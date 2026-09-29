@@ -23,7 +23,7 @@ in this repository.
 
 Worth knowing when you assess an issue: the optional privacy lock hides the app
 behind a PIN but does not encrypt manuscripts; encrypted portable archives do
-encrypt their contents with a separate recovery key. Preview builds are unsigned.
+encrypt their contents with a separate recovery key.
 
 ## Supported versions
 
