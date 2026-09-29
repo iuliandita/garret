@@ -123,7 +123,10 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   const saveAs = button("preview-save-as", t("preview.save-as"));
   saveAs.dataset.weight = "primary";
   const closeControl = button("preview-close", t("preview.close"));
-  head.append(heading, refresh, saveAs, closeControl);
+  const actions = document.createElement("div");
+  actions.id = "preview-actions";
+  actions.append(refresh, saveAs, closeControl);
+  head.append(heading, actions);
 
   const ornamentGroup = document.createElement("div");
   ornamentGroup.id = "preview-ornament";
@@ -164,13 +167,26 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   summary.id = "preview-summary";
   summary.setAttribute("role", "status");
 
+  const options = document.createElement("div");
+  options.id = "preview-options";
+  options.hidden = true;
+  options.append(ornamentGroup, flagGroup);
+  const optionsToggle = button("preview-options-toggle", t("preview.options"));
+  optionsToggle.setAttribute("aria-label", t("preview.options"));
+  optionsToggle.setAttribute("aria-expanded", "false");
+  optionsToggle.setAttribute("aria-controls", options.id);
+  optionsToggle.addEventListener("click", () => {
+    options.hidden = !options.hidden;
+    optionsToggle.setAttribute("aria-expanded", String(!options.hidden));
+  });
+
   const styleElement = document.createElement("style");
   styleElement.id = "preview-style";
 
   const pages = document.createElement("div");
   pages.id = PAGES_ID;
 
-  rail.append(head, ornamentGroup, flagGroup, note, summary, styleElement, pages);
+  rail.append(head, optionsToggle, options, note, summary, styleElement, pages);
   container.append(rail);
   let pageSetup: ProofPageSetup | null = null;
 

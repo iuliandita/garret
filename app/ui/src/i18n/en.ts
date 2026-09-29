@@ -1574,6 +1574,7 @@ export const EN = {
   "preview.refresh": "Refresh",
   "preview.save-as": "Save as\u2026",
   "preview.close": "Close",
+  "preview.options": "Book appearance",
   // ON DEMAND, and the line says why rather than leaving a writer wondering
   // whether the rail is broken. A full render is O(the manuscript) and this
   // application's keystroke path is measured and gated; a preview that
