@@ -79,8 +79,11 @@ async function library(errorText?: string, resumeOpen = true) {
   root.className = "mobile-workspace mobile-library";
   root.dataset.theme = theme;
   const header = element("header");
+  const wordmark = element("span");
+  wordmark.className = "mobile-wordmark";
+  wordmark.setAttribute("aria-hidden", "true");
   const title = element("h1", m.libraryTitle);
-  header.append(title);
+  header.append(wordmark);
   const appearance = element("button", theme === "dark" ? m.light : m.dark);
   appearance.type = "button";
   appearance.setAttribute("aria-label", `${m.appearance}: ${theme === "dark" ? m.light : m.dark}`);
@@ -88,7 +91,7 @@ async function library(errorText?: string, resumeOpen = true) {
   header.append(appearance);
   const error = element("p", errorText ?? "");
   error.setAttribute("role", "alert"); error.hidden = !errorText;
-  root.append(header, element("p", m.libraryHint), error);
+  root.append(header, title, element("p", m.libraryHint), error);
   mount.replaceChildren(root);
   if (!native) { error.textContent = m.nativeRequired; error.hidden = false; return; }
   setBusy(true);
@@ -102,8 +105,14 @@ async function library(errorText?: string, resumeOpen = true) {
     }
     const list = element("nav"); list.setAttribute("aria-label", m.books);
     for (const book of catalog.books) {
-      const button = element("button", book.unavailable ? m.unavailableBook : book.name);
+      const button = element("button");
       button.type = "button";
+      const cover = element("span", book.unavailable ? "" : (Array.from(book.name.trim())[0] ?? ""));
+      cover.className = "mobile-book-cover";
+      cover.setAttribute("aria-hidden", "true");
+      const bookTitle = element("span", book.unavailable ? m.unavailableBook : book.name);
+      bookTitle.className = "mobile-book-name";
+      button.append(cover, bookTitle);
       if (book.unavailable) {
         button.dataset.unavailable = "true";
         button.disabled = true;
