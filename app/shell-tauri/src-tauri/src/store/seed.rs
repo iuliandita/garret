@@ -46,7 +46,7 @@ struct FixtureScene {
     #[serde(default)]
     blocks: Vec<FixtureBlock>,
     /// A whole ProseMirror document, straight from the generator's own
-    /// `import` run (094) rather than reconstructed from flat text. WINS OVER
+    /// `import` run rather than reconstructed from flat text. WINS OVER
     /// `blocks` when both are present, and is the only route by which a
     /// seeded body can carry MARKS: `pm_doc` below only ever emits bare
     /// paragraphs, so a bible note's `*em*`/`**strong**` would be silently
@@ -69,8 +69,8 @@ struct FixtureCastMember {
     summary: String,
     #[serde(default)]
     fields: Vec<FixtureCastField>,
-    /// Absent means none, `cast.ndjson`'s own rule for `fields` and `summary`
-    /// (105). Run through `cast::normalise_aliases` before it is written, so a
+    /// Absent means none, `cast.ndjson`'s own rule for `fields` and `summary`.
+    /// Run through `cast::normalise_aliases` before it is written, so a
     /// short alias fails the seed loudly rather than landing in a file
     /// `cast_set` would have refused to write.
     #[serde(default)]
@@ -349,7 +349,7 @@ pub fn seed_project(fixture_dir: &Path, db_path: &Path) -> Result<usize> {
     }
     // ---------------------------------------------------------------- cast
     // OPTIONAL: a fixture carrying no `cast.ndjson` seeds an empty cast table,
-    // exactly as every fixture did before 094 -- `lab/fixtures/out/*` never
+    // exactly as every fixture did before this -- `lab/fixtures/out/*` never
     // carries this file.
     //
     // RAW SQL, NOT `Store::cast_create`/`cast_set`. Those commands open their
@@ -541,7 +541,7 @@ pub fn seed_project(fixture_dir: &Path, db_path: &Path) -> Result<usize> {
     }
 
     // -------------------------------------------------------------- timelines
-    // OPTIONAL, and ships EMPTY for the sample as of 101 -- 104 fills it. Each
+    // OPTIONAL, and ships EMPTY for the sample -- filled elsewhere. Each
     // line makes a NEW `timeline` item under the bible, never one of
     // `project.json`'s own: unlike a synopsis, a timeline has nowhere in that
     // list to belong.
@@ -900,7 +900,7 @@ mod tests {
         assert_eq!(store.synopsis_item_ids().unwrap(), Vec::<String>::new());
     }
 
-    /// THE BOOK'S NAME TRAVELS (094): `meta.name` becomes the store's
+    /// THE BOOK'S NAME TRAVELS: `meta.name` becomes the store's
     /// `project_name` row, so the outline header names the book and not the
     /// file. Absent, no row is written and the header keeps the file's name,
     /// which is what every lab fixture has always shown.
@@ -1157,7 +1157,7 @@ mod tests {
     }
 
     /// A CAST-KIND TRACK'S `memberId` AND AN EVENT'S `cast` NAME MEMBERS BY
-    /// NAME (104), resolved here against `cast.ndjson` in the same pass that
+    /// NAME, resolved here against `cast.ndjson` in the same pass that
     /// resolves `appearances.ndjson` -- so the stored body carries the real
     /// cast id, never the name `sample-build.ts` wrote.
     #[test]

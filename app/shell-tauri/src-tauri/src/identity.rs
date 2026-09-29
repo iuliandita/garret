@@ -41,7 +41,7 @@ use std::path::{Path, PathBuf};
 
 /// The `meta` key the pin lives under. `identity.` rather than `design.`: a pen
 /// name is not how the book is set, it is who it is by, and a later series or
-/// universe pin is a sibling of this key rather than of 040's three.
+/// universe pin is a sibling of this key rather than of `design`'s three.
 pub use crate::core_constants::PIN_KEY;
 
 /// The vault's own file, beside `settings.json`.
@@ -1117,7 +1117,7 @@ mod tests {
 
     #[test]
     fn the_pin_has_exactly_these_keys() {
-        // THE TRIPWIRE. 050 gave salvage a `meta` SWEEP that copies every row
+        // THE TRIPWIRE. Salvage has a `meta` SWEEP that copies every row
         // verbatim into `manifest.json`, so whatever a pin holds is serialized
         // into plain text forever with no field-level knowledge of what it is.
         // Adding a field to `Pin` must be a deliberate act with a failing test

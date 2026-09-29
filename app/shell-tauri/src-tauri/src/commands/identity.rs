@@ -123,7 +123,7 @@ pub(crate) fn identity_save(
 /// cannot be.
 ///
 /// **NO OPEN PROJECT IS NOT A FAILURE HERE.** The library screen's "New pen
-/// name..." (100) calls this with nothing mounted -- that is the whole point
+/// name..." calls this with nothing mounted -- that is the whole point
 /// of an identity vault that lives beside `settings.json` rather than inside
 /// a project file. The vault write above already succeeded by the time an
 /// older version of this function reached `open_project(&guard)?` and

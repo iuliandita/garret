@@ -117,7 +117,7 @@ pub fn validate(path: &Path) -> Result<Validation, String> {
     //    application reads fine, or stay silent about ones it does not.
     //
     //    A TIMELINE'S BODY IS NEVER "UNREADABLE": it is not a document at
-    //    all, by design (101) -- `document_text` correctly returns None
+    //    all, by design -- `document_text` correctly returns None
     //    for its opaque JSON, and reporting that as damage would tell an
     //    operator every healthy timeline in the file is corrupt.
     let bodies = store.documents().map_err(|e| e.to_string())?;

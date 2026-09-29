@@ -147,7 +147,7 @@ pub const KIND_UNREADABLE_COVER: &str = "unreadable_cover";
 pub const KIND_APPEARANCE_ROW: &str = "unreadable_appearance_row";
 /// An appearance naming an item or a cast member that is not in this file. ONE
 /// KIND FOR BOTH ENDS with the sentence saying which, which is `cli::validate`'s
-/// own shape for this table (039): the row is a PAIR, and a script acting on it
+/// own shape for this table: the row is a PAIR, and a script acting on it
 /// does the same thing either way. ONE per distinct missing id and never one per
 /// row -- `orphan_cast_field`'s rule.
 pub const KIND_ORPHAN_APPEARANCE: &str = "orphan_appearance";
@@ -288,8 +288,8 @@ pub const KIND_REVISION_PASS_ROW: &str = "unreadable_revision_pass_row";
 pub const KIND_REVISION_TASK_ROW: &str = "unreadable_revision_task_row";
 /// The project's own spelling wordlist. Written only when it holds a word.
 ///
-/// A FILE AND NOT A MANIFEST KEY, which is where this parts from the design
-/// (048): a design is a handful of scalars a person re-types into a panel, and a
+/// A FILE AND NOT A MANIFEST KEY, which is where this parts from the design:
+/// a design is a handful of scalars a person re-types into a panel, and a
 /// wordlist is a set of unbounded size. `dict.rs`'s own header refuses to put
 /// this set in a `meta` scalar for the same reason.
 pub const WORDLIST_NAME: &str = "wordlist.md";
@@ -446,7 +446,7 @@ pub struct Salvage {
     /// THE SWEEP EXISTS BECAUSE THE ROSTER COULD NOT SEE THIS. `SALVAGED` is
     /// table-level, and `meta` was salvaged BY KEY -- the project's name, the two
     /// covers and the design rows -- so a row that was none of those was
-    /// silent exactly as the `comment` table was before 049, and the daily word
+    /// silent exactly as the `comment` table was before this, and the daily word
     /// target and its baseline were live examples. One reader now takes every
     /// row; `design` is a NAMED SUBSET projected from this map rather than a
     /// second read of the same table.
@@ -707,7 +707,7 @@ impl Working {
 
 /// Read the copy's header, apply `distrust_stale_page_count`, and write the
 /// hundred bytes back only if it changed them. Any IO failure here is not a
-/// refusal: the file is then read exactly as it would have been before 052.
+/// refusal: the file is then read exactly as it would have been before this fix.
 fn repair_copied_header(db: &Path) -> Option<(u32, u32)> {
     use std::io::{Read, Seek, SeekFrom, Write};
     let len = std::fs::metadata(db).ok()?.len();
@@ -961,7 +961,7 @@ fn extract(
             // the table EXISTS; the SELECT can still fail because it does not
             // have the COLUMNS this build expects, since a rowid is a b-tree
             // key and knows nothing about columns. This returned an empty vec
-            // until 048, which reported a file full of scenes as a file with
+            // until it was fixed, which reported a file full of scenes as a file with
             // none and recorded NOTHING -- silent total loss on the recovery
             // command.
             match read_items(&conn, &ids) {
@@ -1043,7 +1043,7 @@ fn extract(
     // widening it would touch every caller of that struct for one boolean.
     // A plain query against the live table is enough here -- if the table
     // cannot answer it, the set comes back empty and every body salvages
-    // exactly as it did before 101, which is the safe side: it means "report
+    // exactly as it did before, which is the safe side: it means "report
     // damage if the body does not parse", never "hide damage".
     let timeline_ids: HashSet<String> = conn
         .prepare("SELECT id FROM item WHERE type = ?1")
@@ -1090,7 +1090,7 @@ fn extract(
         // walk: asking a v7 file for `picture_path` makes the prepare fail, and
         // `walk`'s wrong-shape branch would then report the WHOLE cast table as
         // unreadable -- every character sheet in an old project lost, by a check
-        // added to recover a photograph. That is the 046 guard rule one version
+        // added to recover a photograph. That is the same guard rule one version
         // on, and a test says so.
         let member_select = if schema_version.unwrap_or(0) >= 14 {
             "SELECT id, kind, name, summary, picture_path, deleted_at FROM cast_member WHERE rowid = ?1"
@@ -1138,7 +1138,7 @@ fn extract(
 
     // -------------------------------------------------------- the aliases
     //
-    // v10's table (105), guarded on its OWN version rather than folded into
+    // v10's table, guarded on its OWN version rather than folded into
     // the `>= 7` block above: a v9 file has cast members and fields and no
     // `cast_alias` table, and one guard covering both versions reads it
     // wrongly at this end -- the picture column's own precedent one version
@@ -1379,8 +1379,8 @@ fn extract(
             });
         }
     }
-    // ONE loss per member, never one per row -- the same rule, one table over
-    // (105). Gated on `members_ok` for the identical reason, immediately above.
+    // ONE loss per member, never one per row -- the same rule, one table over.
+    // Gated on `members_ok` for the identical reason, immediately above.
     let orphaned_alias_members: std::collections::BTreeSet<&str> = aliases
         .iter()
         .map(|a| a.member_id.as_str())
@@ -1565,7 +1565,7 @@ fn extract(
                     .map_err(|e| e.to_string())?;
                 // A TIMELINE'S BODY IS NEVER "NOT A DOCUMENT THIS BUILD CAN
                 // READ" -- MAJOR review finding, item 9, `validate`'s own
-                // reason: by design (101) it is not a document at all, so it
+                // reason: by design it is not a document at all, so it
                 // is swept verbatim here (the write above, unconditional)
                 // with NEITHER a `Loss` NOR an entry in `raw_bodies`, whose
                 // own doc comment ties its length to the `words` undercount
@@ -2068,7 +2068,7 @@ fn write_snapshots(
     // `by_snapshot`'s keys, which arrive sorted. Taking them sorted would make
     // the `(None, None)` arm below a second statement of the container's order
     // -- a tiebreak no input could reach, which is worse than none because a
-    // reader credits it (049 removed exactly that from `write_comments`). Taken
+    // reader credits it (this was removed from `write_comments`). Taken
     // this way the arm is load-bearing and is killed at this function's own
     // boundary, where the input order is chosen.
     for v in versions {
@@ -2280,7 +2280,7 @@ fn write_cast(
     }
 
     // "ALSO CALLED", `by_member`'s own shape one column over: ordered by
-    // ordinal, the writer's own order for the aliases (105).
+    // ordinal, the writer's own order for the aliases.
     let mut aliases_by_member: BTreeMap<&str, Vec<&RecoveredAlias>> = BTreeMap::new();
     for a in aliases {
         aliases_by_member
@@ -2339,7 +2339,7 @@ fn write_cast(
             if m.deleted_at.is_some() {
                 text.push_str(&format!("\n{}\n", strings.t("salvage.cast.removed")));
             }
-            // ALSO CALLED, before the summary -- the page's own order (105):
+            // ALSO CALLED, before the summary -- the page's own order:
             // who this is, then what they are called, then the paragraph.
             if let Some(rows) = aliases_by_member.get(m.id.as_str()) {
                 let joined = rows
@@ -2855,7 +2855,7 @@ pub const NOT_SALVAGED: [(&str, &str); 0] = [];
 /// THE SWEEP IS THE FIX FOR THE ROSTER'S OWN LIMIT. `SALVAGED` is table-level,
 /// and until this slice `meta` was read BY KEY: the project's name, two covers
 /// and design rows. Any other row was silent exactly as the `comment` table
-/// was before 049 -- the daily word target, its baseline, and the two rows a
+/// was before this -- the daily word target, its baseline, and the two rows a
 /// recovery point writes about where it came from were all live examples.
 ///
 /// THE KEY IS READ SEPARATELY FROM THE VALUE, and that is what lets a row whose
@@ -3533,7 +3533,7 @@ pub(crate) mod tests {
         (was, keep)
     }
 
-    /// THE DAMAGE A WRITER ACTUALLY HAS, and until 052 this command refused it
+    /// THE DAMAGE A WRITER ACTUALLY HAS, and this command used to refuse it
     /// outright: SQLite will not read one row out of a file whose header claims
     /// more pages than the file holds, so a book missing its last megabyte
     /// salvaged as "this file does not hold a project this build can salvage".
@@ -3916,7 +3916,7 @@ pub(crate) mod tests {
         assert_eq!(raw, r#"{"foo":1}"#);
     }
 
-    /// A TIMELINE'S BODY (101) IS SWEPT VERBATIM, exactly like the JSON-but-
+    /// A TIMELINE'S BODY IS SWEPT VERBATIM, exactly like the JSON-but-
     /// not-a-document case above -- salvage reads `doc` by rowid with no
     /// knowledge of `item.type`, so a timeline needs no code of its own here.
     /// This pins the byte-for-byte round trip the plan asks for: the raw file
@@ -4092,7 +4092,7 @@ pub(crate) mod tests {
         assert_eq!(names.pick("a b", "md"), "a_b-3.md");
     }
 
-    // ------------------------------------------- synopses and the cast (046)
+    // ------------------------------------------- synopses and the cast
 
     /// The fixture, plus a synopsis on the part and on both scenes, plus a cast
     /// of three across all three kinds with detail fields on one of them.
@@ -4149,8 +4149,8 @@ pub(crate) mod tests {
 
     /// A CATALOG THAT IS NOT ENGLISH, so "the recovery used the catalog" is a
     /// claim a wrong build can fail. Every value differs from the English one.
-    /// NOT A SHIPPED LANGUAGE: tag `qq`, not `de`, since 088 -- German
-    /// shipped in 084 with its own values, and a fixture on the real tag
+    /// NOT A SHIPPED LANGUAGE: tag `qq`, not `de` -- German
+    /// ships with its own values, and a fixture on the real tag
     /// would be the shipped catalog's twin, indistinguishable from it.
     static PSEUDO_ENTRIES: &[(&str, &str)] = &[
         ("book.contents", "INHALT"),
@@ -4472,7 +4472,7 @@ pub(crate) mod tests {
     }
 
     /// `detail_fields_whose_member_is_gone_are_recovered_and_reported_once`'s
-    /// own fixture shape, one table over (105): ONE loss per member, not one
+    /// own fixture shape, one table over: ONE loss per member, not one
     /// per row.
     #[test]
     fn aliases_whose_member_is_gone_are_recovered_and_reported_once() {
@@ -6510,7 +6510,7 @@ pub(crate) mod tests {
 
     /// And v5 is the half-way file at the other end: a wordlist, and no
     /// synopses. `a_file_that_predates_the_tables_salvages_exactly_as_it_did`
-    /// covers the same version for the 046 tables; this is the half those two
+    /// covers the same version for those tables; this is the half those two
     /// guards cannot see.
     #[test]
     fn a_v5_file_recovers_its_wordlist_and_is_not_asked_about_synopses() {
@@ -6998,8 +6998,8 @@ pub(crate) mod tests {
             .exists());
     }
 
-    /// A rowid is a b-tree key and knows nothing about columns -- 048's finding,
-    /// at the three tables 050 added.
+    /// A rowid is a b-tree key and knows nothing about columns -- an earlier finding,
+    /// at the three tables this sweep added.
     #[test]
     fn a_snapshot_table_of_the_wrong_shape_is_reported_and_not_read_as_empty() {
         let dir = tempdir().unwrap();
@@ -7238,9 +7238,9 @@ pub(crate) mod tests {
         );
     }
 
-    // ------------------------------------------------- the meta sweep (050)
+    // ------------------------------------------------- the meta sweep
 
-    /// 049 named this as the roster's own limit: `meta` was salvaged BY KEY, so
+    /// This was named as the roster's own limit: `meta` was salvaged BY KEY, so
     /// a row nothing named was silent exactly as the `comment` table was. The
     /// daily word target and its baseline were the live examples.
     #[test]
@@ -7356,7 +7356,7 @@ pub(crate) mod tests {
         }
     }
 
-    /// THE MANIFEST NAMES FILES, NEVER PATHS (054).
+    /// THE MANIFEST NAMES FILES, NEVER PATHS.
     ///
     /// `source` and `out_dir` were absolute until this slice, so `manifest.json`
     /// -- a plain-text file an operator hands to whoever is helping them --

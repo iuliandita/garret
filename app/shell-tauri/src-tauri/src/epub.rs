@@ -500,8 +500,8 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
         ),
     ));
 
-    // THE NAVIGATION DOCUMENT, from 041's `contents` and from nothing else. It
-    // is 041's own words: the list is carried out of the render as DATA
+    // THE NAVIGATION DOCUMENT, from `contents` and from nothing else. It
+    // is `contents`'s own words: the list is carried out of the render as DATA
     // precisely so this needs no Markdown to parse and no second statement of
     // which heading sits under which.
     //

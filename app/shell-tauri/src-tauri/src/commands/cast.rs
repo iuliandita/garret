@@ -219,7 +219,7 @@ mod tests {
     use super::*;
     use crate::store::StoreError;
 
-    /// The wire contract itself (105): a rename of any of these three exact
+    /// The wire contract itself: a rename of any of these three exact
     /// strings breaks the page's classification silently unless this test
     /// catches it first -- `cast-panel.ts`'s `ALIAS_REFUSAL_KEYS` restates
     /// them on the other side.

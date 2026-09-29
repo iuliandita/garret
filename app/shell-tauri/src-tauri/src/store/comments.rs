@@ -163,7 +163,7 @@ impl Store {
     /// REFUSES PAST `MAX_COMMENTS_PER_DOCUMENT`, in the same transaction that
     /// would insert, so the count cannot be beaten by two calls in flight.
     ///
-    /// REFUSES A TIMELINE (101): a STORE-API INVARIANT with no path a writer
+    /// REFUSES A TIMELINE: a STORE-API INVARIANT with no path a writer
     /// can reach in this build. There is no editor over a timeline yet (the
     /// page never offers Add comment while one is open, and activating one
     /// opens nothing at all -- see `open.ts`), so this refusal exists for the

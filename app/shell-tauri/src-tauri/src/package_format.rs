@@ -140,7 +140,7 @@ fn read32(bytes: &[u8], at: usize) -> Option<u32> {
 ///
 /// STORED AND DEFLATED, nothing else. This reader was written to read what
 /// `zip` above wrote -- the preview's copy of the file this application just
-/// rendered -- and read stored entries only. 093 made `import` read a DOCX, and
+/// rendered -- and read stored entries only. `import` also reads a DOCX, and
 /// every DOCX a writer receives from Word, pandoc or LibreOffice is deflated, so
 /// the one method those writers use is inflated here (`miniz_oxide`, already in
 /// the build graph) with the entry's declared size as the output limit. It is
