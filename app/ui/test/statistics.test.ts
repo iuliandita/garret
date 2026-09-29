@@ -30,11 +30,11 @@ function item(
  *
  *     part-one
  *       chapter-one
- *         s1  (120)
+ *         s1
  *         s2  (30)
  *         s3  (0)      <- empty, a real reading
  *     chapter-loose
- *     s-loose (500)
+ *     s-loose
  */
 function manuscript(): ProjectItem[] {
   return [
@@ -560,7 +560,7 @@ describe("every figure carries its definition", () => {
 
 describe("what the rows read as", () => {
   test("no two rows share a label, and every sub-line starts with a capital", () => {
-    // 243: "Chapters" named both the chapters' words and their number, and the
+    // "Chapters" named both the chapters' words and their number, and the
     // absent sub-lines began in lower case.
     const rows = statisticRows(computeStatistics(input({ openItemId: null }))).flatMap((g) => g.rows);
     const labels = rows.map((r) => r.label);
@@ -664,7 +664,7 @@ describe("the bible is excluded from every figure", () => {
 });
 
 describe("by section", () => {
-  // 041 accepted that a dedication's words count toward the daily goal, because
+  // This accepts that a dedication's words count toward the daily goal, because
   // the whole-manuscript figure describes the FILE. This is the breakdown that
   // argument asked for instead of a filter: the total is untouched and the
   // three sections add up to it.

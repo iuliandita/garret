@@ -180,7 +180,7 @@ describe("what the report is saying", () => {
   });
 
   test("nothing it can say mentions restoring", () => {
-    // 015 owns restore. Nothing in this slice can put a point back, and a
+    // Restore is owned elsewhere. Nothing here can put a point back, and a
     // surface that hints otherwise is the failure the design names.
     const all = [
       describeRecovery(report(), NOW),
@@ -601,8 +601,8 @@ describe("the three protections never blur into one sentence", () => {
     // The design's section 6 argument: in-project history, same-device
     // recovery, and a file the writer moves off the computer themselves are
     // three different promises, and a surface that blurs them is the failure
-    // this feature exists to prevent. 016 owns "move this file off this
-    // computer yourself" and this slice must not borrow it.
+    // this feature exists to prevent. Restore owns "move this file off this
+    // computer yourself" and this must not borrow it.
     const forbidden = [
       "off this computer",
       "off-site",

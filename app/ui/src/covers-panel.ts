@@ -3,7 +3,7 @@
 // their book.
 //
 // A PANEL OF ITS OWN AND NOT A BLOCK IN `File > Book design…`, and the argument
-// is that panel's own. 040 recorded that it deliberately holds NOTHING THAT CAN
+// is that panel's own. It deliberately holds NOTHING THAT CAN
 // GROW, and that this is why it has no `max-height` and no scroll: "the fix is
 // to have no unbounded list, not to scroll one". Two cover previews are not
 // unbounded, but they are TALL -- and a panel with no scroll that outgrows the
@@ -21,13 +21,13 @@
 // NO SAVE CONTROL, deliberately, and not by omission: every control here IS the
 // act. Add, Change, Remove and View each do their whole job on the press. A Save
 // on a panel whose changes have already landed is a control a writer has to
-// learn does nothing -- the defect 039 found by looking at a capture, and 040
+// learn does nothing -- a defect found by looking at a capture, and
 // pinned.
 //
 // THE PANEL NEVER NAMES A FILE, IN EITHER DIRECTION. It sends a side; the writer
 // chooses a picture in the HOST's own OS dialog; the host copies it under a uuid
 // it generated. So there is nothing inbound for a traversal rule to guard and
-// nothing outbound a writer could paste somewhere -- 038's rule, one owner out.
+// nothing outbound a writer could paste somewhere -- one owner out.
 //
 // THE FINDINGS ARE A STATE AND NOT A NOTICE. Whether a cover suits this book
 // depends on a page size the writer changes in another panel, so a verdict
@@ -248,7 +248,7 @@ export function createCoversPanel(deps: CoversPanelDeps): CoversPanel {
     // writer wants: the book says it has a cover and there is no way to see it,
     // so taking the claim off is the repair. `cast-panel.ts`'s rule.
     //
-    // NO `data-weight="danger"`, and 038's capture is what settled it: the file
+    // NO `data-weight="danger"`, and a capture is what settled it: the file
     // it unlinks is a COPY and the picture the writer chose is still wherever
     // they got it. An application that shouts at every removal teaches a writer
     // to ignore it shouting.

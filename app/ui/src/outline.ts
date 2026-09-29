@@ -365,7 +365,7 @@ export function manuscriptItemsIn(items: readonly ProjectItem[]): ProjectItem[] 
  *  chapter number, it is not adopted into a part, and it must not decide whether
  *  a book already has one.
  *
- *  The concrete defect this exists to prevent is 033's, restored by a fourth
+ *  The concrete defect this exists to prevent is restored by a fourth
  *  root: a `part` a writer parked in their front matter would satisfy
  *  `planAdoption`'s "this book already has a part" and suppress adoption for the
  *  life of the manuscript. Pinned by `placement.test.ts`. */
@@ -490,7 +490,7 @@ export interface Outline {
    *  do and must not cost a write, a rev bump or a reprojection. */
   setState(id: string, state: string | null): Promise<OutlineOutcome>;
   move(id: string, direction: MoveDirection): Promise<OutlineOutcome>;
-  /** `count` moves of one row in one direction as ONE undo entry (243): a drag
+  /** `count` moves of one row in one direction as ONE undo entry: a drag
    *  in the outline table that crosses three siblings is one gesture, and one
    *  Undo puts the row back where the drag found it. Each step is planned
    *  against the walk the step before it re-read, exactly as `count` separate
@@ -615,7 +615,7 @@ export function createOutline(deps: OutlineDeps): Outline {
     deps.onDone(message);
   };
 
-  // 085's whole stack: one entry per landed mutation, an inverse PLAN rather
+  // The outline's whole undo stack: one entry per landed mutation, an inverse PLAN rather
   // than a snapshot. See outline-undo.ts's header for why the arithmetic
   // lives there and not here.
   const undoStack = createUndoStack();
@@ -702,7 +702,7 @@ export function createOutline(deps: OutlineDeps): Outline {
     return "applied";
   }
 
-  /** Find the bin, or create it. EXTRACTED FROM `remove()` (085): undo of a
+  /** Find the bin, or create it. EXTRACTED FROM `remove()`: undo of a
    *  create needs the same find-or-create the delete path already has, since
    *  a row this unit is about to bin may be undone before any writer has ever
    *  pressed Delete once.
@@ -961,7 +961,7 @@ export function createOutline(deps: OutlineDeps): Outline {
         // deleted chapter would be an undelete nobody pressed. Read here rather
         // than after the creates so the list cannot contain a row this press
         // just made.
-        // THE MANUSCRIPT WALK, not merely the live one. 033's argument for
+        // THE MANUSCRIPT WALK, not merely the live one. The argument for
         // stripping the bin applies unchanged to the bible: a part the writer
         // keeps among their world building is not a part of the book, and
         // letting one suppress adoption would spend the manuscript's single
@@ -977,7 +977,7 @@ export function createOutline(deps: OutlineDeps): Outline {
         let afterId = place.afterId;
         let created: string | null = null;
         // The part this press brings into existence, whether the writer asked
-        // for it or 030's holder rule built it. There is never more than one.
+        // for it or the holder rule built it. There is never more than one.
         let adoptInto: string | null = null;
         // The FIRST row this press made - the outermost holder when there is
         // one, otherwise `created` itself once the loop below finishes. What

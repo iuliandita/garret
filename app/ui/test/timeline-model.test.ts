@@ -390,7 +390,7 @@ describe("applyStep / inverseOf", () => {
     expect(serialize(t)).toBe(before);
   });
 
-  // Carry-in from 102's review item 10: the drag commits AT and TRACKS as
+  // The drag commits AT and TRACKS as
   // two "set" steps in one undo entry rather than one "move" step, and
   // "set"'s own inverseOf reads the FULL prior array -- undoing a drag on a
   // MEETING (two tracks) must restore both, not just the first.
@@ -420,7 +420,7 @@ describe("applyStep / inverseOf", () => {
   });
 });
 
-describe("laneAssignment (103)", () => {
+describe("laneAssignment", () => {
   function branchesTimeline(writing: boolean): Timeline {
     return baseTimeline({
       tracks: [
@@ -502,7 +502,7 @@ describe("laneAssignment (103)", () => {
   });
 });
 
-describe("commitTrackName (103)", () => {
+describe("commitTrackName", () => {
   test("trims and keeps a real name", () => {
     expect(commitTrackName("  The harbour  ", "Track 1")).toBe("The harbour");
   });
@@ -514,7 +514,7 @@ describe("commitTrackName (103)", () => {
   });
 });
 
-describe("monthTableValid (103)", () => {
+describe("monthTableValid", () => {
   test("a populated table with positive day counts is valid", () => {
     expect(
       monthTableValid([
@@ -565,7 +565,7 @@ describe("calendarDate with negative days (103 decisions)", () => {
 });
 
 // MAJOR (review): plan item 2's month/season/year bands, not implemented.
-describe("bandLevel (103)", () => {
+describe("bandLevel", () => {
   const calendar = {
     months: [
       { name: "Thaw", days: 20, season: "Spring" },
@@ -610,7 +610,7 @@ describe("bandLevel (103)", () => {
   });
 });
 
-describe("zoomToSeparate (103)", () => {
+describe("zoomToSeparate", () => {
   function view(pxPerUnit: number): TimelineViewState {
     return { pxPerUnit, originUnit: 0, widthPx: 800 };
   }

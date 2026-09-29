@@ -2,8 +2,8 @@
 // What the writer changed in their folder, as rows they can read.
 //
 // A REVIEW SURFACE THAT NOW APPLIES -- ON EXACTLY THE ROWS THE HOST SAYS MAY BE
-// APPLIED, and on no other. 021 shipped this panel with no accept control at
-// all and a test asserting there was none; 022 moves that boundary rather than
+// APPLIED, and on no other. An earlier version shipped this panel with no accept control at
+// all and a test asserting there was none; this moves that boundary rather than
 // removing it. `can_accept` is the HOST's answer, derived from the change set
 // it built itself, and the page's whole part in the decision is to obey it: a
 // row painted from a stale read cannot grow a control the host would refuse,
@@ -111,7 +111,7 @@ export interface MirrorChangesDeps {
   /** What an accepted change obliges the page to do. THE FOURTH `replaceDoc`
    *  PATH hangs off this: the host has rewritten a body and moved its revision,
    *  so the open scene, its notes and every figure that describes it are stale.
-   *  Plan 001's write-back names this call site three slices before it existed. */
+   *  An earlier plan's write-back names this call site before it existed. */
   onAccepted(outcome: MirrorAcceptOutcome): void | Promise<void>;
   /** Restore one document from the acceptance's captured version. */
   undo(handle: MirrorUndoHandle): Promise<void>;
@@ -207,7 +207,7 @@ export function createMirrorChanges(deps: MirrorChangesDeps): MirrorChanges {
   const undos = document.createElement("div");
   undos.id = "mirror-changes-undo";
 
-  // ABOVE THE LIST, which is 040's rule read the way the report panel reads it:
+  // ABOVE THE LIST, read the way the report panel reads it:
   // the list is what grows, and a control below it is a control a writer with
   // forty changed files cannot reach.
   const acceptAll = document.createElement("button");

@@ -1,5 +1,5 @@
 // app/ui/src/cast-card.ts
-// A cast member's sheet, floated under their name in the prose (098, W5).
+// A cast member's sheet, floated under their name in the prose.
 //
 // NO HOST CALL ON HOVER. `project.ts` already holds the cast list it loaded
 // for the panel and for cast-marks.ts's own feed; this unit is handed a
@@ -8,7 +8,7 @@
 // design record warns against, aimed at the pointer instead of the keyboard.
 //
 // ON <body>, LIKE #format-bubble AND FOR THE SAME REASON: `#editor {
-// will-change: transform }` (064's memory fix) holds only while #editor has
+// will-change: transform }` (the memory fix) holds only while #editor has
 // no positioned descendant, so this card is a sibling of #format-bubble and
 // #nav-context-menu, never a child of the pane it floats over.
 //
@@ -171,7 +171,7 @@ export function createCastCard(deps: CastCardDeps): CastCard {
   const name = document.createElement("div");
   name.className = "cast-card-name";
   // An id for the rigs: a plain div gets no accessible name, and bible-cli
-  // reads the card's name through the id-keyed text walk (105).
+  // reads the card's name through the id-keyed text walk.
   name.id = "cast-card-name";
   header.append(icon, name);
 

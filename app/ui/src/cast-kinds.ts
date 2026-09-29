@@ -50,7 +50,7 @@ export function kindKeyFor(kind: string): string | null {
   return CAST_KINDS.includes(kind) ? `cast.kind.${kind}` : null;
 }
 
-/** The glyph naming ONE kind (096, W3): `user` for a character, `globe` for a
+/** The glyph naming ONE kind: `user` for a character, `globe` for a
  *  place, `map-pin` for a point of interest. Null for a kind this build does
  *  not know, `kindKeyFor`'s own reason: a newer host's fourth kind must not
  *  index into `undefined` and paint a row with a missing icon where a glyph

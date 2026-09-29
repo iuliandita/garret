@@ -22,7 +22,7 @@ import { createTooltip, type Tooltip } from "./tooltip";
 // AMBER, NEVER --danger. The danger ink is reserved for "your work is not in
 // the file", the save indicator's alone (style.css beside #save-indicator).
 //
-// THREE STATES SINCE 236 (the calm-panels record amends 067). A copy that is
+// THREE STATES (the calm-panels record amends the earlier two). A copy that is
 // merely not set up is NEUTRAL: a new book has no archive and no readable
 // folder, and a dot that was amber for every new book taught the writer to
 // ignore it. AMBER is kept for a copy that failed, went stale or is paused,
@@ -88,7 +88,7 @@ export interface StatusDotDeps {
 
 export interface StatusDot {
   report<K extends keyof CopyStates>(which: K, state: NonNullable<CopyStates[K]>): void;
-  /** The dot as painted now. The project panel reads it on open (240). */
+  /** The dot as painted now. The project panel reads it on open. */
   state(): DotState;
   destroy(): void;
 }

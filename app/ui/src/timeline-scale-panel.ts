@@ -1,5 +1,5 @@
 // app/ui/src/timeline-scale-panel.ts
-// `Edit scale…` (103, design section 4, plan item 2): unit name, zero label,
+// `Edit scale…`: unit name, zero label,
 // the calendar toggle and its month table, the year label, the epoch year,
 // and the eras list.
 //

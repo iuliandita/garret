@@ -1,5 +1,5 @@
 // app/ui/test/synopsis-css.test.ts
-// THE SYNOPSIS PANEL'S TWO MODES MUST ACTUALLY HIDE THE OTHER BLOCK (097, W4).
+// THE SYNOPSIS PANEL'S TWO MODES MUST ACTUALLY HIDE THE OTHER BLOCK.
 // `panel.dataset.mode` is the only thing that decides which of #synopsis-read
 // / #synopsis-form is on screen -- see synopsis-panel.ts's own header -- and
 // `synopsis-panel.test.ts` already asserts the JS SETS the attribute, which

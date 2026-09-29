@@ -56,7 +56,7 @@ export function createRelationshipView(container: HTMLElement) {
     selected = key; page = 0; search.value = ""; options(); render(); heading.focus();
   }
   /** THE FOCUS AND ITS NEIGHBOURS AS A TREE, drawn at the inspector's own
-   *  width (243). The first version was a 580-unit drawing squeezed into
+   *  width. The first version was a 580-unit drawing squeezed into
    *  328px: 9px text, connectors that stopped short of their captions and a
    *  numbering that matched nothing in the list. Now user units are pixels, so
    *  text is the panel's own 13/12px; every connector ends 6px before its
@@ -117,7 +117,7 @@ export function createRelationshipView(container: HTMLElement) {
       const direction = doc.createElement("p"); direction.textContent = t(outgoing && relationshipKey(link.target) === selected ? "relationships.both" : outgoing ? "relationships.outgoing" : "relationships.incoming");
       const explore = doc.createElement("button"); explore.type = "button"; explore.textContent = caption(point);
       explore.addEventListener("click", () => choose(relationshipKey(point)));
-      // Only the parts the writer filled in (239): "Note: ." is not a note.
+      // Only the parts the writer filled in: "Note: ." is not a note.
       const detail = doc.createElement("p"); detail.textContent = ([["relationships.detail.label", link.label],
         ["relationships.detail.note", link.note], ["relationships.detail.citation", link.citation]] as const)
         .filter(([, value]) => value.trim() !== "").map(([key, value]) => t(key, { value })).join(" ");

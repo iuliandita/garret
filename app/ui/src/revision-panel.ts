@@ -295,7 +295,7 @@ function mountPlanning(panel: HTMLElement, deps: RevisionPanelDeps): { refresh()
   const savePass = action("planning.pass-save");
   const discardPass = action("planning.pass-discard");
   const removePass = action("planning.pass-remove");
-  // ONE PRIMARY, DESTRUCTIVE AS INK (238): five equal buttons gave Discard the
+  // ONE PRIMARY, DESTRUCTIVE AS INK: five equal buttons gave Discard the
   // same weight as Create. Creating a pass is this row's reason; New only
   // clears the fields; Discard and Remove throw work away.
   createPass.dataset.weight = "primary";
@@ -322,7 +322,7 @@ function mountPlanning(panel: HTMLElement, deps: RevisionPanelDeps): { refresh()
   taskBody.rows = 3;
   taskBody.placeholder = t("planning.task-placeholder");
   taskBody.setAttribute("aria-label", t("planning.task-text"));
-  // THE LIMIT IS SAID NEAR THE LIMIT (239), not printed under an empty
+  // THE LIMIT IS SAID NEAR THE LIMIT, not printed under an empty
   // field: the field already stops at 4,000 characters.
   const limit = document.createElement("p");
   limit.className = "planning-limit";

@@ -26,7 +26,7 @@ import type { DailyTarget } from "./goals";
 
 export interface EmptyProjectDeps {
   /** Open the switcher on the list. `menu-library`, the workspace's own "Open
-   *  the library" button and (100) the library screen's own routes all reach
+   *  the library" button and the library screen's own routes all reach
    *  through this one thunk rather than the `Switcher` itself: `mountEmpty`
    *  runs BEFORE `main.ts` builds the switcher (the first mount happens
    *  before the application-chrome block that constructs it), so this is
@@ -141,7 +141,7 @@ export function mountEmpty(deps: EmptyProjectDeps): MountedProject {
 
   // Built INTO #editor, after #scene-heading, exactly as mountProject builds
   // and removes the ProseMirror mount there -- nothing here is positioned
-  // (064's rule for #editor's descendants).
+  // (the rule for #editor's descendants).
   const workspace = document.createElement("div");
   workspace.id = "empty-workspace";
   const prompt = document.createElement("p");

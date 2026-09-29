@@ -12,7 +12,7 @@ describe("dotState", () => {
     expect(dotState(quiet)).toBe("quiet");
   });
   const cases: Array<[string, Parameters<typeof dotState>[0], DotState]> = [
-    // Not set up is not a failure (236, amending 067).
+    // Not set up is not a failure.
     ["no recovery point", { ...quiet, recovery: "none" }, "neutral"],
     ["no archive", { ...quiet, archive: "none" }, "neutral"],
     ["no folder", { ...quiet, mirror: "off" }, "neutral"],

@@ -1,6 +1,6 @@
 import { isCompositionKey } from "./composition-key";
 // app/ui/src/chrome-fade.ts
-// Focus mode hides the chrome as soon as it turns on (115 reverses 071).
+// Focus mode hides the chrome as soon as it turns on.
 // After a wake, typing or timeline pointer stillness starts the re-hide timer. This module owns exactly one thing -- the `chrome-hidden` class on
 // `<body>` and the timer that adds it -- the stylesheet does the fading, the
 // visibility flip and the pane's recentring transform (style.css, near
@@ -67,7 +67,7 @@ export interface ChromeFadeDeps {
 
 export interface ChromeFade {
   onType(): void;
-  /** The timeline's own arm (102, design section 4): it has no typing, so
+  /** The timeline's own arm: it has no typing, so
    *  the 1.5s hide timer keys off pointer STILLNESS instead. Callers debounce
    *  this themselves (a short idle timer after the last pointer move) and
    *  call it once the pointer has actually stopped -- calling it on every

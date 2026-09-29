@@ -182,7 +182,7 @@ describe("exporting the manuscript", () => {
 
   test("a failure names the format that was ASKED for", async () => {
     // The one path with no result to read a format off. A notice with the
-    // format left out would be the sentence 040 removed.
+    // format left out would be the sentence that was removed.
     const rig = mount({
       exportProject: () => Promise.reject(new Error("no space")),
     });

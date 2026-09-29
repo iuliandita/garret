@@ -33,7 +33,7 @@ test("recording starts only after the writer chooses it and carries the generati
   await workspace.open();
   expect(calls.some(([command]) => command === "analytics_set_recording")).toBe(false);
   expect(document.getElementById("analytics-workspace")?.textContent).toContain("No sessions recorded here yet.");
-  // The method moved off the page into help marks (239), still the marks'
+  // The method moved off the page into help marks, still the marks'
   // accessible descriptions: a session's span is not writing time.
   const span = document.getElementById("analytics-help-history")!;
   expect(span.getAttribute("aria-label")).toBe("About Sessions and corrections");

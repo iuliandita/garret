@@ -226,7 +226,7 @@ describe("the covers panel", () => {
   });
 
   test("a cover whose file is gone keeps its claim and offers the repair", async () => {
-    // A MISSING FILE DOES NOT CLEAR THE ROW -- 038's rule, one owner out: a
+    // A MISSING FILE DOES NOT CLEAR THE ROW -- one owner out: a
     // writer whose external drive is unmounted has not asked to forget that
     // their book had a cover. Remove is offered precisely here, because taking
     // the claim off IS the repair.
@@ -461,7 +461,7 @@ describe("the covers panel", () => {
   });
 
   test("there is no Save control on it at all", async () => {
-    // 040's rule, pinned here for the reason it is pinned there: every control
+    // The rule, pinned here for the reason it is pinned there: every control
     // IS the act, and a Save on a panel whose changes have already landed is a
     // control a writer has to learn does nothing.
     const r = rig(view({ view: { state: "present", data_uri: THUMB }, check: ok() }));
@@ -473,7 +473,7 @@ describe("the covers panel", () => {
   });
 
   test("no control on it carries a danger weight", async () => {
-    // 038's eleventh defect, found by looking: filled red, Remove picture was
+    // An earlier defect, found by looking: filled red, Remove picture was
     // the loudest control on a panel whose reason for existing is something
     // else -- and the file it unlinks is a COPY. Proportion is the point.
     const r = rig(view({ view: { state: "present", data_uri: THUMB }, check: ok() }));

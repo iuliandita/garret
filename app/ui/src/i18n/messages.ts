@@ -45,14 +45,14 @@ export interface Messages {
   /** The language this instance was built for. */
   readonly locale: string;
   /** A count or figure with the catalog's own digit grouping ("2,000" in
-   *  English, "2.000" in German), whatever the process locale is (090). */
+   *  English, "2.000" in German), whatever the process locale is. */
   number(n: number): string;
   /** A displayed date in this catalog's language, never a stored machine date. */
   date(atMs: number): string;
   /** A displayed local date and time in this catalog's language. */
   dateTime(atMs: number): string;
   /** A short date and time for a summary line ("Sep 25, 10:15 PM"): no
-   *  seconds, and the year only when it is not this year (239). */
+   *  seconds, and the year only when it is not this year. */
   shortDateTime(atMs: number): string;
   /** A short date for a list row ("Sep 25"), the year only when it differs. */
   shortDate(atMs: number): string;

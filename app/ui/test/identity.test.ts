@@ -252,7 +252,7 @@ describe("the report's words", () => {
     expect(fieldPlace("dc:date")).toBe("dc:date");
     expect(fieldLabel("pseudonym")).toBe("pseudonym");
     expect(formatName("rtf")).toBe("rtf");
-    // 092: docx IS a format now; its name comes from the catalog.
+    // docx IS a format now; its name comes from the catalog.
     expect(formatName("docx")).toBe(EN["preflight.format.docx"]);
     expect(severityName("advice")).toBe("advice");
   });

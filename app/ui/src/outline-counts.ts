@@ -83,7 +83,7 @@ export function rollUpMetric<T>(
  *
  *  Grouped, because five figures unseparated is a number a reader has to count
  *  the digits of. `formatNumber` rather than a hand-rolled separator: the
- *  language the writer chose decides (090), and this is one of the few places
+ *  language the writer chose decides, and this is one of the few places
  *  in the application where it can without a rule of ours drifting from it.
  *
  *  An absent count renders as NOTHING, not as a dash and not as a zero. The row

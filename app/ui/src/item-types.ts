@@ -63,7 +63,7 @@ export const TIMELINE_TYPE = "timeline";
  *
  *  THE MATTER SECTIONS ARE NOT IN THIS LIST AND MUST NEVER BE ADDED TO IT.
  *  Front matter is IN the book -- exported, mirrored, counted -- and this list
- *  is what "not the book" means. That is the whole of 041's third state, and
+ *  is what "not the book" means. That is the whole of this third state, and
  *  `RESERVED_ROOT_TYPES` below is the other half of it. */
 export const NON_MANUSCRIPT_ROOT_TYPES: readonly string[] = [TRASH_TYPE, BIBLE_TYPE];
 

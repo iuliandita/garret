@@ -1,10 +1,10 @@
 // app/ui/src/timeline-view.ts
-// The timeline's lanes (102, design section 4). Mounted into `#editor` when a
+// The timeline's lanes. Mounted into `#editor` when a
 // `timeline` item is activated; the ProseMirror view is hidden, never
 // destroyed, and this module's DOM leaves `#editor` on `destroy()`.
 //
 // POSITIONED DESCENDANTS INSIDE `#editor`, RECORDED. `#editor {
-// will-change: transform }` (064's memory fix) holds only while `#editor`
+// will-change: transform }` (the memory fix) holds only while `#editor`
 // has no positioned descendant -- every other floating surface in this
 // application (the bubble toolbar, the cast card, the timeline's own event
 // card) stays OFF `#editor` for exactly that reason. The lanes are the one
@@ -13,7 +13,7 @@
 // `#editor`'s class list and `style.css` turns the hint off for as long as
 // that class is present. `chrome-fade.ts`'s prose-typing gate is unaffected
 // (no prose is typed into a timeline), and `persist-cli` re-runs to show the
-// scene path unchanged (102's harness item).
+// scene path unchanged.
 //
 // THE VIEW HOLDS THE PARSED `Timeline` AS ITS STATE (Decision, plan). Every
 // mutation re-serializes the whole document and hands it to `onDirty`; the
@@ -76,7 +76,7 @@ const ZOOM_FACTOR = 1.15;
 const MAX_ZOOM_SAMPLES = 200;
 const MIN_TICK_GAP_PX = 80;
 /** A calendar tick reads "Kellstide 36", about twice a bare number's width;
- *  at 80px the sample's labels overlapped at every zoom (104's captures). */
+ *  at 80px the sample's labels overlapped at every zoom (captures showed). */
 const CALENDAR_TICK_GAP_PX = 130;
 /** A press becomes a pan only after this much travel. Capturing the pointer
  *  ON pointerdown retargeted the browser's compatibility click and dblclick
@@ -188,7 +188,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
   addBranchBtn.textContent = t("timeline.toolbar.add-branch");
   toolbar.append(addBranchBtn);
 
-  // THE MEASURING INSTRUMENT (100's `#library-timing` pattern, restated in
+  // THE MEASURING INSTRUMENT (the `#library-timing` pattern, restated in
   // section 4). Clipped off-screen, never `display: none`, so it stays a
   // node in the accessibility tree for `timeline-cli` to read by name.
   const status = document.createElement("p");
@@ -239,7 +239,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
 
   const lanes = document.createElement("div");
   lanes.id = "timeline-lanes";
-  // A KEYBOARD OPEN'S FOCUS TARGET, carry-in from 102's review: the fallback
+  // A KEYBOARD OPEN'S FOCUS TARGET: the fallback
   // used to be `root.focus()`, which drew the browser's default ring around
   // the WHOLE pane (toolbar, scale strip and empty state included) the
   // moment a writer opened an empty timeline with no event to land on.
@@ -475,7 +475,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
     return Math.max(1, niceNorm * mag);
   }
 
-  // -------------------------------------------------------------- drag (103)
+  // -------------------------------------------------------------- drag
 
   /** True for the duration between a drag's `pointerup` and the synthetic
    *  `click` the browser fires right after it -- `eventButton`'s own click
@@ -567,7 +567,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
     // TRACKS ONLY WHEN THE LANE ACTUALLY CHANGED -- a drag confined to its
     // own lane must never touch `tracks`, or a meeting dragged along its own
     // row would silently collapse to one track. Two "set" steps in ONE undo
-    // entry (carry-in from 102's review, timeline-model.ts's own comment on
+    // entry (see timeline-model.ts's own comment on
     // "move"): undoing this restores the FULL prior `tracks` array, not just
     // its first element.
     if (session.targetTrack !== session.originTrack) {
@@ -988,7 +988,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
     paintStatus();
   }
 
-  // ----------------------------------------------------------- branches (103)
+  // ----------------------------------------------------------- branches
 
   function renderBranches(la: ReturnType<typeof laneAssignment>): void {
     if (timeline === null) return;
@@ -1081,7 +1081,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
   function paintStatus(): void {
     const p95 = zoomSamples.length === 0 ? 0 : percentiles(zoomSamples).p95;
     const visibleCount = lanes.querySelectorAll(".tl-event").length;
-    // PX PER UNIT, TO 4 DECIMALS (103, plan item 7): `timeline_drag_moves`
+    // PX PER UNIT, TO 4 DECIMALS: `timeline_drag_moves`
     // reads this figure to compute the units an xdotool drag of a known
     // pixel distance is supposed to move `at` by -- the page's own live
     // scale, never a restated pixel-to-unit constant the rig could drift
@@ -1373,7 +1373,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
   });
   addBranchBtn.addEventListener("click", () => openBranchForm());
 
-  // -------------------------------------------------------- + Branch (103)
+  // -------------------------------------------------------- + Branch
 
   const branchForm = document.createElement("div");
   branchForm.id = "timeline-branch-form";

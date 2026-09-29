@@ -4,7 +4,7 @@
 // DERIVED, NOT STORED, and that is the whole shape --
 // the short of it: a stored per-container cast
 // list would need invalidating on `item_move`, on create, on delete, on restore
-// and on 033's adoption -- five paths -- and that record's own closing line is
+// and on the bible's adoption -- five paths -- and that record's own closing line is
 // "THERE ARE NOW THREE `replaceDoc` PATHS. A fourth is where this comes back."
 //
 // IN THE PAGE, NOT THE HOST, which is the split `outline-counts.ts` already

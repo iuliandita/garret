@@ -322,7 +322,7 @@ export function editorPlugins(): Plugin[] {
     // name.
     castMarksPlugin(),
     // Draws nothing a reader can see; its decoration exists for one
-    // transaction at a time (111). Last, so it is outside every real one.
+    // transaction at a time. Last, so it is outside every real one.
     spellRedrawPlugin(),
   ];
 }
@@ -389,7 +389,7 @@ export interface Editor {
    *  word boundary. */
   wordAtCaret(): WordRange | null;
   /** Redraw one range's text from fresh DOM nodes so WebKit's spelling
-   *  marker on it is gone (111, `spell-redraw.ts`). No document change. */
+   *  marker on it is gone (see `spell-redraw.ts`). No document change. */
   redrawSpelling(from: number, to: number): void;
   /** Where those notes are NOW, after every transaction since. This is what
    *  rides the flush. */
@@ -470,7 +470,7 @@ export interface Editor {
   /** The open scene's word count, read from the live document so the display
    *  unit never has to reach into ProseMirror. */
   wordCount(): number;
-  /** Hides or shows the ProseMirror DOM without touching its state (102: a
+  /** Hides or shows the ProseMirror DOM without touching its state (a
    *  timeline replaces it as #editor's visible content while one is open,
    *  the same recorded exception to `#editor`'s `will-change` rule that
    *  timeline-view.ts's own header explains). The EditorState, its undo

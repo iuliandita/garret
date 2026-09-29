@@ -349,7 +349,7 @@ describe("the change set panel", () => {
   });
 
   test("ONLY A ROW THE HOST MARKED APPLICABLE CARRIES AN ACCEPT", async () => {
-    // 021 asserted that NO button here applies anything. 022 ships the accept,
+    // An earlier version asserted that NO button here applies anything. This ships the accept,
     // so the boundary moves rather than disappearing: the control exists on
     // exactly the rows the HOST said may be taken, and on no other. The page
     // does not decide -- `can_accept` is the host's answer and this is a test

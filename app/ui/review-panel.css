@@ -1,5 +1,5 @@
-/* Surface, padding, title and Close are the panel shell's (238). */
-/* Place and width are the inspector's (241). */
+/* Surface, padding, title and Close are the panel shell's. */
+/* Place and width are the inspector's. */
 #review-panel {
   box-sizing: border-box; font: inherit; overflow-wrap: anywhere;
 }
@@ -10,7 +10,7 @@
 #review-panel .review-actions, #review-panel .review-authors { display: flex; flex-wrap: wrap; align-items: end; gap: .6rem; margin-bottom: .4rem; }
 #review-panel label { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
 #review-panel .review-authors label { flex: 1 1 12rem; flex-direction: column; align-items: stretch; }
-/* The new-reviewer form opens on its own line under the chooser (240). */
+/* The new-reviewer form opens on its own line under the chooser. */
 #review-panel #review-author-form { display: flex; flex: 1 0 100%; flex-wrap: wrap; align-items: end; gap: .6rem; }
 #review-panel button, #review-panel select, #review-panel input, #review-panel textarea { max-width: 100%; }
 #review-panel button { white-space: normal; }

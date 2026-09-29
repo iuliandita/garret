@@ -1,4 +1,4 @@
-// The banner's tones and its Details disclosure (236).
+// The banner's tones and its Details disclosure.
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { afterEach, expect, test } from "bun:test";
 
@@ -52,7 +52,7 @@ test("an explicit detail is used as given", () => {
   expect(document.querySelector("#open-error details")).toBeNull();
 });
 
-test("the banner publishes its height so the Library can start below it (238)", () => {
+test("the banner publishes its height so the Library can start below it", () => {
   // On Element, as save-indicator.test.ts stubs it: a copy left on
   // HTMLElement.prototype would shadow every later Element stub.
   const real = Element.prototype.getBoundingClientRect;

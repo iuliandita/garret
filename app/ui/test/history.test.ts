@@ -833,7 +833,7 @@ describe("the panel", () => {
   });
 
   test("it adds no capture-phase document listener, and destroy leaves none", async () => {
-    // 241: the inspector has no outside-click closer, so the count stays at
+    // the inspector has no outside-click closer, so the count stays at
     // zero; this is what would notice one coming back. A leaked closeOnOutsideClick handler returns immediately when the panel is
     // hidden, so it changes no DOM state and no behaviour a test can reach while
     // accumulating one live closure per project switch. Counting is the only

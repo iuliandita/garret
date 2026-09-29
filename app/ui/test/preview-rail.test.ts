@@ -282,7 +282,7 @@ describe("what it renders", () => {
   });
 
   test("THE SUMMARY IS ANNOUNCED, not only painted: its figures are in its own name", async () => {
-    // 109's rig walked the live application and read `#preview-summary` as
+    // A rig walked the live application and read `#preview-summary` as
     // `status bar name="" text="" kids=0` while the writer was looking at the
     // sentence: WebKitGTK maps `role="status"` to an ATK status bar and PRUNES
     // its children, so a screen reader was told nothing about what the rail was
@@ -433,7 +433,7 @@ describe("the four options", () => {
   });
 
   test("A REFUSED WRITE LEAVES THE PRESSED STATE THE FILE ACTUALLY HOLDS", async () => {
-    // 040's rule -- a refused design applies nowhere at all -- met by
+    // The rule -- a refused design applies nowhere at all -- met by
     // CONSTRUCTION rather than by a repaint: this rail paints only from the
     // host's answer, so a press that was refused never changed what is on
     // screen. A repaint in the catch was written first and a mutation deleting
@@ -647,7 +647,7 @@ describe("the proof copy", () => {
   });
 
   test("a font the machine does not have is SAID, and one it has is not mentioned", async () => {
-    // 040's recorded gap: this application ships no font files, and a writer
+    // A recorded gap: this application ships no font files, and a writer
     // whose machine lacks the face "gets something else and is told nothing".
     // The control matters as much as the warning -- a rail that said this
     // always would be a rail nobody reads.

@@ -26,7 +26,7 @@ function diagnostic(value: unknown): string {
  *  off the diagnostic SQLite and the OS already write. First match wins, and
  *  the order matters: "database or disk is full" must not read as a lock. */
 const CLASSES: ReadonlyArray<readonly [string, RegExp]> = [
-  // A PICTURE'S REFUSAL FIRST (239). `pictures.rs` writes each refusal as a
+  // A PICTURE'S REFUSAL FIRST. `pictures.rs` writes each refusal as a
   // sentence meant for the writer, so the generic "please try again" was the
   // wrong headline for all four: trying again refuses the same file the same
   // way. The host's own figures stay behind Details.

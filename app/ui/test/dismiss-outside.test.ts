@@ -146,7 +146,7 @@ describe("every panel that lost its toggle is wired to this", () => {
     });
   }
 
-  // 238: the anchored panels close through the shell, which registers the
+  // the anchored panels close through the shell, which registers the
   // closer once for all of them. Each must still build one and destroy it.
   const SHELL_UNITS = ["rename-panel", "find-bar", "preferences", "statistics-panel", "synopsis-panel", "cast-panel", "comments-panel", "design-panel", "craft-panel", "covers-panel", "history", "switcher", "identity-panel", "preflight-panel", "mirror-changes", "appearances-panel", "appearances-map", "help", "revision-panel", "picture-viewer"] as const;
 

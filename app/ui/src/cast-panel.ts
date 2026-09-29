@@ -53,7 +53,7 @@ export interface CastMemberRow {
   name: string;
   summary: string;
   fields: CastFieldRow[];
-  /** Other names the prose may call this member by (105, "including aliases").
+  /** Other names the prose may call this member by ("including aliases").
    *  In the order the writer put them, which is the order they were sent. */
   aliases: string[];
   /** The picture's filename in this project's picture directory, or null. The
@@ -132,7 +132,7 @@ export interface CastPanelDeps {
 }
 
 export interface CastPanel {
-  /** `focusId` (098, W5): open straight onto that member's sheet, the hover
+  /** `focusId`: open straight onto that member's sheet, the hover
    *  card's "Open in Cast" route. Absent for the ordinary route (the header
    *  button, the Outline menu), which opens onto whatever the panel last
    *  showed. */
@@ -182,7 +182,7 @@ function kindSelect(id: string, label: string): HTMLSelectElement {
 }
 
 /** `cast_set`'s three alias refusals, classified from the HOST'S OWN
- *  DECISION rather than decided again here (105) -- the panel "does not know
+ *  DECISION rather than decided again here -- the panel "does not know
  *  that a blank-on-both-sides field row is dropped" (this file's own header)
  *  and this is no exception: `AliasTooShort`/`AliasIsName`/`AliasRepeated`
  *  are all `Store::cast_set`'s to refuse. `commands/cast.rs`'s
@@ -229,7 +229,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
   // failure of the fifth panel is one a writer could not dismiss at all.
   panel.tabIndex = -1;
   panel.hidden = true;
-  // READ FIRST, EDIT SECOND (096, W3). `#cast-sheet` and `#cast-detail` are
+  // READ FIRST, EDIT SECOND. `#cast-sheet` and `#cast-detail` are
   // both always in the DOM once a member is selected; this attribute is what
   // CSS keys on to show one and hide the other, so switching modes is never a
   // DOM rebuild -- see the two `[data-mode=...]` rules in style.css.
@@ -254,7 +254,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
   newButton.id = "cast-new";
   newButton.type = "button";
   newButton.textContent = t("cast.new");
-  // DEFAULT, not primary (238): Save is this panel's one filled control, and
+  // DEFAULT, not primary: Save is this panel's one filled control, and
   // the add row can be open beside the edit form.
   newRow.append(newName, newKind, newButton);
 
@@ -276,7 +276,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
   name.type = "text";
   name.setAttribute("aria-label", t("cast.name.label"));
 
-  // ---- the aliases (105, "including aliases") ----------------------------
+  // ---- the aliases ("including aliases") --------------------------------
   //
   // AFTER THE NAME AND BEFORE THE SUMMARY, deliberately: aliases are names,
   // and the record's order is who this is, then what they are called, then
@@ -341,7 +341,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
   cancelButton.dataset.weight = "quiet";
 
   // THE PICTURE SITS BEFORE THE DETAIL LIST, and a capture is what settled it.
-  // 037 put NO BOUND on the number of detail fields, deliberately, so anything
+  // There is NO BOUND on the number of detail fields, deliberately, so anything
   // after that list sits at an unbounded depth -- and the first picture of this
   // panel showed the photograph, Save and Delete all below the fold of a
   // default window, with three fields and a summary above them. The order is
@@ -363,7 +363,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
     removeButton,
   );
 
-  // ---- the sheet (096, W3) -----------------------------------------------
+  // ---- the sheet -----------------------------------------------
   //
   // READ FIRST. Everything above (`detail`) is TODAY'S FORM, unchanged under
   // its own ids -- this is the surface a member opens INTO, and it never asks
@@ -374,9 +374,9 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
   const sheet = document.createElement("div");
   sheet.id = "cast-sheet";
 
-  // NO SECOND EMPTY SENTENCE HERE (096 follow-up). A `#cast-sheet-empty`
+  // NO SECOND EMPTY SENTENCE HERE. A `#cast-sheet-empty`
   // shipped saying "the add row is below", which is exactly backwards once
-  // 096 already opens that row automatically -- `.cast-empty` below (037's
+  // that row already opens automatically -- `.cast-empty` below (the
   // sentence, in the LIST) is the one place a bookless writer is told
   // anything, and it already says "above", correctly. `sheetRecord` is still
   // wrapped so it can be shown or hidden as ONE UNIT.
@@ -415,7 +415,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
   sheetPicture.className = "cast-sheet-picture";
 
   // ALSO CALLED, before the summary -- who this is, then what they are
-  // called, then the paragraph (105). `paintSheet`'s own rule for an empty
+  // called, then the paragraph. `paintSheet`'s own rule for an empty
   // summary applies here too: hidden rather than shown as a sentence with
   // nothing after the colon.
   const sheetAliases = document.createElement("p");
@@ -440,7 +440,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
   let showingDeleted = false;
   /** Which entry the form is about, or null when none is. */
   let editing: string | null = null;
-  /** Read or Edit. Read is the default on every fresh selection (096, W3);
+  /** Read or Edit. Read is the default on every fresh selection;
    *  Edit is entered only by pressing `#cast-edit` and left by `#cast-cancel`
    *  or a successful `#cast-save`. CSS keys on `panel.dataset.mode`, set by
    *  `setMode`, to show `#cast-sheet` or `#cast-detail` -- neither is ever
@@ -573,11 +573,11 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
   function paintSheetPicture(view: PictureView, memberName: string): void {
     sheetPicture.replaceChildren();
     if (view.data_uri !== null) {
-      // THE SQUARE ITSELF IS THE BUTTON -- "click = today's enlarge" (W3) --
+      // THE SQUARE ITSELF IS THE BUTTON -- "click = today's enlarge" --
       // named from the image's own alt text rather than a separate label. Its
       // id is `cast-picture-full`, not a sheet-scoped name: this square is now
       // the ONLY enlarge control the panel has, Edit's separate button retired
-      // in 097 once 096 had already made Read the sheet the writer opens onto.
+      // once Read had already become the sheet the writer opens onto.
       const frame = document.createElement("button");
       frame.type = "button";
       frame.id = "cast-picture-full";
@@ -650,7 +650,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
     // PAINTED BEFORE THE READ RESOLVES, so moving between entries never leaves
     // the previous member's photograph on screen under the next member's name.
     // BOTH BLOCKS, one load: `#cast-sheet` and `#cast-detail` are both always
-    // in the DOM (096), so one read answers both regardless of which the
+    // in the DOM, so one read answers both regardless of which the
     // writer is currently looking at.
     paintPicture({ state: "none", data_uri: null }, memberName);
     paintSheetPicture({ state: "none", data_uri: null }, memberName);
@@ -823,7 +823,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
     stash();
     disarm();
     editing = id;
-    // READ IS THE DEFAULT ON EVERY FRESH SELECTION (096, W3). A writer who
+    // READ IS THE DEFAULT ON EVERY FRESH SELECTION. A writer who
     // was editing a DIFFERENT member and clicks another does not carry Edit
     // over to it -- Edit is a per-member act the writer presses into, not a
     // sticky mode of the panel.
@@ -857,7 +857,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
   }
 
   function paintEntries(): void {
-    // KEYBOARD FOCUS SURVIVES THE REPAINT (096 review). `entries.replaceChildren()`
+    // KEYBOARD FOCUS SURVIVES THE REPAINT. `entries.replaceChildren()`
     // below throws away the very button the writer just activated -- every
     // browser drops focus to <body> when its element leaves the document,
     // which is where the panel's own `keydown` listener stops hearing
@@ -900,12 +900,12 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
       empty.className = "cast-empty";
       empty.textContent = t("cast.empty");
       entries.append(empty);
-      // THE ADD ROW IS OPEN (096, decision 4): an empty cast has no "foot of
+      // THE ADD ROW IS OPEN: an empty cast has no "foot of
       // the list" to hang a toggle off, and adding the first entry is the one
       // thing a brand-new book needs. `.cast-empty` above is the ONLY
-      // sentence this state gets (096 follow-up: a second one lived in the
+      // sentence this state gets: a second one used to live in the
       // sheet and said "below", which contradicted this row opening here,
-      // above the list, automatically).
+      // above the list, automatically.
       newRow.hidden = false;
       syncSheetVisibility();
       return;
@@ -924,7 +924,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
       // somebody who cannot see which heading a button sits under.
       group.setAttribute("role", "group");
       group.setAttribute("aria-label", key === null ? groupKind : t(key));
-      // h4, NOT h3 (096 review): #cast-sheet-name is an h3 -- the sheet is
+      // h4, NOT h3: #cast-sheet-name is an h3 -- the sheet is
       // this panel's main content -- and a group title in the list beside it
       // is subordinate to that, one heading level down.
       const title = document.createElement("h4");
@@ -1033,7 +1033,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
       .then(async (made) => {
         if (destroyed || mine !== generation) return;
         newName.value = "";
-        // A SUCCESSFUL ADD HIDES THE ROW AGAIN (096, decision 3) -- the other
+        // A SUCCESSFUL ADD HIDES THE ROW AGAIN -- the other
         // of the two acts that close it, Escape being the first. Harmless
         // when the row had no toggle to reopen it (the cast was empty): the
         // repaint below finds a non-empty list now and grows one.
@@ -1076,14 +1076,14 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
           paintForm(draftOf(saved));
           paintSheet(saved);
           status.textContent = t("cast.status.about", { name: saved.name });
-          // A SUCCESSFUL SAVE RETURNS TO READ (096, decision 1). Inside the
+          // A SUCCESSFUL SAVE RETURNS TO READ. Inside the
           // `editing === id` guard on purpose: a save that lands after the
           // writer moved to a different member must not silently flip THAT
           // member's mode -- the generation check above already refuses a
           // save that landed after the whole panel moved on, and this is the
           // same rule one level down.
           setMode("read");
-          // FOCUS MOVES WITH IT (096 review). `saveButton` is about to be
+          // FOCUS MOVES WITH IT. `saveButton` is about to be
           // hidden by the mode CSS, and a hidden element cannot hold focus --
           // every engine drops it to <body>, which is exactly where the
           // panel's own `keydown` listener stops hearing Escape. `#cast-edit`
@@ -1131,7 +1131,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
       });
   }
 
-  /** Enters Edit for the member the sheet is currently about (096). */
+  /** Enters Edit for the member the sheet is currently about. */
   function onEdit(): void {
     if (editing === null) return;
     disarm();
@@ -1143,7 +1143,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
   }
 
   /** Leaves Edit without saving, discarding THAT MEMBER'S draft -- the
-   *  difference from a plain selection change, which keeps it (037's rule
+   *  difference from a plain selection change, which keeps it (that
    *  survives a selection change; it does not survive the writer pressing
    *  the word "Cancel"). */
   function onCancel(): void {
@@ -1154,7 +1154,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
     // without reselecting it opens fresh rather than showing the discarded
     // typing one more time. This repaint IS the discard: leaving the member
     // later writes the form back into the draft map (`select` keeps drafts
-    // across a selection change, 037), so what it writes back is the store's
+    // across a selection change), so what it writes back is the store's
     // text. A `drafts.delete(id)` stood here too and the mutation pass showed
     // it unobservable from any path; a line nothing can reach is a claim a
     // reader credits, so it is gone.
@@ -1212,7 +1212,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
   const onKey = (event: Event): void => {
     if (!(event instanceof KeyboardEvent) || isCompositionKey(event)) return;
     if (event.key !== "Escape") return;
-    // A CLOSABLE ADD ROW GOES FIRST (096, decision 3): it has its own toggle
+    // A CLOSABLE ADD ROW GOES FIRST: it has its own toggle
     // to reopen it, so Escape collapsing it is a smaller, reversible act than
     // closing the whole panel on a writer who was only backing out of adding
     // one. The always-open row an EMPTY cast shows has no toggle to bring it
@@ -1296,7 +1296,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
       clearSelection();
       newButton.disabled = false;
       deletedToggle.disabled = true;
-      // COLLAPSED BY DEFAULT (096): `paintEntries`'s empty branch reopens it
+      // COLLAPSED BY DEFAULT: `paintEntries`'s empty branch reopens it
       // if the store turns out to hold nobody, and this line must run BEFORE
       // that repaint rather than after, or it would re-close a row the
       // writer had already opened themselves on a later, unrelated reload.
@@ -1315,7 +1315,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
       // and a list from a held value would show whoever was in the book the
       // first time for the rest of the session.
       await reload(mine);
-      // FOCUS-ONTO-A-MEMBER (098): the hover card's "Open in Cast" names who
+      // FOCUS-ONTO-A-MEMBER: the hover card's "Open in Cast" names who
       // it is about, and `select` is what puts the sheet on that member
       // rather than leaving the panel on whatever it last showed. A stale or
       // unknown id (the member was deleted between the card showing and the

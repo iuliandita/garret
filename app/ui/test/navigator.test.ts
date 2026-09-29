@@ -548,7 +548,7 @@ describe("createNavigator as a tree", () => {
     container.remove();
   });
 
-  // 095, W1: the world's glyphs and the separator. A fixture with every kind
+  // the world's glyphs and the separator. A fixture with every kind
   // this table treats differently -- a manuscript row, a note, and all four
   // reserved roots -- in an order where the first RESERVED root ("front") is
   // NOT the first of the four in title order, so a naive implementation that
@@ -608,7 +608,7 @@ describe("createNavigator as a tree", () => {
   // other tests in this describe block assert exact row counts and pixel
   // offsets against that fixture's nine rows, and a tenth row shifts every
   // one of them (found by running this against the shared fixture first).
-  test("a timeline paints a glyph too (101)", () => {
+  test("a timeline paints a glyph too", () => {
     const items = [
       { id: "bible-1", parent_id: null, title: "The Bible", depth: 0, type: "bible" },
       { id: "timeline-1", parent_id: "bible-1", title: "A Timeline", depth: 1, type: "timeline" },
@@ -751,7 +751,7 @@ describe("createNavigator as a tree", () => {
     // The chevron is `.nav-title::before` in style.css, which the browser
     // always paints before an element's real children - so a glyph nested as
     // `.nav-title`'s own first child renders chevron, glyph, title without any
-    // extra ordering rule. The initial 095 ship painted the glyph as a
+    // extra ordering rule. The initial shipped version painted the glyph as a
     // SIBLING before `.nav-title` instead, which put it before the chevron
     // too; this pins the fix at the DOM level rather than trusting a visual
     // read.
@@ -776,7 +776,7 @@ describe("createNavigator as a tree", () => {
   });
 
   test("a scene row's title is a bare text node, with no icon-sized slot reserved", () => {
-    // Before 095's first ship a scene's `.nav-title` held nothing but a text
+    // Before the first ship a scene's `.nav-title` held nothing but a text
     // node; the fix restores exactly that shape for every row the icon table
     // does not cover, rather than an empty `.nav-icon` wrapper that would
     // nudge the title 8px to the right the way the captures showed.

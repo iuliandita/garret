@@ -91,7 +91,7 @@ export interface Timeline {
 /** A document the page cannot write to: a future schema version. Rendered
  *  read-only with `timeline.newer` and never reaches `onDirty` (section 3's
  *  whole-document leniency rule -- a partial write of a newer schema is data
- *  loss, unlike the per-key leniency 040 established for settings). */
+ *  loss, unlike the per-key leniency established for settings). */
 export interface TimelineNewer {
   newer: true;
 }
@@ -315,7 +315,7 @@ export function pxToUnit(x: number, view: TimelineViewState): number {
   return view.originUnit + x / view.pxPerUnit;
 }
 
-/** Events (main line only, 102) whose `at`..`until` range intersects the
+/** Events (main line only) whose `at`..`until` range intersects the
  *  viewport plus `marginPx` on each side. `until: null` is a point, using
  *  `at` for both ends. This is the whole cull -- the view renders exactly
  *  what this returns and nothing else, which is what keeps a 2,000-event
@@ -534,7 +534,7 @@ export function bandLevel(pxPerUnit: number, calendar: TimelineCalendar | null):
   return "year";
 }
 
-// ------------------------------------------------------ branches (103)
+// ------------------------------------------------------ branches
 
 /** Which events paint on the MAIN lanes and which paint in each branch's
  *  dashed lane group, per track -- the pure half of "Make this the one I am
@@ -631,7 +631,7 @@ export function laneAssignment(t: Timeline): LaneAssignment {
   return { main, branch };
 }
 
-// ------------------------------------------------- track names (103)
+// ------------------------------------------------- track names
 
 /** A track name after Enter or a blur commits it: trimmed, and empty
  *  refused in favour of `fallback` -- the plan's "an empty name is refused
@@ -643,7 +643,7 @@ export function commitTrackName(input: string, fallback: string): string {
   return trimmed === "" ? fallback : trimmed;
 }
 
-// ------------------------------------------------- the calendar (103)
+// ------------------------------------------------- the calendar
 
 /** False for a calendar the Save button must refuse: no months, or any
  *  month with zero or negative days (the plan's "a row with 0 days is
@@ -668,15 +668,15 @@ export type TimelineEntity = TimelineEvent | TimelineTrack | TimelineBranch | Ti
  *  other way) cannot drift from what actually happened.
  *
  *  "move" carries a SINGLE `track`, not a list, and its OWN `inverseOf` arm
- *  below restores only `tracks[0]` -- 102's review flagged this: undoing a
- *  "move" of a multi-track meeting would drop every other track. 103's drag
+ *  below restores only `tracks[0]`: undoing a
+ *  "move" of a multi-track meeting would drop every other track. The drag
  *  (timeline-view.ts) does NOT use "move" for exactly that reason; it emits
  *  TWO "set" steps in one undo entry instead -- one on `at`, one on `tracks`
  *  replacing the whole array with `[track]` -- and "set"'s own `inverseOf`
  *  arm reads the field's FULL prior value from the live document, so undoing
  *  a drag restores every track a meeting carried, not just the first. "move"
  *  is kept in the type for a caller that genuinely only ever has one track to
- *  restore; nothing in this codebase calls it as of 103. */
+ *  restore; nothing in this codebase currently calls it. */
 export type TimelineStep =
   | { kind: "add"; entity: TimelineEntityKind; value: TimelineEntity }
   | { kind: "remove"; entity: TimelineEntityKind; id: string }
@@ -761,12 +761,12 @@ export function inverseOf(t: Timeline, step: TimelineStep): TimelineStep | null 
     case "move": {
       const found = t.events.find((e) => e.id === step.id);
       if (found === undefined) return null;
-      // STILL READS ONLY tracks[0] (102's review item 10, never fixed here):
+      // STILL READS ONLY tracks[0]:
       // undoing a "move" of a multi-track meeting drops every other track.
-      // 103 did not fix this arm -- it avoided calling it at all. The drag in
+      // This arm was never fixed -- it avoided calling it at all. The drag in
       // timeline-view.ts emits "set" steps instead (see TimelineStep's own
       // comment above "move"), whose inverseOf arm restores the full prior
-      // value. Nothing in this codebase calls "move" as of 103.
+      // value. Nothing in this codebase currently calls "move".
       return { kind: "move", id: step.id, at: found.at, track: found.tracks[0] ?? "" };
     }
   }

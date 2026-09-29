@@ -107,7 +107,7 @@ export interface NavigatorOptions {
    *  `onMove`: the outline decides whether the row can go, and the new shape
    *  arrives back through `reload`. */
   onRemove?(itemId: string): void;
-  /** Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y while the tree has focus (085). Reports
+  /** Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y while the tree has focus. Reports
    *  the intent only, exactly like `onMove` and `onRemove` - the outline unit
    *  owns the stack and the new shape arrives back through `reload`. */
   onUndo?(): void;
@@ -205,7 +205,7 @@ export const APPEARANCES_DESCRIPTION_ID = "nav-appearances-description";
  *  because the accessibility contract has no width to run out of. */
 const INDENT_CAP = 6;
 
-/** Which of the world's rows carry a glyph before their title (095, W1).
+/** Which of the world's rows carry a glyph before their title.
  *
  *  MANUSCRIPT ROWS (part, chapter, scene) AND MATTER DOCUMENTS ARE NOT HERE.
  *  The manuscript is the writer's own hierarchy and stays type, not icon; a
@@ -277,7 +277,7 @@ function partsOf(el: HTMLElement): {
   }
   const title = document.createElement("span");
   title.className = "nav-title";
-  // The synopsis mark (243): a span rather than `.nav-title::after`, so it
+  // The synopsis mark: a span rather than `.nav-title::after`, so it
   // sits outside the title's ellipsis clip (a long title used to cut it off)
   // and can carry a pointer tooltip saying what it means. Hidden from the
   // accessibility tree like its siblings; the description says it instead.
@@ -313,7 +313,7 @@ function partsOf(el: HTMLElement): {
  *  first child fixes the order for free: chevron (the pseudo-element),
  *  glyph, title text, in that order, with no separate stacking rule needed.
  *
- *  NO GLYPH IS THE PRE-095 SHAPE EXACTLY: a bare text node, nothing else, so
+ *  NO GLYPH IS THE EARLIER SHAPE EXACTLY: a bare text node, nothing else, so
  *  a manuscript row (or a matter document) reserves no icon-sized slot a
  *  stray empty span would still take up. `title.textContent = text` below
  *  both sets the text AND clears any glyph a recycled element used to hold,
@@ -503,7 +503,7 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
     // case the delete branch exists for.
     if (row.itemType === undefined) delete el.dataset.type;
     else el.dataset.type = row.itemType;
-    // THE SEPARATOR'S ANCHOR (095, W1). Written on EVERY paint and DELETED
+    // THE SEPARATOR'S ANCHOR. Written on EVERY paint and DELETED
     // when absent, for the recycling reason every other data attribute here
     // is: a row element that last held the first reserved root is reused for
     // an ordinary chapter on the next reproject, and an attribute set only
@@ -564,9 +564,9 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
     if (row.id === openId) el.setAttribute("aria-current", "true");
     else el.removeAttribute("aria-current");
     const parts = partsOf(el);
-    // THE GLYPH, BEFORE THE TITLE (W1). undefined for every row type not in
+    // THE GLYPH, BEFORE THE TITLE. undefined for every row type not in
     // the table -- the manuscript's part/chapter/scene rows and a matter
-    // document -- which paintTitle turns into the exact pre-095 shape, so
+    // document -- which paintTitle turns into the exact earlier shape, so
     // those rows reserve no icon-sized slot.
     const iconName = row.itemType === undefined ? undefined : ROW_ICONS[row.itemType];
     paintTitle(parts.title, row.title, iconName);
@@ -853,14 +853,14 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
       }
       return;
     }
-    // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y is structural undo/redo (085). Above the
+    // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y is structural undo/redo. Above the
     // modifier guard below for the same reason Alt+Arrow is above it: the
     // synthetic measurement workload drives handleKey directly, and a
     // measured soak must not be able to undo the tree it is measuring.
     //
     // Compared against a lower-cased LOCAL rather than the raw event property,
     // so a shifted press still matches. `help.ts` lists this chord by hand, as
-    // 085's plan requires: it is a Ctrl combination and help.test.ts's own
+    // the plan requires: it is a Ctrl combination and help.test.ts's own
     // navigator scan only ever reads Alt chords and bare-key comparisons out
     // of this file, so a Ctrl chord was never something that scan could see.
     if (event.ctrlKey && !event.altKey && !event.metaKey) {
@@ -926,7 +926,7 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
     }
   };
 
-  /** The full title on hover, only where the ellipsis cut it (243). Measured
+  /** The full title on hover, only where the ellipsis cut it. Measured
    *  when the pointer arrives, never on paint: paint is the scroll path. On the
    *  title span, whose text it repeats exactly, so the row's name is unchanged
    *  whichever way an engine weighs a `title` against content. */

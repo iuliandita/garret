@@ -105,7 +105,7 @@ export interface PreferencesDeps {
    *  it governs a launch that already happened. */
   initialStart: Start;
   initialSpelling: SpellingMode;
-  /** Whether the cast-marks plugin is fed any names at all (098, W5). On by
+  /** Whether the cast-marks plugin is fed any names at all. On by
    *  default: the design record's own sample shows the marks. */
   initialMarkCastNames: boolean;
   initialBibleRows?: number;
@@ -114,7 +114,7 @@ export interface PreferencesDeps {
    *  this panel, which is why `setDictionary` exists: the panel is mounted
    *  once and a project switch must repaint this one group.
    *
-   *  `null` AT AN EMPTY BOOT (099): `dict_list` answers the OPEN project's
+   *  `null` AT AN EMPTY BOOT: `dict_list` answers the OPEN project's
    *  dictionary and errors with nothing open (`open_project`'s own guard), so
    *  main.ts never calls it there -- the dictionary is per book, and a group
    *  whose every control would answer "no project is open" is hidden instead
@@ -190,11 +190,11 @@ export interface Preferences {
    *  whichever project is open, and a switch must not go on showing the
    *  previous manuscript's words.
    *
-   *  `null` HIDES THE GROUP (099): the empty boot's own answer, and a switch
+   *  `null` HIDES THE GROUP: the empty boot's own answer, and a switch
    *  AWAY from a book back to nothing open would use it too, though nothing
    *  today drives that path -- a switch only ever lands on another book. */
   setDictionary(words: readonly string[] | null): void;
-  /** Persist one word into the OPEN project's dictionary and paint it (111).
+  /** Persist one word into the OPEN project's dictionary and paint it.
    *  Resolves to the word as stored; rejects with the host's refusal. */
   addWord(word: string): Promise<string>;
   /** A chord changed it outside this panel (Ctrl+= / Ctrl+- / Ctrl+0 anywhere
@@ -520,7 +520,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     labels: ZOOM_LABELS,
   });
 
-  // What the writer is trying to do, placed in the Writing section (240)
+  // What the writer is trying to do, placed in the Writing section
   // after the three that set the page.
   const goalGroup = buildGroup<DailyTarget>({
     id: "prefs-goal",
@@ -579,7 +579,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     values: TYPEWRITER_MODES,
     labels: TYPEWRITER_LABELS,
   });
-  // 098 (W5): whether a cast member's name is marked where it appears in the
+  // whether a cast member's name is marked where it appears in the
   // open scene's prose. Beside spelling and typewriter rather than in a
   // group of its own, on the same reasoning as both -- a fourth kind of
   // thing in the one panel there is, this one about the manuscript's own
@@ -684,7 +684,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   }
 
   /** Persist one word and paint it into the list. The one body behind the
-   *  panel's own field and the editor's routes (111); it throws what the host
+   *  panel's own field and the editor's routes; it throws what the host
    *  threw, and each caller says so in its own surface. */
   async function addWord(requested: string): Promise<string> {
     const stored = await deps.persistDictAdd(requested);
@@ -743,11 +743,11 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   dictInput.addEventListener("keydown", onDictInputKeyDown);
   dictList.addEventListener("click", onDictListClick);
 
-  // TWO HEADED SECTIONS (240): what the writing looks and behaves like, then
+  // TWO HEADED SECTIONS: what the writing looks and behaves like, then
   // the application around it. Twelve equal rows read as one list with no
   // way in; two headings say where to look. Headings, not wrappers: the
   // groups stay direct children of the body's grid, so both sections share
-  // the one longest-label column (154) instead of each sizing its own.
+  // the one longest-label column instead of each sizing its own.
   // The goal sits in Writing, high: it is what a writer comes here to set,
   // and below the fold it was out of reach of a default window (goals-cli).
   const section = (key: string): HTMLHeadingElement => {

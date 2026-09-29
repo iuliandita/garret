@@ -136,7 +136,7 @@ describe("the formatting controls in the bubble", () => {
 
   test("the bubble is fixed and above the panels", () => {
     // #format-bubble lives on <body>, never inside #editor -- the memory fix
-    // (064) holds only while #editor has no positioned descendants. `fixed`
+    // holds only while #editor has no positioned descendants. `fixed`
     // is what lets its left/top be the viewport coordinates
     // bubble-placement.ts computes, and its z-index has to clear every
     // panel's 10 so the toolbar can sit over the prose it rides.
@@ -172,7 +172,7 @@ describe("the formatting controls in the bubble", () => {
   });
 
   test("the tooltip is out of flow, so it cannot change the strip", () => {
-    // A TIP IN FLOW IS 034'S DEFECT WITH A NEW CAUSE. That slice shipped a
+    // A TIP IN FLOW IS AN EARLIER DEFECT WITH A NEW CAUSE. That earlier version shipped a
     // control that got NARROWER and wrapped the group at 900px, growing the bar
     // and moving every navigator row under two rigs that went on reporting
     // plausible numbers. A tip is a box with a sentence in it; in flow it would

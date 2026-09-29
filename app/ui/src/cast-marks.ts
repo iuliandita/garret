@@ -23,8 +23,8 @@ import { Decoration, DecorationSet } from "prosemirror-view";
 /** One name a cast member is found by, and the member it marks.
  *
  *  A LIST OF PAIRS RATHER THAN A MAP KEYED ON THE MEMBER, because the spec's
- *  "including aliases" is the second half of this feature (098's own design
- *  record): a member with two aliases is two pairs sharing an id, and the
+ *  "including aliases" is the second half of this feature: a member with
+ *  two aliases is two pairs sharing an id, and the
  *  matcher below already treats every pair as independent text to look for.
  *  When aliases land as data this shape does not change. */
 export interface CastNamePair {

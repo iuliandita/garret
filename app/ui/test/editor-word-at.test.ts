@@ -1,5 +1,5 @@
 // app/ui/test/editor-word-at.test.ts
-// `wordAtCaret` through a real ProseMirror view (111): the selection when it is
+// `wordAtCaret` through a real ProseMirror view: the selection when it is
 // one word, the word around a collapsed caret, nothing for a span of words.
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { describe, expect, test } from "bun:test";

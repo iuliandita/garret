@@ -1,5 +1,5 @@
 // app/ui/src/panel-shell.ts
-// The frame every anchored panel shares (238): a header with the title, an
+// The frame every anchored panel shares: a header with the title, an
 // optional one-line subtitle and a Close icon, the body, an optional footer
 // for actions, and the three dismissals.
 //
@@ -17,7 +17,7 @@
 //
 // THREE DISMISSALS, ONE PLACE. Close and Escape hand focus back through
 // `returnFocus`; an outside click does not (dismiss-outside.ts says why). An
-// inspector (241) has the first two only: it sits beside the prose.
+// inspector has the first two only: it sits beside the prose.
 // Escape is heard in the BUBBLE phase and skips an event something inside
 // already took (`defaultPrevented`): a field that collapses its own edit, or a
 // menu inside the panel, answers first, and only a plain Escape closes.
@@ -55,7 +55,7 @@ export interface PanelShellOptions {
   returnFocus?: () => void;
   /** false for the one surface a click in the prose must leave open. */
   outsideClick?: boolean;
-  /** Docks the panel as the inspector (241, inspector.ts): no outside-click
+  /** Docks the panel as the inspector (see inspector.ts): no outside-click
    *  close, since clicking the prose beside it is the point, and one at a
    *  time in the column the rails share. `replace` is how another inspector
    *  or a rail takes the column without moving focus; false refuses, and the

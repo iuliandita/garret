@@ -640,7 +640,7 @@ describe("switcher activation", () => {
   test("the panel says where the open book is", async () => {
     const rig = mount();
     await open(rig);
-    // The folder's name, the whole path on hover (240).
+    // The folder's name, the whole path on hover.
     const here = rig.container.querySelector<HTMLElement>("#project-here");
     expect(here?.textContent).toBe("This book is in p");
     expect(here?.title).toBe("/p/one.mss");
@@ -789,12 +789,12 @@ describe("switcher creation: where the book goes", () => {
   // path was hardcoded until now.
 
   test("the panel says where new books go, before anything is created", async () => {
-    // 019's enable act, for its reason: the resolved destination is the thing
+    // For its reason: the resolved destination is the thing
     // being consented to. This is also the line that catches a book about to
     // land in a folder the writer syncs.
     const rig = mount();
     await open(rig, "create");
-    // The folder's name in the sentence, the whole path on hover (240).
+    // The folder's name in the sentence, the whole path on hover.
     expect(el(rig.container, "project-new-where").textContent).toContain(folderName(NEW_DIR, false));
     expect(el(rig.container, "project-new-where").title).toBe(NEW_DIR);
     expect(rig.calls.newDir).toBeGreaterThan(0);
@@ -1565,14 +1565,14 @@ describe("the copy that leaves this computer", () => {
     expect(rig.calls.list).toBe(beforeShelf);
   });
   test("the section is its own, after the recovery one and never folded into it", async () => {
-    // 015's maintenance note, made structural: a panel with one "Recovery"
+    // The maintenance note, made structural: a panel with one "Recovery"
     // heading covering same-device recovery AND device-loss protection is the
     // design's forbidden blur with a different shape. Two headings, two notes,
     // two lists, in that order -- device loss LAST because it is the only one
     // whose next step happens outside this application.
     const rig = mount();
     await open(rig);
-    // Inside Backups and archives since 240.
+    // Inside Backups and archives.
     const body = el(rig.container, "project-copies");
     const ids = [...body.children].map((c) => c.id).filter((id) => id !== "");
     expect(ids).toContain("project-archive-heading");
@@ -2087,7 +2087,7 @@ describe("the book's name in the sidebar", () => {
   });
 });
 
-describe("the cast button in the header (095, W2)", () => {
+describe("the cast button in the header", () => {
   const cast = (): HTMLButtonElement =>
     document.getElementById("nav-cast") as HTMLButtonElement;
 
@@ -2175,7 +2175,7 @@ for (const fails of [false, true]) {
   });
 }
 
-describe("progressive disclosure in the project panel (240)", () => {
+describe("progressive disclosure in the project panel", () => {
   test("folderName takes the last folder, for a file or a folder, on either separator", () => {
     expect(folderName("/home/w/Books/Novel.mss", true)).toBe("Books");
     expect(folderName("C:\\Users\\w\\Books\\Novel.mss", true)).toBe("Books");

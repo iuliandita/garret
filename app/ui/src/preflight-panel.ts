@@ -9,7 +9,7 @@
 // the place this report names, or pin the identity the name belongs to.
 //
 // ITS DISMISS CONTROL IS AT THE TOP. Every other panel in this application holds
-// nothing that can grow, and 040 recorded why: a list that grows pushes the
+// nothing that can grow, and there's a reason why: a list that grows pushes the
 // controls under the fold. This report DOES grow -- one row per finding, one per
 // surface -- so its dismiss control stays above the lists, and the panel scrolls.
 // That is the only place in this application

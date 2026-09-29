@@ -200,7 +200,7 @@ test("departure freezes draft, author, message and decision actions until cancel
 });
 
 test("a proposal reads as a sentence: author, short date, the non-zero counts only", async () => {
-  // 239: the selector used to read "Mara · 9/25/2026, 10:15:37 PM · 1 pending,
+  // the selector used to read "Mara · 9/25/2026, 10:15:37 PM · 1 pending,
   // 0 conflicted, 0 accepted, 0 rejected", a log line.
   const at = new Date(new Date().getFullYear(), 8, 25, 22, 15, 37).getTime();
   expect(proposalSummary({ ...summary, created_at: at, conflicted: 0 })).toBe("Mara, Sep 25, 10:15 PM: 1 pending");
@@ -217,7 +217,7 @@ test("the decided-proposals checkbox comes before its words", async () => {
   expect(box.parentElement?.textContent).toBe(t("review.history"));
 });
 
-test("the proposals lead: creating a reviewer waits behind Add reviewer (240)", async () => {
+test("the proposals lead: creating a reviewer waits behind Add reviewer", async () => {
   const r = rig(); await r.panel.open("scene", "Captured title"); await tick();
   const form = r.get<HTMLElement>("#review-author-form");
   const toggle = r.get<HTMLButtonElement>("#review-author-add");

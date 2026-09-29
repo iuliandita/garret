@@ -29,14 +29,14 @@ export interface OpenerDeps {
  *  not openable - making a CONTAINER openable is a store change (a body per
  *  container), not a UI change.
  *
- *  A SET rather than one string, and 041 is the day the third arrived - which is
+ *  A SET rather than one string, added the day the third arrived - which is
  *  what the shape was for. It is restated from `store::carries_document`, on the
  *  wire-contract rule that governs every type string here.
  *
  *  A TIMELINE IS IN THIS SET AND REACHES `switchTo` LIKE ANY OTHER OPENABLE
- *  TYPE (102) -- `session.ts`'s own `isTimelineDoc`/`onTimelineDoc` branch is
- *  what routes it away from `editor.replaceDoc` from there. 101 special-cased
- *  it here instead, before this build had anywhere to send one; that arm is
+ *  TYPE -- `session.ts`'s own `isTimelineDoc`/`onTimelineDoc` branch is
+ *  what routes it away from `editor.replaceDoc` from there. This was special-cased
+ *  here instead, before this build had anywhere to send one; that arm is
  *  gone along with `timeline.not-yet`, the sentence it raised. */
 const OPENABLE: readonly string[] = ["scene", NOTE_TYPE, MATTER_TYPE, TIMELINE_TYPE];
 

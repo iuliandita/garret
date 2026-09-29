@@ -514,7 +514,7 @@ describe("what the items do", () => {
   });
 
   test("Export for an editor (Word) runs its own dep", () => {
-    // 092. A format of its own, not a third argument folded into Export
+    // A format of its own, not a third argument folded into Export
     // as… -- the same reason Export statistics has a CSV item and a JSON
     // item rather than one item with a hidden choice inside it.
     const rig = mount();
@@ -538,7 +538,7 @@ describe("what the items do", () => {
     }
   });
 
-  test("menu-library sits below the exports, immediately above Preferences (099)", () => {
+  test("menu-library sits below the exports, immediately above Preferences", () => {
     const rig = mount();
     try {
       rig.title("menu-file").click();
@@ -1246,7 +1246,7 @@ describe("the Menu button and its list", () => {
     }
   });
 
-  test("the dropdown is sized to the room below its row, so it scrolls instead of leaving the window (087)", () => {
+  test("the dropdown is sized to the room below its row, so it scrolls instead of leaving the window", () => {
     const rig = mount();
     try {
       rig.button().click();
@@ -1534,7 +1534,7 @@ describe("the items that open a page dialog say so", () => {
   // above would still pass.
   const OPENS_NOTHING: Record<string, string> = {
     "menu-import": "menu-file",
-    // 111: acts on the caret and reports through the notice surface.
+    // acts on the caret and reports through the notice surface.
     "menu-add-to-dictionary": "menu-edit",
     "menu-export": "menu-file",
     "menu-export-as": "menu-file",
@@ -1543,7 +1543,7 @@ describe("the items that open a page dialog say so", () => {
     // takes over; the EPUB rail sits beside the prose, stays open while the
     // writer types, and has a Close instead of dismissing itself.
     "menu-epub-preview": "menu-file",
-    // 044, and it is in the SAME list for 043's reason: it opens the same rail
+    // and it is in the SAME list for the same reason: it opens the same rail
     // in the other format, and a rail is not a dialog.
     "menu-pdf-preview": "menu-file",
     "menu-backup-now": "menu-file",
@@ -1701,7 +1701,7 @@ test("Review proposals opens its captured workspace from the Outline menu", () =
   } finally { teardown(rig); }
 });
 
-describe("Outline Undo and Redo (085)", () => {
+describe("Outline Undo and Redo", () => {
   const labelOf = (rig: Rig, id: string): string | undefined =>
     rig.item(id)?.querySelector(".menu-item-label")?.textContent ?? undefined;
 
@@ -1833,7 +1833,7 @@ for (const composition of [{ isComposing: true }, { keyCode: 229 }]) {
   });
 }
 
-describe("the File menu is five groups (240)", () => {
+describe("the File menu is five groups", () => {
   test("separators cut it into book, publish, proof, copies and app, none over six", () => {
     const rig = mount();
     try {

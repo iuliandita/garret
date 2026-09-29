@@ -251,7 +251,7 @@ export function createFindBar(deps: FindBarDeps): FindBar {
       return;
     }
     // formatNumber, consistent with #word-count: a writer in Berlin who chose
-    // German sees 4.812, whatever the shell's locale (090). The rigs boot the
+    // German sees 4.812, whatever the shell's locale. The rigs boot the
     // English page, which is what lets them parse these figures with [\d,]+.
     const total = formatNumber(found.total);
     if (found.truncated) {
