@@ -894,7 +894,16 @@ export function createLibrary(deps: LibraryDeps): Library {
     const label = document.createElement("span");
     label.className = "shelf-title";
     label.textContent = t("library.new-book");
-    tile.append(input, label);
+    if (root.classList.contains("library-is-empty")) {
+      const create = document.createElement("button");
+      create.type = "button";
+      create.id = "library-new-book-create";
+      create.textContent = t("library.new-book.create");
+      create.addEventListener("click", () => void createBook(input.value.trim()));
+      tile.append(input, create);
+    } else {
+      tile.append(input, label);
+    }
     input.focus();
   }
 
@@ -911,6 +920,11 @@ export function createLibrary(deps: LibraryDeps): Library {
   function paint(): void {
     const closeAllowed = deps.currentPath() !== "";
     closeButton.hidden = !closeAllowed;
+    const isEmptyLibrary = latest.books.length === 0 && latest.more === 0;
+    root.classList.toggle("library-is-empty", isEmptyLibrary);
+    groupFilters.hidden = isEmptyLibrary;
+    desk.hidden = isEmptyLibrary;
+    shelfHeading.hidden = isEmptyLibrary;
 
     paintStrip();
     paintGroupFilters();

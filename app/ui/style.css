@@ -8065,6 +8065,10 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   margin: 4px 0 10px;
 }
 
+#library-group-filters[hidden] {
+  display: none;
+}
+
 
 #library-membership,
 #library-summary {
@@ -8225,6 +8229,10 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   padding-bottom: 24px;
   border-bottom: 1px solid var(--border-soft);
   margin-bottom: 24px;
+}
+
+#library-desk[hidden] {
+  display: none;
 }
 
 #library-desk .desk-cover {
@@ -8404,6 +8412,79 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 #library-empty,
 #library-more {
   color: var(--muted);
+}
+
+/* With no books, the next action leads. The shelf's cover-shaped placeholder
+   returns as soon as there is a book to sit beside. */
+#library > h3[hidden] {
+  display: none;
+}
+
+#library.library-is-empty #library-heading {
+  margin-top: 24px;
+}
+
+#library.library-is-empty #library-empty {
+  margin: 4px 0 12px;
+}
+
+#library.library-is-empty #library-shelf {
+  display: block;
+}
+
+#library.library-is-empty button#library-new-book-tile {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 18px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-control);
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+}
+
+#library.library-is-empty button#library-new-book-tile:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+#library.library-is-empty button#library-new-book-tile .cover-new {
+  width: auto;
+  height: auto;
+  border: 0;
+  color: inherit;
+  font-family: var(--ui-family, sans-serif);
+  font-size: var(--text-xl);
+}
+
+#library.library-is-empty button#library-new-book-tile .shelf-title {
+  font-family: inherit;
+  font-size: var(--text-md);
+  font-weight: 500;
+}
+
+#library.library-is-empty div#library-new-book-tile {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#library.library-is-empty #library-new-book-name {
+  width: min(320px, 100%);
+  height: 44px;
+  text-align: left;
+}
+
+#library.library-is-empty button#library-new-book-create {
+  min-height: 44px;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
 }
 
 /* --------------------------------------------------- the pen-name form
