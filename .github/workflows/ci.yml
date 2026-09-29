@@ -1,0 +1,75 @@
+name: CI
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  interface:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: "1.4.2"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      - run: bun install --frozen-lockfile
+      - run: bunx tsc --noEmit -p app/tsconfig.json
+      - run: bun test ./app/ui
+      - run: bun test ./app/harness
+      - run: bun run build
+        working-directory: app/ui
+
+  host:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install WebKitGTK build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev librsvg2-dev
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: "1.4.2"
+      - run: bun install --frozen-lockfile
+      # The host embeds the built interface from app/shell-tauri/dist.
+      - name: Build the interface for the host
+        run: |
+          (cd app/ui && bun run build)
+          mkdir -p app/shell-tauri/dist
+          cp -r app/ui/dist/. app/shell-tauri/dist/
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: app/shell-tauri/src-tauri
+      - name: Host tests
+        working-directory: app/shell-tauri/src-tauri
+        # Skipped tests are tracked in https://github.com/iuliandita/garret/issues/1
+        run: |
+          cargo test --locked --bin app-shell-tauri -- --exact \
+            --skip recovery::tests::a_snapshot_of_a_file_older_than_the_picture_column_reports_no_pictures \
+            --skip salvage::tests::a_file_that_predates_the_tables_salvages_exactly_as_it_did \
+            --skip salvage::tests::a_v1_file_recovers_its_prose_and_is_not_asked_about_a_history \
+            --skip salvage::tests::a_v2_file_recovers_its_history_and_is_not_asked_about_comments \
+            --skip salvage::tests::a_v3_file_recovers_its_prose_and_is_not_asked_about_comments \
+            --skip salvage::tests::a_v4_file_recovers_its_comments_and_is_not_asked_about_a_wordlist \
+            --skip salvage::tests::a_v5_file_recovers_its_wordlist_and_is_not_asked_about_synopses \
+            --skip salvage::tests::a_v6_file_recovers_its_synopses_and_is_not_asked_about_a_cast \
+            --skip salvage::tests::a_v7_file_recovers_its_cast_and_is_not_asked_about_a_picture \
+            --skip salvage::tests::a_v8_file_recovers_its_cast_and_is_not_asked_about_appearances \
+            --skip salvage::tests::a_v9_file_recovers_its_cast_and_is_not_asked_about_aliases
