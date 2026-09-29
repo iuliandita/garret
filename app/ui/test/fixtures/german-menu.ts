@@ -90,7 +90,7 @@ try {
   for (const [key, titleId, title, firstItemId, firstItem] of [
     // These literal German labels and chords are product oracles: deriving
     // them from the catalog would let a copied English catalog pass.
-    ["d", "menu-file", "Datei", "menu-project-new", "Neues Projekt…"],
+    ["d", "menu-file", "Datei", "menu-project-new", "Neues Buch…"],
     ["b", "menu-edit", "Bearbeiten", "menu-undo", "Rückgängig"],
     ["g", "menu-outline", "Gliederung", "menu-nav-back", "Zurück"],
     ["h", "menu-help", "Hilfe", "menu-shortcuts", "Tastaturkürzel"],

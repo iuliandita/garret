@@ -31,7 +31,7 @@ describe("the loading surface", () => {
     showProjectLoading(true);
     const el = document.getElementById(LOADING_ID);
     expect(el?.getAttribute("role")).toBe("status");
-    expect(el?.textContent ?? "").toMatch(/Opening the project/);
+    expect(el?.textContent ?? "").toMatch(/Opening the book/);
   });
 
   test("showing twice leaves ONE element", () => {
