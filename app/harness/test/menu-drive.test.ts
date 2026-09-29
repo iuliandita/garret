@@ -25,7 +25,7 @@ function fixture(source: string, name = "menu-bar.ts"): string {
 
 /** A table with the shape the parser depends on and none of the surrounding
  *  module. Twelve items, because the vacuity guard refuses fewer. `key` is
- *  the catalog key the menu reads its letter from (088), or a literal when a
+ *  the catalog key the menu reads its letter from, or a literal when a
  *  test wants the refused shape. */
 function table(items: { menu: string; key: string; ids: string[] }[]): string {
   const blocks = items.map(
@@ -151,7 +151,7 @@ describe("the parser refuses a source it cannot trust", () => {
     expect(menuChord("menu-file", fixture(table(FULL)), catalog)).toBe("alt+d");
   });
 
-  test("a literal letter in the source is refused: the bar must read the catalog (088)", () => {
+  test("a literal letter in the source is refused: the bar must read the catalog", () => {
     const literal = FULL.map((m) => ({ ...m, key: '"f"' }));
     const path = fixture(table(literal));
     expect(() => menuRoute("menu-a", path)).toThrow(/precedes any menu id and key/);
@@ -193,7 +193,7 @@ describe("the parser refuses a source it cannot trust", () => {
   });
 
   test("the shipped outline views use the shorter wrapped route", async () => {
-    // The TEST was stale, not the parser (240): these literals were written
+    // The TEST was stale, not the parser: these literals were written
     // when Outline held 37 items, and Review proposals... was appended as the
     // 38th. One Up from item 0 wraps to the last item, so index i is
     // 38 - i presses: 7 for the table view (31), 6 for the cards view (32).
@@ -266,8 +266,8 @@ function contextFile(source: string): string {
 }
 
 /** The shape the parser depends on: the panel's id, written exactly like an
- *  item's, and eight item ids in paint order (095 added Synopsis... and Who
- *  appears here..., above Rename). */
+ *  item's, and eight item ids in paint order (Synopsis... and Who
+ *  appears here... were added above Rename). */
 function contextSource(ids: string[], panel = true): string {
   const head = panel ? `const panel = createMenuPanel({ id: "nav-context-menu" });\n` : "";
   return head + ids.map((id) => `      { id: "${id}", label: () => "L", run: () => {} },`).join("\n");
@@ -297,7 +297,7 @@ test("an item's index is its position in the source's paint order, on a row that
 
 test("Rename's index on a part is two lower than on a scene, note or matter", () => {
   // Synopsis... and Who-appears-here... only paint above Rename for a row that
-  // carries a body (095): a rig that pressed the scene's index on a part would
+  // carries a body: a rig that pressed the scene's index on a part would
   // land on Who-appears-here instead of Rename.
   const path = contextFile(contextSource(CONTEXT_IDS));
   const onScene = navContextIndex("nav-context-rename", "scene", path);

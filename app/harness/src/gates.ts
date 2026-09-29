@@ -411,7 +411,7 @@ export function evaluateSwitchGates(m: SwitchMetrics): GateResult[] {
 // THIS PATH HAD NO COVERAGE OF ANY KIND until 2026-08-26, and it is the first
 // one every writer takes. Every other rig here seeds a project through the host
 // and boots it with APP_PROJECT; every screenshot in app/results/screenshots is
-// of a seeded project. Slices 023 and 024 fixed four defects that were all
+// of a seeded project. This path once had four defects that were all
 // visible in the first frame of the unseeded path -- no way to quit, a book
 // called `default`, no rename, an import folder with no name -- and none of them
 // could have been found by anything already here.
@@ -2304,7 +2304,7 @@ export interface GoalsMetrics {
   recorded_target: string;
   target_in_bar: string;
   /** The READOUT's own height from AT-SPI component extents, and a control from
-   *  the same strip (#footer since 067) and the same walk. Neither is a
+   *  the same strip (#footer) and the same walk. Neither is a
    *  restated constant.
    *
    *  The strip itself cannot be used: WebKitGTK prunes it, so its box is not in
@@ -2396,7 +2396,7 @@ export function evaluateGoalsGates(m: GoalsMetrics): GateResult[] {
       // THE GEOMETRY CLAIM, and the reason it is graded rather than looked at.
       // The readout gained a third figure in a strip whose height is a
       // click-geometry constant the navigator rigs restate: it was #project-bar
-      // (39px) until 067 and is #footer (34px) since, and the control it is
+      // (39px) and is now #footer (34px), and the control it is
       // measured against is in the same strip either way. A wrapped strip moves
       // every navigator row those rigs click, and they would go on reporting
       // plausible numbers about the wrong rows. An earlier build's panel
@@ -3188,7 +3188,7 @@ export function evaluateContextGates(m: ContextMetrics): GateResult[] {
 // Bible gates: the book's second half -- what a scene is ABOUT, who is in it,
 // and where they appear -- plus the memory cost of holding a photograph.
 //
-// WHY ONE FAMILY AND NOT FIVE. Slices 035, 036, 037, 038/042 and 039 shipped
+// WHY ONE FAMILY AND NOT FIVE. Five earlier changes shipped
 // five surfaces that share one store, one navigator selection and one menu, and
 // every claim about all five rests on unit tests and screenshots. That is the
 // position the readable mirror was in when a defect that made the whole feature
@@ -3265,7 +3265,7 @@ export interface BibleMetrics {
 
   /** Every alias stored against the member the rig created, read directly
    *  from `cast_alias` -- the same file-is-the-oracle rule the cast name and
-   *  appearance figures above already follow (105). */
+   *  appearance figures above already follow. */
   cast_aliases: string[];
   /** The alias the rig typed into the sheet's alias row and saved. */
   cast_alias_typed: string;
@@ -3377,7 +3377,7 @@ export function evaluateBibleGates(m: BibleMetrics): GateResult[] {
     },
     {
       // THE FILE, `cast_member_created`'s own oracle: `cast_alias` read
-      // directly rather than asked of the page (105).
+      // directly rather than asked of the page.
       gate: "cast_alias_saved",
       value: m.cast_aliases.length === 0 ? "NO ALIAS STORED" : `[${m.cast_aliases.join(", ")}]`,
       threshold: `the alias typed into the sheet ("${m.cast_alias_typed}") is in the member's alias list`,
@@ -3422,8 +3422,9 @@ export function evaluateBibleGates(m: BibleMetrics): GateResult[] {
           : "FAIL",
     },
     {
-      // 038 recorded that nothing in this application could show a picture
-      // properly, and 042 shipped the viewer that closed it. NOTHING HAS EVER
+      // An earlier record noted that nothing in this application could show a
+      // picture properly, until a later change shipped the viewer that closed
+      // it. NOTHING HAS EVER
       // GRADED IT: the claim rested on two screenshots. The oracle is the
       // accessibility tree's account of whether the panel is painted, which is
       // the one channel that can tell an open viewer from a constructed one.
@@ -3659,15 +3660,15 @@ function sameStringMap(a: Record<string, string>, b: Record<string, string | nul
   return keys.length > 0 && keys.every((k) => b[k] === a[k]);
 }
 
-/** The readable mirror, driven end to end (022).
+/** The readable mirror, driven end to end.
  *
- * **THE STANDING P0 THIS CLOSES.** Slices 019, 020, 021 and 029 all shipped
+ * **THE STANDING P0 THIS CLOSES.** Four earlier changes all shipped
  * with the same note in their write-backs: no rig covers the mirror, and every
  * claim about it in this repository is checked by a `cargo` test over a temp
- * directory. 029 was a total defect -- every prose edit invisible to the folder,
+ * directory. One of them was a total defect -- every prose edit invisible to the folder,
  * permanently -- that lived through four slices and was found by READING. These
  * gates are what would have caught it: `mirror_carries_a_prose_edit` fails
- * against the tree 029 fixed.
+ * against the tree that defect fixed.
  */
 export interface MirrorMetrics {
   fixture: string;
@@ -3729,7 +3730,7 @@ export interface MirrorMetrics {
    *  landed. */
   row_accept_pressed: boolean;
   /** A change-set row's OWN accept, pressed by its accessible name rather than
-   *  the batch control (080) -- read from the store right after that one
+   *  the batch control -- read from the store right after that one
    *  press, before the batch control is pressed at all, and read from the
    *  DOCUMENT ROW WHOSE `item_id` IS TARGET'S, never from "any document in the
    *  store": a host that wrote the accepted body into the wrong document, or
@@ -3778,7 +3779,7 @@ export function evaluateMirrorGates(m: MirrorMetrics): GateResult[] {
       value:
         `first sentence ${m.file_holds_the_typed_sentence ? "in the folder" : "MISSING"}, ` +
         `second ${m.file_holds_the_second_sentence ? "in the folder" : "MISSING"}`,
-      threshold: "both -- an edit AFTER an entry's first write still reaches the folder (029)",
+      threshold: "both -- an edit AFTER an entry's first write still reaches the folder",
       verdict:
         m.file_holds_the_typed_sentence && m.file_holds_the_second_sentence ? "PASS" : "FAIL",
     },
@@ -4032,7 +4033,7 @@ export function evaluateSalvageGates(m: SalvageMetrics): GateResult[] {
         "answered by a covering scan of that autoindex and the rows reach the writer already " +
         "alphabetical whatever order the file was written in - measured with EXPLAIN QUERY " +
         "PLAN, and no choice of planted words can change it. Deleting the sort from " +
-        "write_wordlist leaves this gate GREEN on a live run; the sort is pinned by 049 at that " +
+        "write_wordlist leaves this gate GREEN on a live run; the sort is pinned at that " +
         "function's own boundary, where the input order is chosen",
       verdict: wordlistOk ? "PASS" : "FAIL",
     },
@@ -4145,7 +4146,7 @@ export function evaluateSalvageGates(m: SalvageMetrics): GateResult[] {
       verdict: m.peak_rss_mb <= SALVAGE_RSS_MB ? "PASS" : "FAIL",
     },
     {
-      // WHAT A RIG CAN HOLD FOREVER, and the reason 054 put it here rather than
+      // WHAT A RIG CAN HOLD FOREVER, and the reason it is put here rather than
       // leaving it to unit tests: `manifest.json` is the plain-text artifact an
       // operator hands to somebody else, and until this slice it opened with
       // the operating-system user's home directory in `source` and `out_dir`
@@ -4413,7 +4414,7 @@ export interface PreflightMetrics {
   clean_finding_count: number;
 }
 
-/** The five preflight gates (107). `msLimit` and `rssMb` default to the
+/** The five preflight gates. `msLimit` and `rssMb` default to the
  *  module's own placeholder constants and exist as parameters so a boundary
  *  test can exercise the comparison at a real number without waiting for the
  *  stress measurement that sets them. */
@@ -4555,7 +4556,7 @@ export interface PicturesMetrics {
   cover_expected_sentence: string;
 }
 
-/** The five pictures gates (108). `rssLimit` and `thumbMax` default to the
+/** The five pictures gates. `rssLimit` and `thumbMax` default to the
  *  module's own constants and exist as parameters so a boundary test can
  *  exercise each comparison at a real number without importing the host's. */
 export function evaluatePicturesGates(
@@ -4803,7 +4804,7 @@ function boundedPreviewGate(
   };
 }
 
-/** The preview gates (109): seven where the book can be proofed, six where it
+/** The preview gates: seven where the book can be proofed, six where it
  *  cannot -- there `proof_save_ms` has nothing to time and
  *  `proof_refused_at_the_render_bound` takes the leaves gate's place. Every
  *  row is PASS or FAIL; this rig emits no UNKNOWN of its own. */
@@ -4937,7 +4938,7 @@ export function evaluatePreviewGates(
   ];
 }
 
-/** The mirror's three acts, in one boot (110): (a) turning the mirror on
+/** The mirror's three acts, in one boot: (a) turning the mirror on
  *  through the project panel writes the folder and says so; (b) an outside
  *  rewrite of one file reaches the change set WITHOUT a restart, because the
  *  in-process folder watcher is the thing being proved and a reopen would
@@ -5088,7 +5089,7 @@ export interface MirrorActsMetrics {
   peak_rss_mb: number;
 }
 
-/** The mirror-acts gates (110, 127), including the explicit full check, are kept
+/** The mirror-acts gates, including the explicit full check, are kept
  *  apart from the older `evaluateMirrorGates` block because this rig drives all
  *  three acts in ONE boot that never restarts, and that block's metrics answer
  *  a rig whose whole shape is quitting and reopening.
@@ -5316,7 +5317,7 @@ export interface HomeMetrics {
   home_rows: number;
   /** Whether `#library`'s own marker (`library-new-pen-name`, present
    *  whatever the vault or the filter holds) was found in the AT-SPI tree for
-   *  the `home` boot. GATED as of 100: the empty workspace's own button no
+   *  the `home` boot. GATED: the empty workspace's own button no
    *  longer distinguishes the two screens, since `home` now shows the
    *  library screen over it. */
   home_library_present: boolean;

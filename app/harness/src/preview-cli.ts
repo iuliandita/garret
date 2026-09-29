@@ -1,8 +1,8 @@
 // app/harness/src/preview-cli.ts
 // Graded run over the two BOOK previews: the EPUB rail and the PDF proof.
 //
-// WHAT THIS IS FOR. 038, 042, 043 and 044 each had to write "no graded rig
-// opens the rail", and 044 added "no rig drives the PDF save dialog" and "the
+// WHAT THIS IS FOR. Four earlier changes each had to write "no graded rig
+// opens the rail", and one added "no rig drives the PDF save dialog" and "the
 // proof's own render is not measured at stress". Every claim about the archive
 // the rail shows, about the leaves the printer was handed, and about the file
 // either one saves has rested on unit tests, on `epubcheck` run by hand, and on
@@ -372,7 +372,7 @@ function clickAt(
  *  IT READS THE NAME AND NOT THE SUBTREE. The rail's summary is `role="status"`,
  *  which WebKitGTK maps to an ATK status bar WHOSE CHILDREN IT PRUNES: its
  *  sentences are only reachable through the node's accessible name, which the
- *  page sets (109 fixed that; `#word-count` has always done it). An earlier
+ *  page sets (that was fixed; `#word-count` has always done it). An earlier
  *  version of this walk collected every descendant's text as a fallback, and it
  *  was a guard nothing could reach -- the children it would have read do not
  *  exist, and collecting them from the rail, which is an ANCESTOR of the

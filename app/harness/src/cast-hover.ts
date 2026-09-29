@@ -1,8 +1,8 @@
 // app/harness/src/cast-hover.ts
 // The AT-SPI walk that finds the leftmost cast mark in the open scene's own
 // prose and confirms the hover card came up over it -- shot-cli.ts's
-// `--cast-card` and `--cast-alias`, and bible-cli.ts's boot 4 alias check
-// (105), share this file rather than each carrying its own copy of the two
+// `--cast-card` and `--cast-alias`, and bible-cli.ts's boot 4 alias check,
+// share this file rather than each carrying its own copy of the two
 // Python scripts.
 //
 // THE ENTRY'S OWN TEXT INTERFACE, NOT A DOM ID. WebKitGTK exposes the

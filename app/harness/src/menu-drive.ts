@@ -182,7 +182,7 @@ export function menuRoute(
 
 /** The chord that opens a menu, e.g. `alt+f` for `menu-file`, read from the
  *  same parse. Every rig that presses a menu open goes through this rather
- *  than a literal: since 088 the letter is a catalog value, and a restated
+ *  than a literal: the letter is a catalog value, and a restated
  *  letter would deliver the chord and every key after it into the editor
  *  without a word. */
 export function menuChord(
@@ -275,7 +275,7 @@ export function menuDriver(
 //
 // A SECOND TABLE, PARSED THE SAME WAY, for the same reason: `nav-context-menu.ts`
 // paints three creates, Synopsis... and Who appears here... (for a row that
-// carries a body, since 095), Rename, Delete-or-Restore and Revision state in
+// carries a body), Rename, Delete-or-Restore and Revision state in
 // that order, and the only thing that decides the order is the source. A rig
 // holding `REMOVE_INDEX = 4` is correct until an item is inserted above it, and
 // then it presses Return on the item above the one it named and reports

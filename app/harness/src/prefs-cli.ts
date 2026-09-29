@@ -79,7 +79,7 @@ const PANE_W = WINDOW_W - NAV_W - 2 * EDITOR_PADDING;
 /** xdotool type/click returns when X has the events, not when WebKitGTK has
  *  acted on them. hand-cli.ts found 500 ms silently truncating; 2500 ms held
  *  for the 40-repeat passage at 15px -- and then silently truncated the
- *  56-repeat passage at 17px (066), reading 814px where the full text is
+ *  56-repeat passage at 17px, reading 814px where the full text is
  *  1398px. So the passage is no longer read after a fixed wait: the box is
  *  polled until two readings a second apart agree (see `settledBox`), and
  *  this constant is what the resize and the click still wait. */
@@ -100,7 +100,7 @@ const COMMIT_POLL_MS = 100;
 /** Long enough that the page overflows a 900px window at the SMALLEST size,
  *  which is what makes the height comparison a measurement rather than two
  *  readings of `min-height: 100%`. Measured: 1082px at small when small was
- *  15px and 40 repeats; 1398px at 17px (066) and 56 repeats. The figure the
+ *  15px and 40 repeats; 1398px at 17px and 56 repeats. The figure the
  *  run prints is the measurement. Deterministic and identical in every boot,
  *  because two boxes are compared for exact equality below. */
 // End at the final period: WebKit stores a trailing typed space as NBSP.

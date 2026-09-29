@@ -27,7 +27,7 @@
 // written inside a `*-cli.ts` is unmutatable: this file aborts at module scope,
 // so no test can import it.
 //
-// THE CORPUS (052). 051 recorded its own hole: every recovery path here was
+// THE CORPUS. An earlier record noted its own hole: every recovery path here was
 // built and graded against damage inflicted THROUGH SQL, on a file SQLite still
 // considers valid, and the gap between that and "not a database at all" -- a
 // truncated write, a torn page, a header that lies about the file's geometry --
@@ -174,7 +174,7 @@ interface Run {
   peakRssMb: number;
   manifest: Manifest | null;
   /** Every string in this run's `manifest.json` that names an absolute path or
-   *  the directory the run happened in (054). Read from the FILE, because the
+   *  the directory the run happened in. Read from the FILE, because the
    *  file is the artifact that travels. */
   namedPaths: { at: string; value: string }[];
   /** The process died on a signal, or its stderr carried a Rust panic. BOTH,
@@ -670,7 +670,7 @@ try {
 const enumerationTreePages = btreePages(baseBytes, corpusTargets.enumerationIndexRoot).length;
 
 /** Every string any manifest of this run carries that names a place on this
- *  machine, tagged with the run that wrote it (054). A LIST AND NOT A COUNT:
+ *  machine, tagged with the run that wrote it. A LIST AND NOT A COUNT:
  *  the gate that reads it has no threshold, and what a reader needs when it goes
  *  red is which key in which manifest. */
 const namedPaths: { run: string; at: string; value: string }[] = [];

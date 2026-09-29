@@ -1,5 +1,5 @@
 // app/harness/src/demo-vault.ts
-// Extracted out of shot-cli.ts (107) because TWO rigs need the same
+// Extracted out of shot-cli.ts because TWO rigs need the same
 // two-identity vault for two different reasons: shot-cli.ts plants it to
 // PHOTOGRAPH the pen-name strip and the library filtering it drives, and
 // preflight-cli.ts plants the identical vault to run the cross-identity scan
@@ -11,7 +11,7 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 /** The two pen names planted by `plantDemoIdentities` and read back by
- *  `pinBook` (100), so a second and third book can be pinned to either
+ *  `pinBook`, so a second and third book can be pinned to either
  *  without a second vault literal drifting from the first. */
 export const DEMO_VAULT = {
   version: 1,

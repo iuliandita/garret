@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-// Every embedded desktop walk this repo carries, spliced with the pid selector
-// (073), checked for: python SYNTAX; that the splice actually landed
+// Every embedded desktop walk this repo carries, spliced with the pid selector,
+// checked for: python SYNTAX; that the splice actually landed
 // (`get_process_id()` and `matched` present); and that no script still names
 // what the splice replaced (`target.lower()`, `app.name`). Syntax alone would
 // pass a script that lost its `${PY_SELECT_APPS}` splice entirely or one that

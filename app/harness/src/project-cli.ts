@@ -68,9 +68,9 @@ const PROJECTS_DIR = "projects";
 /** body { font: 16px/1.6 } => one line box. Still what an OPTION row is built
  *  on (its font is unchanged); no longer what the bar is built on. */
 const LINE_HEIGHT = 25.6;
-/** #project-bar is 39px by declaration since 067 (border-box), so its
+/** #project-bar is 39px by declaration (border-box), so its
  *  padding box ends at 38 and `#project-panel { top: 100% }` resolves there.
- *  Before 067 the bar was 6 + 25.6 + 6 + 1 and the panel sat at 37. */
+ *  Before that the bar was 6 + 25.6 + 6 + 1 and the panel sat at 37. */
 const BAR_HEIGHT = 39;
 const PANEL_TOP = BAR_HEIGHT - 1;
 /** #project-panel { left: 12px; padding: 12px } plus its 1px border. */

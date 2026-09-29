@@ -1,5 +1,5 @@
 // app/harness/src/timeline-cli.ts
-// Graded run over the timeline (102): does zooming a 2,000-event document
+// Graded run over the timeline: does zooming a 2,000-event document
 // stay fast, does the cull keep the DOM bounded, does an event created by
 // double-click survive to the file, and does Open scene reach the linked
 // scene.

@@ -379,8 +379,8 @@ export function namedPathsIn(manifest: string, holding: string): NamedPath[] {
 /** How many `manifest.json` files a salvage run is owed, given what its corpus
  *  entries answered.
  *
- *  THE RIG'S OWN WIRING IS UNMUTATABLE and this is the rule pulled out of it
- *  (054). `salvage_manifest_names_no_path` grades a list of offending strings,
+ *  THE RIG'S OWN WIRING IS UNMUTATABLE and this is the rule pulled out of it.
+ *  `salvage_manifest_names_no_path` grades a list of offending strings,
  *  and a rig that quietly stopped collecting some of its manifests would shrink
  *  that gate's subject while leaving it green -- so the count is checked, and it
  *  is checked here rather than in the gate: a break in one corpus file changes

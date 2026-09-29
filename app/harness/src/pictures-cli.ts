@@ -742,7 +742,7 @@ try {
         // paragraph) and `#cast-picture`'s accessible name (an `<img>`, role
         // "image" -- not in `locateNodes`'s WANTED set, hence this id-matched
         // walk). Present is drawn there, never in `#cast-picture-state` --
-        // see the header. SAVE IS RE-READ TOO (239): with 237's 30px
+        // see the header. SAVE IS RE-READ TOO: with the current 30px
         // controls, walk 2's Save coordinate lands on the thumbnail's
         // "Change picture..." button, which reopened the picture dialog and
         // let act (d)'s cover path attach to the cast member instead -- the
@@ -935,7 +935,7 @@ const coverFileMatches =
   existsSync(join(picturesDir, coverMetaValue)) &&
   sha256Hex(readFileSync(join(picturesDir, coverMetaValue))) === sha256Hex(sourceCoverBytes);
 
-// THE HEADLINE IS THE PLAIN SENTENCE (239): since 236 a host diagnostic sits
+// THE HEADLINE IS THE PLAIN SENTENCE: a host diagnostic sits
 // behind the banner's Details and `command-error.ts` names the problem, and
 // for this refusal it names it as `host-error.picture-pixels`. Restated, not
 // imported; the host's own figures stay in the Details.
