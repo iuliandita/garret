@@ -4267,6 +4267,32 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   background: var(--bg);
 }
 
+#outline-view:not([hidden]):has(.outline-view-table-scroll) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#outline-view:not([hidden]):has(.outline-view-table-scroll) > :not(.outline-view-table-scroll) { flex-shrink: 0; }
+.outline-view-table-scroll { min-height: 0; overflow: auto; }
+.outline-view-table-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-view-scroll-hint { display: none; }
+#outline-view:has(.outline-view-table-scroll[data-overflow="true"]) .outline-view-scroll-hint { display: block; margin: 0 0 8px; color: var(--muted); font-size: var(--text-sm); }
+.outline-view-table td.outline-view-row-actions,
+.outline-view-table th[data-column="actions"] { position: sticky; right: 0; background: var(--bg); }
+.outline-view-table-scroll[data-overflow="true"] .outline-view-row-actions,
+.outline-view-table-scroll[data-overflow="true"] th[data-column="actions"] { box-shadow: -8px 0 12px -12px var(--fg); }
+.outline-view-table .outline-view-row[data-selected="true"] > .outline-view-row-actions { background: linear-gradient(var(--accent-soft), var(--accent-soft)), var(--bg); }
+
+@media (max-width: 1120px) {
+  body:has(#outline-view:not([hidden]) .outline-view-table-scroll) #nav-column,
+  body:has(#outline-view:not([hidden]) .outline-view-table-scroll) #outline-toggle { visibility: hidden; }
+  #outline-view:has(.outline-view-table-scroll) { grid-column: 1 / -1; padding: 16px; }
+  #outline-view:has(.outline-view-table-scroll) h1 { margin-bottom: 12px; }
+  #outline-view:has(.outline-view-table-scroll) .outline-view-scope { margin: -6px 0 12px; }
+  #outline-view:has(.outline-view-table-scroll) .outline-view-controls { gap: 8px 16px; margin-bottom: 8px; }
+}
+
 #outline-view button:disabled { opacity: .5; }
 
 #outline-view h1 { margin: 0 0 18px; font-size: var(--text-xl); }

@@ -239,6 +239,12 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
   let readGeneration = 0;
   const synopsisCache = new Map<string, string | null>();
   const synopsisFailures = new Set<string>();
+  const tableResize = typeof ResizeObserver === "undefined" ? null : new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const scroll = entry.target as HTMLElement;
+      scroll.dataset.overflow = String(scroll.scrollWidth > scroll.clientWidth);
+    }
+  });
 
   function button(label: string, action: () => void, disabled = false, actionId?: string, itemId?: string): HTMLButtonElement {
     const control = document.createElement("button");
@@ -253,14 +259,22 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
 
   function paint(): void {
     if (currentMode === "manuscript") return;
+    tableResize?.disconnect();
     cancelDrag();
     closeMenu();
     if (currentMode === "reading") { paintReading(); return; }
+    const previousScroll = element.querySelector<HTMLElement>(".outline-view-table-scroll");
+    const scrollLeft = previousScroll?.scrollLeft ?? 0;
+    const scrollTop = previousScroll?.scrollTop ?? 0;
     const focused = element.contains(document.activeElement) ? document.activeElement as HTMLElement : null;
     const focusAction = focused?.dataset.action;
     const focusItemId = focused?.dataset.itemId;
     const restoreFocus = (): void => {
       if (focused === null) return;
+      if (focused === previousScroll) {
+        const scroll = element.querySelector<HTMLElement>(".outline-view-table-scroll");
+        if (scroll !== null) { scroll.focus({ preventScroll: true }); return; }
+      }
       const controls = [...element.querySelectorAll<HTMLElement>("[data-action]")];
       const live = (control: HTMLElement): boolean => !(control instanceof HTMLButtonElement && control.disabled);
       const same = controls.find((control) => control.dataset.action === focusAction && control.dataset.itemId === focusItemId && live(control));
@@ -409,7 +423,24 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
     }
     rowsHost.addEventListener("keydown", onRowsKey);
     if (currentMode === "table") surface.append(rowsHost);
-    element.replaceChildren(heading, scope, controlsBar, surface);
+    if (currentMode === "table") {
+      const hint = document.createElement("p");
+      hint.className = "outline-view-scroll-hint";
+      hint.textContent = t("outline-view.scroll-hint");
+      const tableScroll = document.createElement("div");
+      tableScroll.className = "outline-view-table-scroll";
+      tableScroll.setAttribute("role", "region");
+      tableScroll.setAttribute("aria-label", t("outline-view.table"));
+      tableScroll.tabIndex = 0;
+      tableScroll.append(surface);
+      element.replaceChildren(heading, scope, controlsBar, hint, tableScroll);
+      tableScroll.scrollLeft = scrollLeft;
+      tableScroll.scrollTop = scrollTop;
+      tableScroll.dataset.overflow = String(tableScroll.scrollWidth > tableScroll.clientWidth);
+      tableResize?.observe(tableScroll);
+    } else {
+      element.replaceChildren(heading, scope, controlsBar, surface);
+    }
     restoreFocus();
     const generation = ++readGeneration;
     const ids = projection.rows.filter((item) => !synopsisCache.has(item.id) && !synopsisFailures.has(item.id)).map((item) => item.id);
@@ -732,13 +763,14 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
   return {
     element,
     show(mode) { ++readGeneration; if (currentMode === "manuscript") { synopsisCache.clear(); synopsisFailures.clear(); } currentMode = mode; page = 1; element.hidden = false; paint(); element.querySelector<HTMLElement>("h1")?.setAttribute("tabindex", "-1"); element.querySelector<HTMLElement>("h1")?.focus(); },
-    hide() { ++readGeneration; cancelDrag(); closeMenu(); currentMode = "manuscript"; element.hidden = true; },
+    hide() { ++readGeneration; tableResize?.disconnect(); cancelDrag(); closeMenu(); currentMode = "manuscript"; element.hidden = true; },
     mode: () => currentMode,
     setItems(next) { items = next; synopsisCache.clear(); synopsisFailures.clear(); if (currentMode !== "reading") { const index = manuscriptItemsIn(items).findIndex((item) => item.id === selectedId); if (index >= 0) page = Math.floor(index / OUTLINE_PAGE_SIZE) + 1; } paint(); },
     setCounts(next) { counts = next; if (currentMode !== "reading") paint(); },
     selectById(id) { selectedId = id; if (currentMode === "table" || currentMode === "cards") { const index = manuscriptItemsIn(items).findIndex((item) => item.id === id); if (index >= 0) page = Math.floor(index / OUTLINE_PAGE_SIZE) + 1; paint(); } },
     destroy() {
       ++readGeneration;
+      tableResize?.disconnect();
       cancelDrag();
       document.removeEventListener("keydown", onDocumentKey);
       document.removeEventListener("click", onDocumentClick, true);
