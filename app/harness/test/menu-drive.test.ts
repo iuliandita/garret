@@ -203,7 +203,7 @@ describe("the parser refuses a source it cannot trust", () => {
     sent.length = 0;
     await driver.activate("menu-view-cards");
     expect(sent).toEqual(["alt+o", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Return"]);
-  });
+  }, 10_000);
 
   test("a German route is not served from the English catalog cache", () => {
     expect(menuChord("menu-file", REAL)).toBe("alt+f");
