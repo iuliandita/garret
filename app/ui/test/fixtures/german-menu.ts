@@ -92,13 +92,13 @@ try {
     // them from the catalog would let a copied English catalog pass.
     ["d", "menu-file", "Datei", "menu-project-new", "Neues Buch…"],
     ["b", "menu-edit", "Bearbeiten", "menu-undo", "Rückgängig"],
-    ["g", "menu-outline", "Gliederung", "menu-nav-back", "Zurück"],
-    ["h", "menu-help", "Hilfe", "menu-shortcuts", "Tastaturkürzel"],
+    ["g", "menu-outline", "Gliederung", "menu-new-scene", "Neue Szene"],
+    ["h", "menu-help", "Hilfe", "menu-shortcuts", "Anleitung und Tastenkürzel"],
   ] as const) {
     press(key);
     const menuTitle = container.querySelector<HTMLButtonElement>(`#${titleId}`);
     const firstItemElement = panel.querySelector<HTMLButtonElement>("[role='menuitem']");
-    const firstItemLabel = panel.querySelector<HTMLElement>(".menu-item-label");
+    const firstItemLabel = firstItemElement?.querySelector<HTMLElement>(".menu-item-label");
     expect(panel.hidden, false, `Alt+${key.toUpperCase()} opens ${title}`);
     expect(menuTitle?.textContent, title, `${title} title is localized`);
     expect(menuTitle?.getAttribute("aria-expanded"), "true", `${title} is selected`);

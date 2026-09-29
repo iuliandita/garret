@@ -332,9 +332,9 @@ describe("the stylesheet's half", () => {
     expect(hidden).toMatch(/visibility:\s*hidden/);
   });
 
-  test("the pane recentres by transform, only while the navigator is present", () => {
+  test("the pane recentres by transform, only while the navigator occupies a layout column", () => {
     expect(block("#editor")).toMatch(/transition:\s*transform var\(--chrome-ms\) ease-out/);
-    const shifted = block('body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-continuous-open="true"]):not([data-inspector-open="true"]) #editor');
+    const shifted = block('body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="true"]):not([data-continuous-open="true"]):not([data-inspector-open="true"]) #editor');
     expect(shifted).toMatch(/transform:\s*translateX\(calc\(var\(--nav-width\) \/ -2\)\)/);
     expect(stripped).not.toMatch(/body\.chrome-hidden #editor \{/);
   });

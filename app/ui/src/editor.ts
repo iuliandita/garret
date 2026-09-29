@@ -19,6 +19,7 @@ import { type CastNamePair, CAST_MARK_CLASS, castMarksKey, castMarksPlugin } fro
 import { isOneWord, wordAround, type WordRange } from "./word-at";
 import { spellRedrawKey, spellRedrawPlugin } from "./spell-redraw";
 import { EditSourceTracker, type EditSourceChange } from "./edit-source";
+import { t } from "./i18n";
 
 export const schema = new Schema({
   nodes: {
@@ -404,6 +405,8 @@ export interface Editor {
    *  the live document, which is an answer rather than an error: a panel row can
    *  outlive the prose it points at. */
   selectRange(from: number, to: number): boolean;
+  /** Restore a caret or selection against the live document without scrolling. */
+  restoreSelection(from: number, to: number): void;
   /** The current selection as document positions.
    *
    *  Exists because the browser's own selection is not readable under the test
@@ -578,6 +581,7 @@ export function createEditor(
   const editSources = new EditSourceTracker();
   const view: EditorView = new EditorView(mount, {
     state: EditorState.create({ doc, plugins: editorPlugins() }),
+    attributes: { role: "textbox", "aria-multiline": "true", "aria-label": t("editor.name") },
     dispatchTransaction(tr) {
       if (tr.docChanged && !editable) return;
       const before = view.state;
@@ -595,7 +599,7 @@ export function createEditor(
       // where it was. Outside the docChanged guard on purpose: a caret moved by
       // an arrow key changes no document and still has to be brought to the
       // anchor line, which is most of what typewriter mode is for.
-      holdTypewriterLine();
+      if (!tr.getMeta("restoreSelection")) holdTypewriterLine();
     },
   });
   const onFocus = (): void => opts.onFocus?.();
@@ -757,6 +761,15 @@ export function createEditor(
           .scrollIntoView(),
       );
       return true;
+    },
+    restoreSelection(from: number, to: number): void {
+      const { state } = view;
+      const size = state.doc.content.size;
+      const clamp = (position: number): number =>
+        Number.isFinite(position) ? Math.max(0, Math.min(size, Math.trunc(position))) : 0;
+      view.dispatch(state.tr
+        .setSelection(TextSelection.between(state.doc.resolve(clamp(from)), state.doc.resolve(clamp(to))))
+        .setMeta("restoreSelection", true));
     },
     selection: () => ({ from: view.state.selection.from, to: view.state.selection.to }),
     selectionRect(): SelectionBox | null {

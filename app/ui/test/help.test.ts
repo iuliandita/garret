@@ -552,3 +552,19 @@ describe("the outline's undo/redo chord is bound and shown", () => {
     expect(row?.description).toMatch(/undo|redo/i);
   });
 });
+
+
+test("Help includes offline guidance for structuring, annotating, exporting and copies", () => {
+  const container = document.createElement("span");
+  document.body.append(container);
+  const panel = createHelpPanel({ container });
+  try {
+    const topics = container.querySelectorAll("#help-guide details");
+    expect(topics.length).toBe(4);
+    for (const [index, task] of ["structure", "annotate", "export", "protect"].entries()) {
+      expect(topics[index]?.querySelector("summary")?.textContent).toBe(t(`help.guide.${task}.title`));
+      expect(topics[index]?.querySelector("p")?.textContent).toBe(t(`help.guide.${task}.body`));
+    }
+    expect(container.querySelector("#help-guide a")).toBeNull();
+  } finally { panel.destroy(); container.remove(); }
+});

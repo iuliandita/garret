@@ -87,7 +87,7 @@
      separate token instead of an opacity on --accent. */
   --accent-soft: #dee5f1;
   --control-bg: #fffdf9;
-  --control-border: #d5cec1;
+  --control-border: #8e8475;
   /* The one alarming colour in the application. Used by the save indicator's
      failed state and nothing else so far: if a writer sees this, their work is
      not in the file. */
@@ -261,7 +261,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --accent-strong: #313a43;
   --accent-soft: #dfe3e7;
   --control-bg: #ffffff;
-  --control-border: #cfcfd2;
+  --control-border: #85858a;
   --danger: #b3261e;
   --amber: #b7791f;
   --success: color-mix(in oklab, #3f9460 55%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -317,7 +317,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --accent-strong: #33533d;
   --accent-soft: #dbe7dc;
   --control-bg: #fbfdf9;
-  --control-border: #c8d4bf;
+  --control-border: #77866f;
   --danger: #a3241c;
   --amber: #b7791f;
   --success: color-mix(in oklab, #3f9460 55%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -372,7 +372,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
     --accent-strong: #a9c3ea;
     --accent-soft: #2b3446;
     --control-bg: #26262d;
-    --control-border: #3d3d46;
+    --control-border: #7c7c89;
     --danger: #f2b8b5;
     --amber: #e0b25a;
     --success: color-mix(in oklab, #5cc987 70%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -430,7 +430,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
     --accent-strong: #bfc9d4;
     --accent-soft: #2b323a;
     --control-bg: #26262a;
-    --control-border: #3b3b41;
+    --control-border: #7b7b83;
     --danger: #f2b8b5;
     --amber: #e0b25a;
     --success: color-mix(in oklab, #5cc987 70%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -484,7 +484,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
     --accent-strong: #a0cfba;
     --accent-soft: #22332f;
     --control-bg: #1e262c;
-    --control-border: #35424a;
+    --control-border: #728794;
     --danger: #f2b8b5;
     --amber: #e0b25a;
     --success: color-mix(in oklab, #5cc987 70%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -540,7 +540,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --accent-strong: #a9c3ea;
   --accent-soft: #2b3446;
   --control-bg: #26262d;
-  --control-border: #3d3d46;
+  --control-border: #7c7c89;
   --danger: #f2b8b5;
   --amber: #e0b25a;
   --success: color-mix(in oklab, #5cc987 70%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -600,7 +600,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --accent-strong: #bfc9d4;
   --accent-soft: #2b323a;
   --control-bg: #26262a;
-  --control-border: #3b3b41;
+  --control-border: #7b7b83;
   --danger: #f2b8b5;
   --amber: #e0b25a;
   --success: color-mix(in oklab, #5cc987 70%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -654,7 +654,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --accent-strong: #a0cfba;
   --accent-soft: #22332f;
   --control-bg: #1e262c;
-  --control-border: #35424a;
+  --control-border: #728794;
   --danger: #f2b8b5;
   --amber: #e0b25a;
   --success: color-mix(in oklab, #5cc987 70%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -1995,7 +1995,7 @@ body.nav-hidden #nav-column {
   width: 48px;
   height: 4px;
   border-radius: var(--radius-pill);
-  background: var(--control-border);
+  background: var(--border);
   overflow: hidden;
   flex: 0 0 auto;
 }
@@ -2307,7 +2307,7 @@ body.nav-hidden #nav-column {
 }
 
 .project-legacy-heading {
-  color: var(--text);
+  color: var(--fg);
 }
 
 .project-legacy-note {
@@ -4088,7 +4088,7 @@ body.nav-hidden #nav-column {
    `var(--border)` (the hairline colour used everywhere else) reads too faint
    against `--nav-bg` in the dark theme - the two are close enough in
    lightness that the line all but disappears - so this one hairline is
-   `color-mix(in srgb, var(--text) 18%, transparent)` instead, which keeps a
+   `color-mix(in srgb, var(--fg) 18%, transparent)` instead, which keeps a
    readable line in both themes without a new custom property. The fallback
    `border-top` is written FIRST and the color-mix one after, so an engine
    without color-mix() support still draws the plain `--border` line rather
@@ -4107,7 +4107,7 @@ body.nav-hidden #nav-column {
   left: 12px;
   right: 12px;
   border-top: 1px solid var(--border);
-  border-top: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
 }
 
 /* A bible document is prose the writer writes, so it reads like a scene -- in
@@ -5937,7 +5937,7 @@ body.chrome-hidden #footer {
    since the writer opened it on purpose and it lives outside the faded
    chrome, and a shifted pane would slide the prose under nothing and leave
    a gap against the inspector's edge. */
-body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-continuous-open="true"]):not([data-inspector-open="true"]) #editor {
+body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="true"]):not([data-continuous-open="true"]):not([data-inspector-open="true"]) #editor {
   transform: translateX(calc(var(--nav-width) / -2));
 }
 
@@ -7453,7 +7453,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 
 #mirror-changes-note,
 #mirror-changes-status {
-  color: var(--fg-soft);
+  color: var(--muted);
   font-size: var(--text-sm);
   margin-bottom: 8px;
 }
@@ -7476,7 +7476,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 .mirror-change-state,
 .mirror-change-title-was,
 .mirror-change-direction {
-  color: var(--fg-soft);
+  color: var(--muted);
   font-size: var(--text-sm);
 }
 
@@ -7521,7 +7521,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   margin-top: 6px;
   font-size: var(--text-sm);
   font-weight: 600;
-  color: var(--fg-soft);
+  color: var(--muted);
 }
 
 /* The batch control, above the list: the list is what grows,
@@ -7541,7 +7541,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 
 .mirror-change-legend,
 .mirror-change-summary {
-  color: var(--fg-soft);
+  color: var(--muted);
   font-size: var(--text-sm);
   margin-top: 6px;
 }
@@ -8511,7 +8511,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   display: block;
 }
 
-#library.library-is-empty button#library-new-book-tile {
+#library button#library-new-book-tile {
   display: inline-flex;
   flex-direction: row;
   align-items: center;
@@ -8525,12 +8525,12 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   cursor: pointer;
 }
 
-#library.library-is-empty button#library-new-book-tile:hover {
+#library button#library-new-book-tile:hover {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
 }
 
-#library.library-is-empty button#library-new-book-tile .cover-new {
+#library button#library-new-book-tile .cover-new {
   width: auto;
   height: auto;
   border: 0;
@@ -8539,13 +8539,13 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   font-size: var(--text-xl);
 }
 
-#library.library-is-empty button#library-new-book-tile .shelf-title {
+#library button#library-new-book-tile .shelf-title {
   font-family: inherit;
   font-size: var(--text-md);
   font-weight: 500;
 }
 
-#library.library-is-empty div#library-new-book-tile {
+#library div#library-new-book-tile {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -8553,7 +8553,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   gap: 8px;
 }
 
-#library.library-is-empty #library-new-book-name {
+#library #library-new-book-name {
   width: min(320px, 100%);
   height: 44px;
   text-align: left;
@@ -8770,3 +8770,47 @@ body[data-inspector-open="true"] #scene-notes {
     display: none;
   }
 }
+
+#library-new-book-area { margin: 0 0 24px; }
+#library #library-new-book-tile { width: auto; }
+#library #library-new-book-name { border-style: solid; background: var(--control-bg); }
+#prefs-panel .prefs-choice-note {
+  grid-column: 2;
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-ui);
+}
+@media (max-width: 600px) {
+  #prefs-panel .prefs-choice-note { grid-column: 1; }
+}
+
+/* Narrow writing keeps the full pane; the outline opens over it temporarily. */
+body.nav-narrow { grid-template-columns: 0 minmax(0, 1fr) auto; }
+body.nav-narrow:not(.nav-hidden) #nav-column {
+  position: fixed;
+  inset: 39px auto 34px 0;
+  width: min(var(--nav-width), calc(100vw - 48px));
+  z-index: 7;
+  background: var(--nav-bg);
+  box-shadow: var(--shadow-panel);
+}
+#outline-backdrop {
+  position: fixed;
+  inset: 39px 0 34px;
+  z-index: 6;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: color-mix(in srgb, var(--fg) 12%, transparent);
+}
+#outline-backdrop[hidden] { display: none; }
+
+.menu-group-label { padding: 4px 8px; color: var(--muted); font-size: var(--text-xs); }
+#help-guide h3, #help-panel .panel-body > h3 { margin: 0 0 8px; font-size: var(--text-md); font-weight: 500; }
+#help-guide { margin-bottom: 20px; }
+#help-guide details { margin: 0 0 8px; }
+#help-guide summary { cursor: pointer; }
+#help-guide summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#help-guide p { margin: 6px 0 12px; max-width: 70ch; font-size: var(--text-sm); line-height: var(--leading-ui); }
+@media (max-width: 600px) { #help-columns { column-count: 1; } }

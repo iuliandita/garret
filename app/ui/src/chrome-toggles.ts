@@ -3,6 +3,7 @@ import { createIcon } from "./icons";
 import { t } from "./i18n";
 import { createTooltip, type Tooltip } from "./tooltip";
 import type { FocusMode } from "./writing-modes";
+import { isCompositionKey } from "./composition-key";
 
 // TWO HEADER CONTROLS. Both are buttons with aria-pressed, which
 // makes them `toggle button` in ATK (nodes.ts's WANTED set). Neither is
@@ -29,15 +30,61 @@ export function createOutlineToggle(deps: OutlineToggleDeps): OutlineToggle {
   button.setAttribute("aria-label", t("chrome.outline.label"));
   button.append(createIcon("outline"));
 
+  const narrow = window.matchMedia("(max-width: 900px)");
+  let manualHidden = body.classList.contains(NAV_HIDDEN_CLASS);
+  let overlayOpen = false;
+  const backdrop = document.createElement("button");
+  backdrop.id = "outline-backdrop";
+  backdrop.type = "button";
+  backdrop.setAttribute("aria-label", t("chrome.outline.close"));
+  backdrop.tabIndex = -1;
+  body.append(backdrop);
+
   const paint = (): void => {
-    button.setAttribute("aria-pressed", String(!body.classList.contains(NAV_HIDDEN_CLASS)));
+    const hidden = narrow.matches ? !overlayOpen : manualHidden;
+    body.classList.toggle("nav-narrow", narrow.matches);
+    body.classList.toggle(NAV_HIDDEN_CLASS, hidden);
+    backdrop.hidden = !narrow.matches || !overlayOpen;
+    button.setAttribute("aria-pressed", String(!hidden));
+    button.setAttribute("aria-expanded", String(!hidden));
+    button.setAttribute("aria-controls", "nav-column");
+  };
+  const closeOverlay = (): void => {
+    overlayOpen = false;
+    paint();
   };
   const onClick = (): void => {
-    body.classList.toggle(NAV_HIDDEN_CLASS);
+    if (narrow.matches) {
+      overlayOpen = !overlayOpen;
+      manualHidden = !overlayOpen;
+    } else manualHidden = !manualHidden;
     paint();
+  };
+  const onResize = (): void => {
+    overlayOpen = false;
+    paint();
+  };
+  const onBackdrop = (): void => {
+    closeOverlay();
+    button.focus();
+  };
+  const onKey = (event: KeyboardEvent): void => {
+    if (!overlayOpen || event.key !== "Escape" || isCompositionKey(event)) return;
+    const target = event.target;
+    if (!(target instanceof Element) || !target.closest("#nav-column")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    onBackdrop();
+  };
+  const onEditorFocus = (event: Event): void => {
+    if (overlayOpen && event.target instanceof Element && event.target.closest("#editor")) closeOverlay();
   };
 
   paint();
+  narrow.addEventListener("change", onResize);
+  backdrop.addEventListener("click", onBackdrop);
+  body.addEventListener("keydown", onKey, true);
+  body.addEventListener("focus", onEditorFocus, true);
   const tooltip: Tooltip = createTooltip({
     control: button,
     name: t("chrome.outline.label"),
@@ -49,8 +96,12 @@ export function createOutlineToggle(deps: OutlineToggleDeps): OutlineToggle {
   return {
     destroy(): void {
       button.removeEventListener("click", onClick);
+      narrow.removeEventListener("change", onResize);
+      body.removeEventListener("keydown", onKey, true);
+      body.removeEventListener("focus", onEditorFocus, true);
+      backdrop.remove();
       tooltip.destroy();
-      body.classList.remove(NAV_HIDDEN_CLASS);
+      body.classList.remove(NAV_HIDDEN_CLASS, "nav-narrow");
       container.replaceChildren();
     },
   };

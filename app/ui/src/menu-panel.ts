@@ -46,6 +46,7 @@ export interface MenuItemSpec {
    *  it is not focusable, the arrows skip it, and it carries no id, so
    *  menu-cli's id count and menu-drive's parsed indices do not see it. */
   separatorBefore?: boolean;
+  groupLabel?: string;
   run: () => void;
 }
 
@@ -167,6 +168,13 @@ export function createMenuPanel(opts: MenuPanelOptions): MenuPanel {
           rule.className = "menu-separator";
           rule.setAttribute("role", "separator");
           children.push(rule);
+        }
+        if (spec.groupLabel) {
+          const heading = document.createElement("div");
+          heading.className = "menu-group-label";
+          heading.setAttribute("role", "presentation");
+          heading.textContent = spec.groupLabel;
+          children.push(heading);
         }
         const element = document.createElement("button");
         element.id = spec.id;

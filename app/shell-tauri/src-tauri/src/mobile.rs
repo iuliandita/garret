@@ -32,11 +32,19 @@ struct Catalog {
     current_id: Option<String>,
 }
 
+#[derive(Clone, Serialize)]
+struct SceneContext {
+    id: String,
+    title: String,
+    kind: String,
+}
+
 #[derive(Serialize)]
 struct Scene {
     id: String,
     title: String,
     depth: i64,
+    context: Vec<SceneContext>,
 }
 
 #[derive(Serialize)]
@@ -72,15 +80,32 @@ struct Document {
 fn scenes(store: &store::Store) -> Result<Vec<Scene>, String> {
     let items = store.items().map_err(|error| error.to_string())?;
     let excluded = store::excluded_from_book(&items);
-    Ok(items
-        .into_iter()
-        .filter(|item| item.item_type == "scene" && !excluded.contains(&item.id))
-        .map(|item| Scene {
-            id: item.id,
-            title: item.title,
-            depth: item.depth,
-        })
-        .collect())
+    let mut context: Vec<(i64, SceneContext)> = Vec::new();
+    let mut scenes = Vec::new();
+    for item in items {
+        context.retain(|(depth, _)| *depth < item.depth);
+        if excluded.contains(&item.id) {
+            continue;
+        }
+        if item.item_type == "part" || item.item_type == "chapter" {
+            context.push((
+                item.depth,
+                SceneContext {
+                    id: item.id,
+                    title: item.title,
+                    kind: item.item_type,
+                },
+            ));
+        } else if item.item_type == "scene" {
+            scenes.push(Scene {
+                id: item.id,
+                title: item.title,
+                depth: item.depth,
+                context: context.iter().map(|(_, parent)| parent.clone()).collect(),
+            });
+        }
+    }
+    Ok(scenes)
 }
 
 fn current(session: &Session) -> Result<&OpenBook, String> {
