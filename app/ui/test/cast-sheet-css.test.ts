@@ -1,6 +1,6 @@
 // app/ui/test/cast-sheet-css.test.ts
-// EVERY BLOCK THE CAST PANEL HIDES NEEDS ITS OWN `[hidden]` OVERRIDE (096
-// review). An element whose own rule sets `display` -- flex, grid, whatever
+// EVERY BLOCK THE CAST PANEL HIDES NEEDS ITS OWN `[hidden]` OVERRIDE.
+// An element whose own rule sets `display` -- flex, grid, whatever
 // -- keeps that display even while `hidden`, because an author rule beats
 // the UA stylesheet's `[hidden] { display: none }` regardless of
 // specificity. `#cast-new-row`'s `display: flex` shipped first without the

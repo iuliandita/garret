@@ -108,7 +108,7 @@ describe("gutterVerdict", () => {
   });
 
   test("it speaks when the margin clears and when it does not", () => {
-    // BOTH, never only the unhappy one. 042's rule: a surface that speaks only
+    // BOTH, never only the unhappy one. A surface that speaks only
     // when it disapproves leaves a writer unable to tell "checked and fine"
     // from "not checked", and the moment they need to tell those apart is the
     // moment before they send the book to a printer.

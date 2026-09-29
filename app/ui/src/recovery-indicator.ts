@@ -10,7 +10,7 @@
 // the failure this surface exists to prevent is a writer BELIEVING they are
 // protected when they are not. Nothing here may imply the third thing.
 //
-// THE THIRD THING EXISTS AS OF SLICE 016, and this span still does not say it.
+// THE THIRD THING EXISTS ELSEWHERE, and this span still does not say it.
 // `archive-indicator.ts` is its own span, immediately after this one, under its
 // own `archive.*` catalog namespace -- and the split is what keeps this file's
 // forward guard at full strength, since the design mandates the phrase "move
@@ -19,7 +19,7 @@
 // argument is that these are two promises about two files, and a later reader
 // who merges the indicators has deleted the argument rather than a duplication.
 //
-// A RESTORE EXISTS AS OF SLICE 015, and this surface still does not mention it.
+// A RESTORE EXISTS ELSEWHERE, and this surface still does not mention it.
 // That is a decision, not an oversight: the bar answers "is there a second copy
 // and how old is it", and where a writer ACTS on that answer is the project
 // panel, beside the library the restore adds a project to. Widening this span

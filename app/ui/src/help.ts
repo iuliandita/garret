@@ -41,7 +41,7 @@ export const SHORTCUTS: readonly ShortcutGroup[] = [
       // either already has it. It is in Writing rather than in a group of its
       // own because it acts on the prose the caret is in.
       { keys: t("help.keys.comment"), description: t("help.comment") },
-      // 098 (W5): with the caret inside a marked name, shows the same card a
+      // with the caret inside a marked name, shows the same card a
       // hover does -- the keyboard route to a surface a pointer would
       // otherwise be the only way to reach.
       { keys: t("help.keys.cast-card"), description: t("help.cast-card") },
@@ -53,7 +53,7 @@ export const SHORTCUTS: readonly ShortcutGroup[] = [
     rows: [
       { keys: t("help.keys.quick-open"), description: t("help.quick-open") },
       { keys: t("help.keys.find"), description: t("help.find") },
-      // 241: inspector.ts binds it on the document, beside no other chord.
+      // inspector.ts binds it on the document, beside no other chord.
       { keys: t("help.keys.inspector"), description: t("help.inspector") },
       // The same two keys the Outline group binds below, and the panel says so
       // rather than leaving a writer to discover the collision. Which one you
@@ -95,7 +95,7 @@ export const SHORTCUTS: readonly ShortcutGroup[] = [
         description: t("help.context-menu"),
       },
       { keys: t("help.keys.enter"), description: t("help.rename") },
-      // 085: structural undo, above the modifier guard the same way Alt+Arrow
+      // structural undo, above the modifier guard the same way Alt+Arrow
       // and Delete are, and named here rather than caught by the automatic
       // navigator scan the same way Shift+F10 is - that scan reads bare
       // `event.key` literals and this is a Ctrl chord.
@@ -110,7 +110,7 @@ export const SHORTCUTS: readonly ShortcutGroup[] = [
       { keys: t("help.keys.menu.outline"), description: t("help.menu.outline") },
       { keys: t("help.keys.menu.help"), description: t("help.menu.help") },
       // Reuses the File menu's own shortcut string rather than a second key
-      // naming the identical chord (099) -- application chrome, so it works
+      // naming the identical chord -- application chrome, so it works
       // with nothing open, exactly like Alt+<key> above it.
       { keys: t("menu.shortcut.library"), description: t("help.library") },
       { keys: t("help.keys.export"), description: t("help.export") },
@@ -155,7 +155,7 @@ export function createHelpPanel(deps: HelpPanelDeps): HelpPanel {
   // Tab should leave the panel, not cycle its rows, which are not interactive.
   panel.tabIndex = -1;
 
-  // The groups flow in two columns inside their own box (089). The columns
+  // The groups flow in two columns inside their own box. The columns
   // used to be on the panel itself, which also has a max-height, and a
   // multicol box with a constrained height does not scroll: it spawns a third
   // column sideways, and the last group (Menus) sat there, off-screen.

@@ -81,7 +81,7 @@ export const ICON_PATHS: Readonly<Record<IconName, readonly string[]>> = Object.
   menu: Object.freeze(["M4 12h16", "M4 6h16", "M4 18h16"]),
   // lucide `message-square`: one path.
   "message-square": Object.freeze(["M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"]),
-  // lucide `book-plus`: the cover, and a plus on it. 111's dictionary control.
+  // lucide `book-plus`: the cover, and a plus on it. Used by the dictionary control.
   "book-plus": Object.freeze([
     "M12 7v6",
     "M16 10H8",
@@ -89,7 +89,7 @@ export const ICON_PATHS: Readonly<Record<IconName, readonly string[]>> = Object.
   ]),
   // lucide `search`: a circle (cx 11, cy 11, r 8) as two arcs, and the handle.
   search: Object.freeze(["M19 11a8 8 0 1 1-16 0a8 8 0 0 1 16 0", "M21 21L16.7 16.7"]),
-  // 095: the world in the outline. `book-open`, `file-text`, `bookmark` and
+  // the world in the outline. `book-open`, `file-text`, `bookmark` and
   // `trash-2` are the reserved roots' and the notes' glyphs; `users` is the
   // header's cast button. All five straight from `lucide-react` 0.564.0, the
   // package and version THIRD-PARTY-NOTICES.md and this file's own header
@@ -125,8 +125,8 @@ export const ICON_PATHS: Readonly<Record<IconName, readonly string[]>> = Object.
     "M22 21v-2a4 4 0 0 0-3-3.87",
     "M13 7a4 4 0 1 1-8 0a4 4 0 0 1 8 0",
   ]),
-  // 096: the cast sheet's three kind glyphs and its empty picture square, all
-  // straight from `lucide-react`/`lucide-static` 0.564.0, same as 095's five.
+  // the cast sheet's three kind glyphs and its empty picture square, all
+  // straight from `lucide-react`/`lucide-static` 0.564.0, same as the other five.
   // lucide `user`: one path plus a circle (cx 12, cy 7, r 4) as two arcs, the
   // same transcription `search`'s and `users`' circles already use.
   user: Object.freeze([
@@ -157,7 +157,7 @@ export const ICON_PATHS: Readonly<Record<IconName, readonly string[]>> = Object.
     "M11 9a2 2 0 1 1-4 0a2 2 0 0 1 4 0",
     "M21 15L17.914 11.914A2 2 0 0 0 15.086 11.914L6 21",
   ]),
-  // 101: the timeline's navigator glyph. lucide `calendar-range`, straight
+  // the timeline's navigator glyph. lucide `calendar-range`, straight
   // from `lucide-react` 0.564.0, same as every icon above. The rect (18x18 at
   // (3,4), rx 2) is transcribed the same way `outline`'s and `image`'s
   // identical rects already are -- only `y` differs (4, not 3), so the arc
@@ -173,17 +173,17 @@ export const ICON_PATHS: Readonly<Record<IconName, readonly string[]>> = Object.
     "M7 14h.01",
     "M17 18h.01",
   ]),
-  // 236: the success notice's mark. lucide `circle-check`: a circle (cx 12,
+  // the success notice's mark. lucide `circle-check`: a circle (cx 12,
   // cy 12, r 10) as two arcs, `globe`'s own transcription, then upstream's
   // `m9 12 2 2 4-4` restated with an absolute moveto for the upper-case rule.
   "circle-check": Object.freeze([
     "M22 12a10 10 0 1 1-20 0a10 10 0 0 1 20 0",
     "M9 12l2 2l4-4",
   ]),
-  // 238: the panel shell's Close. lucide `x`: upstream's `M18 6 6 18` and
+  // the panel shell's Close. lucide `x`: upstream's `M18 6 6 18` and
   // `m6 6 12 12` restated with an explicit lineto and an absolute moveto.
   x: Object.freeze(["M18 6L6 18", "M6 6L18 18"]),
-  // 239: the help mark beside a figure whose definition left the page. lucide
+  // the help mark beside a figure whose definition left the page. lucide
   // `circle-help`: `circle-check`'s own circle, then upstream's two paths
   // exactly as written.
   "circle-help": Object.freeze([
@@ -191,7 +191,7 @@ export const ICON_PATHS: Readonly<Record<IconName, readonly string[]>> = Object.
     "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3",
     "M12 17h.01",
   ]),
-  // 242: the outline table's drag handle. lucide `grip-vertical`: six
+  // the outline table's drag handle. lucide `grip-vertical`: six
   // circles (r 1 at x 9 and 15, y 12, 5 and 19, upstream's order), each as
   // two arcs, the transcription `search`'s circle already uses.
   "grip-vertical": Object.freeze([
@@ -202,7 +202,7 @@ export const ICON_PATHS: Readonly<Record<IconName, readonly string[]>> = Object.
     "M16 5a1 1 0 1 1-2 0a1 1 0 0 1 2 0",
     "M16 19a1 1 0 1 1-2 0a1 1 0 0 1 2 0",
   ]),
-  // 243: an orphaned comment's mark, the reason its row stands out that
+  // an orphaned comment's mark, the reason its row stands out that
   // survives greyscale. lucide `unlink`: upstream's two relative `m` openers
   // restated with an absolute moveto and an explicit relative lineto for the
   // pair that followed, then its four `<line>`s as `underline`'s were.

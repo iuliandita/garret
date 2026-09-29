@@ -183,8 +183,8 @@ export function createAppearancesPanel(deps: AppearancesPanelDeps): AppearancesP
         box.className = "appears-box";
         box.value = member.id;
         box.checked = on.has(member.id);
-        // THE GLYPH, `aria-hidden` (097, W4, ticket 05's sibling on this
-        // panel's own list): the label's accessible name stays the plain
+        // THE GLYPH, `aria-hidden` on this
+        // panel's own list: the label's accessible name stays the plain
         // member name -- the text node below and nothing else --
         // `createIcon`'s own `aria-hidden` `<svg>` repeated on its wrapper
         // for the cast panel's own belt-and-braces reason.

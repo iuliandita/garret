@@ -8,7 +8,7 @@
 // that a latency gate would never notice.
 
 /** The one gap the list ever inserts: above the first reserved root's row
- *  (095's separator, fixed in the report after the initial ship drew the line
+ *  (the separator, fixed after the initial ship drew the line
  *  by clipping into the row's own 24px box instead). Fixed rather than a
  *  parameter, because there is exactly one thing in this list that is not a
  *  row and needs room -- "where the book stops" -- and a second one would need

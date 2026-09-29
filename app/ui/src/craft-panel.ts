@@ -86,7 +86,7 @@ export function createCraftPanel(deps: {
     }
     label.append(control); return control;
   };
-  // A SEGMENTED CONTROL, not buttons dressed as tabs (238), and Close is the
+  // A SEGMENTED CONTROL, not buttons dressed as tabs, and Close is the
   // shell's, never one of the views.
   const views = doc.createElement("div"); views.id = "craft-views"; views.className = "segmented";
   views.setAttribute("role", "group"); views.setAttribute("aria-label", t("craft.views"));
@@ -98,7 +98,7 @@ export function createCraftPanel(deps: {
   deps.container.append(panel);
 
   const search = field("craft.search"); search.id = "craft-search";
-  // The limits are the heading's help (239), not a paragraph of MiB in front
+  // The limits are the heading's help, not a paragraph of MiB in front
   // of the list.
   const resourcesHead = doc.createElement("h3"); resourcesHead.textContent = t("craft.resources");
   resourcesHead.append(createHelpTip({ label: t("craft.resources"), definition: t("craft.resource-limits"), id: "craft-help-resources" }).anchor);
@@ -138,11 +138,11 @@ export function createCraftPanel(deps: {
   const watchMode = select("craft.watch-mode", [["literal", "craft.watch.literal"], ["folded", "craft.watch.folded"]]);
   const watchList = doc.createElement("div"); watchList.id = "craft-watchlist";
   // What the export does to a cell, beside the two exports rather than in a
-  // paragraph under every report (239).
+  // paragraph under every report.
   const exports = doc.createElement("div"); exports.className = "craft-exports";
   const addWatch = button("craft.watch-add", () => { void addWatchTerm(); });
   const run = button("craft.run", () => { void runReport(); }); run.id = "craft-run-report";
-  // The reports view's one primary (238): the reason the view exists.
+  // The reports view's one primary: the reason the view exists.
   run.dataset.weight = "primary";
   const cancel = button("craft.cancel", () => { ++runGeneration; run.disabled = false; status.textContent = t("craft.canceled"); });
   const json = button("craft.export-json", () => { void exportReport("json"); });
@@ -364,7 +364,7 @@ export function createCraftPanel(deps: {
     });
     if (report.coverage.truncated_by !== null) summary.append(" ", t(`craft.truncated.${report.coverage.truncated_by}`));
     reportBody.append(summary);
-    // THE FIGURES, EACH WITH ITS RULE ONE QUESTION MARK AWAY (239): the six
+    // THE FIGURES, EACH WITH ITS RULE ONE QUESTION MARK AWAY: the six
     // definitions used to run together as one paragraph under the summary.
     const metrics = doc.createElement("dl"); metrics.className = "craft-metrics";
     const metric = (key: string, value: string, definition?: string): void => {

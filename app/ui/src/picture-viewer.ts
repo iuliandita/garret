@@ -14,7 +14,7 @@
 // IT NEVER HOLDS AN ORIGINAL, and neither does the process it runs in. What
 // arrives is a `data:` URI of a picture the HOST has already bounded at
 // `pictures::FULL_MAX` -- 1600 px on its long side, a few megabytes rather than
-// the ~48 MB a 4000x3000 photograph decodes to. That bound is 038's founding
+// the ~48 MB a 4000x3000 photograph decodes to. That bound is the founding
 // memory rule and this surface is exactly where it would have been given up.
 //
 // THE BYTES ARE DROPPED ON CLOSE. The picture is the biggest thing this page

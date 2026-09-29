@@ -182,7 +182,7 @@ test("a page-busy save keeps the prepared export for retry", async () => {
 });
 
 test("a completed save or apply is success news, never the problem channel", async () => {
-  // 223's capture showed "Returned review applied." painted red: both outcomes
+  // A capture showed "Returned review applied." painted red: both outcomes
   // went through onNotice, which the page raises in the problem tone.
   const r = rig(); await r.panel.setTarget("scene", "Arrival", []);
   r.click("#review-transport button:first-of-type"); await tick();

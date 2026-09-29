@@ -151,7 +151,7 @@ describe("opening and closing", () => {
   });
 
   test("a click outside leaves it open, as one inside does", async () => {
-    // 241: the inspector. Clicking the prose beside it is the point, so an
+    // the inspector. Clicking the prose beside it is the point, so an
     // outside click leaves it open, exactly as it leaves the preview rail.
     const outside = document.createElement("button");
     document.body.append(outside);
@@ -417,7 +417,7 @@ describe("teardown", () => {
     }) as typeof document.removeEventListener;
     try {
       const rig = mount();
-      // 241: no outside-click closer on the inspector.
+      // no outside-click closer on the inspector.
       expect(added).not.toContain("click");
       rig.panel.destroy();
       rig.container.remove();
@@ -685,7 +685,7 @@ describe("the saved-word controls", () => {
   });
 });
 
-describe("the two statistics files are the footer's actions (240)", () => {
+describe("the two statistics files are the footer's actions", () => {
   test("each button asks for its own format, and none is drawn without a host", () => {
     const asked: string[] = [];
     const rig = mount({ exportFile: (kind) => asked.push(kind) });

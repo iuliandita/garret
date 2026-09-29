@@ -244,7 +244,7 @@ describe("destroy", () => {
   });
 });
 
-describe("separators (240)", () => {
+describe("separators", () => {
   test("a separator is drawn between groups and is never an item", () => {
     const panel = mount();
     const specs: MenuItemSpec[] = [

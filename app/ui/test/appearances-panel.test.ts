@@ -152,7 +152,7 @@ describe("opening against one row", () => {
   });
 
   test("each row's label carries the kind glyph, and the name is still the whole accessible text", async () => {
-    // 097, W4, ticket 05's sibling: the box gains a glyph but the label's own
+    // the box gains a glyph but the label's own
     // text -- what a screen reader reads -- is unchanged, the same rule the
     // cast panel's own entries state.
     const r = rig();
@@ -343,7 +343,7 @@ describe("dismissal", () => {
   });
 
   test("a click outside leaves it open and does NOT move focus", async () => {
-    // 241: the inspector. Clicking the prose beside it is the point, so an
+    // the inspector. Clicking the prose beside it is the point, so an
     // outside click leaves it open, exactly as it leaves the preview rail.
     const r = rig();
     const outside = document.createElement("button");

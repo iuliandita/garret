@@ -37,7 +37,7 @@ export interface ReviewTransportDeps {
   isLocked?(): boolean;
   onNotice(message: string): void;
   /** A completed save or apply. Its own channel: through `onNotice` it was
-   *  painted in the problem tone, red, as "Returned review applied." (223). */
+   *  painted in the problem tone, red, as "Returned review applied.". */
   onSuccess(message: string): void;
   onStateChange(): void;
   onDone(): void;

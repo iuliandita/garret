@@ -1,7 +1,7 @@
 // app/ui/src/menu-bar.ts
 // The application menu: one button, a list of four titles, one dropdown.
 //
-// ONE ICON BUTTON ON THE HEADER'S RIGHT END, NOT FOUR WORDS ACROSS IT (068).
+// ONE ICON BUTTON ON THE HEADER'S RIGHT END, NOT FOUR WORDS ACROSS IT.
 // #app-menu opens #app-menu-list, a popover holding the File, Edit, Outline and
 // Help titles as rows; a row opens #menu-panel beside itself. Three states:
 // closed; the list alone; the list with one row expanded. Alt+<key> goes
@@ -42,7 +42,7 @@ export interface MenuSpec {
   id: string;
   label: string;
   /** Alt+<key> opens this menu. One letter from the catalog (`menu.<x>.key`,
-   *  088: Datei is Alt+D), matched against `event.key` with both sides
+   * Datei is Alt+D), matched against `event.key` with both sides
    *  lowercased, so it survives a shifted or capsed press. `event.key` is
    *  the layout's letter, not the physical key: on a non-Latin layout no
    *  menu answers a chord (pre-088, recorded). */
@@ -77,7 +77,7 @@ export interface MenuBarDeps {
   exportProject: () => void;
   /** Export through the operating system's own save dialog. */
   exportAs: () => void;
-  /** The DOCX editor handoff (092), through the same OS save dialog. A
+  /** The DOCX editor handoff, through the same OS save dialog. A
    *  format of its own rather than a third argument to `exportAs`: the two
    *  menu items differ in which renderer they ask for, exactly as the
    *  statistics panel's CSV and JSON buttons differ in which converter they
@@ -93,9 +93,9 @@ export interface MenuBarDeps {
   /** Import through the operating system's own open dialog. Creates a NEW
    *  project and never merges into the open one. */
   importProject: () => void;
-  /** File > Library... (099): the switcher on the list, exactly as
+  /** File > Library...: the switcher on the list, exactly as
    *  `openProjects("list")` does. A separate dep rather than reusing
-   *  `openProjects` directly: 100 gives this its own screen, and the
+   *  `openProjects` directly: this gives Library its own screen, and the
    *  item must already be routing through its own name before that lands. */
   openLibrary: () => void;
   openPreferences: () => void;
@@ -119,7 +119,7 @@ export interface MenuBarDeps {
   /** The same panel, with the caret in the note field and the selected passage
    *  quoted above it. Two items for one surface, like Find and Replace. */
   addComment: () => void;
-  /** Add the word under the caret to this book's own dictionary (111). The
+  /** Add the word under the caret to this book's own dictionary. The
    *  route that does not depend on WebKit's context menu, whose Learn
    *  Spelling writes a machine-global list this application never reads. */
   addToDictionary: () => void;
@@ -132,7 +132,7 @@ export interface MenuBarDeps {
   canNavForward: () => boolean;
   undo: () => void;
   redo: () => void;
-  /** Structural undo/redo (085): the outline's own stack, distinct from Edit's
+  /** Structural undo/redo: the outline's own stack, distinct from Edit's
    *  prose undo above. Labels are read at PAINT time, like `canNavBack` -
    *  null means nothing to act on. */
   outlineUndo: () => void;
@@ -234,7 +234,7 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
       label: t("menu.file"),
       key: t("menu.file.key"),
       items: [
-        // FIVE GROUPS (240): the book, publishing it, checking it, its
+        // FIVE GROUPS: the book, publishing it, checking it, its
         // copies, the application. A separator is drawn before the first
         // item of each group and is not an item: the arrows skip it and
         // menu-drive counts only ids, so no index moved for it. No group is
@@ -263,21 +263,21 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
         // per-project group already calls itself out as the exception.
         { id: "menu-book-design", separatorBefore: true, opensDialog: true, label: () => t("menu.book-design"), run: deps.openBookDesign },
         // BESIDE Book design and not inside it, and the reason is that panel's
-        // own: 040 recorded that it holds nothing that can grow and therefore
+        // own: it holds nothing that can grow and therefore
         // needs no scroll, and two cover previews are tall enough to push its
         // margin fields under the fold of a default window. Two items, one
         // subject -- New project… and Open project…'s shape.
         //
-        // ABOVE the exports for Book design's reason: 043 and 044 are what will
-        // put a cover on a book, and this is what they will obey.
+        // ABOVE the exports for Book design's reason: the covers panel and the
+        // proof preview are what will put a cover on a book, and this is what they will obey.
         { id: "menu-covers", opensDialog: true, label: () => t("menu.covers"), run: deps.openCovers },
-        // Ctrl+E (240): the one export a writer repeats, so the one given a
+        // Ctrl+E: the one export a writer repeats, so the one given a
         // chord. Bound by the export bar, never here (menu-panel's rule).
         { id: "menu-export", label: () => t("menu.export"), shortcut: t("menu.shortcut.export"), run: deps.exportProject },
         { id: "menu-export-as", label: () => t("menu.export-as"), run: deps.exportAs },
         // The third export format stays with the other export commands.
         { id: "menu-export-docx", label: () => t("menu.export-docx"), run: () => deps.exportDocx() },
-        // The statistics files left this menu in 240: they are the Statistics
+        // The statistics files left this menu: they are the Statistics
         // panel's footer now, beside the figures they write out.
         // NOT `opensDialog`. That flag says the page is about to hand focus to
         // a panel of its own; a rail is not a panel, does not dismiss on an
@@ -285,10 +285,10 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
         // take focus on open so Escape is heard, which is the panels' rule and
         // is the one thing the flag is not about.
         { id: "menu-epub-preview", separatorBefore: true, label: () => t("menu.epub-preview"), run: deps.openEpubPreview },
-        // 044. It opens the SAME rail in the other format -- not a second
+        // It opens the SAME rail in the other format -- not a second
         // surface.
         { id: "menu-pdf-preview", label: () => t("menu.pdf-preview"), run: deps.openPdfPreview },
-        // 053. Not beside Book design, where the subject plainly belongs: the
+        // Not beside Book design, where the subject plainly belongs: the
         // whole publishing block stays together.
         { id: "menu-identities", opensDialog: true, label: () => t("menu.identities"), run: deps.openIdentities },
         // Beside the exports because it is the same kind of thing - a command
@@ -307,7 +307,7 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
         // because those act on the OPEN book and this does not. In THIS slice it
         // opens the switcher on the list, the same target `menu-project-new` and
         // `menu-project-open` already reach -- the screen that replaces that
-        // target is 100's.
+        // target is the library's.
         {
           id: "menu-library",
           separatorBefore: true,
@@ -471,7 +471,7 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
           id: "menu-remove",
           // Evaluated at paint time, exactly like the outline bar's `offering`.
           label: () => (deps.selectedTrashed() ? t("menu.restore") : t("menu.delete")),
-          // NO Delete hint (240, deliberately). The key deletes a row only while
+          // NO Delete hint, deliberately. The key deletes a row only while
           // the outline has focus; with the caret in the prose, where the menu
           // is usually opened from, it deletes a character. A hint here would
           // teach the one press that does something else.
@@ -574,7 +574,7 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
         // Appended after the existing outline actions: `menu-drive.ts` reads
         // item indices out of this table, so existing positions stay fixed.
         //
-        // 085's own stack, distinct from Edit's Undo/Redo above (which stay
+        // The outline's own undo stack, distinct from Edit's Undo/Redo above (which stay
         // the editor's, over prose): both labels say when they have nothing
         // to act on, exactly like Back and Forward, and for the same reason -
         // an item that reads "Undo" and does nothing when pressed reads as a
@@ -639,7 +639,7 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
     },
   });
 
-  // ONE BUTTON, ONE LIST, ONE DROPDOWN (068). The four titles are rows in
+  // ONE BUTTON, ONE LIST, ONE DROPDOWN. The four titles are rows in
   // #app-menu-list rather than words on the header; the dropdown paints
   // beside the open row. Three states: closed; the list alone; the list
   // with one title expanded. Alt+<key> goes straight to the third, which is
@@ -715,7 +715,7 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
     // title's offsetTop is the row's top in the list's own box.
     const rowTop = title?.offsetTop ?? 0;
     panel.element.style.top = `${rowTop}px`;
-    // 087: the Outline menu is 22 rows and left the window at the 640x480
+    // the Outline menu is 22 rows and left the window at the 640x480
     // floor. The room is measured from THIS row, not the viewport, because
     // the dropdown hangs off its title and a lower title has less of it; the
     // stylesheet's overflow-y does the scrolling. 120px keeps a menu readable
@@ -784,7 +784,7 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
       deps.lockPrivacy?.();
       return;
     }
-    // Ctrl+Shift+L (099), application chrome exactly like the Alt+<key> branch
+    // Ctrl+Shift+L, application chrome exactly like the Alt+<key> branch
     // below: this listener is installed once and outlives every project
     // switch, and `deps.openLibrary` must work with nothing mounted -- the
     // whole reason the chord lives here rather than inside a per-project

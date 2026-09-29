@@ -180,7 +180,7 @@ describe("a control weight changes no geometry", () => {
   test("primary and danger answer :hover themselves", () => {
     // The shared :hover repaints the background to a tone and changes no
     // colour, which over the filled primary leaves --bg text on a pale tint.
-    // Danger is TEXT on the default surface since 237 (calm-panels record),
+    // Danger is TEXT on the default surface (calm-panels record),
     // never a filled slab, and its hover keeps that ink so an armed control
     // does not light up. The quiet tier deliberately carries no hover, because
     // being revealed by the shared hover is the point of it.
@@ -206,7 +206,7 @@ describe("a control weight changes no geometry", () => {
   });
 
   test("the retired format group has no rules left", () => {
-    // format-bar.ts and #format-group are gone since 069: Bold, Italic and
+    // format-bar.ts and #format-group are gone: Bold, Italic and
     // Underline are three of the bubble's five buttons now (#format-bubble),
     // which is a different selector entirely.
     expect(css).not.toContain("#format-group");
@@ -283,7 +283,7 @@ describe("a bar anchor costs the strip nothing", () => {
   // #project-bar is a flex row with `gap: 12px`, so even a bare EMPTY span is a
   // flex item and still takes 12px of the strip - for an element that renders
   // nothing. `display: contents` takes it out of the box tree entirely. The
-  // recorded 034 defect is a bar control that got NARROWER and made the strip
+  // recorded defect is a bar control that got NARROWER and made the strip
   // wrap at switch-cli's 900px window, moving every navigator row; a stray 12px
   // is the same failure with a different cause, and no unit test of the page
   // can see either.

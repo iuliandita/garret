@@ -1,7 +1,7 @@
 // app/ui/test/prefs-panel-overflow.test.ts
-// 098: an eleventh group (Cast names) pushed #prefs-panel's own content past
+// an eleventh group (Cast names) pushed #prefs-panel's own content past
 // the bottom of a 640x480 window with nothing to stop it -- the same defect
-// `#menu-panel` (087) and `#help-panel` (089) shipped and were fixed for.
+// `#menu-panel` and `#help-panel` shipped and were fixed for.
 // happy-dom does no layout, so this guards the rule at the source rather
 // than through a rendered height, `prefs-legend-css.test.ts`'s own reason.
 import { describe, expect, test } from "bun:test";

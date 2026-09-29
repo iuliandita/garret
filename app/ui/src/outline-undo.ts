@@ -1,5 +1,5 @@
 // app/ui/src/outline-undo.ts
-// The pure half of structural undo (085): a stack of inverse PLANS, and the
+// The pure half of structural undo: a stack of inverse PLANS, and the
 // arithmetic that turns a step into its own reverse against a walk.
 //
 // AN ENTRY IS AN INVERSE PLAN, NOT A SNAPSHOT. `outline.ts` builds one from the

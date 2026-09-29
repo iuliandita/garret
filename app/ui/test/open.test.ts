@@ -78,9 +78,9 @@ describe("createDocumentOpener", () => {
     expect(r.log).toEqual(["switchTo:matter-1", "markOpen:matter-1", "focusEditor"]);
   });
 
-  test("a timeline opens exactly as a scene does (102)", async () => {
-    // 101 special-cased this type here, before session.ts had anywhere to
-    // send one; 102's session.ts learned a second document kind
+  test("a timeline opens exactly as a scene does", async () => {
+    // This type was special-cased here, before session.ts had anywhere to
+    // send one; session.ts later learned a second document kind
     // (isTimelineDoc/onTimelineDoc) and this unit no longer treats a
     // timeline as different from any other openable type at all.
     const r = rig();

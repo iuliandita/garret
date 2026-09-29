@@ -255,7 +255,7 @@ const SHELL_IDS = [
   // retirement slice, so index.html carries no anchor for it and project.ts
   // looks none up. #prefs-controls is in the page but not here - mountProject
   // does not read it; the preferences panel is main.ts's. No #format-controls
-  // either, since 069: the bubble toolbar mounts on document.body, which
+  // either: the bubble toolbar mounts on document.body, which
   // mountProject reaches directly rather than through a shell anchor.
   "find-controls",
   "quick-open-controls",
@@ -980,7 +980,7 @@ describe("mountProject store path", () => {
       // Inside finally, not the last statement: a failing assertion above
       // must not skip teardown, which is the only thing that removes the
       // fade's document listeners -- a leaked fade broke a later test's own
-      // assertions this way once already (071 fix-up review item 5).
+      // assertions this way once already.
       mounted?.destroy();
       document.documentElement.removeAttribute("data-focus");
     }
@@ -1238,7 +1238,7 @@ describe("mountProject outline editing", () => {
     mounted.destroy();
   });
 
-  test("Ctrl+Z on the navigator undoes the last outline change (085)", async () => {
+  test("Ctrl+Z on the navigator undoes the last outline change", async () => {
     // The same wiring shape as Alt+ArrowDown above, and driven the same way:
     // a real keydown on #nav, not handleKey, and the outline unit's own undo
     // stack decides what happens - the page only routes the chord to it.
@@ -1283,7 +1283,7 @@ describe("mountProject outline editing", () => {
     const h = host({ walks: [walk(), grownWalk()] });
     const mounted = await mountProject(deps({ invoke: h.invoke }));
     const before = mounted.navigator.rows().length;
-    // .ProseMirror, not firstElementChild: since 070 #scene-heading is the
+    // .ProseMirror, not firstElementChild: #scene-heading is the
     // editor's first child, so the identity that proves "no remount" is the
     // mount node itself.
     const editorNode = document.querySelector("#editor .ProseMirror");
@@ -2132,7 +2132,7 @@ describe("the project bar's strip after the retirement slice", () => {
     expect(bar).toContain('id="find-controls"');
     expect(bar).toContain('id="prefs-controls"');
     expect(bar).not.toContain("export-controls");
-    // The one static button is the scene's name (240), which opens Go to:
+    // The one static button is the scene's name, which opens Go to:
     // what the writer is looking at, not a retired toggle come back.
     const scene = '<button id="scene-name" type="button" hidden></button>';
     expect(bar).toContain(scene);
@@ -2140,7 +2140,7 @@ describe("the project bar's strip after the retirement slice", () => {
   });
 });
 
-describe("the bubble toolbar (069)", () => {
+describe("the bubble toolbar", () => {
   test("mounts on the body, hidden, and is gone after destroy()", async () => {
     shell();
     const h = host();
@@ -2917,7 +2917,7 @@ describe("comments reach the editor and the flush", () => {
     expect(h.of("doc_restore").length).toBe(1);
     const asked = h.of("comment_list").slice(before).map((c) => c.args?.itemId);
     expect(asked).toContain("scene-0");
-    // 241: History is the inspector and shares the column, so opening it
+    // History is the inspector and shares the column, so opening it
     // closed the reference rail the restore would otherwise have marked stale.
     expect(document.querySelector<HTMLElement>("#reference-rail")?.hidden).toBe(true);
 
@@ -2925,7 +2925,7 @@ describe("comments reach the editor and the flush", () => {
   });
 
   test("ACCEPTING A CHANGE FROM THE READABLE FOLDER RELOADS THE OPEN SCENE'S NOTES", async () => {
-    // THE FOURTH `replaceDoc` PATH. Plan 001's write-back ends "THERE ARE NOW
+    // THE FOURTH `replaceDoc` PATH. An earlier plan's write-back ends "THERE ARE NOW
     // THREE `replaceDoc` PATHS. A fourth is where this comes back", and this is
     // it: the host has rewritten a body and collapsed that document's comment
     // anchors in the same transaction, so the underlines the plugin is holding
@@ -3283,7 +3283,7 @@ describe("comments reach the editor and the flush", () => {
     expect(h.of("snapshot_restore").length).toBe(1);
     const asked = h.of("comment_list").slice(before).map((c) => c.args?.itemId);
     expect(asked).toContain("scene-0");
-    // 241: History is the inspector and shares the column, so opening it
+    // History is the inspector and shares the column, so opening it
     // closed the reference rail the restore would otherwise have marked stale.
     expect(document.querySelector<HTMLElement>("#reference-rail")?.hidden).toBe(true);
 
@@ -3538,7 +3538,7 @@ describe("mountProject recovery", () => {
   test("the status dot is neutral, not amber, while copies are only not set up", async () => {
     // The fixture's default: recovery answers protected, and archive_status and
     // mirror_status both reject, which each indicator paints as its negative
-    // ("none", "off"). 236 amends 067: not set up is neutral, amber is failed,
+    // ("none", "off"). Not set up is neutral, amber is failed,
     // stale or paused.
     shell();
     const h = host();
@@ -3562,10 +3562,10 @@ describe("mountProject recovery", () => {
   });
 });
 
-describe("cast marks in the prose (098, W5)", () => {
+describe("cast marks in the prose", () => {
   const CAST = [{ id: "m1", kind: "character", name: "Arrival", summary: "", fields: [], aliases: [] }];
 
-  test("MUTATION TARGET (105): an alias marks the prose too, not only the name", async () => {
+  test("MUTATION TARGET: an alias marks the prose too, not only the name", async () => {
     // A `namesForCast` that dropped `m.aliases` passes every other test in
     // this file, because none of the other fixtures carry one.
     shell();
@@ -3642,7 +3642,7 @@ describe("cast marks in the prose (098, W5)", () => {
   });
 });
 
-describe("mountProject: a timeline opens in the editor pane (102)", () => {
+describe("mountProject: a timeline opens in the editor pane", () => {
   // ITS OWN ITEMS, not `walk()` widened: a bible root and a timeline appended
   // after the manuscript so the boot document is still the first scene, per
   // `walk()`'s own comment.
@@ -3712,7 +3712,7 @@ describe("mountProject: a timeline opens in the editor pane (102)", () => {
     row.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     await settle();
 
-    // THE SWITCH REALLY HAPPENED (unlike 101's placeholder-only arm): the
+    // THE SWITCH REALLY HAPPENED (unlike an earlier placeholder-only arm): the
     // session names the timeline, the header names it, and its one lane is
     // in the DOM.
     expect(mounted.session?.activeDocId()).toBe("timeline-0");
@@ -3780,7 +3780,7 @@ describe("mountProject: a timeline opens in the editor pane (102)", () => {
     await settle();
 
     expect(mounted.session?.activeDocId()).toBe("scene-0");
-    // A BOOLEAN, NOT THE RAW NODE (103's mutant-6 hang, chased and fixed
+    // A BOOLEAN, NOT THE RAW NODE (a mutant hang, chased and fixed
     // here): with the mount-teardown lines removed from project.ts's wrapped
     // replaceDoc, this assertion genuinely FAILS -- `#timeline-view` is still
     // in the DOM -- and asserting `toBeNull()` against the live element (a

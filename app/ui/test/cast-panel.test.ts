@@ -39,7 +39,7 @@ interface Rig {
   dones: string[];
   dismissals: number;
   fail: { list: boolean; create: boolean; save: boolean; remove: boolean };
-  /** Thrown by `save` instead of the generic "could not save" (105): a BARE
+  /** Thrown by `save` instead of the generic "could not save": a BARE
    *  STRING, matching what a real Tauri command rejection actually is (the
    *  exact `Err(String)` the host returned, never wrapped in a JS `Error`) --
    *  lets a test fake `cast_set_wire_error`'s JSON without a real host. */
@@ -362,7 +362,7 @@ describe("the cast panel", () => {
     // and then having to find it in the list is the shape of a form nobody
     // finishes.
     expect(el("cast-detail").hidden).toBe(false);
-    // 096: Add opens in Read like any other selection, so reaching the form
+    // Add opens in Read like any other selection, so reaching the form
     // to check what it holds means pressing Edit first -- a #cast-edit that
     // failed to reveal the form would leave the assertion below unreachable.
     el<HTMLButtonElement>("cast-edit").click();
@@ -401,7 +401,7 @@ describe("the cast panel", () => {
     await r.panel.open();
 
     entryNamed("Ilse").click();
-    // 096: selecting opens Read; the form these lines check is Edit's, so a
+    // selecting opens Read; the form these lines check is Edit's, so a
     // #cast-edit that failed to reveal it would leave every line below
     // reading whatever the elements happened to hold beforehand.
     el<HTMLButtonElement>("cast-edit").click();
@@ -425,7 +425,7 @@ describe("the cast panel", () => {
     const r = rig([member({ id: "a", name: "Ilse" })]);
     await r.panel.open();
     entryNamed("Ilse").click();
-    // 096: Edit first -- see the comment on "selecting an entry fills the
+    // Edit first -- see the comment on "selecting an entry fills the
     // form...".
     el<HTMLButtonElement>("cast-edit").click();
 
@@ -464,7 +464,7 @@ describe("the cast panel", () => {
     const r = rig([member({ id: "a", name: "Ilse" })]);
     await r.panel.open();
     entryNamed("Ilse").click();
-    // 096: Edit first -- see the comment on "selecting an entry fills the
+    // Edit first -- see the comment on "selecting an entry fills the
     // form...".
     el<HTMLButtonElement>("cast-edit").click();
     type(fieldRows()[0]!.label, "accent");
@@ -486,7 +486,7 @@ describe("the cast panel", () => {
     ]);
     await r.panel.open();
     entryNamed("Ilse").click();
-    // 096: Edit first -- see the comment on "selecting an entry fills the
+    // Edit first -- see the comment on "selecting an entry fills the
     // form...".
     el<HTMLButtonElement>("cast-edit").click();
     type(fieldRows()[0]!.label, "");
@@ -509,7 +509,7 @@ describe("the cast panel", () => {
     ]);
     await r.panel.open();
     entryNamed("Ilse").click();
-    // 096: Edit first -- see the comment on "selecting an entry fills the
+    // Edit first -- see the comment on "selecting an entry fills the
     // form...".
     el<HTMLButtonElement>("cast-edit").click();
     type(el<HTMLTextAreaElement>("cast-summary"), "half a thought");
@@ -552,7 +552,7 @@ describe("the cast panel", () => {
     r.trims = true;
     await r.panel.open();
     entryNamed("Ilse").click();
-    // 096: Edit first -- see the comment on "selecting an entry fills the
+    // Edit first -- see the comment on "selecting an entry fills the
     // form...".
     el<HTMLButtonElement>("cast-edit").click();
     type(el<HTMLTextAreaElement>("cast-summary"), "   saved text   ");
@@ -589,7 +589,7 @@ describe("the cast panel", () => {
     r.holdSave = hold;
     await r.panel.open();
     entryNamed("Ilse").click();
-    // 096: Edit first -- see the comment on "selecting an entry fills the
+    // Edit first -- see the comment on "selecting an entry fills the
     // form...".
     el<HTMLButtonElement>("cast-edit").click();
     type(el<HTMLTextAreaElement>("cast-summary"), "   what was typed   ");
@@ -612,7 +612,7 @@ describe("the cast panel", () => {
     const r = rig([member({ id: "a", name: "Ilse" })]);
     await r.panel.open();
     entryNamed("Ilse").click();
-    // 096: Edit first -- Delete lives in the form, and a #cast-edit that
+    // Edit first -- Delete lives in the form, and a #cast-edit that
     // failed to reveal it would leave this whole test acting on a control a
     // writer could never reach.
     el<HTMLButtonElement>("cast-edit").click();
@@ -681,7 +681,7 @@ describe("the cast panel", () => {
     ]);
     await r.panel.open();
     entryNamed("Ilse").click();
-    // 096: Edit first -- see the comment on "Delete ARMS...".
+    // Edit first -- see the comment on "Delete ARMS...".
     el<HTMLButtonElement>("cast-edit").click();
     const remove = el<HTMLButtonElement>("cast-remove");
     const resting = remove.textContent;
@@ -699,7 +699,7 @@ describe("the cast panel", () => {
     const r = rig([member({ id: "a", name: "Ilse" })]);
     await r.panel.open();
     entryNamed("Ilse").click();
-    // 096: Edit first -- see the comment on "selecting an entry fills the
+    // Edit first -- see the comment on "selecting an entry fills the
     // form...".
     el<HTMLButtonElement>("cast-edit").click();
     type(el<HTMLTextAreaElement>("cast-summary"), "paragraphs the writer typed");
@@ -714,7 +714,7 @@ describe("the cast panel", () => {
   });
 
   test("Escape closes it and hands focus back; an outside click leaves it open", async () => {
-    // 241: the inspector. Clicking the prose beside it is the point.
+    // the inspector. Clicking the prose beside it is the point.
     const r = rig([member()]);
     await r.panel.open();
 
@@ -762,7 +762,7 @@ describe("the cast panel", () => {
       await r.panel.open();
       r.panel.destroy();
       expect(added.slice().sort()).toEqual(removed.slice().sort());
-      // 241: no outside-click closer on the inspector.
+      // no outside-click closer on the inspector.
       expect(added).not.toContain("click");
     } finally {
       document.addEventListener = realAdd;
@@ -829,7 +829,7 @@ describe("the cast panel", () => {
   });
 
   test("with no members, cast.empty points at the add row above it (control)", async () => {
-    // The one sentence 076 found already correct: `cast-empty` lives in
+    // The one sentence already correct: `cast-empty` lives in
     // `entries`, which is appended AFTER `newRow`, so "above" is the right
     // word here. This is the control that must already pass.
     const r = rig([]);
@@ -876,7 +876,7 @@ describe("the cast panel's picture", () => {
     await r.panel.open();
     entryNamed("Ilse").click();
     await settle();
-    // 096: Edit first -- the picture controls this test drives live in the
+    // Edit first -- the picture controls this test drives live in the
     // form, and a #cast-edit that failed to reveal it would leave them
     // unreachable.
     el<HTMLButtonElement>("cast-edit").click();
@@ -896,7 +896,7 @@ describe("the cast panel's picture", () => {
     await r.panel.open();
     entryNamed("Ilse").click();
     await settle();
-    // 096: Edit first -- the picture controls this test drives live in the
+    // Edit first -- the picture controls this test drives live in the
     // form, and a #cast-edit that failed to reveal it would leave them
     // unreachable.
     el<HTMLButtonElement>("cast-edit").click();
@@ -919,7 +919,7 @@ describe("the cast panel's picture", () => {
     await r.panel.open();
     entryNamed("Ilse").click();
     await settle();
-    // 096: Edit first -- the picture controls this test drives live in the
+    // Edit first -- the picture controls this test drives live in the
     // form, and a #cast-edit that failed to reveal it would leave them
     // unreachable.
     el<HTMLButtonElement>("cast-edit").click();
@@ -940,7 +940,7 @@ describe("the cast panel's picture", () => {
     await r.panel.open();
     entryNamed("Ilse").click();
     await settle();
-    // 096: Edit first -- the picture controls this test drives live in the
+    // Edit first -- the picture controls this test drives live in the
     // form, and a #cast-edit that failed to reveal it would leave them
     // unreachable.
     el<HTMLButtonElement>("cast-edit").click();
@@ -954,7 +954,7 @@ describe("the cast panel's picture", () => {
     await r.panel.open();
     entryNamed("Ilse").click();
     await settle();
-    // 096: Edit first -- the picture controls this test drives live in the
+    // Edit first -- the picture controls this test drives live in the
     // form, and a #cast-edit that failed to reveal it would leave them
     // unreachable.
     el<HTMLButtonElement>("cast-edit").click();
@@ -977,7 +977,7 @@ describe("the cast panel's picture", () => {
     await r.panel.open();
     entryNamed("Ilse").click();
     await settle();
-    // 096: Edit first -- the picture controls this test drives live in the
+    // Edit first -- the picture controls this test drives live in the
     // form, and a #cast-edit that failed to reveal it would leave them
     // unreachable.
     el<HTMLButtonElement>("cast-edit").click();
@@ -999,7 +999,7 @@ describe("the cast panel's picture", () => {
     await r.panel.open();
     entryNamed("Ilse").click();
     await settle();
-    // 096: Edit first -- the picture controls this test drives live in the
+    // Edit first -- the picture controls this test drives live in the
     // form, and a #cast-edit that failed to reveal it would leave them
     // unreachable.
     el<HTMLButtonElement>("cast-edit").click();
@@ -1018,7 +1018,7 @@ describe("the cast panel's picture", () => {
     await r.panel.open();
     entryNamed("Ilse").click();
     await settle();
-    // 096: Edit first -- the picture controls this test drives live in the
+    // Edit first -- the picture controls this test drives live in the
     // form, and a #cast-edit that failed to reveal it would leave them
     // unreachable.
     el<HTMLButtonElement>("cast-edit").click();
@@ -1058,7 +1058,7 @@ describe("the cast panel's picture", () => {
     await r.panel.open();
 
     entryNamed("Ilse").click();
-    // 096: Edit first -- the picture controls this test drives live in the
+    // Edit first -- the picture controls this test drives live in the
     // form, and a #cast-edit that failed to reveal it would leave them
     // unreachable.
     el<HTMLButtonElement>("cast-edit").click();
@@ -1084,7 +1084,7 @@ describe("the cast panel's picture", () => {
     await r.panel.open();
     entryNamed("Ilse").click();
     await settle();
-    // 096: Edit first -- the picture controls this test drives live in the
+    // Edit first -- the picture controls this test drives live in the
     // form, and a #cast-edit that failed to reveal it would leave them
     // unreachable.
     el<HTMLButtonElement>("cast-edit").click();
@@ -1110,7 +1110,7 @@ describe("the cast panel's picture", () => {
     await r.panel.open();
     entryNamed("Ilse").click();
     await settle();
-    // 096: Edit first -- the picture controls this test drives live in the
+    // Edit first -- the picture controls this test drives live in the
     // form, and a #cast-edit that failed to reveal it would leave them
     // unreachable.
     el<HTMLButtonElement>("cast-edit").click();
@@ -1124,10 +1124,10 @@ describe("the cast panel's picture", () => {
     expect(r.removes).toEqual([]);
   });
   test("a present picture offers a full-size view and a broken one does not", async () => {
-    // SLICE 038 RECORDED THAT THERE WAS NO WAY TO SEE A PICTURE FULL SIZE. The
+    // THERE WAS NO WAY TO SEE A PICTURE FULL SIZE BEFORE THIS. The
     // control is offered only where there IS one: the three broken states have
     // nothing to show, and a control whose whole answer is "there is nothing to
-    // show" exists to disappoint. 097 moved the control onto the sheet, so
+    // show" exists to disappoint. This moves the control onto the sheet, so
     // this reads it straight off Read -- no `cast-edit` needed to see it.
     const r = rig([
       member({ picture_path: "a.jpg" }),
@@ -1140,7 +1140,7 @@ describe("the cast panel's picture", () => {
     await settle();
     expect(present("cast-picture-full")).toBe(true);
     // EDIT KEEPS NO ENLARGE CONTROL OF ITS OWN: the sheet's square is the only
-    // one the panel has since 097 retired the form's separate button, and this
+    // one the panel has since an earlier version retired the form's separate button, and this
     // checks the form's picture block specifically rather than the whole
     // document, which still holds the sheet's square underneath.
     el<HTMLButtonElement>("cast-edit").click();
@@ -1196,7 +1196,7 @@ describe("the cast panel's picture", () => {
   test("viewing a picture disarms an armed delete", async () => {
     // ANY other interaction disarms. Delete only arms from Edit -- `cast-remove`
     // lives in its form -- but the control pressed here to disarm it is the
-    // sheet's: 097 moved viewing there, and the sheet never leaves the
+    // sheet's: this moved viewing there, and the sheet never leaves the
     // document while Edit is open.
     const r = rig([member({ picture_path: "a.jpg" })]);
     r.views.set("m1", { state: "present", data_uri: "data:image/png;base64,QUJD" });
@@ -1217,14 +1217,14 @@ describe("the cast panel's picture", () => {
 
 describe("drafts across a close", () => {
   test("typing that was never saved is still in the form after the panel is closed and reopened", async () => {
-    // 037 dropped drafts on close as "a deliberate act"; the writer who hit
+    // An earlier version dropped drafts on close as "a deliberate act"; the writer who hit
     // Escape by accident lost a paragraph. Owner's call of 2026-09-01.
     const r = rig([member({ id: "a", name: "Ilse" })]);
     await r.panel.open();
     await settle();
     entryNamed("Ilse").click();
     await settle();
-    // 096: Edit first -- see the comment on "selecting an entry fills the
+    // Edit first -- see the comment on "selecting an entry fills the
     // form...".
     el<HTMLButtonElement>("cast-edit").click();
     type(el<HTMLInputElement>("cast-name"), "Ilse Vandermeer");
@@ -1241,7 +1241,7 @@ describe("drafts across a close", () => {
   });
 });
 
-describe("the sheet is read, the form is Edit (096, W3)", () => {
+describe("the sheet is read, the form is Edit", () => {
   // happy-dom never applies style.css, so none of these can watch `#cast-
   // sheet` or `#cast-detail` actually disappear -- that half is CSS, keyed on
   // `panel.dataset.mode`, and is a fact about the stylesheet a screenshot
@@ -1307,7 +1307,7 @@ describe("the sheet is read, the form is Edit (096, W3)", () => {
 
     expect(el("cast-panel").dataset.mode).toBe("read");
     expect(r.saves).toEqual([]);
-    // FOCUS MOVES TO #cast-edit (096 review): #cast-cancel is about to be
+    // FOCUS MOVES TO #cast-edit: #cast-cancel is about to be
     // hidden by the mode CSS, and a hidden element cannot hold focus in any
     // engine -- without moving it explicitly, it falls to <body>, and the
     // panel's own Escape handler stops hearing anything.
@@ -1348,7 +1348,7 @@ describe("the sheet is read, the form is Edit (096, W3)", () => {
     expect(el<HTMLTextAreaElement>("cast-summary").value).toBe("Ilse's unsaved typing");
   });
 
-  test("pressing Cancel disarms an armed delete (096 review)", async () => {
+  test("pressing Cancel disarms an armed delete", async () => {
     // ANY other interaction disarms, which is the arming control's whole
     // rule -- the picture tests already model this for the picture surface.
     const r = rig([member({ id: "a", name: "Ilse" })]);
@@ -1364,7 +1364,7 @@ describe("the sheet is read, the form is Edit (096, W3)", () => {
     expect(remove.textContent).toBe("Remove");
   });
 
-  test("pressing Edit disarms an armed delete (096 review)", async () => {
+  test("pressing Edit disarms an armed delete", async () => {
     // Armed inside Edit, then Edit pressed again -- a redundant press, but
     // ANY other interaction disarms and this control is no exception.
     const r = rig([member({ id: "a", name: "Ilse" })]);
@@ -1392,7 +1392,7 @@ describe("the sheet is read, the form is Edit (096, W3)", () => {
 
     expect(el("cast-panel").dataset.mode).toBe("read");
     expect(el("cast-sheet-summary").textContent).toBe("saved text");
-    // FOCUS MOVES TO #cast-edit (096 review), the same reason Cancel's own
+    // FOCUS MOVES TO #cast-edit, the same reason Cancel's own
     // test asserts it: #cast-save is about to be hidden by the mode CSS.
     expect(document.activeElement).toBe(el("cast-edit"));
   });
@@ -1427,11 +1427,11 @@ describe("the sheet is read, the form is Edit (096, W3)", () => {
   });
 
   test("with no members the list says so (037's sentence, the only one) and the add row is open", async () => {
-    // 096 follow-up: a SECOND sentence used to live in the sheet
+    // a SECOND sentence used to live in the sheet
     // ("cast.sheet.empty") and said the add row was BELOW, which contradicted
-    // 037's own list sentence ("above") the moment 096 made the row open
-    // automatically -- it always opens above the (empty) list. One sentence,
-    // 037's, is kept; `cast-panel.test.ts`'s own "control" test above already
+    // this file's own list sentence ("above") the moment the row was made to open
+    // automatically -- it always opens above the (empty) list. One sentence
+    // is kept; `cast-panel.test.ts`'s own "control" test above already
     // pins its wording and position.
     const r = rig([]);
     await r.panel.open();
@@ -1491,7 +1491,7 @@ describe("the sheet is read, the form is Edit (096, W3)", () => {
     expect(present("cast-picture-full")).toBe(true);
   });
 
-  test("keyboard focus on the selected entry survives the repaint (096 review)", async () => {
+  test("keyboard focus on the selected entry survives the repaint", async () => {
     // `select` ends in `paintEntries`, which rebuilds every entry button --
     // including the one the writer just activated with the keyboard. Without
     // restoring focus onto its replacement, it falls to <body>, and the
@@ -1514,7 +1514,7 @@ describe("the sheet is read, the form is Edit (096, W3)", () => {
     // (here, choosing a picture, which reloads the whole list) must not go
     // hunting for an entry to focus when the writer's keyboard was never in
     // the list to begin with. Picture, not Save: a successful Save moves
-    // focus to #cast-edit on its own (096 review, the Escape-after-Save
+    // focus to #cast-edit on its own (the Escape-after-Save
     // fix), which would make this test assert the wrong thing for the wrong
     // reason.
     const r = rig([member({ id: "a", name: "Ilse" })]);
@@ -1648,7 +1648,7 @@ describe("aliases (105, \"including aliases\")", () => {
   ] as const) {
     test(`MUTATION TARGET: a ${code} refusal surfaces its own sentence, not the generic save notice`, async () => {
       const r = rig([member({ id: "a", name: "Ilse" })]);
-      // THE WIRE SHAPE ITSELF, `cast_set_wire_error`'s own contract (105) --
+      // THE WIRE SHAPE ITSELF, `cast_set_wire_error`'s own contract --
       // a bare JSON string, exactly what a real command rejection is.
       r.saveError = JSON.stringify({ code, alias });
       await r.panel.open();

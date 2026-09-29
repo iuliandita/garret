@@ -223,7 +223,7 @@ describe("session.switchTo on a body it cannot load", () => {
   });
 });
 
-describe("session.switchTo, the second document kind (102)", () => {
+describe("session.switchTo, the second document kind", () => {
   test("a timeline id runs drain, load, register and onTimelineDoc, never replaceDoc", async () => {
     const r = rig({ isTimelineDoc: (id) => id === "timeline-1" });
     expect(await r.session.switchTo("timeline-1")).toBe("switched");

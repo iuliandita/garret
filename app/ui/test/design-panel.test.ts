@@ -142,7 +142,7 @@ describe("the book design panel", () => {
     r.container.querySelector<HTMLButtonElement>("[data-design-transfer='preview']")!.click();
     await Promise.resolve();
     await Promise.resolve();
-    // One sentence per setting, in a list (239), never an arrow log line.
+    // One sentence per setting, in a list, never an arrow log line.
     const lines = [...r.el("design-transfer-review")!.querySelectorAll("li")].map((li) => li.textContent);
     expect(lines).toEqual([
       "Body font will change from Crimson Text to EB Garamond.",

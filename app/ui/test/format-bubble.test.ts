@@ -422,7 +422,7 @@ describe("scroll and resize", () => {
     // position: fixed in viewport coordinates: a scroll or a resize moves
     // what is under the toolbar without moving the toolbar. Hiding is one
     // listener per event and no per-frame placement work; re-placing on
-    // every tick would cost exactly what 064's memory record says the
+    // every tick would cost exactly what the memory record says the
     // scroll path must not spend.
     const rig = mount({ rect: { left: 600, top: 300, right: 700, bottom: 320 } });
     rig.show({ from: 1, to: 4 });
@@ -452,7 +452,7 @@ describe("after destroy", () => {
   });
 });
 
-describe("the dictionary control (111)", () => {
+describe("the dictionary control", () => {
   const rect = { left: 600, top: 300, right: 700, bottom: 320 };
 
   test("it shows over one word and hides over more, decided at show time", () => {

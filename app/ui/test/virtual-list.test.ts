@@ -397,7 +397,7 @@ describe("a pane that changes size", () => {
   });
 });
 
-// THE SECTION GAP (fix after 095's first ship): SECTION_GAP px of blank
+// THE SECTION GAP (fix after the first ship): SECTION_GAP px of blank
 // scroll-content space above the item at `gapIndex`, so the navigator's
 // separator has real room to draw into instead of clipping into a fixed
 // ROW_HEIGHT box. Every case here is pure `visibleRange` math except where a

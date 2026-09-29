@@ -169,7 +169,7 @@ describe("createClosePrompt", () => {
   });
 
   test("discard is danger TEXT on the default surface, never a filled slab", () => {
-    // 236. The weight names the tier; the prompt's own two-id rule paints it,
+    // The weight names the tier; the prompt's own two-id rule paints it,
     // because the shared danger tier is still the filled armed style.
     const { container, panel } = mount();
     try {

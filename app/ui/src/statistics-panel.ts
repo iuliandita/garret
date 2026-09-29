@@ -56,7 +56,7 @@ export interface StatisticsPanelDeps {
   setCollecting(collecting: boolean): Promise<void>;
   /** Start the saved-word measurement over. Same contract as setCollecting. */
   resetSources(): Promise<void>;
-  /** The figures as a file, through the OS save dialog (240: moved here from
+  /** The figures as a file, through the OS save dialog (moved here from
    *  the File menu, beside what it writes). Absent where there is no host. */
   exportFile?(kind: StatisticsFileKind): void;
   onDismiss(): void;

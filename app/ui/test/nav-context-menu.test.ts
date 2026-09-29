@@ -91,7 +91,7 @@ function press(key: string, init: KeyboardEventInit = {}): KeyboardEvent {
 
 describe("what the menu offers", () => {
   test("eight items on a scene, in the order a writer builds a manuscript in", () => {
-    // 095: Synopsis... and Who appears here... joined the six, ABOVE Rename -
+    // Synopsis... and Who appears here... joined the six, ABOVE Rename -
     // a scene is one of the three types that carries a body.
     const rig = mount();
     try {

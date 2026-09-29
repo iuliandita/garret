@@ -41,8 +41,8 @@ describe("the primary menu's stylesheet", () => {
     expect(h + 2 * m).toBe(18);
   });
 
-  test("the dropdown scrolls inside the window instead of leaving it (087)", () => {
-    // The Outline menu is 22 rows since 085 and ends 38px above the bottom of
+  test("the dropdown scrolls inside the window instead of leaving it", () => {
+    // The Outline menu is 22 rows and ends 38px above the bottom of
     // a 1200x800 window; at the 640x480 floor its last rows were outside the
     // window and unreachable by pointer. The height is set per open in
     // menu-bar.ts; the stylesheet only has to let it scroll.

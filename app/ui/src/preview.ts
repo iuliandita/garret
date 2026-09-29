@@ -128,7 +128,7 @@ export function parseDocumentBody(xhtml: string): Element | null {
 }
 
 
-// ---- 044: the proof copy ---------------------------------------------------
+// ---- the proof copy --------------------------------------------------------
 // A PDF cannot be read back the way an archive can, so the agreement between
 // the preview and the file is made one level up: the host loads the proof
 // document into a web view, that document's own script cuts it into leaves, and
@@ -192,7 +192,7 @@ export type GutterVerdict = "unknown" | "clears" | "below";
 /**
  * Whether the inner margin clears the printer's minimum for a book this long.
  *
- * 040 LEFT THIS OPEN BECAUSE NOTHING KNEW THE PAGE COUNT, and said so in as many
+ * THIS WAS LEFT OPEN BECAUSE NOTHING KNEW THE PAGE COUNT, and said so in as many
  * words. A laid-out proof knows. The TABLE is the host's -- this decides only
  * which of three sentences a writer reads, which is `covers.ts`'s rule: the page
  * holds no measurement and no threshold.

@@ -1,7 +1,7 @@
 // app/ui/src/nav-context-menu.ts
 // Right-click a row in the navigator and act on THAT row: the three creates,
-// Synopsis... and Who appears here... for a row that carries a body (095,
-// W2), Rename, Delete or Restore, and Revision state.
+// Synopsis... and Who appears here... for a row that carries a body,
+// Rename, Delete or Restore, and Revision state.
 //
 // A SECOND ROUTE, NOT A SECOND IMPLEMENTATION. Every operation here already
 // exists and is already reachable from the Outline menu; `outline.ts` owns the
@@ -69,7 +69,7 @@ export interface NavContextMenuDeps {
    *  holds. */
   typeOf(itemId: string): string | null;
   openRevisionState(itemId: string): void;
-  /** Synopsis... and Who appears here... (095, W2) -- the same two acts the
+  /** Synopsis... and Who appears here... -- the same two acts the
    *  Outline menu's `menu-synopsis` and `menu-appears` items reach, offered on
    *  the row this menu opened on rather than on whatever is selected. */
   openSynopsis(itemId: string): void;
@@ -128,7 +128,7 @@ export function createNavContextMenu(deps: NavContextMenuDeps): NavContextMenu {
         run: () => deps.create(itemId, spec.itemType),
       })),
     ];
-    // ABOVE RENAME (095, W2): a writer reaching for the row's own words should
+    // ABOVE RENAME: a writer reaching for the row's own words should
     // not have to pass the row's own name first.
     if (carriesABody(itemId)) {
       items.push(

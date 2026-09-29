@@ -11,7 +11,7 @@
 // guard. An item below the previews costs that route nothing.
 //
 // THE PANEL SENDS AN ID AND NEVER A PIN. `identity_pin` takes the identity's id
-// and the HOST reads that identity out of the vault itself. That is 042's
+// and the HOST reads that identity out of the vault itself. That is the
 // containment rule -- a cover is not an argument to `book_design_set` because a
 // page-composed value would be naming a file on disk -- one surface further in
 // and for a sharper reason: a page-composed pin is a page-composed BYLINE, and
@@ -128,7 +128,7 @@ export function createIdentityPanel(deps: IdentityPanelDeps): IdentityPanel {
   checksButton.textContent = t("identity.check");
 
   /** THE LIST'S OWN CONTROLS, ABOVE THE LIST. A list of pen names grows with
-   *  the library, and 042 recorded the capture defect this avoids: a primary
+   *  the library, and this avoids the capture defect: a primary
    *  control pushed under the fold by something above it that can grow. Putting
    *  New and the report above the list means nothing a writer has to reach can
    *  be displaced by a long one. */

@@ -59,7 +59,7 @@ function label(key: string, control: HTMLElement): HTMLLabelElement {
   return element;
 }
 
-/** A checkbox BEFORE its words, the order every platform draws (239). */
+/** A checkbox BEFORE its words, the order every platform draws. */
 function check(key: string, control: HTMLInputElement): HTMLLabelElement {
   const element = node("label", "analytics-check");
   element.append(control, node("span", "", key));
@@ -67,7 +67,7 @@ function check(key: string, control: HTMLInputElement): HTMLLabelElement {
 }
 
 /** A heading with the help mark that holds what used to be a paragraph of
- *  method above the controls (239). The text is the mark's tooltip and its
+ *  method above the controls. The text is the mark's tooltip and its
  *  accessible description; it is moved, not deleted. */
 function heading(key: string, id: string, definition?: string): HTMLHeadingElement {
   const element = node("h3", "", key);
@@ -342,7 +342,7 @@ export function createAnalyticsWorkspace(deps: AnalyticsWorkspaceDeps): Analytic
         select.addEventListener("change", () => { if (select.value) representatives.set(copies[0].book_id!, select.value); else representatives.delete(copies[0].book_id!); void reload(); });
         filters.append(label("analytics.duplicate.choose", select));
       }
-      // NON-ZERO PARTS ONLY (239): a line listing four zeros says nothing.
+      // NON-ZERO PARTS ONLY: a line listing four zeros says nothing.
       const missing = [
         ["analytics.library.unknown.books", chosen.unknown],
         ["analytics.library.unknown.sessions", librarySessionUnknown],

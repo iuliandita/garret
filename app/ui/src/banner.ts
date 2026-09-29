@@ -1,5 +1,5 @@
 // app/ui/src/banner.ts
-// The one banner surface, factored out of project.ts (099) so the empty
+// The one banner surface, factored out of project.ts so the empty
 // workspace can raise the same notices with nothing mounted: `mountEmpty`
 // needs `raiseNotice` / `raiseFailure` / `announce` into the SAME container a
 // mounted project uses, so a switch from empty to a book tears one surface
@@ -17,7 +17,7 @@ import { createIcon } from "./icons";
  *  the session. A writer who exported once had a permanent emergency on
  *  screen. Three shipped features reported success that way.
  *
- *  `success` (236) is a completed action: the neutral surface of `info` plus a
+ *  `success` is a completed action: the neutral surface of `info` plus a
  *  check mark, and it goes away on its own. `info` is news that is not an
  *  outcome ("nothing earlier to go back to"). */
 export type Tone = "info" | "success" | "problem" | "failure";
@@ -57,7 +57,7 @@ export function createBanner(): Banner {
   const noticeTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   /** The height the banners take off the top of the window, as `--banner-h`
-   *  on the root (238). Every banner is fixed at top 0, so it is the tallest
+   *  on the root. Every banner is fixed at top 0, so it is the tallest
    *  one. The Library is a fixed region too and starts below it rather than
    *  under it; the book's own chrome keeps the banner over it, as before. */
   function publishHeight(): void {

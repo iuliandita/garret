@@ -42,7 +42,7 @@ export interface MenuItemSpec {
   opensDialog?: boolean;
   enabled?: () => boolean;
   checked?: () => boolean;
-  /** Draw a separator above this item (240). The separator is not an item:
+  /** Draw a separator above this item. The separator is not an item:
    *  it is not focusable, the arrows skip it, and it carries no id, so
    *  menu-cli's id count and menu-drive's parsed indices do not see it. */
   separatorBefore?: boolean;

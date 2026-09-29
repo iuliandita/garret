@@ -50,7 +50,7 @@ describe("which formats this application writes", () => {
   test("an id this page has no name for renders as itself", () => {
     // A host one version ahead. `Exported djvu to ...` is a worse sentence than
     // a named one and a true one; naming Markdown, EPUB or PDF there would be a
-    // lie about the file on disk. The literal was `pdf` until 044 made it a
+    // lie about the file on disk. The literal was `pdf` until this page made it a
     // format this page names -- which is the drift a test built on "a word
     // nothing writes yet" acquires the moment something writes it.
     expect(exportFormatName("djvu")).toBe("djvu");

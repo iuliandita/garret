@@ -67,18 +67,18 @@
          role="banner", and a <header> child of <body> is a second, nested
          banner landmark. -->
     <div id="project-bar">
-      <!-- THE HEADER, since 067: what the writer is looking at, then the Menu
-           button (068), then the panel anchors. Its height is written down
+      <!-- THE HEADER: what the writer is looking at, then the Menu
+           button, then the panel anchors. Its height is written down
            (39px) rather than summed from a line box, so nothing added or
            removed here can move a navigator row. -->
       <span id="outline-controls"></span>
       <div id="project-controls"></div>
       <button id="scene-name" type="button" hidden></button>
-      <!-- Bold, italic and underline left the header in 069: they are a
+      <!-- Bold, italic and underline left the header: they are a
            bubble toolbar over the selection now (format-bubble.ts, mounted
            on <body>), alongside Add comment and Find in manuscript. -->
       <span id="focus-controls"></span>
-      <!-- THE MENU BUTTON AND ITS LIST, at the right end since 068: one icon
+      <!-- THE MENU BUTTON AND ITS LIST, at the right end: one icon
            button opening a popover of the four titles, each of which still
            opens its own dropdown beside the row. The list is positioned
            absolutely against #project-bar exactly as #find-panel, #prefs-panel
@@ -162,7 +162,7 @@
          child so the ProseMirror mount lands after it in document order.
          Nothing positioned lives inside #editor and this is not positioned. -->
     <main id="editor"><h1 id="scene-heading"></h1></main>
-    <!-- THE FOOTER, since 067: the counts, the goal bar, one status dot whose
+    <!-- THE FOOTER: the counts, the goal bar, one status dot whose
          popover holds the three protection sentences, and "Saved". Its height is
          written down (34px); the three rigs that assume the navigator does not
          scroll subtract it from the window. The three indicator anchors keep
@@ -213,7 +213,7 @@
          runs are evidence for. -->
     <div id="preview-controls"></div>
     <div id="reference-controls"></div>
-    <!-- THE INSPECTOR (241), in the same third column: the panels that are
+    <!-- THE INSPECTOR, in the same third column: the panels that are
          about the manuscript and are worked beside it. Every wrapper here is
          `display: contents`, so an open panel IS the grid item and a closed
          one costs the column nothing, the rail's shape and for the rail's

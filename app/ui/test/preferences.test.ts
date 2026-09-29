@@ -240,7 +240,7 @@ afterEach(() => {
 });
 
 describe("the preferences panel", () => {
-  test("two headed sections, Writing then Application, share the body's grid (240)", () => {
+  test("two headed sections, Writing then Application, share the body's grid", () => {
     const r = rig();
     const body = r.panel().querySelector(".panel-body");
     expect(body instanceof HTMLElement).toBe(true);
@@ -643,7 +643,7 @@ describe("the language chooser", () => {
   });
 });
 
-describe("the start select (099)", () => {
+describe("the start select", () => {
   test("shows the injected value, offering exactly the three words", () => {
     const r = rig(
       "system",
@@ -735,7 +735,7 @@ describe("the spelling group", () => {
   });
 });
 
-describe("the mark-cast-names group (098)", () => {
+describe("the mark-cast-names group", () => {
   test("offers exactly on and off, and starts on the injected value", () => {
     const r = rig();
     r.control.open();

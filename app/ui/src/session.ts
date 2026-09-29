@@ -31,11 +31,11 @@ export interface SessionDeps {
   loadDoc(itemId: string): Promise<{ body: string; rev: number }>;
   docId: string;
   /** True for an item this session must hand to `onTimelineDoc` rather than
-   *  `editor.replaceDoc` (102). Absent (or answering false for every id)
-   *  reproduces the pre-102 behaviour exactly: every switch is a prose
+   *  `editor.replaceDoc`. Absent (or answering false for every id)
+   *  reproduces the earlier behaviour exactly: every switch is a prose
    *  document. */
   isTimelineDoc?(itemId: string): boolean;
-  /** The second document kind (102, design section 4): `switchTo` hands the
+  /** The second document kind: `switchTo` hands the
    *  RAW body straight through -- it is never `JSON.parse`d as `PmNodeJson`,
    *  because it is not one, and the caller's own parser
    *  (`timeline-model.ts`'s `parseTimeline`) already answers `newer`/

@@ -53,7 +53,7 @@ test("known host failures read as one plain sentence naming the recovery", () =>
     ["database disk image is malformed", "host-error.corrupt"],
     ["file is not a database", "host-error.corrupt"],
     ["refused scene", "host-error.failed"],
-    // pictures.rs's four refusals (239): the reason, never "try again".
+    // pictures.rs's four refusals: the reason, never "try again".
     ["that file is 60000000 bytes and the largest picture this book will take is 52428800", "host-error.picture-bytes"],
     ["that file is not a PNG or a JPEG, whatever it is called", "host-error.picture-format"],
     ["that picture says it is 50410000 pixels and the largest this book will read is 50000000", "host-error.picture-pixels"],

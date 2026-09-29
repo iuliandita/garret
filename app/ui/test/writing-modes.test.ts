@@ -171,7 +171,7 @@ describe("the three statements of the mode lists", () => {
     // The only animation in the prose, and a colour fade at every caret
     // move is exactly what that preference exists for.
     const css = await Bun.file("app/ui/style.css").text();
-    // The focus fade's own block: the panel shell (238) has one of its own.
+    // The focus fade's own block: the panel shell has one of its own.
     const at = css.indexOf('prefers-reduced-motion: reduce) {\n  :root[data-focus="paragraph"]');
     expect(at).toBeGreaterThan(-1);
     expect(css.slice(at, at + 260)).toContain("transition: none");

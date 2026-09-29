@@ -8,7 +8,7 @@ import { createChromeFade, HIDDEN_CLASS, HIDE_AFTER_MS, type ChromeFade } from "
 // Held so afterEach can always reach the fade a test built, even one whose
 // own assertion threw before it called destroy() itself -- a leaked fade
 // keeps its document listeners live and has broken a LATER test's own
-// assertions this way once already (item 7 of the 071 fix-up review).
+// assertions this way once already.
 let current: ChromeFade | null = null;
 
 function rig(focus: "paragraph" | "off" = "paragraph", wake = true) {
@@ -154,9 +154,9 @@ describe("hiding", () => {
   });
 });
 
-// 102's own arm: a timeline has no typing, so its stillness (debounced in
+// A timeline has no typing, so its stillness (debounced in
 // timeline-view.ts, not here) calls this directly instead of onType.
-describe("onPointerStill (102)", () => {
+describe("onPointerStill", () => {
   test("arms the same 1.5s timer onType does", () => {
     const r = rig();
     r.fade.onPointerStill();

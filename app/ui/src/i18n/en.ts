@@ -33,7 +33,7 @@
 // UNKNOWN once. Change a string here only with a rig run behind it.
 
 export const EN = {
-  // panel-shell.ts: the Close icon every anchored panel shares (238).
+  // panel-shell.ts: the Close icon every anchored panel shares.
   "panel.close": "Close {title}",
   "help.about": "About {label}",
   "menu.review-proposals": "Review proposals...",
@@ -833,7 +833,7 @@ export const EN = {
   "prefs.legend.spelling": "Spelling",
   "prefs.legend.typewriter": "Typewriter",
   "prefs.legend.dictionary": "Dictionary",
-  // 098 (W5): whether the cast-marks plugin is fed any names at all. Short on
+  // whether the cast-marks plugin is fed any names at all. Short on
   // the row, `prefs.name.mark-cast-names`'s own reason -- the Goal group's own
   // pattern of a fixed-width legend beside a longer aria-label.
   "prefs.legend.mark-cast-names": "Cast names",
@@ -978,12 +978,12 @@ export const EN = {
   "cast.empty": "Nobody and nowhere yet. Add the first one above.",
   "cast.status.reading": "Reading the cast\u2026",
   "cast.status.choose": "Choose one to read, or add another below.",
-  // NEUTRAL AS OF 096: this used to say "Editing {name}" unconditionally, but
+  // NEUTRAL NOW: this used to say "Editing {name}" unconditionally, but
   // selecting a member now opens the READ sheet by default -- "editing"
   // somebody the panel is only showing would be a claim the panel is not
   // making. "About" is true in both of the panel's two modes.
   "cast.status.about": "About {name}",
-  // ---- cast-panel.ts: the sheet (096, W3) -----------------------------
+  // ---- cast-panel.ts: the sheet -----------------------------
   "cast.edit": "Edit",
   "cast.cancel": "Cancel",
   "cast.new.toggle": "Add\u2026",
@@ -998,7 +998,7 @@ export const EN = {
   "cast.new.kind.label": "kind of the new entry",
   "cast.new": "Add",
   "cast.name.label": "Name",
-  // ---- cast-panel.ts: the aliases (105, "including aliases") ------------
+  // ---- cast-panel.ts: the aliases ("including aliases") ----------------
   // AFTER THE NAME, BEFORE THE SUMMARY: aliases are names, and the record's
   // order is who this is, then what they are called, then the paragraph.
   "cast.alias.label": "an alias",
@@ -1063,7 +1063,7 @@ export const EN = {
   "cast.error.remove": "Could not remove that, and nothing was changed: {error}",
   "cast.error.picture": "Could not change the picture, and nothing was changed: {error}",
 
-  // ---- cast-card.ts: the hover card over a marked name in the prose (098) --
+  // ---- cast-card.ts: the hover card over a marked name in the prose --
   "cast.card.open": "Open in Cast",
   "cast.card.error.open": "Could not open the Cast panel for that name: {error}",
 
@@ -1107,7 +1107,7 @@ export const EN = {
   // between a list a writer can act on and a list they have to go looking
   // through their outline to explain.
   "appears.map.here": "Here: {names}",
-  // THE ACCESSIBLE NAME FOR A SINGLE KIND LINE (097 review, ticket 08). The
+  // THE ACCESSIBLE NAME FOR A SINGLE KIND LINE. The
   // visible "Here:"/"Further down:" is said once per bucket, on its first
   // line only, so a screen reader needs its own statement of which bucket and
   // which kind THIS line is -- there is no indentation for it to infer that
@@ -1126,8 +1126,8 @@ export const EN = {
   // ---- switcher.ts: the project panel -------------------------------------
   "switcher.name.label": "New project name",
   "switcher.create": "Create",
-  // WHERE THE BOOK WILL GO, said before the writer commits -- 019's enable act
-  // and for its reason: the resolved destination is the thing being consented
+  // WHERE THE BOOK WILL GO, said before the writer commits, for its reason:
+  // the resolved destination is the thing being consented
   // to. It is also the line that catches a book about to land in a folder the
   // writer syncs, which is the one place a live manuscript file should not be.
   "switcher.where": "New books go in {dir}",
@@ -1162,8 +1162,8 @@ export const EN = {
   "switcher.import.where": "Files are imported from {dir}",
   "switcher.import.empty": "Drop a .md or .docx file in the import folder.",
   "switcher.import.error": "Could not read the import folder.",
-  // 093's loss report, for a DOCX source: a Markdown import always reports
-  // zeros and never reaches this sentence at all (decision 7). The
+  // A loss report, for a DOCX source: a Markdown import always reports
+  // zeros and never reaches this sentence at all. The
   // `{list}` is built in `switcher.ts::lossesNotice`, one clause per
   // non-zero kind below, in this FIXED order.
   "import.contents-derived": "The opening contents list \"{title}\" was omitted. Exports regenerate it from the outline; the source file is unchanged.",
@@ -1187,7 +1187,7 @@ export const EN = {
   "import.loss.revisions.warning": "Tracked revisions and their authors were not retained. Keep the original DOCX for review.",
 
   // ---- format-bubble.ts -----------------------------------------------
-  // Since 069 these are icon-only controls in a bubble over the selection,
+  // These are icon-only controls in a bubble over the selection,
   // not a bar in the header -- the visible text is gone, and the name below
   // is the control's `aria-label` alone.
   //
@@ -1523,8 +1523,8 @@ export const EN = {
   "covers.done.fit": "{side} cover placement changed for the PDF proof.",
   "covers.error.load": "The covers could not be read: {error}",
   "covers.error.change": "Could not change the cover, and nothing was changed: {error}",
-  // THE FULL-SIZE VIEWER, shared by the cast panel and the covers panel. Slice
-  // 038 recorded that there was no way to see a picture full size; there is one
+  // THE FULL-SIZE VIEWER, shared by the cast panel and the covers panel. There
+  // was no way to see a picture full size before this; there is one
   // viewer and one bound rather than two of each.
   "viewer.label": "Picture",
   "viewer.error": "That picture could not be shown full size: {error}",
@@ -1534,7 +1534,7 @@ export const EN = {
   "viewer.unavailable": "There is nothing to show full size: the picture file is not readable.",
 
   // ---- export-bar.ts and export-formats.ts --------------------------------
-  // EVERY EXPORT SENTENCE NAMES ITS FORMAT, since 040. Markdown was the only
+  // EVERY EXPORT SENTENCE NAMES ITS FORMAT. Markdown was the only
   // thing this application could write, so the notices said "Exported to" and
   // meant one file type without ever saying which; the publishing track adds
   // EPUB and PDF, and a writer told only "Exported to /home/w/book" cannot tell
@@ -1681,7 +1681,7 @@ export const EN = {
   "reading.loading": "Loading saved text…",
   "reading.unavailable": "This document could not be read.",
   "menu.help": "Help",
-  // 088: the Alt letter that opens each menu, one uppercase chord token so
+  // the Alt letter that opens each menu, one uppercase chord token so
   // the completeness test reads it as a chord. Must be the first letter of
   // the title above it in THIS catalog; `menu-accelerators.test.ts` pins it.
   "menu.file.key": "F",
@@ -1852,7 +1852,7 @@ export const EN = {
   // model is one story clock per book, so "Timeline 1" would be a
   // lie about a book that has exactly one.
   "timeline.untitled": "Timeline",
-  // 102: the menu's Add comment while a timeline is open. comment_create
+  // the menu's Add comment while a timeline is open. comment_create
   // already refuses the type server-side; this is the writer-facing half.
   "timeline.no-comments": "A timeline cannot carry a comment.",
   // The card's live date beside the day number (timeline-model.ts's
@@ -1906,7 +1906,7 @@ export const EN = {
   "timeline.card.field.branch": "Branch",
   "timeline.card.field.branch.main": "The main line",
 
-  // ---- branches (103) ------------------------------------------------------
+  // ---- branches ------------------------------------------------------
   "timeline.toolbar.add-branch": "+ Branch",
   "timeline.branch.form.title": "New branch",
   "timeline.branch.field.name": "Name",
@@ -1923,7 +1923,7 @@ export const EN = {
   "timeline.branch.delete.count.one": "Deletes {count} event with it.",
   "timeline.branch.delete.count.other": "Deletes {count} events with it.",
 
-  // ---- the calendar, eras, the scale panel (103) ---------------------------
+  // ---- the calendar, eras, the scale panel ---------------------------
   "timeline.toolbar.scale": "Scale: {unit}",
   "timeline.toolbar.edit-scale": "Edit scale…",
   "timeline.scale.panel.title": "Edit scale",
@@ -1951,7 +1951,7 @@ export const EN = {
   "timeline.scale.save": "Save",
   "timeline.scale.cancel": "Cancel",
 
-  // ---- cast tracks and track naming (103) -----------------------------------
+  // ---- cast tracks and track naming -----------------------------------
   "timeline.track.new.thread": "A thread",
   "timeline.track.new.cast": "A cast member",
   "timeline.track.default": "Track {n}",
@@ -1960,7 +1960,7 @@ export const EN = {
   "timeline.track.delete": "Delete track",
   "timeline.track.gone": "(gone from the cast)",
 
-  // ---- drag and the collapsed dots (103) ------------------------------------
+  // ---- drag and the collapsed dots ------------------------------------
   "timeline.drag.at": "{at}",
   "timeline.drag.at-dated": "{at} ({date})",
 
@@ -2003,7 +2003,7 @@ export const EN = {
   "outline.gone.move": "That item is no longer in your outline, so it could not be moved. ({id})",
   "outline.gone.delete": "That item is no longer in your outline, so it could not be deleted. ({id})",
   "outline.gone.restore": "That item is no longer in your outline, so it could not be restored. ({id})",
-  // ---- 085: structural undo ------------------------------------------------
+  // ---- structural undo ------------------------------------------------------
   "outline.undo.label.create": "adding {title}",
   "outline.undo.label.move": "moving {title}",
   "outline.undo.label.rename": "renaming {title}",
@@ -2271,7 +2271,7 @@ export const EN = {
   // not exist. `mirror-strings.test.ts` is what keeps that true one string at
   // a time.
   "mirror.changes.heading": "Changes in your folder",
-  // THIS SENTENCE WAS FALSE THE MOMENT 022 SHIPPED, and a capture is what said
+  // THIS SENTENCE WAS FALSE FROM THE START, and a capture is what said
   // so: it read "Looking here changes nothing in your book" beside a control
   // that changes the book. Looking still changes nothing; the panel is no
   // longer only for looking, so the sentence says both halves and names where
@@ -2321,7 +2321,7 @@ export const EN = {
   // run.
   "mirror.changes.diff.region.full": "{intro} {summary}",
 
-  // ---- taking a change into the book (022) --------------------------------
+  // ---- taking a change into the book --------------------------------
   // THE VERBS ARE THE WRITER'S, not the version-control ones. Nothing here is
   // merged, synced or pulled: one whole document replaces another whole
   // document, which is the only operation this design has and the reason it
@@ -2381,7 +2381,7 @@ export const EN = {
 
   // ---- navigator/index.ts, loading.ts, project.ts, project-switch.ts ------
   "nav.label": "manuscript navigator",
-  // The header's cast button (095, W2), the same word the Outline menu's
+  // The header's cast button, the same word the Outline menu's
   // `menu-cast` item and the cast panel itself use.
   "nav.cast.label": "Cast",
   "nav.synopsis.described": "Has a synopsis",
@@ -2406,7 +2406,7 @@ export const EN = {
   "library.open": "Open the library",
   // Every menuActions arm in empty-project.ts raises this one notice.
   "library.nothing-open": "No book is open. Open one from the library.",
-  // The library screen itself (100).
+  // The library screen itself.
   "library.series": "Series",
   "library.universe": "Universe",
   "library.series.filter": "Filter by series",

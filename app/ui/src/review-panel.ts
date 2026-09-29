@@ -47,14 +47,14 @@ function button(key: string, action: () => void): HTMLButtonElement {
 function label(key: string, field: HTMLElement): HTMLLabelElement {
   const element = node("label", t(key)); element.append(field); return element;
 }
-/** A checkbox BEFORE its words, the order every platform draws (239). */
+/** A checkbox BEFORE its words, the order every platform draws. */
 function check(key: string, field: HTMLInputElement): HTMLLabelElement {
   const element = node("label"); element.className = "review-check";
   element.append(field, t(key)); return element;
 }
 
 /** "Mara, Sep 25, 10:15 PM: 1 pending": the non-zero counts only, joined the
- *  way the catalog's language joins a list (239). A line of four counts with
+ *  way the catalog's language joins a list. A line of four counts with
  *  three zeros in it reads as a log, not as a sentence. */
 export function proposalSummary(group: Pick<ReviewSummary, "author_name" | "created_at" | "pending" | "conflicted" | "accepted" | "rejected">): string {
   const parts = (["pending", "conflicted", "accepted", "rejected"] as const)
@@ -82,7 +82,7 @@ export function createReviewPanel(deps: ReviewPanelDeps): ReviewPanel {
       showAuthorForm(false);
     });
   });
-  // CREATING A REVIEWER IS BEHIND A BUTTON (240). Seven controls stood
+  // CREATING A REVIEWER IS BEHIND A BUTTON. Seven controls stood
   // before the first proposal; naming a new reviewer is done once per
   // person, choosing one is done every visit. The form opens under the row.
   const authorToggle = button("review.author-add", () => showAuthorForm(authorForm.hidden));
@@ -96,7 +96,7 @@ export function createReviewPanel(deps: ReviewPanelDeps): ReviewPanel {
   }
   const authors = node("div"); authors.className = "review-authors";
   authors.append(label("review.author", author), authorToggle, authorForm);
-  // A SEGMENTED CONTROL, not buttons dressed as tabs (238): one row of views,
+  // A SEGMENTED CONTROL, not buttons dressed as tabs: one row of views,
   // the pressed one tinted, and Close is never one of them.
   const tabs = node("div"); tabs.className = "segmented"; tabs.id = "review-views";
   tabs.setAttribute("role", "group"); tabs.setAttribute("aria-label", t("review.views"));
@@ -111,7 +111,7 @@ export function createReviewPanel(deps: ReviewPanelDeps): ReviewPanel {
   const first = button("review.first", () => { cursor = null; void reload(); });
   const next = button("review.next", () => { if (state?.page.before_id) { cursor = state.page.before_id; void reload(); } });
   controls.append(check("review.history", history));
-  // Paging and Refresh AFTER the list (240): the proposals lead.
+  // Paging and Refresh AFTER the list: the proposals lead.
   const paging = node("div"); paging.className = "review-actions"; paging.id = "review-paging";
   paging.append(first, next, refresh);
   const list = node("ul"); list.id = "review-list";
@@ -164,7 +164,7 @@ export function createReviewPanel(deps: ReviewPanelDeps): ReviewPanel {
   // focus back itself. No outside click: this panel holds drafts, and a click
   // in the prose it is reviewing must not ask whether to throw them away.
   // Its own Escape (below) answers the leave question before closing. As the
-  // inspector (241) it is replaced only when nothing would be lost; otherwise
+  // inspector it is replaced only when nothing would be lost; otherwise
   // the replacement refuses and Close's leave question is asked instead.
   const shell = createPanelShell({
     panel, title: t("review.heading"), closeId: "review-close",

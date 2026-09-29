@@ -74,7 +74,7 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-describe("the inspector (241)", () => {
+describe("the inspector", () => {
   test("an outside click leaves it open", async () => {
     const a = rig("a");
     open(a);

@@ -10,14 +10,14 @@ export interface Rect { left: number; top: number; right: number; bottom: number
 export interface Size { width: number; height: number }
 export interface Placed { left: number; top: number; below: boolean }
 
-/** How far inside the window the bubble always stays (243). */
+/** How far inside the window the bubble always stays. */
 export const WINDOW_MARGIN = 8;
 
 /** 8px above the selection, centred; below it when above would leave the
  *  pane; shifted so it stays inside the pane horizontally. All viewport
  *  coordinates, for a position: fixed element.
  *
- *  THEN KEPT 8px INSIDE THE WINDOW on both axes, last, so it wins (243): the
+ *  THEN KEPT 8px INSIDE THE WINDOW on both axes, last, so it wins: the
  *  pane is not always inside the window. #editor is recentred by a transform
  *  in focus mode and runs under an overlaying inspector, and a bubble clamped
  *  only to the pane was cut off by the window's right edge. A window smaller

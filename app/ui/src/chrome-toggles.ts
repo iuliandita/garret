@@ -4,7 +4,7 @@ import { t } from "./i18n";
 import { createTooltip, type Tooltip } from "./tooltip";
 import type { FocusMode } from "./writing-modes";
 
-// TWO HEADER CONTROLS, since 067. Both are buttons with aria-pressed, which
+// TWO HEADER CONTROLS. Both are buttons with aria-pressed, which
 // makes them `toggle button` in ATK (nodes.ts's WANTED set). Neither is
 // pressed by any rig.
 

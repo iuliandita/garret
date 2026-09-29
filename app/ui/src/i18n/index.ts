@@ -74,7 +74,7 @@ export const t: Messages["t"] = (key, vars) => messages.t(key, vars);
 export const plural: Messages["plural"] = (key, count, vars) => messages.plural(key, count, vars);
 
 /** `formatNumber(n)` - digits grouped for the language the host chose, not
- *  for the process locale (090). Every figure the page shows goes through
+ *  for the process locale. Every figure the page shows goes through
  *  this; `number-format.test.ts` refuses a bare `toLocaleString()`. */
 export const formatNumber: Messages["number"] = (n) => messages.number(n);
 
