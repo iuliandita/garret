@@ -330,6 +330,7 @@ interface GroupSpec<T extends string> {
    *  it is not. Defaults to the legend, which is right for the four whose one
    *  word is the whole name. */
   name?: string;
+  description?: string;
   values: readonly T[];
   labels: Record<T, string>;
 }
@@ -413,6 +414,15 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
       buttons.set(button.id, button);
     }
     group.append(choices);
+    if (spec.description) {
+      const note = document.createElement("p");
+      note.id = `${spec.id}-note`;
+      note.className = "prefs-choice-note";
+      note.textContent = spec.description;
+      group.append(note);
+      choices.setAttribute("aria-describedby", note.id);
+      for (const button of choices.children) button.setAttribute("aria-describedby", note.id);
+    }
     return group;
   }
 
@@ -436,10 +446,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   languageGroup.append(languageLegend);
   const languageSelect = document.createElement("select");
   languageSelect.id = "prefs-language";
-  // NO aria-label of its own - `languageGroup`'s already carries the name,
-  // the same one name every other group here gives once, on the group, with
-  // its legend `aria-hidden` beside it. A second `aria-label` here would
-  // announce "Language" twice for one control.
+  languageSelect.setAttribute("aria-label", t("prefs.language"));
   for (const value of LOCALES) {
     const option = document.createElement("option");
     option.value = value;
@@ -467,8 +474,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   startGroup.append(startLegend);
   const startSelect = document.createElement("select");
   startSelect.id = "prefs-start";
-  // NO aria-label of its own, `languageSelect`'s own reason: the group already
-  // carries the name.
+  startSelect.setAttribute("aria-label", t("prefs.start.label"));
   for (const value of STARTS) {
     const option = document.createElement("option");
     option.value = value;
@@ -560,6 +566,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   // choice of one.
   const focusGroup = buildGroup<FocusMode>({
     id: "prefs-focus",
+    description: t("prefs.focus.note"),
     legend: t("prefs.legend.focus"),
     values: FOCUS_MODES,
     labels: FOCUS_LABELS,
@@ -575,6 +582,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   });
   const typewriterGroup = buildGroup<TypewriterMode>({
     id: "prefs-typewriter",
+    description: t("prefs.typewriter.note"),
     legend: t("prefs.legend.typewriter"),
     values: TYPEWRITER_MODES,
     labels: TYPEWRITER_LABELS,
@@ -586,6 +594,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   // surface.
   const markCastNamesGroup = buildGroup<SpellingMode>({
     id: "prefs-mark-cast-names",
+    description: t("prefs.mark-cast-names.note"),
     legend: t("prefs.legend.mark-cast-names"),
     name: t("prefs.name.mark-cast-names"),
     values: SPELLING_MODES,

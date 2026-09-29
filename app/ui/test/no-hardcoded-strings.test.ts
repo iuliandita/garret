@@ -171,6 +171,7 @@ function isKeyNameComparison(text: string, before: string): boolean {
  * list, is what needs fixing.
  */
 const ALLOWED = new Map<string, string>([
+  ["(max-width: 900px)", "chrome-toggles.ts: responsive media query, not displayed text"],
   ["application locked", "command-error.ts: legacy host lock rejection recognized during bootstrap, not a displayed label"],
   [
     "${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}",

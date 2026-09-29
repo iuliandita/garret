@@ -623,14 +623,10 @@ describe("the language chooser", () => {
     expect(r.dones).toEqual([]);
   });
 
-  test("the select carries no name of its own; the group names it once", () => {
-    // The pattern every other group in this panel follows: one accessible
-    // name, on the group, with its legend `aria-hidden` beside it. A second
-    // `aria-label` on the select itself would announce "Language" twice for
-    // one control.
+  test("the select carries a localized accessible name", () => {
     const r = rig();
     const select = r.languageSelect();
-    expect(select.getAttribute("aria-label")).toBeNull();
+    expect(select.getAttribute("aria-label")).toBe(t("prefs.language"));
     const group = r.container.querySelector("#prefs-language-group");
     expect(group?.getAttribute("aria-label")).toBe(t("prefs.language"));
   });
@@ -685,10 +681,10 @@ describe("the start select", () => {
     expect(r.startSelect().value).toBe("last");
   });
 
-  test("the select carries no name of its own; the group names it once", () => {
+  test("the select carries a localized accessible name", () => {
     const r = rig();
     const select = r.startSelect();
-    expect(select.getAttribute("aria-label")).toBeNull();
+    expect(select.getAttribute("aria-label")).toBe(t("prefs.start.label"));
     const group = r.container.querySelector("#prefs-start-group");
     expect(group?.getAttribute("aria-label")).toBe(t("prefs.start.label"));
   });
@@ -1009,4 +1005,16 @@ test("privacy preferences routes to native settings and states the file boundary
   expect(document.getElementById("prefs-privacy")?.textContent).toContain(t("privacy.boundary"));
   button.click(); await settle();
   expect(calls).toBe(1);
+});
+
+
+test("ambiguous writing modes carry readable descriptions on their controls", () => {
+  const r = rig();
+  for (const stem of ["focus", "typewriter", "mark-cast-names"]) {
+    const note = r.container.querySelector(`#prefs-${stem}-note`);
+    expect(note?.textContent).toBe(t(`prefs.${stem}.note`));
+    for (const button of r.container.querySelectorAll(`#prefs-${stem} button`)) {
+      expect(button.getAttribute("aria-describedby")).toBe(`prefs-${stem}-note`);
+    }
+  }
 });

@@ -384,51 +384,12 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
       label: t("menu.outline"),
       key: t("menu.outline.key"),
       items: [
-        // THE VERBS ARE BACK. The toolbar's three create buttons read "Part",
-        // "Chapter", "Scene" -- nouns -- because five whole phrases do not fit
-        // across the navigator column on one line, and the verb survives only in
-        // an aria-label. So a screen-reader user is told what the button does
-        // and a sighted user is not, which is the inverse of the usual failure.
-        // A menu item has its own row, so the constraint does not exist here and
-        // neither does the override: visible text and accessible name are one
-        // string again.
-        // FIRST in Outline, above the creates. It is the item a writer reaches
-        // for most often in a long manuscript and the only one that is pure
-        // navigation - the four below it all change the tree.
-        // ABOVE Go to…, and above it for the same reason Go to… is above the
-        // creates: the three of them are pure navigation and everything below
-        // changes the tree.
-        //
-        // Both labels say when they cannot act, the way menu-remove says which
-        // of Delete and Restore it will do, and for a sharper reason: Delete on
-        // an empty selection is an item a writer can see is not for them, while
-        // a Back that appears live and does nothing reads as a broken
-        // application. Evaluated at paint time, so the label is the answer for
-        // the trail as it stands when the menu opened.
-        {
-          id: "menu-nav-back",
-          label: () => (deps.canNavBack() ? t("menu.nav-back") : t("menu.nav-back.empty")),
-          shortcut: t("menu.shortcut.nav-back"),
-          run: deps.navBack,
-        },
-        {
-          id: "menu-nav-forward",
-          label: () =>
-            deps.canNavForward() ? t("menu.nav-forward") : t("menu.nav-forward.empty"),
-          shortcut: t("menu.shortcut.nav-forward"),
-          run: deps.navForward,
-        },
-        { id: "menu-go-to", opensDialog: true, label: () => t("menu.go-to"), shortcut: t("menu.shortcut.go-to"), run: deps.openQuickOpen },
-        { id: "menu-new-part", label: () => t("menu.new-part"), run: () => deps.create("part") },
+        { groupLabel: t("menu.outline.group.create"), separatorBefore: true, id: "menu-new-scene", label: () => t("menu.new-scene"), run: () => deps.create("scene") },
         { id: "menu-new-chapter", label: () => t("menu.new-chapter"), run: () => deps.create("chapter") },
-        { id: "menu-new-scene", label: () => t("menu.new-scene"), run: () => deps.create("scene") },
+        { id: "menu-new-part", label: () => t("menu.new-part"), run: () => deps.create("part") },
         { id: "menu-new-note", label: () => t("menu.new-note"), run: deps.createNote },
         { id: "menu-new-bible-folder", label: () => t("menu.new-bible-folder"), run: deps.createBibleFolder },
         { id: "menu-new-timeline", label: () => t("menu.new-timeline"), run: deps.createTimeline },
-        // THE FOUR PAGES THAT ARE NOT CHAPTERS, named for what a writer looks
-        // for. They sit with the other creates and above the moves, because
-        // that is what they are: `menu-cli` reads this order rather than
-        // restating it, so inserting here moves no rig's index.
         {
           id: "menu-new-dedication",
           label: () => t("menu.new-dedication"),
@@ -449,136 +410,30 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
           label: () => t("menu.new-afterword"),
           run: () => deps.createMatter("afterword"),
         },
-        // THE MOVES, AND WHY THEY ARE HERE AT ALL. They have existed since the
-        // outline-editing slice, are graded by `outline_reorder_persists`, and
-        // were reachable ONLY by Alt+Arrow while the outline had focus -- so a
-        // writer with the caret in their prose pressed the keys, nothing
-        // happened, and the feature was invisible unless they opened Help >
-        // Keyboard shortcuts. That is a reported defect: "I also want the
-        // option to move them around" -- not an absence, a
-        // discoverability failure.
-        //
-        // They call `deps.move` DIRECTLY rather than synthesising a keypress.
-        // The menu holds focus while an item runs, so a key-based
-        // implementation would reach the menu and not the outline -- it would
-        // do nothing, which is the defect these items exist to fix.
-        { id: "menu-move-up", label: () => t("menu.move-up"), shortcut: t("menu.shortcut.move-up"), run: () => deps.move("up") },
+        {
+          groupLabel: t("menu.outline.group.navigate"), separatorBefore: true, id: "menu-nav-back",
+          label: () => (deps.canNavBack() ? t("menu.nav-back") : t("menu.nav-back.empty")),
+          shortcut: t("menu.shortcut.nav-back"),
+          run: deps.navBack,
+        },
+        {
+          id: "menu-nav-forward",
+          label: () =>
+            deps.canNavForward() ? t("menu.nav-forward") : t("menu.nav-forward.empty"),
+          shortcut: t("menu.shortcut.nav-forward"),
+          run: deps.navForward,
+        },
+        { id: "menu-go-to", opensDialog: true, label: () => t("menu.go-to"), shortcut: t("menu.shortcut.go-to"), run: deps.openQuickOpen },
+        { groupLabel: t("menu.outline.group.structure"), separatorBefore: true, id: "menu-move-up", label: () => t("menu.move-up"), shortcut: t("menu.shortcut.move-up"), run: () => deps.move("up") },
         { id: "menu-move-down", label: () => t("menu.move-down"), shortcut: t("menu.shortcut.move-down"), run: () => deps.move("down") },
         { id: "menu-move-out", label: () => t("menu.move-out"), shortcut: t("menu.shortcut.move-out"), run: () => deps.move("outdent") },
         { id: "menu-move-in", label: () => t("menu.move-in"), shortcut: t("menu.shortcut.move-in"), run: () => deps.move("indent") },
         { id: "menu-rename", label: () => t("menu.rename"), run: deps.beginRename },
         {
           id: "menu-remove",
-          // Evaluated at paint time, exactly like the outline bar's `offering`.
           label: () => (deps.selectedTrashed() ? t("menu.restore") : t("menu.delete")),
-          // NO Delete hint, deliberately. The key deletes a row only while
-          // the outline has focus; with the caret in the prose, where the menu
-          // is usually opened from, it deletes a character. A hint here would
-          // teach the one press that does something else.
           run: deps.removeOrRestore,
         },
-        // LAST, and appended rather than inserted, which is not a style
-        // preference: dialog-cli reaches Export as… by four literal ArrowDowns
-        // in File, and menu-cli, export-cli and history-cli read their indices
-        // out of this table. An item added at the END of a menu moves nothing.
-        //
-        // In Outline rather than File because the panel is mostly a description
-        // of the outline - how many parts, how many chapters, how long the
-        // scenes are - and the writer asking it is asking about the shape of
-        // their book, not about the file it lives in.
-        {
-          id: "menu-statistics",
-          opensDialog: true,
-          label: () => t("menu.statistics"),
-          run: deps.openStatistics,
-        },
-        { id: "menu-analytics", opensDialog: true, label: () => t("menu.analytics"), run: deps.openAnalytics },
-        // LAST, and appended rather than inserted, for the reason the item above
-        // gives: dialog-cli reaches Export as… by four literal ArrowDowns, and
-        // menu-cli, export-cli and history-cli read their indices out of this
-        // table through menu-drive.ts. An item added at the END of a menu moves
-        // nothing.
-        //
-        // In Outline because the state is a fact about a row of the outline, and
-        // beside Statistics because the panel that counts the states is the one
-        // above it.
-        {
-          id: "menu-revision-state",
-          opensDialog: true,
-          label: () => t("menu.revision-state"),
-          run: deps.openRevisionState,
-        },
-        // LAST, and appended rather than inserted, for the reason the two items
-        // above give: `menu-drive.ts` reads item indices out of this table for
-        // menu-cli, export-cli, history-cli and dialog-cli, and an item added at
-        // the END of a menu moves nothing.
-        //
-        // In Outline, beside Revision state, because both are facts a writer
-        // keeps ABOUT a row of the outline rather than in it. Not in Edit with
-        // the comments: a comment is anchored to a passage of prose and moves
-        // with it; a synopsis belongs to the item and exists whether or not the
-        // item carries any prose at all.
-        {
-          id: "menu-synopsis",
-          opensDialog: true,
-          label: () => t("menu.synopsis"),
-          run: deps.openSynopsis,
-        },
-        // LAST, and appended rather than inserted, for the reason the three
-        // items above give: `menu-drive.ts` reads item indices out of this table
-        // for menu-cli, export-cli, history-cli and dialog-cli, and an item
-        // added at the END of a menu moves nothing.
-        //
-        // IN OUTLINE, and this is the one placement in the menu worth arguing.
-        // A cast member is not a row of the outline the way a synopsis and a
-        // revision state are - it is not about any row at all. But it is about
-        // the BOOK rather than about the file the book lives in, which is what
-        // File holds, and it is not an operation on the prose, which is what
-        // Edit holds. A fifth menu title for it would put a fifth control in the
-        // 900px strip that is the recorded way a bar control silently moves
-        // every navigator row, for one item.
-        {
-          id: "menu-cast",
-          opensDialog: true,
-          label: () => t("menu.cast"),
-          run: deps.openCast,
-        },
-        { id: "menu-knowledge", opensDialog: true, label: () => t("menu.knowledge"), run: () => deps.openKnowledge?.() },
-        { id: "menu-craft-reports", opensDialog: true, label: () => t("menu.craft-reports"), run: () => deps.openCraftReports?.() },
-        // LAST, and appended rather than inserted, for the reason the four
-        // items above give: `menu-drive.ts` reads item indices out of this
-        // table for menu-cli, export-cli, history-cli and dialog-cli, and an
-        // item added at the END of a menu moves nothing.
-        //
-        // THE PAIR IS TWO ITEMS AND NOT ONE, and the split is the same one the
-        // synopsis and the cast already draw across this menu: the first is
-        // about the row the writer has selected and the second is about the
-        // BOOK. One item with a mode would be a surface that sometimes reads
-        // the selection and sometimes does not, which is the class of defect
-        // the synopsis panel's capture-at-open rule exists to prevent.
-        //
-        // Beside the Cast, because a tag names somebody in it and the panel is
-        // useless before that panel has been used.
-        {
-          id: "menu-appears",
-          opensDialog: true,
-          label: () => t("menu.appears"),
-          run: deps.openAppearances,
-        },
-        {
-          id: "menu-appears-map",
-          opensDialog: true,
-          label: () => t("menu.appears-map"),
-          run: deps.openAppearancesMap,
-        },
-        // Appended after the existing outline actions: `menu-drive.ts` reads
-        // item indices out of this table, so existing positions stay fixed.
-        //
-        // The outline's own undo stack, distinct from Edit's Undo/Redo above (which stay
-        // the editor's, over prose): both labels say when they have nothing
-        // to act on, exactly like Back and Forward, and for the same reason -
-        // an item that reads "Undo" and does nothing when pressed reads as a
-        // broken application.
         {
           id: "menu-outline-undo",
           label: () => {
@@ -597,15 +452,52 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
           shortcut: t("menu.shortcut.redo"),
           run: deps.outlineRedo,
         },
-        { id: "menu-view-manuscript", label: () => t("menu.view.manuscript"), checked: () => deps.outlineViewMode() === "manuscript", run: deps.showManuscript },
+        {
+          groupLabel: t("menu.outline.group.plan"), separatorBefore: true, id: "menu-synopsis",
+          opensDialog: true,
+          label: () => t("menu.synopsis"),
+          run: deps.openSynopsis,
+        },
+        {
+          id: "menu-revision-state",
+          opensDialog: true,
+          label: () => t("menu.revision-state"),
+          run: deps.openRevisionState,
+        },
+        {
+          id: "menu-cast",
+          opensDialog: true,
+          label: () => t("menu.cast"),
+          run: deps.openCast,
+        },
+        { id: "menu-knowledge", opensDialog: true, label: () => t("menu.knowledge"), run: () => deps.openKnowledge?.() },
+        {
+          id: "menu-appears",
+          opensDialog: true,
+          label: () => t("menu.appears"),
+          run: deps.openAppearances,
+        },
+        {
+          id: "menu-appears-map",
+          opensDialog: true,
+          label: () => t("menu.appears-map"),
+          run: deps.openAppearancesMap,
+        },
+        { groupLabel: t("menu.outline.group.views"), separatorBefore: true, id: "menu-view-manuscript", label: () => t("menu.view.manuscript"), checked: () => deps.outlineViewMode() === "manuscript", run: deps.showManuscript },
         { id: "menu-view-table", label: () => t("menu.view.table"), checked: () => deps.outlineViewMode() === "table", run: deps.showOutlineTable },
         { id: "menu-view-cards", label: () => t("menu.view.cards"), checked: () => deps.outlineViewMode() === "cards", run: deps.showOutlineCards },
-        // These actions extend the reading surfaces without moving earlier
-        // menu indices used by the screenshot and keyboard rigs.
         { id: "menu-view-reading", label: () => t("menu.view.reading"), checked: () => deps.outlineViewMode() === "reading", run: deps.showReadThrough },
         { id: "menu-view-continuous", label: () => t("menu.view.continuous"), checked: () => deps.outlineViewMode() === "continuous", run: deps.showContinuousChapter },
         { id: "menu-open-reference", label: () => t("menu.open-reference"), run: deps.openReference },
         { id: "menu-close-reference", label: () => t("menu.close-reference"), run: deps.closeReference },
+        {
+          groupLabel: t("menu.outline.group.review"), separatorBefore: true, id: "menu-statistics",
+          opensDialog: true,
+          label: () => t("menu.statistics"),
+          run: deps.openStatistics,
+        },
+        { id: "menu-analytics", opensDialog: true, label: () => t("menu.analytics"), run: deps.openAnalytics },
+        { id: "menu-craft-reports", opensDialog: true, label: () => t("menu.craft-reports"), run: () => deps.openCraftReports?.() },
         { id: "menu-review-proposals", opensDialog: true, label: () => t("menu.review-proposals"), run: deps.openReviewProposals },
       ],
     },

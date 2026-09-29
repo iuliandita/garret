@@ -1,5 +1,5 @@
 // app/ui/src/help.ts
-// The keyboard shortcuts panel, opened from Help in the application menu.
+// Offline writing guidance and keyboard shortcuts, opened from Help.
 //
 // THIS FILE RESTATES BINDINGS IT DOES NOT OWN, and that is the whole hazard.
 // The chords live in four other places -- the editor's keymap (editor.ts), the
@@ -154,6 +154,24 @@ export function createHelpPanel(deps: HelpPanelDeps): HelpPanel {
   // Focusable so open() has somewhere to put the caret, but not a tab stop:
   // Tab should leave the panel, not cycle its rows, which are not interactive.
   panel.tabIndex = -1;
+
+  const guide = document.createElement("section");
+  guide.id = "help-guide";
+  const guideTitle = document.createElement("h3");
+  guideTitle.textContent = t("help.guide.heading");
+  guide.append(guideTitle);
+  for (const task of ["structure", "annotate", "export", "protect"] as const) {
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = t(`help.guide.${task}.title`);
+    const text = document.createElement("p");
+    text.textContent = t(`help.guide.${task}.body`);
+    details.append(summary, text);
+    guide.append(details);
+  }
+  const shortcutsTitle = document.createElement("h3");
+  shortcutsTitle.textContent = t("help.shortcuts.heading");
+  panel.append(guide, shortcutsTitle);
 
   // The groups flow in two columns inside their own box. The columns
   // used to be on the panel itself, which also has a max-height, and a

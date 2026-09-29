@@ -841,12 +841,12 @@ describe("Back and Forward", () => {
     }
   });
 
-  test("they sit above Go to… and above everything that changes the tree", () => {
+  test("navigation stays together after the creation group", () => {
     const rig = mount();
     try {
       rig.title("menu-outline").click();
       const ids = [...rig.panel().querySelectorAll("[role='menuitem']")].map((el) => el.id);
-      expect(ids.slice(0, 3)).toEqual(["menu-nav-back", "menu-nav-forward", "menu-go-to"]);
+      expect(ids.slice(10, 13)).toEqual(["menu-nav-back", "menu-nav-forward", "menu-go-to"]);
     } finally {
       teardown(rig);
     }
@@ -905,14 +905,14 @@ describe("the context item says which action it will take", () => {
     }
   });
 
-  test("Who appears where opens the panel, with review appended after reference actions", () => {
+  test("Who appears where opens the panel, with review actions grouped last", () => {
     // Menu indices are consumed by the rigs, so new actions stay at the end.
     const rig = mount();
     try {
       rig.title("menu-outline").click();
       const items = [...rig.panel().querySelectorAll("[role='menuitem']")];
-      expect(items.slice(-3).map((item) => item.id)).toEqual([
-        "menu-open-reference", "menu-close-reference", "menu-review-proposals",
+      expect(items.slice(-4).map((item) => item.id)).toEqual([
+        "menu-statistics", "menu-analytics", "menu-craft-reports", "menu-review-proposals",
       ]);
 
       rig.item("menu-appears-map")?.click();
@@ -1705,12 +1705,12 @@ describe("Outline Undo and Redo", () => {
   const labelOf = (rig: Rig, id: string): string | undefined =>
     rig.item(id)?.querySelector(".menu-item-label")?.textContent ?? undefined;
 
-  test("new reference actions follow Outline Undo and Redo", () => {
+  test("reference actions sit together in the reading group", () => {
     const rig = mount();
     try {
       rig.title("menu-outline").click();
       const ids = [...rig.panel().querySelectorAll("[role='menuitem']")].map((el) => el.id);
-      expect(ids.slice(-3)).toEqual(["menu-open-reference", "menu-close-reference", "menu-review-proposals"]);
+      expect(ids.slice(-6, -4)).toEqual(["menu-open-reference", "menu-close-reference"]);
     } finally {
       teardown(rig);
     }
@@ -1857,4 +1857,20 @@ describe("the File menu is five groups", () => {
       teardown(rig);
     }
   });
+});
+
+
+test("Outline presents task groups and starts with scene and chapter creation", () => {
+  const rig = mount();
+  try {
+    rig.title("menu-outline").click();
+    const panel = rig.panel();
+    const items = [...panel.querySelectorAll("button")];
+    expect(items.slice(0, 3).map((item) => item.id)).toEqual(["menu-new-scene", "menu-new-chapter", "menu-new-part"]);
+    expect(panel.querySelectorAll('[role="separator"]').length).toBe(5);
+    expect([...panel.querySelectorAll(".menu-group-label")].map((el) => el.textContent)).toEqual([
+      "Add to the book", "Navigate", "Arrange the outline", "Plan scenes and cast", "Read and compare", "Review the book",
+    ]);
+    expect(items.length).toBe(38);
+  } finally { teardown(rig); }
 });

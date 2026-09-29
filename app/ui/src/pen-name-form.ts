@@ -66,13 +66,22 @@ export function createPenNameForm(deps: PenNameFormDeps): PenNameForm {
     const sortName = document.createElement("input");
     sortName.type = "text";
     sortName.id = "library-pen-name-sort-name";
+    const sortNote = document.createElement("span");
+    sortNote.id = "library-pen-name-sort-note";
+    sortNote.className = "pen-name-caption";
+    sortNote.textContent = t("library.pen-name.sort-note");
+    sortName.setAttribute("aria-describedby", sortNote.id);
     // Name and sort name side by side -- two short fields on one line, with
     // a real gap between the caption and the control and between the two
     // fields, rather than three labels and two inputs run together with no
     // layout of their own.
     const row = document.createElement("div");
     row.className = "pen-name-row";
-    row.append(field(t("library.pen-name.name"), name), field(t("library.pen-name.sort-name"), sortName));
+    const sortField = field(t("library.pen-name.sort-name"), sortName);
+    sortField.firstElementChild?.setAttribute("id", "library-pen-name-sort-caption");
+    sortName.setAttribute("aria-labelledby", "library-pen-name-sort-caption");
+    sortField.append(sortNote);
+    row.append(field(t("library.pen-name.name"), name), sortField);
 
     const bio = document.createElement("textarea");
     bio.id = "library-pen-name-bio";
