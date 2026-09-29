@@ -4,6 +4,7 @@ import { parseReviewBody } from "../../ui/src/review-fragments";
 import { createSession, type Session } from "../../ui/src/session";
 import { createFlushScheduler, type FlushEntry, type FlushAck, type FlushAttribution } from "../../ui/src/store/flush";
 import { mobileMessages } from "./messages";
+import type { WritingPosition } from "./position";
 
 export interface MobileDocument {
   item_id: string;
@@ -11,13 +12,17 @@ export interface MobileDocument {
   rev: number;
   comments: readonly CommentAnchor[];
 }
-export interface MobileScene { id: string; title: string; depth: number }
+export interface MobileContext { id: string; title: string; kind: "part" | "chapter" }
+export interface MobileScene { id: string; title: string; depth: number; context?: readonly MobileContext[] }
 export interface MobileWorkspaceOptions {
   bookTitle: string;
   locale: "en" | "de";
   theme: "light" | "dark";
   scenes: readonly MobileScene[];
   initial: MobileDocument;
+  initialPosition?: WritingPosition;
+  positionUnavailable?: boolean;
+  savePosition?(position: WritingPosition): void;
   // The native adapter captures the project generation. Never read a later
   // global project identity when a delayed save reaches this boundary.
   loadDoc(itemId: string): Promise<MobileDocument>;
@@ -89,24 +94,57 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
   let busy = false;
   let closed = false;
   let countFrame: number | undefined;
+  let positionTimer: ReturnType<typeof setTimeout> | undefined;
+  let restoreFrame: number | undefined;
+  let restoringPosition = true;
+  let recovery: HTMLDialogElement | undefined;
+  const page = get(".mobile-page");
+  function finishRestore() {
+    if (!restoringPosition) return;
+    if (restoreFrame !== undefined) { cancelAnimationFrame(restoreFrame); restoreFrame = undefined; }
+    const position = opts.initialPosition;
+    if (position?.sceneId === session.activeDocId()) {
+      page.scrollTop = Math.min(position.scrollTop, Math.max(0, page.scrollHeight - page.clientHeight));
+    }
+    restoringPosition = false;
+  }
+  function rememberPosition() {
+    if (!session || !editor || closed || restoringPosition) return;
+    if (positionTimer !== undefined) { clearTimeout(positionTimer); positionTimer = undefined; }
+    try {
+      opts.savePosition?.({ sceneId: session.activeDocId(), ...editor.selection(), scrollTop: page.scrollTop });
+    } catch { if (!flusher.failed()) showError(m.positionError); }
+  }
+  function schedulePosition() {
+    if (busy || closed || restoringPosition || positionTimer !== undefined) return;
+    positionTimer = setTimeout(rememberPosition, 150);
+  }
+  page.addEventListener("scroll", schedulePosition, { passive: true });
   const markButtons = new Map<string, HTMLButtonElement>();
   const showError = (message: string) => {
+    const target = outline.open ? outline : root;
+    if (error.parentElement !== target) {
+      if (outline.open) outline.querySelector("header")!.after(error);
+      else root.querySelector("header")!.after(error);
+    }
     error.textContent = message;
     error.hidden = false;
     if (flusher.failed()) {
       const copy = document.createElement("button"); copy.type = "button"; copy.textContent = m.recoverText;
       copy.addEventListener("click", () => {
-        const recovery = document.createElement("dialog"); recovery.className = "mobile-outline mobile-recovery";
-        recovery.setAttribute("aria-label", m.recoverText);
+        if (recovery?.open) return;
+        const dialog = document.createElement("dialog"); recovery = dialog;
+        dialog.className = "mobile-outline mobile-recovery";
+        dialog.setAttribute("aria-label", m.recoverText);
         const hint = document.createElement("p"); hint.textContent = m.recoveryHint;
         const field = document.createElement("textarea"); field.readOnly = true;
         field.setAttribute("aria-label", m.recoverText);
         const doc = schema.nodeFromJSON(JSON.parse(editor.serialize()));
         field.value = doc.textBetween(0, doc.content.size, "\n\n");
         const dismiss = document.createElement("button"); dismiss.type = "button"; dismiss.textContent = m.close;
-        dismiss.addEventListener("click", () => recovery.close());
-        recovery.addEventListener("close", () => recovery.remove(), { once: true });
-        recovery.append(hint, field, dismiss); root.append(recovery); recovery.showModal(); field.focus(); field.select();
+        dismiss.addEventListener("click", () => dialog.close());
+        dialog.addEventListener("close", () => { dialog.remove(); recovery = undefined; }, { once: true });
+        dialog.append(hint, field, dismiss); root.append(dialog); dialog.showModal(); field.focus(); field.select();
       });
       error.append(copy);
     }
@@ -125,6 +163,7 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
   }
   function refresh() {
     if (!editor) return;
+    schedulePosition();
     const marks = editor.activeMarks();
     for (const [key, button] of markButtons) button.setAttribute("aria-pressed", String(marks[key as keyof typeof marks]));
   }
@@ -173,10 +212,27 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
   function drawScenes() {
     sceneButtons.clear();
     get(".mobile-outline nav").replaceChildren();
+    let previous: readonly MobileContext[] = [];
     for (const scene of scenes) {
+    const context = scene.context ?? [];
+    let shared = 0;
+    while (shared < context.length && previous[shared]?.id === context[shared].id) shared++;
+    for (let index = shared; index < context.length; index++) {
+      const parent = context[index];
+      const label = document.createElement("h3");
+      label.className = "mobile-outline-context";
+      label.textContent = parent.title || (parent.kind === "part" ? m.untitledPart : m.untitledChapter);
+      label.style.paddingInlineStart = `${16 + Math.min(index, 4) * 12}px`;
+      get(".mobile-outline nav").append(label);
+    }
+    previous = context;
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = scene.title || m.untitled;
+    if (context.length) button.setAttribute("aria-label", [
+      ...context.map(parent => parent.title || (parent.kind === "part" ? m.untitledPart : m.untitledChapter)),
+      scene.title || m.untitled,
+    ].join(", "));
     button.style.paddingInlineStart = `${16 + Math.min(Math.max(scene.depth, 0), 4) * 12}px`;
     button.addEventListener("click", () => { void openScene(scene.id); });
     sceneButtons.set(scene.id, button);
@@ -194,7 +250,8 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
     outline.append(form);
     form.addEventListener("submit", event => {
       event.preventDefault();
-      const title = input.value.trim();
+      const submittedDraft = input.value;
+      const title = submittedDraft.trim();
       if (!title || busy || closed) return;
       void (async () => {
         setBusy(true);
@@ -205,7 +262,7 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
             || !result.scenes.some(scene => scene.id === session.activeDocId())) throw new Error(m.openError);
           scenes = result.scenes;
           drawScenes();
-          input.value = "";
+          if (input.value === submittedDraft) input.value = "";
           setBusy(false);
           if (!await openScene(result.item_id)) showError(m.openError);
         } catch { showError(m.operationError); }
@@ -232,6 +289,8 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
   async function openScene(id: string): Promise<boolean> {
     if (closed || busy || !sceneButtons.has(id)) return false;
     if (flusher.failed()) { showError(m.saveError); return false; }
+    finishRestore();
+    rememberPosition();
     setBusy(true);
     loading.incoming = undefined;
     try {
@@ -241,9 +300,13 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
         return false;
       }
       const loaded = loadedDocument();
-      if (result === "switched" && loaded) editor.setCommentAnchors(loaded.comments);
+      if (result === "switched" && loaded) {
+        editor.setCommentAnchors(loaded.comments);
+        page.scrollTop = 0;
+      }
       error.hidden = true;
       sceneChanged();
+      rememberPosition();
       if (outline.open) outline.close();
       return true;
     } finally { setBusy(false); }
@@ -256,6 +319,8 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
   async function close() {
     if (closed) return true;
     if (busy) return false;
+    finishRestore();
+    rememberPosition();
     setBusy(true);
     if (!await drain()) { setBusy(false); return false; }
     try { await opts.beforeLeave?.(); }
@@ -263,6 +328,8 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
     closed = true;
     flusher.stop();
     if (countFrame !== undefined) cancelAnimationFrame(countFrame);
+    if (restoreFrame !== undefined) cancelAnimationFrame(restoreFrame);
+    if (positionTimer !== undefined) clearTimeout(positionTimer);
     document.removeEventListener("visibilitychange", onVisibility);
     window.removeEventListener("pagehide", onBackground);
     window.removeEventListener("mobile-background", onBackground);
@@ -270,7 +337,7 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
     root.remove();
     return true;
   }
-  const onBackground = () => { void drain(); };
+  const onBackground = () => { finishRestore(); rememberPosition(); void drain(); };
   const onVisibility = () => { if (document.visibilityState === "hidden") onBackground(); };
   document.addEventListener("visibilitychange", onVisibility);
   window.addEventListener("pagehide", onBackground);
@@ -278,10 +345,21 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
   books.addEventListener("click", () => { void close().then(ok => { if (ok) opts.onLeave(); }); });
   outlineButton.addEventListener("click", () => outline.showModal());
   get('[data-action="close-outline"]').addEventListener("click", () => outline.close());
+  outline.addEventListener("close", () => { root.querySelector("header")!.after(error); });
   sceneChanged();
   mount.append(root);
+  const position = opts.initialPosition;
+  if (position?.sceneId === opts.initial.item_id) editor.restoreSelection(position.from, position.to);
+  restoreFrame = requestAnimationFrame(() => {
+    restoreFrame = undefined;
+    if (closed) return;
+    finishRestore();
+    rememberPosition();
+    if (opts.positionUnavailable && !flusher.failed()) showError(m.positionError);
+  });
   return { editor, openScene, drain, close, back() {
-    if (outline.open) outline.close();
+    if (recovery?.open) recovery.close();
+    else if (outline.open) outline.close();
     else books.click();
   } };
 }
