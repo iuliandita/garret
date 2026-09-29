@@ -184,7 +184,7 @@ describe("word count exposure", () => {
 
     expect(rig.container.getAttribute("role")).toBe(WORD_COUNT_ROLE);
     expect(rig.container.getAttribute("aria-label")).toBe(
-      "Word count: 1,234 words in this scene, 45,678 saved in the project, 0 words typed today",
+      "Word count: 1,234 words in this scene, 45,678 saved in the book, 0 words typed today",
     );
   });
 
@@ -209,7 +209,7 @@ describe("word count exposure", () => {
 
     const label = rig.container.getAttribute("aria-label") ?? "";
     expect(label).toContain("7 words in this scene");
-    expect(label).toContain("2,000 saved in the project");
+    expect(label).toContain("2,000 saved in the book");
     // The visible separator is punctuation with no meaning; read aloud between
     // two figures it is noise, which is also why the visible one is aria-hidden.
     expect(label).not.toContain("·");
@@ -235,7 +235,7 @@ describe("word count exposure", () => {
     expect(text(rig, "word-count-scene")).toBe("7 words");
     expect(text(rig, "word-count-project")).toBe("2,000 in the book");
     expect(rig.container.getAttribute("aria-label")).toBe(
-      "Word count: 7 words in this scene, 2,000 saved in the project, 0 words typed today",
+      "Word count: 7 words in this scene, 2,000 saved in the book, 0 words typed today",
     );
   });
 
@@ -248,13 +248,13 @@ describe("word count exposure", () => {
     rig.view.refreshScene();
     // A name rebuilt from only the half that changed would drop the other half.
     expect(rig.container.getAttribute("aria-label")).toBe(
-      "Word count: 6 words in this scene, 100 saved in the project, 0 words typed today",
+      "Word count: 6 words in this scene, 100 saved in the book, 0 words typed today",
     );
 
     answer = 250;
     await rig.view.refreshProject();
     expect(rig.container.getAttribute("aria-label")).toBe(
-      "Word count: 6 words in this scene, 250 saved in the project, 0 words typed today",
+      "Word count: 6 words in this scene, 250 saved in the book, 0 words typed today",
     );
   });
 
@@ -266,7 +266,7 @@ describe("word count exposure", () => {
     await rig.view.refreshProject();
 
     expect(rig.container.getAttribute("aria-label")).toBe(
-      "Word count: 3 words in this scene, — saved in the project",
+      "Word count: 3 words in this scene, — saved in the book",
     );
   });
 

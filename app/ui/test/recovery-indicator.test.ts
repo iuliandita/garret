@@ -451,7 +451,7 @@ describe("the manual backup a writer asked for", () => {
 describe("the sentence on the screen that explains a failed open", () => {
   test("a verified point is named, with its time and with `on this device`", () => {
     expect(startupRecoverySentence(report(), NOW)).toBe(
-      "This project has a same-device recovery point from 5 minutes ago. It sits beside the project file, so it is lost with the computer. Restoring it adds a NEW project and replaces nothing: open another project and use the recovery list in the project panel, or run `garret restore <point.point> <library-dir>` from a terminal.",
+      "This book has a same-device recovery point from 5 minutes ago. It sits beside the book file, so it is lost with the computer. Restoring it adds a NEW book and replaces nothing: open another book and use the recovery list in the book panel, or run `garret restore <point.point> <library-dir>` from a terminal.",
     );
   });
 
@@ -482,7 +482,7 @@ describe("the sentence on the screen that explains a failed open", () => {
   test("no point at all promises nothing", () => {
     expect(
       startupRecoverySentence(report({ newest_verified_ms: null, verified_points: 0 }), NOW),
-    ).toBe("There is no same-device recovery point for this project.");
+    ).toBe("There is no same-device recovery point for this book.");
   });
 
   test("a newest point that FAILED verification gets the same plain negative", () => {
@@ -500,7 +500,7 @@ describe("the sentence on the screen that explains a failed open", () => {
         } }),
         NOW,
       ),
-    ).toBe("There is no same-device recovery point for this project.");
+    ).toBe("There is no same-device recovery point for this book.");
   });
 
   test("nothing to ask, nothing to say", () => {
