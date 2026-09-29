@@ -120,7 +120,8 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
     onStateChange: state => { save.textContent = m[state]; save.dataset.state = state; },
   });
   function refreshCount() {
-    words.textContent = `${editor.wordCount().toLocaleString(opts.locale)} ${m.words}`;
+    const count = editor.wordCount();
+    words.textContent = `${count.toLocaleString(opts.locale)} ${count === 1 ? m.word : m.words}`;
   }
   function refresh() {
     if (!editor) return;

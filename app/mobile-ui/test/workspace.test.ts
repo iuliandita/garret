@@ -21,6 +21,17 @@ function fixture(overrides: Partial<MobileWorkspaceOptions> = {}) {
   return { workspace, mount, writes };
 }
 
+test("the footer uses the singular word in both languages", async () => {
+  for (const [locale, singular, plural] of [["en", "1 word", "3 words"], ["de", "1 Wort", "3 Wörter"]] as const) {
+    const f = fixture({ locale, initial: doc("a", "Before") });
+    const count = f.mount.querySelector(".mobile-words")!;
+    expect(count.textContent).toBe(singular);
+    await f.workspace.openScene("b");
+    expect(count.textContent).toBe(plural);
+    await f.workspace.close(); f.mount.remove();
+  }
+});
+
 test("switching saves the outgoing scene and its mapped notes before loading another", async () => {
   const initial = doc("a", "Before dawn");
   initial.comments = [{ id: 4, from: 2, to: 5, resolved: false }];
