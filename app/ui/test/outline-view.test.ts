@@ -42,6 +42,26 @@ describe("outline view", () => {
     view.destroy(); editor.remove();
   });
 
+  test("table updates preserve the keyboard scroll region and its position", () => {
+    const editor = document.createElement("main"); document.body.append(editor);
+    const view = createOutlineView({ ...noDeps(), editor, items: [item("s0"), item("s1")] });
+    view.show("table");
+    const scroll = view.element.querySelector<HTMLElement>(".outline-view-table-scroll")!;
+    expect(scroll.getAttribute("role")).toBe("region");
+    expect(scroll.tabIndex).toBe(0);
+    scroll.scrollLeft = 120;
+    scroll.scrollTop = 80;
+    scroll.focus();
+    view.setCounts(new Map([["s0", 1]]));
+    const updated = view.element.querySelector<HTMLElement>(".outline-view-table-scroll")!;
+    expect(updated.scrollLeft).toBe(120);
+    expect(updated.scrollTop).toBe(80);
+    expect(document.activeElement).toBe(updated);
+    view.hide();
+    expect(view.element.hidden).toBe(true);
+    view.destroy(); editor.remove();
+  });
+
   test("table selection and move carry the same canonical id", () => {
     const editor = document.createElement("main"); document.body.append(editor);
     const selected: string[] = [];
