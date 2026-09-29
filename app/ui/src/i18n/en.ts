@@ -33,6 +33,7 @@
 // UNKNOWN once. Change a string here only with a rig run behind it.
 
 export const EN = {
+  "editor.name": "Manuscript editor",
   // panel-shell.ts: the Close icon every anchored panel shares.
   "panel.close": "Close {title}",
   "help.about": "About {label}",

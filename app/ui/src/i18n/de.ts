@@ -29,6 +29,7 @@
 // Bibel, Pseudonym, Fokusmodus, Schreibmaschinenmodus.
 
 export const DE = {
+  "editor.name": "Manuskripteditor",
   // panel-shell.ts: the Close icon every anchored panel shares.
   "panel.close": "{title} schließen",
   "help.about": "Erklärung zu {label}",
