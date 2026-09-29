@@ -44,8 +44,8 @@ pub(crate) struct ExportResult {
 /// The catalog key for the heading the generated table of contents is written
 /// under.
 ///
-/// A KEY AND NO LONGER A CONSTANT (055). It was `CONTENTS_TITLE = "Contents"`,
-/// and 041 left it a parameter on `export::Book` precisely so a later slice
+/// A KEY AND NO LONGER A CONSTANT. It was `CONTENTS_TITLE = "Contents"`,
+/// and was left a parameter on `export::Book` precisely so a later change
 /// could source it -- `export.rs` is pure and holds no writer-facing words of
 /// its own, which `no_writer_facing_literal_in_the_renderers` now enforces.
 /// The word comes from `strings`, which comes from the locale in
@@ -694,9 +694,9 @@ pub(crate) struct PdfPreview {
 /// Takes the open handle rather than opening it, so the failure path is
 /// reachable from a test: the caller's `create_new` open is what makes a
 /// write-failure destination impossible to construct through the path alone.
-/// BYTES, not `&str`, since 040. An EPUB is a zip container and a PDF is
+/// BYTES, not `&str`. An EPUB is a zip container and a PDF is
 /// binary; a writer that could only take text would have to be rewritten by the
-/// slice that adds the first of them, and the `Dest::New` / `Dest::Replace`
+/// change that adds the first of them, and the `Dest::New` / `Dest::Replace`
 /// crash safety above it -- the `create_new` refusal, the sibling temp file, the
 /// rename, the reclaim -- would be rewritten with it. That safety is the reason
 /// this function exists and it is unchanged: only the type of what it writes
@@ -1241,7 +1241,7 @@ mod tests {
 
     #[test]
     fn the_written_bytes_are_the_rendered_bytes() {
-        // `write_manuscript` takes bytes since 040 and the render produces them;
+        // `write_manuscript` takes bytes and the render produces them;
         // nothing in between may reinterpret. Asserted against the renderer
         // rather than against a literal, so this stays true for a format whose
         // bytes are not text.
@@ -1775,7 +1775,7 @@ mod tests {
         assert_eq!(result.words, 4);
     }
 
-    /// A TIMELINE UNDER THE BIBLE IS NEVER EXPORTED EITHER (101). One
+    /// A TIMELINE UNDER THE BIBLE IS NEVER EXPORTED EITHER. One
     /// assertion, per the plan: it needs no new filter of its own, because it
     /// lives inside the same bible subtree `manuscript_items` already drops --
     /// this pins that the existing exclusion covers it rather than assuming so.

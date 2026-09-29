@@ -2254,7 +2254,7 @@ pub const MATTER_TYPE: &str = "matter";
 /// parts, chapters and scenes, and a body arriving on any other row there is a
 /// parser bug rather than a bible document.
 ///
-/// A `timeline` carries one too (101), a JSON body rather than prose - see
+/// A `timeline` carries one too, a JSON body rather than prose - see
 /// `TIMELINE_TYPE`'s own comment for why every prose-reading consumer excludes
 /// it BY TYPE rather than treating it as a fourth kind of document.
 pub fn carries_document(item_type: &str) -> bool {
@@ -2794,7 +2794,7 @@ mod tests {
     /// and NAMES ITS OWN KIND rather than one that merely differs by string
     /// equality -- so this parses the stored body as JSON and reads `kind`
     /// back out of it, the same shape the page's own `timeline-model.ts` will
-    /// use in 102.
+    /// use.
     #[test]
     fn a_timeline_is_created_with_a_timeline_document_not_a_prosemirror_one() {
         let dir = tempdir().unwrap();
@@ -3006,7 +3006,7 @@ mod tests {
 
     #[test]
     fn the_starter_chapter_and_scene_are_named_by_the_page_s_own_convention() {
-        // The reason `Untitled scene` was retired in 027, applied to the
+        // The reason `Untitled scene` was retired, applied to the
         // chapter: a starter named by a different convention makes a writer's
         // first two rows read as two systems.
         let dir = tempdir().unwrap();

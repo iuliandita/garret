@@ -17,7 +17,7 @@
 // `meta` and not a column, because a book has no row to hang a column on. The
 // alternatives were a one-row table or a second column on `meta` itself, and
 // both are a migration for two scalars in a table that has held per-project
-// scalars since v1 -- which is exactly the argument 040 made for putting the
+// scalars since v1 -- which is exactly the argument made for putting the
 // font, the page and the margins there, and this is the same book's design.
 //
 // `meta` and not A FIXED FILENAME in the picture directory, which is the

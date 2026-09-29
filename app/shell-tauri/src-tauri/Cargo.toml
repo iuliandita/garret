@@ -36,7 +36,7 @@ tauri-plugin-dialog = "2.7.2"
 tempfile = "3.27.0"
 png = "0.18"
 zune-jpeg = "0.5"
-# `read_zip`'s DEFLATE arm (093): every DOCX a writer receives from Word, pandoc
+# `read_zip`'s DEFLATE arm: every DOCX a writer receives from Word, pandoc
 # or LibreOffice is deflated, and the stored-only reader refused them all.
 # Already in the build graph under `png`; promoted rather than added. Only
 # inflate is on the shipped path -- this application still writes STORED
@@ -46,7 +46,7 @@ miniz_oxide = "0.8"
 # Canonical registry alias checks. Already present in the locked graph; named
 # directly so this host code does not depend on a transitive package by accident.
 same-file = "1.0.6"
-# The new book default (159): `document_dir()`/`home_dir()`, nothing else.
+# The new book default: `document_dir()`/`home_dir()`, nothing else.
 # Already present in the locked graph under tauri's own dependencies; named
 # directly rather than relied on transitively, since this host code now calls
 # it on its own account.

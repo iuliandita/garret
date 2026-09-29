@@ -675,7 +675,7 @@ mod tests {
 /// THE DRIFT GUARD, and the reason this module is load-bearing rather than
 /// decorative.
 ///
-/// The page's half of 008 ships `no-hardcoded-strings.test.ts`, which fails the
+/// The page's half ships `no-hardcoded-strings.test.ts`, which fails the
 /// build on the next inline literal anywhere in `app/ui/src`. The host cannot
 /// have that guard over 39,000 lines of Rust full of SQL, XML and format
 /// strings without an allowlist so long it would exempt the next real label. So

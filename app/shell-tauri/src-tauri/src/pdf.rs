@@ -94,10 +94,10 @@ pub struct Cover {
 pub struct Proof<'a> {
     pub book: &'a Book<'a>,
     pub bodies: &'a HashMap<String, String>,
-    /// The BCP-47 tag on the proof document's `<html lang>`. 043's constant,
-    /// made a parameter by 055 -- see `epub::Epub::language`.
+    /// The BCP-47 tag on the proof document's `<html lang>`. Originally a
+    /// constant, made a parameter -- see `epub::Epub::language`.
     pub language: &'a str,
-    /// 040's three, and THIS is the slice where all three become real. The EPUB
+    /// The font, the page and the margins together, and THIS is where all three become real. The EPUB
     /// takes only the font, because a reflowable format has no page; a proof
     /// copy is a page, and the trim and the margins are its whole geometry.
     pub design: &'a BookDesign,

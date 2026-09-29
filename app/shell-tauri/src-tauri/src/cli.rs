@@ -742,7 +742,7 @@ pub struct ImportResult {
 /// (`crate::import_path`, shared rather than restated) -- so a foreign file
 /// can be graded without a window, which is this subcommand's whole point.
 ///
-/// `library` IS THE OPERATOR'S OWN ARGUMENT, unaffected by 159: this
+/// `library` IS THE OPERATOR'S OWN ARGUMENT: this
 /// subcommand already takes an explicit destination on the command line, so
 /// there is no hidden default here for the resolver to replace. `data_home`
 /// is only `import_path`'s registration seam -- so a destination outside the
@@ -895,7 +895,7 @@ fn salvage_report(v: &salvage::Salvage, out_dir: &Path) -> String {
         out.push_str(&format!("sidecars   {}\n", v.sidecars.join(", ")));
     }
     // THE PATH THE OPERATOR TYPED, and NOT `v.out_dir`, which is the directory's
-    // own name since 054. The terminal belongs to the person who ran the
+    // own name. The terminal belongs to the person who ran the
     // command, who needs to be told where to look; the manifest is the artifact
     // that travels, and it names files. Two readers, two answers.
     out.push_str(&format!("out        {}\n", out_dir.display()));
@@ -959,7 +959,7 @@ fn salvage_report(v: &salvage::Salvage, out_dir: &Path) -> String {
     ));
     // THE VERSION HISTORY, at zero on the same rule, and in TWO lines because
     // they say two different things. The first is what came back; the second is
-    // what this recovery CHOSE not to bring back, which is the whole of 050's
+    // what this recovery CHOSE not to bring back, which is the whole of that
     // decision and the one figure a writer cannot get anywhere else. A dropped
     // automatic version is not a loss and so appears in no loss list -- if it is
     // not on this line it is nowhere.
@@ -3320,7 +3320,7 @@ mod tests {
         assert!(with.contains(&format!("pictures   1 ({dir}/)")), "{with}");
     }
 
-    /// THE TERMINAL IS THE OPERATOR'S AND THE MANIFEST IS EVERYBODY ELSE'S (054).
+    /// THE TERMINAL IS THE OPERATOR'S AND THE MANIFEST IS EVERYBODY ELSE'S.
     ///
     /// `manifest.json` names files because it travels; the two lines that tell
     /// the person who ran the command where to look must go on naming the whole
@@ -3542,7 +3542,7 @@ mod tests {
     /// earlier fixes exist to end, reintroduced inside the fix for it.
     ///
     /// Read back through `salvage_report` because nothing in this crate had ever
-    /// read a `print_*` back until 046 extracted it, and a mutation that made
+    /// read a `print_*` back until this was extracted, and a mutation that made
     /// one of these lines lie would otherwise survive the whole suite.
     #[test]
     fn salvage_report_states_the_snapshots_and_what_it_dropped() {
@@ -3714,8 +3714,8 @@ mod tests {
 
     #[test]
     fn a_format_this_build_does_not_write_is_a_usage_error_and_not_a_markdown_file() {
-        // A WORD THIS BUILD HAS NO RENDERER FOR. It was `pdf` until 044 gave
-        // this build one, which is exactly the drift a literal in a test
+        // A WORD THIS BUILD HAS NO RENDERER FOR. It was `pdf` until this
+        // build gained one, which is exactly the drift a literal in a test
         // acquires -- the assertion went on passing for a format that had
         // become real and would have kept passing for every format after it.
         assert!(parse(&["export".into(), "--format".into(), "postscript".into()]).is_err());

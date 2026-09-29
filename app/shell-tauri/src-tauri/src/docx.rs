@@ -561,7 +561,7 @@ mod tests {
     }
 
     /// THE LANG TAG CARRIES THE TAG PASSED IN, on the document defaults
-    /// every run inherits -- the same source-of-truth rule 055 put on
+    /// every run inherits -- the same source-of-truth rule put on
     /// `epub::Epub::language`: the render never invents one of its own.
     #[test]
     fn w_lang_carries_the_tag_passed_in() {

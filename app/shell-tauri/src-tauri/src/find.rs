@@ -57,8 +57,8 @@ pub struct FindHit {
     /// chapter that matched is still shown and still selects its navigator row.
     ///
     /// `store::carries_document`, never the literal `"scene"`. It was the
-    /// literal until 041, which is why a bible note has been findable and
-    /// unopenable from this panel since 035 -- the one rule that answers "does
+    /// literal at first, which is why a bible note has been findable and
+    /// unopenable from this panel -- the one rule that answers "does
     /// this row hold prose" lives in the store and this is the third caller of
     /// it. A fourth type must not have to remember this line exists.
     pub openable: bool,

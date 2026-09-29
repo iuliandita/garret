@@ -174,8 +174,8 @@ pub fn library_dir(data_home: &Path) -> PathBuf {
     data_home.join(APP_DIR).join("projects")
 }
 
-/// Where a new book goes with no folder the writer chose still in force
-/// (159): `remembered` if it is an absolute path other than `library`,
+/// Where a new book goes with no folder the writer chose still in force:
+/// `remembered` if it is an absolute path other than `library`,
 /// `documents_dir` plus `"Books"` otherwise, `home_dir` plus `"Books"` if
 /// there is no Documents folder, and a refusal if there is neither.
 ///
@@ -699,7 +699,7 @@ pub fn known(data_home: &Path) -> Vec<PathBuf> {
     }
     for recorded in read_settings(data_home).books {
         let path = PathBuf::from(recorded);
-        // A `~/` entry with no usable HOME to expand it (106) is a relative
+        // A `~/` entry with no usable HOME to expand it is a relative
         // path, and a relative path in the openability set would resolve
         // against the process's working directory at open time. Listed as
         // missing by `list_known`, never here.
@@ -1713,7 +1713,7 @@ pub struct Settings {
     #[serde(default)]
     pub protection_claims: Vec<ProtectionClaim>,
     /// Paths of books that do NOT live in the default library: absolute in
-    /// memory, `~/`-relative on disk under the home directory (106).
+    /// memory, `~/`-relative on disk under the home directory.
     ///
     /// THIS IS THE OPENABILITY GATE, not a convenience index. `may_open` used
     /// to ask "is this file directly inside the library directory", which was
@@ -1759,7 +1759,7 @@ pub struct Settings {
     /// by `record_recent`. LENIENT PER ELEMENT - see `lenient_recent`.
     #[serde(default, deserialize_with = "lenient_recent")]
     pub recent: Vec<RecentBook>,
-    /// Which pen name the library screen is filtered to (100). An id the
+    /// Which pen name the library screen is filtered to. An id the
     /// vault no longer holds reads as All -- `commands::library` is what
     /// applies that filter, not this file, so a renamed or removed identity
     /// costs the writer one click rather than a dangling reference anywhere
@@ -2339,7 +2339,7 @@ where
 /// as default: this is a preferences file, losing it costs the user one click,
 /// and refusing to launch over it would be worse.
 ///
-/// The five path fields are expanded against the real `HOME` (106); with none
+/// The five path fields are expanded against the real `HOME`; with none
 /// usable a `~` value reads back literally, which lists as a missing book
 /// rather than a deleted one.
 pub fn read_settings(data_home: &Path) -> Settings {
@@ -2355,7 +2355,7 @@ pub fn read_settings_checked(data_home: &Path) -> Result<Settings, String> {
 
 /// `read_settings`'s body, with the home directory taken as a parameter
 /// rather than read from the environment -- the seam tests use, so no test
-/// sets `HOME` (106).
+/// sets `HOME`.
 fn read_settings_with(data_home: &Path, home: Option<&Path>) -> Settings {
     read_settings_checked_with(data_home, home).unwrap_or_default()
 }
@@ -2415,7 +2415,7 @@ pub fn update_settings_checked(
 /// worse than none.
 ///
 /// The five path fields are contracted against the real `HOME` before the
-/// bytes are written (106); with none usable the file is written absolute, as
+/// bytes are written; with none usable the file is written absolute, as
 /// it always was.
 pub fn write_settings(data_home: &Path, s: &Settings) -> Result<(), String> {
     write_settings_with(data_home, s, home_dir().as_deref())
@@ -3123,7 +3123,7 @@ mod tests {
 
         let store = crate::store::Store::open(Path::new(&listed[0].path)).unwrap();
         let items = store.items().unwrap();
-        // A CHAPTER AND A SCENE INSIDE IT, since 033. A chapter is not optional
+        // A CHAPTER AND A SCENE INSIDE IT. A chapter is not optional
         // in this product, and a book that opened as one bare scene is what
         // left the writer's first press with nowhere to indent to.
         assert_eq!(items.len(), 2);
@@ -3407,7 +3407,7 @@ mod tests {
         assert_eq!(contract_home("/srv/books/x.db", home), "/srv/books/x.db");
     }
 
-    // ---- resolve_new_book_dir (159) --------------------------------------
+    // ---- resolve_new_book_dir --------------------------------------
 
     #[test]
     fn an_absolute_remembered_folder_wins_over_every_default() {

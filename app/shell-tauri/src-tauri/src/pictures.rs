@@ -182,7 +182,7 @@ pub struct PictureView {
 /// FROM THE STORE PATH ALONE -- not from `data_home`, not from a library slug --
 /// and that is load-bearing three times. `salvage` is handed a bare `.db` path
 /// and no data home, so a directory it could not derive is a directory it could
-/// not recover from. A book can live in a folder the writer picked (031), and
+/// not recover from. A book can live in a folder the writer picked, and
 /// their photographs belong beside their book rather than in an
 /// application-owned area they will never find. And `projects::list` filters
 /// `p.is_file()`, so a directory sitting in the library is invisible to the

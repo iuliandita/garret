@@ -738,8 +738,8 @@ pub fn confirm(
 /// asymmetry the design's own words carry: overwriting an external edit is "the
 /// single worst thing this feature could do", and rewriting a file the writer
 /// deleted destroys nothing. A deletion that paused would leave the folder
-/// permanently short a scene with no way to repair it until 022 ships the
-/// resolve path.
+/// permanently short a scene with no way to repair it until the resolve path
+/// ships.
 ///
 /// RETURNS A REPORT, NEVER A RESULT. This runs as a background task after the
 /// window is up and is never a precondition for opening the project
@@ -1387,8 +1387,8 @@ pub const CONFLICT: &str = "conflict";
 pub const FRONT_MATTER: &str = "front-matter";
 /// The `# ` heading differs from the item's title.
 ///
-/// NOT IN THE DESIGN'S TABLE, which was written three days before 019 put the
-/// title in a heading OUTSIDE the front matter. Folding a renamed heading into
+/// NOT IN THE DESIGN'S TABLE, which was written three days before the title
+/// moved into a heading OUTSIDE the front matter. Folding a renamed heading into
 /// "front matter changed" would put a wrong word in front of a writer.
 /// **Outranks `PROSE`**: accepting prose from a file whose heading also
 /// changed would silently discard the rename, and half of what a writer did is
@@ -1860,7 +1860,7 @@ pub struct MirrorEntry {
     /// at 1, so 0 can mean both "this item has no document" and "this row was
     /// written before the application recorded prose revisions" without the two
     /// ever colliding: a container compares 0 to 0 and is correctly skipped,
-    /// while a scene written by 019 or 020 compares 0 to its real revision and
+    /// while a scene written by an earlier build compares 0 to its real revision and
     /// is rewritten once. An `Option` would make both of those `None == None`
     /// and leave every mirror on disk stale forever.
     #[serde(default)]
@@ -2910,10 +2910,10 @@ mod tests {
 
     #[test]
     fn a_paused_entry_is_not_overwritten_and_its_siblings_still_are() {
-        // THE FAILURE THIS SLICE EXISTS TO CLOSE. The design calls overwriting
+        // THE FAILURE THIS EXISTS TO CLOSE. The design calls overwriting
         // a writer's external edit because a timer fired "the single worst
-        // thing this feature could do" (:496-502), and 019 shipped a mirror
-        // that would do exactly that on the next ten-second tick.
+        // thing this feature could do" (:496-502), and the mirror originally
+        // shipped would do exactly that on the next ten-second tick.
         //
         // BOTH SCENES ARE MADE DIRTY IN THE STORE FIRST, and that is what
         // makes the sibling half mean anything. 019's incremental rule skips
@@ -3013,7 +3013,7 @@ mod tests {
         // writer went on typing in the application while their external edit
         // sat unresolved. A row that took the new `doc_rev` would compare equal
         // on the pass after the pause lifted, and the words typed here would
-        // never reach the folder -- the 029 defect, rebuilt inside the pause.
+        // never reach the folder -- the same defect, rebuilt inside the pause.
         {
             let store = crate::store::Store::open(&src).unwrap();
             let doc_rev = store.load_doc(&edited.id).unwrap().rev;
@@ -4087,7 +4087,7 @@ mod tests {
     /// by accident on the first run, one of them because replacing a 36-byte
     /// UUID with a 21-byte forgery and appending 19 bytes of prose came to
     /// exactly zero. Both reported no rows and looked like a broken change set.
-    /// This is the recorded fix from 020's own mutation pass: move the manifest
+    /// This is the recorded fix from an earlier mutation pass: move the manifest
     /// rather than touch the files, and let the hash answer.
     fn age_manifest(dir: &Path) {
         let manifest: crate::recovery::Manifest<MirrorEntry> =
@@ -4445,7 +4445,7 @@ mod tests {
     #[test]
     fn an_applicable_row_says_how_many_underlined_runs_the_folder_ALREADY_dropped() {
         // MEASURED, NOT ASSERTED IN PROSE. Markdown has no underline, so the
-        // mirror's own write dropped it (034) -- the file never carried it and
+        // mirror's own write dropped it -- the file never carried it and
         // no accept can bring it back. The number is the store's, counted by
         // the same tally the export notice uses, and it is on the row so the
         // writer is told BEFORE they press rather than after.
@@ -4803,7 +4803,7 @@ mod tests {
         assert!(both.contains(&"strong".to_string()) && both.contains(&"em".to_string()));
 
         // LOST: underline, and this is the ONLY mark in the schema that is.
-        // The export drops it by design (034) and counts it, so the FILE never
+        // The export drops it by design and counts it, so the FILE never
         // carried it -- the loss happens on the way out, not on the way back,
         // and no accept could restore what is not in the file. `under` comes
         // back as a bare text run.

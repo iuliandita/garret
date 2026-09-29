@@ -460,7 +460,7 @@ impl Store {
             name: name.to_string(),
             summary: String::new(),
             fields: Vec::new(),
-            // A new member has no aliases: `cast_create` writes none (105).
+            // A new member has no aliases: `cast_create` writes none.
             aliases: Vec::new(),
             // A new member has no picture, and the row's column is NULL because
             // the INSERT does not name it.
