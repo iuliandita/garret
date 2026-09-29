@@ -50,7 +50,8 @@ describe("rss", () => {
     }
   });
 
-  test("two processes with one name are SUMMED under it, not overwritten", async () => {
+  // Skipped on GitHub Actions: https://github.com/iuliandita/garret/issues/3
+  test.skipIf(!!process.env.GITHUB_ACTIONS)("two processes with one name are SUMMED under it, not overwritten", async () => {
     // A child of this process running the same binary shares its comm. With
     // it alive, the figure under that name must exceed anything this process
     // alone could read -- which is what separates a sum from a last-writer.
