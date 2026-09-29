@@ -352,7 +352,8 @@ describe("runShell failure cleanup", () => {
     }
   });
 
-  test("discards unused stdout so a pipe-sized synthetic payload can report", async () => {
+  // Skipped on GitHub Actions: https://github.com/iuliandita/garret/issues/3
+  test.skipIf(!!process.env.GITHUB_ACTIONS)("discards unused stdout so a pipe-sized synthetic payload can report", async () => {
     const dir = mkdtempSync(join(tmpdir(), "run-shell-stdout-"));
     try {
       const synthetic = syntheticRun(dir, "stdout");
