@@ -696,9 +696,9 @@ export async function runShell<P extends { ready: boolean; error?: string } = Si
         // override still wins.
         ...(session ? {} : { GDK_BACKEND: "x11" }),
         GTK_A11Y: "atspi",
-        // The page formats its figures for the LANGUAGE the settings chose (090:
-        // `formatNumber`), so the English page the rigs boot reads "2,011" under
-        // any shell locale; before 090 the shell's locale decided, and under
+        // The page formats its figures for the LANGUAGE the settings chose
+        // (`formatNumber`), so the English page the rigs boot reads "2,011" under
+        // any shell locale; before that the shell's locale decided, and under
         // de_DE the count read "2.011" and under fr_FR "2 011". words-cli parses
         // those figures out of the exposed accessible name with a [\d,]+ pattern,
         // which stops matching - and the run then degrades to UNKNOWN verdicts,

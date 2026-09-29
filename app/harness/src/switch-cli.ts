@@ -91,7 +91,7 @@ const BAR_HEIGHT = 39;
  *  and grades whatever it happens to hit. */
 const NAV_HEADER_HEIGHT = 39;
 const NAV_TOP = BAR_HEIGHT + NAV_HEADER_HEIGHT;
-/** #footer { height: 34px }, since 067. The navigator's rows still start at
+/** #footer { height: 34px }. The navigator's rows still start at
  *  NAV_TOP, but the pane ends this much before the window does, so the
  *  "every row is on screen" guard subtracts it. */
 const FOOTER_HEIGHT = 34;

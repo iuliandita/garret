@@ -1,7 +1,7 @@
 // app/harness/src/home-cli.ts
-// Graded no-project-boot run (099/100): does the window come up with nothing
+// Graded no-project-boot run: does the window come up with nothing
 // mounted when `settings.start` says so, does `last` keep today's behaviour
-// exactly, and (100) does `home` show the library screen with an affordable
+// exactly, and does `home` show the library screen with an affordable
 // overview and word count and a working Continue-writing press.
 //
 // THE PATH `switch-cli` AND `project-cli` NEVER TAKE: both of them seed a
@@ -298,7 +298,7 @@ function pressContinueWriting(
     const headerName = after["project-name-label"];
     const settings = JSON.parse(readFileSync(settingsPath, "utf8")) as { recent?: { path: string }[] };
     // The host writes this path `~/`-relative when the data home sits under
-    // HOME (106); under /tmp it is absolute. Expand before comparing so the
+    // HOME; under /tmp it is absolute. Expand before comparing so the
     // gate does not depend on where TMPDIR points.
     const recentRaw = settings.recent?.[0]?.path;
     const recentPath = recentRaw?.startsWith("~/") ? join(homedir(), recentRaw.slice(2)) : recentRaw;

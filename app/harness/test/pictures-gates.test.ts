@@ -1,5 +1,5 @@
 // app/harness/test/pictures-gates.test.ts
-// The five pictures gates (108), and the failing direction of each named in
+// The five pictures gates, and the failing direction of each named in
 // the plan's mutation targets. The numeric gate is exercised at a real
 // threshold passed in explicitly, so the test is about the comparison and not
 // about the placeholder constant reading FAIL by design.

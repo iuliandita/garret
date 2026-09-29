@@ -17,7 +17,7 @@
 # usage: WIDE_OUTPUT=<hyprland output name> WIDE_WORKSPACE=<n> \
 #        app/harness/src/wide-shot.sh <light|dark> <out.png> [zoom]
 # from the repo root, after `cd app/ui && bun run build`. With
-# WIDE_SCREEN=library (100) the host boots with NO project and `start`
+# WIDE_SCREEN=library the host boots with NO project and `start`
 # "home": a library of three books (the sample on the desk, pinned to the
 # first of shot-cli's two demo pen names; two more from the stress and tiny
 # fixtures, one pinned to the second) seeded into the data home's own
@@ -26,7 +26,7 @@
 # monitor:<output>"`) and a window rule must send the app there
 # (`hyprctl keyword windowrule "workspace <n> silent, match:class
 # ^([Aa]pp-shell-tauri)$"`); both are session-only and neither is set here.
-# WIDE_FIXTURE=<dir> (104) seeds that fixture instead of the stress one
+# WIDE_FIXTURE=<dir> seeds that fixture instead of the stress one
 # (`app/fixtures/sample` for the sample's own timeline), and
 # WIDE_OPEN=<title> opens that document through Quick Open (Ctrl+P, the
 # title, Return, typed with wtype into the focused window) before the

@@ -625,11 +625,11 @@ async function main(): Promise<void> {
   const trashedLabel =
     captured.labelTrashed ?? fail("the context menu exposed no removal item on the binned row");
 
-  // -- Boot 4: a create lands where 027 places it ---------------------------
-  console.log("[4/6] create where 027 places it");
+  // -- Boot 4: a create lands where placement type-awareness puts it --------
+  console.log("[4/6] create where placement type-awareness puts it");
   const createProject = seed("create");
   const rowsBeforeCreate = storeWalk(createProject);
-  // 027 made placement type-aware; this is the rig's restatement of that rule
+  // Placement is type-aware; this is the rig's restatement of that rule
   // (context-placement.ts), computed BEFORE the create runs so the fixture's
   // tree, not the create's own effect, decides the expectation. The fixture
   // clicks a scene under a chapter, so the "build a missing container" arm is

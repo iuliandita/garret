@@ -909,7 +909,7 @@ const manuscript = readManuscript(firstBytes);
 // list that happens to be there.
 //
 // NOT A GATE, deliberately: a gate answers "is this over the line" and this is
-// a yes or a no. Recorded as a gap in 041's write-back all the same -- an abort
+// a yes or a no. Recorded as a known gap all the same -- an abort
 // is invisible in `app/results/` when it does not fire.
 if (walk0.length > 0) {
   const titles = walk0.map((item) => item.title);

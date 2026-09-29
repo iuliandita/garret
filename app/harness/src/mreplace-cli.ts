@@ -312,7 +312,7 @@ interface Seen {
  *  the whole cost was the enumeration and the banner had been gone for nine
  *  seconds. The first version of this rig therefore reported `the panel never
  *  announced a count` about an announcement that was correct, on screen and
- *  photographed. `get_process_id()` (073) answers from the bus daemon rather
+ *  photographed. `get_process_id()` answers from the bus daemon rather
  *  than the application and costs nothing per registrant, but the early spawn
  *  below is unchanged: it is still the one AT-SPI client this window takes.
  *

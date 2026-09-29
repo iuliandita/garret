@@ -100,15 +100,15 @@ const WINDOW_HEIGHT = 1200;
  *  `context-cli` already own the same lever for the same row. */
 const SERVER_ARGS_TALL = "-screen 0 1280x1200x24 -s 0 -noreset";
 const SCREEN_HEIGHT = 1200;
-/** The project bar, which DECLARES `height: 39px` (border-box) since 067.
+/** The project bar, which DECLARES `height: 39px` (border-box).
  *  Before that it was `padding: 6px` around a 16px/1.6 line plus a 1px border,
  *  which summed to the same number.
  *
  *  Used ONLY as the fit guard's upper bound on what sits above the navigator.
  *  Every click reads the pane's real top out of the accessibility tree instead
- *  - see `paneTop`. Measured against a live window before 067 the bar was 38px,
- *  so this was one pixel pessimistic, which is the direction a fit guard should
- *  err in; since 067 it is exact. */
+ *  - see `paneTop`. Measured against a live window before that change the bar
+ *  was 38px, so this was one pixel pessimistic, which is the direction a fit
+ *  guard should err in; now it is exact. */
 const PROJECT_BAR_HEIGHT = 39;
 /** #nav-header, the strip carrying the book's name above the outline. Added
  *  earlier, and 39px BY DESIGN -- the same as the bar, so the navigator's
@@ -122,7 +122,7 @@ const NAV_HEADER_HEIGHT = 39;
 /** The top of the navigator's first row. One name for the sum, so a third strip
  *  is one edit rather than three. */
 const NAV_TOP = PROJECT_BAR_HEIGHT + NAV_HEADER_HEIGHT;
-/** #footer { height: 34px }, since 067. The navigator's rows still start at
+/** #footer { height: 34px }. The navigator's rows still start at
  *  NAV_TOP, but the pane ends this much before the window does, so the
  *  "every row is on screen" guard subtracts it, and so does the clamp that
  *  keeps the editable's corner click inside the pane. */
@@ -1028,7 +1028,7 @@ async function drive(phase: "a" | "b"): Promise<RunOutcome<{ ready: boolean; err
         //
         // Clamping keeps the intent (a point low and right INSIDE the editable)
         // and drops only the part of the box nobody can click anyway. The
-        // bottom is the PANE's, not the window's: since 067 the footer owns the
+        // bottom is the PANE's, not the window's: the footer owns the
         // last 34px, and a click clamped to the window would press its status
         // dot instead of the prose.
         const x = Math.min(entry.x + entry.w, WINDOW_WIDTH) - EDGE_INSET_PX;

@@ -196,7 +196,7 @@ export function probeAtspi(rootPid: number): A11yProbe {
 /** Text by DOM id: for every id in argv[2] (comma-separated), the text of
  *  the node carrying that `id:` attribute, as JSON {id: text}. Reaches nodes
  *  the role-restricted walk does not (a heading, a status div). Was a private
- *  copy in home-cli and timeline-cli; cast-hover made it a third reader (105). */
+ *  copy in home-cli and timeline-cli; cast-hover made it a third reader. */
 export const PY_READ_NODES = String.raw`
 import json
 import sys

@@ -137,10 +137,10 @@ const NAME_PATTERN =
  *  which asserts that what a screen reader can read matches what is on screen.
  *
  *  IT IS A DIFFERENT SENTENCE FROM THE NAME, and deliberately so as of the
- *  visual redesign. The readout says "47 words · 2,000 in the book" (236), then
- *  the day's figure after a plain space (239: one middle dot per line), because it sits
+ *  visual redesign. The readout says "47 words · 2,000 in the book", then
+ *  the day's figure after a plain space (one middle dot per line), because it sits
  *  beside other controls in a strip whose height three rigs restate (#footer
- *  since 067, #project-bar before); the name keeps the full sentence because a
+ *  now, #project-bar before); the name keeps the full sentence because a
  *  screen reader user has no strip to look at
  *  and "47 words" followed by "2,000 in the book" does not say the figure lags.
  *  Before the split the name was built by reading these spans back out of the

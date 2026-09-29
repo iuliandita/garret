@@ -60,7 +60,7 @@ interface FixtureCastEntry {
   name: string;
   summary: string;
   fields: Array<{ label: string; value: string }>;
-  /** Absent means none, `fields`' own rule (105). */
+  /** Absent means none, `fields`' own rule. */
   aliases: string[];
 }
 
@@ -167,7 +167,7 @@ function wordCount(text: string): number {
  *  counter. ONE COUNTER ACROSS THE WHOLE TREE for `sc-` -- the manuscript's
  *  parts, chapters and scenes, then the bible root and its notes -- so an id
  *  says nothing about what KIND of item it names, exactly as the store's own
- *  uuids do not. A TIMELINE GETS ITS OWN `tl-` COUNTER (101) rather than
+ *  uuids do not. A TIMELINE GETS ITS OWN `tl-` COUNTER rather than
  *  sharing `sc-`'s: the id is minted here, by this generator, never by the
  *  store (`store/seed.rs` takes it as given) -- so nothing enforces that it
  *  stays deterministic against `sc-`'s if a later item is added to the
@@ -260,7 +260,7 @@ function readSrcSynopses(srcDir: string): Record<string, string> {
   return JSON.parse(readFileSync(path, "utf8")) as Record<string, string>;
 }
 
-/** `src/timeline.json`'s shape when it names an actual timeline (104): the
+/** `src/timeline.json`'s shape when it names an actual timeline: the
  *  document's title and its body, which a person writes with a scene TITLE
  *  under `events[].scene` and cast member NAMES under `tracks[].memberId`
  *  (cast-kind tracks) and `events[].cast` -- never ids, exactly as
@@ -424,8 +424,8 @@ function build(srcDir: string): Built {
   }));
 
   // ONE LINE OR NONE, never more: the sample book has one story clock, and
-  // `readSrcTimeline`'s null covers "not yet written" (101) exactly as it
-  // will cover "the writer removed it" once 104 has something to remove.
+  // `readSrcTimeline`'s null covers "not yet written" exactly as it
+  // will cover "the writer removed it" once that removal path exists.
   const srcTimeline = readSrcTimeline(srcDir);
   const nextTimelineId = idAssigner("tl-");
   const knownCastNames = new Set(srcCast.map((c) => c.name));

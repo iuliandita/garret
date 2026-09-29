@@ -5,7 +5,7 @@ import { join } from "node:path";
 // A rig that calls captureEnv() before its last runShell() records
 // renderer: null forever -- runShell is what notes the renderer, and
 // captureEnv() only ever reads the registry's current value. Two rigs
-// (diag-cli.ts, nav-cli.ts) did this until 072's follow-up. A source-parse
+// (diag-cli.ts, nav-cli.ts) did this until a later follow-up. A source-parse
 // guard because the mistake is invisible in every other test: the field
 // typechecks and is present, just always null.
 const SRC = join(import.meta.dir, "..", "src");

@@ -1,6 +1,6 @@
 // app/harness/src/preflight-cli.ts
-// Graded run of `preflight`, the read-only cross-identity scan (107). Until
-// this rig, 053's amendment recorded "NO GRADED RIG COVERS THE CROSS-IDENTITY
+// Graded run of `preflight`, the read-only cross-identity scan. Until
+// this rig, an earlier amendment recorded "NO GRADED RIG COVERS THE CROSS-IDENTITY
 // SCAN AT `stress`" -- the CLI existed and its unit tests over a tempdir
 // proved the logic, but nothing had ever timed the walk over a real book or
 // watched its memory.

@@ -1,5 +1,5 @@
 // app/harness/test/preview-gates.test.ts
-// The seven preview gates (109), and the failing direction of each named in
+// The seven preview gates, and the failing direction of each named in
 // the plan's mutation targets. The numeric gates are exercised at a real
 // threshold passed in explicitly, so the tests are about the comparison and
 // not about the shipped zeros reading FAIL by design.
