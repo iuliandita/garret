@@ -1,0 +1,83 @@
+{
+  "run_id": "app-dialog-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-dialog",
+  "environment": {
+    "kernel": "7.1.8-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "dialog_opened": true,
+    "class_matches_while_open": 2,
+    "chosen_path": "/tmp/app-dialog-7g7a9G/chosen/the-writers-choice.md",
+    "wrote_chosen_path": true,
+    "file_scenes": 30,
+    "store_scenes": 30,
+    "nonce_in_file": true,
+    "cancel_dialog_opened": true,
+    "cancel_files_written": 0,
+    "import_dialog_opened": true,
+    "library_projects_after_import": 1,
+    "imported_scenes": 30,
+    "peak_rss_mb": 503,
+    "scope": "the dialog is a GTK window belonging to the host process, not something this application draws, and every figure about it is xdotool's reading of the X server. Xvfb has no window manager and no XDG portal, so this measures the gtk3 backend only: enabling tauri-plugin-dialog's xdg-portal feature would put a different implementation under the same gates and this run would say nothing about it.",
+    "omitted_gates": "no latency, stall, cliff or a11y figures: this rig types one sentence and opens two windows, which has nothing true to say about frame cadence. No a11y_exposure either - the dialog's accessibility is GTK's, not this application's, and one AT-SPI walk per boot is spent on the editable's box because several walks in one window kill the app. The import boot takes NO walk at all - it needs no widget geometry, because the menu is keystrokes and the dialog is found by title."
+  },
+  "verdicts": [
+    {
+      "gate": "dialog_opens",
+      "value": "a window titled for the export appeared (2 windows share the app's WM_CLASS while it is up)",
+      "threshold": "asking the writer where to put the file actually asks them",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "dialog_writes_the_chosen_path",
+      "value": "wrote /tmp/app-dialog-7g7a9G/chosen/the-writers-choice.md",
+      "threshold": "the file lands where the writer said, not where the application prefers",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "dialog_content_matches_the_store",
+      "value": "30 scene(s) in the file, 30 in the store",
+      "threshold": "every scene the store holds is in the file the writer chose",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "dialog_export_includes_the_last_keystroke",
+      "value": "the typed sentence is in the file",
+      "threshold": "the export drains before it reads the store",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "dialog_cancel_writes_nothing",
+      "value": "0 file(s) written after a cancel",
+      "threshold": "a cancelled dialog leaves no file, having actually been opened",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "dialog_import_opens",
+      "value": "opened",
+      "threshold": "File > Import... opens the operating system's own file chooser",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "dialog_imports_the_chosen_file",
+      "value": "1 project(s) in the library; 30 scene(s) against 30 in the file",
+      "threshold": "the chosen file becomes exactly one new project whose scenes match the file's",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": "503",
+      "threshold": "<= 750",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "n/a",
+  "rig_commit": "46355dbe"
+}

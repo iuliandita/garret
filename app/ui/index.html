@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>app</title>
+    <link rel="icon" type="image/png" href="garret-favicon.png" />
+    <!-- BEFORE the stylesheet, and inline, because this is the only place the
+         writer's palette preference can land before first paint. The host sets
+         window.__appTheme from settings.json in its initialization script, which
+         runs before any document script; the module bundle at the end of <body>
+         runs after parse, so applying it there gives a launch that overrides a
+         dark desktop to light a dark flash every time.
+
+         Restates the light/dark check in src/theme.ts deliberately: a module
+         import here would be a second round trip in the head, and this cannot
+         wait for one. theme.ts names this script in return. -->
+    <script>
+      var root = document.documentElement;
+      var t = window.__appTheme;
+      if (t === "light" || t === "dark") root.setAttribute("data-theme", t);
+      // The palette FAMILY, and it must be here rather than applied on mount:
+      // it repaints every surface in the application, so a writer who chose one
+      // would watch the default flash first at every launch. Restates
+      // src/theme.ts's list, which names this script in return; theme.test.ts
+      // parses both and the stylesheet and fails when the three disagree.
+      //
+      // "editorial" writes NOTHING: the stylesheet carries the default family on
+      // bare :root, so the absent attribute already renders it.
+      var f = window.__appThemeFamily;
+      if (f === "neutral" || f === "atmospheric") root.setAttribute("data-family", f);
+      // The typography axes, for the same reason and by the same route. These
+      // lists restate src/typography.ts, which names this script in return;
+      // test/typography.test.ts parses this file, that module and style.css and
+      // fails when the three statements disagree.
+      //
+      // Unlike the theme, an unset axis writes NOTHING rather than writing its
+      // default: the default is the var() fallback in the stylesheet, so the
+      // absent attribute already renders it.
+      function prose(name, value, allowed) {
+        if (allowed.indexOf(value) >= 0) root.setAttribute("data-prose-" + name, value);
+      }
+      prose("family", window.__appProseFamily, ["serif", "sans", "mono"]);
+      prose("size", window.__appProseSize, ["small", "medium", "large", "larger"]);
+      prose("measure", window.__appProseMeasure, ["narrow", "medium", "wide"]);
+      // The writing modes, here for the same reason: focus changes the colour of
+      // every paragraph and typewriter adds 58vh of padding below the prose, so
+      // both reflow or repaint the page. Applied after mount, a writer who
+      // chose either watches it flash on at every launch.
+      //
+      // Restates src/writing-modes.ts, which names this script in return, the
+      // same way theme.ts and typography.ts do. `off` writes NOTHING rather
+      // than writing the word: the stylesheet has no rule for that value, and
+      // the absent attribute already renders it.
+      function mode(name, value, allowed) {
+        if (value !== "off" && allowed.indexOf(value) >= 0) root.setAttribute("data-" + name, value);
+      }
+      mode("focus", window.__appFocusMode, ["off", "paragraph"]);
+      mode("typewriter", window.__appTypewriter, ["off", "on"]);
+    </script>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body id="app">
+    <!-- The bar is a strip, not a unit: the switcher owns #project-controls
+         and clears it wholesale, so anything sharing the strip has to live
+         outside that element or be wiped on the first repaint. #project-bar is
+         a div rather than a header because the switcher marks its own container
+         role="banner", and a <header> child of <body> is a second, nested
+         banner landmark. -->
+    <div id="project-bar">
+      <!-- THE HEADER, since 067: what the writer is looking at, then the Menu
+           button (068), then the panel anchors. Its height is written down
+           (39px) rather than summed from a line box, so nothing added or
+           removed here can move a navigator row. -->
+      <span id="outline-controls"></span>
+      <div id="project-controls"></div>
+      <button id="scene-name" type="button" hidden></button>
+      <!-- Bold, italic and underline left the header in 069: they are a
+           bubble toolbar over the selection now (format-bubble.ts, mounted
+           on <body>), alongside Add comment and Find in manuscript. -->
+      <span id="focus-controls"></span>
+      <!-- THE MENU BUTTON AND ITS LIST, at the right end since 068: one icon
+           button opening a popover of the four titles, each of which still
+           opens its own dropdown beside the row. The list is positioned
+           absolutely against #project-bar exactly as #find-panel, #prefs-panel
+           and #project-panel are, and each title's dropdown is positioned
+           against the list in turn. A menu STRIP above the bar would move every
+           navigator row down, and the rigs that press at a coordinate computed
+           from the bar's 39px would go on clicking rows a writer does not see
+           - silently, reporting plausible numbers. Inside the strip, nothing
+           below the bar moves at all.
+
+           The help panel is appended here AFTER the bar is built (order rule
+           in main.ts): createMenuBar replaces this element's children, so a
+           panel appended before it is detached the instant the menu is built. -->
+      <span id="menu-controls"></span>
+      <!-- PANEL ANCHORS, not control groups. Each held a button in the strip
+           until the retirement slice: Export, Find and Preferences were all
+           reachable from the bar AND from the application menu, and two routes
+           to one operation is one route too many to keep evidence for. The bar
+           carries what the writer is looking at and the menu carries commands.
+
+           #export-controls is GONE rather than left empty: the export command
+           has no panel and so has nothing to anchor. These two remain because
+           #find-panel and #prefs-panel are positioned absolutely against
+           #project-bar and still need a parent in the strip. -->
+      <span id="find-controls"></span>
+      <span id="prefs-controls"></span>
+      <!-- Same rule: a panel anchor. #quick-open-panel is positioned absolutely
+           against #project-bar. -->
+      <span id="quick-open-controls"></span>
+      <!-- Same rule once more: #state-panel is positioned absolutely against
+           #project-bar. -->
+      <span id="state-controls"></span>
+      <!-- Same rule once more: #design-panel is positioned absolutely against
+           #project-bar, and `display: contents` in the stylesheet beside the
+           others, because even a bare empty span costs 12px of the strip's
+           gap. -->
+      <span id="design-controls"></span>
+      <!-- Same rule twice more, for the covers panel and the full-size picture
+           viewer: both are positioned absolutely against #project-bar, and both
+           are `display: contents` in the stylesheet beside the others. The
+           viewer's anchor is here rather than inside a panel because BOTH the
+           covers panel and the cast panel show one, and a viewer owned by
+           either would go with that panel's teardown. -->
+      <!-- Same rule twice more, for the pen-names panel and the export report:
+           both are positioned absolutely against #project-bar, and both are
+           `display: contents` in the stylesheet beside the others. TWO anchors
+           and not one: the report is opened FROM the pen-names panel and must
+           outlive its close, and an anchor shared with a panel goes with that
+           panel's teardown. -->
+      <span id="identity-controls"></span>
+      <span id="preflight-controls"></span>
+      <span id="covers-controls"></span>
+      <span id="picture-viewer-controls"></span>
+      <!-- Same rule once more: #rename-panel is positioned absolutely against
+           #project-bar.
+
+           Renaming used to be a field in the outline bar, which is where it
+           opened as an 8px sliver; the bar is retired and the field has a panel
+           of its own. -->
+      <span id="rename-controls"></span>
+      <!-- Same rule once more: #mirror-changes is positioned absolutely against
+           #project-bar. -->
+      <span id="mirror-changes-controls"></span>
+    </div>
+    <!-- THE BOOK'S NAME LIVES HERE, not in the strip above. It moved out of
+         #project-controls: a manuscript's title
+         belongs over its own outline, and the strip's width is genuinely scarce.
+
+         #nav-header is 39px, the SAME as #project-bar, so the navigator's first
+         row starts at exactly twice the bar. That is one number to hold instead
+         of two, and it is a click-geometry constant restated in outline-cli and
+         switch-cli: anything that changes this height moves every navigator row
+         and both rigs go on clicking rows a writer does not see, silently,
+         reporting plausible numbers. -->
+    <div id="nav-column">
+      <div id="nav-header"></div>
+      <div id="nav"></div>
+    </div>
+    <!-- #scene-heading is READ-ONLY and painted by project.ts's
+         paintSceneName, from the navigator's row (rename stays there). First
+         child so the ProseMirror mount lands after it in document order.
+         Nothing positioned lives inside #editor and this is not positioned. -->
+    <main id="editor"><h1 id="scene-heading"></h1></main>
+    <!-- THE FOOTER, since 067: the counts, the goal bar, one status dot whose
+         popover holds the three protection sentences, and "Saved". Its height is
+         written down (34px); the three rigs that assume the navigator does not
+         scroll subtract it from the window. The three indicator anchors keep
+         their ids and their own spans: each module calls replaceChildren() on
+         its container on mount and on destroy. #save-controls is LAST and never
+         yields, as before.
+
+         #word-count sits outside every landmark, and it STAYS there. Not
+         exposure -- a graded run reads it as ATK `panel` through the role and
+         name word-count.ts sets -- but landmark navigation: a screen reader
+         user cannot jump to it by region. Every fix costs more than it buys: a
+         named region around the strip, or a wrapper around the count alone, is
+         a second named container around one span.
+
+         The three sentences keep their order and their reasons. #recovery-
+         controls is the second copy on this device; #archive-controls is the
+         copy that could leave this computer, AFTER the same-device span and
+         never merged with it, because the two say different things about
+         different files and the design's section 6 forbids a sentence that
+         blurs them; #mirror-controls is whether the readable folder is keeping
+         up, NOT a protection, and mirror-strings.test.ts is what keeps the
+         three from converging on one vocabulary. -->
+    <div id="footer">
+      <span id="word-count"></span>
+      <span id="goal-bar" aria-hidden="true" hidden><span id="goal-bar-fill"></span></span>
+      <span id="status-controls">
+        <div id="status-popover" role="dialog" aria-modal="false" hidden>
+          <span id="recovery-controls"></span>
+          <span id="archive-controls"></span>
+          <span id="mirror-controls"></span>
+        </div>
+      </span>
+      <span id="save-controls"></span>
+    </div>
+    <!-- THE THIRD GRID COLUMN, and the only element in this page that is one.
+         Every other surface is absolutely positioned against #project-bar
+         precisely so the bar's 39px click-geometry constant is untouched; a
+         PREVIEW cannot be an overlay, because a writer works beside it rather
+         than in front of it, and one that covered the prose it is made of would
+         be the comments panel's recorded defect on purpose.
+
+         The bill is recorded rather than discovered: opening this narrows
+         #editor, which changes the editable's AT-SPI extents, which
+         export-cli, outline-cli and words-cli each click off by `x + w - 4`.
+         The column is `auto` and this element is EMPTY until the rail is
+         opened, so a run that never opens it measures a window byte-identical
+         to the one before this slice -- which is what those three re-recorded
+         runs are evidence for. -->
+    <div id="preview-controls"></div>
+    <div id="reference-controls"></div>
+    <!-- THE INSPECTOR (241), in the same third column: the panels that are
+         about the manuscript and are worked beside it. Every wrapper here is
+         `display: contents`, so an open panel IS the grid item and a closed
+         one costs the column nothing, the rail's shape and for the rail's
+         reason. One anchor per unit, never a shared one: a container two units
+         append to is the recorded #menu-controls hazard. inspector.ts keeps
+         them to one at a time and shares the column with the rails. -->
+    <div id="inspector-dock">
+      <span id="comments-controls"></span>
+      <span id="synopsis-controls"></span>
+      <span id="cast-controls"></span>
+      <span id="appears-controls"></span>
+      <span id="appears-map-controls"></span>
+      <span id="history-controls"></span>
+      <span id="review-controls"></span>
+      <span id="craft-controls"></span>
+      <span id="stats-controls"></span>
+    </div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

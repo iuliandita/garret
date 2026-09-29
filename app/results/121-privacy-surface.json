@@ -1,0 +1,671 @@
+{
+  "kind": "toolkit-feasibility-diagnostic",
+  "date": "2026-09-16",
+  "application_lock_shipped": false,
+  "feasibility_verdict": "PASS_ON_RECORDED_ENVIRONMENT",
+  "environment": {
+    "display": "isolated Xvfb",
+    "gtk": "3.24.52",
+    "webkitgtk": "2.52.6",
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "crates": {
+      "gtk": "0.18.2",
+      "rfd": "0.16.0",
+      "tauri": "2.11.5",
+      "tauri-plugin-dialog": "2.7.2",
+      "webkit2gtk": "2.0.2"
+    }
+  },
+  "source_sha256": {
+    "app/shell-tauri/src-tauri/examples/privacy_surface.rs": "40ddf89e44c82ec39d157398859d657dd013e6612dab5dfcbed9cffc3970f788",
+    "docs/local/diagnostics/121/run-privacy-native-probe.py": "9530369c237aa61253ef30a9d0b9ae7c3360bbef214b4bb50676b633ad571243",
+    "docs/local/diagnostics/121/privacy-atspi-probe.py": "5d6f775daa7e06cd9d5ea557b71dd2359f12c9f4a8ec8e85715eb260e4030f49",
+    "docs/local/diagnostics/121/privacy-session-bus.conf": "3a586b1c983ab214047eef7d59b3ad0f945bec3402a5373c0aef33defc0430cf",
+    "docs/local/diagnostics/121/record-results.py": "368c3ad0265976b1d5160d0e35f20794e3ce08e1101760f8148fa611a132b2e2"
+  },
+  "cases": [
+    {
+      "mode": "baseline",
+      "implementation": "tauri",
+      "private_exposed": true,
+      "nodes": 11,
+      "password": false,
+      "messages_before_unlock": 6,
+      "restored": null,
+      "before_titles": [
+        "PRIVATE_BOOK_SENTINEL"
+      ],
+      "prose_exposed": true,
+      "scheme": "light",
+      "busy_active_at_lock": null,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "accessibility": [
+        {
+          "role": "application",
+          "name": "privacy_surface",
+          "description": ""
+        },
+        {
+          "role": "frame",
+          "name": "PRIVATE_BOOK_SENTINEL",
+          "description": ""
+        },
+        {
+          "role": "filler",
+          "name": "",
+          "description": ""
+        },
+        {
+          "role": "filler",
+          "name": "",
+          "description": ""
+        },
+        {
+          "role": "filler",
+          "name": "",
+          "description": ""
+        },
+        {
+          "role": "scroll pane",
+          "name": "",
+          "description": ""
+        },
+        {
+          "role": "document web",
+          "name": "PRIVATE_BOOK_SENTINEL",
+          "description": ""
+        },
+        {
+          "role": "heading",
+          "name": "PRIVATE_BOOK_SENTINEL",
+          "description": "",
+          "text": "PRIVATE_BOOK_SENTINEL"
+        },
+        {
+          "role": "paragraph",
+          "name": "",
+          "description": "",
+          "text": "PRIVATE_PROSE_SENTINEL"
+        },
+        {
+          "role": "section",
+          "name": "",
+          "description": "",
+          "text": "\ufffc"
+        },
+        {
+          "role": "entry",
+          "name": "PRIVATE_EDITOR_SENTINEL",
+          "description": "",
+          "text": "EDITED_1789590495235_0.0045823065376072725"
+        }
+      ],
+      "concealment_check": "FAIL",
+      "expected_negative_control": true,
+      "visual_review": {
+        "capture_sha256": "a89d9dbc56408f71038f08673869d27648020de756c46e518089551a44595280",
+        "native_form_painted": "not-applicable"
+      },
+      "captures": {
+        "before": "app/results/screenshots/121-privacy-baseline-light-before.png",
+        "concealed": "app/results/screenshots/121-privacy-baseline-light-concealed.png"
+      }
+    },
+    {
+      "mode": "hide",
+      "implementation": "tauri",
+      "private_exposed": true,
+      "nodes": 16,
+      "password": true,
+      "messages_before_unlock": 6,
+      "restored": true,
+      "before_titles": [
+        "PRIVATE_BOOK_SENTINEL"
+      ],
+      "prose_exposed": true,
+      "scheme": "light",
+      "busy_active_at_lock": null,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "unicode_input": "matched",
+      "timer_resumed": true,
+      "accessibility": [
+        {
+          "role": "application",
+          "name": "privacy_surface",
+          "description": ""
+        },
+        {
+          "role": "frame",
+          "name": "Application locked",
+          "description": ""
+        },
+        {
+          "role": "filler",
+          "name": "",
+          "description": ""
+        },
+        {
+          "role": "filler",
+          "name": "",
+          "description": ""
+        },
+        {
+          "role": "filler",
+          "name": "",
+          "description": ""
+        },
+        {
+          "role": "scroll pane",
+          "name": "",
+          "description": ""
+        },
+        {
+          "role": "document web",
+          "name": "PRIVATE_BOOK_SENTINEL",
+          "description": ""
+        },
+        {
+          "role": "heading",
+          "name": "PRIVATE_BOOK_SENTINEL",
+          "description": "",
+          "text": "PRIVATE_BOOK_SENTINEL"
+        },
+        {
+          "role": "paragraph",
+          "name": "",
+          "description": "",
+          "text": "PRIVATE_PROSE_SENTINEL"
+        },
+        {
+          "role": "section",
+          "name": "",
+          "description": "",
+          "text": "\ufffc"
+        },
+        {
+          "role": "entry",
+          "name": "PRIVATE_EDITOR_SENTINEL",
+          "description": "",
+          "text": "EDITED_1789590503431_0.894449634061618"
+        },
+        {
+          "role": "filler",
+          "name": "",
+          "description": ""
+        },
+        {
+          "role": "label",
+          "name": "Application locked (probe)",
+          "description": "",
+          "text": "Application locked (probe)"
+        },
+        {
+          "role": "label",
+          "name": "Password",
+          "description": "",
+          "text": "Password"
+        },
+        {
+          "role": "password text",
+          "name": "Password",
+          "description": "",
+          "text": ""
+        },
+        {
+          "role": "button",
+          "name": "Unlock probe",
+          "description": ""
+        }
+      ],
+      "concealment_check": "FAIL",
+      "expected_negative_control": true,
+      "visual_review": {
+        "capture_sha256": "404cd8fd289e523d66c4ea3c69a14f1209a5869c52c711b0eee5dad83ddb7b7e",
+        "native_form_painted": "PASS",
+        "difference_from_visible_form_reference": null
+      },
+      "captures": {
+        "before": "app/results/screenshots/121-privacy-hide-light-before.png",
+        "concealed": "app/results/screenshots/121-privacy-hide-light-concealed.png"
+      }
+    },
+    {
+      "mode": "detach",
+      "implementation": "tauri",
+      "private_exposed": false,
+      "nodes": 7,
+      "password": true,
+      "messages_before_unlock": 6,
+      "restored": true,
+      "before_titles": [
+        "PRIVATE_BOOK_SENTINEL"
+      ],
+      "prose_exposed": false,
+      "scheme": "light",
+      "busy_active_at_lock": null,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "lock_window_survives_close": true,
+      "unicode_input": "matched",
+      "timer_resumed": true,
+      "accessibility": [
+        {
+          "role": "application",
+          "name": "privacy_surface",
+          "description": ""
+        },
+        {
+          "role": "frame",
+          "name": "Application locked",
+          "description": ""
+        },
+        {
+          "role": "filler",
+          "name": "",
+          "description": ""
+        },
+        {
+          "role": "label",
+          "name": "Application locked (probe)",
+          "description": "",
+          "text": "Application locked (probe)"
+        },
+        {
+          "role": "label",
+          "name": "Password",
+          "description": "",
+          "text": "Password"
+        },
+        {
+          "role": "password text",
+          "name": "Password",
+          "description": "",
+          "text": ""
+        },
+        {
+          "role": "button",
+          "name": "Unlock probe",
+          "description": ""
+        }
+      ],
+      "concealment_check": "PASS",
+      "expected_negative_control": false,
+      "visual_review": {
+        "capture_sha256": "f49f969c0af7942bad3a5ddd1ab5776216dfa10656be6eadeeac268747be1c95",
+        "native_form_painted": "PASS",
+        "difference_from_visible_form_reference": [
+          57,
+          125,
+          58,
+          144
+        ]
+      },
+      "captures": {
+        "before": "app/results/screenshots/121-privacy-detach-light-before.png",
+        "concealed": "app/results/screenshots/121-privacy-detach-light-concealed.png"
+      }
+    },
+    {
+      "mode": "dialog",
+      "implementation": "tauri",
+      "private_exposed": false,
+      "nodes": 7,
+      "password": true,
+      "messages_before_unlock": 6,
+      "restored": true,
+      "before_titles": [
+        "PRIVATE_BOOK_SENTINEL",
+        "PRIVATE_DIALOG_SENTINEL"
+      ],
+      "prose_exposed": false,
+      "scheme": "light",
+      "busy_active_at_lock": null,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "lock_window_survives_close": true,
+      "unicode_input": "matched",
+      "timer_resumed": true,
+      "second_dialog_opened": true,
+      "second_dialog_callback": "cancelled",
+      "dialog_callback": "cancelled",
+      "accessibility": [
+        {
+          "role": "application",
+          "name": "privacy_surface",
+          "description": ""
+        },
+        {
+          "role": "frame",
+          "name": "Application locked",
+          "description": ""
+        },
+        {
+          "role": "filler",
+          "name": "",
+          "description": ""
+        },
+        {
+          "role": "label",
+          "name": "Application locked (probe)",
+          "description": "",
+          "text": "Application locked (probe)"
+        },
+        {
+          "role": "label",
+          "name": "Password",
+          "description": "",
+          "text": "Password"
+        },
+        {
+          "role": "password text",
+          "name": "Password",
+          "description": "",
+          "text": ""
+        },
+        {
+          "role": "button",
+          "name": "Unlock probe",
+          "description": ""
+        }
+      ],
+      "concealment_check": "PASS",
+      "expected_negative_control": false,
+      "visual_review": {
+        "capture_sha256": "404cd8fd289e523d66c4ea3c69a14f1209a5869c52c711b0eee5dad83ddb7b7e",
+        "native_form_painted": "PASS",
+        "difference_from_visible_form_reference": null
+      },
+      "captures": {
+        "concealed": "app/results/screenshots/121-privacy-dialog-light-concealed.png"
+      }
+    },
+    {
+      "mode": "plugin-dialog",
+      "implementation": "tauri",
+      "private_exposed": false,
+      "nodes": 7,
+      "password": true,
+      "messages_before_unlock": 6,
+      "restored": true,
+      "before_titles": [
+        "PRIVATE_BOOK_SENTINEL",
+        "PRIVATE_DIALOG_SENTINEL"
+      ],
+      "prose_exposed": false,
+      "scheme": "light",
+      "busy_active_at_lock": null,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "lock_window_survives_close": true,
+      "unicode_input": "matched",
+      "timer_resumed": true,
+      "second_dialog_opened": true,
+      "second_dialog_callback": "cancelled",
+      "dialog_callback": "cancelled",
+      "accessibility": [
+        {
+          "role": "application",
+          "name": "privacy_surface",
+          "description": ""
+        },
+        {
+          "role": "frame",
+          "name": "Application locked",
+          "description": ""
+        },
+        {
+          "role": "filler",
+          "name": "",
+          "description": ""
+        },
+        {
+          "role": "label",
+          "name": "Application locked (probe)",
+          "description": "",
+          "text": "Application locked (probe)"
+        },
+        {
+          "role": "label",
+          "name": "Password",
+          "description": "",
+          "text": "Password"
+        },
+        {
+          "role": "password text",
+          "name": "Password",
+          "description": "",
+          "text": ""
+        },
+        {
+          "role": "button",
+          "name": "Unlock probe",
+          "description": ""
+        }
+      ],
+      "concealment_check": "PASS",
+      "expected_negative_control": false,
+      "visual_review": {
+        "capture_sha256": "f49f969c0af7942bad3a5ddd1ab5776216dfa10656be6eadeeac268747be1c95",
+        "native_form_painted": "PASS",
+        "difference_from_visible_form_reference": [
+          57,
+          125,
+          58,
+          144
+        ]
+      },
+      "captures": {
+        "concealed": "app/results/screenshots/121-privacy-plugin-dialog-light-concealed.png"
+      }
+    },
+    {
+      "mode": "busy-detach",
+      "implementation": "tauri",
+      "private_exposed": false,
+      "nodes": 7,
+      "password": true,
+      "messages_before_unlock": 1,
+      "restored": true,
+      "before_titles": [
+        "PRIVATE_BOOK_SENTINEL"
+      ],
+      "prose_exposed": false,
+      "scheme": "light",
+      "busy_active_at_lock": true,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "lock_window_survives_close": true,
+      "unicode_input": "matched",
+      "timer_resumed": true,
+      "busy_completed": true,
+      "accessibility": [
+        {
+          "role": "application",
+          "name": "privacy_surface",
+          "description": ""
+        },
+        {
+          "role": "frame",
+          "name": "Application locked",
+          "description": ""
+        },
+        {
+          "role": "filler",
+          "name": "",
+          "description": ""
+        },
+        {
+          "role": "label",
+          "name": "Application locked (probe)",
+          "description": "",
+          "text": "Application locked (probe)"
+        },
+        {
+          "role": "label",
+          "name": "Password",
+          "description": "",
+          "text": "Password"
+        },
+        {
+          "role": "password text",
+          "name": "Password",
+          "description": "",
+          "text": ""
+        },
+        {
+          "role": "button",
+          "name": "Unlock probe",
+          "description": ""
+        }
+      ],
+      "concealment_check": "PASS",
+      "expected_negative_control": false,
+      "visual_review": {
+        "capture_sha256": "f49f969c0af7942bad3a5ddd1ab5776216dfa10656be6eadeeac268747be1c95",
+        "native_form_painted": "PASS",
+        "difference_from_visible_form_reference": [
+          57,
+          125,
+          58,
+          144
+        ]
+      },
+      "captures": {
+        "before": "app/results/screenshots/121-privacy-busy-detach-light-before.png",
+        "concealed": "app/results/screenshots/121-privacy-busy-detach-light-concealed.png"
+      }
+    },
+    {
+      "mode": "detach",
+      "implementation": "tauri",
+      "private_exposed": false,
+      "nodes": 7,
+      "password": true,
+      "messages_before_unlock": 6,
+      "restored": true,
+      "before_titles": [
+        "PRIVATE_BOOK_SENTINEL"
+      ],
+      "prose_exposed": false,
+      "scheme": "dark",
+      "busy_active_at_lock": null,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "lock_window_survives_close": true,
+      "unicode_input": "matched",
+      "timer_resumed": true,
+      "accessibility": [
+        {
+          "role": "application",
+          "name": "privacy_surface",
+          "description": ""
+        },
+        {
+          "role": "frame",
+          "name": "Application locked",
+          "description": ""
+        },
+        {
+          "role": "filler",
+          "name": "",
+          "description": ""
+        },
+        {
+          "role": "label",
+          "name": "Application locked (probe)",
+          "description": "",
+          "text": "Application locked (probe)"
+        },
+        {
+          "role": "label",
+          "name": "Password",
+          "description": "",
+          "text": "Password"
+        },
+        {
+          "role": "password text",
+          "name": "Password",
+          "description": "",
+          "text": ""
+        },
+        {
+          "role": "button",
+          "name": "Unlock probe",
+          "description": ""
+        }
+      ],
+      "concealment_check": "PASS",
+      "expected_negative_control": false,
+      "visual_review": {
+        "capture_sha256": "5a9456979243529b7cc050345da34a04b68cf6c12a4b27c11d2bf28a914244e4",
+        "native_form_painted": "PASS"
+      },
+      "captures": {
+        "before": "app/results/screenshots/121-privacy-detach-dark-before.png",
+        "concealed": "app/results/screenshots/121-privacy-detach-dark-concealed.png"
+      }
+    }
+  ],
+  "limits": [
+    "Synthetic content only; no project opened",
+    "No authentication or application integration",
+    "Fresh accessibility walks only; cached references untested",
+    "No Wayland or portal evidence",
+    "No sleep/session-lock delivery evidence",
+    "No cold locked startup evidence",
+    "No real save/close durability evidence",
+    "Unicode injection is not IME composition or screen-reader speech",
+    "No clipboard or multi-window claim"
+  ]
+}

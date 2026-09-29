@@ -1,0 +1,21 @@
+{
+  "source_commit": "732bf134addd84190f39f917ebfe894071a6f168",
+  "source_restored": true,
+  "mutations": [
+    {
+      "mutation": "gui-opt-in",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "theme-validation",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "capture-failure",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    }
+  ]
+}

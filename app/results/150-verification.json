@@ -1,0 +1,71 @@
+{
+  "source_commit": "66f8ee48f1bb9c1817dfbbd3db06eceda83a5de6",
+  "bun_passed": 3856,
+  "bun_failed": 0,
+  "typescript_exit": 0,
+  "ui_build_exit": 0,
+  "native_exit": 0,
+  "captures": [
+    {
+      "path": "app/results/screenshots/150-mirror-light.png",
+      "sha256": "a8e14ebd46c346b932ddc912b1ad7b4dca5f47470a62142dcb4bb16ee0758637",
+      "entry_point": "shot-cli --mirror-changes",
+      "launch_renderers": [
+        "dmabuf-llvmpipe",
+        "dmabuf-llvmpipe"
+      ],
+      "owned_cleanup_counts": [
+        5,
+        5
+      ],
+      "visual_inspection": "Populated changed-file row and expanded comparison readable in the expected theme."
+    },
+    {
+      "path": "app/results/screenshots/150-mirror-dark.png",
+      "sha256": "899d19c8138b6a24356e195bd074109eea7eb2c0c52664d2185dc0230cec62d7",
+      "entry_point": "mirror-shot standalone",
+      "launch_renderers": [
+        "dmabuf-llvmpipe",
+        "dmabuf-llvmpipe"
+      ],
+      "owned_cleanup_counts": [
+        5,
+        5
+      ],
+      "visual_inspection": "Populated changed-file row and expanded comparison readable in the expected theme."
+    }
+  ],
+  "mutations": {
+    "source_commit": "66f8ee48f1bb9c1817dfbbd3db06eceda83a5de6",
+    "source_restored": true,
+    "mutations": [
+      {
+        "mutation": "fixture",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "unsupported-option",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "dispatch",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "import-side-effect",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "callable-opt-in",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      }
+    ]
+  },
+  "review": "No findings.",
+  "scope": "One callable capture workflow, two compatible entry points. Strict exclusive route options, import without side effects, opt-in before setup, awaited cleanup. Non-graded visual instrument only. Image failure behavior inherited unchanged from149, with its native failure evidence retained. No application/host change or performance claim."
+}

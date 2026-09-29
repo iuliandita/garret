@@ -1,0 +1,21 @@
+#review-transport { display: grid; gap: .7rem; }
+#review-transport h3, #review-transport h4, #review-transport h5, #review-transport h6,
+#review-transport p { margin: 0; }
+#review-transport #review-transport-preview { display: grid; gap: .8rem; }
+#review-transport #review-transport-preview[hidden] { display: none; }
+#review-transport #review-transport-preview > section,
+#review-transport .review-transport-discussion { padding: .75rem; background: var(--nav-bg); border-radius: var(--radius-control); }
+#review-transport #review-transport-preview article { padding: .7rem 0; border-top: 1px solid var(--border-soft); }
+#review-transport #review-transport-preview article:first-of-type { border-top: 0; }
+#review-transport #review-transport-preview h6 { font-size: var(--text-md); margin-bottom: .5rem; }
+#review-transport .review-transport-discussion summary { cursor: pointer; }
+#review-transport .review-transport-discussion p { white-space: pre-wrap; }
+#review-transport #review-transport-mappings { display: grid; gap: .65rem; }
+#review-transport .review-transport-choice { display: grid; grid-template-columns: minmax(9rem, 1fr) minmax(10rem, 1fr); gap: .4rem .7rem; align-items: center; }
+#review-transport .review-transport-choice input { grid-column: 2; }
+#review-transport .review-transport-choice input[hidden] { display: none; }
+#review-transport #review-transport-status:empty { display: none; }
+@media (max-width: 36rem) {
+  #review-transport .review-transport-choice { grid-template-columns: 1fr; }
+  #review-transport .review-transport-choice input { grid-column: 1; }
+}

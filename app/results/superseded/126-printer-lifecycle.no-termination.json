@@ -1,0 +1,70 @@
+{
+  "schema": "printer-lifecycle-v1",
+  "source_revision": "1b6b4656f9f763be3ddb91cb30e7b349f605630b",
+  "source_diff_sha256": "1abe42c3a3ed8e8d0838ee5e257f6f17fd8004d6a094ff043b52304646c06c32",
+  "built_by_checker": true,
+  "executable_sha256": "bb8eb5580173e2f1943aeec9fd18e4ab32207a4b2ac8fb9431c4ab84d5bca7ad",
+  "test": "printer::tests::a_busy_proof_times_out_once_without_killing_another_view",
+  "repetitions": 1,
+  "timeout_ms": 15000,
+  "expected_gates": {
+    "runner_completed": true,
+    "exit_zero": true,
+    "within_15_seconds": true,
+    "test_ran_once": true,
+    "test_passed": true,
+    "no_watchdog_error": true,
+    "web_process_observed": true,
+    "no_descendant_survivors": true
+  },
+  "passed": false,
+  "environment": {
+    "kernel": "7.2.3-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 6.89,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": false,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "shm",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "exit": 0,
+      "elapsed_ms": 6467,
+      "timed_out": false,
+      "test_ran_once": true,
+      "test_passed": true,
+      "watchdog_error": false,
+      "tracked_descendants": 6,
+      "surviving_descendants": [
+        "WebKitWebProces"
+      ],
+      "runner_error": false,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": false,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "shm",
+        "webProcesses": 1
+      },
+      "gates": {
+        "runner_completed": true,
+        "exit_zero": true,
+        "within_15_seconds": true,
+        "test_ran_once": true,
+        "test_passed": true,
+        "no_watchdog_error": true,
+        "web_process_observed": true,
+        "no_descendant_survivors": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "run_id": "app-pictures-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-pictures",
+  "environment": {
+    "kernel": "7.2.6-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 3.86,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "attach_sha_matches": true,
+    "attach_thumb_width": 256,
+    "attach_thumb_height": 256,
+    "attach_stored_name": "01a0e92d-292b-7f61-ae97-f3818ac49079.png",
+    "attach_state_name": "Picture of Marisol Quillfeather",
+    "attach_state_expected_name": "Picture of Marisol Quillfeather",
+    "oversize_picture_path_before": "01a0e92d-292b-7f61-ae97-f3818ac49079.png",
+    "oversize_picture_path_after": "01a0e92d-292b-7f61-ae97-f3818ac49079.png",
+    "oversize_files_before": 1,
+    "oversize_files_after": 1,
+    "oversize_notice_text": "Could not change the picture, and nothing was changed: That picture has more pixels than this book can read. Choose a smaller picture, or resize it first.",
+    "oversize_expected_notice": "Could not change the picture, and nothing was changed: That picture has more pixels than this book can read. Choose a smaller picture, or resize it first.",
+    "attach_host_rss_mb": 487.6,
+    "attach_rss_steps_mb": [
+      189.8,
+      192.4,
+      192.2,
+      191.8,
+      191.9,
+      192,
+      193.6,
+      193.5,
+      193.9,
+      193.1,
+      198.2,
+      198.9,
+      197.3,
+      197.9,
+      197.3,
+      200.3,
+      198.5,
+      200.3,
+      204.4,
+      204.6,
+      206.6,
+      238.9,
+      304.9,
+      391.3,
+      487.6
+    ],
+    "cover_meta_value": "01a0e92d-7c63-7e21-8666-4b9a1c387156.png",
+    "cover_file_matches": true,
+    "cover_sides_text": "Covers Covers Checked against a 152.4 x 228.6 mm (6 x 9 in) page. Change it in File › Book design. Front cover PDF page placement PDF page placement Show whole image May leave blank bands to show the whole image. Show whole image Fill page 600 x 900 pixels is about 100 dpi on this page. Print wants 300 dpi, which is 1800 x 2700 pixels. Change cover… View full size Remove cover No cover yet. PDF page placement PDF page placement Show whole image May leave blank bands to show the whole image. Show whole image Fill page Add a cover… Close Covers",
+    "cover_expected_sentence": "600 x 900 pixels is about 100 dpi on this page. Print wants 300 dpi, which is 1800 x 2700 pixels.",
+    "omitted_gates": "latency, stall, cliff, a11y_exposure: one boot of a handful of dialogs, which has nothing true to say about frame cadence.",
+    "scope": "attach_host_rss_mb is the host main process's own VmHWM, polled every 20ms from before the first act to the end of the boot; VmHWM is the kernel's monotonic high-water mark, so the reading already reflects the process's peak over its whole life up to the last poll. attach_rss_steps_mb is bounded to the samples where the value changed, plus the first and last."
+  },
+  "verdicts": [
+    {
+      "gate": "picture_attached",
+      "value": "sha matches, thumbnail 256x256, stored as \"01a0e92d-292b-7f61-ae97-f3818ac49079.png\"",
+      "threshold": "sha256 identical to the source, thumbnail both sides <= 256px and > 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "picture_state_present",
+      "value": "accessible name \"Picture of Marisol Quillfeather\" (expected \"Picture of Marisol Quillfeather\")",
+      "threshold": "the picture panel's image node accessible name equals \"Picture of Marisol Quillfeather\"",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "oversize_refused",
+      "value": "picture_path unchanged, files 1 -> 1, notice \"Could not change the picture, and nothing was changed: That picture has more pixels than this book can read. Choose a smaller picture, or resize it first.\"",
+      "threshold": "picture_path unchanged, no new file in the pictures directory, and the banner carries the refusal sentence: \"Could not change the picture, and nothing was changed: That picture has more pixels than this book can read. Choose a smaller picture, or resize it first.\"",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "attach_host_rss_mb",
+      "value": "487.6 MB (25 step(s))",
+      "threshold": "<= 650 MB, VmHWM peak of the host main process across the whole boot (0 MB is no sample taken, not a real reading, and FAILS)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "cover_set",
+      "value": "meta \"01a0e92d-7c63-7e21-8666-4b9a1c387156.png\", file matches true, panel says \"Covers Covers Checked against a 152.4 x 228.6 mm (6 x 9 in) page. Change it in File › Book design. Front cover PDF page placement PDF page placement Show whole image May leave blank bands to show the whole image. Show whole image Fill page 600 x 900 pixels is about 100 dpi on this page. Print wants 300 dpi, which is 1800 x 2700 pixels. Change cover… View full size Remove cover No cover yet. PDF page placement PDF page placement Show whole image May leave blank bands to show the whole image. Show whole image Fill page Add a cover… Close Covers\"",
+      "threshold": "a stored file named in meta, bytes equal to the source, and the panel's text contains \"600 x 900 pixels is about 100 dpi on this page. Print wants 300 dpi, which is 1800 x 2700 pixels.\"",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "unknown"
+}

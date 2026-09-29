@@ -1,0 +1,11 @@
+{"built":["<repo>/lab/bakeoff/dist/run.js"],"soakMs":1800000,"lazyDocs":true,"containNav":true}
+416 | 
+417 |   const resultsDir = join(REPO_ROOT, "lab/results");
+418 |   const records = [];
+419 |   for (const entry of plan) {
+420 |     const { payload, peakRssKb, a11y, rssSeries, stderrTail } = await runShell(
+421 |       entry.candidate, fixtureDir, fixture, soakMs, variants,
+                      ^
+error: electron: soak requested (30 min) but the run returned no soak payload — check that build.ts baked BAKEOFF_SOAK_MS
+      at main (<repo>/lab/bakeoff/harness/src/matrix.ts:421:17)
+

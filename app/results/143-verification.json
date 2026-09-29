@@ -1,0 +1,13 @@
+{
+  "source_commit": "1ad72f8a0a63d732edcb74adcdfc85f3188eab86",
+  "bun_passed": 3815,
+  "bun_exit": 0,
+  "typescript_exit": 0,
+  "mutants_killed": 1,
+  "review": "source: no findings; stale private harness guidance corrected",
+  "native_verification": "deferred to slice 142 fresh tiny/stress runs",
+  "limitations": [
+    "Export working memory remains unmeasured. Historical startup RSS does not certify export memory.",
+    "No host or product behavior changed."
+  ]
+}

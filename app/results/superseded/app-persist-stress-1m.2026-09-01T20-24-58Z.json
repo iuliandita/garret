@@ -1,0 +1,663 @@
+{
+  "run_id": "app-persist-stress-1m",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-persist",
+  "environment": {
+    "kernel": "7.2.2-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "peak_rss_mb": 683,
+    "typing_p95_ms": 34.00000000000182,
+    "typing_p99_ms": 35,
+    "nav_p95_ms": 34,
+    "typing": {
+      "count": 1570,
+      "dispatch": {
+        "p50": 1,
+        "p95": 2.0000000000004547,
+        "p99": 3
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34.00000000000182,
+        "p99": 35
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 1568,
+        "40-100": 2,
+        "500-2000": 0,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 0,
+      "stalls": 0
+    },
+    "nav": {
+      "count": 228,
+      "dispatch": {
+        "p50": 0,
+        "p95": 4,
+        "p99": 13.00000000000091
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34,
+        "p99": 34.000000000007276
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 227,
+        "40-100": 1,
+        "500-2000": 0,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 0,
+      "stalls": 0
+    },
+    "cycles": [
+      {
+        "atMs": 16192,
+        "charsTyped": 400,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 32371,
+        "charsTyped": 800,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 48551,
+        "charsTyped": 1200,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 60025,
+        "charsTyped": 1477,
+        "cycle": 4,
+        "partial": true,
+        "typingP95Ms": 34.000000000007276
+      }
+    ],
+    "rows": 20000,
+    "workload_script": "writing-v1",
+    "a11y": {
+      "available": true,
+      "hasNavigator": true,
+      "exposedRows": 0,
+      "mountedRows": 23,
+      "treeRows": [
+        {
+          "id": "nav-row-0",
+          "name": "WINTER CAFÉ 566",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-9",
+          "name": "GARDEN OMBRÉ 826",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 2,
+          "expanded": true
+        },
+        {
+          "id": "nav-row-10",
+          "name": "café Nocturne 335",
+          "level": 2,
+          "setsize": 4,
+          "posinset": 1,
+          "expanded": true
+        },
+        {
+          "id": "nav-row-11",
+          "name": "River Ombré 39",
+          "level": 3,
+          "setsize": 3,
+          "posinset": 1,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-12",
+          "name": "café Letter 835",
+          "level": 3,
+          "setsize": 3,
+          "posinset": 2,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-13",
+          "name": "River Harbor 112",
+          "level": 3,
+          "setsize": 3,
+          "posinset": 3,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-14",
+          "name": "Storm Ombré 347",
+          "level": 2,
+          "setsize": 4,
+          "posinset": 2,
+          "expanded": true
+        },
+        {
+          "id": "nav-row-15",
+          "name": "Ombré Storm 261",
+          "level": 3,
+          "setsize": 4,
+          "posinset": 1,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-16",
+          "name": "Straße Storm 667",
+          "level": 3,
+          "setsize": 4,
+          "posinset": 2,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-17",
+          "name": "CAFÉ Letter 985",
+          "level": 3,
+          "setsize": 4,
+          "posinset": 3,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-18",
+          "name": "Ombré Straße 633",
+          "level": 3,
+          "setsize": 4,
+          "posinset": 4,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19",
+          "name": "Storm Ombré 447",
+          "level": 2,
+          "setsize": 4,
+          "posinset": 3,
+          "expanded": true
+        },
+        {
+          "id": "nav-row-20",
+          "name": "CAFÉ Winter 652",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 1,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-21",
+          "name": "Ombré Garden 665",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 2,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-22",
+          "name": "Harbor River 226",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 3,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-23",
+          "name": "Winter Ausência 750",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 4,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-24",
+          "name": "Straße Lantern 337",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 5,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-25",
+          "name": "Ombré Lantern 191",
+          "level": 2,
+          "setsize": 4,
+          "posinset": 4,
+          "expanded": true
+        },
+        {
+          "id": "nav-row-26",
+          "name": "Straße Harbor 163",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 1,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-27",
+          "name": "CAFÉ Ausência 67",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 2,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-28",
+          "name": "Harbor Ausência 849",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 3,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-29",
+          "name": "Ombré Nocturne 614",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 4,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-30",
+          "name": "Letter Straße 88",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 5,
+          "expanded": false
+        }
+      ],
+      "roleCounts": {
+        "application": 1,
+        "frame": 1,
+        "panel": 8,
+        "filler": 5,
+        "separator": 1,
+        "button": 3,
+        "label": 2,
+        "scroll pane": 1,
+        "document web": 1,
+        "toggle button": 3,
+        "tree": 1,
+        "tree item": 23,
+        "landmark": 1,
+        "entry": 1,
+        "section": 2
+      }
+    },
+    "startup_ms": 178,
+    "soak_minutes": 1,
+    "actions": 1798,
+    "onset": null,
+    "slow_actions": 0,
+    "persist": {
+      "restart_body_match": true,
+      "body_diverged_from_seed": true,
+      "flush_count": 58,
+      "flush_conflicts": 0,
+      "flush_errors": 0,
+      "flush_p50_ms": 1,
+      "flush_p95_ms": 4.000000000007276
+    },
+    "persist_error": null,
+    "rss": {
+      "samples": 253,
+      "span_ms": 63465,
+      "peak_mb": 683,
+      "peak_at_ms": 33937,
+      "boot_window_ms": 30000,
+      "peak_in_boot_window": false,
+      "boot_window_peak_mb": 681,
+      "post_boot_samples": 134,
+      "post_boot_median_mb": 662,
+      "post_boot_max_mb": 683,
+      "post_boot_slope_mb_per_min": 0.660443365254597
+    },
+    "rss_series": [
+      {
+        "atMs": 0,
+        "rssMb": 55
+      },
+      {
+        "atMs": 1000,
+        "rssMb": 55
+      },
+      {
+        "atMs": 2000,
+        "rssMb": 55
+      },
+      {
+        "atMs": 3000,
+        "rssMb": 627
+      },
+      {
+        "atMs": 4000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 5000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 6000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 7000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 8000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 9000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 10000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 11000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 12000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 13000,
+        "rssMb": 671
+      },
+      {
+        "atMs": 14000,
+        "rssMb": 671
+      },
+      {
+        "atMs": 15000,
+        "rssMb": 666
+      },
+      {
+        "atMs": 16000,
+        "rssMb": 666
+      },
+      {
+        "atMs": 17000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 18000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 19000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 20000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 21000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 22000,
+        "rssMb": 672
+      },
+      {
+        "atMs": 23000,
+        "rssMb": 681
+      },
+      {
+        "atMs": 24000,
+        "rssMb": 681
+      },
+      {
+        "atMs": 25000,
+        "rssMb": 680
+      },
+      {
+        "atMs": 26000,
+        "rssMb": 676
+      },
+      {
+        "atMs": 27000,
+        "rssMb": 676
+      },
+      {
+        "atMs": 28000,
+        "rssMb": 677
+      },
+      {
+        "atMs": 29000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 30000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 31000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 32000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 33000,
+        "rssMb": 683
+      },
+      {
+        "atMs": 34000,
+        "rssMb": 683
+      },
+      {
+        "atMs": 35000,
+        "rssMb": 655
+      },
+      {
+        "atMs": 36000,
+        "rssMb": 655
+      },
+      {
+        "atMs": 37000,
+        "rssMb": 654
+      },
+      {
+        "atMs": 38000,
+        "rssMb": 654
+      },
+      {
+        "atMs": 39000,
+        "rssMb": 655
+      },
+      {
+        "atMs": 40000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 41000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 42000,
+        "rssMb": 659
+      },
+      {
+        "atMs": 43000,
+        "rssMb": 659
+      },
+      {
+        "atMs": 44000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 45000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 46000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 47000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 48000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 49000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 50000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 51000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 52000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 53000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 54000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 55000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 56000,
+        "rssMb": 676
+      },
+      {
+        "atMs": 57000,
+        "rssMb": 676
+      },
+      {
+        "atMs": 58000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 59000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 60000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 61000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 62000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 63000,
+        "rssMb": 665
+      }
+    ]
+  },
+  "verdicts": [
+    {
+      "gate": "peak_rss_mb",
+      "value": 683,
+      "threshold": "< 750",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p95_ms",
+      "value": 34.00000000000182,
+      "threshold": "< 50",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p99_ms",
+      "value": 35,
+      "threshold": "< 100",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "nav_p95_ms",
+      "value": 34,
+      "threshold": "< 150",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "no_typing_cliff",
+      "value": "3 complete cycles",
+      "threshold": "last decile / first decile < 1.5 (min 10 cycles)",
+      "verdict": "UNKNOWN"
+    },
+    {
+      "gate": "typing_stall_rate",
+      "value": 0,
+      "threshold": "< 0.01 (stalled + frameMs > 100 ms, over sample count)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "a11y_exposure",
+      "value": "not applicable: tree navigator advertises per-sibling-group setsize, see a11y_tree_structure",
+      "threshold": "advertised rows == 20000 (flat list only)",
+      "verdict": "UNKNOWN"
+    },
+    {
+      "gate": "restart_body_match",
+      "value": "match",
+      "threshold": "reopened body hash == pre-kill body hash",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_conflicts",
+      "value": 0,
+      "threshold": "== 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_errors",
+      "value": 0,
+      "threshold": "== 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_p95_ms",
+      "value": 4.000000000007276,
+      "threshold": "< 50",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "5934e756"
+}

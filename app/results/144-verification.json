@@ -1,0 +1,42 @@
+{
+  "baseline_source_commit": "ae296a85c35dd4264e8d48ab487294a5bb6c7181",
+  "native_exit": 0,
+  "same_host_and_web_process": true,
+  "visual_review": "root inspected all captures; independent review: no findings",
+  "stages": [
+    {
+      "stage": "a-first",
+      "underlined_words_observed": [
+        "Quorvexalune",
+        "Xyzzplorvik"
+      ],
+      "screenshot": "144-baseline-dictionary-switch-a-first.png",
+      "screenshot_sha256": "ff17677bac6be3404b6d15b130314421f49f332aefafa3eb83e74693003f37cd"
+    },
+    {
+      "stage": "b",
+      "underlined_words_observed": [
+        "Zorbulaxine",
+        "Xyzzplorvik"
+      ],
+      "screenshot": "144-baseline-dictionary-switch-b.png",
+      "screenshot_sha256": "aac80d244d1e4a63c1fa0cbe4dd57b8493a30850dcd6e204bbece0d265ba6217"
+    },
+    {
+      "stage": "a-return",
+      "underlined_words_observed": [
+        "Quorvexalune",
+        "Xyzzplorvik"
+      ],
+      "screenshot": "144-baseline-dictionary-switch-a-return.png",
+      "screenshot_sha256": "8138937ff2b98ff271b9bf1a8d7c7f8171a4c80cea76e11e3b20a89d91cb73c6"
+    }
+  ],
+  "conclusion": "Recognition follows the active book without a new reload call.",
+  "scope": [
+    "Linux en_US/aspell on recorded WebKitGTK renderer",
+    "Visual observations, not an automated spelling gate",
+    "No behavior change; no product mutation run",
+    "Other providers/platforms and spec section 9 remain unverified"
+  ]
+}

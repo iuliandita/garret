@@ -1,0 +1,123 @@
+{
+  "run_id": "app-bible-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-bible",
+  "environment": {
+    "kernel": "7.2.2-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 0.72,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "workload_script": "bible-v1",
+    "peak_rss_mb": 567,
+    "peak_rss_mb_per_boot": {
+      "bible": 567,
+      "synopsis-write": 557,
+      "synopsis-prefill": 566,
+      "cast": 566,
+      "picture": 567
+    },
+    "rss_scope": "boot 5 only: a 3000x2000 PNG attached to a cast member, its thumbnail shown in the panel and its full-size render open in the viewer. The other four boots' peaks are recorded beside it as the control this figure has never had.",
+    "rows": 42,
+    "opened_at_boot": "it-000011",
+    "bible": {
+      "note_root_type": "bible",
+      "note_body_holds_nonce": true,
+      "export_holds_note_nonce": false,
+      "export_holds_manuscript_prose": true,
+      "synopsis_rows": 1,
+      "synopsis_on_the_open_scene": true,
+      "synopsis_body": "Ilse learns what the ledger says and tells nobody about it.",
+      "synopsis_typed": "Ilse learns what the ledger says and tells nobody about it.",
+      "synopsis_after_blind_resave": "Ilse learns what the ledger says and tells nobody about it.",
+      "cast_names": [
+        "Marisol Quillfeather"
+      ],
+      "cast_typed_name": "Marisol Quillfeather",
+      "cast_kind": "character",
+      "cast_expected_kind": "character",
+      "appearance_on_scene": [
+        "Marisol Quillfeather"
+      ],
+      "appearance_rows_total": 1,
+      "picture_full_button_found": true,
+      "picture_viewer_open": true,
+      "thumbnail_long_side": 256,
+      "original_long_side": 3000,
+      "peak_rss_mb": 567
+    },
+    "omitted_gates": "latency, stall, cliff, a11y_exposure: five boots of seconds each, a11y probing off",
+    "close_path": "unverified: no window manager under Xvfb; windowclose kills the process"
+  },
+  "verdicts": [
+    {
+      "gate": "bible_note_created",
+      "value": "a note under a \"bible\" root, body holds the nonce: true",
+      "threshold": "Outline > New note creates a note under a \"bible\" root and it accepts prose",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "bible_excluded_from_manuscript",
+      "value": "the note's text is absent; manuscript prose present: true",
+      "threshold": "the exported manuscript holds the book's prose and none of the bible's (the second clause is the needle: an exporter that emitted nothing would pass the first)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "synopsis_saved",
+      "value": "1 synopsis on the open scene, 59 character(s), exactly as typed",
+      "threshold": "one synopsis row, on the scene the page opened, holding exactly what was typed",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "synopsis_prefills_on_reopen",
+      "value": "the reopened panel saved back what the store held",
+      "threshold": "reopening the panel and pressing Save with nothing typed leaves the synopsis unchanged",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "cast_member_created",
+      "value": "\"Marisol Quillfeather\" is in the book as a character",
+      "threshold": "the name typed into the panel is in the file, under the kind the select offered",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "appearance_tagged",
+      "value": "the open scene is tagged with \"Marisol Quillfeather\" and nothing else",
+      "threshold": "ticking one member tags the open scene with that member and writes no other row (the second clause rules out a panel that tags everything)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "picture_thumbnail_bounded",
+      "value": "256px on its long side, down from 3000px",
+      "threshold": "a thumbnail exists, is <= 256px on its long side, and is smaller than the original",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "picture_viewer_opens",
+      "value": "the viewer is open",
+      "threshold": "pressing View full size paints the picture viewer",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 567,
+      "threshold": "<= 750, measured with a photograph open at full size",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "7dda4cc6"
+}

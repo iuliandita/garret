@@ -1,0 +1,259 @@
+{
+  "run_id": "app-words-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-words",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "workload_script": "words-v1",
+    "peak_rss_mb": 509,
+    "startup_ms": 94,
+    "rows": 40,
+    "opened_at_boot": "it-000011",
+    "scene": "it-000011",
+    "words": {
+      "marked_text": "down.",
+      "mark_persisted": true,
+      "mark_applied_live": true,
+      "stored_body_hash": "fc22ce15",
+      "reopen_loaded_body_hash": "fc22ce15",
+      "project_total": 2011,
+      "scene_sum": 2011,
+      "scene_docs": 30,
+      "scene_words": 58,
+      "scan_ms": 14,
+      "scan_granularity_ms": 22,
+      "scan_watch_read_ms": 0.7,
+      "scan_commit_read_ms": 0.3,
+      "a11y_role": "panel",
+      "a11y_name": "Word count: 58 words in this scene, 2,011 saved in the project, 11 words written today",
+      "a11y_text": "58 words · 2,011 saved · 11 today",
+      "a11y_text_has_both_figures": true,
+      "a11y_text_figures": [
+        "58",
+        "2,011"
+      ],
+      "a11y_name_figures": [
+        "58",
+        "2,011"
+      ]
+    },
+    "selected_before_mark": "down.",
+    "marked_runs_in_reopened_scene": [
+      "down."
+    ],
+    "bar_readings": [
+      {
+        "label": "baseline",
+        "raw": "Word count: 47 words in this scene, 2,000 saved in the project, 0 words written today"
+      },
+      {
+        "label": "scan-repaint",
+        "raw": "Word count: 48 words in this scene, 2,001 saved in the project, 1 word written today"
+      },
+      {
+        "label": "selection-before-mark",
+        "raw": "down."
+      },
+      {
+        "label": "after-typing-and-mark",
+        "raw": "Word count: 58 words in this scene, 2,011 saved in the project, 11 words written today"
+      },
+      {
+        "label": "final",
+        "raw": "Word count: 58 words in this scene, 2,011 saved in the project, 11 words written today"
+      }
+    ],
+    "per_scene_page_words": [
+      {
+        "item_id": "it-000008",
+        "words": 82
+      },
+      {
+        "item_id": "it-000009",
+        "words": 88
+      },
+      {
+        "item_id": "it-000010",
+        "words": 57
+      },
+      {
+        "item_id": "it-000011",
+        "words": 58
+      },
+      {
+        "item_id": "it-000012",
+        "words": 68
+      },
+      {
+        "item_id": "it-000013",
+        "words": 46
+      },
+      {
+        "item_id": "it-000014",
+        "words": 76
+      },
+      {
+        "item_id": "it-000015",
+        "words": 49
+      },
+      {
+        "item_id": "it-000016",
+        "words": 69
+      },
+      {
+        "item_id": "it-000017",
+        "words": 76
+      },
+      {
+        "item_id": "it-000018",
+        "words": 75
+      },
+      {
+        "item_id": "it-000019",
+        "words": 74
+      },
+      {
+        "item_id": "it-000020",
+        "words": 67
+      },
+      {
+        "item_id": "it-000021",
+        "words": 87
+      },
+      {
+        "item_id": "it-000022",
+        "words": 55
+      },
+      {
+        "item_id": "it-000023",
+        "words": 49
+      },
+      {
+        "item_id": "it-000024",
+        "words": 87
+      },
+      {
+        "item_id": "it-000025",
+        "words": 67
+      },
+      {
+        "item_id": "it-000026",
+        "words": 50
+      },
+      {
+        "item_id": "it-000027",
+        "words": 62
+      },
+      {
+        "item_id": "it-000028",
+        "words": 49
+      },
+      {
+        "item_id": "it-000029",
+        "words": 62
+      },
+      {
+        "item_id": "it-000030",
+        "words": 87
+      },
+      {
+        "item_id": "it-000031",
+        "words": 63
+      },
+      {
+        "item_id": "it-000032",
+        "words": 56
+      },
+      {
+        "item_id": "it-000033",
+        "words": 65
+      },
+      {
+        "item_id": "it-000034",
+        "words": 67
+      },
+      {
+        "item_id": "it-000035",
+        "words": 88
+      },
+      {
+        "item_id": "it-000036",
+        "words": 65
+      },
+      {
+        "item_id": "it-000037",
+        "words": 67
+      }
+    ],
+    "reopen_peak_rss_mb": 526,
+    "omitted_gates": [
+      {
+        "gate": "a11y_exposure, a11y_tree_structure",
+        "reason": "this run makes no structural claim about the NAVIGATOR: it never clicks a row and never mutates the tree. The hierarchy and outline runs are where the navigator's accessibility contract is graded. a11y_word_count_exposed, which this run does grade, is a claim about one element of the project bar and nothing else."
+      },
+      {
+        "gate": "latency, stall, cliff, peak RSS trend",
+        "reason": "the run is a minute of real keyboard input, not a soak; it has nothing true to say about frame cadence or a leak slope."
+      }
+    ],
+    "scope": {
+      "input": "Real X input throughout: xdotool keystrokes into the shipped editor, and one xdotool click to put the caret at the end of the open document. The page's own JavaScript is never called. Reading the display costs no input at all any more, so the rig no longer disturbs the focus of the thing it is measuring.",
+      "how_the_host_figure_is_read": "THE PLATFORM ACCESSIBILITY TREE - the same channel a screen reader uses. project_word_count is reachable only through the page and the page reports neither the figure nor the latency in its sink payload, so the display is the only observable; the display is exposed, with an accessible name carrying both figures, and the rig parses the figures out of that name. Every name read is recorded verbatim in bar_readings so a reader can check the parse. Matching is on the node's `id` attribute to FIND it and on its ATK ROLE to grade it, never on `xml-roles`.",
+      "a11y_word_count_exposed": "This gate exists because the element used to be invisible. Until 2026-08-12 a full AT-SPI walk of the running app showed `document web` with exactly four children - the #project-controls banner, the #outline-bar group, the #nav tree and the #editor landmark - with #project-bar and #word-count nowhere, and no ancestor exposing their text through the Text interface either. A screen reader user could not read their own word count. The fix is role=group plus an aria-label carrying both figures; role=group rather than role=status because the scene figure repaints on every keystroke and a live region would announce the count continuously while the writer types. role=status with aria-live=off was measured too and is also exposed (ATK `status bar`, live:off) - but it keeps the whole live-region apparatus attached, including container-live-role:status, and a guarantee by construction beats one by override.",
+      "why_this_is_graded_here": "The exposure and the rig's read are ONE change. The predecessor read the figure by triple-clicking the project bar and scraping the X PRIMARY selection with xclip, because that was the only channel out of the page that existed. That made xclip a hard prerequisite and made every read steal keyboard focus from the editor, which aborted a run. Exposing the element removed both. Grading the exposure is what stops the scrape growing back: a regression in the markup now FAILs a gate rather than quietly costing the rig its channel.",
+      "page_side_sum": "countWordsIn and the ProseMirror schema are IMPORTED from app/ui/src/editor.ts, not restated. That is the opposite of this harness's usual rule and it is deliberate: the gate's claim is that the host's total equals the sum of THE PAGE'S counts, so a restatement would be a third implementation and a disagreement could no longer say which two of the three drifted. The thresholds gates.ts restates are specifications; this is one of the two things being compared.",
+      "word_count_agrees": "One number against one number, over a store the rig has confirmed quiet: every reading is taken after the stored bodies have been unchanged for 2000 ms, twice the page's flush debounce, so the total on screen and the file on disk describe the same manuscript. PER-DOCUMENT ATTRIBUTION IS IMPOSSIBLE from outside: the host answers with a single u64 and never says which document contributed what. per_scene_page_words carries the page side document by document so a future reader of a FAIL has one half of the picture; the other half would need a host-side change.",
+      "word_count_scan_ms": "AN UPPER BOUND, not the command's latency, and the gate's threshold string says so. The interval runs from a commit becoming visible to a second read-only connection to the exposed name's project half no longer reading what it read at baseline, so it covers the flush ack, the page's un-awaited refreshProject, the IPC both ways, the full scan of every document, the repaint AND the rig's own RESOLUTION FLOOR, recorded beside it as scan_granularity_ms. BOTH ENDPOINTS ARE POLLED, so both bound the resolution: the repaint side sleeps 20 ms between name reads, and the commit side opens a fresh read-only SQLite connection every 2 ms. scan_granularity_ms used to hold the median NAME READ ALONE (0.4 ms) while the gate called it the finest interval the rig could resolve, understating the floor by roughly fifty times and letting a recorded scan_ms of 2 read as a measurement; it is now max(period, cost) at each endpoint, summed, with the two measured costs recorded beside it as scan_watch_read_ms and scan_commit_read_ms. The watcher still resolves the node once and polls the object it holds, in its own process, so the read is a property fetch rather than a whole AT-SPI connection - the predecessor's floor was a triple-click and an xclip. At the tiny fixture the scan lands at or below that floor, so the gate reports it as bounded and NOT RESOLVED rather than printing it bare. The figure that would matter - a full scan at the stress fixture, where the design's cost actually lives - is UNMEASURED, and measuring it separably needs the host or the page to report the latency itself.",
+      "marks_persist": "The word is chosen by the EDITOR's word boundaries, not by the rig: ctrl+shift+Left makes the selection and the rig reads back what got selected from the editable's own AT-SPI Text interface, aborting unless it is a single whitespace-free word of the sentence this run typed. Read that way rather than from the X PRIMARY selection, which quietly hands back the PREVIOUS selection when a chord selects nothing; an empty AT-SPI selection is empty. The scene is the one the page opens at boot, deliberately, so the reopen boot LOADS and parses the marked body. WHAT THIS GATE DOES NOT COVER: the reopen boot writes nothing back - soakMs 0, APP_MUTATIONS 0, and the page flushes only on a docChanged transaction - so the body it reads is the body the killed process left, and a schema that dropped em ON THE WAY IN would not disturb it. marks_persist is a claim about the STORE keeping the mark across a SIGKILL and a reopen. The page's parse is reopen_parse_intact's claim, measured by comparing the boot's own re-serialization against those same bytes. Until 2026-08-12 that comparison was recorded and not graded, and this scope text asserted the opposite of the truth: it said a dropped em 'would fail there'.",
+      "reopen_parse_intact": "The reopen half of the round trip, and the only part of this run that can see the page's parse. FNV-1a over the marked scene's stored body against the hash the reopen boot reports for its own re-serialization of it (app/ui/src/store/hash.ts, imported rather than restated for the same reason countWordsIn is). A hash is sensitive to more than marks and that is accepted: a boot that re-serializes a manuscript differently from how it was stored is a finding whatever caused it, and both hashes are recorded so a FAIL can be diffed. Verified by sabotage on 2026-08-12: with `em` stripped from the page's schema in a throwaway build, this gate FAILed and marks_persist FAILed beside it while every other gate stayed PASS."
+    }
+  },
+  "verdicts": [
+    {
+      "gate": "marks_persist",
+      "value": "\"down.\" still carries em",
+      "threshold": "STORE-SIDE LOSS ONLY - the word italicised with Mod-i carries its em mark in the body read from the reopened project file. This CANNOT detect a parse-side loss: the reopen boot writes nothing back, so a page that dropped the mark while parsing would leave these bytes intact and this gate would still PASS. reopen_parse_intact is the gate that sees that half",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "reopen_parse_intact",
+      "value": "fc22ce15 re-serialized unchanged",
+      "threshold": "the reopen boot's re-serialization of the marked scene is byte-identical (by FNV-1a) to the body the killed process left in the store - the page parsed everything the store held",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "word_count_agrees",
+      "value": "2011 == 2011 over 30 document(s)",
+      "threshold": "the host's project_word_count == the sum of the page's per-scene counts over the same saved state",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "word_count_scan_ms",
+      "value": "14 - below the rig's ~22 ms floor, so bounded but NOT RESOLVED",
+      "threshold": "< 500 (flush commit observed in the project file -> the project bar's total repainted: an UPPER BOUND covering the flush ack, the page's un-awaited refresh, the IPC, the full scan, the repaint AND the rig's own ~22 ms RESOLUTION FLOOR - both endpoints are polled, so the floor is the watcher's 20 ms period plus a fresh-connection store read, not the cost of one display read)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "a11y_word_count_exposed",
+      "value": "ATK role \"panel\", name \"Word count: 58 words in this scene, 2,011 saved in the project, 11 words written today\", text carries both figures",
+      "threshold": "the word count is in the platform accessibility tree under a usable ATK role, carries a non-empty accessible name, and its text carries both figures (the open scene's count and the project's saved total)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "a11y_word_count_agrees",
+      "value": "screen \"58 / 2,011\" vs announced \"58 / 2,011\"",
+      "threshold": "the scene figure and the project figure shown on screen are the same two figures the accessible name announces (the WORDING around them differs by design; the NUMBERS may not)",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "7614b72a"
+}

@@ -1,0 +1,38 @@
+{
+  "source_commit": "a06330721327987efe1c7074105690142c8968ab",
+  "native_controls": [
+    {
+      "rig": "hier",
+      "exit_code": 2,
+      "observed_rows": 20000,
+      "injected_floor": 20001,
+      "result_unchanged": true,
+      "verdict": "KILLED"
+    },
+    {
+      "rig": "persist",
+      "exit_code": 2,
+      "observed_rows": 20000,
+      "injected_floor": 20001,
+      "result_unchanged": true,
+      "verdict": "KILLED"
+    }
+  ],
+  "unit_mutations": [
+    {
+      "mutation": "invalid-observed-count",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "invalid-floor",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "fractional-manifest",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    }
+  ]
+}

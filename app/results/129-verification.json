@@ -1,0 +1,31 @@
+{
+  "stage": "complete",
+  "bun_passed": 3770,
+  "bun_failed": 0,
+  "typescript_exit": 0,
+  "native_runs": 2,
+  "native_gate_passes": 12,
+  "mutations_killed": 3,
+  "captures_inspected": [
+    "129-project-panel-light.png",
+    "129-project-panel-dark.png"
+  ],
+  "renderers": [
+    {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    }
+  ]
+}

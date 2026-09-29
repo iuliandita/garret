@@ -1,0 +1,296 @@
+{
+  "meta": {
+    "name": "The Salt Cartographer",
+    "seed": "sample-v1"
+  },
+  "items": [
+    {
+      "id": "sc-000000",
+      "type": "part",
+      "title": "Chapter One: The Spring Tide",
+      "parentId": null
+    },
+    {
+      "id": "sc-000001",
+      "type": "scene",
+      "title": "The Lighthouse Chart",
+      "parentId": "sc-000000"
+    },
+    {
+      "id": "sc-000002",
+      "type": "scene",
+      "title": "The Letter",
+      "parentId": "sc-000000"
+    },
+    {
+      "id": "sc-000003",
+      "type": "scene",
+      "title": "The Impossible Chart",
+      "parentId": "sc-000000"
+    },
+    {
+      "id": "sc-000004",
+      "type": "part",
+      "title": "Chapter Two: The Harbour Master's Question",
+      "parentId": null
+    },
+    {
+      "id": "sc-000005",
+      "type": "scene",
+      "title": "A Matter of Archives",
+      "parentId": "sc-000004"
+    },
+    {
+      "id": "sc-000006",
+      "type": "scene",
+      "title": "The Apprentice's Dilemma",
+      "parentId": "sc-000004"
+    },
+    {
+      "id": "sc-000007",
+      "type": "scene",
+      "title": "The Decision",
+      "parentId": "sc-000004"
+    },
+    {
+      "id": "sc-000008",
+      "type": "part",
+      "title": "Chapter Three: The Tide-Readers",
+      "parentId": null
+    },
+    {
+      "id": "sc-000009",
+      "type": "scene",
+      "title": "The House by the Narrows",
+      "parentId": "sc-000008"
+    },
+    {
+      "id": "sc-000010",
+      "type": "scene",
+      "title": "The Recognition",
+      "parentId": "sc-000008"
+    },
+    {
+      "id": "sc-000011",
+      "type": "scene",
+      "title": "The Warning",
+      "parentId": "sc-000008"
+    },
+    {
+      "id": "sc-000012",
+      "type": "part",
+      "title": "Chapter Four: The Harbour Master's Press",
+      "parentId": null
+    },
+    {
+      "id": "sc-000013",
+      "type": "scene",
+      "title": "The Official Letter",
+      "parentId": "sc-000012"
+    },
+    {
+      "id": "sc-000014",
+      "type": "scene",
+      "title": "The Harbour Master's Visit",
+      "parentId": "sc-000012"
+    },
+    {
+      "id": "sc-000015",
+      "type": "scene",
+      "title": "The Choice",
+      "parentId": "sc-000012"
+    },
+    {
+      "id": "sc-000016",
+      "type": "part",
+      "title": "Chapter Five: Aurel Danse",
+      "parentId": null
+    },
+    {
+      "id": "sc-000017",
+      "type": "scene",
+      "title": "The Stranger's Arrival",
+      "parentId": "sc-000016"
+    },
+    {
+      "id": "sc-000018",
+      "type": "scene",
+      "title": "The Conversation",
+      "parentId": "sc-000016"
+    },
+    {
+      "id": "sc-000019",
+      "type": "scene",
+      "title": "The Temptation and the Refusal",
+      "parentId": "sc-000016"
+    },
+    {
+      "id": "sc-000020",
+      "type": "part",
+      "title": "Chapter Six: The Spring Tide",
+      "parentId": null
+    },
+    {
+      "id": "sc-000021",
+      "type": "scene",
+      "title": "The Water's Turn",
+      "parentId": "sc-000020"
+    },
+    {
+      "id": "sc-000022",
+      "type": "scene",
+      "title": "The Coastline Remembers",
+      "parentId": "sc-000020"
+    },
+    {
+      "id": "sc-000023",
+      "type": "scene",
+      "title": "The Bay Begins",
+      "parentId": "sc-000020"
+    },
+    {
+      "id": "sc-000024",
+      "type": "part",
+      "title": "Chapter Seven: The Three Claims",
+      "parentId": null
+    },
+    {
+      "id": "sc-000025",
+      "type": "scene",
+      "title": "The Harbour Master's Authority",
+      "parentId": "sc-000024"
+    },
+    {
+      "id": "sc-000026",
+      "type": "scene",
+      "title": "The Tide-Readers' Claim",
+      "parentId": "sc-000024"
+    },
+    {
+      "id": "sc-000027",
+      "type": "scene",
+      "title": "Aurel Danse's Assault",
+      "parentId": "sc-000024"
+    },
+    {
+      "id": "sc-000028",
+      "type": "part",
+      "title": "Chapter Eight: The Rowing Survey",
+      "parentId": null
+    },
+    {
+      "id": "sc-000029",
+      "type": "scene",
+      "title": "The Preparation",
+      "parentId": "sc-000028"
+    },
+    {
+      "id": "sc-000030",
+      "type": "scene",
+      "title": "The Bay's Architecture",
+      "parentId": "sc-000028"
+    },
+    {
+      "id": "sc-000031",
+      "type": "scene",
+      "title": "The Storm's Shadow",
+      "parentId": "sc-000028"
+    },
+    {
+      "id": "sc-000032",
+      "type": "part",
+      "title": "Chapter Nine: The Salt Marks",
+      "parentId": null
+    },
+    {
+      "id": "sc-000033",
+      "type": "scene",
+      "title": "The Cipher Revealed",
+      "parentId": "sc-000032"
+    },
+    {
+      "id": "sc-000034",
+      "type": "scene",
+      "title": "The Storm's Test",
+      "parentId": "sc-000032"
+    },
+    {
+      "id": "sc-000035",
+      "type": "scene",
+      "title": "The Charts Preserved",
+      "parentId": "sc-000032"
+    },
+    {
+      "id": "sc-000036",
+      "type": "part",
+      "title": "Chapter Ten: Drawing Tomorrow",
+      "parentId": null
+    },
+    {
+      "id": "sc-000037",
+      "type": "scene",
+      "title": "The Publication",
+      "parentId": "sc-000036"
+    },
+    {
+      "id": "sc-000038",
+      "type": "scene",
+      "title": "The Recognition, Again",
+      "parentId": "sc-000036"
+    },
+    {
+      "id": "sc-000039",
+      "type": "scene",
+      "title": "Drawing Tomorrow",
+      "parentId": "sc-000036"
+    },
+    {
+      "id": "sc-000040",
+      "type": "bible",
+      "title": "Bible",
+      "parentId": null
+    },
+    {
+      "id": "sc-000041",
+      "type": "note",
+      "title": "Language and Style Sheet",
+      "parentId": "sc-000040"
+    },
+    {
+      "id": "sc-000042",
+      "type": "note",
+      "title": "Meddow: Harbour City and Centre of Knowledge",
+      "parentId": "sc-000040"
+    },
+    {
+      "id": "sc-000043",
+      "type": "note",
+      "title": "Salt Marks and the Water's Memory",
+      "parentId": "sc-000040"
+    },
+    {
+      "id": "sc-000044",
+      "type": "note",
+      "title": "The Cartographers' Craft and Commission",
+      "parentId": "sc-000040"
+    },
+    {
+      "id": "sc-000045",
+      "type": "note",
+      "title": "The Spring Tides and the Tide-Readers' Art",
+      "parentId": "sc-000040"
+    },
+    {
+      "id": "sc-000046",
+      "type": "note",
+      "title": "The Three Claims to Knowledge",
+      "parentId": "sc-000040"
+    },
+    {
+      "id": "sc-000047",
+      "type": "note",
+      "title": "Timeline of Events",
+      "parentId": "sc-000040"
+    }
+  ]
+}

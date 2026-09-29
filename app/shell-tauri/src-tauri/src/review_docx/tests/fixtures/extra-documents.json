@@ -1,0 +1,263 @@
+[
+  {
+    "id": "insert_final_paragraph",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "one"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 5,
+      "to": 5,
+      "before": [],
+      "after": [
+        {
+          "kind": "open"
+        },
+        {
+          "kind": "text",
+          "text": "tail"
+        },
+        {
+          "kind": "close"
+        }
+      ]
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "one"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "tail"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "delete_final_paragraph",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "one"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "tail"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 5,
+      "to": 11,
+      "before": [
+        {
+          "kind": "open"
+        },
+        {
+          "kind": "text",
+          "text": "tail"
+        },
+        {
+          "kind": "close"
+        }
+      ],
+      "after": []
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "one"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "insert_final_empty_paragraph",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "one"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 5,
+      "to": 5,
+      "before": [],
+      "after": [
+        {
+          "kind": "open"
+        },
+        {
+          "kind": "close"
+        }
+      ]
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "one"
+            }
+          ]
+        },
+        {
+          "type": "paragraph"
+        }
+      ]
+    }
+  },
+  {
+    "id": "delete_final_empty_paragraph",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "one"
+            }
+          ]
+        },
+        {
+          "type": "paragraph"
+        }
+      ]
+    },
+    "hunk": {
+      "from": 5,
+      "to": 7,
+      "before": [
+        {
+          "kind": "open"
+        },
+        {
+          "kind": "close"
+        }
+      ],
+      "after": []
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "one"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "discussion",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "abc"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 2,
+      "to": 3,
+      "before": [
+        {
+          "kind": "text",
+          "text": "b"
+        }
+      ],
+      "after": [
+        {
+          "kind": "text",
+          "text": "Y"
+        }
+      ]
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "aYc"
+            }
+          ]
+        }
+      ]
+    },
+    "message": {
+      "id": 9,
+      "author_name": "Lee",
+      "body": "Keep this discussion.\nSecond line.",
+      "created_at": 0
+    }
+  }
+]

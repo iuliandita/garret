@@ -1,0 +1,85 @@
+{
+  "source_commit": "a41df37df461663eec6db45e4f7bdb2eb339b8f1",
+  "source_sha256": {
+    "app/ui/src/placement.ts": "e85ab5ffd8e4688eb4a93d32fc3004f542bfb43984dc6b9237890fe19d78ed6f",
+    "app/ui/src/outline.ts": "bf73a3dd5e6fb6e85f5fd549e891698eafe423ba12e94114a9daf41aaa50ceb6",
+    "app/ui/src/i18n/en.ts": "d277666a3268554df660ef5b0b69ee683a7bf23e4dbd3e0fd45f8751d6421335",
+    "app/ui/src/i18n/de.ts": "47c3e4827b7ddebf66dd870614a2fa88a073b9d456bbc0b86223985815ad1d82",
+    "app/ui/test/placement.test.ts": "dd3f6891db29ff74fc89164ae35fdd0303b5dd3b7f5c83b2592181acb6746b3d",
+    "app/ui/test/outline.test.ts": "36d6fb9c93940beb81cdccf95f7f1ebd2090b2be791cbb4f07d28412a02b057d"
+  },
+  "checks": {
+    "bun": {
+      "command": [
+        "bun",
+        "test",
+        "app"
+      ],
+      "exit_code": 0
+    },
+    "tsc": {
+      "command": [
+        "bunx",
+        "tsc",
+        "--noEmit",
+        "-p",
+        "app/tsconfig.json"
+      ],
+      "exit_code": 0
+    }
+  },
+  "bun_passed": 3895,
+  "bun_failed": 0,
+  "mutations": {
+    "source_commit": "a41df37df461663eec6db45e4f7bdb2eb339b8f1",
+    "source_restored": true,
+    "restored_ui_build_exit": 0,
+    "mutations": [
+      {
+        "mutation": "reserved-sections-treated-as-prose",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "caller-bypasses-guard",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "append-means-first",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "all-candidates-safe",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "silent-skipped-adoption",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      }
+    ]
+  },
+  "native": {
+    "screenshot": "app/results/screenshots/155-adoption-kept-order.png",
+    "environment": {
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    },
+    "existing_rows_unchanged": true,
+    "undo_only_new_part": true,
+    "scope": "Native order/undo check and visual capture; no performance claim."
+  },
+  "screenshot_sha256": "e1633a71f0af8569bdcf8f43698b1410910bd7883da93746a318f4a199324b35",
+  "native_probe_correction": "The first attempt verified creation but missed navigator focus for Ctrl+Z. Final run invokes the explicit Outline Undo menu and verifies the database state.",
+  "scope": "No storage or body changes. Functional native verification and screenshot, not a latency or memory result.",
+  "review": "One finding corrected: reserved sections are excluded from the chapter reading sequence; focused regression and killed negative control added."
+}

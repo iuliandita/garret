@@ -1,0 +1,670 @@
+{
+  "run_id": "app-persist-stress-3m",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-persist",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "peak_rss_mb": 601,
+    "typing_p95_ms": 34,
+    "typing_p99_ms": 34.000000000029104,
+    "nav_p95_ms": 34.00000000000091,
+    "typing": {
+      "count": 4718,
+      "dispatch": {
+        "p50": 1,
+        "p95": 2,
+        "p99": 2.000000000014552
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34,
+        "p99": 34.000000000029104
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 4717,
+        "40-100": 0,
+        "500-2000": 1,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 1,
+      "stalls": 0
+    },
+    "nav": {
+      "count": 664,
+      "dispatch": {
+        "p50": 0,
+        "p95": 4,
+        "p99": 13
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34.00000000000091,
+        "p99": 34.000000000029104
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 664,
+        "40-100": 0,
+        "500-2000": 0,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 0,
+      "stalls": 0
+    },
+    "cycles": [
+      {
+        "atMs": 16672,
+        "charsTyped": 400,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 32851,
+        "charsTyped": 800,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 49029,
+        "charsTyped": 1200,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 65208,
+        "charsTyped": 1600,
+        "cycle": 4,
+        "partial": false,
+        "typingP95Ms": 34.000000000007276
+      },
+      {
+        "atMs": 81387,
+        "charsTyped": 2000,
+        "cycle": 5,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 97566,
+        "charsTyped": 2400,
+        "cycle": 6,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 113745,
+        "charsTyped": 2800,
+        "cycle": 7,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 129923,
+        "charsTyped": 3200,
+        "cycle": 8,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 146102,
+        "charsTyped": 3600,
+        "cycle": 9,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 162281,
+        "charsTyped": 4000,
+        "cycle": 10,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 178459,
+        "charsTyped": 4400,
+        "cycle": 11,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 180027,
+        "charsTyped": 4437,
+        "cycle": 12,
+        "partial": true,
+        "typingP95Ms": 34.000000000029104
+      }
+    ],
+    "rows": 20000,
+    "workload_script": "writing-v1",
+    "a11y": {
+      "available": true,
+      "hasNavigator": true,
+      "exposedRows": 1570,
+      "mountedRows": 51,
+      "treeRows": [
+        {
+          "id": "nav-row-19953",
+          "name": "CAFÉ River 503",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1524,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19954",
+          "name": "Garden Winter 479",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1525,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19955",
+          "name": "Straße Storm 703",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1526,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19956",
+          "name": "Straße Lantern 848",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1527,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19957",
+          "name": "River Nocturne 198",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1528,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19952",
+          "name": "River Ausência 146",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1523,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19951",
+          "name": "Harbor café 80",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1522,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19909",
+          "name": "Ausência River 847",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1480,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19910",
+          "name": "Letter Lantern 92",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1481,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19911",
+          "name": "Nocturne Nocturne 750",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1482,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19912",
+          "name": "Ausência Winter 835",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1483,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19913",
+          "name": "Winter café 488",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1484,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19914",
+          "name": "River Straße 559",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1485,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19915",
+          "name": "River River 663",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1486,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19916",
+          "name": "Ombré Letter 526",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1487,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19917",
+          "name": "Letter River 283",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1488,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19918",
+          "name": "Letter café 873",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1489,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19919",
+          "name": "Ombré Lantern 753",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1490,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19920",
+          "name": "Lantern CAFÉ 396",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1491,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19921",
+          "name": "CAFÉ Winter 838",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1492,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19922",
+          "name": "Harbor Harbor 241",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1493,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19923",
+          "name": "Storm Harbor 957",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1494,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19924",
+          "name": "CAFÉ Winter 704",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1495,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19925",
+          "name": "Nocturne Garden 719",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1496,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19926",
+          "name": "Straße Ombré 573",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1497,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19927",
+          "name": "Nocturne Storm 359",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1498,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19928",
+          "name": "Ausência Straße 121",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1499,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19929",
+          "name": "Nocturne Straße 841",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1500,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19930",
+          "name": "Straße Harbor 30",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1501,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19931",
+          "name": "CAFÉ Nocturne 618",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1502,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19932",
+          "name": "Winter Ombré 921",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1503,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19933",
+          "name": "River Straße 16",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1504,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19934",
+          "name": "Straße Lantern 88",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1505,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19935",
+          "name": "Straße Lantern 266",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1506,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19936",
+          "name": "Storm Nocturne 381",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1507,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19937",
+          "name": "CAFÉ Ombré 427",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1508,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19938",
+          "name": "café Winter 145",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1509,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19939",
+          "name": "Ombré Garden 397",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1510,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19940",
+          "name": "Letter Winter 343",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1511,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19941",
+          "name": "Nocturne Storm 21",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1512,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19942",
+          "name": "Lantern Ausência 910",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1513,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19943",
+          "name": "CAFÉ Letter 194",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1514,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19944",
+          "name": "Nocturne Garden 905",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1515,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19945",
+          "name": "Storm Ombré 628",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1516,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19946",
+          "name": "Garden Harbor 867",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1517,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19947",
+          "name": "Ausência café 200",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1518,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19948",
+          "name": "Lantern Garden 698",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1519,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19949",
+          "name": "Garden Ausência 402",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1520,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19950",
+          "name": "River Harbor 313",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1521,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19908",
+          "name": "CAFÉ Letter 102",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1479,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19907",
+          "name": "Garden Ombré 534",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1478,
+          "expanded": false
+        }
+      ],
+      "roleCounts": {
+        "application": 1,
+        "frame": 1,
+        "panel": 5,
+        "filler": 5,
+        "separator": 1,
+        "button": 8,
+        "label": 2,
+        "scroll pane": 1,
+        "document web": 1,
+        "tree": 1,
+        "tree item": 51,
+        "landmark": 1,
+        "entry": 1
+      }
+    },
+    "startup_ms": 165,
+    "soak_minutes": 3,
+    "actions": 5382,
+    "onset": null,
+    "slow_actions": 1,
+    "persist": {
+      "restart_body_match": true,
+      "body_diverged_from_seed": true,
+      "flush_count": 174,
+      "flush_conflicts": 0,
+      "flush_errors": 0,
+      "flush_p50_ms": 1.999999999992724,
+      "flush_p95_ms": 3
+    },
+    "persist_error": null
+  },
+  "verdicts": [
+    {
+      "gate": "peak_rss_mb",
+      "value": 601,
+      "threshold": "< 750",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p95_ms",
+      "value": 34,
+      "threshold": "< 50",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p99_ms",
+      "value": 34.000000000029104,
+      "threshold": "< 100",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "nav_p95_ms",
+      "value": 34.00000000000091,
+      "threshold": "< 150",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "no_typing_cliff",
+      "value": 1,
+      "threshold": "last decile / first decile < 1.5 (min 10 cycles)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_stall_rate",
+      "value": 0.0002,
+      "threshold": "< 0.01 (stalled + frameMs > 100 ms, over sample count)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "a11y_exposure",
+      "value": "not applicable: tree navigator advertises per-sibling-group setsize, see a11y_tree_structure",
+      "threshold": "advertised rows == 20000 (flat list only)",
+      "verdict": "UNKNOWN"
+    },
+    {
+      "gate": "restart_body_match",
+      "value": "match",
+      "threshold": "reopened body hash == pre-kill body hash",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_conflicts",
+      "value": 0,
+      "threshold": "== 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_errors",
+      "value": 0,
+      "threshold": "== 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_p95_ms",
+      "value": 3,
+      "threshold": "< 50",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "95c64c06"
+}

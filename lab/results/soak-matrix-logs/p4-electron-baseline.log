@@ -1,0 +1,4 @@
+{"built":["<repo>/lab/bakeoff/dist/run.js"],"soakMs":1800000,"lazyDocs":false,"containNav":false}
+electron: killed 3 orphaned shell process(es)
+electron: 3 fails (peak_rss_mb, soak_peak_rss_mb, soak_projected_8h_rss_mb)
+report -> <repo>/lab/results/report-bakeoff-stress-soak-electron.md

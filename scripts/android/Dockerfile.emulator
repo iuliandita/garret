@@ -1,0 +1,20 @@
+# Separate from the APK build image: the large system image is only needed for
+# isolated runtime checks, never for packaging an APK.
+FROM write-android
+
+USER root
+# Channel zero is stable. The Google APIs image is not a Play Store image and
+# is usable without an account or network at runtime.
+RUN python3 -c 'import subprocess; subprocess.run(["sdkmanager", "--channel=0", "emulator", "system-images;android-36;google_apis;x86_64"], input="y\n" * 100, text=True, check=True)'
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      libasound2 libdbus-1-3 libdrm2 libfontconfig1 libgbm1 libgl1 \
+      libnss3 libpulse0 libx11-6 libxcb1 libxcursor1 libxext6 \
+      libxi6 libxkbcommon0 libxkbfile1 libxrandr2 libxrender1 \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV PATH=/opt/android-sdk/emulator:$PATH
+USER builder
+WORKDIR /src
+CMD ["emulator", "-version"]

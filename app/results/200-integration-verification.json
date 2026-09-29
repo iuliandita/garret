@@ -1,0 +1,40 @@
+{
+  "source": "dddc62462bfb05992e05feb817bad00fb5db6a9c",
+  "checks": {
+    "bun": {
+      "passed": 4072,
+      "failed": 0,
+      "files": 201
+    },
+    "typescript": {
+      "exit_code": 0
+    },
+    "cargo": [
+      {
+        "passed": 1812,
+        "failed": 0,
+        "ignored": 4
+      },
+      {
+        "passed": 2,
+        "failed": 0,
+        "ignored": 0
+      }
+    ]
+  },
+  "limits": [
+    "Four host tests requiring isolated WebKit or a private session bus are explicitly ignored in the ordinary suite; scoped native evidence is recorded separately.",
+    "This checkpoint makes no hardware performance or cross-platform certification claim."
+  ],
+  "receipts": {
+    "200-final-bun.log": "ae2e271c022c72d4fe6c3321e0cc19619abe1d08010f5913f015f578ae2c952f",
+    "200-final-cargo.log": "dc09323ed58c4c65fa73121a8c578115d6a138c648c4113143f95558eea63cef",
+    "200-final-typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "resolved": [
+    "Historical database fixtures now construct older schemas without relaxing production migrations.",
+    "Missing originals preserve database-only recovery while complete-bundle status stays false.",
+    "Exact output inventories and current page fixtures match the integrated features.",
+    "Analytics figures and displayed timestamps follow the app locale."
+  ]
+}

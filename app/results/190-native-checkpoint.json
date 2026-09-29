@@ -1,0 +1,93 @@
+{
+  "kind": "native-screenshot-checkpoint",
+  "schema": 1,
+  "scope": [
+    "outline table/cards/empty",
+    "saved references/read-through",
+    "nested bible folders",
+    "removed cast recovery list"
+  ],
+  "limitations": [
+    "isolated Linux Xvfb renderer; no physical monitor claim",
+    "cast restore persistence verified by focused host/UI tests, not by screenshot"
+  ],
+  "screenshots": [
+    {
+      "file": "app/results/screenshots/172-outline-cards-dark.png",
+      "sha256": "7c1ee5c8d492e482f1a6ea6fb0014e1a760c25bba5801ec94f6b1ed1bee5790a",
+      "renderer": "dmabuf-llvmpipe",
+      "capture": "complete",
+      "visual_review": "inspected"
+    },
+    {
+      "file": "app/results/screenshots/172-outline-empty-dark.png",
+      "sha256": "578c42ae7e76e96e2e397354db2d2c690fce71072410c550525ed74f5031f7a4",
+      "renderer": "dmabuf-llvmpipe",
+      "capture": "complete",
+      "visual_review": "inspected"
+    },
+    {
+      "file": "app/results/screenshots/172-outline-table-light.png",
+      "sha256": "4ae419cd21d080b72db58e41af2fe9dd03b6cc62c25a17206852962aaf0d8542",
+      "renderer": "dmabuf-llvmpipe",
+      "capture": "complete",
+      "visual_review": "inspected"
+    },
+    {
+      "file": "app/results/screenshots/175-cast-recovery-dark.png",
+      "sha256": "0c6ab8338eeef7756a9b0fe38c13b516af7ba8c68ccf977313653654145456ce",
+      "renderer": "dmabuf-llvmpipe",
+      "capture": "complete",
+      "visual_review": "inspected"
+    },
+    {
+      "file": "app/results/screenshots/175-cast-recovery-light.png",
+      "sha256": "54d258584b88a8aefc91be1ad470f0d58890f61de8c1d18707fb067af1d67a0f",
+      "renderer": "dmabuf-llvmpipe",
+      "capture": "complete",
+      "visual_review": "inspected"
+    },
+    {
+      "file": "app/results/screenshots/176-bible-folders-dark.png",
+      "sha256": "cbfa5c593d13491f047341b71e89a0a04ae8575c5ee72e5fa08df11f034ed9ea",
+      "renderer": "dmabuf-llvmpipe",
+      "capture": "complete",
+      "visual_review": "inspected"
+    },
+    {
+      "file": "app/results/screenshots/176-bible-folders-light.png",
+      "sha256": "bd4898338a56beeaff6b68a1c9da3217922ee0e4b9153065edef583dce23f48d",
+      "renderer": "dmabuf-llvmpipe",
+      "capture": "complete",
+      "visual_review": "inspected"
+    },
+    {
+      "file": "app/results/screenshots/177-read-through-dark.png",
+      "sha256": "a9ace7486b3bb0463a593f6b2740b8d54bdefe56bbb68f2fdd01433ef6931b71",
+      "renderer": "dmabuf-llvmpipe",
+      "capture": "complete",
+      "visual_review": "inspected"
+    },
+    {
+      "file": "app/results/screenshots/177-read-through-light.png",
+      "sha256": "eeea65f7b71075083ff591eee4e7cccb0034d486575b9d17b58e8caa0f9554eb",
+      "renderer": "dmabuf-llvmpipe",
+      "capture": "complete",
+      "visual_review": "inspected"
+    },
+    {
+      "file": "app/results/screenshots/177-reference-dark.png",
+      "sha256": "858c79b9568caed380bf531e77f5d9525fd4dd730e2b7c76c5d1a76ec3d4815c",
+      "renderer": "dmabuf-llvmpipe",
+      "capture": "complete",
+      "visual_review": "inspected"
+    },
+    {
+      "file": "app/results/screenshots/177-reference-light.png",
+      "sha256": "3d1046150fa296d990bf3b536ff357827d3be08b41c367d9b32a8036b3c214db",
+      "renderer": "dmabuf-llvmpipe",
+      "capture": "complete",
+      "visual_review": "inspected"
+    }
+  ]
+}

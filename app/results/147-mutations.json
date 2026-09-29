@@ -1,0 +1,32 @@
+{
+  "source_commit": "f8ef1fe9a973f18de9771354da10189982e9d2f3",
+  "source_restored": true,
+  "restored_release_build_exit": 0,
+  "mutations": [
+    {
+      "mutation": "sentence-metric",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "own-text",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "nearest-type",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "manuscript-exclusions",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "host-projection",
+      "exit_code": 101,
+      "verdict": "KILLED"
+    }
+  ]
+}

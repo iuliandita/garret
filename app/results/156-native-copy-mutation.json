@@ -1,0 +1,11 @@
+{
+  "source_commit": "0778068738a8f6a80b54a844c8862155840f381f",
+  "mutation": "same-button-forks",
+  "exit_code": 1,
+  "failed_gates": [
+    "same_identity",
+    "same_canonical_location"
+  ],
+  "source_restored": true,
+  "restored_ui_build_exit": 0
+}

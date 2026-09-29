@@ -1,0 +1,60 @@
+{
+  "scope": "Ubuntu 24.04 container, Mint 22 package base; Xvfb, not a Mint desktop certification",
+  "binary_sha256": "78645a9a4285d0f7a862b8a613af15c7ac9a28022ad9e708a98b7afca3beb9c8",
+  "checks": {
+    "checksums": {
+      "exit_code": 0
+    },
+    "linkage": {
+      "exit_code": 0
+    },
+    "unicode_import": {
+      "exit_code": 0
+    },
+    "inspect": {
+      "exit_code": 0
+    },
+    "validate": {
+      "exit_code": 0
+    },
+    "markdown_export": {
+      "exit_code": 0
+    },
+    "epub_export": {
+      "exit_code": 0
+    },
+    "docx_export": {
+      "exit_code": 0
+    },
+    "windows": {
+      "exit_code": 0
+    },
+    "gui": {
+      "ready": true,
+      "rows": 1,
+      "run": "interactive",
+      "asset_override": false,
+      "clean_exit": true
+    },
+    "focus": {
+      "exit_code": 0
+    },
+    "close": {
+      "exit_code": 0
+    }
+  },
+  "failure": null,
+  "unicode_round_trip": true,
+  "archive_sha256": "63c9fb59c725807d700159e1c279743902e3074bff37b7824629299e070d2288",
+  "archive_bytes": 5838364,
+  "source_revision": "de303f9b67a04032380d1159510e68bead76cf2f",
+  "glibc_floor": "2.39",
+  "package_contents_verified": true,
+  "dirty_source_refusal_verified": true,
+  "limitations": [
+    "Mint Cinnamon/MATE/Xfce desktop integration has not been certified",
+    "Mint 21 / Ubuntu 22.04 / Debian 12 are not supported by this binary",
+    "No sandbox or GPU override used; container display is software-rendered",
+    "Minimal test container lacks CJK fonts; Unicode round-trip passed"
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "source_commit": "ff787aa6e06b602d2f046b4c455ed60a43314a98",
+  "source_restored": true,
+  "mutations": [
+    {
+      "mutation": "known-name-qualification",
+      "exit_code": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "checked-list-hardcoded",
+      "exit_code": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "unchecked-list-hardcoded",
+      "exit_code": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "unchecked-line-omitted",
+      "exit_code": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "empty-checked-list-hidden",
+      "exit_code": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "empty-unchecked-list-hidden",
+      "exit_code": 101,
+      "verdict": "KILLED"
+    }
+  ]
+}

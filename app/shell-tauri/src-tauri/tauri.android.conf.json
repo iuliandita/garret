@@ -1,0 +1,11 @@
+{
+  "productName": "Writing preview",
+  "build": { "frontendDist": "../../mobile-ui/dist" },
+  "app": {
+    "windows": [{ "label": "main", "title": "Writing preview" }],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    }
+  },
+  "bundle": { "android": { "minSdkVersion": 24, "versionCode": 1 } }
+}

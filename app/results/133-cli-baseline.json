@@ -1,0 +1,156 @@
+{
+  "source_commit": "c545a29125c7f739b78b308876dd86117e8dce90",
+  "binary_sha256": "b5bfc7652d47debe95f11e09f6deb93ad8dd9e0000e7684d0470f85da4ac6ec4",
+  "classification": "expected missing disclosure",
+  "cases": [
+    {
+      "case": "empty-vault",
+      "human_exit": 0,
+      "json_exit": 0,
+      "scope_present": false,
+      "unchecked_present": false,
+      "project_bytes_unchanged": true,
+      "human_report": "no identity pinned\nidentity_disclosure      ran\ncross_identity           not_applicable\nmissing_metadata         vacuous\nbroken_links             vacuous\nvalidator                not_applicable\nassets                   not_applicable\nwarning  identity_unset in project\nno blockers\n",
+      "json_report": {
+        "format": "markdown",
+        "identity": null,
+        "fields": [],
+        "checks": [
+          {
+            "name": "identity_disclosure",
+            "state": "ran"
+          },
+          {
+            "name": "cross_identity",
+            "state": "not_applicable"
+          },
+          {
+            "name": "missing_metadata",
+            "state": "vacuous"
+          },
+          {
+            "name": "broken_links",
+            "state": "vacuous"
+          },
+          {
+            "name": "validator",
+            "state": "not_applicable"
+          },
+          {
+            "name": "assets",
+            "state": "not_applicable"
+          }
+        ],
+        "skipped": [
+          "cross_identity",
+          "missing_metadata",
+          "broken_links",
+          "validator",
+          "assets"
+        ],
+        "findings": [
+          {
+            "kind": "identity_unset",
+            "severity": "warning",
+            "surface": "project",
+            "item_id": null,
+            "offset": null,
+            "matched": ""
+          }
+        ],
+        "surfaces_checked": [
+          "project_name",
+          "item_title",
+          "document_body"
+        ],
+        "surfaces_unchecked": [
+          "comment_body",
+          "comment_quote",
+          "snapshot_label",
+          "synopsis",
+          "cast",
+          "export_directory",
+          "window_title",
+          "diagnostics",
+          "readable_mirror"
+        ],
+        "blockers": 0,
+        "ok": true
+      }
+    },
+    {
+      "case": "known-name-vault",
+      "human_exit": 0,
+      "json_exit": 0,
+      "scope_present": false,
+      "unchecked_present": false,
+      "project_bytes_unchanged": true,
+      "human_report": "no identity pinned\nidentity_disclosure      ran\ncross_identity           ran\nmissing_metadata         vacuous\nbroken_links             vacuous\nvalidator                not_applicable\nassets                   not_applicable\nwarning  identity_unset in project\nno blockers\n",
+      "json_report": {
+        "format": "markdown",
+        "identity": null,
+        "fields": [],
+        "checks": [
+          {
+            "name": "identity_disclosure",
+            "state": "ran"
+          },
+          {
+            "name": "cross_identity",
+            "state": "ran"
+          },
+          {
+            "name": "missing_metadata",
+            "state": "vacuous"
+          },
+          {
+            "name": "broken_links",
+            "state": "vacuous"
+          },
+          {
+            "name": "validator",
+            "state": "not_applicable"
+          },
+          {
+            "name": "assets",
+            "state": "not_applicable"
+          }
+        ],
+        "skipped": [
+          "missing_metadata",
+          "broken_links",
+          "validator",
+          "assets"
+        ],
+        "findings": [
+          {
+            "kind": "identity_unset",
+            "severity": "warning",
+            "surface": "project",
+            "item_id": null,
+            "offset": null,
+            "matched": ""
+          }
+        ],
+        "surfaces_checked": [
+          "project_name",
+          "item_title",
+          "document_body"
+        ],
+        "surfaces_unchecked": [
+          "comment_body",
+          "comment_quote",
+          "snapshot_label",
+          "synopsis",
+          "cast",
+          "export_directory",
+          "window_title",
+          "diagnostics",
+          "readable_mirror"
+        ],
+        "blockers": 0,
+        "ok": true
+      }
+    }
+  ]
+}

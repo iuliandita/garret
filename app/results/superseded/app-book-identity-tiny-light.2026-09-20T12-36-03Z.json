@@ -1,0 +1,128 @@
+{
+  "run_id": "app-book-identity-tiny-light",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-project",
+  "environment": {
+    "kernel": "7.2.6-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "8 logical CPUs; CPU quota 800%; nice 19; idle IO; memory high 6 GiB, maximum 8 GiB; no swap; one Cargo job; two Rust test threads",
+    "loadAvg1m": 0.68,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Three isolated native launches through human startup, with copied SQLite files. Real Tab/Return choices; independent manuscript and canonical registry reads. English light or German dark screenshot. No timing claim.",
+  "metrics": {
+    "launches": 3,
+    "renderers": [
+      {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    ]
+  },
+  "verdicts": [
+    {
+      "gate": "cancel_prompt_and_keyboard",
+      "value": "observed",
+      "threshold": "copied-book prompt appears and the keyboard choice dismisses it",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "cancel_keeps_manuscripts",
+      "value": "observed",
+      "threshold": "both manuscripts, versions and snapshots remain unchanged",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "cancel_identity",
+      "value": "observed",
+      "threshold": "only Separate gives the copied file a new identity",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "cancel_canonical_location",
+      "value": "observed",
+      "threshold": "Cancel preserves the registry; Same selects the copy; Separate records both identities",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "same_prompt_and_keyboard",
+      "value": "observed",
+      "threshold": "copied-book prompt appears and the keyboard choice dismisses it",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "same_keeps_manuscripts",
+      "value": "observed",
+      "threshold": "both manuscripts, versions and snapshots remain unchanged",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "same_identity",
+      "value": "observed",
+      "threshold": "only Separate gives the copied file a new identity",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "same_canonical_location",
+      "value": "observed",
+      "threshold": "Cancel preserves the registry; Same selects the copy; Separate records both identities",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "separate_prompt_and_keyboard",
+      "value": "observed",
+      "threshold": "copied-book prompt appears and the keyboard choice dismisses it",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "separate_keeps_manuscripts",
+      "value": "observed",
+      "threshold": "both manuscripts, versions and snapshots remain unchanged",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "separate_identity",
+      "value": "observed",
+      "threshold": "only Separate gives the copied file a new identity",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "separate_canonical_location",
+      "value": "observed",
+      "threshold": "Cancel preserves the registry; Same selects the copy; Separate records both identities",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "04e9c99915a6a7332c900263051674921cae7e2f"
+}

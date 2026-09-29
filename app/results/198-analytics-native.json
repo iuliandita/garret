@@ -1,0 +1,28 @@
+{
+  "source": "0c8d86f9cb7317c54f236ce04c3751cf1b462104",
+  "images": [
+    {
+      "path": "app/results/screenshots/198-analytics-light.png",
+      "sha256": "8bdce1270c4e8bec95afc0fa7a671401d64fc78c5b7d8caa123369e410b446e0",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/198-analytics-dark.png",
+      "sha256": "b091cf220443013b84dd314525f6e89c6e2a4c9272825cb3fece571fe32938b9",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    }
+  ],
+  "scope": "Virtual-display layout only; no physical hardware or performance claim.",
+  "observations": [
+    "Analytics opens with seeded recorded sessions in both themes.",
+    "Dark selects use the existing themed control rule; corrected labels and filters are readable.",
+    "Host binary is the prior analytics build; current UI was rebuilt for each corrected theme capture. This does not verify the later native close-timeout change."
+  ],
+  "host_source": "be6b9c2bd8e3ff56ca972bb04876b73d6e5e1b2f"
+}

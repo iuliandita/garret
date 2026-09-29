@@ -1,0 +1,1913 @@
+{
+  "run_id": "app-persist-stress-5m",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-persist",
+  "environment": {
+    "kernel": "7.2.2-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 3.35,
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "peak_rss_mb": 804,
+    "typing_p95_ms": 34,
+    "typing_p99_ms": 34.000000000029104,
+    "nav_p95_ms": 34,
+    "typing": {
+      "count": 7873,
+      "dispatch": {
+        "p50": 1.999999999970896,
+        "p95": 2.000000000029104,
+        "p99": 2.999999999970896
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34,
+        "p99": 34.000000000029104
+      },
+      "histogram": {
+        "100-500": 1,
+        "20-40": 7867,
+        "40-100": 5,
+        "500-2000": 0,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 1,
+      "stalls": 0
+    },
+    "nav": {
+      "count": 1115,
+      "dispatch": {
+        "p50": 0.999999999996362,
+        "p95": 6,
+        "p99": 20
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34,
+        "p99": 34.000000000029104
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 1115,
+        "40-100": 0,
+        "500-2000": 0,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 0,
+      "stalls": 0
+    },
+    "cycles": [
+      {
+        "atMs": 16170,
+        "charsTyped": 400,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 32349,
+        "charsTyped": 800,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 34.00000000000364
+      },
+      {
+        "atMs": 48527,
+        "charsTyped": 1200,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 64706,
+        "charsTyped": 1600,
+        "cycle": 4,
+        "partial": false,
+        "typingP95Ms": 34.000000000007276
+      },
+      {
+        "atMs": 80885,
+        "charsTyped": 2000,
+        "cycle": 5,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 97064,
+        "charsTyped": 2400,
+        "cycle": 6,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 113242,
+        "charsTyped": 2800,
+        "cycle": 7,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 129421,
+        "charsTyped": 3200,
+        "cycle": 8,
+        "partial": false,
+        "typingP95Ms": 34.00000000001455
+      },
+      {
+        "atMs": 145600,
+        "charsTyped": 3600,
+        "cycle": 9,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 161779,
+        "charsTyped": 4000,
+        "cycle": 10,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 178174,
+        "charsTyped": 4400,
+        "cycle": 11,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 194353,
+        "charsTyped": 4800,
+        "cycle": 12,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 210532,
+        "charsTyped": 5200,
+        "cycle": 13,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 226711,
+        "charsTyped": 5600,
+        "cycle": 14,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 242889,
+        "charsTyped": 6000,
+        "cycle": 15,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 259068,
+        "charsTyped": 6400,
+        "cycle": 16,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 275247,
+        "charsTyped": 6800,
+        "cycle": 17,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 291425,
+        "charsTyped": 7200,
+        "cycle": 18,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 300032,
+        "charsTyped": 7409,
+        "cycle": 19,
+        "partial": true,
+        "typingP95Ms": 34
+      }
+    ],
+    "rows": 20000,
+    "workload_script": "writing-v1",
+    "a11y": {
+      "available": true,
+      "hasNavigator": true,
+      "exposedRows": 0,
+      "mountedRows": 46,
+      "treeRows": [
+        {
+          "id": "nav-row-0",
+          "name": "WINTER CAFÉ 566",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-9",
+          "name": "GARDEN OMBRÉ 826",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 2,
+          "expanded": true
+        },
+        {
+          "id": "nav-row-10",
+          "name": "café Nocturne 335",
+          "level": 2,
+          "setsize": 4,
+          "posinset": 1,
+          "expanded": true
+        },
+        {
+          "id": "nav-row-11",
+          "name": "River Ombré 39",
+          "level": 3,
+          "setsize": 3,
+          "posinset": 1,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-12",
+          "name": "café Letter 835",
+          "level": 3,
+          "setsize": 3,
+          "posinset": 2,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-13",
+          "name": "River Harbor 112",
+          "level": 3,
+          "setsize": 3,
+          "posinset": 3,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-14",
+          "name": "Storm Ombré 347",
+          "level": 2,
+          "setsize": 4,
+          "posinset": 2,
+          "expanded": true
+        },
+        {
+          "id": "nav-row-15",
+          "name": "Ombré Storm 261",
+          "level": 3,
+          "setsize": 4,
+          "posinset": 1,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-16",
+          "name": "Straße Storm 667",
+          "level": 3,
+          "setsize": 4,
+          "posinset": 2,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-17",
+          "name": "CAFÉ Letter 985",
+          "level": 3,
+          "setsize": 4,
+          "posinset": 3,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-18",
+          "name": "Ombré Straße 633",
+          "level": 3,
+          "setsize": 4,
+          "posinset": 4,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19",
+          "name": "Storm Ombré 447",
+          "level": 2,
+          "setsize": 4,
+          "posinset": 3,
+          "expanded": true
+        },
+        {
+          "id": "nav-row-20",
+          "name": "CAFÉ Winter 652",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 1,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-21",
+          "name": "Ombré Garden 665",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 2,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-22",
+          "name": "Harbor River 226",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 3,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-23",
+          "name": "Winter Ausência 750",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 4,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-24",
+          "name": "Straße Lantern 337",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 5,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-25",
+          "name": "Ombré Lantern 191",
+          "level": 2,
+          "setsize": 4,
+          "posinset": 4,
+          "expanded": true
+        },
+        {
+          "id": "nav-row-26",
+          "name": "Straße Harbor 163",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 1,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-27",
+          "name": "CAFÉ Ausência 67",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 2,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-28",
+          "name": "Harbor Ausência 849",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 3,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-29",
+          "name": "Ombré Nocturne 614",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 4,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-30",
+          "name": "Letter Straße 88",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 5,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-31",
+          "name": "Nocturne Ombré 916",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 6,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-32",
+          "name": "CAFÉ Harbor 211",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 7,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-33",
+          "name": "AUSÊNCIA HARBOR 554",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 3,
+          "expanded": true
+        },
+        {
+          "id": "nav-row-34",
+          "name": "Ombré Letter 942",
+          "level": 2,
+          "setsize": 8,
+          "posinset": 1,
+          "expanded": true
+        },
+        {
+          "id": "nav-row-35",
+          "name": "CAFÉ CAFÉ 454",
+          "level": 3,
+          "setsize": 3,
+          "posinset": 1,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-36",
+          "name": "River Ausência 318",
+          "level": 3,
+          "setsize": 3,
+          "posinset": 2,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-37",
+          "name": "CAFÉ Ausência 359",
+          "level": 3,
+          "setsize": 3,
+          "posinset": 3,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-38",
+          "name": "River Lantern 653",
+          "level": 2,
+          "setsize": 8,
+          "posinset": 2,
+          "expanded": true
+        },
+        {
+          "id": "nav-row-39",
+          "name": "River Letter 336",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 1,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-40",
+          "name": "CAFÉ Ausência 838",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 2,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-41",
+          "name": "CAFÉ Ombré 375",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 3,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-42",
+          "name": "Nocturne Nocturne 893",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 4,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-43",
+          "name": "Ausência River 697",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 5,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-44",
+          "name": "CAFÉ Garden 280",
+          "level": 2,
+          "setsize": 8,
+          "posinset": 3,
+          "expanded": true
+        },
+        {
+          "id": "nav-row-45",
+          "name": "Ausência Winter 645",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 1,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-46",
+          "name": "Storm Ausência 68",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 2,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-47",
+          "name": "Ausência Letter 736",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 3,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-48",
+          "name": "Lantern CAFÉ 40",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 4,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-49",
+          "name": "Ausência Ausência 314",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 5,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-50",
+          "name": "Letter Ombré 243",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 6,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-51",
+          "name": "Ausência Storm 186",
+          "level": 3,
+          "setsize": 7,
+          "posinset": 7,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-52",
+          "name": "River Ausência 852",
+          "level": 2,
+          "setsize": 8,
+          "posinset": 4,
+          "expanded": true
+        },
+        {
+          "id": "nav-row-53",
+          "name": "Garden Winter 402",
+          "level": 3,
+          "setsize": 5,
+          "posinset": 1,
+          "expanded": false
+        }
+      ],
+      "roleCounts": {
+        "application": 1,
+        "frame": 1,
+        "panel": 8,
+        "filler": 5,
+        "separator": 1,
+        "button": 3,
+        "label": 2,
+        "scroll pane": 1,
+        "document web": 1,
+        "toggle button": 3,
+        "tree": 1,
+        "tree item": 46,
+        "landmark": 1,
+        "entry": 1,
+        "section": 2
+      }
+    },
+    "startup_ms": 167,
+    "soak_minutes": 5,
+    "actions": 8988,
+    "onset": null,
+    "slow_actions": 1,
+    "persist": {
+      "restart_body_match": true,
+      "body_diverged_from_seed": true,
+      "flush_count": 288,
+      "flush_conflicts": 0,
+      "flush_errors": 0,
+      "flush_p50_ms": 2,
+      "flush_p95_ms": 3.000000000029104
+    },
+    "persist_error": null,
+    "rss": {
+      "samples": 1192,
+      "span_ms": 303645,
+      "peak_mb": 804,
+      "peak_at_ms": 303924,
+      "boot_window_ms": 45000,
+      "peak_in_boot_window": false,
+      "boot_window_peak_mb": 691,
+      "post_boot_samples": 1017,
+      "post_boot_median_mb": 718,
+      "post_boot_max_mb": 804,
+      "post_boot_slope_mb_per_min": 24.27591976006718
+    },
+    "rss_series": [
+      {
+        "atMs": 0,
+        "rssMb": 54
+      },
+      {
+        "atMs": 1000,
+        "rssMb": 54
+      },
+      {
+        "atMs": 2000,
+        "rssMb": 54
+      },
+      {
+        "atMs": 3000,
+        "rssMb": 505
+      },
+      {
+        "atMs": 4000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 5000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 6000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 7000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 8000,
+        "rssMb": 671
+      },
+      {
+        "atMs": 9000,
+        "rssMb": 682
+      },
+      {
+        "atMs": 10000,
+        "rssMb": 680
+      },
+      {
+        "atMs": 11000,
+        "rssMb": 680
+      },
+      {
+        "atMs": 12000,
+        "rssMb": 680
+      },
+      {
+        "atMs": 13000,
+        "rssMb": 680
+      },
+      {
+        "atMs": 14000,
+        "rssMb": 680
+      },
+      {
+        "atMs": 15000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 16000,
+        "rssMb": 676
+      },
+      {
+        "atMs": 17000,
+        "rssMb": 678
+      },
+      {
+        "atMs": 18000,
+        "rssMb": 678
+      },
+      {
+        "atMs": 19000,
+        "rssMb": 678
+      },
+      {
+        "atMs": 20000,
+        "rssMb": 681
+      },
+      {
+        "atMs": 21000,
+        "rssMb": 682
+      },
+      {
+        "atMs": 22000,
+        "rssMb": 682
+      },
+      {
+        "atMs": 23000,
+        "rssMb": 685
+      },
+      {
+        "atMs": 24000,
+        "rssMb": 691
+      },
+      {
+        "atMs": 25000,
+        "rssMb": 683
+      },
+      {
+        "atMs": 26000,
+        "rssMb": 683
+      },
+      {
+        "atMs": 27000,
+        "rssMb": 683
+      },
+      {
+        "atMs": 28000,
+        "rssMb": 683
+      },
+      {
+        "atMs": 29000,
+        "rssMb": 683
+      },
+      {
+        "atMs": 30000,
+        "rssMb": 681
+      },
+      {
+        "atMs": 31000,
+        "rssMb": 683
+      },
+      {
+        "atMs": 32000,
+        "rssMb": 684
+      },
+      {
+        "atMs": 33000,
+        "rssMb": 684
+      },
+      {
+        "atMs": 34000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 35000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 36000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 37000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 38000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 39000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 40000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 41000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 42000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 43000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 44000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 45000,
+        "rssMb": 666
+      },
+      {
+        "atMs": 46000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 47000,
+        "rssMb": 666
+      },
+      {
+        "atMs": 48000,
+        "rssMb": 666
+      },
+      {
+        "atMs": 49000,
+        "rssMb": 671
+      },
+      {
+        "atMs": 50000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 51000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 52000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 53000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 54000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 55000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 56000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 57000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 58000,
+        "rssMb": 671
+      },
+      {
+        "atMs": 59000,
+        "rssMb": 671
+      },
+      {
+        "atMs": 60000,
+        "rssMb": 672
+      },
+      {
+        "atMs": 61000,
+        "rssMb": 672
+      },
+      {
+        "atMs": 62000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 63000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 64000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 65000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 66000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 67000,
+        "rssMb": 672
+      },
+      {
+        "atMs": 68000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 69000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 70000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 71000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 72000,
+        "rssMb": 682
+      },
+      {
+        "atMs": 73000,
+        "rssMb": 682
+      },
+      {
+        "atMs": 74000,
+        "rssMb": 682
+      },
+      {
+        "atMs": 75000,
+        "rssMb": 677
+      },
+      {
+        "atMs": 76000,
+        "rssMb": 678
+      },
+      {
+        "atMs": 77000,
+        "rssMb": 680
+      },
+      {
+        "atMs": 78000,
+        "rssMb": 679
+      },
+      {
+        "atMs": 79000,
+        "rssMb": 679
+      },
+      {
+        "atMs": 80000,
+        "rssMb": 680
+      },
+      {
+        "atMs": 81000,
+        "rssMb": 682
+      },
+      {
+        "atMs": 82000,
+        "rssMb": 683
+      },
+      {
+        "atMs": 83000,
+        "rssMb": 682
+      },
+      {
+        "atMs": 84000,
+        "rssMb": 683
+      },
+      {
+        "atMs": 85000,
+        "rssMb": 683
+      },
+      {
+        "atMs": 86000,
+        "rssMb": 682
+      },
+      {
+        "atMs": 87000,
+        "rssMb": 683
+      },
+      {
+        "atMs": 88000,
+        "rssMb": 695
+      },
+      {
+        "atMs": 89000,
+        "rssMb": 687
+      },
+      {
+        "atMs": 90000,
+        "rssMb": 687
+      },
+      {
+        "atMs": 91000,
+        "rssMb": 687
+      },
+      {
+        "atMs": 92000,
+        "rssMb": 687
+      },
+      {
+        "atMs": 93000,
+        "rssMb": 687
+      },
+      {
+        "atMs": 94000,
+        "rssMb": 687
+      },
+      {
+        "atMs": 95000,
+        "rssMb": 689
+      },
+      {
+        "atMs": 96000,
+        "rssMb": 689
+      },
+      {
+        "atMs": 97000,
+        "rssMb": 689
+      },
+      {
+        "atMs": 98000,
+        "rssMb": 689
+      },
+      {
+        "atMs": 99000,
+        "rssMb": 689
+      },
+      {
+        "atMs": 100000,
+        "rssMb": 689
+      },
+      {
+        "atMs": 101000,
+        "rssMb": 689
+      },
+      {
+        "atMs": 102000,
+        "rssMb": 689
+      },
+      {
+        "atMs": 103000,
+        "rssMb": 689
+      },
+      {
+        "atMs": 104000,
+        "rssMb": 695
+      },
+      {
+        "atMs": 105000,
+        "rssMb": 704
+      },
+      {
+        "atMs": 106000,
+        "rssMb": 696
+      },
+      {
+        "atMs": 107000,
+        "rssMb": 695
+      },
+      {
+        "atMs": 108000,
+        "rssMb": 695
+      },
+      {
+        "atMs": 109000,
+        "rssMb": 694
+      },
+      {
+        "atMs": 110000,
+        "rssMb": 694
+      },
+      {
+        "atMs": 111000,
+        "rssMb": 694
+      },
+      {
+        "atMs": 112000,
+        "rssMb": 694
+      },
+      {
+        "atMs": 113000,
+        "rssMb": 696
+      },
+      {
+        "atMs": 114000,
+        "rssMb": 696
+      },
+      {
+        "atMs": 115000,
+        "rssMb": 695
+      },
+      {
+        "atMs": 116000,
+        "rssMb": 694
+      },
+      {
+        "atMs": 117000,
+        "rssMb": 695
+      },
+      {
+        "atMs": 118000,
+        "rssMb": 696
+      },
+      {
+        "atMs": 119000,
+        "rssMb": 700
+      },
+      {
+        "atMs": 120000,
+        "rssMb": 702
+      },
+      {
+        "atMs": 121000,
+        "rssMb": 711
+      },
+      {
+        "atMs": 122000,
+        "rssMb": 701
+      },
+      {
+        "atMs": 123000,
+        "rssMb": 705
+      },
+      {
+        "atMs": 124000,
+        "rssMb": 704
+      },
+      {
+        "atMs": 125000,
+        "rssMb": 706
+      },
+      {
+        "atMs": 126000,
+        "rssMb": 706
+      },
+      {
+        "atMs": 127000,
+        "rssMb": 702
+      },
+      {
+        "atMs": 128000,
+        "rssMb": 702
+      },
+      {
+        "atMs": 129000,
+        "rssMb": 701
+      },
+      {
+        "atMs": 130000,
+        "rssMb": 702
+      },
+      {
+        "atMs": 131000,
+        "rssMb": 702
+      },
+      {
+        "atMs": 132000,
+        "rssMb": 703
+      },
+      {
+        "atMs": 133000,
+        "rssMb": 703
+      },
+      {
+        "atMs": 134000,
+        "rssMb": 702
+      },
+      {
+        "atMs": 135000,
+        "rssMb": 702
+      },
+      {
+        "atMs": 136000,
+        "rssMb": 703
+      },
+      {
+        "atMs": 137000,
+        "rssMb": 713
+      },
+      {
+        "atMs": 138000,
+        "rssMb": 711
+      },
+      {
+        "atMs": 139000,
+        "rssMb": 704
+      },
+      {
+        "atMs": 140000,
+        "rssMb": 704
+      },
+      {
+        "atMs": 141000,
+        "rssMb": 704
+      },
+      {
+        "atMs": 142000,
+        "rssMb": 704
+      },
+      {
+        "atMs": 143000,
+        "rssMb": 704
+      },
+      {
+        "atMs": 144000,
+        "rssMb": 705
+      },
+      {
+        "atMs": 145000,
+        "rssMb": 706
+      },
+      {
+        "atMs": 146000,
+        "rssMb": 708
+      },
+      {
+        "atMs": 147000,
+        "rssMb": 709
+      },
+      {
+        "atMs": 148000,
+        "rssMb": 708
+      },
+      {
+        "atMs": 149000,
+        "rssMb": 711
+      },
+      {
+        "atMs": 150000,
+        "rssMb": 711
+      },
+      {
+        "atMs": 151000,
+        "rssMb": 709
+      },
+      {
+        "atMs": 152000,
+        "rssMb": 708
+      },
+      {
+        "atMs": 153000,
+        "rssMb": 719
+      },
+      {
+        "atMs": 154000,
+        "rssMb": 712
+      },
+      {
+        "atMs": 155000,
+        "rssMb": 712
+      },
+      {
+        "atMs": 156000,
+        "rssMb": 713
+      },
+      {
+        "atMs": 157000,
+        "rssMb": 713
+      },
+      {
+        "atMs": 158000,
+        "rssMb": 713
+      },
+      {
+        "atMs": 159000,
+        "rssMb": 713
+      },
+      {
+        "atMs": 160000,
+        "rssMb": 716
+      },
+      {
+        "atMs": 161000,
+        "rssMb": 715
+      },
+      {
+        "atMs": 162000,
+        "rssMb": 716
+      },
+      {
+        "atMs": 163000,
+        "rssMb": 716
+      },
+      {
+        "atMs": 164000,
+        "rssMb": 717
+      },
+      {
+        "atMs": 165000,
+        "rssMb": 715
+      },
+      {
+        "atMs": 166000,
+        "rssMb": 716
+      },
+      {
+        "atMs": 167000,
+        "rssMb": 716
+      },
+      {
+        "atMs": 168000,
+        "rssMb": 715
+      },
+      {
+        "atMs": 169000,
+        "rssMb": 730
+      },
+      {
+        "atMs": 170000,
+        "rssMb": 717
+      },
+      {
+        "atMs": 171000,
+        "rssMb": 717
+      },
+      {
+        "atMs": 172000,
+        "rssMb": 718
+      },
+      {
+        "atMs": 173000,
+        "rssMb": 718
+      },
+      {
+        "atMs": 174000,
+        "rssMb": 719
+      },
+      {
+        "atMs": 175000,
+        "rssMb": 719
+      },
+      {
+        "atMs": 176000,
+        "rssMb": 718
+      },
+      {
+        "atMs": 177000,
+        "rssMb": 719
+      },
+      {
+        "atMs": 178000,
+        "rssMb": 719
+      },
+      {
+        "atMs": 179000,
+        "rssMb": 719
+      },
+      {
+        "atMs": 180000,
+        "rssMb": 719
+      },
+      {
+        "atMs": 181000,
+        "rssMb": 721
+      },
+      {
+        "atMs": 182000,
+        "rssMb": 720
+      },
+      {
+        "atMs": 183000,
+        "rssMb": 721
+      },
+      {
+        "atMs": 184000,
+        "rssMb": 721
+      },
+      {
+        "atMs": 185000,
+        "rssMb": 725
+      },
+      {
+        "atMs": 186000,
+        "rssMb": 734
+      },
+      {
+        "atMs": 187000,
+        "rssMb": 727
+      },
+      {
+        "atMs": 188000,
+        "rssMb": 727
+      },
+      {
+        "atMs": 189000,
+        "rssMb": 726
+      },
+      {
+        "atMs": 190000,
+        "rssMb": 726
+      },
+      {
+        "atMs": 191000,
+        "rssMb": 726
+      },
+      {
+        "atMs": 192000,
+        "rssMb": 726
+      },
+      {
+        "atMs": 193000,
+        "rssMb": 735
+      },
+      {
+        "atMs": 194000,
+        "rssMb": 735
+      },
+      {
+        "atMs": 195000,
+        "rssMb": 727
+      },
+      {
+        "atMs": 196000,
+        "rssMb": 728
+      },
+      {
+        "atMs": 197000,
+        "rssMb": 731
+      },
+      {
+        "atMs": 198000,
+        "rssMb": 730
+      },
+      {
+        "atMs": 199000,
+        "rssMb": 733
+      },
+      {
+        "atMs": 200000,
+        "rssMb": 731
+      },
+      {
+        "atMs": 201000,
+        "rssMb": 737
+      },
+      {
+        "atMs": 202000,
+        "rssMb": 744
+      },
+      {
+        "atMs": 203000,
+        "rssMb": 742
+      },
+      {
+        "atMs": 204000,
+        "rssMb": 732
+      },
+      {
+        "atMs": 205000,
+        "rssMb": 732
+      },
+      {
+        "atMs": 206000,
+        "rssMb": 734
+      },
+      {
+        "atMs": 207000,
+        "rssMb": 735
+      },
+      {
+        "atMs": 208000,
+        "rssMb": 732
+      },
+      {
+        "atMs": 209000,
+        "rssMb": 732
+      },
+      {
+        "atMs": 210000,
+        "rssMb": 731
+      },
+      {
+        "atMs": 211000,
+        "rssMb": 732
+      },
+      {
+        "atMs": 212000,
+        "rssMb": 735
+      },
+      {
+        "atMs": 213000,
+        "rssMb": 734
+      },
+      {
+        "atMs": 214000,
+        "rssMb": 736
+      },
+      {
+        "atMs": 215000,
+        "rssMb": 736
+      },
+      {
+        "atMs": 216000,
+        "rssMb": 737
+      },
+      {
+        "atMs": 217000,
+        "rssMb": 736
+      },
+      {
+        "atMs": 218000,
+        "rssMb": 743
+      },
+      {
+        "atMs": 219000,
+        "rssMb": 737
+      },
+      {
+        "atMs": 220000,
+        "rssMb": 737
+      },
+      {
+        "atMs": 221000,
+        "rssMb": 737
+      },
+      {
+        "atMs": 222000,
+        "rssMb": 737
+      },
+      {
+        "atMs": 223000,
+        "rssMb": 738
+      },
+      {
+        "atMs": 224000,
+        "rssMb": 738
+      },
+      {
+        "atMs": 225000,
+        "rssMb": 738
+      },
+      {
+        "atMs": 226000,
+        "rssMb": 737
+      },
+      {
+        "atMs": 227000,
+        "rssMb": 740
+      },
+      {
+        "atMs": 228000,
+        "rssMb": 740
+      },
+      {
+        "atMs": 229000,
+        "rssMb": 740
+      },
+      {
+        "atMs": 230000,
+        "rssMb": 740
+      },
+      {
+        "atMs": 231000,
+        "rssMb": 740
+      },
+      {
+        "atMs": 232000,
+        "rssMb": 739
+      },
+      {
+        "atMs": 233000,
+        "rssMb": 739
+      },
+      {
+        "atMs": 234000,
+        "rssMb": 750
+      },
+      {
+        "atMs": 235000,
+        "rssMb": 742
+      },
+      {
+        "atMs": 236000,
+        "rssMb": 746
+      },
+      {
+        "atMs": 237000,
+        "rssMb": 746
+      },
+      {
+        "atMs": 238000,
+        "rssMb": 746
+      },
+      {
+        "atMs": 239000,
+        "rssMb": 747
+      },
+      {
+        "atMs": 240000,
+        "rssMb": 747
+      },
+      {
+        "atMs": 241000,
+        "rssMb": 748
+      },
+      {
+        "atMs": 242000,
+        "rssMb": 748
+      },
+      {
+        "atMs": 243000,
+        "rssMb": 749
+      },
+      {
+        "atMs": 244000,
+        "rssMb": 749
+      },
+      {
+        "atMs": 245000,
+        "rssMb": 749
+      },
+      {
+        "atMs": 246000,
+        "rssMb": 750
+      },
+      {
+        "atMs": 247000,
+        "rssMb": 751
+      },
+      {
+        "atMs": 248000,
+        "rssMb": 750
+      },
+      {
+        "atMs": 249000,
+        "rssMb": 749
+      },
+      {
+        "atMs": 250000,
+        "rssMb": 758
+      },
+      {
+        "atMs": 251000,
+        "rssMb": 756
+      },
+      {
+        "atMs": 252000,
+        "rssMb": 750
+      },
+      {
+        "atMs": 253000,
+        "rssMb": 749
+      },
+      {
+        "atMs": 254000,
+        "rssMb": 750
+      },
+      {
+        "atMs": 255000,
+        "rssMb": 750
+      },
+      {
+        "atMs": 256000,
+        "rssMb": 752
+      },
+      {
+        "atMs": 257000,
+        "rssMb": 751
+      },
+      {
+        "atMs": 258000,
+        "rssMb": 752
+      },
+      {
+        "atMs": 259000,
+        "rssMb": 752
+      },
+      {
+        "atMs": 260000,
+        "rssMb": 751
+      },
+      {
+        "atMs": 261000,
+        "rssMb": 752
+      },
+      {
+        "atMs": 262000,
+        "rssMb": 753
+      },
+      {
+        "atMs": 263000,
+        "rssMb": 752
+      },
+      {
+        "atMs": 264000,
+        "rssMb": 752
+      },
+      {
+        "atMs": 265000,
+        "rssMb": 752
+      },
+      {
+        "atMs": 266000,
+        "rssMb": 757
+      },
+      {
+        "atMs": 267000,
+        "rssMb": 761
+      },
+      {
+        "atMs": 268000,
+        "rssMb": 755
+      },
+      {
+        "atMs": 269000,
+        "rssMb": 755
+      },
+      {
+        "atMs": 270000,
+        "rssMb": 754
+      },
+      {
+        "atMs": 271000,
+        "rssMb": 757
+      },
+      {
+        "atMs": 272000,
+        "rssMb": 757
+      },
+      {
+        "atMs": 273000,
+        "rssMb": 758
+      },
+      {
+        "atMs": 274000,
+        "rssMb": 758
+      },
+      {
+        "atMs": 275000,
+        "rssMb": 757
+      },
+      {
+        "atMs": 276000,
+        "rssMb": 756
+      },
+      {
+        "atMs": 277000,
+        "rssMb": 758
+      },
+      {
+        "atMs": 278000,
+        "rssMb": 761
+      },
+      {
+        "atMs": 279000,
+        "rssMb": 761
+      },
+      {
+        "atMs": 280000,
+        "rssMb": 760
+      },
+      {
+        "atMs": 281000,
+        "rssMb": 761
+      },
+      {
+        "atMs": 282000,
+        "rssMb": 759
+      },
+      {
+        "atMs": 283000,
+        "rssMb": 772
+      },
+      {
+        "atMs": 284000,
+        "rssMb": 763
+      },
+      {
+        "atMs": 285000,
+        "rssMb": 764
+      },
+      {
+        "atMs": 286000,
+        "rssMb": 768
+      },
+      {
+        "atMs": 287000,
+        "rssMb": 769
+      },
+      {
+        "atMs": 288000,
+        "rssMb": 767
+      },
+      {
+        "atMs": 289000,
+        "rssMb": 765
+      },
+      {
+        "atMs": 290000,
+        "rssMb": 766
+      },
+      {
+        "atMs": 291000,
+        "rssMb": 766
+      },
+      {
+        "atMs": 292000,
+        "rssMb": 767
+      },
+      {
+        "atMs": 293000,
+        "rssMb": 768
+      },
+      {
+        "atMs": 294000,
+        "rssMb": 767
+      },
+      {
+        "atMs": 295000,
+        "rssMb": 771
+      },
+      {
+        "atMs": 296000,
+        "rssMb": 770
+      },
+      {
+        "atMs": 297000,
+        "rssMb": 769
+      },
+      {
+        "atMs": 298000,
+        "rssMb": 770
+      },
+      {
+        "atMs": 299000,
+        "rssMb": 782
+      },
+      {
+        "atMs": 300000,
+        "rssMb": 773
+      },
+      {
+        "atMs": 301000,
+        "rssMb": 774
+      },
+      {
+        "atMs": 302000,
+        "rssMb": 776
+      },
+      {
+        "atMs": 303000,
+        "rssMb": 804
+      }
+    ]
+  },
+  "verdicts": [
+    {
+      "gate": "peak_rss_mb",
+      "value": 804,
+      "threshold": "< 750",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "typing_p95_ms",
+      "value": 34,
+      "threshold": "< 50",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p99_ms",
+      "value": 34.000000000029104,
+      "threshold": "< 100",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "nav_p95_ms",
+      "value": 34,
+      "threshold": "< 150",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "no_typing_cliff",
+      "value": 1,
+      "threshold": "last decile / first decile < 1.5 (min 10 cycles)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_stall_rate",
+      "value": 0.0001,
+      "threshold": "< 0.01 (stalled + frameMs > 100 ms, over sample count)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "a11y_exposure",
+      "value": "not applicable: tree navigator advertises per-sibling-group setsize, see a11y_tree_structure",
+      "threshold": "advertised rows == 20000 (flat list only)",
+      "verdict": "UNKNOWN"
+    },
+    {
+      "gate": "restart_body_match",
+      "value": "match",
+      "threshold": "reopened body hash == pre-kill body hash",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_conflicts",
+      "value": 0,
+      "threshold": "== 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_errors",
+      "value": 0,
+      "threshold": "== 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_p95_ms",
+      "value": 3.000000000029104,
+      "threshold": "< 50",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "07380394"
+}

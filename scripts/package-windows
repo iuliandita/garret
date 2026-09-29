@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Build a Windows zip a non-technical writer can unpack and double-click.
+#
+# The host is cross-compiled in a container (see scripts/windows/Dockerfile for
+# why it is not built on the machine directly). The UI is built here, because
+# it is platform-independent and the repo already has the toolchain.
+#
+# The zip is a directory, not a bare .exe: resolve_asset_root looks for
+# <exe dir>/dist after APP_DIST, so the interface has to travel beside the
+# binary. A lone .exe starts and serves the error page.
+set -euo pipefail
+
+here=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+repo=$(cd -- "$here/.." && pwd)
+
+revision=$(git -C "$repo" rev-parse HEAD)
+if [[ -n $(git -C "$repo" status --porcelain) ]]; then
+  echo "commit or set aside working-tree changes before packaging" >&2
+  exit 1
+fi
+
+image=write-xwin
+target=x86_64-pc-windows-msvc
+# Kept out of the repo: these are a Rust registry cache and a downloaded Windows
+# SDK, neither of which is this project's evidence.
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/write-windows-build"
+out="$repo/app/dist-windows"
+
+command -v docker >/dev/null || { echo "docker is required; see scripts/windows/Dockerfile" >&2; exit 1; }
+
+if ! docker image inspect "$image" >/dev/null 2>&1; then
+  echo "building the cross-compile image (first time only, a few minutes)" >&2
+  docker build -f "$here/windows/Dockerfile" -t "$image" "$here/windows"
+fi
+
+# app/ui/dist is gitignored and has gone stale silently twice, each time costing
+# a rig run that measured a previous build. Never skipped.
+(cd "$repo/app/ui" && bun run build)
+# Tauri requires frontendDist to exist; appdist serves the real UI separately.
+mkdir -p "$repo/app/shell-tauri/dist"
+
+mkdir -p "$cache/cargo" "$cache/xwin"
+docker run --rm \
+  --cpus 8 \
+  -u "$(id -u):$(id -g)" \
+  -v "$repo/app/shell-tauri:/src" \
+  -v "$cache/cargo:/cargo" \
+  -v "$cache/xwin:/xwin" \
+  -e CARGO_HOME=/cargo -e XWIN_CACHE_DIR=/xwin -e XWIN_ARCH=x86_64 -e CARGO_BUILD_JOBS=8 \
+  -e CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS="-C target-feature=+crt-static" \
+  -w /src/src-tauri "$image" \
+  cargo xwin build --locked --release --target "$target"
+
+if [[ $(git -C "$repo" rev-parse HEAD) != "$revision" || -n $(git -C "$repo" status --porcelain) ]]; then
+  echo "source changed during the build; refusing to label this package" >&2
+  exit 1
+fi
+
+exe="$repo/app/shell-tauri/src-tauri/target/$target/release/app-shell-tauri.exe"
+[ -f "$exe" ] || { echo "no binary at $exe" >&2; exit 1; }
+
+# Rebuilt from nothing every time. An incremental staging directory would carry
+# a stale dist/ forward, which is the same defect as the stale app/ui/dist above
+# except it ships to the writer.
+stage="$out/app"
+rm -rf "$out"
+mkdir -p "$stage"
+cp "$exe" "$stage/"
+cp -r "$repo/app/ui/dist" "$stage/dist"
+cp "$here/windows/README.txt" "$stage/README.txt"
+cp "$repo/COPYING" "$repo/THIRD-PARTY-NOTICES.md" "$stage/"
+{
+  printf 'Source revision: %s\n' "$revision"
+  printf 'Target: %s\n' "$target"
+  printf 'Built UTC: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf 'Signing: unsigned\nWindows GUI verification: not performed\n'
+} > "$stage/BUILD.txt"
+(cd "$stage" && sha256sum app-shell-tauri.exe dist/* > SHA256SUMS.txt)
+
+zip="$out/writing-studio-windows-x86_64.zip"
+(cd "$out" && zip -qr "$(basename "$zip")" app)
+(cd "$out" && sha256sum "$(basename "$zip")" > "$(basename "$zip").sha256")
+
+echo
+echo "wrote $zip"
+echo "  $(du -h "$zip" | cut -f1), contents:"
+(cd "$out" && unzip -l "$(basename "$zip")" | tail -n +4 | head -8)
+echo
+echo "NOT verified: that the window renders. This binary has never run on real"
+echo "Windows. A reported startup failure writes %APPDATA%\\cc.local.app\\startup-error.txt."

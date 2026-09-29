@@ -1,0 +1,10 @@
+{
+  "stage": "complete",
+  "bun_passed": 3760,
+  "bun_failed": 0,
+  "typescript_exit": 0,
+  "native_cases": 4,
+  "native_passed": 4,
+  "mutations_killed": 3,
+  "captures_inspected": 8
+}

@@ -1,0 +1,242 @@
+{
+  "source_revision": "467070a",
+  "scope": "Native Wayland, real logind, physical compositor lock and physical suspend/resume on synthetic projects; no owner project or settings used.",
+  "runs": {
+    "session_and_suspend": {
+      "fixture": "tiny",
+      "display": "native-wayland",
+      "checks": {
+        "native_wayland_postload_edit": true,
+        "real_lifecycle_capabilities_available": true,
+        "native_enrollment": true,
+        "idle_disabled_for_trigger_attribution": true,
+        "manual_lock": true,
+        "native_manual_unlock": true,
+        "actual_session_lock_conceals_and_cancels_export": true,
+        "actual_session_unlock_preserves_edit": true,
+        "actual_suspend_remains_concealed_after_resume": true,
+        "actual_resume_preserves_pre_sleep_edit": true,
+        "locked_restart": true,
+        "saved_edit_survives_restart": true
+      },
+      "failure": null,
+      "environment": {
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": false,
+          "gdkBackend": "wayland",
+          "path": "dmabuf-gpu",
+          "webProcesses": 1
+        }
+      },
+      "native_capabilities": {
+        "session_lock": true,
+        "sleep": true,
+        "session_policy_enabled": true,
+        "sleep_policy_enabled": true
+      },
+      "previous_focus_restored": true
+    },
+    "physical_lock": {
+      "fixture": "tiny",
+      "display": "native-wayland",
+      "checks": {
+        "native_wayland_postload_edit": true,
+        "real_lifecycle_capabilities_available": true,
+        "native_enrollment": true,
+        "idle_disabled_for_trigger_attribution": true,
+        "manual_lock": true,
+        "native_manual_unlock": true,
+        "actual_session_lock_conceals_and_cancels_export": true,
+        "actual_session_unlock_preserves_edit": true,
+        "locked_restart": true,
+        "saved_edit_survives_restart": true
+      },
+      "failure": null,
+      "environment": {
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": false,
+          "gdkBackend": "wayland",
+          "path": "dmabuf-gpu",
+          "webProcesses": 1
+        }
+      },
+      "native_capabilities": {
+        "session_lock": true,
+        "sleep": true,
+        "session_policy_enabled": true,
+        "sleep_policy_enabled": true
+      },
+      "previous_focus_restored": true
+    },
+    "validated_session_fallback": {
+      "theme": "light",
+      "fixture": "tiny",
+      "isolation": "private-xvfb-session-atspi-system-logind",
+      "platform_limit": "Synthetic private-logind events only; physical desktop lock, suspend, and compositor timing are unverified",
+      "checks": {
+        "private_system_logind_ready_before_app": true,
+        "postload_edit_visible": true,
+        "native_unicode_enrollment": true,
+        "manual-lock": true,
+        "manual-lock_password_named_and_masked": true,
+        "wrong_secret_refused": true,
+        "unicode_unlock_restores_postload_edit": true,
+        "validated_xdg_session_fallback_used": true,
+        "logind-session-lock": true,
+        "logind-session-lock_password_named_and_masked": true,
+        "logind_session_lock_unlock_preserves_edit": true,
+        "logind-locked-hint": true,
+        "logind-locked-hint_password_named_and_masked": true,
+        "logind-hint-unlock-does-not-authenticate": true,
+        "logind-hint-unlock-does-not-authenticate_password_named_and_masked": true,
+        "logind-lock-cancels-native-export": true,
+        "logind-lock-cancels-native-export_password_named_and_masked": true,
+        "configured-shortcut-cancels-native-export": true,
+        "configured-shortcut-cancels-native-export_password_named_and_masked": true,
+        "native_export_reopens_after_lock_cancellation": true,
+        "logind-before-sleep": true,
+        "logind-before-sleep_password_named_and_masked": true,
+        "x11_only_lock_window_at_first_inhibitor_eof": true,
+        "logind-resume-does-not-authenticate": true,
+        "logind-resume-does-not-authenticate_password_named_and_masked": true,
+        "logind_resume_reacquires_inhibitor": true,
+        "logind-second-sleep": true,
+        "logind-second-sleep_password_named_and_masked": true,
+        "x11_only_lock_window_at_second_inhibitor_eof": true,
+        "logind-failed-resume-stays-locked": true,
+        "logind-failed-resume-stays-locked_password_named_and_masked": true,
+        "failed_inhibitor_reacquisition_visible": true,
+        "service_loss_updates_open_native_settings": true,
+        "locked-restart": true,
+        "locked-restart_password_named_and_masked": true,
+        "restart_unlock_restores_saved_edit": true,
+        "corrupt_record_concealed_recovery": true,
+        "recovery_quit": true,
+        "failed-save-lock": true,
+        "failed-save-lock_password_named_and_masked": true,
+        "failed_save_close_held_beyond_timeout": true,
+        "failed_save_pending_edit_retained": true
+      },
+      "failure": null,
+      "environment": {
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        }
+      },
+      "sleep_inhibitor_release": {
+        "event": "inhibitor-released",
+        "sequence": 25,
+        "monotonic_ns": 702306880295980,
+        "inhibitor": 1,
+        "eof_monotonic_ns": 702306871699442,
+        "display_observed": true,
+        "visible_titles": [
+          "Application locked"
+        ],
+        "visible_lock_only": true,
+        "x11_observed_ns": 702306871909417,
+        "x11_observation_finished_ns": 702306880286181
+      },
+      "second_sleep_inhibitor_release": {
+        "event": "inhibitor-released",
+        "sequence": 35,
+        "monotonic_ns": 702307779393445,
+        "inhibitor": 2,
+        "eof_monotonic_ns": 702307773247466,
+        "display_observed": true,
+        "visible_titles": [
+          "Application locked"
+        ],
+        "visible_lock_only": true,
+        "x11_observed_ns": 702307773382450,
+        "x11_observation_finished_ns": 702307779386332
+      }
+    }
+  },
+  "cycles": {
+    "initial_logind_lock": {
+      "kind": "lock",
+      "events": [
+        {
+          "event": "ready",
+          "monotonic_ns": 702296678521434,
+          "boottime_ns": 706020842063900
+        },
+        {
+          "event": "Lock",
+          "monotonic_ns": 702732045416604,
+          "boottime_ns": 706456208958369
+        }
+      ],
+      "real_logind_lock_signal": true,
+      "physical_compositor_lock_observed": false,
+      "locked_hint_transition_observed": false,
+      "owner_reported_app_lock_worked": true
+    },
+    "suspend": {
+      "kind": "suspend",
+      "events": [
+        {
+          "event": "PrepareForSleep",
+          "monotonic_ns": 702816544833607,
+          "boottime_ns": 706540708375332,
+          "preparing": true
+        },
+        {
+          "event": "Lock",
+          "monotonic_ns": 702816558309492,
+          "boottime_ns": 706540721851819
+        },
+        {
+          "event": "PrepareForSleep",
+          "monotonic_ns": 702819608303966,
+          "boottime_ns": 706563315530414,
+          "preparing": false
+        }
+      ],
+      "physical_suspend_ns": 19543682107
+    },
+    "physical_lock": {
+      "physical_compositor_lock_observed": true,
+      "owner_unlock_observed": true,
+      "locker_exit_code": 0,
+      "started_monotonic_ns": 702904518651740,
+      "locked_monotonic_ns": 702904633040712,
+      "unlocked_monotonic_ns": 702908527398317
+    }
+  },
+  "negative_controls": [
+    {
+      "mutation": "foreign_uid_accepted",
+      "exit_code": 101,
+      "killed": true
+    }
+  ],
+  "screenshots": {
+    "screenshots/122-privacy-wayland-physical-lock.png": {
+      "sha256": "0c7352ab62df6c3c3923b4754ae40db5b2782cd8e84b5361330138f1da10f2c8"
+    }
+  },
+  "limitations": [
+    "Post-resume crop rejected during visual review because compositor animation included background pixels. It is not committed or used as concealment evidence.",
+    "Fresh accessibility and visible-window observations do not establish frame-by-frame compositor ordering.",
+    "GTK built-in Unicode composition verified; screen-reader speech and external IBus/Fcitx/CJK composition not exercised."
+  ],
+  "desktop_cleanup": {
+    "probe_processes_exited": true,
+    "previous_focus_restored": true,
+    "monitor_stopped": true
+  },
+  "owner_constraint": "No further physical suspend tests; owner confirmed successful test and withdrew permission to repeat.",
+  "review": "Inherited-session fallback reviewed independently; no additional concrete code defects found.",
+  "native_accessibility_verification": "122-privacy-native-accessibility.json"
+}

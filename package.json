@@ -1,0 +1,16 @@
+{
+  "name": "workspace-root",
+  "private": true,
+  "type": "module",
+  "workspaces": ["app/*"],
+  "scripts": {
+    "test": "bun test ./app",
+    "typecheck": "bunx tsc --noEmit -p app/tsconfig.json"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "^20.11.1",
+    "@types/bun": "^1.2.0",
+    "happy-dom": "^20.11.1",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,1140 @@
+{
+  "run_id": "diag-nav-only",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-diagnostic",
+  "environment": {
+    "kernel": "7.2.2-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 2.8,
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "mode": "virtual",
+    "soak_minutes": 5,
+    "typing_chars_per_cycle": 0,
+    "nav_jumps_per_cycle": 60,
+    "action_delay_ms": 0,
+    "workload_script": "writing-v1",
+    "display": "xvfb",
+    "session_type": "xvfb",
+    "gdk_backend": "x11",
+    "server_args": "-screen 0 1280x1024x24 -s 0 -noreset",
+    "input_pulse_ms": 0,
+    "ms_per_action": 33.71,
+    "peak_rss_mb": 696,
+    "startup_ms": 159,
+    "actions": 8899,
+    "onset": null,
+    "first_slow": {
+      "actionIndex": 1,
+      "atMs": 570,
+      "charsTyped": 0,
+      "dispatchMs": 2,
+      "frameMs": 569,
+      "kind": "nav",
+      "stalled": false
+    },
+    "session_states": [],
+    "step": null,
+    "slow_actions": 3,
+    "typing": {
+      "count": 0,
+      "dispatch": {
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "frame": {
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 0,
+        "40-100": 0,
+        "500-2000": 0,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 0,
+      "stalls": 0
+    },
+    "nav": {
+      "count": 8899,
+      "dispatch": {
+        "p50": 0.999999999985448,
+        "p95": 3,
+        "p99": 18
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34,
+        "p99": 34.000000000029104
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 8892,
+        "40-100": 1,
+        "500-2000": 3,
+        "<20": 3,
+        ">=2000": 0
+      },
+      "slowFrames": 3,
+      "stalls": 0
+    },
+    "cycles": [
+      {
+        "atMs": 2538,
+        "charsTyped": 0,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 4539,
+        "charsTyped": 0,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 6541,
+        "charsTyped": 0,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 8542,
+        "charsTyped": 0,
+        "cycle": 4,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 10544,
+        "charsTyped": 0,
+        "cycle": 5,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 12545,
+        "charsTyped": 0,
+        "cycle": 6,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 14547,
+        "charsTyped": 0,
+        "cycle": 7,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 16548,
+        "charsTyped": 0,
+        "cycle": 8,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 18550,
+        "charsTyped": 0,
+        "cycle": 9,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 20551,
+        "charsTyped": 0,
+        "cycle": 10,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 22552,
+        "charsTyped": 0,
+        "cycle": 11,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 24554,
+        "charsTyped": 0,
+        "cycle": 12,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 26555,
+        "charsTyped": 0,
+        "cycle": 13,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 28557,
+        "charsTyped": 0,
+        "cycle": 14,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 30558,
+        "charsTyped": 0,
+        "cycle": 15,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 32560,
+        "charsTyped": 0,
+        "cycle": 16,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 34561,
+        "charsTyped": 0,
+        "cycle": 17,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 36563,
+        "charsTyped": 0,
+        "cycle": 18,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 38564,
+        "charsTyped": 0,
+        "cycle": 19,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 40565,
+        "charsTyped": 0,
+        "cycle": 20,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 42567,
+        "charsTyped": 0,
+        "cycle": 21,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 44568,
+        "charsTyped": 0,
+        "cycle": 22,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 46570,
+        "charsTyped": 0,
+        "cycle": 23,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 48571,
+        "charsTyped": 0,
+        "cycle": 24,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 50573,
+        "charsTyped": 0,
+        "cycle": 25,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 52574,
+        "charsTyped": 0,
+        "cycle": 26,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 54576,
+        "charsTyped": 0,
+        "cycle": 27,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 56577,
+        "charsTyped": 0,
+        "cycle": 28,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 58579,
+        "charsTyped": 0,
+        "cycle": 29,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 60580,
+        "charsTyped": 0,
+        "cycle": 30,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 62582,
+        "charsTyped": 0,
+        "cycle": 31,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 64583,
+        "charsTyped": 0,
+        "cycle": 32,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 66585,
+        "charsTyped": 0,
+        "cycle": 33,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 68586,
+        "charsTyped": 0,
+        "cycle": 34,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 70588,
+        "charsTyped": 0,
+        "cycle": 35,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 72589,
+        "charsTyped": 0,
+        "cycle": 36,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 74590,
+        "charsTyped": 0,
+        "cycle": 37,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 76592,
+        "charsTyped": 0,
+        "cycle": 38,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 78597,
+        "charsTyped": 0,
+        "cycle": 39,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 80594,
+        "charsTyped": 0,
+        "cycle": 40,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 82596,
+        "charsTyped": 0,
+        "cycle": 41,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 84598,
+        "charsTyped": 0,
+        "cycle": 42,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 86599,
+        "charsTyped": 0,
+        "cycle": 43,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 88600,
+        "charsTyped": 0,
+        "cycle": 44,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 90602,
+        "charsTyped": 0,
+        "cycle": 45,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 92603,
+        "charsTyped": 0,
+        "cycle": 46,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 94605,
+        "charsTyped": 0,
+        "cycle": 47,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 96606,
+        "charsTyped": 0,
+        "cycle": 48,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 98607,
+        "charsTyped": 0,
+        "cycle": 49,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 100609,
+        "charsTyped": 0,
+        "cycle": 50,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 102610,
+        "charsTyped": 0,
+        "cycle": 51,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 104612,
+        "charsTyped": 0,
+        "cycle": 52,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 106613,
+        "charsTyped": 0,
+        "cycle": 53,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 108615,
+        "charsTyped": 0,
+        "cycle": 54,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 110616,
+        "charsTyped": 0,
+        "cycle": 55,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 112618,
+        "charsTyped": 0,
+        "cycle": 56,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 114619,
+        "charsTyped": 0,
+        "cycle": 57,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 116621,
+        "charsTyped": 0,
+        "cycle": 58,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 118622,
+        "charsTyped": 0,
+        "cycle": 59,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 120623,
+        "charsTyped": 0,
+        "cycle": 60,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 122625,
+        "charsTyped": 0,
+        "cycle": 61,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 124626,
+        "charsTyped": 0,
+        "cycle": 62,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 126628,
+        "charsTyped": 0,
+        "cycle": 63,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 128629,
+        "charsTyped": 0,
+        "cycle": 64,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 130631,
+        "charsTyped": 0,
+        "cycle": 65,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 132632,
+        "charsTyped": 0,
+        "cycle": 66,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 134634,
+        "charsTyped": 0,
+        "cycle": 67,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 136635,
+        "charsTyped": 0,
+        "cycle": 68,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 138637,
+        "charsTyped": 0,
+        "cycle": 69,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 140638,
+        "charsTyped": 0,
+        "cycle": 70,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 142639,
+        "charsTyped": 0,
+        "cycle": 71,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 147307,
+        "charsTyped": 0,
+        "cycle": 72,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 149261,
+        "charsTyped": 0,
+        "cycle": 73,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 151262,
+        "charsTyped": 0,
+        "cycle": 74,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 153264,
+        "charsTyped": 0,
+        "cycle": 75,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 155265,
+        "charsTyped": 0,
+        "cycle": 76,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 157267,
+        "charsTyped": 0,
+        "cycle": 77,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 159268,
+        "charsTyped": 0,
+        "cycle": 78,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 161269,
+        "charsTyped": 0,
+        "cycle": 79,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 163271,
+        "charsTyped": 0,
+        "cycle": 80,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 165272,
+        "charsTyped": 0,
+        "cycle": 81,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 167274,
+        "charsTyped": 0,
+        "cycle": 82,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 169275,
+        "charsTyped": 0,
+        "cycle": 83,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 171277,
+        "charsTyped": 0,
+        "cycle": 84,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 173278,
+        "charsTyped": 0,
+        "cycle": 85,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 175280,
+        "charsTyped": 0,
+        "cycle": 86,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 177281,
+        "charsTyped": 0,
+        "cycle": 87,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 179283,
+        "charsTyped": 0,
+        "cycle": 88,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 181284,
+        "charsTyped": 0,
+        "cycle": 89,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 183286,
+        "charsTyped": 0,
+        "cycle": 90,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 185287,
+        "charsTyped": 0,
+        "cycle": 91,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 187288,
+        "charsTyped": 0,
+        "cycle": 92,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 189290,
+        "charsTyped": 0,
+        "cycle": 93,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 191291,
+        "charsTyped": 0,
+        "cycle": 94,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 193293,
+        "charsTyped": 0,
+        "cycle": 95,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 195294,
+        "charsTyped": 0,
+        "cycle": 96,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 197296,
+        "charsTyped": 0,
+        "cycle": 97,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 199297,
+        "charsTyped": 0,
+        "cycle": 98,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 201298,
+        "charsTyped": 0,
+        "cycle": 99,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 203300,
+        "charsTyped": 0,
+        "cycle": 100,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 205301,
+        "charsTyped": 0,
+        "cycle": 101,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 207303,
+        "charsTyped": 0,
+        "cycle": 102,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 209305,
+        "charsTyped": 0,
+        "cycle": 103,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 211306,
+        "charsTyped": 0,
+        "cycle": 104,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 213308,
+        "charsTyped": 0,
+        "cycle": 105,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 215309,
+        "charsTyped": 0,
+        "cycle": 106,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 217310,
+        "charsTyped": 0,
+        "cycle": 107,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 219312,
+        "charsTyped": 0,
+        "cycle": 108,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 221313,
+        "charsTyped": 0,
+        "cycle": 109,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 223315,
+        "charsTyped": 0,
+        "cycle": 110,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 225316,
+        "charsTyped": 0,
+        "cycle": 111,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 227318,
+        "charsTyped": 0,
+        "cycle": 112,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 229319,
+        "charsTyped": 0,
+        "cycle": 113,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 231320,
+        "charsTyped": 0,
+        "cycle": 114,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 233322,
+        "charsTyped": 0,
+        "cycle": 115,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 235324,
+        "charsTyped": 0,
+        "cycle": 116,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 237325,
+        "charsTyped": 0,
+        "cycle": 117,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 239326,
+        "charsTyped": 0,
+        "cycle": 118,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 241328,
+        "charsTyped": 0,
+        "cycle": 119,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 243329,
+        "charsTyped": 0,
+        "cycle": 120,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 245330,
+        "charsTyped": 0,
+        "cycle": 121,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 247332,
+        "charsTyped": 0,
+        "cycle": 122,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 249333,
+        "charsTyped": 0,
+        "cycle": 123,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 251335,
+        "charsTyped": 0,
+        "cycle": 124,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 253336,
+        "charsTyped": 0,
+        "cycle": 125,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 255338,
+        "charsTyped": 0,
+        "cycle": 126,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 257339,
+        "charsTyped": 0,
+        "cycle": 127,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 259341,
+        "charsTyped": 0,
+        "cycle": 128,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 261342,
+        "charsTyped": 0,
+        "cycle": 129,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 263344,
+        "charsTyped": 0,
+        "cycle": 130,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 265345,
+        "charsTyped": 0,
+        "cycle": 131,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 267347,
+        "charsTyped": 0,
+        "cycle": 132,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 269348,
+        "charsTyped": 0,
+        "cycle": 133,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 271349,
+        "charsTyped": 0,
+        "cycle": 134,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 273351,
+        "charsTyped": 0,
+        "cycle": 135,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 275352,
+        "charsTyped": 0,
+        "cycle": 136,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 277354,
+        "charsTyped": 0,
+        "cycle": 137,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 279355,
+        "charsTyped": 0,
+        "cycle": 138,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 281357,
+        "charsTyped": 0,
+        "cycle": 139,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 283358,
+        "charsTyped": 0,
+        "cycle": 140,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 285360,
+        "charsTyped": 0,
+        "cycle": 141,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 287361,
+        "charsTyped": 0,
+        "cycle": 142,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 289363,
+        "charsTyped": 0,
+        "cycle": 143,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 291364,
+        "charsTyped": 0,
+        "cycle": 144,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 293366,
+        "charsTyped": 0,
+        "cycle": 145,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 295367,
+        "charsTyped": 0,
+        "cycle": 146,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 297369,
+        "charsTyped": 0,
+        "cycle": 147,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 299370,
+        "charsTyped": 0,
+        "cycle": 148,
+        "partial": false,
+        "typingP95Ms": 0
+      },
+      {
+        "atMs": 300004,
+        "charsTyped": 0,
+        "cycle": 149,
+        "partial": true,
+        "typingP95Ms": 0
+      }
+    ],
+    "rows": 20000
+  },
+  "verdicts": [],
+  "seed": "app-v1",
+  "rig_commit": "07380394"
+}

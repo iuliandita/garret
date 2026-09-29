@@ -1,0 +1,73 @@
+{
+  "source_commit": "81be666651c516a921709b44cdc0c37be8c74d12",
+  "checks": {
+    "cargo": [
+      {
+        "passed": 1589,
+        "failed": 0,
+        "ignored": 2
+      },
+      {
+        "passed": 2,
+        "failed": 0,
+        "ignored": 0
+      }
+    ],
+    "bun_passed": 3818,
+    "typescript_exit": 0
+  },
+  "ui_build_exit": 0,
+  "native_exit": 0,
+  "mutations": {
+    "source_commit": "81be666651c516a921709b44cdc0c37be8c74d12",
+    "source_restored": true,
+    "restored_release_build_exit": 0,
+    "mutations": [
+      {
+        "mutation": "skip-dedup",
+        "exit_code": 101,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "same-length-is-enough",
+        "exit_code": 101,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "fallback-overwrites-alias",
+        "exit_code": 101,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "first-mismatch-stops-search",
+        "exit_code": 101,
+        "verdict": "KILLED"
+      }
+    ]
+  },
+  "review": "No findings; root strengthened original-byte survival assertion afterward.",
+  "comparison": {
+    "baseline_sha256": "0e0ab34c4f469cc75c1dc7397a8bc6196cc3bc9dfb6d841a9576405f2c0ac396",
+    "archive": "app/results/superseded/app-pictures-tiny.2026-09-09T21-16-47Z.json",
+    "current_sha256": "0ca2f7e2b6054b8ac260767b1f996842e8bee1478eb57e7a58c77c9d8d7a6334",
+    "renderer_before": "dmabuf-llvmpipe",
+    "renderer_after": "dmabuf-llvmpipe",
+    "host_peak_mb_before": 506.3,
+    "host_peak_mb_after": 501.1,
+    "gates_before": {
+      "picture_attached": "PASS",
+      "picture_state_present": "PASS",
+      "oversize_refused": "PASS",
+      "attach_host_rss_mb": "PASS",
+      "cover_set": "PASS"
+    },
+    "gates_after": {
+      "picture_attached": "PASS",
+      "picture_state_present": "PASS",
+      "oversize_refused": "PASS",
+      "attach_host_rss_mb": "PASS",
+      "cover_set": "PASS"
+    }
+  },
+  "scope": "Linux best-effort hard-link sharing of exact stored originals; unique names and thumbnails, external source copied. Native rig verifies existing picture behavior; inode tests verify dedup. No performance improvement or orphan cleanup claim."
+}

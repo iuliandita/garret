@@ -1,0 +1,24 @@
+{
+  "slice": 160,
+  "commits": ["d3dd66f", "35d9c9a"],
+  "merge": "727fd1f",
+  "checks": {
+    "wordlist_focused": "passed (33 tests)",
+    "mirror_dict_spell_wordlist": "passed (218 tests)",
+    "sabotage_conflict_check": "4 tests failed with the conflict check disabled",
+    "sabotage_scan_filter": "1 test failed with the reserved-name filter removed",
+    "sabotage_crash_window": "1 test failed with the pending baseline ignored",
+    "full_host_suite_after_159_160_merge": "1693 passed, 1 failed: covers_need_no_schema_version_of_their_own, pre-existing on develop"
+  },
+  "behaviour": [
+    "wordlist.txt holds dictionary words sorted by UTF-8 bytes, one per line; outbound only.",
+    "Ownership record .readable-mirror-wordlist.json carries byte length and FNV-64, plus a pending baseline during a rewrite.",
+    "Outside edits, malformed records, symlinks, non-regular files and line-break words hold the wordlist; scenes and manifest are still written and the mirror status names the cause.",
+    "Enabling the mirror succeeds when only the wordlist is held."
+  ],
+  "limits": [
+    "Held-wordlist messages are English only, like other mirror errors.",
+    "Directory fsync is a no-op on Windows.",
+    "No GUI capture: the status uses the existing failing state and text."
+  ]
+}

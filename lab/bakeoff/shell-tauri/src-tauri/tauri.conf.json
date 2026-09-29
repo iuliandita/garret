@@ -1,0 +1,16 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "bakeoff-shell-tauri",
+  "version": "0.1.0",
+  "identifier": "cc.local.bakeoff",
+  "build": {
+    "frontendDist": "../../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "security": {
+      "csp": "default-src 'self' bakeoff:; connect-src 'self' bakeoff: ipc: http://ipc.localhost; script-src 'self' bakeoff:; style-src 'self' bakeoff: 'unsafe-inline'; img-src 'self' bakeoff: data:"
+    }
+  },
+  "bundle": { "active": false }
+}

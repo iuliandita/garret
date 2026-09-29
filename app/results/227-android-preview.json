@@ -1,0 +1,34 @@
+{
+  "apk_sha256": "6c3c9f507723067aa3b4270b16bef5c836b3d42e2038228d97a8165a598d2600",
+  "package": "cc.local.app",
+  "system_image": "system-images;android-36;google_apis;x86_64",
+  "steps": [
+    "fresh API 36 emulator booted",
+    "APK installed; book library rendered",
+    "book created and opened",
+    "first scene text entered and saved",
+    "second scene created and selected",
+    "scene switch restored first scene text",
+    "app backgrounded and force-stopped",
+    "both scenes and text survived process death and reopen"
+  ],
+  "status": "PASS",
+  "emulator_version": "Android emulator version 37.1.11.0 (build_id 15917651) (CL:N/A)",
+  "android_release": "16",
+  "android_api": "36",
+  "source": "cd8c56e1085c7300207bdffb5c5a165ebadd28f5",
+  "bytes": 28549536,
+  "native_libraries": [
+    "lib/arm64-v8a/libapp_shell_tauri.so",
+    "lib/x86_64/libapp_shell_tauri.so"
+  ],
+  "zip_integrity": "pass",
+  "signature_v2_v3": "pass",
+  "zipalign_16k": "pass",
+  "limits": [
+    "Physical phone not verified",
+    "Other Android versions and kernels not verified",
+    "ASCII input smoke does not certify IME composition",
+    "No import/export in this preview"
+  ]
+}

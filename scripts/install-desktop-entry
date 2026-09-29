@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Install a .desktop entry that launches this repo's build. Development
+# launcher: the Exec points into this working copy, so it is not a distribution
+# artifact and moving the repo breaks it.
+set -euo pipefail
+
+here=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+repo=$(cd -- "$here/.." && pwd)
+
+# The application's data-directory identifier (APP_DIR in main.rs). There is no
+# product name, so the entry borrows the only stable identifier there is.
+id="cc.local.app"
+# XDG honoured for the same reason the host honours it, and because it is what
+# makes this script testable without writing into a real desktop menu.
+data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
+dir="$data_home/applications"
+target="$dir/$id.desktop"
+
+# Ownership marker. Anything at $target without this line was written by
+# something else, and clobbering it is the one destructive thing in reach here.
+marker="# written by scripts/install-desktop-entry"
+
+if [ -e "$target" ] && ! grep -qxF "$marker" "$target"; then
+  echo "$target exists and was not written by this script; refusing to overwrite it" >&2
+  echo "remove it by hand if you want this entry instead" >&2
+  exit 1
+fi
+
+mkdir -p "$dir"
+cat > "$target" <<EOF
+[Desktop Entry]
+$marker
+Type=Application
+Name=Writing studio (development build)
+Comment=Local-first writing studio, launched from a working copy
+Exec=$repo/scripts/run-app
+Icon=$repo/app/shell-tauri/src-tauri/icons/icon.png
+Path=$repo
+Terminal=false
+Categories=Office;WordProcessor;
+StartupNotify=true
+EOF
+
+echo "wrote $target"
+echo "it launches $repo/scripts/run-app, which rebuilds the UI and then starts the host."
+echo "if your desktop caches its menu: update-desktop-database \"$dir\""

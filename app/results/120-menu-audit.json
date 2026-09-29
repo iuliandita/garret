@@ -1,0 +1,1946 @@
+{
+  "environment": {
+    "renderer": "dmabuf-llvmpipe",
+    "platform": "Linux WebKitGTK",
+    "language": "en"
+  },
+  "states": 69,
+  "captures": 138,
+  "screenshots": [
+    {
+      "name": "menu-file-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--menu",
+        "file"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-menu-file-light.png",
+      "sha256": "0d00a4da6d1b662118b2b98316aecfa8014c2d68080a335d8278386fb7276192",
+      "exit_code": 0
+    },
+    {
+      "name": "menu-file-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--menu",
+        "file"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-menu-file-dark.png",
+      "sha256": "f119166ccf731ac0eac9b935b03e7a638c4782fbacf43418235d1b187b97bd31",
+      "exit_code": 0
+    },
+    {
+      "name": "menu-edit-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--menu",
+        "edit"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-menu-edit-light.png",
+      "sha256": "bc09da7d1cd29978640d66e6c41ec9f351018cb931c4419548ccb62e3c56ad1f",
+      "exit_code": 0
+    },
+    {
+      "name": "menu-edit-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--menu",
+        "edit"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-menu-edit-dark.png",
+      "sha256": "9d8302aa5ca4e317267ab28ea0a3149cbbd1c795c79f12d1d788181fbc690095",
+      "exit_code": 0
+    },
+    {
+      "name": "menu-outline-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--menu",
+        "outline"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-menu-outline-light.png",
+      "sha256": "9714007d8a8e7d967cdb74d5b7798dc9339781e8940eef118b9b62bdaa0b5879",
+      "exit_code": 0
+    },
+    {
+      "name": "menu-outline-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--menu",
+        "outline"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-menu-outline-dark.png",
+      "sha256": "64a3f661998f20138580d2a43d1bcec41abc3b1bbe7345e31200620c7a3aedf5",
+      "exit_code": 0
+    },
+    {
+      "name": "menu-help-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--menu",
+        "help"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-menu-help-light.png",
+      "sha256": "1235f9ea2c9173967aa39ed67b9025860bad037501d768913232a0a3d59d25d6",
+      "exit_code": 0
+    },
+    {
+      "name": "menu-help-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--menu",
+        "help"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-menu-help-dark.png",
+      "sha256": "6cf50bd4b8495193334ae8bdeb05f15d12969c2c5670365bbd529fc1a56252f4",
+      "exit_code": 0
+    },
+    {
+      "name": "menu-root-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--press",
+        "id:app-menu"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-menu-root-light.png",
+      "sha256": "5f84b7f2ec297e160fba5d3ae0d06e1be526f6c9914010b35fbdfdd6ba0b88fd",
+      "exit_code": 0
+    },
+    {
+      "name": "menu-root-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--press",
+        "id:app-menu"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-menu-root-dark.png",
+      "sha256": "263ab7a9704f8b1b88d17cf4bffd02b509fe2176f702890c1ec0f3573a57731a",
+      "exit_code": 0
+    },
+    {
+      "name": "nav-context-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--nav-context"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-nav-context-light.png",
+      "sha256": "42370f39d184b2a383c9d6c7d17987859b43a98ef12fb3f5b580af6e55f4ad3d",
+      "exit_code": 0
+    },
+    {
+      "name": "nav-context-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--nav-context"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-nav-context-dark.png",
+      "sha256": "e73ac310620b4a245550d98cd43b6d5c8740e3572601190a095f326ec706fcdf",
+      "exit_code": 0
+    },
+    {
+      "name": "preferences-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--prefs"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-preferences-light.png",
+      "sha256": "62181348c2b5382da892651b562203866c48dcf5b47f8ab7291bf86a89e9d018",
+      "exit_code": 0
+    },
+    {
+      "name": "preferences-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--prefs"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-preferences-dark.png",
+      "sha256": "0ae1fff6a11893ac955e0ee649180fca157a0a4ccc0236a1946c3046d7f07da4",
+      "exit_code": 0
+    },
+    {
+      "name": "projects-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--projects"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-projects-light.png",
+      "sha256": "f528969b95cbe7d598d3e286a77e5c794318bbae4fa4c8dd2763fdef6425eec6",
+      "exit_code": 0
+    },
+    {
+      "name": "projects-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--projects"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-projects-dark.png",
+      "sha256": "0934ab0af9f857d29bf8d3b25bf8599d922bdb778eb7e060d4f15366edb6470c",
+      "exit_code": 0
+    },
+    {
+      "name": "projects-missing-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--projects",
+        "--ghost-book"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-projects-missing-light.png",
+      "sha256": "e560988eb1397cdc18d55b5d96f481a2a5cc94e1426f95e4f9bdcedb0579a00e",
+      "exit_code": 0
+    },
+    {
+      "name": "projects-missing-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--projects",
+        "--ghost-book"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-projects-missing-dark.png",
+      "sha256": "7012eba46361a3160862b58449835fdf6f5c53799656fff304733dc09f385a80",
+      "exit_code": 0
+    },
+    {
+      "name": "shortcuts-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--shortcuts"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-shortcuts-light.png",
+      "sha256": "0398d1d4661502d2546a1282cb7152667e6c65648f668d2c86706347baf10c1e",
+      "exit_code": 0
+    },
+    {
+      "name": "shortcuts-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--shortcuts"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-shortcuts-dark.png",
+      "sha256": "b87183de910989c58d3590a6ee4d5ead5befed41b7c8f80329f63147b31444e0",
+      "exit_code": 0
+    },
+    {
+      "name": "find-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--find",
+        "chart"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-find-light.png",
+      "sha256": "9803c5fa33ab3672528c79c4cd4a51dcefc0c6c1508ee1f8667c9f3a7af052cb",
+      "exit_code": 0
+    },
+    {
+      "name": "find-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--find",
+        "chart"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-find-dark.png",
+      "sha256": "9bf22ed05cce51afc81763ca7397751d035a0f16c26dfd2466976e25ea2f82c0",
+      "exit_code": 0
+    },
+    {
+      "name": "statistics-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--stats"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-statistics-light.png",
+      "sha256": "2b545242bef07946216baf839c3bcf6e077c99bd37e3a29faf6a388425bf2b0d",
+      "exit_code": 0
+    },
+    {
+      "name": "statistics-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--stats"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-statistics-dark.png",
+      "sha256": "f73a9a4b8b1e2f063c5ce88d1956fc9b9dc8f8d3e76d064817bce54dcde302c2",
+      "exit_code": 0
+    },
+    {
+      "name": "copies-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--status"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-copies-light.png",
+      "sha256": "47294fe0a4eecdca6fc0e7bf97c7709c00c3932f3a0a8a86f35e363b03d79de1",
+      "exit_code": 0
+    },
+    {
+      "name": "copies-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--status"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-copies-dark.png",
+      "sha256": "a8de83a32398e9b909df968969ea2b5aefcd44d2b486f327770cefb20d7a3bf1",
+      "exit_code": 0
+    },
+    {
+      "name": "history-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--history-demo",
+        "--menu-item",
+        "edit:4"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-history-light.png",
+      "sha256": "192814d1ff1d93a2048bb89c5bca733bf5b3ba1f318e4b9270fa7b1e06d48c6f",
+      "exit_code": 0
+    },
+    {
+      "name": "history-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--history-demo",
+        "--menu-item",
+        "edit:4"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-history-dark.png",
+      "sha256": "b9ec79f5c9eaaec3c55118be1da414a5e3d8e19186a3a711f055191ed6dd9630",
+      "exit_code": 0
+    },
+    {
+      "name": "compare-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--history-demo",
+        "--compare"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-compare-light.png",
+      "sha256": "dc426788b850ea99fd1e36a62e4e4244eee8e69256006efc0c3dd7e6dbd06782",
+      "exit_code": 0
+    },
+    {
+      "name": "compare-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--history-demo",
+        "--compare"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-compare-dark.png",
+      "sha256": "1cab8d1482c497e96ea0da2a7f10afbb8bef18177c77e324a1ea88b63e9984d5",
+      "exit_code": 0
+    },
+    {
+      "name": "comments-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--comments-demo",
+        "--comments"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-comments-light.png",
+      "sha256": "a062999c8854c7b1b656bb5d3d33e2883fbc1e86428d3b3b9e8d7a4b5f9f8f05",
+      "exit_code": 0
+    },
+    {
+      "name": "comments-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--comments-demo",
+        "--comments"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-comments-dark.png",
+      "sha256": "128eef9ac4b35840bdc1e1ce26de65d1a173cba93cf8bf7c916386172902e4aa",
+      "exit_code": 0
+    },
+    {
+      "name": "format-bubble-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--marks-demo",
+        "--select-word"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-format-bubble-light.png",
+      "sha256": "2959718636992cb1455022635075738d69c1d1fef0fb2e8191298447ec0921c6",
+      "exit_code": 0
+    },
+    {
+      "name": "format-bubble-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--marks-demo",
+        "--select-word"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-format-bubble-dark.png",
+      "sha256": "6296e450a0dcd5e29f7584784947167a7579a5654d5d4479b7c605d5d83ab547",
+      "exit_code": 0
+    },
+    {
+      "name": "synopsis-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--synopsis"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-synopsis-light.png",
+      "sha256": "4e63263be4a3a649b3851860fb2475881020933d634a2243d7489d694317f82f",
+      "exit_code": 0
+    },
+    {
+      "name": "synopsis-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--synopsis"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-synopsis-dark.png",
+      "sha256": "486bb33bc2d0f787c794572811c28fcb1f65073fda226d1daeaae572926a579b",
+      "exit_code": 0
+    },
+    {
+      "name": "synopsis-edit-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--synopsis-edit"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-synopsis-edit-light.png",
+      "sha256": "e8314cb0356def85019d8954e454ac112aebd82271f0b8396f2655aaca995001",
+      "exit_code": 0
+    },
+    {
+      "name": "synopsis-edit-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--synopsis-edit"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-synopsis-edit-dark.png",
+      "sha256": "2c39366bd1ad8ac49279737d8c541dbed1ca05acab112db655920ee072ff0ae6",
+      "exit_code": 0
+    },
+    {
+      "name": "book-design-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--book-design"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-book-design-light.png",
+      "sha256": "2b490906a6fb1dd6080cf27c85220e357dc5d549b2b43d24aa4ce459bdefa53a",
+      "exit_code": 0
+    },
+    {
+      "name": "book-design-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--book-design"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-book-design-dark.png",
+      "sha256": "dd59649abc422fb275d82048649f67c32c9e7e3fa2d6a18172026c24893ec73e",
+      "exit_code": 0
+    },
+    {
+      "name": "covers-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--covers"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-covers-light.png",
+      "sha256": "df6f0726cf892d89cdcecb972a7b58d3b52113e23067fbf9d7aa136fdd7c1e9f",
+      "exit_code": 0
+    },
+    {
+      "name": "covers-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--covers"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-covers-dark.png",
+      "sha256": "13aa606e479ea598bda509114ab6285eccdfbf42f28d3400a04243d7b21d9f2a",
+      "exit_code": 0
+    },
+    {
+      "name": "covers-empty-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--covers-empty"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-covers-empty-light.png",
+      "sha256": "7e3a962a6170a7c5c389d6372e7adfcb5244569385a57669a00afe4c2ab7d0e4",
+      "exit_code": 0
+    },
+    {
+      "name": "covers-empty-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--covers-empty"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-covers-empty-dark.png",
+      "sha256": "d20dbc81aebd52d57d0b32bd7f7b8cbe4f6ad2c9f028603aad3afa35f4f9e1a7",
+      "exit_code": 0
+    },
+    {
+      "name": "cover-viewer-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--covers-full"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-cover-viewer-light.png",
+      "sha256": "131fabb94c273b92ff9d0a1161b89c407db37bef387118732073d16c9d8f021b",
+      "exit_code": 0
+    },
+    {
+      "name": "cover-viewer-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--covers-full"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-cover-viewer-dark.png",
+      "sha256": "8417cf850861ae2073e723fa3764dc5d64a67aed9bed6b28ea436fcfdab3d025",
+      "exit_code": 0
+    },
+    {
+      "name": "identities-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--identities"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-identities-light.png",
+      "sha256": "1be8be539054066f211915ed595a84796cbaa46b1bc1a7c02be0613c7dbee439",
+      "exit_code": 0
+    },
+    {
+      "name": "identities-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--identities"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-identities-dark.png",
+      "sha256": "093661b876363c7beb9a91acdcc189f46e9603d6283616cf995feb6ecd1aebf7",
+      "exit_code": 0
+    },
+    {
+      "name": "identities-empty-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--identities-empty"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-identities-empty-light.png",
+      "sha256": "48e7f45c49544ddb8ae2ebb4951d630f3d9bf833ed94e95ef7af20fc8d2a3988",
+      "exit_code": 0
+    },
+    {
+      "name": "identities-empty-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--identities-empty"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-identities-empty-dark.png",
+      "sha256": "889a405d3da19e725632f868ddb65a990c87fc050adf2726ba1cccd4b48b2f44",
+      "exit_code": 0
+    },
+    {
+      "name": "identity-report-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--identities-report"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-identity-report-light.png",
+      "sha256": "ad08fb76a54745b52ef398773fa1b12681db1daf6c7e57cd228268051f5207d4",
+      "exit_code": 0
+    },
+    {
+      "name": "identity-report-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--identities-report"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-identity-report-dark.png",
+      "sha256": "e233b010ec9c35a46b3fc0b9efe8171bdc73e96c0e3dfa37dd0fa20a95028c5f",
+      "exit_code": 0
+    },
+    {
+      "name": "library-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--library"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-library-light.png",
+      "sha256": "3b2eecba943f086fbbf20afc64d7a237427d8b892f1d5633870c54af5ff145c1",
+      "exit_code": 0
+    },
+    {
+      "name": "library-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--library"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-library-dark.png",
+      "sha256": "b608b259b8478bb1823a4ddbd15a77dad4930c769374de3061912093f5efa989",
+      "exit_code": 0
+    },
+    {
+      "name": "library-empty-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--library-empty"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-library-empty-light.png",
+      "sha256": "0b2a385eeb153677ac411f6bd63b59a45fa5490c3789ecd135e8bc4f0ddd02f8",
+      "exit_code": 0
+    },
+    {
+      "name": "library-empty-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--library-empty"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-library-empty-dark.png",
+      "sha256": "d06a6986409bc67de4f2a02dad8c646160da348e87f4123981941d8826351ff8",
+      "exit_code": 0
+    },
+    {
+      "name": "library-form-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--library-form"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-library-form-light.png",
+      "sha256": "90940b72a7b536037e3febe219f29a7fb7a757796ace225948d32ffcebb6af4d",
+      "exit_code": 0
+    },
+    {
+      "name": "library-form-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--library-form"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-library-form-dark.png",
+      "sha256": "1688c7c64d7749bcd78b4f8bba6d425fa3ebaeb749e00f9b9fc4b4964315c52c",
+      "exit_code": 0
+    },
+    {
+      "name": "new-book-tile-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--library",
+        "--press",
+        "id:library-new-book-tile"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-new-book-tile-light.png",
+      "sha256": "611c54eb4e04f48adc23c31c6708e864e227e0bb261cebce461b16bc6979f17f",
+      "exit_code": 0
+    },
+    {
+      "name": "new-book-tile-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--library",
+        "--press",
+        "id:library-new-book-tile"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-new-book-tile-dark.png",
+      "sha256": "78bb12837084746b0e82d33b4f65ffc6af52b97552f005625e1cbe1838d45ce5",
+      "exit_code": 0
+    },
+    {
+      "name": "epub-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--epub-styled",
+        "--preview-scroll",
+        "10"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-epub-light.png",
+      "sha256": "01de343f66f3e03bf338d8be833566bbbdcb784185f79131b5d44fcbdcfd830a",
+      "exit_code": 0
+    },
+    {
+      "name": "epub-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--epub-styled",
+        "--preview-scroll",
+        "10"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-epub-dark.png",
+      "sha256": "1de9b828b6691cb7955f869a85b439b535960c8aaa760c5cf07a0a2118580fde",
+      "exit_code": 0
+    },
+    {
+      "name": "pdf-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--pdf-styled"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-pdf-light.png",
+      "sha256": "9e49560ffe37417891a6da2711e33193f10ee0622dd705fc1df41407796d703c",
+      "exit_code": 0
+    },
+    {
+      "name": "pdf-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--pdf-styled"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-pdf-dark.png",
+      "sha256": "d4609fd90281a7866733837751792b5bdef1583c9e81e44f2e08f20dd60188a2",
+      "exit_code": 0
+    },
+    {
+      "name": "cast-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--cast"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-cast-light.png",
+      "sha256": "1893ba5ce897715c2fba41e34f6b4bfe5103f2287c45885b65ba103d16f8b1f8",
+      "exit_code": 0
+    },
+    {
+      "name": "cast-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--cast"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-cast-dark.png",
+      "sha256": "eda607807838beb9aebf0f083d0ec1cc7c023bdce7e4bf8572f90d5c6e64d8b1",
+      "exit_code": 0
+    },
+    {
+      "name": "cast-empty-light",
+      "fixture": "tiny",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--cast-empty"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-cast-empty-light.png",
+      "sha256": "73da9382b1de1be12994799496944faad515bffe403a3a10085c315db8ae9ac3",
+      "exit_code": 0
+    },
+    {
+      "name": "cast-empty-dark",
+      "fixture": "tiny",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--cast-empty"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-cast-empty-dark.png",
+      "sha256": "5023de9e83e99a55d77db16a69ba5b2f81a4fa1c67c3318e63217c1cc92d7551",
+      "exit_code": 0
+    },
+    {
+      "name": "cast-edit-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--cast-edit"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-cast-edit-light.png",
+      "sha256": "5891de9364242ecbad84a5f458b051b9d2ff08898502cb5d4816edf1741a993f",
+      "exit_code": 0
+    },
+    {
+      "name": "cast-edit-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--cast-edit"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-cast-edit-dark.png",
+      "sha256": "abfb3d2b626044eab5836e4a154451dff3c054c52909ef75262fe140899068bb",
+      "exit_code": 0
+    },
+    {
+      "name": "cast-missing-light",
+      "fixture": "tiny",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--cast-missing",
+        "--cast-edit"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-cast-missing-light.png",
+      "sha256": "aa6e82028bad018065bb7993f2082355066245f3bef5678e106291623c00afc9",
+      "exit_code": 0
+    },
+    {
+      "name": "cast-missing-dark",
+      "fixture": "tiny",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--cast-missing",
+        "--cast-edit"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-cast-missing-dark.png",
+      "sha256": "3befadb6a8fbf8531c77ccda0eb975e983259cb617fd016cba410d981b73dff1",
+      "exit_code": 0
+    },
+    {
+      "name": "cast-card-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--cast-card"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-cast-card-light.png",
+      "sha256": "2bf08f99333c05e31d4ce7f69d5e8b7d7e5d7c908aedcf512a6ea2d4ad222eac",
+      "exit_code": 0
+    },
+    {
+      "name": "cast-card-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--cast-card"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-cast-card-dark.png",
+      "sha256": "bbfaf15bad596b6c0bb28ffba3a470be0c9ac73c5a2a37091daf604770eb2f85",
+      "exit_code": 0
+    },
+    {
+      "name": "cast-alias-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--cast-alias"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-cast-alias-light.png",
+      "sha256": "85f117bf81487f76fdc4c934c71c4461d066df3d4ce7b61a999ce5029d4bef10",
+      "exit_code": 0
+    },
+    {
+      "name": "cast-alias-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--cast-alias"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-cast-alias-dark.png",
+      "sha256": "47a94a30335428ff689cc6ece24f1266342cf2ae57f771d534f3eba761d7b0eb",
+      "exit_code": 0
+    },
+    {
+      "name": "appearances-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--appears"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-appearances-light.png",
+      "sha256": "d97e58c59b68f8553ec025fc83125ad3d49565cb6fbd61f7f60d1fb4aa71dedb",
+      "exit_code": 0
+    },
+    {
+      "name": "appearances-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--appears"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-appearances-dark.png",
+      "sha256": "3ed28d7a09520954d1c30c1bc41ee43886a10be0610f0ef0839ad7060d147e25",
+      "exit_code": 0
+    },
+    {
+      "name": "appearances-map-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--appears-map"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-appearances-map-light.png",
+      "sha256": "995a0033615ecbdc452871a8a3cf315cbd66cd969bff4e80e74637b4fd001d65",
+      "exit_code": 0
+    },
+    {
+      "name": "appearances-map-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--appears-map"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-appearances-map-dark.png",
+      "sha256": "a84558f0adb0852c28199778e3c5645db419a66d2cbf9fcf85c9554968050b14",
+      "exit_code": 0
+    },
+    {
+      "name": "appearances-empty-light",
+      "fixture": "tiny",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--appears-empty"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-appearances-empty-light.png",
+      "sha256": "81e48608ea8e960c1a4fac5e6395802938a37b4d0ddc066dbff27decde2ad3c7",
+      "exit_code": 0
+    },
+    {
+      "name": "appearances-empty-dark",
+      "fixture": "tiny",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--appears-empty"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-appearances-empty-dark.png",
+      "sha256": "af8920a166167277209c77adff06b5d1a8ad9f5fd0501646681ac7007deb6723",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--timeline"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-light.png",
+      "sha256": "d2643f94ed624b489b3560ef4217700d5d1f15ba324b601d444a51fa223e1214",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--timeline"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-dark.png",
+      "sha256": "3efb48f4377aad69b329a54b7807fe3b10b91e0a3f76a3c0b6630d15ae269129",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-card-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--timeline-card"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-card-light.png",
+      "sha256": "425864d3cec4813abf25d631eb7b0e92b23e7bc32f777fa5f94804a79e5ed983",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-card-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--timeline-card"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-card-dark.png",
+      "sha256": "d4c1f4d7693252bc6879be519c6b39cb79b5db2d750b2121e37d90b0696339b5",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-edit-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--timeline-edit"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-edit-light.png",
+      "sha256": "3d63188f1c02c59d97fa0a7a003da007ff4a38e4e6c44c01ddddd7b44e1cb65f",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-edit-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--timeline-edit"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-edit-dark.png",
+      "sha256": "b79ec179aa55b3edcaca3032b8a02a521860ad3c4528790fd0788911a07aefd8",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-scale-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--timeline-scale"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-scale-light.png",
+      "sha256": "2502e194f6a3390d3556db94d1f014794c48f179709b4882a2113f11cc9c3d21",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-scale-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--timeline-scale"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-scale-dark.png",
+      "sha256": "86fe80af38348abe27ca642711a2c00f93735a320676b8dde6ea482ea4850d46",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-branch-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--timeline-branch"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-branch-light.png",
+      "sha256": "d2643f94ed624b489b3560ef4217700d5d1f15ba324b601d444a51fa223e1214",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-branch-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--timeline-branch"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-branch-dark.png",
+      "sha256": "3efb48f4377aad69b329a54b7807fe3b10b91e0a3f76a3c0b6630d15ae269129",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-empty-light",
+      "fixture": "tiny",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--timeline-empty"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-empty-light.png",
+      "sha256": "c9ea660e694793fc26678483af140e55e22c7939d738ea051798480980bb31e2",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-empty-dark",
+      "fixture": "tiny",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--timeline-empty"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-empty-dark.png",
+      "sha256": "4518d9e4adababf4ddc0ee3122da04c04e4b1063a02be92b70c159ab931feaeb",
+      "exit_code": 0
+    },
+    {
+      "name": "quick-open-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--menu-item",
+        "outline:2"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-quick-open-light.png",
+      "sha256": "9b9b445080ca6265b9b05cedc26c278d7c9cfeb88bbd9d645bf685886b4ad168",
+      "exit_code": 0
+    },
+    {
+      "name": "quick-open-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--menu-item",
+        "outline:2"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-quick-open-dark.png",
+      "sha256": "0791324ba7f9f4bed8365dc7e07757eefd403f90e43fac80c0017c45d6c9adb8",
+      "exit_code": 0
+    },
+    {
+      "name": "rename-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--menu-item",
+        "outline:16"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-rename-light.png",
+      "sha256": "3429f7746cc384946153070c255c6f7018f347d53500b5dce59856f5c7bd203c",
+      "exit_code": 0
+    },
+    {
+      "name": "rename-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--menu-item",
+        "outline:16"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-rename-dark.png",
+      "sha256": "c7c6fd65fc6245633784154b44caa49ac91ab7a96a3eb53b9eb9127417d8cf0e",
+      "exit_code": 0
+    },
+    {
+      "name": "revision-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--menu-item",
+        "outline:19"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-revision-light.png",
+      "sha256": "c9ec5ac64f2f9ff98ba1b4771162ec4a7c30a1684116bb7b374297b9c22ab92e",
+      "exit_code": 0
+    },
+    {
+      "name": "revision-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--menu-item",
+        "outline:19"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-revision-dark.png",
+      "sha256": "790f9aaea27897b69d25ae1c41ef045cdb6d4c7fb08f72f1c11f1268186b65d2",
+      "exit_code": 0
+    },
+    {
+      "name": "blank-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--blank"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-blank-light.png",
+      "sha256": "c04a40aebb51b40ae6b08cecd13d542a22d3459ffe2deadc37795bc2807919bb",
+      "exit_code": 0
+    },
+    {
+      "name": "blank-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--blank"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-blank-dark.png",
+      "sha256": "993eeed021b199c00847433335e96c4d379621d1f73609ae2d3487ca289b5184",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-branch-form-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--timeline",
+        "--press",
+        "name:+ Branch"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-branch-form-light.png",
+      "sha256": "746b441cdbfda227b9cf99470c9204d81bc8b58df4412c416437a112615afd54",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-branch-form-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--timeline",
+        "--press",
+        "name:+ Branch"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-branch-form-dark.png",
+      "sha256": "4eeea417d7894dacccfec147ed13cbf80283fcf21ac66ac93f3d8386b7e578f7",
+      "exit_code": 0
+    },
+    {
+      "name": "narrow-preferences-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--size",
+        "640x480",
+        "--prefs"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-narrow-preferences-light.png",
+      "sha256": "25966903ae541aeb32a2f4238a8f71f36634ac4b17f3096f13eeeb5fee32159a",
+      "exit_code": 0
+    },
+    {
+      "name": "narrow-preferences-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--size",
+        "640x480",
+        "--prefs"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-narrow-preferences-dark.png",
+      "sha256": "e666aa82e11632da6c6bcdce6341d7af00c48fc1d41e018c6a78ab51d8b58343",
+      "exit_code": 0
+    },
+    {
+      "name": "narrow-outline-menu-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--size",
+        "640x480",
+        "--menu",
+        "outline"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-narrow-outline-menu-light.png",
+      "sha256": "501c5981046744ec470f8e15dcea88467aeeeab3cce148d8e9e7b04be9baf0fe",
+      "exit_code": 0
+    },
+    {
+      "name": "narrow-outline-menu-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--size",
+        "640x480",
+        "--menu",
+        "outline"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-narrow-outline-menu-dark.png",
+      "sha256": "61b7242cd0e9f29d807afeb7b6240f8ff00e50eb103c65720d004b5d221a227f",
+      "exit_code": 0
+    },
+    {
+      "name": "narrow-proof-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--size",
+        "640x480",
+        "--pdf"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-narrow-proof-light.png",
+      "sha256": "d5c509a244cd72e498ca46b6ccbe7190cbd62fdc73ea8f57f7c3b9ff13cfde43",
+      "exit_code": 0
+    },
+    {
+      "name": "narrow-proof-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--size",
+        "640x480",
+        "--pdf"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-narrow-proof-dark.png",
+      "sha256": "4c7d395f677d003c17c5d4e16698a7804f7ffc3020f6de525307bfed022a5f1a",
+      "exit_code": 0
+    },
+    {
+      "name": "narrow-bible-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--size",
+        "640x480"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-narrow-bible-light.png",
+      "sha256": "d7b0a5c22d01dad08fbade1ed17959745ada7486a98ed608c828c5416499da8e",
+      "exit_code": 0
+    },
+    {
+      "name": "narrow-bible-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": "app/harness/src/shot-cli.ts",
+      "args": [
+        "--size",
+        "640x480"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-narrow-bible-dark.png",
+      "sha256": "fd0fb72373729fa23683af44cebcec544888a60903967285312e99529f735734",
+      "exit_code": 0
+    },
+    {
+      "name": "preferences-bottom-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--prefs"
+      ],
+      "environment": {
+        "AUDIT_PREFS_BOTTOM": "1"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-preferences-bottom-light.png",
+      "sha256": "3da74130840919d46eac332bfc8c9c300e4ec3dccca55667b55ad49cb7b45476",
+      "exit_code": 0
+    },
+    {
+      "name": "preferences-bottom-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--prefs"
+      ],
+      "environment": {
+        "AUDIT_PREFS_BOTTOM": "1"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-preferences-bottom-dark.png",
+      "sha256": "68b11528850a3be9cab62bf03ec40d737b52f3f57f7f2868f55b362f1a81175f",
+      "exit_code": 0
+    },
+    {
+      "name": "close-unsaved-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--type",
+        "Unsaved audit passage.",
+        "--menu-item",
+        "file:18"
+      ],
+      "environment": {
+        "AUDIT_REFUSE_SAVE": "1"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-close-unsaved-light.png",
+      "sha256": "f3faabe92093cee5467627e31047faafe8c4c9eb6d46a71e8f01621aaccbaf01",
+      "exit_code": 0
+    },
+    {
+      "name": "close-unsaved-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--type",
+        "Unsaved audit passage.",
+        "--menu-item",
+        "file:18"
+      ],
+      "environment": {
+        "AUDIT_REFUSE_SAVE": "1"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-close-unsaved-dark.png",
+      "sha256": "031e8b37af8aac1c5424c497d01831ee70adce56ea3858447e0a15a6805e11a3",
+      "exit_code": 0
+    },
+    {
+      "name": "comments-compose-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--select-word",
+        "--menu-item",
+        "edit:5"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-comments-compose-light.png",
+      "sha256": "44ebc065363236160fdcd5d097ffb52150864d0ea92596f296604c5da9fc74f3",
+      "exit_code": 0
+    },
+    {
+      "name": "comments-compose-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--select-word",
+        "--menu-item",
+        "edit:5"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-comments-compose-dark.png",
+      "sha256": "19c3f2c2698c48294e480fa56dfdb9c30b820e7a0aa6e9f1483b085d10ea156e",
+      "exit_code": 0
+    },
+    {
+      "name": "comments-edit-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--comments-demo",
+        "--comments"
+      ],
+      "environment": {
+        "AUDIT_COMMENT_EDIT": "1"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-comments-edit-light.png",
+      "sha256": "d7dc876ae0c73a9097d6d6b875f0db43251d0f99a1c6ceeccb1623d403c93116",
+      "exit_code": 0
+    },
+    {
+      "name": "comments-edit-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--comments-demo",
+        "--comments"
+      ],
+      "environment": {
+        "AUDIT_COMMENT_EDIT": "1"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-comments-edit-dark.png",
+      "sha256": "aeaf73dd3acc7614a4d401d1a36272eb4621ff174ff7f8a2d818df7c25f7a1ec",
+      "exit_code": 0
+    },
+    {
+      "name": "book-rename-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--menu-item",
+        "file:2"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-book-rename-light.png",
+      "sha256": "25aa8356d2c381303c13d591719810f74918d8b0f87dd9167a76846269f9c351",
+      "exit_code": 0
+    },
+    {
+      "name": "book-rename-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--menu-item",
+        "file:2"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-book-rename-dark.png",
+      "sha256": "c8201b10aa592fc733d5c6fe09e9e83ba1bfd06f3a1a37357814da8ec2b90362",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-track-kind-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--timeline",
+        "--press",
+        "name:+ Track"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-track-kind-light.png",
+      "sha256": "a2b9731295c05296c6ab35263c4f14d9711e30af88fcbdec457fa38e5f6a8051",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-track-kind-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--timeline",
+        "--press",
+        "name:+ Track"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-track-kind-dark.png",
+      "sha256": "bc56a6eb122d20c7c4c5c7aee70b508ee8012de2f10e65637b3151266cac69bf",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-cast-picker-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--timeline",
+        "--press",
+        "name:+ Track"
+      ],
+      "environment": {
+        "AUDIT_KEYS": "Down,Return"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-cast-picker-light.png",
+      "sha256": "1736a35d3b208111ba6b8badbeb6968c3a7eff6db525d8e81f1ffb3e464cb2bf",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-cast-picker-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--timeline",
+        "--press",
+        "name:+ Track"
+      ],
+      "environment": {
+        "AUDIT_KEYS": "Down,Return"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-cast-picker-dark.png",
+      "sha256": "517b2fb0fef23dc35480484cca5850654a5be0133d3c91d117e96cd04d7c0b10",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-thread-context-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--timeline",
+        "--press",
+        "name:Ines"
+      ],
+      "environment": {
+        "AUDIT_KEYS": "shift+F10"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-thread-context-light.png",
+      "sha256": "56e176eecd2620dd03e4df080d3942592859ab49f58a018d0055f4c1ba9073dd",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-thread-context-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--timeline",
+        "--press",
+        "name:Ines"
+      ],
+      "environment": {
+        "AUDIT_KEYS": "shift+F10"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-thread-context-dark.png",
+      "sha256": "1f9cf8b637d8e3f2d325a3ca81a342c1ebc41a452616282a491388d470fc87d4",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-cast-context-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--timeline",
+        "--press",
+        "name:Thren"
+      ],
+      "environment": {
+        "AUDIT_KEYS": "shift+F10"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-cast-context-light.png",
+      "sha256": "ca39d89705b85334caf57f174d4bcd6fe34492dc95f492b0bcdf3a84184b8874",
+      "exit_code": 0
+    },
+    {
+      "name": "timeline-cast-context-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--timeline",
+        "--press",
+        "name:Thren"
+      ],
+      "environment": {
+        "AUDIT_KEYS": "shift+F10"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-timeline-cast-context-dark.png",
+      "sha256": "615f5b9245840da4b65d1ecb55fb1659be79c1b718dae4388a1eeb2fcfbf72e2",
+      "exit_code": 0
+    },
+    {
+      "name": "proof-margins-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": ".handoff/shot-114-margins.ts",
+      "args": [
+        "--pdf"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-proof-margins-light.png",
+      "sha256": "7a4ee0159a953d19c07dfc583affd1a4dfe9637430139c050d5215e9bf205405",
+      "exit_code": 0
+    },
+    {
+      "name": "proof-margins-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": ".handoff/shot-114-margins.ts",
+      "args": [
+        "--pdf"
+      ],
+      "environment": {},
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-proof-margins-dark.png",
+      "sha256": "7d8e0f98ed1f6ca12dff5c953daae2137ac5f3fe3eaf8be4fff6b5dba3393335",
+      "exit_code": 0
+    },
+    {
+      "name": "narrow-proof-pages-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--size",
+        "640x480",
+        "--pdf"
+      ],
+      "environment": {
+        "AUDIT_RAIL_BOTTOM": "1"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-narrow-proof-pages-light.png",
+      "sha256": "0ddb31ff0d1daf1b2e0c5c7850dc0afce2e227697b75bc15cf53a54db82b7350",
+      "exit_code": 0
+    },
+    {
+      "name": "narrow-proof-pages-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--size",
+        "640x480",
+        "--pdf"
+      ],
+      "environment": {
+        "AUDIT_RAIL_BOTTOM": "1"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-narrow-proof-pages-dark.png",
+      "sha256": "ee69aca3f066faec6a62c79b69a9e61b868da30bd6ca0ad2a9018fe42c991704",
+      "exit_code": 0
+    },
+    {
+      "name": "narrow-close-unsaved-light",
+      "fixture": "sample",
+      "theme": "light",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--size",
+        "640x480",
+        "--type",
+        "Unsaved audit passage.",
+        "--menu-item",
+        "file:18"
+      ],
+      "environment": {
+        "AUDIT_REFUSE_SAVE": "1"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-narrow-close-unsaved-light.png",
+      "sha256": "2afff497cc764e5473811caa8f0993b8c0a8b43f0fc6bffd17c453bceb15892d",
+      "exit_code": 0
+    },
+    {
+      "name": "narrow-close-unsaved-dark",
+      "fixture": "sample",
+      "theme": "dark",
+      "script": ".handoff/shot-owner-refusal.ts",
+      "args": [
+        "--size",
+        "640x480",
+        "--type",
+        "Unsaved audit passage.",
+        "--menu-item",
+        "file:18"
+      ],
+      "environment": {
+        "AUDIT_REFUSE_SAVE": "1"
+      },
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-narrow-close-unsaved-dark.png",
+      "sha256": "287b1ba3990c3c0644989886652dae857e60d6c40a18ded91a08dce0e231ff6d",
+      "exit_code": 0
+    },
+    {
+      "name": "mirror-light",
+      "fixture": "tiny",
+      "theme": "light",
+      "script": "app/harness/src/mirror-shot.ts",
+      "args": [
+        "light",
+        "app/results/screenshots/2026-09-16-owner-audit-mirror-light.png"
+      ],
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-mirror-light.png",
+      "sha256": "a8e14ebd46c346b932ddc912b1ad7b4dca5f47470a62142dcb4bb16ee0758637",
+      "exit_code": 0
+    },
+    {
+      "name": "mirror-dark",
+      "fixture": "tiny",
+      "theme": "dark",
+      "script": "app/harness/src/mirror-shot.ts",
+      "args": [
+        "dark",
+        "app/results/screenshots/2026-09-16-owner-audit-mirror-dark.png"
+      ],
+      "screenshot": "app/results/screenshots/2026-09-16-owner-audit-mirror-dark.png",
+      "sha256": "899d19c8138b6a24356e195bd074109eea7eb2c0c52664d2185dc0230cec62d7",
+      "exit_code": 0
+    }
+  ],
+  "limitations": [
+    "Native OS file pickers excluded",
+    "Screenshots do not establish screen-reader speech or contrast ratios",
+    "Scratch drivers retained under docs/local/diagnostics/120; generic context and combo-box walks cannot drive these states"
+  ]
+}

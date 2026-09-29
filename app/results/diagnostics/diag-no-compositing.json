@@ -1,0 +1,398 @@
+{
+  "run_id": "diag-no-compositing",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-smoke",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "mode": "virtual",
+    "soak_minutes": 12,
+    "typing_chars_per_cycle": 400,
+    "nav_jumps_per_cycle": 60,
+    "action_delay_ms": 0,
+    "server_args": "-screen 0 1280x1024x24 -s 0 -noreset",
+    "input_pulse_ms": 0,
+    "ms_per_action": 36.4,
+    "peak_rss_mb": 511,
+    "startup_ms": 19,
+    "actions": 19781,
+    "onset": null,
+    "first_slow": {
+      "actionIndex": 16542,
+      "atMs": 549288,
+      "charsTyped": 14384,
+      "dispatchMs": 13,
+      "frameMs": 534,
+      "kind": "type",
+      "stalled": false
+    },
+    "slow_actions": 94,
+    "typing": {
+      "count": 17201,
+      "dispatch": {
+        "p50": 7,
+        "p95": 13,
+        "p99": 14
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34.00000000001455,
+        "p99": 35
+      },
+      "histogram": {
+        "100-500": 24,
+        "20-40": 16946,
+        "40-100": 4,
+        "500-2000": 57,
+        "<20": 170,
+        ">=2000": 0
+      },
+      "slowFrames": 80,
+      "stalls": 0
+    },
+    "nav": {
+      "count": 2580,
+      "dispatch": {
+        "p50": 0,
+        "p95": 1,
+        "p99": 1.9999999999417923
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34,
+        "p99": 34.000000000116415
+      },
+      "histogram": {
+        "100-500": 2,
+        "20-40": 2524,
+        "40-100": 0,
+        "500-2000": 12,
+        "<20": 42,
+        ">=2000": 0
+      },
+      "slowFrames": 14,
+      "stalls": 0
+    },
+    "cycles": [
+      {
+        "atMs": 15324,
+        "charsTyped": 400,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 34.000000000000114
+      },
+      {
+        "atMs": 30668,
+        "charsTyped": 800,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 43011,
+        "charsTyped": 1200,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 58355,
+        "charsTyped": 1600,
+        "cycle": 4,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 73700,
+        "charsTyped": 2000,
+        "cycle": 5,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 89045,
+        "charsTyped": 2400,
+        "cycle": 6,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 104390,
+        "charsTyped": 2800,
+        "cycle": 7,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 119734,
+        "charsTyped": 3200,
+        "cycle": 8,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 135079,
+        "charsTyped": 3600,
+        "cycle": 9,
+        "partial": false,
+        "typingP95Ms": 34.00000000001455
+      },
+      {
+        "atMs": 150424,
+        "charsTyped": 4000,
+        "cycle": 10,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 165769,
+        "charsTyped": 4400,
+        "cycle": 11,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 181114,
+        "charsTyped": 4800,
+        "cycle": 12,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 196458,
+        "charsTyped": 5200,
+        "cycle": 13,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 211803,
+        "charsTyped": 5600,
+        "cycle": 14,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 227148,
+        "charsTyped": 6000,
+        "cycle": 15,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 242493,
+        "charsTyped": 6400,
+        "cycle": 16,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 257838,
+        "charsTyped": 6800,
+        "cycle": 17,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 273182,
+        "charsTyped": 7200,
+        "cycle": 18,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 288527,
+        "charsTyped": 7600,
+        "cycle": 19,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 303872,
+        "charsTyped": 8000,
+        "cycle": 20,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 319216,
+        "charsTyped": 8400,
+        "cycle": 21,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 334561,
+        "charsTyped": 8800,
+        "cycle": 22,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 349906,
+        "charsTyped": 9200,
+        "cycle": 23,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 365251,
+        "charsTyped": 9600,
+        "cycle": 24,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 380596,
+        "charsTyped": 10000,
+        "cycle": 25,
+        "partial": false,
+        "typingP95Ms": 34.00000000005821
+      },
+      {
+        "atMs": 395940,
+        "charsTyped": 10400,
+        "cycle": 26,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 411285,
+        "charsTyped": 10800,
+        "cycle": 27,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 426630,
+        "charsTyped": 11200,
+        "cycle": 28,
+        "partial": false,
+        "typingP95Ms": 34.00000000005821
+      },
+      {
+        "atMs": 441975,
+        "charsTyped": 11600,
+        "cycle": 29,
+        "partial": false,
+        "typingP95Ms": 34.00000000005821
+      },
+      {
+        "atMs": 457319,
+        "charsTyped": 12000,
+        "cycle": 30,
+        "partial": false,
+        "typingP95Ms": 34.00000000005821
+      },
+      {
+        "atMs": 472664,
+        "charsTyped": 12400,
+        "cycle": 31,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 488009,
+        "charsTyped": 12800,
+        "cycle": 32,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 503354,
+        "charsTyped": 13200,
+        "cycle": 33,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 518698,
+        "charsTyped": 13600,
+        "cycle": 34,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 534043,
+        "charsTyped": 14000,
+        "cycle": 35,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 549888,
+        "charsTyped": 14400,
+        "cycle": 36,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 565233,
+        "charsTyped": 14800,
+        "cycle": 37,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 580578,
+        "charsTyped": 15200,
+        "cycle": 38,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 595922,
+        "charsTyped": 15600,
+        "cycle": 39,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 621700,
+        "charsTyped": 16000,
+        "cycle": 40,
+        "partial": false,
+        "typingP95Ms": 35
+      },
+      {
+        "atMs": 654196,
+        "charsTyped": 16400,
+        "cycle": 41,
+        "partial": false,
+        "typingP95Ms": 282
+      },
+      {
+        "atMs": 687574,
+        "charsTyped": 16800,
+        "cycle": 42,
+        "partial": false,
+        "typingP95Ms": 146
+      },
+      {
+        "atMs": 719998,
+        "charsTyped": 17200,
+        "cycle": 43,
+        "partial": false,
+        "typingP95Ms": 132
+      },
+      {
+        "atMs": 720032,
+        "charsTyped": 17201,
+        "cycle": 44,
+        "partial": true,
+        "typingP95Ms": 33.000000000116415
+      }
+    ],
+    "rows": 15200
+  },
+  "verdicts": [],
+  "seed": "app-v1",
+  "rig_commit": "405810e"
+}

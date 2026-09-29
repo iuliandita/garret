@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<x:document xmlns:x="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+ <x:body><x:sdt><x:sdtPr><x:tag x:val="fixture"/></x:sdtPr><x:sdtContent>
+  <x:p><x:pPr><x:rPr><x:ins x:id="10" x:author="Rae" x:date="2026-09-25T10:00:00Z"/></x:rPr></x:pPr>
+   <x:r><x:t xml:space="preserve"> A😀 </x:t></x:r>
+   <x:del x:id="11" x:author="Rae"><x:r><x:delText>old</x:delText></x:r></x:del>
+   <x:ins x:id="12" x:author="Rae"><x:r><x:rPr><x:b/><x:u x:val="single"/></x:rPr><x:t>new</x:t></x:r></x:ins>
+  </x:p>
+  <x:p><x:r><x:rPr><x:i/><x:rPrChange x:id="13" x:author="Sol"><x:rPr><x:b/></x:rPr></x:rPrChange></x:rPr><x:t>tail</x:t></x:r></x:p>
+  <x:p/>
+ </x:sdtContent></x:sdt></x:body>
+</x:document>

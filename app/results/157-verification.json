@@ -1,0 +1,60 @@
+{
+  "source_head": "06e8debf436d9a12e5b32d404c613075cb2519d2",
+  "host": {
+    "limits": "8 logical CPUs; CPU quota 800%; nice 19; idle IO; memory high 6 GiB, maximum 8 GiB; no swap; one Cargo job; two Rust test threads",
+    "checks": [
+      {
+        "name": "host-sources",
+        "exit_code": 0,
+        "summaries": [
+          "test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 1647 filtered out; finished in 0.02s",
+          "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s"
+        ]
+      },
+      {
+        "name": "host-progress-recovery",
+        "exit_code": 0,
+        "summaries": [
+          "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 1648 filtered out; finished in 0.03s"
+        ]
+      }
+    ]
+  },
+  "focused_ui": {
+    "status": "passed",
+    "files": [
+      "goals.test.ts",
+      "word-count.test.ts",
+      "statistics.test.ts",
+      "edit-source.test.ts",
+      "flush.test.ts",
+      "session.test.ts",
+      "session-switch.test.ts",
+      "statistics-export.test.ts",
+      "goals-gates.test.ts"
+    ],
+    "evidence": "Focused root tool runs and isolated scheduler worker run; final reload and Find/Replace regressions passed at root."
+  },
+  "typescript": "passed after the final TypeScript changes",
+  "screenshots": [
+    {
+      "path": "app/results/screenshots/2026-09-20-157-sources-dark-de-darkdesktop-darkapp-tiny.png",
+      "sha256": "0732bab9550d2a0198d5368a1b4f22d96737b03e2894b101ecb53396ebdc2989"
+    },
+    {
+      "path": "app/results/screenshots/2026-09-20-157-sources-light-darkdesktop-lightapp-tiny.png",
+      "sha256": "397ffce603ee7c64024cb31eecddd4f6a1a1f9776968b00a3c12839feadd33da"
+    }
+  ],
+  "environment": {
+    "renderer": "dmabuf-llvmpipe",
+    "isolation": "temporary manuscripts, Xvfb and private accessibility/session buses"
+  },
+  "review": "Editor/UI and host review findings corrected; recovery nested-transaction failure reproduced and covered by the focused host recheck.",
+  "limits": [
+    "No full-suite rerun, stress recording or mutation campaign under the owner reduced-verification policy.",
+    "Updated native goals restart/rollover rig was not run; its evaluator and host date/progress boundaries were checked directly.",
+    "Screenshots predate host-only corruption/recovery corrections; UI and valid-ledger display are unchanged.",
+    "Native Windows GUI, speech and external IMEs remain uncertified."
+  ]
+}

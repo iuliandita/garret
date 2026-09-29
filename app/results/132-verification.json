@@ -1,0 +1,143 @@
+{
+  "source_commit": "c545a29125c7f739b78b308876dd86117e8dce90",
+  "host_full": [
+    {
+      "passed": 1581,
+      "failed": 0,
+      "ignored": 2
+    },
+    {
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0
+    }
+  ],
+  "focused_after_bounding_test_waits": [
+    {
+      "passed": 15,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    }
+  ],
+  "full_suite_scope": "Final production source; subsequent changes only bound test-channel waits and passed focused tests.",
+  "bun": {
+    "passed": 3788,
+    "failed": 0
+  },
+  "typescript_exit": 0,
+  "ui_build_exit": 0,
+  "release_build_exit": 0,
+  "release_sha256": "b5bfc7652d47debe95f11e09f6deb93ad8dd9e0000e7684d0470f85da4ac6ec4",
+  "native_exit_codes": {
+    "light": 0,
+    "dark": 0,
+    "privacy_boundary": 0,
+    "privacy_regression": 0
+  },
+  "mutations_killed": 16,
+  "captures_inspected": [
+    "app/results/screenshots/132-close-prompt-before-light.png",
+    "app/results/screenshots/132-close-prompt-light.png",
+    "app/results/screenshots/132-close-prompt-dark.png"
+  ],
+  "repeat_close_held": {
+    "baseline": false,
+    "light": true,
+    "dark": true
+  },
+  "limits": [
+    "Linux isolated Xvfb functional evidence, not native Windows or speech/IME certification.",
+    "Existing unheld two-second fallback and unresolved drain-versus-give-up policy unchanged.",
+    "Initial sandboxed full suite failed local socket tests; native-permission reruns passed.",
+    "First mutation run timed out in a test channel wait; bounded waits corrected the harness and all controls then failed as intended.",
+    "No latency, memory or renderer improvement claim."
+  ],
+  "first_run": {
+    "exit_code": 0,
+    "baseline": "app/results/superseded/app-first-run.2026-09-08T12-24-09Z.json",
+    "baseline_sha256": "57dd920dd0eb3697b222e0ace947d4ef543a06c0fe8b6fe123fab4775cb87142",
+    "before": [
+      {
+        "gate": "first_run_opens",
+        "value": "a window appeared",
+        "threshold": "an empty data home with no fixture still produces a window",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "first_run_project_is_named",
+        "value": "the project is called \"Untitled book\"",
+        "threshold": "a writer's first book is not named after its file",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "first_run_accepts_typing",
+        "value": "6 word(s) in the store",
+        "threshold": "> 0 -- typing into the starter scene reaches the store",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "first_run_quit_closes",
+        "value": "Ctrl+Q closed the window",
+        "threshold": "the application can be left from inside itself",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "first_run_keeps_the_writing",
+        "value": "the sentence is in the stored body",
+        "threshold": "the close drains what was typed before the process goes",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "peak_rss_mb",
+        "value": 524,
+        "threshold": "<= 750",
+        "verdict": "PASS"
+      }
+    ],
+    "after": [
+      {
+        "gate": "first_run_opens",
+        "value": "a window appeared",
+        "threshold": "an empty data home with no fixture still produces a window",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "first_run_project_is_named",
+        "value": "the project is called \"Untitled book\"",
+        "threshold": "a writer's first book is not named after its file",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "first_run_accepts_typing",
+        "value": "6 word(s) in the store",
+        "threshold": "> 0 -- typing into the starter scene reaches the store",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "first_run_quit_closes",
+        "value": "Ctrl+Q closed the window",
+        "threshold": "the application can be left from inside itself",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "first_run_keeps_the_writing",
+        "value": "the sentence is in the stored body",
+        "threshold": "the close drains what was typed before the process goes",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "peak_rss_mb",
+        "value": 558,
+        "threshold": "<= 750",
+        "verdict": "PASS"
+      }
+    ],
+    "renderer_before": null,
+    "renderer_after": null
+  }
+}

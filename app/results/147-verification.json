@@ -1,0 +1,100 @@
+{
+  "source_commit": "a97c791ff4b11c8b786c57fe044367dd4aec06b3",
+  "bun_passed": 3837,
+  "bun_failed": 0,
+  "host_suites": [
+    {
+      "passed": 1590,
+      "failed": 0,
+      "ignored": 2
+    },
+    {
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0
+    }
+  ],
+  "typescript_exit": 0,
+  "ui_build_exit": 0,
+  "mutations": {
+    "source_commit": "f8ef1fe9a973f18de9771354da10189982e9d2f3",
+    "source_restored": true,
+    "restored_release_build_exit": 0,
+    "mutations": [
+      {
+        "mutation": "sentence-metric",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "own-text",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "nearest-type",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "manuscript-exclusions",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "host-projection",
+        "exit_code": 101,
+        "verdict": "KILLED"
+      }
+    ]
+  },
+  "captures": [
+    {
+      "source_commit": "a97c791ff4b11c8b786c57fe044367dd4aec06b3",
+      "theme": "light",
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "screenshots": [
+        "app/results/screenshots/147-statistics-light-top.png",
+        "app/results/screenshots/147-statistics-light-scrolled.png"
+      ],
+      "scope": "Visual capture only; wheel movement and rows require inspection.",
+      "visual_inspection": "Top and native-scrolled views together show all eight unit rows with readable labels and values in this theme.",
+      "sha256": {
+        "app/results/screenshots/147-statistics-light-top.png": "230a43f4195b6778da3a7aec678aedbd92a2e309620071f7477b9f148c82637b",
+        "app/results/screenshots/147-statistics-light-scrolled.png": "548346ebb682e9f31268d2ec348da9d44e001781d97b5641be731dae86cf8103"
+      }
+    },
+    {
+      "source_commit": "a97c791ff4b11c8b786c57fe044367dd4aec06b3",
+      "theme": "dark",
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "screenshots": [
+        "app/results/screenshots/147-statistics-dark-top.png",
+        "app/results/screenshots/147-statistics-dark-scrolled.png"
+      ],
+      "scope": "Visual capture only; wheel movement and rows require inspection.",
+      "visual_inspection": "Top and native-scrolled views together show all eight unit rows with readable labels and values in this theme.",
+      "sha256": {
+        "app/results/screenshots/147-statistics-dark-top.png": "bc84a4f0d7ff13d62b566260ad7a9d408e7f9e38e80dca7bdd9b9bd40435295e",
+        "app/results/screenshots/147-statistics-dark-scrolled.png": "6db909134b89bf15a8bb15d3e4d8d33103427d81e44c5aaa6cd838f38e8f66b0"
+      }
+    }
+  ],
+  "review": "Definition wording corrected to include container own text; no remaining findings.",
+  "scope": "On-demand statistics projection only. Periodic word payload, index maintenance and stored format unchanged. No persistence soak or performance claim. Full suites precede the final definition-only wording edit; focused catalog/statistics/panel checks and UI rebuild passed afterward.",
+  "diagnostic_correction": "Initial private capture used an unsupported xdotool flag; corrected to DISPLAY environment and reran both themes successfully."
+}

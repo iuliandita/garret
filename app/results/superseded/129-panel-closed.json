@@ -1,0 +1,80 @@
+{
+  "run_id": "129-panel-closed",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-diagnostic",
+  "environment": {
+    "kernel": "7.2.3-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 1.39,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "theme": "light",
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "panel_walk": {
+      "nodes": []
+    },
+    "screenshot": "panel-closed.png",
+    "scope": "One fresh boot, one complete attributed AT-SPI walk after the real File > Open project route. queryText is null only where the Text interface is unavailable.",
+    "omitted_gates": "latency, stall, cliff and a11y_exposure: this is a bounded platform-semantics measurement."
+  },
+  "verdicts": [
+    {
+      "gate": "project_panel_open",
+      "value": "0 project-panel nodes",
+      "threshold": "one AT-SPI dialog named \"projects\"",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "project_panel_listboxes",
+      "value": "project-list=absent; project-imports=absent; project-recovery-points=absent; project-archives=absent",
+      "threshold": "four named visible platform list boxes in the project panel",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "project_panel_actions",
+      "value": "project-new-name=absent, project-create=absent, project-new-choose=absent, project-move=absent, project-archive-now=absent, project-mirror-toggle=absent",
+      "threshold": "named create input and enabled Create, Choose folder, Move, Archive and mirror buttons",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "project_panel_mirror_check_off",
+      "value": "absent",
+      "threshold": "named mirror check is visibly disabled while the mirror is off",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "project_panel_explanations",
+      "value": "one or more exact explanatory texts are absent",
+      "threshold": "full recovery, archive and mirror explanatory text is exposed",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "project_panel_reading_order",
+      "value": "absent < absent < absent < absent < absent < absent < absent < absent < absent < absent < absent < absent < absent < absent < absent < absent < absent < absent",
+      "threshold": "visible named sections in Create, Import, Recovery, Archive, Mirror order, with explanations before actions",
+      "verdict": "FAIL"
+    }
+  ],
+  "seed": "tiny",
+  "rig_commit": "bd02468c"
+}

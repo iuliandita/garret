@@ -1,0 +1,15 @@
+{
+  "name": "bakeoff",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build.ts",
+    "matrix": "bun harness/src/matrix.ts"
+  },
+  "dependencies": {
+    "prosemirror-model": "^1.23.0",
+    "prosemirror-state": "^1.4.3",
+    "prosemirror-transform": "^1.10.0",
+    "prosemirror-view": "^1.34.0"
+  }
+}

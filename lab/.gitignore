@@ -1,0 +1,12 @@
+node_modules/
+fixtures/out/
+bakeoff/dist/
+bakeoff/shell-tauri/dist/
+bakeoff/shell-tauri/src-tauri/target/
+bakeoff/shell-tauri/src-tauri/gen/
+bakeoff/shell-electron/main.js
+bakeoff/shell-electron/preload.js
+bakeoff/**/node_modules/
+.durability-work/
+fault-rig/rust-child/target/
+bakeoff/shell-electron/dist/

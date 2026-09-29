@@ -1,0 +1,127 @@
+{
+  "source_commit": "c545a29125c7f739b78b308876dd86117e8dce90",
+  "light": {
+    "theme": "light",
+    "fixture": "tiny",
+    "isolation": "private-xvfb-session-atspi",
+    "checks": {
+      "save_failure_banner_before_close": true,
+      "unsaved_prompt_captured": true,
+      "prompt_visible_before_repeat": true,
+      "sentinel_absent_from_db_while_locked": true,
+      "repeat_close_held": true,
+      "stay_retains_sentinel": true,
+      "escape_retains_sentinel": true,
+      "discard_closes_cleanly": true,
+      "discard_leaves_sentinel_out_of_db": true
+    },
+    "failure": null,
+    "repeat_bypass": false,
+    "environment": {
+      "renderer": null,
+      "note": "Functional close probe did not collect renderer attribution; no performance claim."
+    }
+  },
+  "dark": {
+    "theme": "dark",
+    "fixture": "tiny",
+    "isolation": "private-xvfb-session-atspi",
+    "checks": {
+      "save_failure_banner_before_close": true,
+      "unsaved_prompt_captured": true,
+      "prompt_visible_before_repeat": true,
+      "sentinel_absent_from_db_while_locked": true,
+      "repeat_close_held": true,
+      "stay_retains_sentinel": true,
+      "escape_retains_sentinel": true,
+      "discard_closes_cleanly": true,
+      "discard_leaves_sentinel_out_of_db": true
+    },
+    "failure": null,
+    "repeat_bypass": false,
+    "environment": {
+      "renderer": null,
+      "note": "Functional close probe did not collect renderer attribution; no performance claim."
+    }
+  },
+  "privacy_boundary": {
+    "theme": "light",
+    "fixture": "tiny",
+    "isolation": "private-xvfb-session-atspi",
+    "checks": {
+      "postload_edit_visible": true,
+      "native_unicode_enrollment": true,
+      "boundary-locked": true,
+      "boundary-locked_password_named_and_masked": true,
+      "close_a_held_beyond_timeout": true,
+      "locked_doc_load_rejected": true,
+      "locked_unknown_rejected": true,
+      "locked_status_allowed": true,
+      "locked_empty_flush_allowed": true,
+      "locked_sink_rejected": true,
+      "stale_attempt_captured": true,
+      "stale_real_ipc_acknowledgement_rejected": true,
+      "current_real_ipc_acknowledgement_closes": true
+    },
+    "failure": null,
+    "environment": {
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    },
+    "ipc": {
+      "attempt_a": 1,
+      "attempt_b": 2,
+      "confirm_b_sent": true,
+      "error": null,
+      "held_a": true,
+      "locked_doc_load_rejected": true,
+      "locked_empty_flush_allowed": true,
+      "locked_sink_rejected": true,
+      "locked_status_allowed": true,
+      "locked_unknown_rejected": true,
+      "probe": "privacy-real-ipc-close-boundary",
+      "stale_a_returned": true,
+      "survived_stale_a": true
+    }
+  },
+  "privacy_regression": {
+    "theme": "light",
+    "locale": "en",
+    "fixture": "tiny",
+    "isolation": "private-xvfb-session-atspi",
+    "checks": {
+      "postload_edit_visible": true,
+      "native_unicode_enrollment": true,
+      "manual-lock": true,
+      "manual-lock_password_named_and_masked": true,
+      "wrong_secret_refused": true,
+      "unicode_unlock_restores_postload_edit": true,
+      "locked-restart": true,
+      "locked-restart_password_named_and_masked": true,
+      "restart_unlock_restores_saved_edit": true,
+      "corrupt_record_concealed_recovery": true,
+      "recovery_quit": true,
+      "failed-save-lock": true,
+      "failed-save-lock_password_named_and_masked": true,
+      "failed_save_close_held_beyond_timeout": true,
+      "failed_save_pending_edit_retained": true
+    },
+    "failure": null,
+    "environment": {
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    }
+  }
+}

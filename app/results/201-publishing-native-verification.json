@@ -1,0 +1,61 @@
+{
+  "source_revision": "5ec77d1682c9939ca79ee3df9ef050a6e92b85b9",
+  "scope": "Final publishing native checks; no platform-wide certification or memory claim",
+  "screenshots_sha256": {
+    "195-pdf-cover-fill.png": "ad84ef3ce15105db43d2c5fda25de13117064d58415a236032b0426d7fd4b1ff",
+    "195-design-transfer-dark.png": "272e822fab5b5b5833d939ad6d644f1fc06f684d68543ffe485817de4ff6cb0e",
+    "195-covers-light.png": "a7ce84bd891edbe76946838989135f03e0ab57b7536b505ebe9cc1f53a302b7a",
+    "195-pdf-cover-contain.png": "1cf492166a8d0ba5c6fed6ec101d7e7e6fa1d652b11adf3cabd57b4237fc5717",
+    "195-design-transfer-light.png": "1e4012557e6ca2e639f9f0abde99942b98b2070b1a373ac96f0719834a946275",
+    "195-covers-dark.png": "a2e87335a19b511ebe493cc31332b73eae53178563482771446d222e41f656bf"
+  },
+  "covers": {
+    "source_revision": "5ec77d1682c9939ca79ee3df9ef050a6e92b85b9",
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "renderer": "dmabuf-llvmpipe",
+    "visual_review": "Full placement labels, consequences and controls visible in both themes"
+  },
+  "design_transfer": {
+    "source_revision": "dddc62462bfb05992e05feb817bad00fb5db6a9c",
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "renderer": "dmabuf-llvmpipe",
+    "visual_review": "All seven named changes, custom font/page labels and apply control visible",
+    "instrument_note": "Native chooser clipboard handoff required manual assistance; not unattended automation"
+  },
+  "pdf": {
+    "binary_sha256": "54ec67d662e87120dc9bac8d537f938edbed644583ddb0a626edcc7f2e744f92",
+    "scope": "actual Linux WebKit PDF export under isolated Xvfb; planted synthetic landscape back cover on portrait trim; no printer certification",
+    "outputs": {
+      "contain": {
+        "pages": 14,
+        "last_leaf_contains_cover": true,
+        "pdf_sha256": "d4a9f1b44a75ce556f98ebbf18747ae5e424daff62722ec4a73c3f1a83c01592",
+        "image_sha256": "1cf492166a8d0ba5c6fed6ec101d7e7e6fa1d652b11adf3cabd57b4237fc5717"
+      },
+      "fill": {
+        "pages": 14,
+        "last_leaf_contains_cover": true,
+        "pdf_sha256": "5b81f300c53c4e078b030f560e2384535151cbba9cb4dd8b647999e7d17ee035",
+        "image_sha256": "ad84ef3ce15105db43d2c5fda25de13117064d58415a236032b0426d7fd4b1ff"
+      }
+    }
+  },
+  "export": {
+    "tiny": {
+      "result": "app-export-tiny.json",
+      "source_revision": "dddc62462bfb05992e05feb817bad00fb5db6a9c",
+      "scope": "Functional and timing gates passed; memory gate unknown; positive Markdown TOC assertion passed"
+    },
+    "stress": {
+      "result": "app-export-stress.json",
+      "source_revision": "dddc62462bfb05992e05feb817bad00fb5db6a9c",
+      "scope": "Functional and timing gates passed; memory gate unknown; positive Markdown TOC assertion passed"
+    }
+  }
+}

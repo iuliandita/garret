@@ -1,0 +1,4 @@
+{"built":["<repo>/lab/bakeoff/dist/run.js"],"soakMs":0,"lazyDocs":false,"containNav":false}
+tauri: killed 1 orphaned shell process(es)
+tauri: 0 fails
+report -> <repo>/lab/results/report-bakeoff-tiny-tauri-nav-cap.md

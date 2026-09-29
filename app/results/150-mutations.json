@@ -1,0 +1,31 @@
+{
+  "source_commit": "66f8ee48f1bb9c1817dfbbd3db06eceda83a5de6",
+  "source_restored": true,
+  "mutations": [
+    {
+      "mutation": "fixture",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "unsupported-option",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "dispatch",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "import-side-effect",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "callable-opt-in",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    }
+  ]
+}

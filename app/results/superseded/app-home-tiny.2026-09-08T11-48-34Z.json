@@ -1,0 +1,84 @@
+{
+  "run_id": "app-home-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-home",
+  "environment": {
+    "kernel": "7.2.2-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 2.09,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "home_project_path": "",
+    "home_rows": 0,
+    "home_library_present": true,
+    "last_project_path": "/tmp/app-home-VkIfDd/cc.local.app/projects/tiny-1.db",
+    "last_library_present": false,
+    "blank_project_path": "",
+    "blank_rows": 0,
+    "blank_library_present": false,
+    "library_overview_ms": 2,
+    "library_words_ms": 0,
+    "home_opens_the_book": true,
+    "home_startup_ms": 28,
+    "last_startup_ms": 204,
+    "blank_startup_ms": 27,
+    "last_project_name": "tiny-1",
+    "last_generation": 1,
+    "library_mix": "3 tiny",
+    "home_diagnostic": "",
+    "omitted_gates": "latency, stall, cliff, a11y_exposure"
+  },
+  "verdicts": [
+    {
+      "gate": "home_boots_nothing_open",
+      "value": "nothing mounted, rows 0, #library present",
+      "threshold": "start=\"home\" with no APP_PROJECT mounts nothing (D2/D3) and shows the library screen (100)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "start_last_boots_the_book",
+      "value": "project_path \"/tmp/app-home-VkIfDd/cc.local.app/projects/tiny-1.db\", no #library",
+      "threshold": "start=\"last\" is today's behaviour, unchanged: the recorded or newest book opens and no #library shows",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "start_blank_boots_nothing",
+      "value": "nothing mounted, rows 0, no #library",
+      "threshold": "start=\"blank\" mounts nothing and shows no library screen either -- that is what tells it apart from \"home\"",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "library_overview_ms",
+      "value": "2 ms",
+      "threshold": "<= 250 ms at stress, all 12 cover thumbnails cached",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "library_words_ms",
+      "value": "0 ms",
+      "threshold": "<= 150 ms for library_book_words on one stress book",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "home_opens_the_book",
+      "value": "Continue writing mounted the book; project_current and recent[0] name it",
+      "threshold": "pressing the desk's Continue writing through AT-SPI mounts the book; project_current names it; settings.recent[0] is it",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "46f1d294"
+}

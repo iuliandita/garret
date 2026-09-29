@@ -1,0 +1,96 @@
+{
+  "run_id": "app-history-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-history",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "fixture": "tiny",
+    "documents": 30,
+    "versions_after_typing": 1,
+    "first_version_holds_typed_text": true,
+    "planted_text": "QZPLANTEDPARA the sentence a writer wants back.",
+    "text_after_restore": "QZPLANTEDPARA the sentence a writer wants back.",
+    "captured_before_restore": true,
+    "text_after_typing_on_restored": "QZPLANTEDPARA the sentence a writer wants back.",
+    "nonce_before_restore": "QZHISTTWO",
+    "nonce_after_restore": "QZHISTTHREE",
+    "nonce_ruin": "QZHISTRUIN",
+    "snapshot_count": 2,
+    "snapshot_documents": 30,
+    "snapshot_version_rows": 60,
+    "blobs_before_snapshots": 3,
+    "blobs_after_snapshots": 33,
+    "text_at_snapshot_time": "QZPLANTEDPARA the sentence a writer wants back.",
+    "text_after_snapshot_restore": "QZPLANTEDPARA the sentence a writer wants back.",
+    "panel_version_count": 6,
+    "store_version_count": 6,
+    "peak_rss_mb": 519,
+    "omitted_gates": "typing_p95_ms, typing_stall_rate, cliff_ratio and a11y_exposure are not evaluated: this run types four short nonces and spends most of its wall clock waiting on menus and transactions, so it has nothing true to say about frame cadence, and it takes ONE AT-SPI walk deliberately, which is not an exposure survey."
+  },
+  "verdicts": [
+    {
+      "gate": "history_auto_version_written",
+      "value": "1 version(s) after typing; the typed text is in one of them",
+      "threshold": "typing produces at least one version, and it holds what was typed",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "history_restore_returns_the_text",
+      "value": "the stored body is exactly the planted text",
+      "threshold": "after restoring, the store holds exactly the version's own text",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "history_restore_is_reversible",
+      "value": "the body the restore overwrote (holding \"QZHISTTWO\") is in history",
+      "threshold": "restoring captures what it replaces, so the restore is itself undoable",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "history_restore_reaches_the_page",
+      "value": "does NOT hold the new text; no longer holds the pre-restore text",
+      "threshold": "typing after a restore lands on the RESTORED document: the new text is stored and the replaced text is gone. A page that swapped nothing passes neither half.",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "history_snapshot_covers_every_document",
+      "value": "30 version row(s) for 30 document(s)",
+      "threshold": "a named snapshot captures every document in the manuscript, none missing",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "history_snapshot_dedups",
+      "value": "60 snapshot version row(s) share 30 new blob(s) (3 -> 33)",
+      "threshold": "two snapshots over an unedited manuscript write 2 x documents version rows and at most documents new blobs. A second full copy would double the blob count.",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "history_snapshot_restore_reverts",
+      "value": "the scene is byte-identical to what the snapshot captured",
+      "threshold": "after restoring a snapshot the scene holds exactly what it held when the snapshot was taken, and the text typed since is gone",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "history_panel_lists_what_the_store_holds",
+      "value": "the panel said 6, the store holds 6",
+      "threshold": "the panel, in a window opened after four kills, lists exactly the versions the file holds for the open scene",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 519,
+      "threshold": "<= 750",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "history-v1",
+  "rig_commit": "44318a85"
+}

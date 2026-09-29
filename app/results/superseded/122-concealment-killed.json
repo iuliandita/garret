@@ -1,0 +1,30 @@
+{
+  "mutation": "remove_native_hide_webview_hide_and_detach",
+  "verdict": "KILLED",
+  "exit_code": 1,
+  "reason": "Concealment exposed edited prose",
+  "observation": {
+    "theme": "light",
+    "locale": "en",
+    "fixture": "tiny",
+    "isolation": "private-xvfb-session-atspi",
+    "checks": {
+      "postload_edit_visible": true,
+      "native_unicode_enrollment": true
+    },
+    "failure": {
+      "stage": "manual lock",
+      "kind": "AssertionError"
+    },
+    "environment": {
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    }
+  }
+}

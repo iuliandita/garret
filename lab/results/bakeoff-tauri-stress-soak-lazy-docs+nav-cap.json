@@ -1,0 +1,3890 @@
+{
+  "run_id": "bakeoff-tauri-stress-soak-lazy-docs+nav-cap",
+  "track": "bakeoff",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "bakeoff-suite",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "0-3 / 8G (see throttle-run.sh)",
+    "biasNotes": "cgroup-throttled approximation of reference hardware (4 threads, 8G); modern single-core speed exceeds a five-year-old laptop core. Gates remain hypotheses until a real-hardware pass. macOS unmeasured."
+  },
+  "method": "In-page keydown->next-frame latency (double requestAnimationFrame), identical bundled run.js in both shells; no CDP or Chromium-only tracing (WebKitGTK exposes none). Summed process-tree RSS sampled from /proc during the run. AT-SPI exposure probed via pyatspi when available. SCOPE: cgroup-throttled approximation of reference hardware; gates are hypotheses until a real-hardware pass. macOS unmeasured.",
+  "metrics": {
+    "typing_p95": 33,
+    "typing_p99": 34,
+    "nav_p95": 33,
+    "cold_start_ms": 43.99999999999999,
+    "warm_start_ms": 3,
+    "peak_rss_mb": 573,
+    "a11y": {
+      "available": true,
+      "hasEditor": true,
+      "hasNavigator": true,
+      "hasDialog": true,
+      "roles": [
+        "application",
+        "frame",
+        "panel",
+        "panel",
+        "filler",
+        "separator",
+        "button",
+        "button",
+        "button",
+        "filler",
+        "label",
+        "label",
+        "filler",
+        "filler",
+        "filler",
+        "scroll pane",
+        "document web",
+        "entry",
+        "entry",
+        "entry",
+        "entry",
+        "entry",
+        "entry",
+        "list",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "list item",
+        "dialog",
+        "entry",
+        "scroll bar"
+      ]
+    },
+    "typing": {
+      "count": 400,
+      "p50": 32,
+      "p95": 33,
+      "p99": 34,
+      "max": 3630
+    },
+    "navigation": {
+      "count": 90,
+      "p50": 32,
+      "p95": 33,
+      "p99": 34,
+      "max": 34
+    },
+    "variants": [
+      "lazy-docs",
+      "nav-cap"
+    ],
+    "soak": {
+      "soak_minutes": 30,
+      "cycles": 115,
+      "chars_typed": 46086,
+      "peak_rss_mb": 573,
+      "final_rss_mb": 559,
+      "leak_slope_mb_per_hr": 29.1,
+      "typing_p95_first_cycle_ms": 33,
+      "typing_p95_last_cycle_ms": 33
+    },
+    "soak_cycles": [
+      {
+        "atMs": 15749,
+        "charsTyped": 800,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 31472,
+        "charsTyped": 1200,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 47201,
+        "charsTyped": 1600,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 62922,
+        "charsTyped": 2000,
+        "cycle": 4,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 78647,
+        "charsTyped": 2400,
+        "cycle": 5,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 94371,
+        "charsTyped": 2800,
+        "cycle": 6,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 110100,
+        "charsTyped": 3200,
+        "cycle": 7,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 125829,
+        "charsTyped": 3600,
+        "cycle": 8,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 141552,
+        "charsTyped": 4000,
+        "cycle": 9,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 157278,
+        "charsTyped": 4400,
+        "cycle": 10,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 173002,
+        "charsTyped": 4800,
+        "cycle": 11,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 188726,
+        "charsTyped": 5200,
+        "cycle": 12,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 204450,
+        "charsTyped": 5600,
+        "cycle": 13,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 220175,
+        "charsTyped": 6000,
+        "cycle": 14,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 235905,
+        "charsTyped": 6400,
+        "cycle": 15,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 251628,
+        "charsTyped": 6800,
+        "cycle": 16,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 267351,
+        "charsTyped": 7200,
+        "cycle": 17,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 283076,
+        "charsTyped": 7600,
+        "cycle": 18,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 298801,
+        "charsTyped": 8000,
+        "cycle": 19,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 314527,
+        "charsTyped": 8400,
+        "cycle": 20,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 330253,
+        "charsTyped": 8800,
+        "cycle": 21,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 345978,
+        "charsTyped": 9200,
+        "cycle": 22,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 361706,
+        "charsTyped": 9600,
+        "cycle": 23,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 377430,
+        "charsTyped": 10000,
+        "cycle": 24,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 393152,
+        "charsTyped": 10400,
+        "cycle": 25,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 408879,
+        "charsTyped": 10800,
+        "cycle": 26,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 424905,
+        "charsTyped": 11200,
+        "cycle": 27,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 440634,
+        "charsTyped": 11600,
+        "cycle": 28,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 456365,
+        "charsTyped": 12000,
+        "cycle": 29,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 472089,
+        "charsTyped": 12400,
+        "cycle": 30,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 487809,
+        "charsTyped": 12800,
+        "cycle": 31,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 503533,
+        "charsTyped": 13200,
+        "cycle": 32,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 519256,
+        "charsTyped": 13600,
+        "cycle": 33,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 534984,
+        "charsTyped": 14000,
+        "cycle": 34,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 550709,
+        "charsTyped": 14400,
+        "cycle": 35,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 566431,
+        "charsTyped": 14800,
+        "cycle": 36,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 584726,
+        "charsTyped": 15200,
+        "cycle": 37,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 600781,
+        "charsTyped": 15600,
+        "cycle": 38,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 616517,
+        "charsTyped": 16000,
+        "cycle": 39,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 632249,
+        "charsTyped": 16400,
+        "cycle": 40,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 647984,
+        "charsTyped": 16800,
+        "cycle": 41,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 663727,
+        "charsTyped": 17200,
+        "cycle": 42,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 679466,
+        "charsTyped": 17600,
+        "cycle": 43,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 695207,
+        "charsTyped": 18000,
+        "cycle": 44,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 710943,
+        "charsTyped": 18400,
+        "cycle": 45,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 726685,
+        "charsTyped": 18800,
+        "cycle": 46,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 742421,
+        "charsTyped": 19200,
+        "cycle": 47,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 758154,
+        "charsTyped": 19600,
+        "cycle": 48,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 773902,
+        "charsTyped": 20000,
+        "cycle": 49,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 789651,
+        "charsTyped": 20400,
+        "cycle": 50,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 805392,
+        "charsTyped": 20800,
+        "cycle": 51,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 821132,
+        "charsTyped": 21200,
+        "cycle": 52,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 836866,
+        "charsTyped": 21600,
+        "cycle": 53,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 852586,
+        "charsTyped": 22000,
+        "cycle": 54,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 868306,
+        "charsTyped": 22400,
+        "cycle": 55,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 884024,
+        "charsTyped": 22800,
+        "cycle": 56,
+        "partial": false,
+        "typingP95Ms": 32.999999999883585
+      },
+      {
+        "atMs": 899746,
+        "charsTyped": 23200,
+        "cycle": 57,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 915463,
+        "charsTyped": 23600,
+        "cycle": 58,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 931179,
+        "charsTyped": 24000,
+        "cycle": 59,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 946900,
+        "charsTyped": 24400,
+        "cycle": 60,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 962622,
+        "charsTyped": 24800,
+        "cycle": 61,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 978339,
+        "charsTyped": 25200,
+        "cycle": 62,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 994057,
+        "charsTyped": 25600,
+        "cycle": 63,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1009776,
+        "charsTyped": 26000,
+        "cycle": 64,
+        "partial": false,
+        "typingP95Ms": 32.999999999883585
+      },
+      {
+        "atMs": 1025633,
+        "charsTyped": 26400,
+        "cycle": 65,
+        "partial": false,
+        "typingP95Ms": 32.999999999883585
+      },
+      {
+        "atMs": 1041364,
+        "charsTyped": 26800,
+        "cycle": 66,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1057091,
+        "charsTyped": 27200,
+        "cycle": 67,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1072813,
+        "charsTyped": 27600,
+        "cycle": 68,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1088530,
+        "charsTyped": 28000,
+        "cycle": 69,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1104253,
+        "charsTyped": 28400,
+        "cycle": 70,
+        "partial": false,
+        "typingP95Ms": 32.00000000023283
+      },
+      {
+        "atMs": 1119973,
+        "charsTyped": 28800,
+        "cycle": 71,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1135691,
+        "charsTyped": 29200,
+        "cycle": 72,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1151410,
+        "charsTyped": 29600,
+        "cycle": 73,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1167133,
+        "charsTyped": 30000,
+        "cycle": 74,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1182853,
+        "charsTyped": 30400,
+        "cycle": 75,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1198575,
+        "charsTyped": 30800,
+        "cycle": 76,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1214295,
+        "charsTyped": 31200,
+        "cycle": 77,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1230017,
+        "charsTyped": 31600,
+        "cycle": 78,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1245738,
+        "charsTyped": 32000,
+        "cycle": 79,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1261457,
+        "charsTyped": 32400,
+        "cycle": 80,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1277179,
+        "charsTyped": 32800,
+        "cycle": 81,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1292900,
+        "charsTyped": 33200,
+        "cycle": 82,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1308621,
+        "charsTyped": 33600,
+        "cycle": 83,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1324343,
+        "charsTyped": 34000,
+        "cycle": 84,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1340066,
+        "charsTyped": 34400,
+        "cycle": 85,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1355789,
+        "charsTyped": 34800,
+        "cycle": 86,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1371516,
+        "charsTyped": 35200,
+        "cycle": 87,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1387238,
+        "charsTyped": 35600,
+        "cycle": 88,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1402963,
+        "charsTyped": 36000,
+        "cycle": 89,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1418683,
+        "charsTyped": 36400,
+        "cycle": 90,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1434408,
+        "charsTyped": 36800,
+        "cycle": 91,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1450137,
+        "charsTyped": 37200,
+        "cycle": 92,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1465861,
+        "charsTyped": 37600,
+        "cycle": 93,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1481589,
+        "charsTyped": 38000,
+        "cycle": 94,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1497318,
+        "charsTyped": 38400,
+        "cycle": 95,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1513043,
+        "charsTyped": 38800,
+        "cycle": 96,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1528769,
+        "charsTyped": 39200,
+        "cycle": 97,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1544498,
+        "charsTyped": 39600,
+        "cycle": 98,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1560227,
+        "charsTyped": 40000,
+        "cycle": 99,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1575958,
+        "charsTyped": 40400,
+        "cycle": 100,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1591687,
+        "charsTyped": 40800,
+        "cycle": 101,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1607415,
+        "charsTyped": 41200,
+        "cycle": 102,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1623145,
+        "charsTyped": 41600,
+        "cycle": 103,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1638878,
+        "charsTyped": 42000,
+        "cycle": 104,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1654611,
+        "charsTyped": 42400,
+        "cycle": 105,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1670690,
+        "charsTyped": 42800,
+        "cycle": 106,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1686433,
+        "charsTyped": 43200,
+        "cycle": 107,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1702178,
+        "charsTyped": 43600,
+        "cycle": 108,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1717921,
+        "charsTyped": 44000,
+        "cycle": 109,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1733649,
+        "charsTyped": 44400,
+        "cycle": 110,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1749378,
+        "charsTyped": 44800,
+        "cycle": 111,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1765108,
+        "charsTyped": 45200,
+        "cycle": 112,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1780840,
+        "charsTyped": 45600,
+        "cycle": 113,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1796783,
+        "charsTyped": 46000,
+        "cycle": 114,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 1800031,
+        "charsTyped": 46086,
+        "cycle": 115,
+        "partial": true,
+        "typingP95Ms": 33
+      }
+    ],
+    "rss_series": [
+      {
+        "atMs": 20,
+        "rssKb": 5644
+      },
+      {
+        "atMs": 5298,
+        "rssKb": 517276
+      },
+      {
+        "atMs": 10572,
+        "rssKb": 562680
+      },
+      {
+        "atMs": 15833,
+        "rssKb": 563320
+      },
+      {
+        "atMs": 21084,
+        "rssKb": 564484
+      },
+      {
+        "atMs": 26087,
+        "rssKb": 568140
+      },
+      {
+        "atMs": 31360,
+        "rssKb": 569724
+      },
+      {
+        "atMs": 36385,
+        "rssKb": 547028
+      },
+      {
+        "atMs": 41473,
+        "rssKb": 549712
+      },
+      {
+        "atMs": 46555,
+        "rssKb": 552956
+      },
+      {
+        "atMs": 51614,
+        "rssKb": 558080
+      },
+      {
+        "atMs": 56701,
+        "rssKb": 557900
+      },
+      {
+        "atMs": 61788,
+        "rssKb": 559240
+      },
+      {
+        "atMs": 66896,
+        "rssKb": 562060
+      },
+      {
+        "atMs": 71990,
+        "rssKb": 564188
+      },
+      {
+        "atMs": 77061,
+        "rssKb": 566392
+      },
+      {
+        "atMs": 82139,
+        "rssKb": 570152
+      },
+      {
+        "atMs": 87263,
+        "rssKb": 571812
+      },
+      {
+        "atMs": 92360,
+        "rssKb": 570136
+      },
+      {
+        "atMs": 97467,
+        "rssKb": 571500
+      },
+      {
+        "atMs": 102544,
+        "rssKb": 573064
+      },
+      {
+        "atMs": 107630,
+        "rssKb": 584048
+      },
+      {
+        "atMs": 112733,
+        "rssKb": 577640
+      },
+      {
+        "atMs": 117835,
+        "rssKb": 580292
+      },
+      {
+        "atMs": 122926,
+        "rssKb": 580356
+      },
+      {
+        "atMs": 128024,
+        "rssKb": 585572
+      },
+      {
+        "atMs": 133094,
+        "rssKb": 562368
+      },
+      {
+        "atMs": 138180,
+        "rssKb": 558572
+      },
+      {
+        "atMs": 143284,
+        "rssKb": 561528
+      },
+      {
+        "atMs": 148386,
+        "rssKb": 558872
+      },
+      {
+        "atMs": 153517,
+        "rssKb": 558596
+      },
+      {
+        "atMs": 158616,
+        "rssKb": 558500
+      },
+      {
+        "atMs": 163708,
+        "rssKb": 559196
+      },
+      {
+        "atMs": 168795,
+        "rssKb": 559512
+      },
+      {
+        "atMs": 173883,
+        "rssKb": 559772
+      },
+      {
+        "atMs": 178967,
+        "rssKb": 559024
+      },
+      {
+        "atMs": 184080,
+        "rssKb": 558900
+      },
+      {
+        "atMs": 189165,
+        "rssKb": 560236
+      },
+      {
+        "atMs": 194256,
+        "rssKb": 560432
+      },
+      {
+        "atMs": 199350,
+        "rssKb": 559064
+      },
+      {
+        "atMs": 204444,
+        "rssKb": 559628
+      },
+      {
+        "atMs": 209579,
+        "rssKb": 559632
+      },
+      {
+        "atMs": 214685,
+        "rssKb": 559200
+      },
+      {
+        "atMs": 219794,
+        "rssKb": 561148
+      },
+      {
+        "atMs": 224888,
+        "rssKb": 559796
+      },
+      {
+        "atMs": 230002,
+        "rssKb": 559800
+      },
+      {
+        "atMs": 235106,
+        "rssKb": 560092
+      },
+      {
+        "atMs": 240203,
+        "rssKb": 559876
+      },
+      {
+        "atMs": 245302,
+        "rssKb": 560108
+      },
+      {
+        "atMs": 250412,
+        "rssKb": 563272
+      },
+      {
+        "atMs": 255589,
+        "rssKb": 562852
+      },
+      {
+        "atMs": 260708,
+        "rssKb": 560892
+      },
+      {
+        "atMs": 265801,
+        "rssKb": 561336
+      },
+      {
+        "atMs": 270956,
+        "rssKb": 560844
+      },
+      {
+        "atMs": 276060,
+        "rssKb": 561340
+      },
+      {
+        "atMs": 281159,
+        "rssKb": 560720
+      },
+      {
+        "atMs": 286255,
+        "rssKb": 560712
+      },
+      {
+        "atMs": 291350,
+        "rssKb": 561848
+      },
+      {
+        "atMs": 296456,
+        "rssKb": 561720
+      },
+      {
+        "atMs": 301548,
+        "rssKb": 563020
+      },
+      {
+        "atMs": 306638,
+        "rssKb": 560680
+      },
+      {
+        "atMs": 311728,
+        "rssKb": 561184
+      },
+      {
+        "atMs": 316827,
+        "rssKb": 561084
+      },
+      {
+        "atMs": 321930,
+        "rssKb": 560816
+      },
+      {
+        "atMs": 327050,
+        "rssKb": 560820
+      },
+      {
+        "atMs": 332188,
+        "rssKb": 561832
+      },
+      {
+        "atMs": 337283,
+        "rssKb": 560788
+      },
+      {
+        "atMs": 342390,
+        "rssKb": 560520
+      },
+      {
+        "atMs": 347506,
+        "rssKb": 560764
+      },
+      {
+        "atMs": 352592,
+        "rssKb": 560720
+      },
+      {
+        "atMs": 357690,
+        "rssKb": 564720
+      },
+      {
+        "atMs": 362766,
+        "rssKb": 565388
+      },
+      {
+        "atMs": 367860,
+        "rssKb": 565096
+      },
+      {
+        "atMs": 372972,
+        "rssKb": 561164
+      },
+      {
+        "atMs": 378058,
+        "rssKb": 561396
+      },
+      {
+        "atMs": 383149,
+        "rssKb": 561056
+      },
+      {
+        "atMs": 388303,
+        "rssKb": 560992
+      },
+      {
+        "atMs": 393432,
+        "rssKb": 560656
+      },
+      {
+        "atMs": 398517,
+        "rssKb": 560860
+      },
+      {
+        "atMs": 403627,
+        "rssKb": 561456
+      },
+      {
+        "atMs": 408752,
+        "rssKb": 561488
+      },
+      {
+        "atMs": 413867,
+        "rssKb": 561036
+      },
+      {
+        "atMs": 418991,
+        "rssKb": 561124
+      },
+      {
+        "atMs": 424078,
+        "rssKb": 563988
+      },
+      {
+        "atMs": 429186,
+        "rssKb": 563604
+      },
+      {
+        "atMs": 434292,
+        "rssKb": 561040
+      },
+      {
+        "atMs": 439369,
+        "rssKb": 561444
+      },
+      {
+        "atMs": 444565,
+        "rssKb": 561192
+      },
+      {
+        "atMs": 449624,
+        "rssKb": 561792
+      },
+      {
+        "atMs": 454868,
+        "rssKb": 561508
+      },
+      {
+        "atMs": 460068,
+        "rssKb": 561212
+      },
+      {
+        "atMs": 465284,
+        "rssKb": 561384
+      },
+      {
+        "atMs": 470287,
+        "rssKb": 561792
+      },
+      {
+        "atMs": 475293,
+        "rssKb": 561220
+      },
+      {
+        "atMs": 480305,
+        "rssKb": 560136
+      },
+      {
+        "atMs": 485457,
+        "rssKb": 560308
+      },
+      {
+        "atMs": 490550,
+        "rssKb": 560608
+      },
+      {
+        "atMs": 495651,
+        "rssKb": 560352
+      },
+      {
+        "atMs": 500740,
+        "rssKb": 561264
+      },
+      {
+        "atMs": 505826,
+        "rssKb": 561272
+      },
+      {
+        "atMs": 511001,
+        "rssKb": 560672
+      },
+      {
+        "atMs": 516111,
+        "rssKb": 560240
+      },
+      {
+        "atMs": 521222,
+        "rssKb": 561232
+      },
+      {
+        "atMs": 526329,
+        "rssKb": 561140
+      },
+      {
+        "atMs": 531445,
+        "rssKb": 563476
+      },
+      {
+        "atMs": 536539,
+        "rssKb": 564704
+      },
+      {
+        "atMs": 541650,
+        "rssKb": 561232
+      },
+      {
+        "atMs": 546771,
+        "rssKb": 561264
+      },
+      {
+        "atMs": 551870,
+        "rssKb": 561176
+      },
+      {
+        "atMs": 556969,
+        "rssKb": 561484
+      },
+      {
+        "atMs": 562075,
+        "rssKb": 560904
+      },
+      {
+        "atMs": 567184,
+        "rssKb": 561144
+      },
+      {
+        "atMs": 572333,
+        "rssKb": 561420
+      },
+      {
+        "atMs": 577445,
+        "rssKb": 560940
+      },
+      {
+        "atMs": 582544,
+        "rssKb": 561368
+      },
+      {
+        "atMs": 587641,
+        "rssKb": 561776
+      },
+      {
+        "atMs": 592769,
+        "rssKb": 573044
+      },
+      {
+        "atMs": 597910,
+        "rssKb": 573268
+      },
+      {
+        "atMs": 602914,
+        "rssKb": 562780
+      },
+      {
+        "atMs": 607987,
+        "rssKb": 568996
+      },
+      {
+        "atMs": 613135,
+        "rssKb": 568884
+      },
+      {
+        "atMs": 618138,
+        "rssKb": 569952
+      },
+      {
+        "atMs": 623257,
+        "rssKb": 568944
+      },
+      {
+        "atMs": 628381,
+        "rssKb": 569072
+      },
+      {
+        "atMs": 633528,
+        "rssKb": 569392
+      },
+      {
+        "atMs": 638702,
+        "rssKb": 569992
+      },
+      {
+        "atMs": 643889,
+        "rssKb": 569468
+      },
+      {
+        "atMs": 649097,
+        "rssKb": 571796
+      },
+      {
+        "atMs": 654233,
+        "rssKb": 571468
+      },
+      {
+        "atMs": 659400,
+        "rssKb": 569500
+      },
+      {
+        "atMs": 664505,
+        "rssKb": 569656
+      },
+      {
+        "atMs": 669639,
+        "rssKb": 570096
+      },
+      {
+        "atMs": 674807,
+        "rssKb": 570456
+      },
+      {
+        "atMs": 679998,
+        "rssKb": 569520
+      },
+      {
+        "atMs": 685151,
+        "rssKb": 573444
+      },
+      {
+        "atMs": 690367,
+        "rssKb": 573996
+      },
+      {
+        "atMs": 695512,
+        "rssKb": 571100
+      },
+      {
+        "atMs": 700694,
+        "rssKb": 570176
+      },
+      {
+        "atMs": 705913,
+        "rssKb": 570796
+      },
+      {
+        "atMs": 711137,
+        "rssKb": 571648
+      },
+      {
+        "atMs": 716255,
+        "rssKb": 570452
+      },
+      {
+        "atMs": 721403,
+        "rssKb": 570648
+      },
+      {
+        "atMs": 726471,
+        "rssKb": 568968
+      },
+      {
+        "atMs": 731659,
+        "rssKb": 568804
+      },
+      {
+        "atMs": 736770,
+        "rssKb": 568588
+      },
+      {
+        "atMs": 741947,
+        "rssKb": 569080
+      },
+      {
+        "atMs": 747126,
+        "rssKb": 568664
+      },
+      {
+        "atMs": 752363,
+        "rssKb": 568948
+      },
+      {
+        "atMs": 757547,
+        "rssKb": 568600
+      },
+      {
+        "atMs": 762709,
+        "rssKb": 569788
+      },
+      {
+        "atMs": 767866,
+        "rssKb": 570432
+      },
+      {
+        "atMs": 772985,
+        "rssKb": 569596
+      },
+      {
+        "atMs": 778090,
+        "rssKb": 568844
+      },
+      {
+        "atMs": 783251,
+        "rssKb": 569196
+      },
+      {
+        "atMs": 788482,
+        "rssKb": 569552
+      },
+      {
+        "atMs": 793691,
+        "rssKb": 569544
+      },
+      {
+        "atMs": 798939,
+        "rssKb": 570184
+      },
+      {
+        "atMs": 804112,
+        "rssKb": 570132
+      },
+      {
+        "atMs": 809293,
+        "rssKb": 569952
+      },
+      {
+        "atMs": 814310,
+        "rssKb": 570556
+      },
+      {
+        "atMs": 819466,
+        "rssKb": 570752
+      },
+      {
+        "atMs": 824631,
+        "rssKb": 570648
+      },
+      {
+        "atMs": 829774,
+        "rssKb": 571056
+      },
+      {
+        "atMs": 834961,
+        "rssKb": 571024
+      },
+      {
+        "atMs": 840164,
+        "rssKb": 570964
+      },
+      {
+        "atMs": 845410,
+        "rssKb": 571172
+      },
+      {
+        "atMs": 850601,
+        "rssKb": 571068
+      },
+      {
+        "atMs": 855709,
+        "rssKb": 571284
+      },
+      {
+        "atMs": 860787,
+        "rssKb": 571332
+      },
+      {
+        "atMs": 865853,
+        "rssKb": 571380
+      },
+      {
+        "atMs": 870944,
+        "rssKb": 571576
+      },
+      {
+        "atMs": 876011,
+        "rssKb": 571500
+      },
+      {
+        "atMs": 881074,
+        "rssKb": 571652
+      },
+      {
+        "atMs": 886135,
+        "rssKb": 571672
+      },
+      {
+        "atMs": 891197,
+        "rssKb": 571784
+      },
+      {
+        "atMs": 896242,
+        "rssKb": 571812
+      },
+      {
+        "atMs": 901292,
+        "rssKb": 571972
+      },
+      {
+        "atMs": 906359,
+        "rssKb": 571804
+      },
+      {
+        "atMs": 911419,
+        "rssKb": 572996
+      },
+      {
+        "atMs": 916465,
+        "rssKb": 571992
+      },
+      {
+        "atMs": 921522,
+        "rssKb": 572028
+      },
+      {
+        "atMs": 926558,
+        "rssKb": 572296
+      },
+      {
+        "atMs": 931628,
+        "rssKb": 572312
+      },
+      {
+        "atMs": 936687,
+        "rssKb": 572116
+      },
+      {
+        "atMs": 941737,
+        "rssKb": 572152
+      },
+      {
+        "atMs": 946780,
+        "rssKb": 572268
+      },
+      {
+        "atMs": 951816,
+        "rssKb": 573180
+      },
+      {
+        "atMs": 956862,
+        "rssKb": 573296
+      },
+      {
+        "atMs": 961902,
+        "rssKb": 574040
+      },
+      {
+        "atMs": 966953,
+        "rssKb": 573964
+      },
+      {
+        "atMs": 972011,
+        "rssKb": 573296
+      },
+      {
+        "atMs": 977053,
+        "rssKb": 573228
+      },
+      {
+        "atMs": 982094,
+        "rssKb": 574068
+      },
+      {
+        "atMs": 987144,
+        "rssKb": 574072
+      },
+      {
+        "atMs": 992227,
+        "rssKb": 573260
+      },
+      {
+        "atMs": 997278,
+        "rssKb": 573292
+      },
+      {
+        "atMs": 1002327,
+        "rssKb": 573276
+      },
+      {
+        "atMs": 1007369,
+        "rssKb": 573272
+      },
+      {
+        "atMs": 1012442,
+        "rssKb": 573272
+      },
+      {
+        "atMs": 1017483,
+        "rssKb": 573436
+      },
+      {
+        "atMs": 1022524,
+        "rssKb": 573380
+      },
+      {
+        "atMs": 1027547,
+        "rssKb": 573268
+      },
+      {
+        "atMs": 1032590,
+        "rssKb": 573272
+      },
+      {
+        "atMs": 1037633,
+        "rssKb": 573300
+      },
+      {
+        "atMs": 1042666,
+        "rssKb": 573228
+      },
+      {
+        "atMs": 1047876,
+        "rssKb": 573244
+      },
+      {
+        "atMs": 1053117,
+        "rssKb": 573296
+      },
+      {
+        "atMs": 1058259,
+        "rssKb": 573308
+      },
+      {
+        "atMs": 1063389,
+        "rssKb": 573316
+      },
+      {
+        "atMs": 1068560,
+        "rssKb": 573320
+      },
+      {
+        "atMs": 1073728,
+        "rssKb": 573336
+      },
+      {
+        "atMs": 1078897,
+        "rssKb": 573924
+      },
+      {
+        "atMs": 1084022,
+        "rssKb": 573956
+      },
+      {
+        "atMs": 1089059,
+        "rssKb": 575096
+      },
+      {
+        "atMs": 1094098,
+        "rssKb": 575096
+      },
+      {
+        "atMs": 1099157,
+        "rssKb": 573604
+      },
+      {
+        "atMs": 1104188,
+        "rssKb": 573596
+      },
+      {
+        "atMs": 1109256,
+        "rssKb": 573568
+      },
+      {
+        "atMs": 1114341,
+        "rssKb": 573572
+      },
+      {
+        "atMs": 1119378,
+        "rssKb": 573636
+      },
+      {
+        "atMs": 1124426,
+        "rssKb": 573676
+      },
+      {
+        "atMs": 1129484,
+        "rssKb": 572376
+      },
+      {
+        "atMs": 1134568,
+        "rssKb": 572304
+      },
+      {
+        "atMs": 1139629,
+        "rssKb": 572480
+      },
+      {
+        "atMs": 1144685,
+        "rssKb": 572212
+      },
+      {
+        "atMs": 1149735,
+        "rssKb": 573460
+      },
+      {
+        "atMs": 1154772,
+        "rssKb": 573620
+      },
+      {
+        "atMs": 1159810,
+        "rssKb": 573632
+      },
+      {
+        "atMs": 1164867,
+        "rssKb": 573920
+      },
+      {
+        "atMs": 1169924,
+        "rssKb": 573948
+      },
+      {
+        "atMs": 1174993,
+        "rssKb": 574112
+      },
+      {
+        "atMs": 1180043,
+        "rssKb": 574340
+      },
+      {
+        "atMs": 1185095,
+        "rssKb": 574980
+      },
+      {
+        "atMs": 1190147,
+        "rssKb": 575008
+      },
+      {
+        "atMs": 1195201,
+        "rssKb": 574780
+      },
+      {
+        "atMs": 1200275,
+        "rssKb": 575020
+      },
+      {
+        "atMs": 1205340,
+        "rssKb": 571684
+      },
+      {
+        "atMs": 1210394,
+        "rssKb": 571788
+      },
+      {
+        "atMs": 1215427,
+        "rssKb": 572396
+      },
+      {
+        "atMs": 1220477,
+        "rssKb": 572356
+      },
+      {
+        "atMs": 1225518,
+        "rssKb": 571660
+      },
+      {
+        "atMs": 1230584,
+        "rssKb": 571692
+      },
+      {
+        "atMs": 1235641,
+        "rssKb": 572468
+      },
+      {
+        "atMs": 1240691,
+        "rssKb": 572264
+      },
+      {
+        "atMs": 1245750,
+        "rssKb": 571680
+      },
+      {
+        "atMs": 1250799,
+        "rssKb": 571460
+      },
+      {
+        "atMs": 1255854,
+        "rssKb": 571680
+      },
+      {
+        "atMs": 1260907,
+        "rssKb": 571704
+      },
+      {
+        "atMs": 1265951,
+        "rssKb": 571668
+      },
+      {
+        "atMs": 1271004,
+        "rssKb": 571832
+      },
+      {
+        "atMs": 1276049,
+        "rssKb": 571648
+      },
+      {
+        "atMs": 1281100,
+        "rssKb": 571780
+      },
+      {
+        "atMs": 1286150,
+        "rssKb": 572136
+      },
+      {
+        "atMs": 1291235,
+        "rssKb": 572168
+      },
+      {
+        "atMs": 1296303,
+        "rssKb": 573632
+      },
+      {
+        "atMs": 1301336,
+        "rssKb": 573568
+      },
+      {
+        "atMs": 1306390,
+        "rssKb": 573604
+      },
+      {
+        "atMs": 1311426,
+        "rssKb": 573772
+      },
+      {
+        "atMs": 1316467,
+        "rssKb": 573276
+      },
+      {
+        "atMs": 1321513,
+        "rssKb": 574616
+      },
+      {
+        "atMs": 1326544,
+        "rssKb": 574392
+      },
+      {
+        "atMs": 1331596,
+        "rssKb": 575212
+      },
+      {
+        "atMs": 1336640,
+        "rssKb": 574624
+      },
+      {
+        "atMs": 1341689,
+        "rssKb": 575340
+      },
+      {
+        "atMs": 1346730,
+        "rssKb": 575316
+      },
+      {
+        "atMs": 1351813,
+        "rssKb": 576072
+      },
+      {
+        "atMs": 1356871,
+        "rssKb": 575072
+      },
+      {
+        "atMs": 1361925,
+        "rssKb": 575276
+      },
+      {
+        "atMs": 1366986,
+        "rssKb": 575128
+      },
+      {
+        "atMs": 1372031,
+        "rssKb": 575460
+      },
+      {
+        "atMs": 1377105,
+        "rssKb": 576092
+      },
+      {
+        "atMs": 1382165,
+        "rssKb": 575920
+      },
+      {
+        "atMs": 1387234,
+        "rssKb": 576204
+      },
+      {
+        "atMs": 1392308,
+        "rssKb": 576252
+      },
+      {
+        "atMs": 1397372,
+        "rssKb": 576192
+      },
+      {
+        "atMs": 1402413,
+        "rssKb": 576468
+      },
+      {
+        "atMs": 1407460,
+        "rssKb": 575952
+      },
+      {
+        "atMs": 1412561,
+        "rssKb": 577084
+      },
+      {
+        "atMs": 1417636,
+        "rssKb": 576900
+      },
+      {
+        "atMs": 1422694,
+        "rssKb": 576840
+      },
+      {
+        "atMs": 1427771,
+        "rssKb": 577100
+      },
+      {
+        "atMs": 1432832,
+        "rssKb": 576976
+      },
+      {
+        "atMs": 1437888,
+        "rssKb": 576940
+      },
+      {
+        "atMs": 1442965,
+        "rssKb": 577512
+      },
+      {
+        "atMs": 1448033,
+        "rssKb": 577116
+      },
+      {
+        "atMs": 1453102,
+        "rssKb": 577596
+      },
+      {
+        "atMs": 1458164,
+        "rssKb": 575740
+      },
+      {
+        "atMs": 1463227,
+        "rssKb": 575244
+      },
+      {
+        "atMs": 1468293,
+        "rssKb": 575836
+      },
+      {
+        "atMs": 1473404,
+        "rssKb": 575824
+      },
+      {
+        "atMs": 1478458,
+        "rssKb": 576564
+      },
+      {
+        "atMs": 1483533,
+        "rssKb": 576576
+      },
+      {
+        "atMs": 1488604,
+        "rssKb": 576728
+      },
+      {
+        "atMs": 1493675,
+        "rssKb": 576684
+      },
+      {
+        "atMs": 1498756,
+        "rssKb": 577744
+      },
+      {
+        "atMs": 1503832,
+        "rssKb": 576632
+      },
+      {
+        "atMs": 1508930,
+        "rssKb": 577600
+      },
+      {
+        "atMs": 1514005,
+        "rssKb": 578688
+      },
+      {
+        "atMs": 1519071,
+        "rssKb": 577712
+      },
+      {
+        "atMs": 1524133,
+        "rssKb": 577364
+      },
+      {
+        "atMs": 1529172,
+        "rssKb": 577992
+      },
+      {
+        "atMs": 1534262,
+        "rssKb": 577884
+      },
+      {
+        "atMs": 1539331,
+        "rssKb": 578468
+      },
+      {
+        "atMs": 1544393,
+        "rssKb": 578412
+      },
+      {
+        "atMs": 1549459,
+        "rssKb": 579424
+      },
+      {
+        "atMs": 1554521,
+        "rssKb": 570284
+      },
+      {
+        "atMs": 1559572,
+        "rssKb": 570108
+      },
+      {
+        "atMs": 1564627,
+        "rssKb": 570368
+      },
+      {
+        "atMs": 1569678,
+        "rssKb": 569968
+      },
+      {
+        "atMs": 1574741,
+        "rssKb": 571532
+      },
+      {
+        "atMs": 1579807,
+        "rssKb": 571408
+      },
+      {
+        "atMs": 1584874,
+        "rssKb": 571164
+      },
+      {
+        "atMs": 1589915,
+        "rssKb": 572256
+      },
+      {
+        "atMs": 1595007,
+        "rssKb": 571792
+      },
+      {
+        "atMs": 1600061,
+        "rssKb": 571900
+      },
+      {
+        "atMs": 1605138,
+        "rssKb": 571820
+      },
+      {
+        "atMs": 1610195,
+        "rssKb": 572344
+      },
+      {
+        "atMs": 1615294,
+        "rssKb": 573164
+      },
+      {
+        "atMs": 1620349,
+        "rssKb": 572876
+      },
+      {
+        "atMs": 1625429,
+        "rssKb": 571624
+      },
+      {
+        "atMs": 1630531,
+        "rssKb": 574172
+      },
+      {
+        "atMs": 1635593,
+        "rssKb": 572004
+      },
+      {
+        "atMs": 1640659,
+        "rssKb": 572256
+      },
+      {
+        "atMs": 1645729,
+        "rssKb": 573460
+      },
+      {
+        "atMs": 1650815,
+        "rssKb": 573388
+      },
+      {
+        "atMs": 1655918,
+        "rssKb": 573372
+      },
+      {
+        "atMs": 1660964,
+        "rssKb": 573676
+      },
+      {
+        "atMs": 1666028,
+        "rssKb": 573792
+      },
+      {
+        "atMs": 1671091,
+        "rssKb": 574036
+      },
+      {
+        "atMs": 1676156,
+        "rssKb": 573984
+      },
+      {
+        "atMs": 1681304,
+        "rssKb": 573356
+      },
+      {
+        "atMs": 1686582,
+        "rssKb": 574796
+      },
+      {
+        "atMs": 1691735,
+        "rssKb": 574860
+      },
+      {
+        "atMs": 1696950,
+        "rssKb": 575408
+      },
+      {
+        "atMs": 1702107,
+        "rssKb": 574624
+      },
+      {
+        "atMs": 1707261,
+        "rssKb": 574864
+      },
+      {
+        "atMs": 1712479,
+        "rssKb": 574756
+      },
+      {
+        "atMs": 1717682,
+        "rssKb": 575412
+      },
+      {
+        "atMs": 1722871,
+        "rssKb": 575016
+      },
+      {
+        "atMs": 1728092,
+        "rssKb": 575664
+      },
+      {
+        "atMs": 1733214,
+        "rssKb": 569824
+      },
+      {
+        "atMs": 1738284,
+        "rssKb": 569712
+      },
+      {
+        "atMs": 1743380,
+        "rssKb": 570096
+      },
+      {
+        "atMs": 1748441,
+        "rssKb": 572108
+      },
+      {
+        "atMs": 1753504,
+        "rssKb": 570812
+      },
+      {
+        "atMs": 1758577,
+        "rssKb": 570684
+      },
+      {
+        "atMs": 1763655,
+        "rssKb": 570940
+      },
+      {
+        "atMs": 1768730,
+        "rssKb": 571852
+      },
+      {
+        "atMs": 1773850,
+        "rssKb": 572120
+      },
+      {
+        "atMs": 1778919,
+        "rssKb": 571688
+      },
+      {
+        "atMs": 1783992,
+        "rssKb": 571228
+      },
+      {
+        "atMs": 1789108,
+        "rssKb": 572660
+      },
+      {
+        "atMs": 1794178,
+        "rssKb": 571712
+      },
+      {
+        "atMs": 1799268,
+        "rssKb": 572756
+      },
+      {
+        "atMs": 1804366,
+        "rssKb": 573852
+      },
+      {
+        "atMs": 1809446,
+        "rssKb": 573748
+      },
+      {
+        "atMs": 1814663,
+        "rssKb": 575240
+      },
+      {
+        "atMs": 1819881,
+        "rssKb": 572196
+      }
+    ]
+  },
+  "verdicts": [
+    {
+      "gate": "typing_p95",
+      "value": 33,
+      "threshold": "< 50 ms",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p99",
+      "value": 34,
+      "threshold": "< 100 ms",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "nav_p95",
+      "value": 33,
+      "threshold": "< 150 ms",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "cold_start",
+      "value": 43.99999999999999,
+      "threshold": "< 3000 ms",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "warm_start",
+      "value": 3,
+      "threshold": "< 1500 ms",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 573,
+      "threshold": "< 750 MB",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "a11y_exposure",
+      "value": "editor=true nav=true dialog=true",
+      "threshold": "editor+navigator+dialog exposed",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "soak_peak_rss_mb",
+      "value": 573,
+      "threshold": "< 750 MB",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "soak_projected_8h_rss_mb",
+      "value": 792,
+      "threshold": "< 750 MB",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "soak_typing_p95_last_cycle",
+      "value": 33,
+      "threshold": "< 50 ms",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "bakeoff-v1",
+  "rig_commit": "051ae1a"
+}

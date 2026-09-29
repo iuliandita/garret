@@ -1,0 +1,73 @@
+{
+  "source_commit": "73f11b2b7deb730bfbf9dc47cffa0be543fafdc4",
+  "bun_passed": 3832,
+  "bun_failed": 0,
+  "typescript_exit": 0,
+  "ui_build_exit": 0,
+  "mutations": {
+    "source_commit": "73f11b2b7deb730bfbf9dc47cffa0be543fafdc4",
+    "source_restored": true,
+    "mutations": [
+      {
+        "mutation": "inch-rounding",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "toggle-keeps-old-values",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "unit-blurs-draft",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "unit-before-load",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      }
+    ]
+  },
+  "captures": [
+    {
+      "path": "app/results/screenshots/146-light-mm.png",
+      "sha256": "884c6e57813502800582d917109ecf03ad413c4cf64cdb0a8f22c2656a8c3739",
+      "source_commit": "3baf8ab9",
+      "native_exit": 0,
+      "visual_inspection": "Readable margins, clear selected unit, no overlap or clipped controls."
+    },
+    {
+      "path": "app/results/screenshots/146-light-in.png",
+      "sha256": "5a19229f67fae8a24dbd2178cd57c8c9487fe1e63c3108edf08ae1fd6030288e",
+      "source_commit": "3baf8ab9",
+      "native_exit": 0,
+      "visual_inspection": "Readable margins, clear selected unit, no overlap or clipped controls."
+    },
+    {
+      "path": "app/results/screenshots/146-dark-mm.png",
+      "sha256": "a9f4e2bcfdefbfa4e12b42544a937cf67f9915ab21a5bc249356705db8116696",
+      "source_commit": "3baf8ab9",
+      "native_exit": 0,
+      "visual_inspection": "Readable margins, clear selected unit, no overlap or clipped controls."
+    },
+    {
+      "path": "app/results/screenshots/146-dark-in.png",
+      "sha256": "f2286ee459440d3e06c247475111e065ae8b09cb4f2411fa4e1ca8731ae981ff",
+      "source_commit": "3baf8ab9",
+      "native_exit": 0,
+      "visual_inspection": "Readable margins, clear selected unit, no overlap or clipped controls."
+    },
+    {
+      "path": "app/results/screenshots/146-final-dark-in.png",
+      "sha256": "f2286ee459440d3e06c247475111e065ae8b09cb4f2411fa4e1ca8731ae981ff",
+      "source_commit": "73f11b2b",
+      "native_exit": 0,
+      "visual_inspection": "Readable margins, clear selected unit, no overlap or clipped controls."
+    }
+  ],
+  "review": "No findings after focused-draft and initial-read fixes.",
+  "initial_failures": "Catalog completeness rejected shared in abbreviation; added the actual unit token to the bounded translation allowlist. Earlier label/suffix and focus-order review findings fixed before integration.",
+  "scope": "UI-only display conversion; host storage unchanged. Keyboard tab/change still commits normal edits. Pointer focus suppression tested with ordered synthetic events and omission control; captures verify real unit-button activation and layout, not a native edited-field workflow. Host regression inherited from 145; no persistence or memory soak."
+}

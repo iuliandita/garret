@@ -1,0 +1,27 @@
+{
+  "source_commit": "19e765d5c352e85589fe90804d6ffc8127d677c1",
+  "source_restored": true,
+  "restored_ui_build_exit": 0,
+  "mutations": [
+    {
+      "mutation": "cancel-opens-same",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "missing-original-allows-separate",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "cancel-tears-down",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "remembered-legacy-slug",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    }
+  ]
+}

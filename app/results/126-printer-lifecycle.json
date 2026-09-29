@@ -1,0 +1,128 @@
+{
+  "schema": "printer-lifecycle-v1",
+  "source_revision": "ca56fb2261c4a8731e71b31dd74714c5c37ddadb",
+  "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "built_by_checker": true,
+  "executable_sha256": "15f83e6871602181b901a2eb628889506c5eea79c0c617c30245be9a91c03703",
+  "test": "printer::tests::a_busy_proof_times_out_once_without_killing_another_view",
+  "repetitions": 3,
+  "timeout_ms": 15000,
+  "expected_gates": {
+    "runner_completed": true,
+    "exit_zero": true,
+    "within_15_seconds": true,
+    "test_ran_once": true,
+    "test_passed": true,
+    "no_watchdog_error": true,
+    "web_process_observed": true,
+    "no_descendant_survivors": true
+  },
+  "passed": true,
+  "environment": {
+    "kernel": "7.2.3-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 6.93,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": false,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "shm",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "exit": 0,
+      "elapsed_ms": 4376,
+      "timed_out": false,
+      "test_ran_once": true,
+      "test_passed": true,
+      "watchdog_error": false,
+      "tracked_descendants": 6,
+      "surviving_descendants": [],
+      "runner_error": false,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": false,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "shm",
+        "webProcesses": 1
+      },
+      "gates": {
+        "runner_completed": true,
+        "exit_zero": true,
+        "within_15_seconds": true,
+        "test_ran_once": true,
+        "test_passed": true,
+        "no_watchdog_error": true,
+        "web_process_observed": true,
+        "no_descendant_survivors": true
+      }
+    },
+    {
+      "attempt": 2,
+      "exit": 0,
+      "elapsed_ms": 4040,
+      "timed_out": false,
+      "test_ran_once": true,
+      "test_passed": true,
+      "watchdog_error": false,
+      "tracked_descendants": 6,
+      "surviving_descendants": [],
+      "runner_error": false,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": false,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "shm",
+        "webProcesses": 1
+      },
+      "gates": {
+        "runner_completed": true,
+        "exit_zero": true,
+        "within_15_seconds": true,
+        "test_ran_once": true,
+        "test_passed": true,
+        "no_watchdog_error": true,
+        "web_process_observed": true,
+        "no_descendant_survivors": true
+      }
+    },
+    {
+      "attempt": 3,
+      "exit": 0,
+      "elapsed_ms": 4082,
+      "timed_out": false,
+      "test_ran_once": true,
+      "test_passed": true,
+      "watchdog_error": false,
+      "tracked_descendants": 6,
+      "surviving_descendants": [],
+      "runner_error": false,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": false,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "shm",
+        "webProcesses": 1
+      },
+      "gates": {
+        "runner_completed": true,
+        "exit_zero": true,
+        "within_15_seconds": true,
+        "test_ran_once": true,
+        "test_passed": true,
+        "no_watchdog_error": true,
+        "web_process_observed": true,
+        "no_descendant_survivors": true
+      }
+    }
+  ]
+}

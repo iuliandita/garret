@@ -1,0 +1,31 @@
+{
+  "source_commit": "7f0143bba88f4c8a973072836788b9e568af72ca",
+  "source_restored": true,
+  "mutations": [
+    {
+      "mutation": "accept-wrong-text",
+      "verdict": "KILLED",
+      "exit_code": 1
+    },
+    {
+      "mutation": "unordered-boot-scene",
+      "verdict": "KILLED",
+      "exit_code": 1
+    },
+    {
+      "mutation": "accept-extra-paragraph",
+      "verdict": "KILLED",
+      "exit_code": 1
+    },
+    {
+      "mutation": "accept-formatting",
+      "verdict": "KILLED",
+      "exit_code": 1
+    },
+    {
+      "mutation": "truncated-native-input",
+      "verdict": "KILLED",
+      "exit_code": 1
+    }
+  ]
+}

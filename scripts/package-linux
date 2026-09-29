@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Build a Linux tarball a tester can unpack and run.
+#
+# Built HERE, not in a container, unlike the Windows package: this is the
+# platform the project develops and measures on, so the binary that ships is the
+# binary the graded runs were recorded against. The cost is a glibc floor set by
+# the build machine (see below), which the README states rather than hides.
+#
+# WebKitGTK is supplied by the distribution. Record the actual glibc floor
+# in BUILD.txt and document runtime installation in the packaged README.
+set -euo pipefail
+
+here=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+repo=$(cd -- "$here/.." && pwd)
+
+revision=$(git -C "$repo" rev-parse HEAD)
+if [[ -n $(git -C "$repo" status --porcelain) ]]; then
+  echo "commit or set aside working-tree changes before packaging" >&2
+  exit 1
+fi
+
+out="$repo/app/dist-linux"
+bin="$repo/app/shell-tauri/src-tauri/target/release/app-shell-tauri"
+
+# app/ui/dist is gitignored and has gone stale silently twice, each time costing
+# a rig run that measured a previous build. Never skipped.
+(cd "$repo/app/ui" && bun run build)
+# Tauri requires frontendDist to exist; appdist serves the real UI separately.
+mkdir -p "$repo/app/shell-tauri/dist"
+(cd "$repo/app/shell-tauri/src-tauri" && cargo build --locked --release -j8 --target-dir "$repo/app/shell-tauri/src-tauri/target")
+
+[ -x "$bin" ] || { echo "no binary at $bin" >&2; exit 1; }
+if [[ $(git -C "$repo" rev-parse HEAD) != "$revision" || -n $(git -C "$repo" status --porcelain) ]]; then
+  echo "source changed during the build; refusing to label this package" >&2
+  exit 1
+fi
+floor=$(objdump -T "$bin" | grep -oE 'GLIBC_[0-9]+\.[0-9]+(\.[0-9]+)?' | sort -uV | tail -1)
+if [[ "$floor" != GLIBC_2.39 ]]; then
+  echo "glibc floor changed to $floor; recheck the documented Mint baseline before packaging" >&2
+  exit 1
+fi
+
+# Rebuilt from nothing every time: an incremental staging directory carries a
+# stale dist/ forward, which is the same defect as the stale app/ui/dist above
+# except it ships.
+stage="$out/app"
+rm -rf "$out"
+mkdir -p "$stage"
+cp "$bin" "$stage/"
+cp -r "$repo/app/ui/dist" "$stage/dist"
+cp "$here/linux/README.txt" "$stage/README.txt"
+cp "$repo/COPYING" "$repo/THIRD-PARTY-NOTICES.md" "$stage/"
+{
+  printf 'Source revision: %s\n' "$revision"
+  printf 'Architecture: Linux x86_64\nMinimum glibc: %s\n' "${floor#GLIBC_}"
+  printf 'Built UTC: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf 'Runtime: system WebKitGTK 4.1 and GTK 3\n'
+} > "$stage/BUILD.txt"
+(cd "$stage" && sha256sum app-shell-tauri dist/* > SHA256SUMS.txt)
+
+tar="$out/writing-studio-linux-x86_64.tar.gz"
+tar -C "$out" -czf "$tar" app
+
+(cd "$out" && sha256sum "$(basename "$tar")" > "$(basename "$tar").sha256")
+
+echo
+echo "wrote $tar"
+echo "  $(du -h "$tar" | cut -f1)"
+echo "  requires ${floor#GLIBC_}+ glibc and webkit2gtk-4.1"

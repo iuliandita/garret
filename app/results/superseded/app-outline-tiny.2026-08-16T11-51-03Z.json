@@ -1,0 +1,221 @@
+{
+  "run_id": "app-outline-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-outline",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "workload_script": "outline-v1",
+    "peak_rss_mb": 533,
+    "startup_ms": 192,
+    "rows": 40,
+    "opened_at_boot": "it-000011",
+    "scene": "it-000013",
+    "target": "it-000000",
+    "created_item": "01a00a65-c546-7123-8c06-84d705577274",
+    "typed_into_while_opening_created_row": [
+      "01a00a65-c546-7123-8c06-84d705577274"
+    ],
+    "target_type": "part",
+    "seed_title": "Storm Garden 905",
+    "outline": {
+      "create_row_delta": 1,
+      "create_title_in_walk": true,
+      "create_kept_open_doc": true,
+      "created_scene_opens": true,
+      "deleted_item_in_bin": true,
+      "deleted_body_survives": true,
+      "restored_item_out_of_bin": true,
+      "restored_body_survives": true,
+      "rename_title_persisted": true,
+      "reorder_position_match": true,
+      "document_intact": true,
+      "walk_changed": true,
+      "mutations": 3,
+      "mutation_p50_ms": 18.999,
+      "mutation_p95_ms": 30.669
+    },
+    "mutation_errors": [],
+    "mutation_samples_ms": [
+      {
+        "label": "create-by-click",
+        "input": "pointer",
+        "ms": 105.101495
+      },
+      {
+        "label": "create",
+        "input": "keyboard",
+        "ms": 17.769997
+      },
+      {
+        "label": "rename",
+        "input": "keyboard",
+        "ms": 18.99928
+      },
+      {
+        "label": "move",
+        "input": "keyboard",
+        "ms": 30.669388
+      },
+      {
+        "label": "delete",
+        "input": "pointer",
+        "ms": 111.692006
+      },
+      {
+        "label": "delete-for-restore",
+        "input": "pointer",
+        "ms": 109.930601
+      },
+      {
+        "label": "restore",
+        "input": "pointer",
+        "ms": 110.740715
+      }
+    ],
+    "graded_mutation_samples": 3,
+    "a11y_probes": [
+      {
+        "label": "before-create",
+        "probed_rows": 40,
+        "aligned_rows": 40,
+        "unattributable_rows": 0,
+        "level_mismatches": 0,
+        "setsize_mismatches": 0,
+        "posinset_mismatches": 0
+      },
+      {
+        "label": "after-create",
+        "probed_rows": 41,
+        "aligned_rows": 41,
+        "unattributable_rows": 0,
+        "level_mismatches": 0,
+        "setsize_mismatches": 0,
+        "posinset_mismatches": 0
+      },
+      {
+        "label": "after-mutations",
+        "probed_rows": 43,
+        "aligned_rows": 43,
+        "unattributable_rows": 0,
+        "level_mismatches": 0,
+        "setsize_mismatches": 0,
+        "posinset_mismatches": 0
+      }
+    ],
+    "walk_nodes": {
+      "seeded": 40,
+      "after_create": 41,
+      "final": 43,
+      "reopened": 43,
+      "reopen_boot_projection": 43
+    },
+    "reorder": {
+      "live_ordinal": 4,
+      "reopened_ordinal": 4
+    },
+    "seeded_scene_body_bytes": 298,
+    "reopen_peak_rss_mb": 553,
+    "omitted_gates": [
+      {
+        "gate": "a11y_exposure",
+        "reason": "flat-list concept: it reads the single consistent aria-setsize the rows advertise, else 0. A tree advertises per-sibling-group setsize, so it collapses to 0 and would contradict a11y_tree_structure on the same dump. Superseded by a11y_tree_structure."
+      },
+      {
+        "gate": "latency, stall, cliff, peak RSS trend",
+        "reason": "the run is a couple of minutes of real pointer and keyboard input, not a soak; it has nothing true to say about frame cadence or a leak slope."
+      }
+    ],
+    "scope": {
+      "input": "Real X input throughout: xdotool clicks on the shipped outline bar and the shipped navigator rows, and xdotool keystrokes. The page's own JavaScript is never called, and app/ui/src/project.ts's exported outline unit is never touched.",
+      "atspi_probe_spacing": "The three accessibility probes are seconds apart, and that is a constraint rather than a choice. Measured on this rig: repeated pyatspi clients a few hundred milliseconds apart wedge the WebKitGTK bridge - the application stops appearing in the AT-SPI desktop list entirely and does NOT come back, through further input or 20 s of waiting. Reproduced on the build before this slice's fixes as well, so it is not a regression, and it is why per-click verification here reads the store rather than the accessibility tree.",
+      "button_geometry": "The bar's four buttons are located through the AT-SPI component extents, not computed from a stylesheet. At their natural widths they occupy 8..271 px of the 280 px navigator column; any fixed width wide enough for \"New chapter\" pushes the fourth past the column edge, where #editor paints over it and it stops being clickable. The rig aborts if a button is missing from the accessibility tree, advertises the wrong accessible name, or centres outside the column. Navigator ROW coordinates stay computed from the store's own walk, as switch-cli.ts computes them.",
+      "create_row_delta": "Mounted AT-SPI tree rows before and after the create. At the tiny fixture the whole projection (40 rows) fits the 1200px window, so mounted == projected; the run aborts if the pre-create probe does not mount every row, because the metric would otherwise be counting the window rather than the projection.",
+      "create_kept_open_doc": "Nothing reports which document the editor holds. Read instead as: the sentence typed AFTER the create is in the scene that was open BEFORE it. A rebuilt page reopens the boot-time document, so the sentence would land elsewhere. A remount that happened to reopen the same document is INDISTINGUISHABLE FROM A REPAINT by this gate, and by anything else the rig can see: it would leave identical bytes in the file under the same item id. The PASS says the create did not move the writer's document; it does not say the page was never rebuilt.",
+      "mutation_latency": "Measured from the input event returning to the store file showing the change, polled every 2 ms against a second read-only connection. It therefore INCLUDES X event delivery and the page's handler, and EXCLUDES the walk re-read and reprojection that follow the command - the gate's threshold text names the whole round trip, and no external observer can see its tail at this resolution (an AT-SPI probe costs hundreds of milliseconds). The hierarchy run's in-page mutation_p95_ms is the comparable number for the command itself. Three graded samples, so p50 and p95 are order statistics over three values, not percentiles.",
+      "mutation_latency_input_class": "GRADED SAMPLES ARE KEYBOARD-DRIVEN ONLY, and that is a decision this result has to carry openly. The same item_create measured 103.1/103.2/103.2/103.4/103.6 ms when a mouse click activated the button and 16.3/16.6 ms when Return activated the same focused button, on the same run, with the pointer already parked on the target and one xdotool spawn inside the clock either way. About 87 ms of a click-driven sample is therefore WebKitGTK's pointer-event delivery under Xvfb, not the outline command: grading it would report the display server's input path under a threshold whose own text says \"command + walk re-read + reproject\". The pointer sample is recorded in mutation_samples_ms as create-by-click and is what the create gates are measured around; it is simply not in the percentile. Whether a real writer on a real compositor pays that 87 ms is UNMEASURED and worth measuring - Xvfb has no compositor, and every latency number this project has recorded headless has needed that caveat.",
+      "mutation_latency_on_a_real_desktop": "UNMEASURED, and it cannot be settled by another headless run. Xvfb has no compositor, and this project has already measured the rig distorting input cost in the other direction - a keystroke's dispatch cost is understated about 6x headless (2-3 ms) against XWayland (8 ms) and Wayland native (12 ms). Whether a writer clicking \"New scene\" on a real desktop pays the ~87 ms this rig attributes to Xvfb's pointer path, pays more, or pays almost none of it, needs a live-session run (the APP_SESSION=1 path in shell.ts, which samples logind idle, DPMS and workspace visibility so a blanked screen cannot be mistaken for the app). Until then no claim about pointer latency in this result describes the product.",
+      "created_scene_opens": "The created row is clicked and a sentence is typed; the gate is whether that sentence is under the CREATED item's id in the reopened file. Three outcomes, and the rig separates all three from the store alone: in the created scene is a PASS; in another document means the click landed elsewhere and the run ABORTS rather than blame the application for the rig's aim; in no document at all is the FAIL, because a selected row that never opened leaves focus on the navigator and the keystrokes are swallowed as type-ahead - which is why that sentence carries no spaces, Space being activation rather than type-ahead in the navigator's keymap. Every other row click in this run is verified the same way, by its effect on the store - the opening click by the sentence that follows it, the rename by which item carries the new title, the reorder by which item's position changed. The reorder guard is the load-bearing one: a missed click there moves some other row, the target's own ordinal is then unchanged both before the kill and after the reopen, and outline_reorder_persists passes having tested nothing.",
+      "create_gate_sequence": "outline_create_visible and outline_created_scene_opens read opposite things about the open document and are NOT in conflict: they are two instants. Nothing is opened between the create and create_kept_open_doc's measurement, and the created row is clicked only afterwards. Order in this run: click New scene -> measure the row delta, the title and the unchanged open document -> type into the still-open scene -> click the created row -> type into that.",
+      "rename_and_reorder": "Both read from the file the killed process left behind, so they say the edit reached the store and survived the kill, not merely that the screen redrew. reorder_position_match compares the ordinal the store held before the kill against the reopen boot's OWN projection of the same file, which is a second process's derivation rather than a second read of the first's.",
+      "reopen_boot": "APP_PERSIST_MODE=write with APP_MUTATIONS=0, because the verify payload returns before the tree block is built and carries no walk. Its 1 s soak types into whichever scene it opens, which is why every title and body above is read from the file BEFORE this boot runs."
+    }
+  },
+  "verdicts": [
+    {
+      "gate": "outline_create_visible",
+      "value": "1 row(s) added; new title in the walk; open document unchanged",
+      "threshold": "row count grew by exactly 1, the new title is in the walk, and the editor still holds the item id it held before the create - measured at the instant AFTER the create and BEFORE anything opens the new row, which is outline_created_scene_opens' claim",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "outline_created_scene_opens",
+      "value": "the created row opened when clicked",
+      "threshold": "clicking the created row AFTER the create opens it: prose typed next is under the CREATED item's id in the reopened file, and under no other item's",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "outline_delete_moves_to_bin",
+      "value": "the deleted item is inside the bin in the reopened file",
+      "threshold": "after a Delete click and a restart, the deleted item's parent chain reaches a root item of type `trash`. Read from the STORE, not from the navigator: asking the page where it drew the row checks the page against itself",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "outline_delete_keeps_the_prose",
+      "value": "the deleted item's prose is still readable after the restart",
+      "threshold": "the deleted item's stored body still contains the text typed into it, in the reopened file. THE GATE A DESTRUCTIVE DELETE WOULD FAIL AND NO OTHER GATE HERE WOULD: an item removed outright is equally absent from the export and the search, so nothing else distinguishes the two designs, and restore would have nothing to return",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "outline_restore_leaves_the_bin",
+      "value": "the restored item is back in the manuscript in the reopened file",
+      "threshold": "after a Restore click on the row deleted earlier, and a restart, the item's parent chain no longer reaches a root of type `trash`. Read from the STORE, not from the navigator",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "outline_restore_keeps_the_prose",
+      "value": "the restored item still carries the prose typed into it",
+      "threshold": "the restored item's stored body still contains the sentence typed into it before it was deleted. The gate above alone would PASS on a restore that returned an EMPTY scene; together they are the whole round trip - typed once, through a delete, a restart, a restore and a second restart",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "outline_rename_persists",
+      "value": "new title in the reopened walk",
+      "threshold": "the renamed item carries its new title in the walk read from the reopened file",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "outline_reorder_persists",
+      "value": "sibling position match",
+      "threshold": "the reordered item's position among its siblings in the reopened file == the one shown before the kill",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "outline_document_intact",
+      "value": "byte-identical",
+      "threshold": "text typed before the mutations is byte-identical in the reopened file",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "outline_mutation_p95_ms",
+      "value": 30.669,
+      "threshold": "< 50 (command + walk re-read + reproject; KEYBOARD-DRIVEN SAMPLES ONLY - a pointer-driven create additionally pays ~87 ms of the rig's own X input delivery under Xvfb, which is the display server's path and not the application's work; those samples are recorded, not graded)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "a11y_tree_structure",
+      "value": "43 of 43 exposed; 0 level and 0 setsize mismatch(es) over 43 probed row(s)",
+      "threshold": "exposed == store nodes; 0 level and 0 setsize mismatches",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "adbc88a4"
+}

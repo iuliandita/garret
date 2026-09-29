@@ -1,0 +1,63 @@
+{
+  "run_id": "app-project-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-project",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "workload_script": "project-v1",
+    "peak_rss_mb": 517,
+    "startup_ms": 58,
+    "rows": 40,
+    "boot_project": "alpha",
+    "boot_generation": 1,
+    "switched_to": "beta",
+    "switched_back_to": "alpha",
+    "opened_at_boot": "it-000011",
+    "project_a": "alpha.db",
+    "project_b": "beta.db",
+    "project_a_readable": true,
+    "project_b_readable": true,
+    "project": {
+      "a_holds_own": true,
+      "a_holds_other": false,
+      "b_holds_own": true,
+      "b_holds_other": false,
+      "survived_restart": true,
+      "stale_generation_rejected": false,
+      "projects_changed": 2
+    },
+    "generation_probe": "NOT PROBED. No stale-generation flush can be produced through real input: project-switch.ts drains the outgoing project before destroying it, and this rig cannot call doc_flush directly. Observed instead: two switches completed and every sentence reached its own store, so the page's flushes were accepted at the host's current generation; and no persist-error alert was exposed at the end of the run.",
+    "omitted_gates": "latency, stall, cliff, a11y_exposure: the run is seconds long and the AT-SPI probe vetoes clicks rather than measuring exposure",
+    "close_path": "unverified: no window manager under Xvfb; windowclose kills the process"
+  },
+  "verdicts": [
+    {
+      "gate": "project_isolation",
+      "value": "each project holds its own text and neither holds the other's",
+      "threshold": "each project's scene bodies contain its own sentence and not the other's",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "project_persistence",
+      "value": "both project files readable",
+      "threshold": "both project files' scene bodies were readable after the reopen",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "project_generation_guard",
+      "value": "STALE-GENERATION FLUSH ACCEPTED",
+      "threshold": "a probed doc_flush carrying a superseded generation is rejected by the host",
+      "verdict": "FAIL"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "834249ad"
+}

@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+"""Derive every application, package and page icon from assets/brand/garret.
+
+Deterministic: rerunning it on unchanged masters writes identical files. The
+outputs are tracked because the host build, the packages and the UI build read
+them directly; edit the masters and rerun this, never the outputs.
+"""
+from pathlib import Path
+
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
+
+repo = Path(__file__).resolve().parent.parent
+masters = repo / "assets/brand/garret"
+icons = repo / "app/shell-tauri/src-tauri/icons"
+ui = repo / "app/ui/brand"
+
+# The ink square reads on the widest range of desktops, docks and taskbars.
+APP = "garret-appicon-dark.png"
+ICO_SIZES = [16, 24, 32, 48, 64, 128, 256]
+# Below 32 px the full icon spends a third of its pixels on the square's margin
+# and the script strokes fall under a pixel, so the g reads as a grey smudge.
+SMALL_SIZES = {16, 24}
+ANDROID = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
+# Twice the CSS width of #library-wordmark, for 2x displays.
+WORDMARK_WIDTH = 224
+FAVICON = 64
+
+
+def load(name: str) -> Image.Image:
+    return Image.open(masters / name).convert("RGBA")
+
+
+def square(image: Image.Image) -> Image.Image:
+    """Crop to the drawn content and centre it on a transparent square."""
+    content = image.crop(image.getbbox())
+    side = max(content.size)
+    canvas = Image.new("RGBA", (side, side))
+    canvas.paste(content, ((side - content.width) // 2, (side - content.height) // 2))
+    return canvas
+
+
+def sized(image: Image.Image, side: int) -> Image.Image:
+    return image.resize((side, side), Image.Resampling.LANCZOS)
+
+
+def save_png(image: Image.Image, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(path, optimize=True)
+
+
+def small_variant(image: Image.Image) -> Image.Image:
+    """The same square cropped close around the g and its dot, with the strokes
+    thickened slightly, for 16 and 24 px only. ICO stores each size as its own
+    image, so the larger sizes keep the master's proportions."""
+    fill = image.getpixel((image.width // 2, image.height // 40))
+    face = Image.new("RGB", image.size, fill[:3])
+    face.paste(image.convert("RGB"), (0, 0), image)
+    drawn = ImageChops.difference(face, Image.new("RGB", image.size, fill[:3]))
+    left, top, right, bottom = drawn.convert("L").point(lambda v: 255 if v > 60 else 0).getbbox()
+    half = round(max(right - left, bottom - top) * 1.12 / 2)
+    cx, cy = (left + right) // 2, (top + bottom) // 2
+    face = face.crop((cx - half, cy - half, cx + half, cy + half))
+    face = face.resize((256, 256), Image.Resampling.LANCZOS).filter(ImageFilter.MaxFilter(5))
+    big = face.width * 4
+    mask = Image.new("L", (big, big))
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, big - 1, big - 1), radius=big // 5, fill=255)
+    out = face.convert("RGBA")
+    out.putalpha(mask.resize(face.size, Image.Resampling.LANCZOS))
+    return out
+
+
+def round_variant(image: Image.Image) -> Image.Image:
+    """The square's face clipped to its inscribed circle, drawn 4x and reduced
+    so the edge is antialiased."""
+    big = image.width * 4
+    mask = Image.new("L", (big, big))
+    ImageDraw.Draw(mask).ellipse((0, 0, big - 1, big - 1), fill=255)
+    mask = mask.resize(image.size, Image.Resampling.LANCZOS)
+    out = image.copy()
+    out.putalpha(ImageChops.darker(image.getchannel("A"), mask))
+    return out
+
+
+def main() -> None:
+    app = square(load(APP))
+
+    save_png(sized(app, 512), icons / "icon.png")
+    save_png(sized(app, 32), icons / "32x32.png")
+    save_png(sized(app, 128), icons / "128x128.png")
+    save_png(sized(app, 256), icons / "128x128@2x.png")
+    # Each ICO entry is resampled from the master, not from the next size up.
+    small = small_variant(app)
+    ico_frames = [sized(small if s in SMALL_SIZES else app, s) for s in ICO_SIZES]
+    # BMP entries, the format the previous icon shipped in and the one every
+    # Windows resource compiler and shell size accepts.
+    ico_frames[-1].save(
+        icons / "icon.ico",
+        sizes=[(s, s) for s in ICO_SIZES],
+        append_images=ico_frames[:-1],
+        bitmap_format="bmp",
+    )
+    sized(app, 1024).save(icons / "icon.icns")
+
+    for density, side in ANDROID.items():
+        base = icons / "android" / f"mipmap-{density}"
+        launcher = sized(app, side)
+        save_png(launcher, base / "ic_launcher.png")
+        save_png(round_variant(launcher), base / "ic_launcher_round.png")
+
+    for tone in ("ink", "paper"):
+        mark = load(f"garret-wordmark-{tone}.png")
+        mark = mark.crop(mark.getbbox())
+        height = round(mark.height * WORDMARK_WIDTH / mark.width)
+        save_png(mark.resize((WORDMARK_WIDTH, height), Image.Resampling.LANCZOS), ui / f"garret-wordmark-{tone}.png")
+    save_png(sized(app, FAVICON), ui / "garret-favicon.png")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,559 @@
+{
+  "run_id": "app-project-panel-a11y-light",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-diagnostic",
+  "environment": {
+    "kernel": "7.2.3-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 1.59,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "theme": "light",
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "panel_walk": {
+      "nodes": [
+        {
+          "order": 9,
+          "depth": 8,
+          "role": "dialog",
+          "name": "projects",
+          "text": null,
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-panel"
+        },
+        {
+          "order": 10,
+          "depth": 9,
+          "role": "list box",
+          "name": "projects",
+          "text": null,
+          "states": [
+            "enabled",
+            "focusable",
+            "focused",
+            "sensitive",
+            "showing",
+            "vertical",
+            "visible"
+          ],
+          "id": "project-list"
+        },
+        {
+          "order": 11,
+          "depth": 10,
+          "role": "section",
+          "name": "",
+          "text": "No projects in the library yet. Name one below and create it.",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": null
+        },
+        {
+          "order": 12,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "This book is at <scratch>/tiny.db",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-here"
+        },
+        {
+          "order": 13,
+          "depth": 9,
+          "role": "button",
+          "name": "Move this book…",
+          "text": null,
+          "states": [
+            "enabled",
+            "focusable",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-move"
+        },
+        {
+          "order": 14,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "￼",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": null
+        },
+        {
+          "order": 15,
+          "depth": 10,
+          "role": "entry",
+          "name": "new project name",
+          "text": "",
+          "states": [
+            "editable",
+            "enabled",
+            "focusable",
+            "sensitive",
+            "showing",
+            "single-line",
+            "visible",
+            "selectable-text"
+          ],
+          "id": "project-new-name"
+        },
+        {
+          "order": 16,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "New books go in <scratch>/private-home/cc.local.app/projects",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-new-where"
+        },
+        {
+          "order": 17,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "￼￼",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": null
+        },
+        {
+          "order": 18,
+          "depth": 10,
+          "role": "button",
+          "name": "Choose a folder…",
+          "text": null,
+          "states": [
+            "enabled",
+            "focusable",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-new-choose"
+        },
+        {
+          "order": 19,
+          "depth": 10,
+          "role": "button",
+          "name": "Create",
+          "text": null,
+          "states": [
+            "enabled",
+            "focusable",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-create"
+        },
+        {
+          "order": 20,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "IMPORT",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-import-heading"
+        },
+        {
+          "order": 21,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "Files are imported from <scratch>/private-home/cc.local.app/imports",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-import-where"
+        },
+        {
+          "order": 22,
+          "depth": 9,
+          "role": "list box",
+          "name": "files to import",
+          "text": null,
+          "states": [
+            "enabled",
+            "focusable",
+            "sensitive",
+            "showing",
+            "vertical",
+            "visible"
+          ],
+          "id": "project-imports"
+        },
+        {
+          "order": 23,
+          "depth": 10,
+          "role": "section",
+          "name": "",
+          "text": "Drop a .md or .docx file in the import folder.",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": null
+        },
+        {
+          "order": 24,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "RECOVERY POINTS ON THIS DEVICE",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-recovery-heading"
+        },
+        {
+          "order": 25,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "Restoring adds a new project. Nothing is replaced. Photographs are not inside a recovery point — they stay in the book’s pictures folder beside the project file.",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-recovery-note"
+        },
+        {
+          "order": 26,
+          "depth": 9,
+          "role": "list box",
+          "name": "recovery points",
+          "text": null,
+          "states": [
+            "enabled",
+            "focusable",
+            "sensitive",
+            "showing",
+            "vertical",
+            "visible"
+          ],
+          "id": "project-recovery-points"
+        },
+        {
+          "order": 27,
+          "depth": 10,
+          "role": "section",
+          "name": "",
+          "text": "No recovery point has been taken on this device yet.",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": null
+        },
+        {
+          "order": 28,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "IF YOU LOSE THIS COMPUTER",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-archive-heading"
+        },
+        {
+          "order": 29,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "An archive is one complete file. To protect against losing this computer, move this file off this computer yourself: onto a USB stick, another machine, or a sync folder.",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-archive-note"
+        },
+        {
+          "order": 30,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "Archives are written to <scratch>/private-home/cc.local.app/recovery/tiny/archives",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-archive-where"
+        },
+        {
+          "order": 31,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "￼",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": null
+        },
+        {
+          "order": 32,
+          "depth": 10,
+          "role": "button",
+          "name": "Make an archive",
+          "text": null,
+          "states": [
+            "enabled",
+            "focusable",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-archive-now"
+        },
+        {
+          "order": 33,
+          "depth": 9,
+          "role": "list box",
+          "name": "archives",
+          "text": null,
+          "states": [
+            "enabled",
+            "focusable",
+            "sensitive",
+            "showing",
+            "vertical",
+            "visible"
+          ],
+          "id": "project-archives"
+        },
+        {
+          "order": 34,
+          "depth": 10,
+          "role": "section",
+          "name": "",
+          "text": "No archive has been made yet.",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": null
+        },
+        {
+          "order": 35,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "A READABLE COPY YOU CAN OPEN ANYWHERE",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-mirror-heading"
+        },
+        {
+          "order": 36,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "The mirror keeps your manuscript as ordinary Markdown files, one per scene, within ten seconds of what you have typed. It is a copy to read and edit elsewhere, not a backup: it is on this computer, and this application writes it rather than reading it back.",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-mirror-note"
+        },
+        {
+          "order": 37,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "The mirror is written to <scratch>/private-home/cc.local.app/mirror/tiny",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-mirror-where"
+        },
+        {
+          "order": 38,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "The mirror is off for this project.",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-mirror-state"
+        },
+        {
+          "order": 39,
+          "depth": 9,
+          "role": "section",
+          "name": "",
+          "text": "￼￼",
+          "states": [
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": null
+        },
+        {
+          "order": 40,
+          "depth": 10,
+          "role": "button",
+          "name": "Turn the mirror on",
+          "text": null,
+          "states": [
+            "enabled",
+            "focusable",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "id": "project-mirror-toggle"
+        },
+        {
+          "order": 41,
+          "depth": 10,
+          "role": "button",
+          "name": "Check the mirror thoroughly",
+          "text": null,
+          "states": [
+            "showing",
+            "visible"
+          ],
+          "id": "mirror-check"
+        }
+      ]
+    },
+    "screenshot": "129-project-panel-light.png",
+    "scope": "One fresh boot, one complete attributed AT-SPI walk after the real File > Open project route. queryText is null only where the Text interface is unavailable.",
+    "omitted_gates": "latency, stall, cliff and a11y_exposure: this is a bounded platform-semantics measurement."
+  },
+  "verdicts": [
+    {
+      "gate": "project_panel_open",
+      "value": "dialog \"projects\"",
+      "threshold": "one AT-SPI dialog named \"projects\"",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "project_panel_listboxes",
+      "value": "project-list=projects; project-imports=files to import; project-recovery-points=recovery points; project-archives=archives",
+      "threshold": "four named visible platform list boxes in the project panel",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "project_panel_actions",
+      "value": "project-new-name=new project name, project-create=Create, project-new-choose=Choose a folder…, project-move=Move this book…, project-archive-now=Make an archive, project-mirror-toggle=Turn the mirror on",
+      "threshold": "named create input and enabled Create, Choose folder, Move, Archive and mirror buttons",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "project_panel_mirror_check_off",
+      "value": "Check the mirror thoroughly",
+      "threshold": "named mirror check is visibly disabled while the mirror is off",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "project_panel_explanations",
+      "value": "exact recovery, archive and mirror text exposed",
+      "threshold": "full recovery, archive and mirror explanatory text is exposed",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "project_panel_reading_order",
+      "value": "10 < 13 < 15 < 18 < 19 < 20 < 22 < 24 < 25 < 26 < 28 < 29 < 32 < 33 < 35 < 36 < 40 < 41",
+      "threshold": "visible named sections in Create, Import, Recovery, Archive, Mirror order, with explanations before actions",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "tiny",
+  "rig_commit": "bd02468c"
+}

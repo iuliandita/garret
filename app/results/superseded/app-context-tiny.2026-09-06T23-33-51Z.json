@@ -1,0 +1,108 @@
+{
+  "run_id": "app-context-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-context",
+  "environment": {
+    "kernel": "7.1.8-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "baseline_item_nodes": 0,
+    "open_item_nodes": 6,
+    "open_item_names": [
+      "New part",
+      "New chapter",
+      "New scene",
+      "Rename…",
+      "Delete",
+      "Revision state…"
+    ],
+    "unnamed_item_nodes": 0,
+    "panel_role": "menu",
+    "item_role": "menu item",
+    "boot_selection_title": "Winter Nocturne 978",
+    "clicked_row_title": "River Ombré 479",
+    "clicked_row_id": "it-000013",
+    "binned_row_ids": [
+      "it-000013"
+    ],
+    "create_clicked_row_id": "it-000013",
+    "created_row_id": "01a020ee-ff04-7701-b14e-e71e2b085e34",
+    "created_row_parent_id": "it-000013",
+    "created_row_type": "scene",
+    "store_rows_before_create": 40,
+    "store_rows_after_create": 41,
+    "label_when_live": "Delete",
+    "label_when_trashed": "Restore",
+    "live_row_trashed_in_store": false,
+    "trashed_row_trashed_in_store": true,
+    "keyboard_item_nodes": 6,
+    "items_after_escape": 0,
+    "editor_windows_before": 1,
+    "editor_windows_after": 2,
+    "peak_rss_mb": 548,
+    "editor_menu_windows": [
+      "expose @ 1200x800",
+      "app-shell-tauri @ 324x632"
+    ],
+    "scope": "Six boots, two AT-SPI walks maximum each. Every figure about the store is SQLite read directly with bun:sqlite. The menu is opened with a real XTEST right-click and driven with keystrokes; the two item indices come from nav-context-menu.ts, parsed, never restated. The target row is the SECOND scene, so it is never the boot selection.",
+    "omitted_gates": "no latency, stall, cliff or a11y_exposure figures: a run that opens a menu six times and types nothing has nothing true to say about frame cadence, and row exposure is the hierarchy rig's claim. context_items_named RECORDS the ATK roles rather than asserting them - there is no prior measurement of this panel's mapping to assert against - and asserts instead the thing a collapsed role costs: an item exposed under a role that carries no name."
+  },
+  "verdicts": [
+    {
+      "gate": "context_opens",
+      "value": "0 item node(s) before the right-click -> 6 after",
+      "threshold": "right-clicking a navigator row exposes menu items AT-SPI could not see before it",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "context_items_named",
+      "value": "panel:menu item:menu item; 0 unnamed of 6 [New part | New chapter | New scene | Rename… | Delete | Revision state…]",
+      "threshold": "every exposed context-menu item carries a non-empty accessible name",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "context_selects_the_row",
+      "value": "right-clicked \"River Ombré 479\" (it-000013) while the boot selection was \"Winter Nocturne 978\"; the store has 1 row(s) in the bin: it-000013",
+      "threshold": "Delete from a context menu opened on a row that was NOT selected bins exactly that row",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "context_creates_under_the_clicked_row",
+      "value": "40 -> 41 row(s); created 01a020ee-ff04-7701-b14e-e71e2b085e34 of type scene under parent it-000013, clicked it-000013",
+      "threshold": "New scene from the context menu adds one `scene` whose PARENT is the row the menu opened on",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "context_label_tracks_the_row",
+      "value": "live row -> \"Delete\" (trashed in store: false); binned row -> \"Restore\" (trashed in store: true)",
+      "threshold": "the rendered Delete/Restore matches the clicked row's bin state AS THE STORE HAS IT",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "context_keyboard_opens",
+      "value": "Shift+F10 exposed 6 item(s) against the pointer's 6; 0 left after Escape",
+      "threshold": "Shift+F10 on the focused row opens the same menu, and Escape leaves none painted",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "context_editor_menu_survives",
+      "value": "1 -> 2 visible window(s) with the shell's WM_CLASS after a right-click in #editor",
+      "threshold": "a right-click inside #editor still raises the engine's own menu (one more X window)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 548,
+      "threshold": "< 750",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "n/a",
+  "rig_commit": "1bfb2425"
+}

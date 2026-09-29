@@ -1,0 +1,42 @@
+{
+  "source_commit": "fb7a956d7d3a7efe07b964e23612de81886332ac",
+  "source_restored": true,
+  "mutations": [
+    {
+      "mutation": "omit-owned-reap",
+      "test_filter": "reaps a malformed-sink wrapper",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "undrained-stdout",
+      "test_filter": "discards unused stdout",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "drop-cleanup-error",
+      "test_filter": "preserves a malformed-sink error",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "sample-during-hook",
+      "test_filter": "stops sampling before a successful delayed onReady hook",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "discard-captured-stderr",
+      "test_filter": "discards unused stdout",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "retain-failed-renderer",
+      "test_filter": "reaps a malformed-sink wrapper",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "source_commit": "e32654a52ea5a7d5af3fa70c768d7a9d620dd204",
+  "review": "no findings",
+  "cargo": [
+    {
+      "passed": 1585,
+      "failed": 0,
+      "ignored": 2
+    },
+    {
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0
+    }
+  ],
+  "mutants_killed": 1,
+  "restored_release_build_exit": 0,
+  "limitations": [
+    "regression test only; no application behavior changed",
+    "invalid parent is injected at the existing project/store boundary, not through the current parser",
+    "SQLite drop can remove WAL/SHM; individual defensive sidecar calls are not independently graded"
+  ]
+}

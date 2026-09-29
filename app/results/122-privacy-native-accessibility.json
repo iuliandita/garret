@@ -1,0 +1,110 @@
+{
+  "limitations": [
+    "No screen-reader speech assertion",
+    "GTK built-in Unicode composition only; no IBus/Fcitx or CJK IME assertion"
+  ],
+  "theme": "light",
+  "locale": "en",
+  "fixture": "tiny",
+  "isolation": "private-xvfb-session-atspi",
+  "checks": {
+    "postload_edit_visible": true,
+    "native_unicode_enrollment": true,
+    "manual-lock": true,
+    "manual-lock_password_named_and_masked": true,
+    "native_forward_tab_cycles_entry_unlock_quit_entry": true,
+    "native_reverse_tab_entry_to_quit": true,
+    "wrong_secret_refused": true,
+    "keyboard_Return_submits_wrong_secret": true,
+    "wrong_secret_exposed_as_visible_native_alert": true,
+    "wrong_secret_emits_accessibility_change_event": true,
+    "gtk_unicode_composition_e9_in_masked_field_authenticates": true,
+    "unicode_unlock_restores_postload_edit": true,
+    "keyboard_Return_submits_correct_secret": true,
+    "normal_quit_after_keyboard_unlock": true
+  },
+  "failure": null,
+  "environment": {
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    }
+  },
+  "forward_tab_order": [
+    {
+      "name": "Password or PIN",
+      "role": "password text"
+    },
+    {
+      "name": "Unlock",
+      "role": "button"
+    },
+    {
+      "name": "Quit",
+      "role": "button"
+    },
+    {
+      "name": "Password or PIN",
+      "role": "password text"
+    }
+  ],
+  "wrong_secret_alert_events": [
+    {
+      "type": "object:text-changed:delete",
+      "role": "alert",
+      "message": "wrong_secret"
+    },
+    {
+      "type": "object:text-changed:insert",
+      "role": "alert",
+      "message": "wrong_secret"
+    },
+    {
+      "type": "object:property-change:accessible-name",
+      "role": "alert",
+      "message": "wrong_secret"
+    },
+    {
+      "type": "object:text-changed:delete",
+      "role": "alert",
+      "message": "wrong_secret"
+    },
+    {
+      "type": "object:text-changed:insert",
+      "role": "alert",
+      "message": "wrong_secret"
+    },
+    {
+      "type": "object:property-change:accessible-name",
+      "role": "alert",
+      "message": "wrong_secret"
+    }
+  ],
+  "composition": {
+    "sequence": "Ctrl+Shift+u e9 Return",
+    "character": "U+00E9",
+    "scope": "GTK built-in Unicode composition in native password entry"
+  },
+  "normal_quit_exit_code": 0,
+  "source_revision": "467070a",
+  "probe_exit_code": 0,
+  "diagnostic": "Initial keyboard probe reached all requested checks but reported nonzero app exit without recording its exact code. Preserved privately; two subsequent runs exited 0. No cause established.",
+  "negative_control": {
+    "probe_exit_code": 1,
+    "expected_failure": true,
+    "result": "KILLED",
+    "failure": {
+      "stage": "negative control: omitted composed character must not restore prose",
+      "kind": "TimeoutError"
+    },
+    "observations": {
+      "composition_omitted": true,
+      "prose_still_concealed": true,
+      "lock_title_still_present": true
+    }
+  }
+}

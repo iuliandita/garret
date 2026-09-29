@@ -1,0 +1,14 @@
+{"built":["<repo>/lab/bakeoff/dist/run.js"],"soakMs":360000,"lazyDocs":false,"containNav":false}
+178 | // A straggler from an EARLIER run contaminates this one, and nothing downstream
+179 | // could tell. Refuse to measure rather than record a polluted number.
+180 | function assertNoStragglers(candidate: Candidate): void {
+181 |   const pids = findStragglers(candidate);
+182 |   if (pids.length > 0) {
+183 |     throw new Error(
+                    ^
+error: electron: 4 leftover shell process(es) still running (4099847, 4099987, 4099988, 4099995). They would contend for the same pinned cores; kill them before measuring.
+      at assertNoStragglers (<repo>/lab/bakeoff/harness/src/matrix.ts:183:15)
+      at runShell (<repo>/lab/bakeoff/harness/src/matrix.ts:237:3)
+      at main (<repo>/lab/bakeoff/harness/src/matrix.ts:429:71)
+      at <repo>/lab/bakeoff/harness/src/matrix.ts:490:3
+

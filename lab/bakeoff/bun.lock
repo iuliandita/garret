@@ -1,0 +1,26 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "bakeoff",
+      "dependencies": {
+        "prosemirror-model": "^1.23.0",
+        "prosemirror-state": "^1.4.3",
+        "prosemirror-transform": "^1.10.0",
+        "prosemirror-view": "^1.34.0",
+      },
+    },
+  },
+  "packages": {
+    "orderedmap": ["orderedmap@2.1.1", "", {}, "sha512-TvAWxi0nDe1j/rtMcWcIj94+Ffe6n7zhow33h40SKxmsmozs6dz/e+EajymfoFcHd7sxNn8yHM8839uixMOV6g=="],
+
+    "prosemirror-model": ["prosemirror-model@1.25.11", "", { "dependencies": { "orderedmap": "^2.0.0" } }, "sha512-QWg9RhnpLlogAmp3p96uEFrE5txQpFynd4vhBAELkwgOCWQs/X0yCzB3/hrHqiPwf91RG5KyWq6553zs9JqIOQ=="],
+
+    "prosemirror-state": ["prosemirror-state@1.4.4", "", { "dependencies": { "prosemirror-model": "^1.0.0", "prosemirror-transform": "^1.0.0", "prosemirror-view": "^1.27.0" } }, "sha512-6jiYHH2CIGbCfnxdHbXZ12gySFY/fz/ulZE333G6bPqIZ4F+TXo9ifiR86nAHpWnfoNjOb3o5ESi7J8Uz1jXHw=="],
+
+    "prosemirror-transform": ["prosemirror-transform@1.12.0", "", { "dependencies": { "prosemirror-model": "^1.21.0" } }, "sha512-GxboyN4AMIsoHNtz5uf2r2Ru551i5hWeCMD6E2Ib4Eogqoub0NflniaBPVQ4MrGE5yZ8JV9tUHg9qcZTTrcN4w=="],
+
+    "prosemirror-view": ["prosemirror-view@1.42.2", "", { "dependencies": { "prosemirror-model": "^1.25.8", "prosemirror-state": "^1.0.0", "prosemirror-transform": "^1.1.0" } }, "sha512-Pdg0l5kXm8aLDquFAnQFTCITg0q44sLqBlHlpsVLD9segdOao8TOfQdAhCrCXyVgPSRr6UDDROOIWA3bIrN9YQ=="],
+  }
+}

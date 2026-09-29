@@ -1,0 +1,112 @@
+{
+  "run_id": "app-preview-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-preview",
+  "environment": {
+    "kernel": "7.2.3-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 5.52,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "fixture": "tiny",
+    "epub_rail_name": "EPUB preview",
+    "epub_rail_expected_name": "EPUB preview",
+    "epub_summary_text": "40 sections, 2001 words.",
+    "epub_summary_items": 40,
+    "epub_summary_words": 2001,
+    "store_items": 40,
+    "store_words": 2000,
+    "toggle_pressed": true,
+    "toggle_meta_tokens": [
+      "caps-title"
+    ],
+    "toggle_expected_token": "caps-title",
+    "proof_attempted": true,
+    "epub_save_ms": 619,
+    "epub_bytes": 20700,
+    "epubcheck_exit": 0,
+    "epubcheck_fatals": 0,
+    "epubcheck_errors": 0,
+    "epubcheck_warnings": 0,
+    "proof_leaves": 13,
+    "pdfinfo_pages": 13,
+    "proof_save_ms": 919,
+    "proof_bytes": 742110,
+    "proof_rail_walks": 1,
+    "proof_rail_wall_ms": 15509,
+    "preview_rss_mb": 619,
+    "proof_rail_name": "PDF proof",
+    "proof_rail_expected_name": "PDF proof",
+    "proof_summary_text": "13 pages, 40 sections, 2000 words. Crimson Text is not installed on this machine, so this proof is set in a substitute. The PDF carries the face it was actually set in.",
+    "atspi_walks": 3,
+    "atspi_walk_cap": 8,
+    "atspi_walk_ms": [
+      226,
+      213,
+      225
+    ],
+    "startup_ms": 156,
+    "rows": 40,
+    "omitted_gates": "latency, stall, cliff, a11y_exposure: one boot that opens two previews and saves two files has nothing true to say about frame cadence.",
+    "scope": "epub_save_ms and proof_save_ms are measured from the Return that dismisses each save dialog to a COMPLETE file on disk (the archive's end-of-central-directory record, the proof's %%EOF), so each includes the render, the write and the fsync a writer waits through. proof_rail_wall_ms is the rail's own render, timed at AT-SPI polling granularity: it is DIAGNOSTIC and is not gated, because a figure polled at 20-120 s intervals is mostly this rig's own sleep. preview_rss_mb is the summed process tree, which is where the proof's second web view lives."
+  },
+  "verdicts": [
+    {
+      "gate": "epub_summary_agrees_with_store",
+      "value": "rail \"EPUB preview\" (expected \"EPUB preview\"), summary \"40 sections, 2001 words.\" parsed as 40 item(s)/2001 word(s), store says 40 item(s)/2000 word(s)",
+      "threshold": "the rail's accessible name equals the expected name, the store's own item and word counts are both > 0 (the vacuity guard: zero equalling zero would pass while proving nothing), and the summary line's parsed items and words equal the store's",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "option_toggle_lands",
+      "value": "pressed true, meta tokens [caps-title] (expected \"caps-title\")",
+      "threshold": "the toggle's AT-SPI pressed state is true, and the store's design.chapter meta row's tokens include \"caps-title\"",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "epub_file_valid",
+      "value": "20700 byte(s), epubcheck exit 0, 0 fatal(s), 0 error(s), 0 warning(s)",
+      "threshold": "epub_bytes > 0, epubcheck's own exit code is 0, and epubcheck reports zero fatals and zero errors. Warnings are RECORDED in the value above and NOT gated: a book with warnings and no errors is a valid EPUB",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "proof_leaves_equal_pdf_pages",
+      "value": "rail says 13 leaf(leaves), pdfinfo counts 13 page(s)",
+      "threshold": "the proof rail's own figure for the whole book equals an outside reader's (pdfinfo) count of the file it saved, and both are > 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "epub_save_ms",
+      "value": 619,
+      "threshold": "<= 3000 ms at the \"tiny\" fixture (0 is no measurement taken, not a real reading, and FAILS)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "proof_save_ms",
+      "value": 919,
+      "threshold": "<= 4000 ms at the \"tiny\" fixture (0 is no measurement taken, not a real reading, and FAILS)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "preview_rss_mb",
+      "value": 619,
+      "threshold": "<= 750 MB at the \"tiny\" fixture (0 is no measurement taken, not a real reading, and FAILS)",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "b0de1fae"
+}

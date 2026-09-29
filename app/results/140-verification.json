@@ -1,0 +1,229 @@
+{
+  "source_commit": "7f0143bba88f4c8a973072836788b9e568af72ca",
+  "bun": {
+    "passed": 3815,
+    "failed": 0
+  },
+  "typecheck_exit": 0,
+  "review": "no findings",
+  "mutants_killed": 5,
+  "native_comparisons": [
+    {
+      "result": "app-prefs-tiny.json",
+      "baseline": "app/results/superseded/app-prefs-tiny.2026-09-16T15-01-02Z.json",
+      "baseline_sha256": "73085638b4f846699a0f3a173d3543032b0c9739f563b433fb0eeaaa7dd645f9",
+      "gates_passed": 6,
+      "gates": [
+        {
+          "gate": "prefs_size_reflows",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "prefs_family_reflows",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "prefs_measure_widens",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "prefs_persist",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "prefs_restart_renders_the_choice",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "peak_rss_mb",
+          "before": "PASS",
+          "after": "PASS"
+        }
+      ],
+      "numeric_metrics": [
+        {
+          "metric": "small.h",
+          "before": 1632,
+          "after": 1492
+        },
+        {
+          "metric": "larger.h",
+          "before": 2308,
+          "after": 2132
+        },
+        {
+          "metric": "serif.h",
+          "before": 1856,
+          "after": 1600
+        },
+        {
+          "metric": "narrow.h",
+          "before": 2240,
+          "after": 2016
+        },
+        {
+          "metric": "wide.h",
+          "before": 1440,
+          "after": 1312
+        },
+        {
+          "metric": "peak_rss_mb",
+          "before": 577,
+          "after": 628
+        },
+        {
+          "metric": "passage_chars",
+          "before": 4144,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.size_small.attempts",
+          "before": null,
+          "after": 151
+        },
+        {
+          "metric": "input_verification.size_small.expected_bytes",
+          "before": null,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.size_small.actual_bytes",
+          "before": null,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.size_larger.attempts",
+          "before": null,
+          "after": 133
+        },
+        {
+          "metric": "input_verification.size_larger.expected_bytes",
+          "before": null,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.size_larger.actual_bytes",
+          "before": null,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.family_serif.attempts",
+          "before": null,
+          "after": 138
+        },
+        {
+          "metric": "input_verification.family_serif.expected_bytes",
+          "before": null,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.family_serif.actual_bytes",
+          "before": null,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.family_mono.attempts",
+          "before": null,
+          "after": 173
+        },
+        {
+          "metric": "input_verification.family_mono.expected_bytes",
+          "before": null,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.family_mono.actual_bytes",
+          "before": null,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.measure_narrow.attempts",
+          "before": null,
+          "after": 142
+        },
+        {
+          "metric": "input_verification.measure_narrow.expected_bytes",
+          "before": null,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.measure_narrow.actual_bytes",
+          "before": null,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.measure_wide.attempts",
+          "before": null,
+          "after": 99
+        },
+        {
+          "metric": "input_verification.measure_wide.expected_bytes",
+          "before": null,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.measure_wide.actual_bytes",
+          "before": null,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.restart_clicked.attempts",
+          "before": null,
+          "after": 164
+        },
+        {
+          "metric": "input_verification.restart_clicked.expected_bytes",
+          "before": null,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.restart_clicked.actual_bytes",
+          "before": null,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.restart_seeded.attempts",
+          "before": null,
+          "after": 193
+        },
+        {
+          "metric": "input_verification.restart_seeded.expected_bytes",
+          "before": null,
+          "after": 4143
+        },
+        {
+          "metric": "input_verification.restart_seeded.actual_bytes",
+          "before": null,
+          "after": 4143
+        }
+      ],
+      "renderer_before": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "renderer_after": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    }
+  ],
+  "limitations": [
+    "Linux GTK/WebKitGTK on private Xvfb and buses",
+    "preferences has a tiny-only rig",
+    "numeric differences are recorded without performance attribution",
+    "input verification changes waiting; layout gates and application source are unchanged"
+  ]
+}

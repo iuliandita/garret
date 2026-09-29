@@ -1,0 +1,74 @@
+{
+  "architecture": "x86_64",
+  "authenticode_signed": false,
+  "zip_integrity": true,
+  "required_files_present": true,
+  "contains_project_or_credential_files": false,
+  "static_crt_verified": true,
+  "exe_sha256": "53cb99ea6701de54238fd981cfdf27be2cdd1252a8223719e0fbcf52bf3573dc",
+  "zip_sha256": "de0b609b71290bf0744ab33fefde89ccac3d3f844f3ff5df0c4477abbc4cd2e3",
+  "zip_size_bytes": 5056199,
+  "dll_imports": [
+    "bcryptprimitives.dll",
+    "kernel32.dll",
+    "user32.dll",
+    "ole32.dll",
+    "gdi32.dll",
+    "comctl32.dll",
+    "dwmapi.dll",
+    "shlwapi.dll",
+    "api-ms-win-core-synch-l1-2-0.dll",
+    "shell32.dll",
+    "advapi32.dll",
+    "ntdll.dll",
+    "oleaut32.dll"
+  ],
+  "build": "Source revision: 72473249a488866b4a48d721a28a993b66d53ff0\nTarget: x86_64-pc-windows-msvc\nBuilt UTC: 2026-09-16T23:13:06Z\nSigning: unsigned\nWindows GUI verification: not performed\n",
+  "wine_smoke": {
+    "scope": "Windows executable non-GUI smoke under Wine; not a real Windows or WebView2 GUI test",
+    "checks": {
+      "unicode_import": {
+        "exit_code": 0,
+        "expected_exit_code": 0
+      },
+      "inspect": {
+        "exit_code": 0,
+        "expected_exit_code": 0
+      },
+      "validate": {
+        "exit_code": 0,
+        "expected_exit_code": 0
+      },
+      "markdown_export": {
+        "exit_code": 0,
+        "expected_exit_code": 0
+      },
+      "epub_export": {
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "archive_integrity": true
+      },
+      "docx_export": {
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "archive_integrity": true
+      }
+    },
+    "exe_sha256": "53cb99ea6701de54238fd981cfdf27be2cdd1252a8223719e0fbcf52bf3573dc",
+    "failure": null,
+    "unicode_round_trip": true
+  },
+  "build_exit_code": 0,
+  "shellcheck_exit_code": 0,
+  "source_guard_negative_control": {
+    "dirty_worktree_exit_code": 1,
+    "refused_before_build": true
+  },
+  "native_windows_gui": "not_verified_no_windows_machine",
+  "signing_and_antivirus": "Unsigned. No SmartScreen or Windows antivirus result is claimed.",
+  "spelling_tests": [
+    "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 1550 filtered out; finished in 0.01s",
+    "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s"
+  ],
+  "review": "No blocking findings; source identification finding fixed with clean-tree and unchanged-revision checks."
+}

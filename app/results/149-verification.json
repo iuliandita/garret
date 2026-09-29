@@ -1,0 +1,67 @@
+{
+  "source_commit": "732bf134addd84190f39f917ebfe894071a6f168",
+  "bun_passed": 3839,
+  "bun_failed": 0,
+  "typescript_exit": 0,
+  "ui_build_exit": 0,
+  "native_exit": 0,
+  "captures": [
+    {
+      "path": "app/results/screenshots/149-mirror-light.png",
+      "sha256": "a8e14ebd46c346b932ddc912b1ad7b4dca5f47470a62142dcb4bb16ee0758637",
+      "launch_renderers": [
+        "dmabuf-llvmpipe",
+        "dmabuf-llvmpipe"
+      ],
+      "owned_cleanup_counts": [
+        5,
+        5
+      ],
+      "visual_inspection": "Real outside-edit row and expanded comparison readable; theme correct."
+    },
+    {
+      "path": "app/results/screenshots/149-mirror-dark.png",
+      "sha256": "899d19c8138b6a24356e195bd074109eea7eb2c0c52664d2185dc0230cec62d7",
+      "launch_renderers": [
+        "dmabuf-llvmpipe",
+        "dmabuf-llvmpipe"
+      ],
+      "owned_cleanup_counts": [
+        5,
+        5
+      ],
+      "visual_inspection": "Real outside-edit row and expanded comparison readable; theme correct."
+    }
+  ],
+  "mutations": {
+    "source_commit": "732bf134addd84190f39f917ebfe894071a6f168",
+    "source_restored": true,
+    "mutations": [
+      {
+        "mutation": "gui-opt-in",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "theme-validation",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "capture-failure",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      }
+    ]
+  },
+  "image_refusal": {
+    "exit_code": 1,
+    "failure_reported": true,
+    "no_success_message": true,
+    "no_image_created": true,
+    "both_launches_cleaned": true
+  },
+  "review": "No findings; root strengthened preflight diagnostic assertions after a surviving mutation.",
+  "initial_test_gap": "Bun source excerpts contained the usage string; test now checks actual error lines. Full suite predates this test-only precision change; focused corrected tests and all negative controls passed afterward.",
+  "scope": "Non-graded mirror capture only. Both launches use shared owned cleanup and real outside file rewrite. No application behavior, Rust source, gate thresholds or measurement scope change."
+}

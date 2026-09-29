@@ -1,0 +1,105 @@
+{
+  "label": "144-baseline",
+  "purpose": "dictionary switch baseline",
+  "source_commit": "ae296a85c35dd4264e8d48ab487294a5bb6c7181",
+  "environment": {
+    "kernel": "7.2.6-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 0.98,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "renderer": {
+    "dmabufDisabledByEnv": false,
+    "glesMapped": true,
+    "llvmpipe": true,
+    "gdkBackend": "x11",
+    "path": "dmabuf-llvmpipe",
+    "webProcesses": 1
+  },
+  "control_word": "Xyzzplorvik",
+  "provider_list": {
+    "command": "enchant-lsmod-2 -list-dicts",
+    "output": [
+      "en (aspell)",
+      "en-variant_0 (aspell)",
+      "en-variant_1 (aspell)",
+      "en-variant_2 (aspell)",
+      "en-w_accents (aspell)",
+      "en-wo_accents (aspell)",
+      "en_AU (aspell)",
+      "en_AU-variant_0 (aspell)",
+      "en_AU-variant_1 (aspell)",
+      "en_AU-w_accents (aspell)",
+      "en_AU-wo_accents (aspell)",
+      "en_CA (aspell)",
+      "en_CA-variant_0 (aspell)",
+      "en_CA-variant_1 (aspell)",
+      "en_CA-w_accents (aspell)",
+      "en_CA-wo_accents (aspell)",
+      "en_GB (aspell)",
+      "en_GB-ise (aspell)",
+      "en_GB-ise-w_accents (aspell)",
+      "en_GB-ise-wo_accents (aspell)",
+      "en_GB-ize (aspell)",
+      "en_GB-ize-w_accents (aspell)",
+      "en_GB-ize-wo_accents (aspell)",
+      "en_GB-variant_0 (aspell)",
+      "en_GB-variant_1 (aspell)",
+      "en_GB-w_accents (aspell)",
+      "en_GB-wo_accents (aspell)",
+      "en_US (aspell)",
+      "en_US-variant_0 (aspell)",
+      "en_US-variant_1 (aspell)",
+      "en_US-w_accents (aspell)",
+      "en_US-wo_accents (aspell)"
+    ],
+    "available": true
+  },
+  "stages": [
+    {
+      "stage": "a-first",
+      "current_title": "Dictionary A",
+      "sqlite_book": "a",
+      "sqlite_scene_text": "a-first: Zorbulaxine Quorvexalune Xyzzplorvik.",
+      "rendered_en_US_dic": "Zorbulaxine\n",
+      "screenshot": "144-baseline-dictionary-switch-a-first.png",
+      "host_pid": 1549564,
+      "web_pids": [
+        1549666
+      ]
+    },
+    {
+      "stage": "b",
+      "current_title": "Dictionary B",
+      "sqlite_book": "b",
+      "sqlite_scene_text": "b: Zorbulaxine Quorvexalune Xyzzplorvik.",
+      "rendered_en_US_dic": "Quorvexalune\n",
+      "screenshot": "144-baseline-dictionary-switch-b.png",
+      "host_pid": 1549564,
+      "web_pids": [
+        1549666
+      ]
+    },
+    {
+      "stage": "a-return",
+      "current_title": "Dictionary A",
+      "sqlite_book": "a",
+      "sqlite_scene_text": "a-return: Zorbulaxine Quorvexalune Xyzzplorvik.",
+      "rendered_en_US_dic": "Zorbulaxine\n",
+      "screenshot": "144-baseline-dictionary-switch-a-return.png",
+      "host_pid": 1549564,
+      "web_pids": [
+        1549666
+      ]
+    }
+  ]
+}

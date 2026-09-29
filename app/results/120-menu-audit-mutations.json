@@ -1,0 +1,24 @@
+{
+  "mutations": [
+    {
+      "name": "EPUB styles reset outer paper again",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "name": "Close prompt contents return to backdrop siblings",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "name": "Timeline popup arrows ignored",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "name": "Timeline popup steals outside arrow focus",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    }
+  ]
+}

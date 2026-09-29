@@ -1,0 +1,272 @@
+{
+  "source_commit": "7ebf4d9029c640c81592ffc55fd4804cb66052f2",
+  "release_sha256": "bdd2f6c8b322b05c5c170c3ff0da6cb10a365bf90d284ff96da9eb9e2801fc28",
+  "bun": {
+    "passed": 3809,
+    "failed": 0
+  },
+  "cargo": [
+    {
+      "passed": 1584,
+      "failed": 0,
+      "ignored": 2
+    },
+    {
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0
+    }
+  ],
+  "typecheck_exit": 0,
+  "source_review": "no remaining findings",
+  "mutants_killed": 8,
+  "native_comparisons": [
+    {
+      "result": "app-first-run.json",
+      "baseline": "app/results/superseded/app-first-run.2026-09-19T14-04-29Z.json",
+      "baseline_sha256": "e01e5517c65f1f8e1e43870968834c56fa8551b570628864eab10caba22e0589",
+      "gates_passed": 7,
+      "gates": [
+        {
+          "gate": "first_run_opens",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "first_run_project_is_named",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "first_run_starter_titles_localized",
+          "before": "absent",
+          "after": "PASS"
+        },
+        {
+          "gate": "first_run_accepts_typing",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "first_run_quit_closes",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "first_run_keeps_the_writing",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "peak_rss_mb",
+          "before": "PASS",
+          "after": "PASS"
+        }
+      ],
+      "renderer_before": null,
+      "renderer_after": null
+    },
+    {
+      "result": "app-dialog-tiny.json",
+      "baseline": "app/results/superseded/app-dialog-tiny.2026-09-19T23-54-14Z.json",
+      "baseline_sha256": "1160da688908d3c1a46559f0661dc87cd31737d244d45f31857bcc161eb74ce0",
+      "gates_passed": 14,
+      "gates": [
+        {
+          "gate": "dialog_opens",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "dialog_writes_the_chosen_path",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "dialog_content_matches_the_store",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "dialog_export_includes_the_last_keystroke",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "dialog_cancel_writes_nothing",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "dialog_import_opens",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "dialog_imports_the_chosen_file",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "folder_dialog_opens",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "folder_dialog_closes_after_choice",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "folder_dialog_creates_in_the_chosen_directory",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "folder_dialog_creates_a_readable_named_book",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "folder_dialog_cancel_opens_and_closes",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "folder_dialog_cancel_creates_nothing",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "peak_rss_mb",
+          "before": "PASS",
+          "after": "PASS"
+        }
+      ],
+      "renderer_before": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "renderer_after": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    },
+    {
+      "result": "app-import-tiny.json",
+      "baseline": "app/results/superseded/app-import-tiny.2026-09-07T16-39-47Z.json",
+      "baseline_sha256": "72b37f880dea0c62fa3a65f4c9e4e5d02ab6c6585b98a567cd8e851b83efae04",
+      "gates_passed": 7,
+      "gates": [
+        {
+          "gate": "import_created_project",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "import_item_count",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "import_structure",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "import_titles_verbatim",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "import_prose_fidelity",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "import_marks_survive",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "peak_rss_mb",
+          "before": "PASS",
+          "after": "PASS"
+        }
+      ],
+      "renderer_before": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "renderer_after": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    },
+    {
+      "result": "app-import-docx-round-trip.json",
+      "baseline": "app/results/superseded/app-import-docx-round-trip.2026-09-07T16-39-47Z.json",
+      "baseline_sha256": "14a8f181d521f1019ed9236366dec25e7293d6a42fa511bfa867bd90b93ca906",
+      "gates_passed": 3,
+      "gates": [
+        {
+          "gate": "import_docx_round_trip_items",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "import_docx_round_trip_prose",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "import_docx_reports_no_loss",
+          "before": "PASS",
+          "after": "PASS"
+        }
+      ],
+      "renderer_before": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "renderer_after": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    }
+  ],
+  "screenshots": [
+    "app/results/screenshots/2026-09-20-138-first-run-de-light.png",
+    "app/results/screenshots/2026-09-20-138-timeline-empty-de-light.png"
+  ],
+  "limitations": [
+    "Linux GTK/WebKitGTK with private Xvfb and buses",
+    "creation rigs are tiny-only",
+    "no stress workload or performance improvement claim",
+    "existing titles are never renamed"
+  ]
+}

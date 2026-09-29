@@ -1,0 +1,415 @@
+{
+  "source_commit": "cddbf46b43fd66fd07bb2dcf1f608baf15f17131",
+  "bun": {
+    "passed": 3811,
+    "failed": 0
+  },
+  "typecheck_exit": 0,
+  "review": "no findings",
+  "mutants_killed": 3,
+  "native_comparisons": [
+    {
+      "result": "app-export-tiny.json",
+      "baseline": "app/results/superseded/app-export-tiny.2026-09-08T08-56-51Z.json",
+      "baseline_sha256": "028df9b308353893b883494bc0b4527738f15bd417ec495a7d313b9cde261272",
+      "gates_passed": 9,
+      "gates": [
+        {
+          "gate": "export_structure",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "export_text_fidelity",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "export_word_count_agrees",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "export_underline_loss_reported",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "export_marks_survive",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "export_includes_last_keystroke",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "export_never_clobbers",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "export_ms",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "peak_rss_mb",
+          "before": "PASS",
+          "after": "PASS"
+        }
+      ],
+      "numeric_metrics": [
+        {
+          "metric": "peak_rss_mb",
+          "before": 578,
+          "after": 626
+        },
+        {
+          "metric": "startup_ms",
+          "before": 288,
+          "after": 129
+        },
+        {
+          "metric": "export.export_ms",
+          "before": 29,
+          "after": 21.8
+        },
+        {
+          "metric": "export.peak_rss_mb",
+          "before": 578,
+          "after": 626
+        },
+        {
+          "metric": "last_keystroke_to_click_ms",
+          "before": 613.5,
+          "after": 599.1
+        },
+        {
+          "metric": "debounce_window_used_ms",
+          "before": 859.7,
+          "after": 782.4
+        }
+      ],
+      "renderer_before": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "renderer_after": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    },
+    {
+      "result": "app-export-stress.json",
+      "baseline": "app/results/superseded/app-export-stress.2026-09-06T14-36-42Z.json",
+      "baseline_sha256": "cd0fe27cf1e38b1108bf29a1a7032f8faa9d95f56670dde58dffebf970e973d5",
+      "gates_passed": 9,
+      "gates": [
+        {
+          "gate": "export_structure",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "export_text_fidelity",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "export_word_count_agrees",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "export_underline_loss_reported",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "export_marks_survive",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "export_includes_last_keystroke",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "export_never_clobbers",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "export_ms",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "peak_rss_mb",
+          "before": "PASS",
+          "after": "PASS"
+        }
+      ],
+      "numeric_metrics": [
+        {
+          "metric": "peak_rss_mb",
+          "before": 609,
+          "after": 666
+        },
+        {
+          "metric": "startup_ms",
+          "before": 237,
+          "after": 213
+        },
+        {
+          "metric": "export.export_ms",
+          "before": 388.1,
+          "after": 310.6
+        },
+        {
+          "metric": "export.peak_rss_mb",
+          "before": 609,
+          "after": 666
+        },
+        {
+          "metric": "exported_bytes",
+          "before": 10956386,
+          "after": 10956385
+        },
+        {
+          "metric": "last_keystroke_to_click_ms",
+          "before": 618.9,
+          "after": 596.6
+        },
+        {
+          "metric": "debounce_window_used_ms",
+          "before": 849.8,
+          "after": 779.1
+        }
+      ],
+      "renderer_before": null,
+      "renderer_after": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    },
+    {
+      "result": "app-words-tiny.json",
+      "baseline": "app/results/superseded/app-words-tiny.2026-09-09T02-26-45Z.json",
+      "baseline_sha256": "9f8536b4e677cc0eb1cc939c85aedd8a7b4a87d5930b745ccdd1412820e52e85",
+      "gates_passed": 6,
+      "gates": [
+        {
+          "gate": "marks_persist",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "reopen_parse_intact",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "word_count_agrees",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "word_count_scan_ms",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "a11y_word_count_exposed",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "a11y_word_count_agrees",
+          "before": "PASS",
+          "after": "PASS"
+        }
+      ],
+      "numeric_metrics": [
+        {
+          "metric": "peak_rss_mb",
+          "before": 618,
+          "after": 589
+        },
+        {
+          "metric": "startup_ms",
+          "before": 171,
+          "after": 131
+        },
+        {
+          "metric": "words.scan_ms",
+          "before": 8,
+          "after": 5
+        },
+        {
+          "metric": "words.scan_watch_read_ms",
+          "before": 0.5,
+          "after": 0.4
+        },
+        {
+          "metric": "reopen_peak_rss_mb",
+          "before": 618,
+          "after": 582
+        }
+      ],
+      "renderer_before": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "renderer_after": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    },
+    {
+      "result": "app-outline-tiny.json",
+      "baseline": "app/results/superseded/app-outline-tiny.2026-09-16T15-01-02Z.json",
+      "baseline_sha256": "36d4146897ce18ab80e5aeaf9ddfff09fd4337ba91a3b4b18802f235289f6fb1",
+      "gates_passed": 13,
+      "gates": [
+        {
+          "gate": "outline_create_visible",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "outline_created_scene_opens",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "outline_delete_moves_to_bin",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "outline_delete_keeps_the_prose",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "outline_restore_leaves_the_bin",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "outline_restore_keeps_the_prose",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "outline_restore_lands_last",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "outline_rename_persists",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "outline_reorder_persists",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "outline_undo_restores_order",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "outline_document_intact",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "outline_mutation_p95_ms",
+          "before": "PASS",
+          "after": "PASS"
+        },
+        {
+          "gate": "a11y_tree_structure",
+          "before": "PASS",
+          "after": "PASS"
+        }
+      ],
+      "numeric_metrics": [
+        {
+          "metric": "peak_rss_mb",
+          "before": 560,
+          "after": 619
+        },
+        {
+          "metric": "startup_ms",
+          "before": 199,
+          "after": 134
+        },
+        {
+          "metric": "outline.mutation_p50_ms",
+          "before": 16.486,
+          "after": 16.403
+        },
+        {
+          "metric": "outline.mutation_p95_ms",
+          "before": 29.57,
+          "after": 29.936
+        },
+        {
+          "metric": "reopen_peak_rss_mb",
+          "before": 566,
+          "after": 589
+        }
+      ],
+      "renderer_before": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "renderer_after": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    }
+  ],
+  "limitations": [
+    "Linux GTK/WebKitGTK on private Xvfb and buses",
+    "words and outline have tiny-only rigs",
+    "numeric differences are recorded without performance attribution",
+    "no application source or gate thresholds changed"
+  ]
+}

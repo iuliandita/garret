@@ -1,0 +1,80 @@
+{
+  "scope": "Native dismissal and editor focus; opening is also captured for visual inspection.",
+  "environment": {
+    "kernel": "7.2.3-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 3.8,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "observations": [
+    {
+      "theme": "light",
+      "action": "escape",
+      "panel_absent_after": true,
+      "typing_saved_in_one_document": true,
+      "accessibility_walks": 1,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    },
+    {
+      "theme": "light",
+      "action": "outside",
+      "panel_absent_after": true,
+      "typing_saved_in_one_document": true,
+      "accessibility_walks": 1,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    },
+    {
+      "theme": "dark",
+      "action": "escape",
+      "panel_absent_after": true,
+      "typing_saved_in_one_document": true,
+      "accessibility_walks": 1,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    },
+    {
+      "theme": "dark",
+      "action": "outside",
+      "panel_absent_after": true,
+      "typing_saved_in_one_document": true,
+      "accessibility_walks": 1,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    }
+  ]
+}

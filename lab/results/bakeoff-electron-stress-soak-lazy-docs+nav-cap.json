@@ -1,0 +1,2317 @@
+{
+  "run_id": "bakeoff-electron-stress-soak-lazy-docs+nav-cap",
+  "track": "bakeoff",
+  "candidate": "electron",
+  "fixture": "stress",
+  "workload": "bakeoff-suite",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "0-3 / 8G (see throttle-run.sh)",
+    "biasNotes": "cgroup-throttled approximation of reference hardware (4 threads, 8G); modern single-core speed exceeds a five-year-old laptop core. Gates remain hypotheses until a real-hardware pass. macOS unmeasured."
+  },
+  "method": "In-page keydown->next-frame latency (double requestAnimationFrame), identical bundled run.js in both shells; no CDP or Chromium-only tracing (WebKitGTK exposes none). Summed process-tree RSS sampled from /proc during the run. AT-SPI exposure probed via pyatspi when available. SCOPE: cgroup-throttled approximation of reference hardware; gates are hypotheses until a real-hardware pass. macOS unmeasured.",
+  "metrics": {
+    "typing_p95": 33.5,
+    "typing_p99": 33.599999994039536,
+    "nav_p95": 33.5,
+    "cold_start_ms": 42.599999994039536,
+    "warm_start_ms": 1.4000000059604645,
+    "peak_rss_mb": 911,
+    "a11y": {
+      "available": false,
+      "hasEditor": false,
+      "hasNavigator": false,
+      "hasDialog": false
+    },
+    "typing": {
+      "count": 400,
+      "p50": 33.30000001192093,
+      "p95": 33.5,
+      "p99": 33.599999994039536,
+      "max": 107.40000000596046
+    },
+    "navigation": {
+      "count": 90,
+      "p50": 33.30000001192093,
+      "p95": 33.5,
+      "p99": 33.70000001788139,
+      "max": 33.70000001788139
+    },
+    "variants": [
+      "lazy-docs",
+      "nav-cap"
+    ],
+    "soak": {
+      "soak_minutes": 30,
+      "cycles": 111,
+      "chars_typed": 44477,
+      "peak_rss_mb": 911,
+      "final_rss_mb": 905,
+      "leak_slope_mb_per_hr": 28.8,
+      "typing_p95_first_cycle_ms": 33.5,
+      "typing_p95_last_cycle_ms": 33.5
+    },
+    "soak_cycles": [
+      {
+        "cycle": 1,
+        "atMs": 16333,
+        "typingP95Ms": 33.5,
+        "charsTyped": 800,
+        "partial": false
+      },
+      {
+        "cycle": 2,
+        "atMs": 32665,
+        "typingP95Ms": 33.5,
+        "charsTyped": 1200,
+        "partial": false
+      },
+      {
+        "cycle": 3,
+        "atMs": 48998,
+        "typingP95Ms": 33.5,
+        "charsTyped": 1600,
+        "partial": false
+      },
+      {
+        "cycle": 4,
+        "atMs": 65331,
+        "typingP95Ms": 33.5,
+        "charsTyped": 2000,
+        "partial": false
+      },
+      {
+        "cycle": 5,
+        "atMs": 81663,
+        "typingP95Ms": 33.5,
+        "charsTyped": 2400,
+        "partial": false
+      },
+      {
+        "cycle": 6,
+        "atMs": 97996,
+        "typingP95Ms": 33.5,
+        "charsTyped": 2800,
+        "partial": false
+      },
+      {
+        "cycle": 7,
+        "atMs": 114329,
+        "typingP95Ms": 33.5,
+        "charsTyped": 3200,
+        "partial": false
+      },
+      {
+        "cycle": 8,
+        "atMs": 130661,
+        "typingP95Ms": 33.5,
+        "charsTyped": 3600,
+        "partial": false
+      },
+      {
+        "cycle": 9,
+        "atMs": 146994,
+        "typingP95Ms": 33.5,
+        "charsTyped": 4000,
+        "partial": false
+      },
+      {
+        "cycle": 10,
+        "atMs": 163327,
+        "typingP95Ms": 33.5,
+        "charsTyped": 4400,
+        "partial": false
+      },
+      {
+        "cycle": 11,
+        "atMs": 179659,
+        "typingP95Ms": 33.5,
+        "charsTyped": 4800,
+        "partial": false
+      },
+      {
+        "cycle": 12,
+        "atMs": 195992,
+        "typingP95Ms": 33.5,
+        "charsTyped": 5200,
+        "partial": false
+      },
+      {
+        "cycle": 13,
+        "atMs": 212325,
+        "typingP95Ms": 33.80000001192093,
+        "charsTyped": 5600,
+        "partial": false
+      },
+      {
+        "cycle": 14,
+        "atMs": 228658,
+        "typingP95Ms": 33.5,
+        "charsTyped": 6000,
+        "partial": false
+      },
+      {
+        "cycle": 15,
+        "atMs": 244990,
+        "typingP95Ms": 33.5,
+        "charsTyped": 6400,
+        "partial": false
+      },
+      {
+        "cycle": 16,
+        "atMs": 261323,
+        "typingP95Ms": 33.5,
+        "charsTyped": 6800,
+        "partial": false
+      },
+      {
+        "cycle": 17,
+        "atMs": 277656,
+        "typingP95Ms": 33.5,
+        "charsTyped": 7200,
+        "partial": false
+      },
+      {
+        "cycle": 18,
+        "atMs": 293988,
+        "typingP95Ms": 33.5,
+        "charsTyped": 7600,
+        "partial": false
+      },
+      {
+        "cycle": 19,
+        "atMs": 310321,
+        "typingP95Ms": 33.5,
+        "charsTyped": 8000,
+        "partial": false
+      },
+      {
+        "cycle": 20,
+        "atMs": 326654,
+        "typingP95Ms": 33.5,
+        "charsTyped": 8400,
+        "partial": false
+      },
+      {
+        "cycle": 21,
+        "atMs": 342986,
+        "typingP95Ms": 33.5,
+        "charsTyped": 8800,
+        "partial": false
+      },
+      {
+        "cycle": 22,
+        "atMs": 359319,
+        "typingP95Ms": 33.400000005960464,
+        "charsTyped": 9200,
+        "partial": false
+      },
+      {
+        "cycle": 23,
+        "atMs": 375652,
+        "typingP95Ms": 33.5,
+        "charsTyped": 9600,
+        "partial": false
+      },
+      {
+        "cycle": 24,
+        "atMs": 391984,
+        "typingP95Ms": 33.5,
+        "charsTyped": 10000,
+        "partial": false
+      },
+      {
+        "cycle": 25,
+        "atMs": 408317,
+        "typingP95Ms": 33.5,
+        "charsTyped": 10400,
+        "partial": false
+      },
+      {
+        "cycle": 26,
+        "atMs": 424650,
+        "typingP95Ms": 33.5,
+        "charsTyped": 10800,
+        "partial": false
+      },
+      {
+        "cycle": 27,
+        "atMs": 440982,
+        "typingP95Ms": 33.5,
+        "charsTyped": 11200,
+        "partial": false
+      },
+      {
+        "cycle": 28,
+        "atMs": 457315,
+        "typingP95Ms": 33.5,
+        "charsTyped": 11600,
+        "partial": false
+      },
+      {
+        "cycle": 29,
+        "atMs": 473648,
+        "typingP95Ms": 33.5,
+        "charsTyped": 12000,
+        "partial": false
+      },
+      {
+        "cycle": 30,
+        "atMs": 489980,
+        "typingP95Ms": 33.5,
+        "charsTyped": 12400,
+        "partial": false
+      },
+      {
+        "cycle": 31,
+        "atMs": 506313,
+        "typingP95Ms": 33.5,
+        "charsTyped": 12800,
+        "partial": false
+      },
+      {
+        "cycle": 32,
+        "atMs": 522646,
+        "typingP95Ms": 33.5,
+        "charsTyped": 13200,
+        "partial": false
+      },
+      {
+        "cycle": 33,
+        "atMs": 538979,
+        "typingP95Ms": 33.5,
+        "charsTyped": 13600,
+        "partial": false
+      },
+      {
+        "cycle": 34,
+        "atMs": 555311,
+        "typingP95Ms": 33.5,
+        "charsTyped": 14000,
+        "partial": false
+      },
+      {
+        "cycle": 35,
+        "atMs": 571644,
+        "typingP95Ms": 33.5,
+        "charsTyped": 14400,
+        "partial": false
+      },
+      {
+        "cycle": 36,
+        "atMs": 587976,
+        "typingP95Ms": 33.5,
+        "charsTyped": 14800,
+        "partial": false
+      },
+      {
+        "cycle": 37,
+        "atMs": 604309,
+        "typingP95Ms": 33.5,
+        "charsTyped": 15200,
+        "partial": false
+      },
+      {
+        "cycle": 38,
+        "atMs": 620725,
+        "typingP95Ms": 33.5,
+        "charsTyped": 15600,
+        "partial": false
+      },
+      {
+        "cycle": 39,
+        "atMs": 637058,
+        "typingP95Ms": 33.400000005960464,
+        "charsTyped": 16000,
+        "partial": false
+      },
+      {
+        "cycle": 40,
+        "atMs": 653391,
+        "typingP95Ms": 33.5,
+        "charsTyped": 16400,
+        "partial": false
+      },
+      {
+        "cycle": 41,
+        "atMs": 669723,
+        "typingP95Ms": 33.5,
+        "charsTyped": 16800,
+        "partial": false
+      },
+      {
+        "cycle": 42,
+        "atMs": 686056,
+        "typingP95Ms": 33.5,
+        "charsTyped": 17200,
+        "partial": false
+      },
+      {
+        "cycle": 43,
+        "atMs": 702388,
+        "typingP95Ms": 33.5,
+        "charsTyped": 17600,
+        "partial": false
+      },
+      {
+        "cycle": 44,
+        "atMs": 718788,
+        "typingP95Ms": 33.5,
+        "charsTyped": 18000,
+        "partial": false
+      },
+      {
+        "cycle": 45,
+        "atMs": 735121,
+        "typingP95Ms": 33.5,
+        "charsTyped": 18400,
+        "partial": false
+      },
+      {
+        "cycle": 46,
+        "atMs": 751453,
+        "typingP95Ms": 33.5,
+        "charsTyped": 18800,
+        "partial": false
+      },
+      {
+        "cycle": 47,
+        "atMs": 767786,
+        "typingP95Ms": 33.5,
+        "charsTyped": 19200,
+        "partial": false
+      },
+      {
+        "cycle": 48,
+        "atMs": 784119,
+        "typingP95Ms": 33.5,
+        "charsTyped": 19600,
+        "partial": false
+      },
+      {
+        "cycle": 49,
+        "atMs": 800451,
+        "typingP95Ms": 33.5,
+        "charsTyped": 20000,
+        "partial": false
+      },
+      {
+        "cycle": 50,
+        "atMs": 816917,
+        "typingP95Ms": 34.099999994039536,
+        "charsTyped": 20400,
+        "partial": false
+      },
+      {
+        "cycle": 51,
+        "atMs": 833250,
+        "typingP95Ms": 33.5,
+        "charsTyped": 20800,
+        "partial": false
+      },
+      {
+        "cycle": 52,
+        "atMs": 849583,
+        "typingP95Ms": 33.5,
+        "charsTyped": 21200,
+        "partial": false
+      },
+      {
+        "cycle": 53,
+        "atMs": 865915,
+        "typingP95Ms": 33.5,
+        "charsTyped": 21600,
+        "partial": false
+      },
+      {
+        "cycle": 54,
+        "atMs": 882248,
+        "typingP95Ms": 33.5,
+        "charsTyped": 22000,
+        "partial": false
+      },
+      {
+        "cycle": 55,
+        "atMs": 898581,
+        "typingP95Ms": 33.5,
+        "charsTyped": 22400,
+        "partial": false
+      },
+      {
+        "cycle": 56,
+        "atMs": 914913,
+        "typingP95Ms": 33.5,
+        "charsTyped": 22800,
+        "partial": false
+      },
+      {
+        "cycle": 57,
+        "atMs": 931246,
+        "typingP95Ms": 33.5,
+        "charsTyped": 23200,
+        "partial": false
+      },
+      {
+        "cycle": 58,
+        "atMs": 947579,
+        "typingP95Ms": 33.5,
+        "charsTyped": 23600,
+        "partial": false
+      },
+      {
+        "cycle": 59,
+        "atMs": 963911,
+        "typingP95Ms": 33.5,
+        "charsTyped": 24000,
+        "partial": false
+      },
+      {
+        "cycle": 60,
+        "atMs": 980244,
+        "typingP95Ms": 33.5,
+        "charsTyped": 24400,
+        "partial": false
+      },
+      {
+        "cycle": 61,
+        "atMs": 996577,
+        "typingP95Ms": 33.5,
+        "charsTyped": 24800,
+        "partial": false
+      },
+      {
+        "cycle": 62,
+        "atMs": 1012909,
+        "typingP95Ms": 33.5,
+        "charsTyped": 25200,
+        "partial": false
+      },
+      {
+        "cycle": 63,
+        "atMs": 1029242,
+        "typingP95Ms": 33.5,
+        "charsTyped": 25600,
+        "partial": false
+      },
+      {
+        "cycle": 64,
+        "atMs": 1045575,
+        "typingP95Ms": 33.5,
+        "charsTyped": 26000,
+        "partial": false
+      },
+      {
+        "cycle": 65,
+        "atMs": 1061907,
+        "typingP95Ms": 33.5,
+        "charsTyped": 26400,
+        "partial": false
+      },
+      {
+        "cycle": 66,
+        "atMs": 1078240,
+        "typingP95Ms": 33.5,
+        "charsTyped": 26800,
+        "partial": false
+      },
+      {
+        "cycle": 67,
+        "atMs": 1094573,
+        "typingP95Ms": 33.5,
+        "charsTyped": 27200,
+        "partial": false
+      },
+      {
+        "cycle": 68,
+        "atMs": 1110906,
+        "typingP95Ms": 33.5,
+        "charsTyped": 27600,
+        "partial": false
+      },
+      {
+        "cycle": 69,
+        "atMs": 1127238,
+        "typingP95Ms": 33.5,
+        "charsTyped": 28000,
+        "partial": false
+      },
+      {
+        "cycle": 70,
+        "atMs": 1143571,
+        "typingP95Ms": 33.5,
+        "charsTyped": 28400,
+        "partial": false
+      },
+      {
+        "cycle": 71,
+        "atMs": 1159904,
+        "typingP95Ms": 33.5,
+        "charsTyped": 28800,
+        "partial": false
+      },
+      {
+        "cycle": 72,
+        "atMs": 1176236,
+        "typingP95Ms": 33.5,
+        "charsTyped": 29200,
+        "partial": false
+      },
+      {
+        "cycle": 73,
+        "atMs": 1192569,
+        "typingP95Ms": 33.5,
+        "charsTyped": 29600,
+        "partial": false
+      },
+      {
+        "cycle": 74,
+        "atMs": 1208902,
+        "typingP95Ms": 33.5,
+        "charsTyped": 30000,
+        "partial": false
+      },
+      {
+        "cycle": 75,
+        "atMs": 1225234,
+        "typingP95Ms": 33.5,
+        "charsTyped": 30400,
+        "partial": false
+      },
+      {
+        "cycle": 76,
+        "atMs": 1241567,
+        "typingP95Ms": 33.5,
+        "charsTyped": 30800,
+        "partial": false
+      },
+      {
+        "cycle": 77,
+        "atMs": 1257900,
+        "typingP95Ms": 33.5,
+        "charsTyped": 31200,
+        "partial": false
+      },
+      {
+        "cycle": 78,
+        "atMs": 1274232,
+        "typingP95Ms": 33.5,
+        "charsTyped": 31600,
+        "partial": false
+      },
+      {
+        "cycle": 79,
+        "atMs": 1290565,
+        "typingP95Ms": 33.5,
+        "charsTyped": 32000,
+        "partial": false
+      },
+      {
+        "cycle": 80,
+        "atMs": 1306898,
+        "typingP95Ms": 33.5,
+        "charsTyped": 32400,
+        "partial": false
+      },
+      {
+        "cycle": 81,
+        "atMs": 1323230,
+        "typingP95Ms": 33.5,
+        "charsTyped": 32800,
+        "partial": false
+      },
+      {
+        "cycle": 82,
+        "atMs": 1339563,
+        "typingP95Ms": 33.5,
+        "charsTyped": 33200,
+        "partial": false
+      },
+      {
+        "cycle": 83,
+        "atMs": 1355896,
+        "typingP95Ms": 33.5,
+        "charsTyped": 33600,
+        "partial": false
+      },
+      {
+        "cycle": 84,
+        "atMs": 1372228,
+        "typingP95Ms": 33.5,
+        "charsTyped": 34000,
+        "partial": false
+      },
+      {
+        "cycle": 85,
+        "atMs": 1388561,
+        "typingP95Ms": 33.5,
+        "charsTyped": 34400,
+        "partial": false
+      },
+      {
+        "cycle": 86,
+        "atMs": 1404894,
+        "typingP95Ms": 33.5,
+        "charsTyped": 34800,
+        "partial": false
+      },
+      {
+        "cycle": 87,
+        "atMs": 1421226,
+        "typingP95Ms": 33.5,
+        "charsTyped": 35200,
+        "partial": false
+      },
+      {
+        "cycle": 88,
+        "atMs": 1437559,
+        "typingP95Ms": 33.5,
+        "charsTyped": 35600,
+        "partial": false
+      },
+      {
+        "cycle": 89,
+        "atMs": 1454042,
+        "typingP95Ms": 33.5,
+        "charsTyped": 36000,
+        "partial": false
+      },
+      {
+        "cycle": 90,
+        "atMs": 1470374,
+        "typingP95Ms": 33.5,
+        "charsTyped": 36400,
+        "partial": false
+      },
+      {
+        "cycle": 91,
+        "atMs": 1486707,
+        "typingP95Ms": 33.5,
+        "charsTyped": 36800,
+        "partial": false
+      },
+      {
+        "cycle": 92,
+        "atMs": 1503040,
+        "typingP95Ms": 33.5,
+        "charsTyped": 37200,
+        "partial": false
+      },
+      {
+        "cycle": 93,
+        "atMs": 1519373,
+        "typingP95Ms": 33.5,
+        "charsTyped": 37600,
+        "partial": false
+      },
+      {
+        "cycle": 94,
+        "atMs": 1535705,
+        "typingP95Ms": 33.5,
+        "charsTyped": 38000,
+        "partial": false
+      },
+      {
+        "cycle": 95,
+        "atMs": 1552038,
+        "typingP95Ms": 33.5,
+        "charsTyped": 38400,
+        "partial": false
+      },
+      {
+        "cycle": 96,
+        "atMs": 1568371,
+        "typingP95Ms": 33.5,
+        "charsTyped": 38800,
+        "partial": false
+      },
+      {
+        "cycle": 97,
+        "atMs": 1584703,
+        "typingP95Ms": 33.5,
+        "charsTyped": 39200,
+        "partial": false
+      },
+      {
+        "cycle": 98,
+        "atMs": 1601036,
+        "typingP95Ms": 33.5,
+        "charsTyped": 39600,
+        "partial": false
+      },
+      {
+        "cycle": 99,
+        "atMs": 1617369,
+        "typingP95Ms": 33.5,
+        "charsTyped": 40000,
+        "partial": false
+      },
+      {
+        "cycle": 100,
+        "atMs": 1633701,
+        "typingP95Ms": 33.5,
+        "charsTyped": 40400,
+        "partial": false
+      },
+      {
+        "cycle": 101,
+        "atMs": 1650034,
+        "typingP95Ms": 33.5,
+        "charsTyped": 40800,
+        "partial": false
+      },
+      {
+        "cycle": 102,
+        "atMs": 1666367,
+        "typingP95Ms": 33.5,
+        "charsTyped": 41200,
+        "partial": false
+      },
+      {
+        "cycle": 103,
+        "atMs": 1682699,
+        "typingP95Ms": 33.5,
+        "charsTyped": 41600,
+        "partial": false
+      },
+      {
+        "cycle": 104,
+        "atMs": 1699032,
+        "typingP95Ms": 33.5,
+        "charsTyped": 42000,
+        "partial": false
+      },
+      {
+        "cycle": 105,
+        "atMs": 1715365,
+        "typingP95Ms": 33.5,
+        "charsTyped": 42400,
+        "partial": false
+      },
+      {
+        "cycle": 106,
+        "atMs": 1731697,
+        "typingP95Ms": 33.5,
+        "charsTyped": 42800,
+        "partial": false
+      },
+      {
+        "cycle": 107,
+        "atMs": 1748030,
+        "typingP95Ms": 33.5,
+        "charsTyped": 43200,
+        "partial": false
+      },
+      {
+        "cycle": 108,
+        "atMs": 1764363,
+        "typingP95Ms": 33.5,
+        "charsTyped": 43600,
+        "partial": false
+      },
+      {
+        "cycle": 109,
+        "atMs": 1780695,
+        "typingP95Ms": 33.599999994039536,
+        "charsTyped": 44000,
+        "partial": false
+      },
+      {
+        "cycle": 110,
+        "atMs": 1797028,
+        "typingP95Ms": 33.5,
+        "charsTyped": 44400,
+        "partial": false
+      },
+      {
+        "cycle": 111,
+        "atMs": 1800028,
+        "typingP95Ms": 33.5,
+        "charsTyped": 44477,
+        "partial": true
+      }
+    ],
+    "rss_series": [
+      {
+        "atMs": 12,
+        "rssKb": 5676
+      },
+      {
+        "atMs": 5173,
+        "rssKb": 853068
+      },
+      {
+        "atMs": 10428,
+        "rssKb": 891940
+      },
+      {
+        "atMs": 15668,
+        "rssKb": 862712
+      },
+      {
+        "atMs": 20892,
+        "rssKb": 875264
+      },
+      {
+        "atMs": 26133,
+        "rssKb": 911388
+      },
+      {
+        "atMs": 31372,
+        "rssKb": 892776
+      },
+      {
+        "atMs": 36427,
+        "rssKb": 866092
+      },
+      {
+        "atMs": 41682,
+        "rssKb": 891056
+      },
+      {
+        "atMs": 46749,
+        "rssKb": 859656
+      },
+      {
+        "atMs": 51974,
+        "rssKb": 885036
+      },
+      {
+        "atMs": 57228,
+        "rssKb": 888312
+      },
+      {
+        "atMs": 62229,
+        "rssKb": 869200
+      },
+      {
+        "atMs": 67247,
+        "rssKb": 884660
+      },
+      {
+        "atMs": 72453,
+        "rssKb": 891032
+      },
+      {
+        "atMs": 77591,
+        "rssKb": 875052
+      },
+      {
+        "atMs": 82837,
+        "rssKb": 900392
+      },
+      {
+        "atMs": 87868,
+        "rssKb": 851800
+      },
+      {
+        "atMs": 93139,
+        "rssKb": 895048
+      },
+      {
+        "atMs": 98344,
+        "rssKb": 863520
+      },
+      {
+        "atMs": 103511,
+        "rssKb": 877944
+      },
+      {
+        "atMs": 108687,
+        "rssKb": 846080
+      },
+      {
+        "atMs": 113857,
+        "rssKb": 887324
+      },
+      {
+        "atMs": 119031,
+        "rssKb": 904684
+      },
+      {
+        "atMs": 124186,
+        "rssKb": 865800
+      },
+      {
+        "atMs": 129426,
+        "rssKb": 854668
+      },
+      {
+        "atMs": 134689,
+        "rssKb": 867604
+      },
+      {
+        "atMs": 139932,
+        "rssKb": 892296
+      },
+      {
+        "atMs": 145194,
+        "rssKb": 881308
+      },
+      {
+        "atMs": 150460,
+        "rssKb": 899172
+      },
+      {
+        "atMs": 155527,
+        "rssKb": 848992
+      },
+      {
+        "atMs": 160538,
+        "rssKb": 900468
+      },
+      {
+        "atMs": 165801,
+        "rssKb": 858880
+      },
+      {
+        "atMs": 171073,
+        "rssKb": 866580
+      },
+      {
+        "atMs": 176334,
+        "rssKb": 864364
+      },
+      {
+        "atMs": 181596,
+        "rssKb": 891768
+      },
+      {
+        "atMs": 186852,
+        "rssKb": 900968
+      },
+      {
+        "atMs": 192108,
+        "rssKb": 888344
+      },
+      {
+        "atMs": 197356,
+        "rssKb": 908648
+      },
+      {
+        "atMs": 202618,
+        "rssKb": 863360
+      },
+      {
+        "atMs": 207883,
+        "rssKb": 852820
+      },
+      {
+        "atMs": 212906,
+        "rssKb": 872856
+      },
+      {
+        "atMs": 218013,
+        "rssKb": 886776
+      },
+      {
+        "atMs": 223283,
+        "rssKb": 853740
+      },
+      {
+        "atMs": 228359,
+        "rssKb": 893916
+      },
+      {
+        "atMs": 233601,
+        "rssKb": 911372
+      },
+      {
+        "atMs": 238730,
+        "rssKb": 880592
+      },
+      {
+        "atMs": 243927,
+        "rssKb": 860620
+      },
+      {
+        "atMs": 249205,
+        "rssKb": 873964
+      },
+      {
+        "atMs": 254342,
+        "rssKb": 901576
+      },
+      {
+        "atMs": 259629,
+        "rssKb": 885040
+      },
+      {
+        "atMs": 264925,
+        "rssKb": 910224
+      },
+      {
+        "atMs": 270234,
+        "rssKb": 864108
+      },
+      {
+        "atMs": 275250,
+        "rssKb": 907556
+      },
+      {
+        "atMs": 280306,
+        "rssKb": 863348
+      },
+      {
+        "atMs": 285350,
+        "rssKb": 866468
+      },
+      {
+        "atMs": 290375,
+        "rssKb": 854624
+      },
+      {
+        "atMs": 295505,
+        "rssKb": 875716
+      },
+      {
+        "atMs": 300581,
+        "rssKb": 891848
+      },
+      {
+        "atMs": 305640,
+        "rssKb": 873656
+      },
+      {
+        "atMs": 310648,
+        "rssKb": 899708
+      },
+      {
+        "atMs": 315715,
+        "rssKb": 910652
+      },
+      {
+        "atMs": 320808,
+        "rssKb": 878788
+      },
+      {
+        "atMs": 325862,
+        "rssKb": 850512
+      },
+      {
+        "atMs": 331037,
+        "rssKb": 874020
+      },
+      {
+        "atMs": 336060,
+        "rssKb": 895944
+      },
+      {
+        "atMs": 341105,
+        "rssKb": 871984
+      },
+      {
+        "atMs": 346376,
+        "rssKb": 892964
+      },
+      {
+        "atMs": 351453,
+        "rssKb": 913668
+      },
+      {
+        "atMs": 356536,
+        "rssKb": 891944
+      },
+      {
+        "atMs": 361588,
+        "rssKb": 917652
+      },
+      {
+        "atMs": 366626,
+        "rssKb": 861180
+      },
+      {
+        "atMs": 371681,
+        "rssKb": 906640
+      },
+      {
+        "atMs": 376720,
+        "rssKb": 863768
+      },
+      {
+        "atMs": 381728,
+        "rssKb": 881796
+      },
+      {
+        "atMs": 387015,
+        "rssKb": 857048
+      },
+      {
+        "atMs": 392246,
+        "rssKb": 895144
+      },
+      {
+        "atMs": 397256,
+        "rssKb": 902908
+      },
+      {
+        "atMs": 402337,
+        "rssKb": 869216
+      },
+      {
+        "atMs": 407506,
+        "rssKb": 911156
+      },
+      {
+        "atMs": 412579,
+        "rssKb": 863856
+      },
+      {
+        "atMs": 417612,
+        "rssKb": 879352
+      },
+      {
+        "atMs": 422711,
+        "rssKb": 865584
+      },
+      {
+        "atMs": 427995,
+        "rssKb": 885600
+      },
+      {
+        "atMs": 433070,
+        "rssKb": 897436
+      },
+      {
+        "atMs": 438079,
+        "rssKb": 883696
+      },
+      {
+        "atMs": 443136,
+        "rssKb": 911732
+      },
+      {
+        "atMs": 448411,
+        "rssKb": 917452
+      },
+      {
+        "atMs": 453500,
+        "rssKb": 904012
+      },
+      {
+        "atMs": 458579,
+        "rssKb": 857236
+      },
+      {
+        "atMs": 463681,
+        "rssKb": 878484
+      },
+      {
+        "atMs": 468733,
+        "rssKb": 914056
+      },
+      {
+        "atMs": 473971,
+        "rssKb": 886284
+      },
+      {
+        "atMs": 479159,
+        "rssKb": 899524
+      },
+      {
+        "atMs": 484252,
+        "rssKb": 866980
+      },
+      {
+        "atMs": 489332,
+        "rssKb": 904192
+      },
+      {
+        "atMs": 494414,
+        "rssKb": 856448
+      },
+      {
+        "atMs": 499517,
+        "rssKb": 878676
+      },
+      {
+        "atMs": 504589,
+        "rssKb": 860684
+      },
+      {
+        "atMs": 509705,
+        "rssKb": 875532
+      },
+      {
+        "atMs": 514867,
+        "rssKb": 896416
+      },
+      {
+        "atMs": 520013,
+        "rssKb": 879352
+      },
+      {
+        "atMs": 525144,
+        "rssKb": 904624
+      },
+      {
+        "atMs": 530233,
+        "rssKb": 911464
+      },
+      {
+        "atMs": 535338,
+        "rssKb": 895668
+      },
+      {
+        "atMs": 540446,
+        "rssKb": 918028
+      },
+      {
+        "atMs": 545553,
+        "rssKb": 867492
+      },
+      {
+        "atMs": 550643,
+        "rssKb": 915356
+      },
+      {
+        "atMs": 555732,
+        "rssKb": 876372
+      },
+      {
+        "atMs": 560832,
+        "rssKb": 889828
+      },
+      {
+        "atMs": 565904,
+        "rssKb": 857616
+      },
+      {
+        "atMs": 570967,
+        "rssKb": 895024
+      },
+      {
+        "atMs": 576117,
+        "rssKb": 913848
+      },
+      {
+        "atMs": 581222,
+        "rssKb": 869968
+      },
+      {
+        "atMs": 586313,
+        "rssKb": 918928
+      },
+      {
+        "atMs": 591400,
+        "rssKb": 870316
+      },
+      {
+        "atMs": 596497,
+        "rssKb": 884904
+      },
+      {
+        "atMs": 601602,
+        "rssKb": 868924
+      },
+      {
+        "atMs": 606684,
+        "rssKb": 892932
+      },
+      {
+        "atMs": 611742,
+        "rssKb": 899348
+      },
+      {
+        "atMs": 616810,
+        "rssKb": 885280
+      },
+      {
+        "atMs": 621900,
+        "rssKb": 904924
+      },
+      {
+        "atMs": 627006,
+        "rssKb": 859560
+      },
+      {
+        "atMs": 632105,
+        "rssKb": 898452
+      },
+      {
+        "atMs": 637189,
+        "rssKb": 863728
+      },
+      {
+        "atMs": 642233,
+        "rssKb": 871756
+      },
+      {
+        "atMs": 647242,
+        "rssKb": 906356
+      },
+      {
+        "atMs": 652522,
+        "rssKb": 887268
+      },
+      {
+        "atMs": 657807,
+        "rssKb": 906128
+      },
+      {
+        "atMs": 663096,
+        "rssKb": 867756
+      },
+      {
+        "atMs": 668096,
+        "rssKb": 908892
+      },
+      {
+        "atMs": 673319,
+        "rssKb": 865400
+      },
+      {
+        "atMs": 678434,
+        "rssKb": 882896
+      },
+      {
+        "atMs": 683533,
+        "rssKb": 866556
+      },
+      {
+        "atMs": 688699,
+        "rssKb": 887824
+      },
+      {
+        "atMs": 693886,
+        "rssKb": 899832
+      },
+      {
+        "atMs": 699045,
+        "rssKb": 889788
+      },
+      {
+        "atMs": 704127,
+        "rssKb": 906016
+      },
+      {
+        "atMs": 709243,
+        "rssKb": 857288
+      },
+      {
+        "atMs": 714267,
+        "rssKb": 905660
+      },
+      {
+        "atMs": 719347,
+        "rssKb": 864136
+      },
+      {
+        "atMs": 724450,
+        "rssKb": 870984
+      },
+      {
+        "atMs": 729543,
+        "rssKb": 908688
+      },
+      {
+        "atMs": 734637,
+        "rssKb": 882228
+      },
+      {
+        "atMs": 739693,
+        "rssKb": 894296
+      },
+      {
+        "atMs": 744708,
+        "rssKb": 919780
+      },
+      {
+        "atMs": 749987,
+        "rssKb": 900468
+      },
+      {
+        "atMs": 755045,
+        "rssKb": 858900
+      },
+      {
+        "atMs": 760340,
+        "rssKb": 876624
+      },
+      {
+        "atMs": 765391,
+        "rssKb": 856232
+      },
+      {
+        "atMs": 770415,
+        "rssKb": 879916
+      },
+      {
+        "atMs": 775433,
+        "rssKb": 883200
+      },
+      {
+        "atMs": 780601,
+        "rssKb": 874412
+      },
+      {
+        "atMs": 785765,
+        "rssKb": 896060
+      },
+      {
+        "atMs": 790856,
+        "rssKb": 908184
+      },
+      {
+        "atMs": 795942,
+        "rssKb": 893968
+      },
+      {
+        "atMs": 801041,
+        "rssKb": 917212
+      },
+      {
+        "atMs": 806147,
+        "rssKb": 864080
+      },
+      {
+        "atMs": 811267,
+        "rssKb": 898664
+      },
+      {
+        "atMs": 816453,
+        "rssKb": 874512
+      },
+      {
+        "atMs": 821610,
+        "rssKb": 888524
+      },
+      {
+        "atMs": 826646,
+        "rssKb": 916988
+      },
+      {
+        "atMs": 831799,
+        "rssKb": 891304
+      },
+      {
+        "atMs": 836873,
+        "rssKb": 916796
+      },
+      {
+        "atMs": 842018,
+        "rssKb": 862728
+      },
+      {
+        "atMs": 847022,
+        "rssKb": 909704
+      },
+      {
+        "atMs": 852198,
+        "rssKb": 870880
+      },
+      {
+        "atMs": 857483,
+        "rssKb": 877360
+      },
+      {
+        "atMs": 862505,
+        "rssKb": 873592
+      },
+      {
+        "atMs": 867608,
+        "rssKb": 885516
+      },
+      {
+        "atMs": 872676,
+        "rssKb": 897072
+      },
+      {
+        "atMs": 877872,
+        "rssKb": 887672
+      },
+      {
+        "atMs": 882881,
+        "rssKb": 909404
+      },
+      {
+        "atMs": 887953,
+        "rssKb": 920324
+      },
+      {
+        "atMs": 893043,
+        "rssKb": 888936
+      },
+      {
+        "atMs": 898163,
+        "rssKb": 864428
+      },
+      {
+        "atMs": 903380,
+        "rssKb": 880204
+      },
+      {
+        "atMs": 908465,
+        "rssKb": 909000
+      },
+      {
+        "atMs": 913579,
+        "rssKb": 889696
+      },
+      {
+        "atMs": 918699,
+        "rssKb": 906084
+      },
+      {
+        "atMs": 923713,
+        "rssKb": 924316
+      },
+      {
+        "atMs": 928860,
+        "rssKb": 905644
+      },
+      {
+        "atMs": 934049,
+        "rssKb": 866604
+      },
+      {
+        "atMs": 939199,
+        "rssKb": 868636
+      },
+      {
+        "atMs": 944303,
+        "rssKb": 864228
+      },
+      {
+        "atMs": 949319,
+        "rssKb": 881528
+      },
+      {
+        "atMs": 954442,
+        "rssKb": 892744
+      },
+      {
+        "atMs": 959545,
+        "rssKb": 876808
+      },
+      {
+        "atMs": 964663,
+        "rssKb": 902232
+      },
+      {
+        "atMs": 969781,
+        "rssKb": 920148
+      },
+      {
+        "atMs": 974882,
+        "rssKb": 880956
+      },
+      {
+        "atMs": 980130,
+        "rssKb": 863500
+      },
+      {
+        "atMs": 985282,
+        "rssKb": 876028
+      },
+      {
+        "atMs": 990363,
+        "rssKb": 907300
+      },
+      {
+        "atMs": 995540,
+        "rssKb": 888776
+      },
+      {
+        "atMs": 1000806,
+        "rssKb": 903624
+      },
+      {
+        "atMs": 1005888,
+        "rssKb": 921672
+      },
+      {
+        "atMs": 1011044,
+        "rssKb": 907668
+      },
+      {
+        "atMs": 1016320,
+        "rssKb": 863444
+      },
+      {
+        "atMs": 1021445,
+        "rssKb": 879464
+      },
+      {
+        "atMs": 1026685,
+        "rssKb": 867324
+      },
+      {
+        "atMs": 1031767,
+        "rssKb": 886648
+      },
+      {
+        "atMs": 1036891,
+        "rssKb": 892224
+      },
+      {
+        "atMs": 1042066,
+        "rssKb": 884316
+      },
+      {
+        "atMs": 1047219,
+        "rssKb": 905888
+      },
+      {
+        "atMs": 1052373,
+        "rssKb": 919592
+      },
+      {
+        "atMs": 1057648,
+        "rssKb": 909064
+      },
+      {
+        "atMs": 1062834,
+        "rssKb": 869016
+      },
+      {
+        "atMs": 1068063,
+        "rssKb": 887884
+      },
+      {
+        "atMs": 1073276,
+        "rssKb": 859328
+      },
+      {
+        "atMs": 1078362,
+        "rssKb": 895256
+      },
+      {
+        "atMs": 1083446,
+        "rssKb": 904608
+      },
+      {
+        "atMs": 1088651,
+        "rssKb": 880160
+      },
+      {
+        "atMs": 1093845,
+        "rssKb": 917684
+      },
+      {
+        "atMs": 1099073,
+        "rssKb": 867540
+      },
+      {
+        "atMs": 1104291,
+        "rssKb": 902632
+      },
+      {
+        "atMs": 1109460,
+        "rssKb": 874352
+      },
+      {
+        "atMs": 1114619,
+        "rssKb": 897520
+      },
+      {
+        "atMs": 1119884,
+        "rssKb": 920228
+      },
+      {
+        "atMs": 1125078,
+        "rssKb": 896092
+      },
+      {
+        "atMs": 1130313,
+        "rssKb": 861756
+      },
+      {
+        "atMs": 1135519,
+        "rssKb": 874796
+      },
+      {
+        "atMs": 1140674,
+        "rssKb": 858772
+      },
+      {
+        "atMs": 1145867,
+        "rssKb": 884056
+      },
+      {
+        "atMs": 1151045,
+        "rssKb": 896340
+      },
+      {
+        "atMs": 1156207,
+        "rssKb": 876176
+      },
+      {
+        "atMs": 1161363,
+        "rssKb": 904264
+      },
+      {
+        "atMs": 1166504,
+        "rssKb": 921588
+      },
+      {
+        "atMs": 1171646,
+        "rssKb": 904304
+      },
+      {
+        "atMs": 1176901,
+        "rssKb": 866828
+      },
+      {
+        "atMs": 1182092,
+        "rssKb": 880540
+      },
+      {
+        "atMs": 1187296,
+        "rssKb": 909896
+      },
+      {
+        "atMs": 1192495,
+        "rssKb": 890412
+      },
+      {
+        "atMs": 1197669,
+        "rssKb": 904912
+      },
+      {
+        "atMs": 1202862,
+        "rssKb": 875372
+      },
+      {
+        "atMs": 1208060,
+        "rssKb": 914936
+      },
+      {
+        "atMs": 1213247,
+        "rssKb": 872064
+      },
+      {
+        "atMs": 1218437,
+        "rssKb": 895060
+      },
+      {
+        "atMs": 1223563,
+        "rssKb": 875768
+      },
+      {
+        "atMs": 1228691,
+        "rssKb": 892980
+      },
+      {
+        "atMs": 1233784,
+        "rssKb": 906568
+      },
+      {
+        "atMs": 1238988,
+        "rssKb": 894444
+      },
+      {
+        "atMs": 1244121,
+        "rssKb": 922684
+      },
+      {
+        "atMs": 1249274,
+        "rssKb": 919460
+      },
+      {
+        "atMs": 1254403,
+        "rssKb": 913236
+      },
+      {
+        "atMs": 1259547,
+        "rssKb": 869904
+      },
+      {
+        "atMs": 1264677,
+        "rssKb": 885560
+      },
+      {
+        "atMs": 1269836,
+        "rssKb": 871868
+      },
+      {
+        "atMs": 1274961,
+        "rssKb": 897588
+      },
+      {
+        "atMs": 1280096,
+        "rssKb": 911592
+      },
+      {
+        "atMs": 1285236,
+        "rssKb": 874596
+      },
+      {
+        "atMs": 1290365,
+        "rssKb": 919312
+      },
+      {
+        "atMs": 1295457,
+        "rssKb": 861672
+      },
+      {
+        "atMs": 1300651,
+        "rssKb": 899512
+      },
+      {
+        "atMs": 1305782,
+        "rssKb": 881224
+      },
+      {
+        "atMs": 1310898,
+        "rssKb": 886808
+      },
+      {
+        "atMs": 1316075,
+        "rssKb": 910772
+      },
+      {
+        "atMs": 1321207,
+        "rssKb": 891120
+      },
+      {
+        "atMs": 1326398,
+        "rssKb": 919332
+      },
+      {
+        "atMs": 1331599,
+        "rssKb": 865124
+      },
+      {
+        "atMs": 1336724,
+        "rssKb": 919304
+      },
+      {
+        "atMs": 1341830,
+        "rssKb": 875672
+      },
+      {
+        "atMs": 1347010,
+        "rssKb": 888240
+      },
+      {
+        "atMs": 1352145,
+        "rssKb": 872720
+      },
+      {
+        "atMs": 1357317,
+        "rssKb": 888844
+      },
+      {
+        "atMs": 1362467,
+        "rssKb": 909944
+      },
+      {
+        "atMs": 1367611,
+        "rssKb": 894628
+      },
+      {
+        "atMs": 1372742,
+        "rssKb": 918760
+      },
+      {
+        "atMs": 1377918,
+        "rssKb": 868824
+      },
+      {
+        "atMs": 1383050,
+        "rssKb": 898460
+      },
+      {
+        "atMs": 1388177,
+        "rssKb": 877216
+      },
+      {
+        "atMs": 1393367,
+        "rssKb": 894592
+      },
+      {
+        "atMs": 1398496,
+        "rssKb": 923760
+      },
+      {
+        "atMs": 1403646,
+        "rssKb": 906444
+      },
+      {
+        "atMs": 1408776,
+        "rssKb": 915640
+      },
+      {
+        "atMs": 1413913,
+        "rssKb": 871128
+      },
+      {
+        "atMs": 1419114,
+        "rssKb": 920040
+      },
+      {
+        "atMs": 1424273,
+        "rssKb": 885932
+      },
+      {
+        "atMs": 1429473,
+        "rssKb": 890748
+      },
+      {
+        "atMs": 1434598,
+        "rssKb": 880104
+      },
+      {
+        "atMs": 1439731,
+        "rssKb": 903804
+      },
+      {
+        "atMs": 1444878,
+        "rssKb": 914632
+      },
+      {
+        "atMs": 1450029,
+        "rssKb": 896792
+      },
+      {
+        "atMs": 1455139,
+        "rssKb": 914208
+      },
+      {
+        "atMs": 1460296,
+        "rssKb": 876016
+      },
+      {
+        "atMs": 1465398,
+        "rssKb": 908460
+      },
+      {
+        "atMs": 1470431,
+        "rssKb": 878156
+      },
+      {
+        "atMs": 1475560,
+        "rssKb": 889508
+      },
+      {
+        "atMs": 1480561,
+        "rssKb": 922452
+      },
+      {
+        "atMs": 1485755,
+        "rssKb": 897948
+      },
+      {
+        "atMs": 1490946,
+        "rssKb": 912784
+      },
+      {
+        "atMs": 1496129,
+        "rssKb": 876312
+      },
+      {
+        "atMs": 1501395,
+        "rssKb": 926492
+      },
+      {
+        "atMs": 1506594,
+        "rssKb": 882456
+      },
+      {
+        "atMs": 1511820,
+        "rssKb": 898408
+      },
+      {
+        "atMs": 1517005,
+        "rssKb": 881536
+      },
+      {
+        "atMs": 1522242,
+        "rssKb": 904108
+      },
+      {
+        "atMs": 1527436,
+        "rssKb": 911892
+      },
+      {
+        "atMs": 1532616,
+        "rssKb": 908268
+      },
+      {
+        "atMs": 1537827,
+        "rssKb": 867916
+      },
+      {
+        "atMs": 1543035,
+        "rssKb": 878124
+      },
+      {
+        "atMs": 1548274,
+        "rssKb": 860292
+      },
+      {
+        "atMs": 1553504,
+        "rssKb": 887768
+      },
+      {
+        "atMs": 1558705,
+        "rssKb": 903480
+      },
+      {
+        "atMs": 1563916,
+        "rssKb": 892384
+      },
+      {
+        "atMs": 1569161,
+        "rssKb": 916432
+      },
+      {
+        "atMs": 1574382,
+        "rssKb": 866584
+      },
+      {
+        "atMs": 1579603,
+        "rssKb": 902440
+      },
+      {
+        "atMs": 1584624,
+        "rssKb": 875732
+      },
+      {
+        "atMs": 1589764,
+        "rssKb": 885176
+      },
+      {
+        "atMs": 1594878,
+        "rssKb": 920716
+      },
+      {
+        "atMs": 1600084,
+        "rssKb": 900156
+      },
+      {
+        "atMs": 1605247,
+        "rssKb": 912076
+      },
+      {
+        "atMs": 1610374,
+        "rssKb": 871956
+      },
+      {
+        "atMs": 1615615,
+        "rssKb": 920852
+      },
+      {
+        "atMs": 1620820,
+        "rssKb": 876784
+      },
+      {
+        "atMs": 1625930,
+        "rssKb": 889584
+      },
+      {
+        "atMs": 1631014,
+        "rssKb": 879760
+      },
+      {
+        "atMs": 1636191,
+        "rssKb": 900816
+      },
+      {
+        "atMs": 1641360,
+        "rssKb": 909268
+      },
+      {
+        "atMs": 1646527,
+        "rssKb": 896848
+      },
+      {
+        "atMs": 1651533,
+        "rssKb": 916120
+      },
+      {
+        "atMs": 1656640,
+        "rssKb": 865996
+      },
+      {
+        "atMs": 1661778,
+        "rssKb": 914148
+      },
+      {
+        "atMs": 1667049,
+        "rssKb": 879020
+      },
+      {
+        "atMs": 1672060,
+        "rssKb": 891268
+      },
+      {
+        "atMs": 1677132,
+        "rssKb": 926260
+      },
+      {
+        "atMs": 1682133,
+        "rssKb": 900212
+      },
+      {
+        "atMs": 1687379,
+        "rssKb": 912584
+      },
+      {
+        "atMs": 1692427,
+        "rssKb": 875044
+      },
+      {
+        "atMs": 1697481,
+        "rssKb": 918328
+      },
+      {
+        "atMs": 1702573,
+        "rssKb": 872664
+      },
+      {
+        "atMs": 1707710,
+        "rssKb": 887088
+      },
+      {
+        "atMs": 1712766,
+        "rssKb": 869660
+      },
+      {
+        "atMs": 1717842,
+        "rssKb": 892464
+      },
+      {
+        "atMs": 1722973,
+        "rssKb": 894636
+      },
+      {
+        "atMs": 1728274,
+        "rssKb": 897184
+      },
+      {
+        "atMs": 1733433,
+        "rssKb": 912116
+      },
+      {
+        "atMs": 1738544,
+        "rssKb": 928148
+      },
+      {
+        "atMs": 1743667,
+        "rssKb": 911404
+      },
+      {
+        "atMs": 1748886,
+        "rssKb": 867100
+      },
+      {
+        "atMs": 1753943,
+        "rssKb": 884252
+      },
+      {
+        "atMs": 1758977,
+        "rssKb": 914784
+      },
+      {
+        "atMs": 1764083,
+        "rssKb": 886212
+      },
+      {
+        "atMs": 1769127,
+        "rssKb": 904860
+      },
+      {
+        "atMs": 1774285,
+        "rssKb": 866876
+      },
+      {
+        "atMs": 1779545,
+        "rssKb": 922068
+      },
+      {
+        "atMs": 1784813,
+        "rssKb": 863164
+      },
+      {
+        "atMs": 1790052,
+        "rssKb": 893908
+      },
+      {
+        "atMs": 1795319,
+        "rssKb": 875044
+      },
+      {
+        "atMs": 1800551,
+        "rssKb": 897816
+      },
+      {
+        "atMs": 1805698,
+        "rssKb": 912524
+      },
+      {
+        "atMs": 1810966,
+        "rssKb": 902364
+      },
+      {
+        "atMs": 1816257,
+        "rssKb": 926244
+      }
+    ]
+  },
+  "verdicts": [
+    {
+      "gate": "typing_p95",
+      "value": 33.5,
+      "threshold": "< 50 ms",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p99",
+      "value": 33.599999994039536,
+      "threshold": "< 100 ms",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "nav_p95",
+      "value": 33.5,
+      "threshold": "< 150 ms",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "cold_start",
+      "value": 42.599999994039536,
+      "threshold": "< 3000 ms",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "warm_start",
+      "value": 1.4000000059604645,
+      "threshold": "< 1500 ms",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 911,
+      "threshold": "< 750 MB",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "a11y_exposure",
+      "value": "probe-unavailable",
+      "threshold": "editor+navigator+dialog exposed",
+      "verdict": "UNKNOWN"
+    },
+    {
+      "gate": "soak_peak_rss_mb",
+      "value": 911,
+      "threshold": "< 750 MB",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "soak_projected_8h_rss_mb",
+      "value": 1135,
+      "threshold": "< 750 MB",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "soak_typing_p95_last_cycle",
+      "value": 33.5,
+      "threshold": "< 50 ms",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "bakeoff-v1",
+  "rig_commit": "051ae1a"
+}

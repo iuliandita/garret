@@ -1,0 +1,97 @@
+{
+  "run_id": "app-prefs-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-prefs",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "small": {
+      "w": 586,
+      "h": 1082
+    },
+    "larger": {
+      "w": 898,
+      "h": 1642
+    },
+    "serif": {
+      "w": 664,
+      "h": 1202
+    },
+    "mono": {
+      "w": 664,
+      "h": 1594
+    },
+    "narrow": {
+      "w": 544,
+      "h": 1454
+    },
+    "wide": {
+      "w": 816,
+      "h": 950
+    },
+    "chosen": "mono/larger/medium",
+    "recorded": "mono/larger/medium",
+    "restarted": {
+      "w": 898,
+      "h": 2188
+    },
+    "seeded_equivalent": {
+      "w": 898,
+      "h": 2188
+    },
+    "peak_rss_mb": 536,
+    "window": "1400x900",
+    "server_args": "-screen 0 1600x1024x24 -s 0 -noreset",
+    "pane_width_px": 1032,
+    "passage_chars": 2960,
+    "scope": "every box is the editable's AT-SPI extents in window coordinates, over one fixed passage typed into a freshly seeded tiny project. The window is resized to 1400px because at the default 900 the editor pane is narrower than every measure and all three would cap against it.",
+    "omitted_gates": "no latency, stall, cliff or a11y_exposure: this rig types one passage and reads one box per boot, which has nothing true to say about frame cadence or about the navigator's exposure. No legibility gate either - whether a chosen combination can be READ is what the screenshots beside this slice carry, and nothing here measures contrast."
+  },
+  "verdicts": [
+    {
+      "gate": "prefs_size_reflows",
+      "value": "586x1082 at small, 898x1642 at larger",
+      "threshold": "the same prose is TALLER at the largest size than at the smallest",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "prefs_family_reflows",
+      "value": "664x1202 serif, 664x1594 mono",
+      "threshold": "the same prose in the same column wraps to a DIFFERENT height in a different font",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "prefs_measure_widens",
+      "value": "544px narrow, 816px wide",
+      "threshold": "the text column is WIDER at the widest measure than at the narrowest",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "prefs_persist",
+      "value": "chose mono/larger/medium, file holds mono/larger/medium",
+      "threshold": "settings.json records every axis the panel was clicked to",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "prefs_restart_renders_the_choice",
+      "value": "898x2188 after restart, 898x2188 seeded",
+      "threshold": "relaunching on the recorded preference renders exactly the seeded one",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 536,
+      "threshold": "< 750",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "n/a",
+  "rig_commit": "d8318b22"
+}

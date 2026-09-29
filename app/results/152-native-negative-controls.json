@@ -1,0 +1,32 @@
+{
+  "source_commit": "0c83b7c39bace32347ddcc4d32f8d030fa01e95a",
+  "source_restored": true,
+  "controls": [
+    {
+      "control": "no-pending-event",
+      "exit_code": 1,
+      "failed_gates": [
+        "mirror_reports_updating_for_a_committed_pending_save",
+        "mirror_returns_current_after_the_pending_save_lands"
+      ],
+      "result": "app/results/superseded/app-mirror-acts-tiny.152-no-pending-event.json"
+    },
+    {
+      "control": "no-completion-event",
+      "exit_code": 1,
+      "failed_gates": [
+        "mirror_returns_current_after_the_pending_save_lands"
+      ],
+      "result": "app/results/superseded/app-mirror-acts-tiny.152-no-completion-event.json"
+    },
+    {
+      "control": "no-cleanup-receipts",
+      "exit_code": 1,
+      "failed_gates": [
+        "mirror_actions_reap_every_owned_launch"
+      ],
+      "result": "app/results/superseded/app-mirror-acts-tiny.152-no-cleanup-receipts.json",
+      "scope": "Withheld receipts after all actual owned cleanup completed; no process cleanup was skipped."
+    }
+  ]
+}

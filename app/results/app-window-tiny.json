@@ -1,0 +1,50 @@
+{
+  "run_id": "app-window-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-window",
+  "environment": {
+    "kernel": "7.1.8-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "default_w": 1200,
+    "default_h": 800,
+    "pane_w": 832,
+    "widest_measure_px": 816,
+    "resized_w": 1147,
+    "resized_h": 703,
+    "remembered_w": 1147,
+    "remembered_h": 703,
+    "absurd_w": 640,
+    "absurd_h": 480,
+    "scope": "every figure is xdotool's reading of the X window, never the application's account of itself. Xvfb has no window manager, so nothing here says how a tiling compositor will treat the same request -- on Hyprland the recorded size is advisory and the gates below would describe the compositor rather than the application.",
+    "omitted_gates": "no position: on Wayland a client cannot set its own position at all, so a stored position would work on X11 and silently do nothing on the display server this machine runs. Nothing is measured because nothing is claimed."
+  },
+  "verdicts": [
+    {
+      "gate": "window_default_fits_the_widest_measure",
+      "value": "832px of pane for a 816px column",
+      "threshold": "a first launch can show the widest measure without capping it",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "window_size_is_remembered",
+      "value": "left at 1147x703, reopened at 1147x703",
+      "threshold": "the next launch opens at the size the last one was left",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "window_refuses_an_unusable_size",
+      "value": "640x480 from a recorded 1x1",
+      "threshold": "at least 640x480",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "n/a",
+  "rig_commit": "1bfb2425"
+}

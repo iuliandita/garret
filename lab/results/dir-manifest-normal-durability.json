@@ -1,0 +1,52 @@
+{
+  "run_id": "dir-manifest-normal-durability",
+  "track": "fault-rig",
+  "candidate": "dir-manifest",
+  "fixture": "normal",
+  "workload": "scripted-edit",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "0-3/8G",
+    "biasNotes": "cgroup-throttled approximation of reference hardware (4 threads, 8G); modern single-core speed exceeds a five-year-old laptop core. Gates remain hypotheses until a real-hardware pass."
+  },
+  "method": "Block-layer fault injection on an ext4 loopback volume behind dm-flakey. power-loss@drop-writes: the device is switched to drop_writes underneath a live filesystem, discarding every block still in the page cache, then the volume is remounted and compared against the ledger of acknowledged durable writes. Unlike SIGKILL this DOES test fsync durability: a backend that acks before its data reaches the platter loses acked ops here and is scored REGRESSION. disk-full@enospc: the volume is pre-filled so a commit meets a real ENOSPC; dropping later ops is acceptable, losing an acked op or corrupting the project is not. SCOPE: one filesystem (ext4) on one kernel; no barrier/FUA reordering is simulated, so this is a lower bound on power-loss hostility, not a worst case.",
+  "metrics": {
+    "durability": [
+      {
+        "case": "power-loss@drop-writes",
+        "verdict": "NEW_COMPLETE",
+        "acked_ops": 20,
+        "detail": "ok"
+      },
+      {
+        "case": "disk-full@enospc",
+        "verdict": "NEW_COMPLETE",
+        "acked_ops": 6,
+        "hit_enospc": true,
+        "free_before_kb": 4171,
+        "free_after_kb": 73,
+        "writer_error": "ENOSPC: no space left on device, write",
+        "detail": "free 4171->73KB; 6/40 ops acked; writer exit 1; ok; ENOSPC: no space left on device, write"
+      }
+    ],
+    "durability_control": {
+      "case": "power-loss@drop-writes",
+      "verdict": "REGRESSION",
+      "acked_ops": 20,
+      "detail": "empty"
+    }
+  },
+  "verdicts": [
+    {
+      "case": "power-loss@drop-writes",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "disk-full@enospc",
+      "verdict": "NEW_COMPLETE"
+    }
+  ],
+  "seed": "normal-seed",
+  "rig_commit": "fe4b0f0"
+}

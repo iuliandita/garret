@@ -1,0 +1,489 @@
+{
+  "comparisons": [
+    {
+      "result": "app/results/app-mirror-acts-tiny.json",
+      "baseline": "app/results/superseded/app-mirror-acts-tiny.2026-09-20T04-52-51Z.json",
+      "baseline_sha256": "b0d6832afc3775ce3f2e0edcd4a181526f800a347d674bb5e948bf104a712eb6",
+      "current_sha256": "c959da16e51bd802c111f58b91b289be2d754bd4c2f5dc28edc34890a3b74318",
+      "environment_before": {
+        "kernel": "7.2.6-1-cachyos",
+        "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+        "throttleScope": "none",
+        "loadAvg1m": 2.94,
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        },
+        "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+      },
+      "environment_after": {
+        "kernel": "7.2.6-1-cachyos",
+        "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+        "throttleScope": "8 logical CPUs; CPU quota 800%; nice 19; idle IO; memory high 6 GiB, maximum 8 GiB; no swap; one Cargo job; two Rust test threads",
+        "loadAvg1m": 2.86,
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        },
+        "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+      },
+      "verdicts_before": [
+        {
+          "gate": "enable_writes_the_folder",
+          "value": "0 file(s) before, 40 after, for 30 document(s)",
+          "threshold": "the folder is empty before the press (the vacuity guard: a folder that already held files would prove nothing about it), the store has documents, and the folder holds at least one file per document afterward",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "enable_reports_where_and_how_many",
+          "value": "state \"40 files, last written just now.\" (expected count 40), where \"The mirror is written to <scratch>/project\" (names the directory: true)",
+          "threshold": "the state sentence names the count the rig itself counted on disk, and the where sentence named the WHOLE directory the rig handed the host. Not its basename: the sentence is \"The mirror is written to {dir}\", so a basename check passed on the word \"mirror\" appearing in its own wording, which this rig's first green run did",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "enable_is_remembered",
+          "value": "mirrored [project] (expected \"project\")",
+          "threshold": "settings.json's mirrored list includes this project's own slug",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_panel_offers_the_change_without_a_reopen",
+          "value": "1 row(s) offered in the same process that wrote the folder, the edited document among them (restarted: false)",
+          "threshold": "the change panel offers the outside edit as a row without the application being restarted, and one of those rows names the document that was edited. This is the PANEL's own scan on open, not the watcher's -- a sabotage with the watcher disabled still passes it, which is why the watcher has a gate of its own below",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_watcher_keeps_the_pass_off_an_edited_file",
+          "value": "13020 ms after the typing (the store's rev moved; the outside edit led by 11041 ms) the file still holds the words the writer put in it",
+          "threshold": "the typing reached the store (its rev moved -- otherwise no pass was owed and the file is unchanged for free), a pass window of at least 10000 ms went by AFTER the typing, and the file the writer edited from outside still holds their words. That is what the in-process watcher buys: it notices the edit in time to PAUSE the entry, so the pass leaves the file alone. With the watcher disabled this goes red and the panel gate above does not",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "conflict_is_reported",
+          "value": "row state \"The words changed here and in your book\" (expected \"The words changed here and in your book\")",
+          "threshold": "the conflicted row's state sentence equals the page's own catalog sentence for it",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_books_side_is_preserved",
+          "value": "sidecar \"0000-Winter-Nocturne-978.from-project.md\" exists true, holds the book's words true",
+          "threshold": "the sidecar exists, its name ends \".from-project.md\", and its body -- read by the harness's own Markdown reader -- holds the sentence the rig typed into the application",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_sidecar_is_not_offered_as_a_change",
+          "value": "1 row(s) at the conflict, 0 about another file, sidecar named in a row false",
+          "threshold": "rows were offered (the vacuity guard: with no rows at all, \"no row names the sidecar\" is true and proves nothing), every one of them is about the document the rig edited, and none names the sidecar itself",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "thorough_check_finds_a_preserved_metadata_edit",
+          "value": "metadata preserved true, invisible before true, pressed true, row found true",
+          "threshold": "same size and timestamp, no prior change row, explicit check pressed and a row found without restarting",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "thorough_check_keeps_the_pass_off_an_edited_file",
+          "value": "found after restart true, revision moved true, waited 13001 ms, complete file preserved true",
+          "threshold": "a thorough-only finding survives restart without rechecking and stays byte-identical after a real store revision change and at least 10000 ms for a mirror pass",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_reports_updating_for_a_committed_pending_save",
+          "value": "scheduled warm-up reached the folder true, entire second marker reached SQLite true 1025 ms later, indicator \"The readable folder is being written\", second marker absent from folder true, captured true",
+          "threshold": "after the first scheduled pass reached the folder, a complete second save reaches SQLite within 0 < ms < 10000; while its bytes are absent, the visible popover has the exact accessible name \"The readable folder is being written\" and the visible popover is captured",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_returns_current_after_the_pending_save_lands",
+          "value": "second marker reached the folder true, indicator \"The readable folder matches what you have typed\" (expected \"The readable folder matches what you have typed\")",
+          "threshold": "the same pending save later reaches the actual folder and the still-open popover has the exact accessible name \"The readable folder matches what you have typed\"",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_actions_reap_every_owned_launch",
+          "value": "4 cleanup receipts; killed [0, 0, 0, 1]",
+          "threshold": "all four owned launches (three app sessions and Xvfb) completed cleanup; killed counts are nonnegative integers",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "peak_rss_mb",
+          "value": 571,
+          "threshold": "<= 750 MB (0 is no sample taken, not a real reading, and FAILS)",
+          "verdict": "PASS"
+        }
+      ],
+      "verdicts_after": [
+        {
+          "gate": "enable_writes_the_folder",
+          "value": "0 file(s) before, 40 after, for 30 document(s)",
+          "threshold": "the folder is empty before the press (the vacuity guard: a folder that already held files would prove nothing about it), the store has documents, and the folder holds at least one file per document afterward",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "enable_reports_where_and_how_many",
+          "value": "state \"40 files, last written just now.\" (expected count 40), where \"The mirror is written to <scratch>/by-id/01a0c0a7731a7b708237c5bac9a1f236\" (names the directory: true)",
+          "threshold": "the state sentence names the count the rig itself counted on disk, and the where sentence named the WHOLE directory the rig handed the host. Not its basename: the sentence is \"The mirror is written to {dir}\", so a basename check passed on the word \"mirror\" appearing in its own wording, which this rig's first green run did",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "enable_is_remembered",
+          "value": "mirrored [01a0c0a7731a7b708237c5bac9a1f236] (expected \"01a0c0a7731a7b708237c5bac9a1f236\")",
+          "threshold": "settings.json's mirrored list includes this project's own slug",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_panel_offers_the_change_without_a_reopen",
+          "value": "1 row(s) offered in the same process that wrote the folder, the edited document among them (restarted: false)",
+          "threshold": "the change panel offers the outside edit as a row without the application being restarted, and one of those rows names the document that was edited. This is the PANEL's own scan on open, not the watcher's -- a sabotage with the watcher disabled still passes it, which is why the watcher has a gate of its own below",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_watcher_keeps_the_pass_off_an_edited_file",
+          "value": "13022 ms after the typing (the store's rev moved; the outside edit led by 10934 ms) the file still holds the words the writer put in it",
+          "threshold": "the typing reached the store (its rev moved -- otherwise no pass was owed and the file is unchanged for free), a pass window of at least 10000 ms went by AFTER the typing, and the file the writer edited from outside still holds their words. That is what the in-process watcher buys: it notices the edit in time to PAUSE the entry, so the pass leaves the file alone. With the watcher disabled this goes red and the panel gate above does not",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "conflict_is_reported",
+          "value": "row state \"The words changed here and in your book\" (expected \"The words changed here and in your book\")",
+          "threshold": "the conflicted row's state sentence equals the page's own catalog sentence for it",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_books_side_is_preserved",
+          "value": "sidecar \"0000-Winter-Nocturne-978.from-project.md\" exists true, holds the book's words true",
+          "threshold": "the sidecar exists, its name ends \".from-project.md\", and its body -- read by the harness's own Markdown reader -- holds the sentence the rig typed into the application",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_sidecar_is_not_offered_as_a_change",
+          "value": "1 row(s) at the conflict, 0 about another file, sidecar named in a row false",
+          "threshold": "rows were offered (the vacuity guard: with no rows at all, \"no row names the sidecar\" is true and proves nothing), every one of them is about the document the rig edited, and none names the sidecar itself",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "thorough_check_finds_a_preserved_metadata_edit",
+          "value": "metadata preserved true, invisible before true, pressed true, row found true",
+          "threshold": "same size and timestamp, no prior change row, explicit check pressed and a row found without restarting",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "thorough_check_keeps_the_pass_off_an_edited_file",
+          "value": "found after restart true, revision moved true, waited 13001 ms, complete file preserved true",
+          "threshold": "a thorough-only finding survives restart without rechecking and stays byte-identical after a real store revision change and at least 10000 ms for a mirror pass",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_reports_updating_for_a_committed_pending_save",
+          "value": "scheduled warm-up reached the folder true, entire second marker reached SQLite true 1020 ms later, indicator \"The readable folder is being written\", second marker absent from folder true, captured true",
+          "threshold": "after the first scheduled pass reached the folder, a complete second save reaches SQLite within 0 < ms < 10000; while its bytes are absent, the visible popover has the exact accessible name \"The readable folder is being written\" and the visible popover is captured",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_returns_current_after_the_pending_save_lands",
+          "value": "second marker reached the folder true, indicator \"The readable folder matches what you have typed\" (expected \"The readable folder matches what you have typed\")",
+          "threshold": "the same pending save later reaches the actual folder and the still-open popover has the exact accessible name \"The readable folder matches what you have typed\"",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_actions_reap_every_owned_launch",
+          "value": "4 cleanup receipts; killed [0, 0, 0, 1]",
+          "threshold": "all four owned launches (three app sessions and Xvfb) completed cleanup; killed counts are nonnegative integers",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "peak_rss_mb",
+          "value": 562,
+          "threshold": "<= 750 MB (0 is no sample taken, not a real reading, and FAILS)",
+          "verdict": "PASS"
+        }
+      ],
+      "changed_metrics": {
+        "where_sentence_redacted": {
+          "before": "The mirror is written to <scratch>/project",
+          "after": "The mirror is written to <scratch>/by-id/01a0c0a7731a7b708237c5bac9a1f236"
+        },
+        "settings_mirrored_book_ids": {
+          "before": null,
+          "after": [
+            "01a0c0a7731a7b708237c5bac9a1f236"
+          ]
+        },
+        "book_id": {
+          "before": null,
+          "after": "01a0c0a7731a7b708237c5bac9a1f236"
+        },
+        "pass_window_ms": {
+          "before": 13020,
+          "after": 13022
+        },
+        "outside_edit_led_by_ms": {
+          "before": 11041,
+          "after": 10934
+        },
+        "pending_window_ms": {
+          "before": 1025,
+          "after": 1020
+        },
+        "peak_rss_mb": {
+          "before": 571,
+          "after": 562
+        }
+      }
+    },
+    {
+      "result": "app/results/app-mirror-acts-stress.json",
+      "baseline": "app/results/superseded/app-mirror-acts-stress.2026-09-20T04-52-51Z.json",
+      "baseline_sha256": "020875fbaf154ca5f8ef8e276cc955aeacd04146781bf937822c8ffe5afec8a6",
+      "current_sha256": "22032f717dfaf88ef298a7d508377848c78dd63b87b190dd9ce3c8faae64497a",
+      "environment_before": {
+        "kernel": "7.2.6-1-cachyos",
+        "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+        "throttleScope": "none",
+        "loadAvg1m": 1.74,
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        },
+        "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+      },
+      "environment_after": {
+        "kernel": "7.2.6-1-cachyos",
+        "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+        "throttleScope": "8 logical CPUs; CPU quota 800%; nice 19; idle IO; memory high 6 GiB, maximum 8 GiB; no swap; one Cargo job; two Rust test threads",
+        "loadAvg1m": 1.35,
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        },
+        "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+      },
+      "verdicts_before": [
+        {
+          "gate": "enable_writes_the_folder",
+          "value": "0 file(s) before, 20000 after, for 15200 document(s)",
+          "threshold": "the folder is empty before the press (the vacuity guard: a folder that already held files would prove nothing about it), the store has documents, and the folder holds at least one file per document afterward",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "enable_reports_where_and_how_many",
+          "value": "state \"20000 files, last written just now.\" (expected count 20000), where \"The mirror is written to <scratch>/project\" (names the directory: true)",
+          "threshold": "the state sentence names the count the rig itself counted on disk, and the where sentence named the WHOLE directory the rig handed the host. Not its basename: the sentence is \"The mirror is written to {dir}\", so a basename check passed on the word \"mirror\" appearing in its own wording, which this rig's first green run did",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "enable_is_remembered",
+          "value": "mirrored [project] (expected \"project\")",
+          "threshold": "settings.json's mirrored list includes this project's own slug",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_panel_offers_the_change_without_a_reopen",
+          "value": "1 row(s) offered in the same process that wrote the folder, the edited document among them (restarted: false)",
+          "threshold": "the change panel offers the outside edit as a row without the application being restarted, and one of those rows names the document that was edited. This is the PANEL's own scan on open, not the watcher's -- a sabotage with the watcher disabled still passes it, which is why the watcher has a gate of its own below",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_watcher_keeps_the_pass_off_an_edited_file",
+          "value": "13034 ms after the typing (the store's rev moved; the outside edit led by 10908 ms) the file still holds the words the writer put in it",
+          "threshold": "the typing reached the store (its rev moved -- otherwise no pass was owed and the file is unchanged for free), a pass window of at least 10000 ms went by AFTER the typing, and the file the writer edited from outside still holds their words. That is what the in-process watcher buys: it notices the edit in time to PAUSE the entry, so the pass leaves the file alone. With the watcher disabled this goes red and the panel gate above does not",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "conflict_is_reported",
+          "value": "row state \"The words changed here and in your book\" (expected \"The words changed here and in your book\")",
+          "threshold": "the conflicted row's state sentence equals the page's own catalog sentence for it",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_books_side_is_preserved",
+          "value": "sidecar \"0000-Winter-Garden-443.from-project.md\" exists true, holds the book's words true",
+          "threshold": "the sidecar exists, its name ends \".from-project.md\", and its body -- read by the harness's own Markdown reader -- holds the sentence the rig typed into the application",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_sidecar_is_not_offered_as_a_change",
+          "value": "1 row(s) at the conflict, 0 about another file, sidecar named in a row false",
+          "threshold": "rows were offered (the vacuity guard: with no rows at all, \"no row names the sidecar\" is true and proves nothing), every one of them is about the document the rig edited, and none names the sidecar itself",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "thorough_check_finds_a_preserved_metadata_edit",
+          "value": "metadata preserved true, invisible before true, pressed true, row found true",
+          "threshold": "same size and timestamp, no prior change row, explicit check pressed and a row found without restarting",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "thorough_check_keeps_the_pass_off_an_edited_file",
+          "value": "found after restart true, revision moved true, waited 13000 ms, complete file preserved true",
+          "threshold": "a thorough-only finding survives restart without rechecking and stays byte-identical after a real store revision change and at least 10000 ms for a mirror pass",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_reports_updating_for_a_committed_pending_save",
+          "value": "scheduled warm-up reached the folder true, entire second marker reached SQLite true 1032 ms later, indicator \"The readable folder is being written\", second marker absent from folder true, captured true",
+          "threshold": "after the first scheduled pass reached the folder, a complete second save reaches SQLite within 0 < ms < 10000; while its bytes are absent, the visible popover has the exact accessible name \"The readable folder is being written\" and the visible popover is captured",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_returns_current_after_the_pending_save_lands",
+          "value": "second marker reached the folder true, indicator \"The readable folder matches what you have typed\" (expected \"The readable folder matches what you have typed\")",
+          "threshold": "the same pending save later reaches the actual folder and the still-open popover has the exact accessible name \"The readable folder matches what you have typed\"",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_actions_reap_every_owned_launch",
+          "value": "4 cleanup receipts; killed [0, 0, 0, 1]",
+          "threshold": "all four owned launches (three app sessions and Xvfb) completed cleanup; killed counts are nonnegative integers",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "peak_rss_mb",
+          "value": 727,
+          "threshold": "<= 750 MB (0 is no sample taken, not a real reading, and FAILS)",
+          "verdict": "PASS"
+        }
+      ],
+      "verdicts_after": [
+        {
+          "gate": "enable_writes_the_folder",
+          "value": "0 file(s) before, 20000 after, for 15200 document(s)",
+          "threshold": "the folder is empty before the press (the vacuity guard: a folder that already held files would prove nothing about it), the store has documents, and the folder holds at least one file per document afterward",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "enable_reports_where_and_how_many",
+          "value": "state \"20000 files, last written just now.\" (expected count 20000), where \"The mirror is written to <scratch>/by-id/01a0c0a9911476e19b3a2b7c993d1979\" (names the directory: true)",
+          "threshold": "the state sentence names the count the rig itself counted on disk, and the where sentence named the WHOLE directory the rig handed the host. Not its basename: the sentence is \"The mirror is written to {dir}\", so a basename check passed on the word \"mirror\" appearing in its own wording, which this rig's first green run did",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "enable_is_remembered",
+          "value": "mirrored [01a0c0a9911476e19b3a2b7c993d1979] (expected \"01a0c0a9911476e19b3a2b7c993d1979\")",
+          "threshold": "settings.json's mirrored list includes this project's own slug",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_panel_offers_the_change_without_a_reopen",
+          "value": "1 row(s) offered in the same process that wrote the folder, the edited document among them (restarted: false)",
+          "threshold": "the change panel offers the outside edit as a row without the application being restarted, and one of those rows names the document that was edited. This is the PANEL's own scan on open, not the watcher's -- a sabotage with the watcher disabled still passes it, which is why the watcher has a gate of its own below",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_watcher_keeps_the_pass_off_an_edited_file",
+          "value": "13022 ms after the typing (the store's rev moved; the outside edit led by 10962 ms) the file still holds the words the writer put in it",
+          "threshold": "the typing reached the store (its rev moved -- otherwise no pass was owed and the file is unchanged for free), a pass window of at least 10000 ms went by AFTER the typing, and the file the writer edited from outside still holds their words. That is what the in-process watcher buys: it notices the edit in time to PAUSE the entry, so the pass leaves the file alone. With the watcher disabled this goes red and the panel gate above does not",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "conflict_is_reported",
+          "value": "row state \"The words changed here and in your book\" (expected \"The words changed here and in your book\")",
+          "threshold": "the conflicted row's state sentence equals the page's own catalog sentence for it",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_books_side_is_preserved",
+          "value": "sidecar \"0000-Winter-Garden-443.from-project.md\" exists true, holds the book's words true",
+          "threshold": "the sidecar exists, its name ends \".from-project.md\", and its body -- read by the harness's own Markdown reader -- holds the sentence the rig typed into the application",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_sidecar_is_not_offered_as_a_change",
+          "value": "1 row(s) at the conflict, 0 about another file, sidecar named in a row false",
+          "threshold": "rows were offered (the vacuity guard: with no rows at all, \"no row names the sidecar\" is true and proves nothing), every one of them is about the document the rig edited, and none names the sidecar itself",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "thorough_check_finds_a_preserved_metadata_edit",
+          "value": "metadata preserved true, invisible before true, pressed true, row found true",
+          "threshold": "same size and timestamp, no prior change row, explicit check pressed and a row found without restarting",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "thorough_check_keeps_the_pass_off_an_edited_file",
+          "value": "found after restart true, revision moved true, waited 13001 ms, complete file preserved true",
+          "threshold": "a thorough-only finding survives restart without rechecking and stays byte-identical after a real store revision change and at least 10000 ms for a mirror pass",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_reports_updating_for_a_committed_pending_save",
+          "value": "scheduled warm-up reached the folder true, entire second marker reached SQLite true 1028 ms later, indicator \"The readable folder is being written\", second marker absent from folder true, captured true",
+          "threshold": "after the first scheduled pass reached the folder, a complete second save reaches SQLite within 0 < ms < 10000; while its bytes are absent, the visible popover has the exact accessible name \"The readable folder is being written\" and the visible popover is captured",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_returns_current_after_the_pending_save_lands",
+          "value": "second marker reached the folder true, indicator \"The readable folder matches what you have typed\" (expected \"The readable folder matches what you have typed\")",
+          "threshold": "the same pending save later reaches the actual folder and the still-open popover has the exact accessible name \"The readable folder matches what you have typed\"",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_actions_reap_every_owned_launch",
+          "value": "4 cleanup receipts; killed [0, 0, 0, 1]",
+          "threshold": "all four owned launches (three app sessions and Xvfb) completed cleanup; killed counts are nonnegative integers",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "peak_rss_mb",
+          "value": 712,
+          "threshold": "<= 750 MB (0 is no sample taken, not a real reading, and FAILS)",
+          "verdict": "PASS"
+        }
+      ],
+      "changed_metrics": {
+        "where_sentence_redacted": {
+          "before": "The mirror is written to <scratch>/project",
+          "after": "The mirror is written to <scratch>/by-id/01a0c0a9911476e19b3a2b7c993d1979"
+        },
+        "settings_mirrored_book_ids": {
+          "before": null,
+          "after": [
+            "01a0c0a9911476e19b3a2b7c993d1979"
+          ]
+        },
+        "book_id": {
+          "before": null,
+          "after": "01a0c0a9911476e19b3a2b7c993d1979"
+        },
+        "pass_window_ms": {
+          "before": 13034,
+          "after": 13022
+        },
+        "outside_edit_led_by_ms": {
+          "before": 10908,
+          "after": 10962
+        },
+        "thorough_pass_ms": {
+          "before": 13000,
+          "after": 13001
+        },
+        "pending_window_ms": {
+          "before": 1032,
+          "after": 1028
+        },
+        "peak_rss_mb": {
+          "before": 727,
+          "after": 712
+        }
+      }
+    }
+  ],
+  "interpretation": "Current runs use eight logical CPUs, a CPU quota, nice 19, idle I/O and memory caps. Earlier runs were not equally constrained. Functional outcomes are comparable; timing or peak-memory differences cannot be attributed solely to the identity change. No persistence or memory-climb investigation was run."
+}

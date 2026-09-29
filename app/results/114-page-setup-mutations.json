@@ -1,0 +1,22 @@
+[
+  {
+    "name": "preserve-font",
+    "verdict": "KILLED",
+    "exit": 101
+  },
+  {
+    "name": "write-layout",
+    "verdict": "KILLED",
+    "exit": 1
+  },
+  {
+    "name": "pending-save",
+    "verdict": "KILLED",
+    "exit": 1
+  },
+  {
+    "name": "refresh-proof",
+    "verdict": "KILLED",
+    "exit": 1
+  }
+]

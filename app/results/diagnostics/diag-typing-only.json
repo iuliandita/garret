@@ -1,0 +1,251 @@
+{
+  "run_id": "diag-typing-only",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-diagnostic",
+  "environment": {
+    "kernel": "7.2.2-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 1.19,
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "mode": "virtual",
+    "soak_minutes": 5,
+    "typing_chars_per_cycle": 400,
+    "nav_jumps_per_cycle": 0,
+    "action_delay_ms": 0,
+    "workload_script": "writing-v1",
+    "display": "xvfb",
+    "session_type": "xvfb",
+    "gdk_backend": "x11",
+    "server_args": "-screen 0 1280x1024x24 -s 0 -noreset",
+    "input_pulse_ms": 0,
+    "ms_per_action": 33.4,
+    "peak_rss_mb": 699,
+    "startup_ms": 159,
+    "actions": 8981,
+    "onset": null,
+    "first_slow": {
+      "actionIndex": 1,
+      "atMs": 470,
+      "charsTyped": 1,
+      "dispatchMs": 5,
+      "frameMs": 468,
+      "kind": "type",
+      "stalled": false
+    },
+    "session_states": [],
+    "step": null,
+    "slow_actions": 1,
+    "typing": {
+      "count": 8981,
+      "dispatch": {
+        "p50": 1.000000000007276,
+        "p95": 2.000000000007276,
+        "p99": 2.0000000000582077
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34,
+        "p99": 34.000000000029104
+      },
+      "histogram": {
+        "100-500": 1,
+        "20-40": 8980,
+        "40-100": 0,
+        "500-2000": 0,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 1,
+      "stalls": 0
+    },
+    "nav": {
+      "count": 0,
+      "dispatch": {
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "frame": {
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 0,
+        "40-100": 0,
+        "500-2000": 0,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 0,
+      "stalls": 0
+    },
+    "cycles": [
+      {
+        "atMs": 14605,
+        "charsTyped": 400,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 28783,
+        "charsTyped": 800,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 42959,
+        "charsTyped": 1200,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 57136,
+        "charsTyped": 1600,
+        "cycle": 4,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 71312,
+        "charsTyped": 2000,
+        "cycle": 5,
+        "partial": false,
+        "typingP95Ms": 34.000000000007276
+      },
+      {
+        "atMs": 85489,
+        "charsTyped": 2400,
+        "cycle": 6,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 99666,
+        "charsTyped": 2800,
+        "cycle": 7,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 113843,
+        "charsTyped": 3200,
+        "cycle": 8,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 128019,
+        "charsTyped": 3600,
+        "cycle": 9,
+        "partial": false,
+        "typingP95Ms": 34.00000000001455
+      },
+      {
+        "atMs": 142196,
+        "charsTyped": 4000,
+        "cycle": 10,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 156373,
+        "charsTyped": 4400,
+        "cycle": 11,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 170550,
+        "charsTyped": 4800,
+        "cycle": 12,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 184726,
+        "charsTyped": 5200,
+        "cycle": 13,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 198903,
+        "charsTyped": 5600,
+        "cycle": 14,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 213080,
+        "charsTyped": 6000,
+        "cycle": 15,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 227257,
+        "charsTyped": 6400,
+        "cycle": 16,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 241433,
+        "charsTyped": 6800,
+        "cycle": 17,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 255611,
+        "charsTyped": 7200,
+        "cycle": 18,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 269787,
+        "charsTyped": 7600,
+        "cycle": 19,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 283965,
+        "charsTyped": 8000,
+        "cycle": 20,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 298141,
+        "charsTyped": 8400,
+        "cycle": 21,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 300009,
+        "charsTyped": 8453,
+        "cycle": 22,
+        "partial": true,
+        "typingP95Ms": 34
+      }
+    ],
+    "rows": 20000
+  },
+  "verdicts": [],
+  "seed": "app-v1",
+  "rig_commit": "07380394"
+}

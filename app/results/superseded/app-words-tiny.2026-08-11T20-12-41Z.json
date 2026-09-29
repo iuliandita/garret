@@ -1,0 +1,244 @@
+{
+  "run_id": "app-words-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-words",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "workload_script": "words-v1",
+    "peak_rss_mb": 528,
+    "startup_ms": 72,
+    "rows": 40,
+    "opened_at_boot": "it-000011",
+    "scene": "it-000011",
+    "words": {
+      "marked_text": "down.",
+      "mark_persisted": true,
+      "mark_applied_live": true,
+      "project_total": 2010,
+      "scene_sum": 2010,
+      "scene_docs": 30,
+      "scene_words": 57,
+      "scan_ms": 85,
+      "scan_granularity_ms": 83.4
+    },
+    "selected_before_mark": "down.",
+    "marked_runs_in_reopened_scene": [
+      "down."
+    ],
+    "bar_readings": [
+      {
+        "label": "granularity-0",
+        "raw": "47 words in this scene | 2,000 saved in the project"
+      },
+      {
+        "label": "granularity-1",
+        "raw": "47 words in this scene | 2,000 saved in the project"
+      },
+      {
+        "label": "granularity-2",
+        "raw": "47 words in this scene | 2,000 saved in the project"
+      },
+      {
+        "label": "granularity-3",
+        "raw": "47 words in this scene | 2,000 saved in the project"
+      },
+      {
+        "label": "granularity-4",
+        "raw": "47 words in this scene | 2,000 saved in the project"
+      },
+      {
+        "label": "baseline",
+        "raw": "47 words in this scene | 2,000 saved in the project"
+      },
+      {
+        "label": "scan-poll",
+        "raw": "48 words in this scene | 2,001 saved in the project"
+      },
+      {
+        "label": "selection-before-mark",
+        "raw": "down."
+      },
+      {
+        "label": "after-typing-and-mark",
+        "raw": "57 words in this scene | 2,010 saved in the project"
+      },
+      {
+        "label": "final",
+        "raw": "57 words in this scene | 2,010 saved in the project"
+      }
+    ],
+    "per_scene_page_words": [
+      {
+        "item_id": "it-000008",
+        "words": 82
+      },
+      {
+        "item_id": "it-000009",
+        "words": 88
+      },
+      {
+        "item_id": "it-000010",
+        "words": 57
+      },
+      {
+        "item_id": "it-000011",
+        "words": 57
+      },
+      {
+        "item_id": "it-000012",
+        "words": 68
+      },
+      {
+        "item_id": "it-000013",
+        "words": 46
+      },
+      {
+        "item_id": "it-000014",
+        "words": 76
+      },
+      {
+        "item_id": "it-000015",
+        "words": 49
+      },
+      {
+        "item_id": "it-000016",
+        "words": 69
+      },
+      {
+        "item_id": "it-000017",
+        "words": 76
+      },
+      {
+        "item_id": "it-000018",
+        "words": 75
+      },
+      {
+        "item_id": "it-000019",
+        "words": 74
+      },
+      {
+        "item_id": "it-000020",
+        "words": 67
+      },
+      {
+        "item_id": "it-000021",
+        "words": 87
+      },
+      {
+        "item_id": "it-000022",
+        "words": 55
+      },
+      {
+        "item_id": "it-000023",
+        "words": 49
+      },
+      {
+        "item_id": "it-000024",
+        "words": 87
+      },
+      {
+        "item_id": "it-000025",
+        "words": 67
+      },
+      {
+        "item_id": "it-000026",
+        "words": 50
+      },
+      {
+        "item_id": "it-000027",
+        "words": 62
+      },
+      {
+        "item_id": "it-000028",
+        "words": 49
+      },
+      {
+        "item_id": "it-000029",
+        "words": 62
+      },
+      {
+        "item_id": "it-000030",
+        "words": 87
+      },
+      {
+        "item_id": "it-000031",
+        "words": 63
+      },
+      {
+        "item_id": "it-000032",
+        "words": 56
+      },
+      {
+        "item_id": "it-000033",
+        "words": 65
+      },
+      {
+        "item_id": "it-000034",
+        "words": 67
+      },
+      {
+        "item_id": "it-000035",
+        "words": 88
+      },
+      {
+        "item_id": "it-000036",
+        "words": 65
+      },
+      {
+        "item_id": "it-000037",
+        "words": 67
+      }
+    ],
+    "reopen_loaded_body_hash": "9b0a5e49",
+    "reopen_peak_rss_mb": 529,
+    "omitted_gates": [
+      {
+        "gate": "a11y_exposure, a11y_tree_structure",
+        "reason": "this run makes no structural claim about the navigator: it never clicks a row, never mutates the tree, and reads AT-SPI only for widget geometry. The hierarchy and outline runs are where the accessibility contract is graded."
+      },
+      {
+        "gate": "latency, stall, cliff, peak RSS trend",
+        "reason": "the run is a minute of real keyboard input, not a soak; it has nothing true to say about frame cadence or a leak slope."
+      }
+    ],
+    "scope": {
+      "input": "Real X input throughout: xdotool keystrokes into the shipped editor and xdotool triple-clicks on the shipped project bar. The page's own JavaScript is never called.",
+      "how_the_host_figure_is_read": "The X PRIMARY selection. project_word_count is reachable only through the page; the page reports neither the figure nor the latency in its sink payload; and the word count is absent from the accessibility tree (see a11y_gap). Triple-clicking the bar and reading PRIMARY is therefore the only channel out of the running application that does not require changing it - and it reads exactly the characters a writer sees. The raw strings are recorded in bar_readings so a reader can check the parse.",
+      "a11y_gap": "MEASURED, and a finding rather than a rig note: THE WORD COUNT IS INVISIBLE TO ASSISTIVE TECHNOLOGY. A full AT-SPI walk of the running app shows `document web` with exactly four children - the #project-controls banner, the #outline-bar group, the #nav tree and the #editor landmark. #project-bar and #word-count appear nowhere, and no ancestor exposes their text through the Text interface either (`document web` answers no text object at all), so a screen reader user cannot read their own word count. NOT GRADED HERE: this run's gates are about the counting rule, and inventing an exposure gate around a defect found while building the rig would conflate the two.",
+      "page_side_sum": "countWordsIn and the ProseMirror schema are IMPORTED from app/ui/src/editor.ts, not restated. That is the opposite of this harness's usual rule and it is deliberate: the gate's claim is that the host's total equals the sum of THE PAGE'S counts, so a restatement would be a third implementation and a disagreement could no longer say which two of the three drifted. The thresholds gates.ts restates are specifications; this is one of the two things being compared.",
+      "word_count_agrees": "One number against one number, over a store the rig has confirmed quiet: every reading is taken after the stored bodies have been unchanged for 2000 ms, twice the page's flush debounce, so the total on screen and the file on disk describe the same manuscript. PER-DOCUMENT ATTRIBUTION IS IMPOSSIBLE from outside: the host answers with a single u64 and never says which document contributed what. per_scene_page_words carries the page side document by document so a future reader of a FAIL has one half of the picture; the other half would need a host-side change.",
+      "word_count_scan_ms": "AN UPPER BOUND, not the command's latency, and the gate's threshold string says so. The interval runs from a commit becoming visible to a second read-only connection to the first display read that shows a different total, so it covers the flush ack, the page's un-awaited refreshProject, the IPC both ways, the full scan of every document, the repaint AND the rig's own display-read cost, which is recorded beside it as scan_granularity_ms and is the finest interval this channel can resolve. At the tiny fixture the scan is far below that floor, so this number is mostly the rig. The figure that would matter - a full scan at the stress fixture, where the design's cost actually lives - is UNMEASURED, and measuring it separably needs the host or the page to report the latency itself.",
+      "marks_persist": "The word is chosen by the EDITOR's word boundaries, not by the rig: ctrl+shift+Left makes the selection and the rig reads back what got selected from PRIMARY, aborting unless it is a single whitespace-free word of the sentence this run typed. The scene is the one the page opens at boot, deliberately, so the reopen boot LOADS and parses the marked body - a schema that had dropped em on the way in would fail there, not merely on the way out. The reopen soaks for 0 ms and mutates nothing, so it cannot itself erode the marked word; reopen_loaded_body_hash records the page's re-serialization of what it parsed."
+    }
+  },
+  "verdicts": [
+    {
+      "gate": "marks_persist",
+      "value": "\"down.\" still carries em",
+      "threshold": "the word italicised with Mod-i carries its em mark in the body read from the reopened project file",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "word_count_agrees",
+      "value": "2010 == 2010 over 30 document(s)",
+      "threshold": "the host's project_word_count == the sum of the page's per-scene counts over the same saved state",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "word_count_scan_ms",
+      "value": 85,
+      "threshold": "< 500 (flush commit observed in the project file -> the project bar's total repainted: an UPPER BOUND covering the flush ack, the page's un-awaited refresh, the IPC, the full scan, the repaint AND the rig's own ~83.4 ms display-read cost, which is the finest interval it can resolve)",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "5528ff2b"
+}

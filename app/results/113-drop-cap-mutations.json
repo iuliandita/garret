@@ -1,0 +1,26 @@
+[
+  {
+    "module": "epub",
+    "mutation": "never-arm",
+    "exit_code": 101,
+    "outcome": "killed"
+  },
+  {
+    "module": "epub",
+    "mutation": "never-consume",
+    "exit_code": 101,
+    "outcome": "killed"
+  },
+  {
+    "module": "pdf",
+    "mutation": "never-arm",
+    "exit_code": 101,
+    "outcome": "killed"
+  },
+  {
+    "module": "pdf",
+    "mutation": "never-consume",
+    "exit_code": 101,
+    "outcome": "killed"
+  }
+]

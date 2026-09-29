@@ -1,0 +1,157 @@
+{
+  "run_id": "app-export-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-export",
+  "environment": {
+    "kernel": "7.2.6-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 2.25,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "workload_script": "export-v1",
+    "readiness_peak_rss_mb": 626,
+    "startup_ms": 134,
+    "rows": 40,
+    "opened_at_boot": "it-000011",
+    "scene": "it-000011",
+    "export": {
+      "fixture": "tiny",
+      "export_items": 40,
+      "export_headings": 40,
+      "export_levels_matched": 40,
+      "export_scenes_compared": 30,
+      "export_scenes_matched": 30,
+      "export_words": 2012,
+      "project_words": 2012,
+      "export_marks_found": 1,
+      "marks_applied_live": true,
+      "underlined_runs_in_scene": 1,
+      "export_underline_markup_found": 0,
+      "export_underline_reported": 1,
+      "export_last_sentence_present": true,
+      "export_second_path_differs": true,
+      "export_first_unchanged": true,
+      "export_ms": 110.8
+    },
+    "exported_paths": [
+      "/tmp/app-export-w6kjUw/exports/tiny.md",
+      "/tmp/app-export-w6kjUw/exports/tiny-2.md"
+    ],
+    "exported_bytes": 12261,
+    "manuscript_title": "tiny",
+    "orphan_blocks": 0,
+    "sections_aligned_to_walk": true,
+    "fidelity_mismatches": [],
+    "italicised": "dusk.",
+    "underlined": "dusk.",
+    "export_notice": "Exported Markdown to /tmp/app-export-w6kjUw/exports/tiny-2.md. Markdown has no underline, so 1 underlined run was written as plain text.dismiss this message",
+    "last_sentence": "CrateSevenLedgerShut.",
+    "last_sentence_section_index": 2,
+    "last_keystroke_to_click_ms": 234,
+    "debounce_window_used_ms": 424.3,
+    "prelocated_export_target": {
+      "id": "menu-export",
+      "role": "menu item",
+      "name": "Export manuscript",
+      "rect": {
+        "x": 790,
+        "y": 193,
+        "w": 230,
+        "h": 24
+      },
+      "center": {
+        "x": 905,
+        "y": 205
+      }
+    },
+    "word_count_name": "Word count: 59 words in this scene, 2,012 saved in the project, 12 words written today",
+    "omitted_gates": [
+      {
+        "gate": "latency, stall, cliff, a11y_exposure, a11y_tree_structure",
+        "reason": "the run is a minute of real keyboard and pointer input, not a soak, and it never clicks a navigator row or mutates the tree. It has nothing true to say about frame cadence, a leak slope or the navigator's accessibility contract."
+      }
+    ],
+    "scope": {
+      "input": "Real X input throughout: xdotool keystrokes into the shipped editor, and both exports driven through the SHIPPED application menu (File > Export manuscript). The first export opens File with the route's chord, caches the exact #menu-export accessibility node and clicks its recorded center; the second keeps menuDriver.activate(). The page's own JavaScript is never called, and the export's effect is verified against the FILE and the STORE, never by asking the accessibility layer whether the item ran.",
+      "the_reader": "app/harness/src/markdown-read.ts is the harness's own restatement of the syntax the exporter emits, written from the spec's format section and not from export.rs. It unescapes `\\x` to `x`, drops heading lines, strips `*`/`**`/`***` and joins blocks with one space - which is document_text's own joining rule, so the result is directly comparable to the store's text. IT IS NOT A CommonMark IMPLEMENTATION and the fidelity gate's threshold says so: there is no CommonMark parser in this project and adding one to grade a run would make the run a test of that parser.",
+      "whitespace_normalization": "BOTH SIDES of the fidelity comparison are normalized identically - every run of Unicode whitespace collapsed to one space, then trimmed - and the gate's threshold string says so rather than leaving it here, because the verdict line is what gets read. The asymmetry it absorbs is the format's: the exporter trim_end's every block (two trailing spaces are a CommonMark hard break) and separates blocks with a blank line, while document_text keeps what was typed and separates blocks with one space. The cost is that a whitespace-only difference cannot be detected.",
+      "alignment": "Sections are paired with walk items BY INDEX, never by title: 2,292 of the 20,000 stress items share a title. export_structure compares the counts first, which is what makes the index alignment sound; when the counts disagree nothing is compared and the fidelity gate reports UNKNOWN rather than pairing arbitrary scenes.",
+      "export_includes_last_keystroke": "The claim is the page's drain(), and it only is one because the rig re-reads the scene's stored body after the pointer reaches the prelocated Export item and before the click that runs Export, and ABORTS if the 1000 ms flush debounce had already committed the sentence. The debounce is armed by the FIRST unflushed edit and never re-armed, so the window starts at the paragraph break before the sentence; last_keystroke_to_click_ms is elapsed time from the last keystroke to the click, while debounce_window_used_ms is elapsed time from the paragraph break.",
+      "export_ms": "AN UPPER BOUND on project_export, not its latency. The interval runs from the one pointer click on the prelocated menu item to the exported file being complete and stable on disk, so it covers pointer delivery, the menu's activation, the page's flush drain, the IPC both ways, the store read, the render, the write and the fsync, plus this rig's 5 ms file polling period. The host writes with one write_all and an fsync, which is not atomic to an observer, so completeness is 'the size stopped changing and the last byte is the newline the format always ends with'.",
+      "export_working_memory": "UNAVAILABLE: runShell stops RSS sampling at readiness before this rig's interactive File > Export manuscript action. metrics.readiness_peak_rss_mb records that startup observation only; it does not cover export working memory.",
+      "project_word_count": "Read off the platform accessibility tree, out of the word count's accessible NAME - the same channel a screen reader uses, and the only way out of the page for a figure the sink payload does not carry. An absent or unparseable name leaves the figure UNREAD, which the gate reports as UNKNOWN and never as agreement.",
+      "never_clobbers": "Both exports write into a FRESH temporary directory named by APP_EXPORT_DIR, so the rig knows what appeared without asking the page. Nothing is typed between them, so the second file describes the same manuscript; the claim is only that it took a different path and left the first file's bytes alone."
+    }
+  },
+  "verdicts": [
+    {
+      "gate": "export_structure",
+      "value": "40 heading(s) for 40 walked item(s); 40 at the expected level",
+      "threshold": "one heading per item in the store's depth-first walk, AT THE EXPECTED LEVEL: `##`..`######` heading count == the walk's item count == the number of headings whose level matches, and all > 0. The expected level for the item at walk index i is `min(depth + 2, 6)`, RESTATED by this rig from the format spec and NOT imported from export.rs -- a rig taking the rule from the emitter would check the exporter against itself and this half would grade a tautology. The project name's H1 is NOT counted -- it is the manuscript's title, not an item",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "export_text_fidelity",
+      "value": "30 of 30 scene(s) round-tripped",
+      "threshold": "every compared scene's exported prose, stripped by THIS RIG'S OWN READER (app/harness/src/markdown-read.ts) and NOT a CommonMark reference implementation, equals the text of its stored ProseMirror body. A NECESSARY CONDITION -- the exporter can read back what it wrote -- not a claim that any other Markdown reader agrees. Both sides are whitespace-normalized (every run of whitespace collapsed to one space, then trimmed) because the exporter trim_end's each block while the store keeps what was typed, so a WHITESPACE-ONLY difference is invisible to this gate",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "export_word_count_agrees",
+      "value": "2012 == 2012",
+      "threshold": "words in the exported prose (headings excluded, counted by this rig over its own stripped text) == the host's project_word_count as the footer displays it, and > 0. THE TWO SIDES COUNT OVER DIFFERENT SETS ON PURPOSE: the export counts items in the walk, the host counts every `doc` row. A row whose item is not in the walk is prose missing from the manuscript, and this gate is the tripwire for it -- not a tolerance",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "export_underline_loss_reported",
+      "value": "1 underlined run(s) dropped and reported",
+      "threshold": "a run underlined with Mod-u during the session is in the exported file as PLAIN TEXT, the file carries no `<u>`/`</u>`/`__` markup, and the export notice reports exactly as many dropped runs as the store holds. Markdown has no underline, so the drop is the designed behaviour and the TALLY is what makes it not a silent loss. The reported figure is read off the live accessibility tree, so `not read` is a third state and never agreement",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "export_marks_survive",
+      "value": "1 emphasis-delimited run(s) carry the italicised word",
+      "threshold": "> 0 emphasis-delimited runs in the exported prose carry the word this run italicised with Mod-i. `*`/`**`/`***` are the only inline markup this exporter emits, so the rig's reader has one thing to look for",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "export_includes_last_keystroke",
+      "value": "the last sentence typed before the export is in the file",
+      "threshold": "the sentence typed immediately before Export was activated is in the exported file. THE CLAIM IS THE PAGE'S drain(), NOT THE FLUSH DEBOUNCE: the rig re-reads the store between the last keystroke and the activation and aborts without writing if the 1000 ms debounce had already committed the sentence, because then the file would hold it either way and this gate would prove nothing. The route is the application menu as of the retirement slice, and metrics.debounce_window_used_ms records how much of the debounce elapsed before the prelocated Export item was clicked",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "export_never_clobbers",
+      "value": "two exports, two paths, first file byte-identical",
+      "threshold": "a second export returns a different path AND leaves the first file's bytes unchanged. A manuscript is evidence and evidence is never silently overwritten",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "export_ms",
+      "value": 110.8,
+      "threshold": "< 1000 at the \"tiny\" fixture (the number means nothing without it: the cost is O(manuscript)). From the pointer click on the prelocated menu item to the exported file being complete and stable on disk, so it INCLUDES pointer delivery, the page's flush drain and this rig's file polling period -- it is an UPPER BOUND on project_export, not its latency",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": "not measured",
+      "threshold": "export working memory unavailable at the \"tiny\" fixture: runner sampling ends before interactive export, so the readiness peak cannot grade the export body",
+      "verdict": "UNKNOWN"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "dd015750"
+}

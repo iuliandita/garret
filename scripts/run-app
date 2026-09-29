@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Start the app the way a person would. Development launcher: it runs the
+# binary out of this repo's target directory and is not a distribution
+# artifact.
+set -euo pipefail
+
+# Resolved from this script's own location, not the working directory: the
+# whole point of the slice this belongs to is that a launch from anywhere works.
+here=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+repo=$(cd -- "$here/.." && pwd)
+
+bin="$repo/app/shell-tauri/src-tauri/target/release/app-shell-tauri"
+
+# app/ui/dist is gitignored and goes stale SILENTLY -- two graded rig runs have
+# measured a previous build because of it. Always rebuilt, never skipped on the
+# assumption it is current.
+(cd "$repo/app/ui" && bun run build)
+
+if [ ! -x "$bin" ]; then
+  echo "building the host (first build takes a couple of minutes)" >&2
+  (cd "$repo/app/shell-tauri/src-tauri" && cargo build --release)
+fi
+
+if [ ! -x "$bin" ]; then
+  echo "no runnable host binary at $bin" >&2
+  echo "build it with: cd app/shell-tauri/src-tauri && cargo build --release" >&2
+  exit 1
+fi
+
+# The development machine's Hyprland will not hand keyboard focus to a native-Wayland
+# client via IPC at all: `hyprctl dispatch focuswindow` reports ok and nothing
+# moves, and `wtype` once typed test input into the operator's terminal instead
+# of the app. Rendering through XWayland restores focus handling and is what
+# every GUI rig here already does. Measured on that machine; whether it is
+# needed elsewhere is unknown.
+export GDK_BACKEND=x11
+
+exec "$bin" "$@"

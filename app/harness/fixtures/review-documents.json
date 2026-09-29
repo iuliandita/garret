@@ -1,0 +1,917 @@
+[
+  {
+    "id": "insert_text",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "abc"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 2,
+      "to": 2,
+      "before": [],
+      "after": [
+        {
+          "kind": "text",
+          "text": "X"
+        }
+      ]
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "aXbc"
+            }
+          ]
+        }
+      ]
+    },
+    "pm": {
+      "kind": "insert_text",
+      "text": "X"
+    }
+  },
+  {
+    "id": "delete_text",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "abc"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 2,
+      "to": 3,
+      "before": [
+        {
+          "kind": "text",
+          "text": "b"
+        }
+      ],
+      "after": []
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "ac"
+            }
+          ]
+        }
+      ]
+    },
+    "pm": {
+      "kind": "delete"
+    }
+  },
+  {
+    "id": "replace_text",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "abc"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 2,
+      "to": 3,
+      "before": [
+        {
+          "kind": "text",
+          "text": "b"
+        }
+      ],
+      "after": [
+        {
+          "kind": "text",
+          "text": "Y"
+        }
+      ]
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "aYc"
+            }
+          ]
+        }
+      ]
+    },
+    "pm": {
+      "kind": "insert_text",
+      "text": "Y"
+    }
+  },
+  {
+    "id": "format_only",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "abcd"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 2,
+      "to": 4,
+      "before": [
+        {
+          "kind": "text",
+          "text": "bc"
+        }
+      ],
+      "after": [
+        {
+          "kind": "text",
+          "text": "bc",
+          "marks": [
+            "em"
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "a"
+            },
+            {
+              "type": "text",
+              "text": "bc",
+              "marks": [
+                {
+                  "type": "em"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "d"
+            }
+          ]
+        }
+      ]
+    },
+    "pm": {
+      "kind": "add_mark",
+      "mark": "em"
+    }
+  },
+  {
+    "id": "marked_run_boundary",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "a",
+              "marks": [
+                {
+                  "type": "em"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "b",
+              "marks": [
+                {
+                  "type": "strong"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 2,
+      "to": 3,
+      "before": [
+        {
+          "kind": "text",
+          "text": "b",
+          "marks": [
+            "strong"
+          ]
+        }
+      ],
+      "after": [
+        {
+          "kind": "text",
+          "text": "Z",
+          "marks": [
+            "underline"
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "a",
+              "marks": [
+                {
+                  "type": "em"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "Z",
+              "marks": [
+                {
+                  "type": "underline"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "pm": {
+      "kind": "replace_marked_text",
+      "text": "Z",
+      "mark": "underline"
+    }
+  },
+  {
+    "id": "astral_unicode",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "a😀b"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 2,
+      "to": 4,
+      "before": [
+        {
+          "kind": "text",
+          "text": "😀"
+        }
+      ],
+      "after": [
+        {
+          "kind": "text",
+          "text": "Q"
+        }
+      ]
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "aQb"
+            }
+          ]
+        }
+      ]
+    },
+    "pm": {
+      "kind": "insert_text",
+      "text": "Q"
+    }
+  },
+  {
+    "id": "split_paragraph",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "abcd"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 3,
+      "to": 3,
+      "before": [],
+      "after": [
+        {
+          "kind": "close"
+        },
+        {
+          "kind": "open"
+        }
+      ]
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "ab"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "cd"
+            }
+          ]
+        }
+      ]
+    },
+    "pm": {
+      "kind": "split"
+    }
+  },
+  {
+    "id": "merge_paragraphs",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "a"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "b"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 2,
+      "to": 4,
+      "before": [
+        {
+          "kind": "close"
+        },
+        {
+          "kind": "open"
+        }
+      ],
+      "after": []
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "ab"
+            }
+          ]
+        }
+      ]
+    },
+    "pm": {
+      "kind": "join",
+      "at": 3
+    }
+  },
+  {
+    "id": "cross_paragraph_delete",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "abc"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "def"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 2,
+      "to": 8,
+      "before": [
+        {
+          "kind": "text",
+          "text": "bc"
+        },
+        {
+          "kind": "close"
+        },
+        {
+          "kind": "open"
+        },
+        {
+          "kind": "text",
+          "text": "de"
+        }
+      ],
+      "after": []
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "af"
+            }
+          ]
+        }
+      ]
+    },
+    "pm": {
+      "kind": "delete"
+    }
+  },
+  {
+    "id": "insert_whole_paragraph",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "tail"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 0,
+      "to": 0,
+      "before": [],
+      "after": [
+        {
+          "kind": "open"
+        },
+        {
+          "kind": "text",
+          "text": "head"
+        },
+        {
+          "kind": "close"
+        }
+      ]
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "head"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "tail"
+            }
+          ]
+        }
+      ]
+    },
+    "pm": {
+      "kind": "insert_paragraph",
+      "text": "head"
+    }
+  },
+  {
+    "id": "delete_whole_paragraph",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "a"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "b"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 0,
+      "to": 3,
+      "before": [
+        {
+          "kind": "open"
+        },
+        {
+          "kind": "text",
+          "text": "a"
+        },
+        {
+          "kind": "close"
+        }
+      ],
+      "after": []
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "b"
+            }
+          ]
+        }
+      ]
+    },
+    "pm": {
+      "kind": "delete"
+    }
+  },
+  {
+    "id": "split_empty_paragraph",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph"
+        }
+      ]
+    },
+    "hunk": {
+      "from": 1,
+      "to": 1,
+      "before": [],
+      "after": [
+        {
+          "kind": "close"
+        },
+        {
+          "kind": "open"
+        }
+      ]
+    },
+    "expected": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph"
+        },
+        {
+          "type": "paragraph"
+        }
+      ]
+    },
+    "pm": {
+      "kind": "split"
+    }
+  },
+  {
+    "id": "stale_before",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "abc"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 2,
+      "to": 3,
+      "before": [
+        {
+          "kind": "text",
+          "text": "x"
+        }
+      ],
+      "after": [
+        {
+          "kind": "text",
+          "text": "Y"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "id": "surrogate_split",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "a😀b"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 3,
+      "to": 3,
+      "before": [],
+      "after": [
+        {
+          "kind": "text",
+          "text": "Q"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "id": "unknown_node",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "hard_break"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 1,
+      "to": 1,
+      "before": [],
+      "after": [
+        {
+          "kind": "text",
+          "text": "x"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "id": "unknown_mark",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "a",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 1,
+      "to": 2,
+      "before": [
+        {
+          "kind": "text",
+          "text": "a"
+        }
+      ],
+      "after": [
+        {
+          "kind": "text",
+          "text": "b"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "id": "unsupported_property",
+    "body": {
+      "type": "doc",
+      "attrs": {},
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "a"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 1,
+      "to": 2,
+      "before": [
+        {
+          "kind": "text",
+          "text": "a"
+        }
+      ],
+      "after": [
+        {
+          "kind": "text",
+          "text": "b"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "id": "unbalanced_result",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "a"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 1,
+      "to": 2,
+      "before": [
+        {
+          "kind": "text",
+          "text": "a"
+        }
+      ],
+      "after": [
+        {
+          "kind": "close"
+        }
+      ]
+    },
+    "expected": null
+  },
+  {
+    "id": "last_paragraph_deletion",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "a"
+            }
+          ]
+        }
+      ]
+    },
+    "hunk": {
+      "from": 0,
+      "to": 3,
+      "before": [
+        {
+          "kind": "open"
+        },
+        {
+          "kind": "text",
+          "text": "a"
+        },
+        {
+          "kind": "close"
+        }
+      ],
+      "after": []
+    },
+    "expected": null
+  }
+]

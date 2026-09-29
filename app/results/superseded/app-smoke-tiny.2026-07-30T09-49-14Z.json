@@ -1,0 +1,59 @@
+{
+  "run_id": "app-smoke-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-smoke",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "peak_rss_mb": 304,
+    "a11y": {
+      "available": true,
+      "hasNavigator": false,
+      "roles": [
+        "application",
+        "frame",
+        "panel",
+        "panel",
+        "filler",
+        "separator",
+        "button",
+        "button",
+        "button",
+        "filler",
+        "label",
+        "label",
+        "filler",
+        "filler",
+        "filler",
+        "scroll pane",
+        "document web",
+        "landmark"
+      ]
+    },
+    "host_candidate": "tauri",
+    "host_seed": "app-v1"
+  },
+  "verdicts": [
+    {
+      "gate": "peak_rss_mb",
+      "value": 304,
+      "threshold": "< 750",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "a11y_exposure",
+      "value": "none",
+      "threshold": "navigator exposed",
+      "verdict": "FAIL"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "c9f5da2"
+}

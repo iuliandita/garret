@@ -1,0 +1,30 @@
+[
+  {
+    "surface": "cast",
+    "theme": "light",
+    "exit_code": 0,
+    "renderer": "dmabuf-llvmpipe",
+    "screenshot": "app/results/screenshots/130-control-weight-cast-light.png"
+  },
+  {
+    "surface": "cast",
+    "theme": "dark",
+    "exit_code": 0,
+    "renderer": "dmabuf-llvmpipe",
+    "screenshot": "app/results/screenshots/130-control-weight-cast-dark.png"
+  },
+  {
+    "surface": "preview",
+    "theme": "light",
+    "exit_code": 0,
+    "renderer": "dmabuf-llvmpipe",
+    "screenshot": "app/results/screenshots/130-control-weight-preview-light.png"
+  },
+  {
+    "surface": "preview",
+    "theme": "dark",
+    "exit_code": 0,
+    "renderer": "dmabuf-llvmpipe",
+    "screenshot": "app/results/screenshots/130-control-weight-preview-dark.png"
+  }
+]

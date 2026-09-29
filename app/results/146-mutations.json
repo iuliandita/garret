@@ -1,0 +1,26 @@
+{
+  "source_commit": "73f11b2b7deb730bfbf9dc47cffa0be543fafdc4",
+  "source_restored": true,
+  "mutations": [
+    {
+      "mutation": "inch-rounding",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "toggle-keeps-old-values",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "unit-blurs-draft",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "unit-before-load",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    }
+  ]
+}

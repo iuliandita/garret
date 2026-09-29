@@ -1,0 +1,1663 @@
+{
+  "run_id": "app-persist-stress-5m",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-persist",
+  "environment": {
+    "kernel": "7.2.2-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "peak_rss_mb": 689,
+    "typing_p95_ms": 34.00000000000364,
+    "typing_p99_ms": 5000.999999999985,
+    "nav_p95_ms": 34,
+    "typing": {
+      "count": 3052,
+      "dispatch": {
+        "p50": 1,
+        "p95": 2,
+        "p99": 2.000000000014552
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34.00000000000364,
+        "p99": 5000.999999999985
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 3015,
+        "40-100": 3,
+        "500-2000": 0,
+        "<20": 1,
+        ">=2000": 33
+      },
+      "slowFrames": 0,
+      "stalls": 33
+    },
+    "nav": {
+      "count": 428,
+      "dispatch": {
+        "p50": 0,
+        "p95": 3,
+        "p99": 17
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34,
+        "p99": 50
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 423,
+        "40-100": 1,
+        "500-2000": 0,
+        "<20": 0,
+        ">=2000": 4
+      },
+      "slowFrames": 0,
+      "stalls": 4
+    },
+    "cycles": [
+      {
+        "atMs": 16227,
+        "charsTyped": 400,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 34.000000000000455
+      },
+      {
+        "atMs": 32405,
+        "charsTyped": 800,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 48584,
+        "charsTyped": 1200,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 64763,
+        "charsTyped": 1600,
+        "cycle": 4,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 80959,
+        "charsTyped": 2000,
+        "cycle": 5,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 97137,
+        "charsTyped": 2400,
+        "cycle": 6,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 113316,
+        "charsTyped": 2800,
+        "cycle": 7,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 300041,
+        "charsTyped": 2869,
+        "cycle": 8,
+        "partial": true,
+        "typingP95Ms": 5004.000000000029
+      }
+    ],
+    "rows": 20000,
+    "workload_script": "writing-v1",
+    "a11y": {
+      "available": true,
+      "hasNavigator": true,
+      "exposedRows": 1570,
+      "mountedRows": 23,
+      "treeRows": [
+        {
+          "id": "nav-row-19977",
+          "name": "Straße Nocturne 923",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1548,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19978",
+          "name": "CAFÉ Winter 85",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1549,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19979",
+          "name": "Straße Ombré 149",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1550,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19980",
+          "name": "River Lantern 831",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1551,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19981",
+          "name": "Storm Harbor 399",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1552,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19982",
+          "name": "Garden Nocturne 961",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1553,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19983",
+          "name": "Storm Harbor 437",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1554,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19984",
+          "name": "Lantern Harbor 952",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1555,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19985",
+          "name": "Nocturne CAFÉ 170",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1556,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19986",
+          "name": "Garden Garden 485",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1557,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19987",
+          "name": "Storm Nocturne 414",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1558,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19988",
+          "name": "Storm Winter 163",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1559,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19989",
+          "name": "Garden Lantern 327",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1560,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19990",
+          "name": "Letter Garden 953",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1561,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19991",
+          "name": "CAFÉ Garden 408",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1562,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19992",
+          "name": "Ombré Garden 603",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1563,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19993",
+          "name": "River café 298",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1564,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19994",
+          "name": "Ombré River 117",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1565,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19995",
+          "name": "Storm Lantern 740",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1566,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19996",
+          "name": "CAFÉ Ombré 726",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1567,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19997",
+          "name": "Ausência Lantern 185",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1568,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19998",
+          "name": "Ausência Ombré 29",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1569,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19999",
+          "name": "Nocturne Ombré 813",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1570,
+          "expanded": false
+        }
+      ],
+      "roleCounts": {
+        "application": 1,
+        "frame": 1,
+        "panel": 8,
+        "filler": 5,
+        "separator": 1,
+        "button": 3,
+        "label": 2,
+        "scroll pane": 1,
+        "document web": 1,
+        "toggle button": 3,
+        "tree": 1,
+        "tree item": 23,
+        "landmark": 1,
+        "entry": 1,
+        "section": 2
+      }
+    },
+    "startup_ms": 253,
+    "soak_minutes": 5,
+    "actions": 3480,
+    "onset": {
+      "actionIndex": 3444,
+      "atMs": 119918,
+      "charsTyped": 2838,
+      "dispatchMs": 0,
+      "frameMs": 5001,
+      "kind": "nav",
+      "stalled": true
+    },
+    "slow_actions": 37,
+    "persist": {
+      "restart_body_match": true,
+      "body_diverged_from_seed": true,
+      "flush_count": 144,
+      "flush_conflicts": 0,
+      "flush_errors": 0,
+      "flush_p50_ms": 2,
+      "flush_p95_ms": 3
+    },
+    "persist_error": null,
+    "rss": {
+      "samples": 1210,
+      "span_ms": 303806,
+      "peak_mb": 689,
+      "peak_at_ms": 34279,
+      "boot_window_ms": 30000,
+      "peak_in_boot_window": false,
+      "boot_window_peak_mb": 686,
+      "post_boot_samples": 1092,
+      "post_boot_median_mb": 664,
+      "post_boot_max_mb": 689,
+      "post_boot_slope_mb_per_min": -0.5703858117559517
+    },
+    "rss_series": [
+      {
+        "atMs": 0,
+        "rssMb": 54
+      },
+      {
+        "atMs": 1000,
+        "rssMb": 54
+      },
+      {
+        "atMs": 2000,
+        "rssMb": 54
+      },
+      {
+        "atMs": 3000,
+        "rssMb": 536
+      },
+      {
+        "atMs": 4000,
+        "rssMb": 674
+      },
+      {
+        "atMs": 5000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 6000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 7000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 8000,
+        "rssMb": 676
+      },
+      {
+        "atMs": 9000,
+        "rssMb": 678
+      },
+      {
+        "atMs": 10000,
+        "rssMb": 678
+      },
+      {
+        "atMs": 11000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 12000,
+        "rssMb": 674
+      },
+      {
+        "atMs": 13000,
+        "rssMb": 677
+      },
+      {
+        "atMs": 14000,
+        "rssMb": 677
+      },
+      {
+        "atMs": 15000,
+        "rssMb": 672
+      },
+      {
+        "atMs": 16000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 17000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 18000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 19000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 20000,
+        "rssMb": 677
+      },
+      {
+        "atMs": 21000,
+        "rssMb": 679
+      },
+      {
+        "atMs": 22000,
+        "rssMb": 678
+      },
+      {
+        "atMs": 23000,
+        "rssMb": 683
+      },
+      {
+        "atMs": 24000,
+        "rssMb": 686
+      },
+      {
+        "atMs": 25000,
+        "rssMb": 686
+      },
+      {
+        "atMs": 26000,
+        "rssMb": 681
+      },
+      {
+        "atMs": 27000,
+        "rssMb": 681
+      },
+      {
+        "atMs": 28000,
+        "rssMb": 682
+      },
+      {
+        "atMs": 29000,
+        "rssMb": 681
+      },
+      {
+        "atMs": 30000,
+        "rssMb": 681
+      },
+      {
+        "atMs": 31000,
+        "rssMb": 681
+      },
+      {
+        "atMs": 32000,
+        "rssMb": 681
+      },
+      {
+        "atMs": 33000,
+        "rssMb": 681
+      },
+      {
+        "atMs": 34000,
+        "rssMb": 689
+      },
+      {
+        "atMs": 35000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 36000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 37000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 38000,
+        "rssMb": 659
+      },
+      {
+        "atMs": 39000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 40000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 41000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 42000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 43000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 44000,
+        "rssMb": 666
+      },
+      {
+        "atMs": 45000,
+        "rssMb": 666
+      },
+      {
+        "atMs": 46000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 47000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 48000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 49000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 50000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 51000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 52000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 53000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 54000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 55000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 56000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 57000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 58000,
+        "rssMb": 674
+      },
+      {
+        "atMs": 59000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 60000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 61000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 62000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 63000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 64000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 65000,
+        "rssMb": 674
+      },
+      {
+        "atMs": 66000,
+        "rssMb": 674
+      },
+      {
+        "atMs": 67000,
+        "rssMb": 674
+      },
+      {
+        "atMs": 68000,
+        "rssMb": 674
+      },
+      {
+        "atMs": 69000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 70000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 71000,
+        "rssMb": 674
+      },
+      {
+        "atMs": 72000,
+        "rssMb": 689
+      },
+      {
+        "atMs": 73000,
+        "rssMb": 659
+      },
+      {
+        "atMs": 74000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 75000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 76000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 77000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 78000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 79000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 80000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 81000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 82000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 83000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 84000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 85000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 86000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 87000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 88000,
+        "rssMb": 666
+      },
+      {
+        "atMs": 89000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 90000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 91000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 92000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 93000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 94000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 95000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 96000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 97000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 98000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 99000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 100000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 101000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 102000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 103000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 104000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 105000,
+        "rssMb": 671
+      },
+      {
+        "atMs": 106000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 107000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 108000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 109000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 110000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 111000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 112000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 113000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 114000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 115000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 116000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 117000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 118000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 119000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 120000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 121000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 122000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 123000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 124000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 125000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 126000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 127000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 128000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 129000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 130000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 131000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 132000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 133000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 134000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 135000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 136000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 137000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 138000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 139000,
+        "rssMb": 671
+      },
+      {
+        "atMs": 140000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 141000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 142000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 143000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 144000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 145000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 146000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 147000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 148000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 149000,
+        "rssMb": 672
+      },
+      {
+        "atMs": 150000,
+        "rssMb": 671
+      },
+      {
+        "atMs": 151000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 152000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 153000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 154000,
+        "rssMb": 676
+      },
+      {
+        "atMs": 155000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 156000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 157000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 158000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 159000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 160000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 161000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 162000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 163000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 164000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 165000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 166000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 167000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 168000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 169000,
+        "rssMb": 677
+      },
+      {
+        "atMs": 170000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 171000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 172000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 173000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 174000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 175000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 176000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 177000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 178000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 179000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 180000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 181000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 182000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 183000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 184000,
+        "rssMb": 672
+      },
+      {
+        "atMs": 185000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 186000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 187000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 188000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 189000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 190000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 191000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 192000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 193000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 194000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 195000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 196000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 197000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 198000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 199000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 200000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 201000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 202000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 203000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 204000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 205000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 206000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 207000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 208000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 209000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 210000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 211000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 212000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 213000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 214000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 215000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 216000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 217000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 218000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 219000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 220000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 221000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 222000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 223000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 224000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 225000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 226000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 227000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 228000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 229000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 230000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 231000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 232000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 233000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 234000,
+        "rssMb": 666
+      },
+      {
+        "atMs": 235000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 236000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 237000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 238000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 239000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 240000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 241000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 242000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 243000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 244000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 245000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 246000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 247000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 248000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 249000,
+        "rssMb": 666
+      },
+      {
+        "atMs": 250000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 251000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 252000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 253000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 254000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 255000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 256000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 257000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 258000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 259000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 260000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 261000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 262000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 263000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 264000,
+        "rssMb": 672
+      },
+      {
+        "atMs": 265000,
+        "rssMb": 672
+      },
+      {
+        "atMs": 266000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 267000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 268000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 269000,
+        "rssMb": 676
+      },
+      {
+        "atMs": 270000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 271000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 272000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 273000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 274000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 275000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 276000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 277000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 278000,
+        "rssMb": 665
+      },
+      {
+        "atMs": 279000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 280000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 281000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 282000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 283000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 284000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 285000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 286000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 287000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 288000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 289000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 290000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 291000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 292000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 293000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 294000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 295000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 296000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 297000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 298000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 299000,
+        "rssMb": 672
+      },
+      {
+        "atMs": 300000,
+        "rssMb": 659
+      },
+      {
+        "atMs": 301000,
+        "rssMb": 659
+      },
+      {
+        "atMs": 302000,
+        "rssMb": 659
+      },
+      {
+        "atMs": 303000,
+        "rssMb": 659
+      },
+      {
+        "atMs": 304000,
+        "rssMb": 659
+      }
+    ]
+  },
+  "verdicts": [
+    {
+      "gate": "peak_rss_mb",
+      "value": 689,
+      "threshold": "< 750",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p95_ms",
+      "value": 34.00000000000364,
+      "threshold": "< 50",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p99_ms",
+      "value": 5000.999999999985,
+      "threshold": "< 100",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "nav_p95_ms",
+      "value": 34,
+      "threshold": "< 150",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "no_typing_cliff",
+      "value": "7 complete cycles",
+      "threshold": "last decile / first decile < 1.5 (min 10 cycles)",
+      "verdict": "UNKNOWN"
+    },
+    {
+      "gate": "typing_stall_rate",
+      "value": 0.0108,
+      "threshold": "< 0.01 (stalled + frameMs > 100 ms, over sample count)",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "a11y_exposure",
+      "value": "not applicable: tree navigator advertises per-sibling-group setsize, see a11y_tree_structure",
+      "threshold": "advertised rows == 20000 (flat list only)",
+      "verdict": "UNKNOWN"
+    },
+    {
+      "gate": "restart_body_match",
+      "value": "match",
+      "threshold": "reopened body hash == pre-kill body hash",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_conflicts",
+      "value": 0,
+      "threshold": "== 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_errors",
+      "value": 0,
+      "threshold": "== 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_p95_ms",
+      "value": 3,
+      "threshold": "< 50",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "5934e756"
+}

@@ -1,0 +1,139 @@
+{
+  "run_id": "app-preflight-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-preflight",
+  "environment": {
+    "kernel": "7.2.3-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 22.74,
+    "renderer": null,
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "workload_script": "preflight-v1",
+    "preflight": {
+      "fixture": "tiny",
+      "vault_absent_exit": 0,
+      "vault_absent_ok": true,
+      "vault_absent_check_state": "not_applicable",
+      "planted_exit_codes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "planted_blocker_counts": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "planted_item_id": "it-000029",
+      "planted_finding_item_ids": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "planted_name": "Bram Kell",
+      "planted_finding_matches": [
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "planted_finding_severities": [
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "planted_finding_surfaces": [
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "preflight_ms": 44.2,
+      "preflight_rss_mb": 38.8,
+      "clean_exit": 0,
+      "clean_check_state": "ran",
+      "clean_finding_count": 0
+    },
+    "preflight_ms_per_run": [
+      44.2,
+      42.4,
+      45.3,
+      46.4,
+      42.4
+    ],
+    "exit_codes_per_step": {
+      "vault_absent": 0,
+      "planted": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "clean": 0
+    },
+    "planted_item_id": "it-000029",
+    "omitted_gates": [
+      {
+        "gate": "latency, stall, cliff, a11y_exposure, a11y_tree_structure, startup_ms",
+        "reason": "preflight has NO PAGE SURFACE, salvage-cli's own reason: nothing here opens a window, spawns an Xvfb or attaches to AT-SPI."
+      }
+    ],
+    "scope": {
+      "the_oracle": "The rig plants both the vault and the planted name itself, so what the scan must report is known exactly. Steps (b) and (d) are the falsifiability check: a build that always answered 'blocker' would still pass step (c) alone.",
+      "the_plant_site": "The LAST item of type `scene`, in true book order (a recursive walk's own path key, not `item.position` alone), that has a doc row, is not under a `trash` item, and has a text node to rewrite. Planting the FIRST scene instead would not prove the scan walks the whole manuscript.",
+      "preflight_ms": "Median wall clock of five runs against the planted project, covering the vault read, the whole-manuscript walk and the JSON write. A liveness-adjacent bound, not a per-body latency figure.",
+      "preflight_rss_mb": "The kernel's own VmHWM, peak over the same five runs, sampled every 20 ms."
+    }
+  },
+  "verdicts": [
+    {
+      "gate": "preflight_not_applicable_without_vault",
+      "value": "exit 0, ok true, cross_identity not_applicable",
+      "threshold": "exit 0, ok true, cross_identity not_applicable (no vault at all)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "preflight_finds_the_planted_name",
+      "value": "exits [0,0,0,0,0], blockers [0,0,0,0,0], item ids [null,null,null,null,null], matches [\"\",\"\",\"\",\"\",\"\"], severities [\"\",\"\",\"\",\"\",\"\"], surfaces [\"\",\"\",\"\",\"\",\"\"]",
+      "threshold": "every run of five exits 3 with EXACTLY ONE cross_identity finding, at the planted item id, matching the planted spelling verbatim, severity blocker and surface document_body",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "preflight_ms",
+      "value": "44.2 ms",
+      "threshold": "<= 2000 ms, median of five runs at stress; a tiny run cannot reach this line; the number is evidence at stress only",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "preflight_rss_mb",
+      "value": "38.8 MB",
+      "threshold": "<= 250 MB, VmHWM peak over five runs at stress (0 MB is no sample taken, not a real reading, and FAILS); a tiny run cannot reach this line; the number is evidence at stress only",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "preflight_clean_when_the_name_is_gone",
+      "value": "exit 0, cross_identity ran, 0 finding(s)",
+      "threshold": "exit 0, cross_identity ran (not vacuous), zero findings",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "94d221a3"
+}

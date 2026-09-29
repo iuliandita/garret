@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>bakeoff editor</title>
+    <style>
+      html, body { margin: 0; height: 100%; }
+      #app { max-width: 800px; margin: 0 auto; padding: 16px; }
+      .ProseMirror { outline: none; min-height: 400px; }
+      [data-script="cjk"] { font-family: sans-serif; }
+      [dir="rtl"] { text-align: right; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <!-- The shell injects __bakeoffFixtureUrl / __bakeoffSink / __bakeoffCandidate
+         / __bakeoffSeed BEFORE this script runs (preload for Electron, init
+         script for Tauri). run.js is byte-identical in both shells. -->
+    <script type="module" src="./run.js"></script>
+  </body>
+</html>

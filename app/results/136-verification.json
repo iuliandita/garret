@@ -1,0 +1,108 @@
+{
+  "source_commit": "0ba96d75f2917151c1c1c175ffecfca1dcf79c10",
+  "baseline": "app/results/superseded/app-dialog-tiny.2026-09-16T22-40-57Z.json",
+  "baseline_sha256": "4b6cab68a4471880224d435cab5b409d1cc09ffa3c2e7905398480b6dbb8794f",
+  "bun": {
+    "passed": 3791,
+    "failed": 0
+  },
+  "typecheck_exit": 0,
+  "host_checks": "host source unchanged; full host suite and release build passed in slice 135",
+  "source_review": "no findings",
+  "gate_mutations_killed": 6,
+  "native_negative_control": "expected creation gates failed; other gates passed",
+  "native_gates_passed": 14,
+  "gate_comparison": [
+    {
+      "gate": "dialog_opens",
+      "before": "PASS",
+      "after": "PASS"
+    },
+    {
+      "gate": "dialog_writes_the_chosen_path",
+      "before": "PASS",
+      "after": "PASS"
+    },
+    {
+      "gate": "dialog_content_matches_the_store",
+      "before": "PASS",
+      "after": "PASS"
+    },
+    {
+      "gate": "dialog_export_includes_the_last_keystroke",
+      "before": "PASS",
+      "after": "PASS"
+    },
+    {
+      "gate": "dialog_cancel_writes_nothing",
+      "before": "PASS",
+      "after": "PASS"
+    },
+    {
+      "gate": "dialog_import_opens",
+      "before": "PASS",
+      "after": "PASS"
+    },
+    {
+      "gate": "dialog_imports_the_chosen_file",
+      "before": "PASS",
+      "after": "PASS"
+    },
+    {
+      "gate": "folder_dialog_opens",
+      "before": "absent",
+      "after": "PASS"
+    },
+    {
+      "gate": "folder_dialog_closes_after_choice",
+      "before": "absent",
+      "after": "PASS"
+    },
+    {
+      "gate": "folder_dialog_creates_in_the_chosen_directory",
+      "before": "absent",
+      "after": "PASS"
+    },
+    {
+      "gate": "folder_dialog_creates_a_readable_named_book",
+      "before": "absent",
+      "after": "PASS"
+    },
+    {
+      "gate": "folder_dialog_cancel_opens_and_closes",
+      "before": "absent",
+      "after": "PASS"
+    },
+    {
+      "gate": "folder_dialog_cancel_creates_nothing",
+      "before": "absent",
+      "after": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "before": "PASS",
+      "after": "PASS"
+    }
+  ],
+  "renderer_before": {
+    "dmabufDisabledByEnv": false,
+    "glesMapped": true,
+    "llvmpipe": true,
+    "gdkBackend": "x11",
+    "path": "dmabuf-llvmpipe",
+    "webProcesses": 1
+  },
+  "renderer_after": {
+    "dmabufDisabledByEnv": false,
+    "glesMapped": true,
+    "llvmpipe": true,
+    "gdkBackend": "x11",
+    "path": "dmabuf-llvmpipe",
+    "webProcesses": 1
+  },
+  "limitations": [
+    "GTK chooser on isolated Xvfb only",
+    "no latency or memory improvement claim",
+    "private screenshots retained locally because GTK exposes mounted volume labels"
+  ]
+}

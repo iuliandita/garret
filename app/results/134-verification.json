@@ -1,0 +1,13 @@
+{
+  "source_commit": "45639816e87c25c30e9294fd8498e9de47e06c0d",
+  "scope": "required parameter and unreachable branch removal only",
+  "bun": {
+    "passed": 3788,
+    "failed": 0
+  },
+  "typecheck_exit": 0,
+  "host_validation": "133 full host suite; host source unchanged",
+  "diff_check_exit": 0,
+  "runtime_claim": "all existing callers pass the same snapshot; pid selection unchanged",
+  "worker_typecheck": "blocked by Bun temporary directory permission; root typecheck passes"
+}

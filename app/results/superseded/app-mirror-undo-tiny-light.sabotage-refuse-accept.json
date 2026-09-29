@@ -1,0 +1,78 @@
+{
+  "run_id": "app-mirror-undo-tiny-light",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-mirror",
+  "environment": {
+    "kernel": "7.2.6-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 3.67,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Two owned isolated Linux launches; real panel batch accept and per-document undo, checked against SQLite and readable mirror bytes. Screenshot before undo. No working-memory or performance measurement.",
+  "metrics": {
+    "launches": 2,
+    "renderers": [
+      {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    ]
+  },
+  "verdicts": [
+    {
+      "gate": "batch_accepts_both_documents",
+      "value": "not observed",
+      "threshold": "both outside bodies committed before undo",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "undo_restores_selected_document",
+      "value": "not observed",
+      "threshold": "selected document returns to its exact preaccept body at the next revision",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "undo_preserves_other_documents",
+      "value": "not observed",
+      "threshold": "every other document keeps its postaccept body and revision",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "undo_preserves_accepted_history",
+      "value": "not observed",
+      "threshold": "accepted words remain in durable document history",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "undo_reaches_readable_mirror",
+      "value": "not observed",
+      "threshold": "normal outbound pass writes the exact original readable document",
+      "verdict": "FAIL"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "dac4213a9aa4d34a87d835789aae4d14d9d4ef95"
+}

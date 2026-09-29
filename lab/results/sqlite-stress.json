@@ -1,0 +1,239 @@
+{
+  "run_id": "sqlite-stress",
+  "track": "fault-rig",
+  "candidate": "sqlite",
+  "fixture": "stress",
+  "workload": "scripted-edit",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "0-3/8G",
+    "biasNotes": "cgroup-throttled approximation of reference hardware (4 threads, 8G); modern single-core speed exceeds a five-year-old laptop core. Gates remain hypotheses until a real-hardware pass."
+  },
+  "method": "SIGKILL at durability phase markers and random delays; reopen + integrity check + refmodel state comparison. Any lost acked op = REGRESSION; unknown-but-intact state = CORRUPT. SCOPE: process-kill tests atomicity/crash-consistency only; the kernel and page cache survive, so this does NOT prove fsync durability against power loss. A missing-fsync regression would not surface here; power-loss-class evidence requires the root-gated loopback path.",
+  "metrics": {
+    "commit": {
+      "ops": 40,
+      "preloaded_bytes": 0,
+      "commit_latency_ms": {
+        "p50": 0.07060199999250472,
+        "p95": 0.1374680000008084,
+        "p99": 1.2403100000228733,
+        "mean": 0.10082482500292826,
+        "max": 1.2403100000228733,
+        "samples": 40
+      },
+      "size": {
+        "bytes_after": 28672,
+        "bytes_per_op": 716.8,
+        "logical_bytes": 163,
+        "overhead_ratio": 175.90184049079755
+      },
+      "mirror": {
+        "window_ms": 1000,
+        "flushes": 1,
+        "bytes_written": 4271680,
+        "coalesced_bytes_estimate": 28672,
+        "amplification": 26206.625766871166
+      }
+    },
+    "commit_at_scale": {
+      "ops": 40,
+      "preloaded_bytes": 10544650,
+      "commit_latency_ms": {
+        "p50": 0.8568399999639951,
+        "p95": 1.5730949999997392,
+        "p99": 3.127966000000015,
+        "mean": 0.9763438499925542,
+        "max": 3.127966000000015,
+        "samples": 40
+      },
+      "size": {
+        "bytes_after": 12349440,
+        "bytes_per_op": 308736,
+        "logical_bytes": 163,
+        "overhead_ratio": 75763.43558282209
+      },
+      "mirror": {
+        "window_ms": 1000,
+        "flushes": 1,
+        "bytes_written": 499047040,
+        "coalesced_bytes_estimate": 12349440,
+        "amplification": 3061638.282208589
+      }
+    },
+    "salvage": [
+      {
+        "sidecars": [],
+        "case": "corrupt@torn",
+        "candidate": "sqlite",
+        "recovered_scenes": 0,
+        "recovered_assets": 0,
+        "loss_count": 1,
+        "losses": [
+          "database unopenable: SQLiteError: malformed database schema (?)"
+        ],
+        "source_unmodified": true
+      },
+      {
+        "sidecars": [],
+        "case": "corrupt@flip",
+        "candidate": "sqlite",
+        "recovered_scenes": 0,
+        "recovered_assets": 0,
+        "loss_count": 1,
+        "losses": [
+          "database unopenable: SQLiteError: file is not a database"
+        ],
+        "source_unmodified": true
+      },
+      {
+        "sidecars": [
+          "project.db-shm",
+          "project.db-wal"
+        ],
+        "case": "demo@flip-0pct",
+        "candidate": "sqlite",
+        "recovered_scenes": 0,
+        "recovered_assets": 0,
+        "loss_count": 1,
+        "losses": [
+          "database unopenable: SQLiteError: file is not a database"
+        ],
+        "source_unmodified": true
+      },
+      {
+        "sidecars": [
+          "project.db-shm",
+          "project.db-wal"
+        ],
+        "case": "demo@flip-25pct",
+        "candidate": "sqlite",
+        "recovered_scenes": 23,
+        "recovered_assets": 4,
+        "loss_count": 0,
+        "losses": [],
+        "source_unmodified": true
+      },
+      {
+        "sidecars": [
+          "project.db-shm",
+          "project.db-wal"
+        ],
+        "case": "demo@flip-50pct",
+        "candidate": "sqlite",
+        "recovered_scenes": 23,
+        "recovered_assets": 4,
+        "loss_count": 0,
+        "losses": [],
+        "source_unmodified": true
+      },
+      {
+        "sidecars": [
+          "project.db-shm",
+          "project.db-wal"
+        ],
+        "case": "demo@flip-80pct",
+        "candidate": "sqlite",
+        "recovered_scenes": 23,
+        "recovered_assets": 4,
+        "loss_count": 0,
+        "losses": [],
+        "source_unmodified": true
+      },
+      {
+        "sidecars": [
+          "project.db-shm",
+          "project.db-wal"
+        ],
+        "case": "demo@flip-95pct",
+        "candidate": "sqlite",
+        "recovered_scenes": 23,
+        "recovered_assets": 4,
+        "loss_count": 0,
+        "losses": [],
+        "source_unmodified": true
+      }
+    ]
+  },
+  "verdicts": [
+    {
+      "case": "kill@begin-txn#1",
+      "verdict": "OLD_INTACT"
+    },
+    {
+      "case": "kill@begin-txn#2",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@begin-txn#3",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@fsync#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@fsync#2",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@fsync#3",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@rename#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@rename#2",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@rename#3",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@commit-done#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@commit-done#2",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@commit-done#3",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@delay-0",
+      "verdict": "OLD_INTACT"
+    },
+    {
+      "case": "kill@delay-1",
+      "verdict": "OLD_INTACT"
+    },
+    {
+      "case": "kill@delay-2",
+      "verdict": "OLD_INTACT"
+    },
+    {
+      "case": "mutator+kill@fsync#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "mutator+kill@rename#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "corrupt@torn",
+      "verdict": "CORRUPT"
+    },
+    {
+      "case": "corrupt@flip",
+      "verdict": "CORRUPT"
+    }
+  ],
+  "seed": "stress-seed",
+  "rig_commit": "c3ce2db"
+}

@@ -1,0 +1,46 @@
+{
+  "scope": "One isolated Linux WebKitGTK provider observation. No Learn Spelling action, real IME, speech or screen-reader user certification.",
+  "source": "fd12ac0a105aedcd937ebae9dd1f3da65b05afdf",
+  "environment": {
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "webkitgtk": "2.52.6"
+  },
+  "sentence": "Spelling probe: mispelinggg qqqzzxx elephant.",
+  "observation": {
+    "nodes": [
+      {
+        "role": "entry",
+        "text": "אבן شتاء חורף אבן ظل نهر ليل نافذة קול. عين عاصفة شتاء צל نافذة חורף. קול شتاء גן עין. עין אור קול זכרון נהר אבן. صوت לילה عاصفة يد בית. נהר יד بيت צל קול בית ظل شتاء نهر. יד אבן عاصفة حديقة נהר نور אבן יד.\nSpelling probe: mispelinggg qqqzzxx elephant.\n\n",
+        "runs": [
+          {
+            "attributes": [
+              "style:normal",
+              "underline:none",
+              "direction:ltr",
+              "size:14pt",
+              "invisible:false",
+              "weight:400",
+              "editable:true",
+              "family-name:Georgia",
+              "language:en",
+              "bg-color:251,250,248",
+              "indent:28.5",
+              "strikethrough:false",
+              "fg-color:28,27,25"
+            ],
+            "start": 207,
+            "end": 253
+          }
+        ]
+      }
+    ],
+    "errors": []
+  }
+}

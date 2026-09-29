@@ -1,0 +1,233 @@
+{
+  "run_id": "dir-manifest-stress",
+  "track": "fault-rig",
+  "candidate": "dir-manifest",
+  "fixture": "stress",
+  "workload": "scripted-edit",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "0-3/8G",
+    "biasNotes": "cgroup-throttled approximation of reference hardware (4 threads, 8G); modern single-core speed exceeds a five-year-old laptop core. Gates remain hypotheses until a real-hardware pass."
+  },
+  "method": "SIGKILL at durability phase markers and random delays; reopen + integrity check + refmodel state comparison. Any lost acked op = REGRESSION; unknown-but-intact state = CORRUPT. SCOPE: process-kill tests atomicity/crash-consistency only; the kernel and page cache survive, so this does NOT prove fsync durability against power loss. A missing-fsync regression would not surface here; power-loss-class evidence requires the root-gated loopback path.",
+  "metrics": {
+    "commit": {
+      "ops": 40,
+      "preloaded_bytes": 0,
+      "commit_latency_ms": {
+        "p50": 0.04913299999998344,
+        "p95": 0.09022000000004482,
+        "p99": 0.4164620000000241,
+        "mean": 0.06144345000000726,
+        "max": 0.4164620000000241,
+        "samples": 40
+      },
+      "size": {
+        "bytes_after": 2990,
+        "bytes_per_op": 74.75,
+        "logical_bytes": 163,
+        "overhead_ratio": 18.34355828220859
+      },
+      "mirror": {
+        "window_ms": 1000,
+        "flushes": 1,
+        "bytes_written": 58772,
+        "coalesced_bytes_estimate": 2990,
+        "amplification": 360.5644171779141
+      }
+    },
+    "commit_at_scale": {
+      "ops": 40,
+      "preloaded_bytes": 10544650,
+      "commit_latency_ms": {
+        "p50": 55.74640100001125,
+        "p95": 58.94841599999927,
+        "p99": 81.60736100003123,
+        "mean": 56.83214090000256,
+        "max": 81.60736100003123,
+        "samples": 40
+      },
+      "size": {
+        "bytes_after": 22610159,
+        "bytes_per_op": 565253.975,
+        "logical_bytes": 163,
+        "overhead_ratio": 138712.6319018405
+      },
+      "mirror": {
+        "window_ms": 1000,
+        "flushes": 1,
+        "bytes_written": 903992017,
+        "coalesced_bytes_estimate": 22610159,
+        "amplification": 5545963.294478527
+      }
+    },
+    "salvage": [
+      {
+        "sidecars": [],
+        "case": "corrupt@torn",
+        "candidate": "dir-manifest",
+        "recovered_scenes": 0,
+        "recovered_assets": 0,
+        "loss_count": 1,
+        "losses": [
+          "manifest unparseable (155 bytes, likely torn)"
+        ],
+        "source_unmodified": true
+      },
+      {
+        "sidecars": [],
+        "case": "corrupt@flip",
+        "candidate": "dir-manifest",
+        "recovered_scenes": 0,
+        "recovered_assets": 0,
+        "loss_count": 1,
+        "losses": [
+          "manifest unparseable (2377 bytes, likely torn)"
+        ],
+        "source_unmodified": true
+      },
+      {
+        "sidecars": [],
+        "case": "demo@flip-0pct",
+        "candidate": "dir-manifest",
+        "recovered_scenes": 0,
+        "recovered_assets": 0,
+        "loss_count": 1,
+        "losses": [
+          "manifest unparseable (2981 bytes, likely torn)"
+        ],
+        "source_unmodified": true
+      },
+      {
+        "sidecars": [],
+        "case": "demo@flip-25pct",
+        "candidate": "dir-manifest",
+        "recovered_scenes": 0,
+        "recovered_assets": 0,
+        "loss_count": 1,
+        "losses": [
+          "manifest unparseable (2979 bytes, likely torn)"
+        ],
+        "source_unmodified": true
+      },
+      {
+        "sidecars": [],
+        "case": "demo@flip-50pct",
+        "candidate": "dir-manifest",
+        "recovered_scenes": 21,
+        "recovered_assets": 4,
+        "loss_count": 2,
+        "losses": [
+          "scene it-003807: content object missing",
+          "scene it-003968: content object missing"
+        ],
+        "source_unmodified": true
+      },
+      {
+        "sidecars": [],
+        "case": "demo@flip-80pct",
+        "candidate": "dir-manifest",
+        "recovered_scenes": 0,
+        "recovered_assets": 0,
+        "loss_count": 1,
+        "losses": [
+          "manifest unparseable (2973 bytes, likely torn)"
+        ],
+        "source_unmodified": true
+      },
+      {
+        "sidecars": [],
+        "case": "demo@flip-95pct",
+        "candidate": "dir-manifest",
+        "recovered_scenes": 0,
+        "recovered_assets": 0,
+        "loss_count": 1,
+        "losses": [
+          "manifest unparseable (2977 bytes, likely torn)"
+        ],
+        "source_unmodified": true
+      }
+    ]
+  },
+  "verdicts": [
+    {
+      "case": "kill@begin-txn#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@begin-txn#2",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@begin-txn#3",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@fsync#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@fsync#2",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@fsync#3",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@rename#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@rename#2",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@rename#3",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@commit-done#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@commit-done#2",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@commit-done#3",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@delay-0",
+      "verdict": "OLD_INTACT"
+    },
+    {
+      "case": "kill@delay-1",
+      "verdict": "OLD_INTACT"
+    },
+    {
+      "case": "kill@delay-2",
+      "verdict": "OLD_INTACT"
+    },
+    {
+      "case": "mutator+kill@fsync#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "mutator+kill@rename#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "corrupt@torn",
+      "verdict": "CORRUPT"
+    },
+    {
+      "case": "corrupt@flip",
+      "verdict": "CORRUPT"
+    }
+  ],
+  "seed": "stress-seed",
+  "rig_commit": "c3ce2db"
+}

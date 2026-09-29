@@ -1,0 +1,8 @@
+node_modules/
+# Build output, regenerable by the scripts/package-* scripts.
+app/dist-windows/
+app/dist-linux/
+app/dist-macos/
+app/dist-android/
+# Screenshots captured by the harness rigs during development.
+app/results/screenshots/

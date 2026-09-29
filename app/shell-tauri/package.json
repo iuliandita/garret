@@ -1,0 +1,9 @@
+{
+  "name": "app-shell-tauri",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "scripts": {
+    "build": "cd src-tauri && cargo build --release"
+  }
+}

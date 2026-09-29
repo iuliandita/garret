@@ -1,0 +1,62 @@
+{
+  "source": "aca20c7d5ce6d91caf1a98c829b546377f360ac2",
+  "images": [
+    {
+      "path": "app/results/screenshots/187-knowledge-controls-dark.png",
+      "sha256": "21fb887050cc8c985a44f6cee64c45b8d2f680874ed29da46383c0de121ed535",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/187-knowledge-dark.png",
+      "sha256": "ed2fcf6af57d9a422a8f9f71b7438889f7eb4a299237d5571571e01b28164cd0",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/187-knowledge-light.png",
+      "sha256": "129b7112b13cd544f31e8fd74c31fd669aa8c41a660a248d67f96182e88b2997",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/187-reports-controls-dark.png",
+      "sha256": "a0263831bcc4bb9f605aa3d5ca62038a55c0f8527f5937a0f43ddea6972d9dc6",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/187-reports-dark.png",
+      "sha256": "b9b6fbbafeecd6a727102195e2be78cd1b0fb281747d15d60d6448ad96fb8816",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/187-reports-light.png",
+      "sha256": "6a0eced4cf4cc543c5b99cf85973f7ca2d83fcce393e62620afab0e6068909aa",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true,
+      "source": "f28b0fc12124347225d095deb219d7a6cb1025f8",
+      "host_source": "aca20c7d5ce6d91caf1a98c829b546377f360ac2"
+    }
+  ],
+  "scope": "Virtual-display native layout and report execution only; no physical hardware or performance claim.",
+  "observations": [
+    "Knowledge displays retained research originals and stored relationships.",
+    "Both themes expose controls and reports run on saved text.",
+    "Report counts and definitions are displayed separately from suggestions.",
+    "Long finding buttons now use natural height and no overflow margin; a corrected light capture shows the full wrapped finding without horizontal scrollbar."
+  ]
+}

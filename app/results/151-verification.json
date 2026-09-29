@@ -1,0 +1,439 @@
+{
+  "source_commit": "434deea1f0b58d164b5790692b63890e79b37135",
+  "bun_passed": 3872,
+  "bun_failed": 0,
+  "host_suites": [
+    {
+      "passed": 1601,
+      "failed": 0,
+      "ignored": 2
+    },
+    {
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0
+    }
+  ],
+  "typescript_exit": 0,
+  "ui_build_exit": 0,
+  "native": [
+    {
+      "theme": "light",
+      "gates": [
+        {
+          "gate": "batch_accepts_both_documents",
+          "value": "observed",
+          "threshold": "both outside bodies committed before undo",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "undo_restores_selected_document",
+          "value": "observed",
+          "threshold": "selected document returns to its exact preaccept body at the next revision",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "undo_preserves_other_documents",
+          "value": "observed",
+          "threshold": "every other document keeps its postaccept body and revision",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "undo_preserves_accepted_history",
+          "value": "observed",
+          "threshold": "accepted words remain in durable document history",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "undo_reaches_readable_mirror",
+          "value": "observed",
+          "threshold": "normal outbound pass writes the exact original readable document",
+          "verdict": "PASS"
+        }
+      ],
+      "renderers": [
+        "dmabuf-llvmpipe",
+        "dmabuf-llvmpipe"
+      ],
+      "owned_cleanup_counts": [
+        5,
+        5
+      ]
+    },
+    {
+      "theme": "dark",
+      "gates": [
+        {
+          "gate": "batch_accepts_both_documents",
+          "value": "observed",
+          "threshold": "both outside bodies committed before undo",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "undo_restores_selected_document",
+          "value": "observed",
+          "threshold": "selected document returns to its exact preaccept body at the next revision",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "undo_preserves_other_documents",
+          "value": "observed",
+          "threshold": "every other document keeps its postaccept body and revision",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "undo_preserves_accepted_history",
+          "value": "observed",
+          "threshold": "accepted words remain in durable document history",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "undo_reaches_readable_mirror",
+          "value": "observed",
+          "threshold": "normal outbound pass writes the exact original readable document",
+          "verdict": "PASS"
+        }
+      ],
+      "renderers": [
+        "dmabuf-llvmpipe",
+        "dmabuf-llvmpipe"
+      ],
+      "owned_cleanup_counts": [
+        5,
+        5
+      ]
+    }
+  ],
+  "captures": [
+    {
+      "path": "app/results/screenshots/151-mirror-undo-light-tiny.png",
+      "sha256": "adcf2ed40e3431df62e8666abdfb82788e7a30d82dee157e37497f9d0d759caf",
+      "visual_inspection": "Both document-specific undo controls and their explanatory text are visible in the expected theme."
+    },
+    {
+      "path": "app/results/screenshots/151-mirror-undo-dark-tiny.png",
+      "sha256": "0197e8ec7842360d72445b3a19fc4a1417a534f6ac46f5ce70eea420bf1a4815",
+      "visual_inspection": "Both document-specific undo controls and their explanatory text are visible in the expected theme."
+    }
+  ],
+  "mutations": [
+    {
+      "source_commit": "52b8d5abb6339eedecc891b0255a0402ab6fedc4",
+      "source_restored": true,
+      "restored_release_build_exit": 0,
+      "mutations": [
+        {
+          "mutation": "accepted-revision",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "version-owner",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "snapshot-owner",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "accepted-history",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "baseline-adjustment",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "project-generation",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        }
+      ]
+    },
+    {
+      "source_commit": "2998fae3fac65a1e23ae7b893156df28a08251ae",
+      "source_restored": true,
+      "ui_build_exit": 0,
+      "mutations": [
+        {
+          "mutation": "transaction-lock",
+          "exit_code": 1,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "block-new-opener",
+          "exit_code": 1,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "pending-opener",
+          "exit_code": 1,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "failed-save",
+          "exit_code": 1,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "background-editor",
+          "exit_code": 1,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "original-revision",
+          "exit_code": 1,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "late-reply",
+          "exit_code": 1,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "await-reconciliation",
+          "exit_code": 1,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "consume-handle",
+          "exit_code": 1,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "serialize-actions",
+          "exit_code": 1,
+          "verdict": "KILLED"
+        }
+      ]
+    }
+  ],
+  "native_negative_controls": {
+    "controls": [
+      {
+        "mutation": "corrupt-undo",
+        "exit_code": 1,
+        "failed_gates": [
+          "undo_restores_selected_document",
+          "undo_preserves_other_documents",
+          "undo_preserves_accepted_history",
+          "undo_reaches_readable_mirror"
+        ],
+        "result": "app/results/superseded/app-mirror-undo-tiny-light.sabotage-corrupt-undo.json"
+      },
+      {
+        "mutation": "refuse-accept",
+        "exit_code": 1,
+        "failed_gates": [
+          "batch_accepts_both_documents",
+          "undo_restores_selected_document",
+          "undo_preserves_other_documents",
+          "undo_preserves_accepted_history",
+          "undo_reaches_readable_mirror"
+        ],
+        "result": "app/results/superseded/app-mirror-undo-tiny-light.sabotage-refuse-accept.json"
+      },
+      {
+        "mutation": "omit-dirty",
+        "exit_code": 1,
+        "failed_gates": [
+          "undo_reaches_readable_mirror"
+        ],
+        "result": "app/results/superseded/app-mirror-undo-tiny-light.sabotage-omit-dirty.json"
+      },
+      {
+        "mutation": "missing-output",
+        "exit_code": 1,
+        "failed_gates": [
+          "undo_reaches_readable_mirror"
+        ],
+        "result": "app/results/superseded/app-mirror-undo-tiny-light.sabotage-missing-output.json"
+      }
+    ],
+    "source_restored": true,
+    "restored_release_build_exit": 0
+  },
+  "mirror_regression_comparison": {
+    "baseline_sha256": "961da5e7ffafda21d086588634bdd4c8f41c5b452f366c7110ee69f352fd39ff",
+    "exact_archives": [
+      "app/results/superseded/app-mirror-tiny.2026-09-18T22-19-51Z.json"
+    ],
+    "renderer_before": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "renderer_after": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "verdicts_before": [
+      {
+        "gate": "mirror_writes_the_folder",
+        "value": "40 file(s) for 30 document(s)",
+        "threshold": "a file per document, and the fixture has documents",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_carries_a_prose_edit",
+        "value": "first sentence in the folder, second in the folder",
+        "threshold": "both -- an edit AFTER an entry's first write still reaches the folder (029)",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_does_not_overwrite_an_outside_edit",
+        "value": "the writer's words are still on disk",
+        "threshold": "reopening a project does not rewrite a file edited outside it",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_offers_the_change",
+        "value": "2 row(s) in the change set",
+        "threshold": "> 0 -- the application noticed the edit and said so",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_accept_reaches_the_book",
+        "value": "the store holds the words from the file",
+        "threshold": "pressing the control writes the file's words into the manuscript",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_accept_is_undoable",
+        "value": "2 of 2 wanted \"Before accepting\" snapshot(s): Before accepting 1 change from the readable folder | Before accepting 1 change from the readable folder",
+        "threshold": "two host-composed snapshots -- one per accept that ran (the per-row press, then the batch)",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_accept_orphans_the_notes",
+        "value": "1 of 1 note(s) collapsed",
+        "threshold": "every note on a rewritten body, and the fixture planted some",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_settles_after_an_accept",
+        "value": "file untouched, manifest agrees",
+        "threshold": "the pass after an accept does not rewrite what it just read",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_row_accept_takes_that_file",
+        "value": "the pressed row's words reached its document",
+        "threshold": "pressing one row's own accept, by its accessible name, writes that file's words in",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_row_accept_leaves_the_other_row",
+        "value": "the second file's words stayed out of the book",
+        "threshold": "a per-row accept takes only the row it named -- the batch would have taken both",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_row_accept_settles",
+        "value": "file untouched, manifest agrees",
+        "threshold": "the pass after a per-row accept does not rewrite what it just read either",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "peak_rss_mb",
+        "value": 491,
+        "threshold": "<= 750",
+        "verdict": "PASS"
+      }
+    ],
+    "verdicts_after": [
+      {
+        "gate": "mirror_writes_the_folder",
+        "value": "40 file(s) for 30 document(s)",
+        "threshold": "a file per document, and the fixture has documents",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_carries_a_prose_edit",
+        "value": "first sentence in the folder, second in the folder",
+        "threshold": "both -- an edit AFTER an entry's first write still reaches the folder (029)",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_does_not_overwrite_an_outside_edit",
+        "value": "the writer's words are still on disk",
+        "threshold": "reopening a project does not rewrite a file edited outside it",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_offers_the_change",
+        "value": "2 row(s) in the change set",
+        "threshold": "> 0 -- the application noticed the edit and said so",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_accept_reaches_the_book",
+        "value": "the store holds the words from the file",
+        "threshold": "pressing the control writes the file's words into the manuscript",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_accept_is_undoable",
+        "value": "2 of 2 wanted \"Before accepting\" snapshot(s): Before accepting 1 change from the readable folder | Before accepting 1 change from the readable folder",
+        "threshold": "two host-composed snapshots -- one per accept that ran (the per-row press, then the batch)",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_accept_orphans_the_notes",
+        "value": "1 of 1 note(s) collapsed",
+        "threshold": "every note on a rewritten body, and the fixture planted some",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_settles_after_an_accept",
+        "value": "file untouched, manifest agrees",
+        "threshold": "the pass after an accept does not rewrite what it just read",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_row_accept_takes_that_file",
+        "value": "the pressed row's words reached its document",
+        "threshold": "pressing one row's own accept, by its accessible name, writes that file's words in",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_row_accept_leaves_the_other_row",
+        "value": "the second file's words stayed out of the book",
+        "threshold": "a per-row accept takes only the row it named -- the batch would have taken both",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "mirror_row_accept_settles",
+        "value": "file untouched, manifest agrees",
+        "threshold": "the pass after a per-row accept does not rewrite what it just read either",
+        "verdict": "PASS"
+      },
+      {
+        "gate": "peak_rss_mb",
+        "value": 555,
+        "threshold": "<= 750",
+        "verdict": "PASS"
+      }
+    ],
+    "changed_metrics": {
+      "peak_rss_mb": {
+        "before": 491,
+        "after": 555
+      }
+    },
+    "interpretation": "Functional acceptance regression only. Gate thresholds are not an improvement claim; no persistence soak or new performance claim."
+  },
+  "review": "No remaining findings after the guarded missing-file read and retained-state teardown assertions.",
+  "limitations": "Linux isolated dmabuf-llvmpipe evidence. Latest acceptance group only, retained until project destruction; restart uses durable history. Word restoration leaves orphaned comments orphaned. Existing baseline zero-floor semantics remain. No schema, generic history-restore, source-attribution, persistence-soak or platform-certification change."
+}

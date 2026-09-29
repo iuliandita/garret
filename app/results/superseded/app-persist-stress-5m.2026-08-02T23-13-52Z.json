@@ -1,0 +1,322 @@
+{
+  "run_id": "app-persist-stress-5m",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-smoke",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "peak_rss_mb": 556,
+    "typing_p95_ms": 33,
+    "typing_p99_ms": 34,
+    "nav_p95_ms": 33,
+    "typing": {
+      "count": 8074,
+      "dispatch": {
+        "p50": 5,
+        "p95": 9,
+        "p99": 10
+      },
+      "frame": {
+        "p50": 32,
+        "p95": 33,
+        "p99": 34
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 8070,
+        "40-100": 0,
+        "500-2000": 1,
+        "<20": 3,
+        ">=2000": 0
+      },
+      "slowFrames": 1,
+      "stalls": 0
+    },
+    "nav": {
+      "count": 1208,
+      "dispatch": {
+        "p50": 0,
+        "p95": 3.000000000029104,
+        "p99": 4
+      },
+      "frame": {
+        "p50": 32,
+        "p95": 33,
+        "p99": 34
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 1208,
+        "40-100": 0,
+        "500-2000": 0,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 0,
+      "stalls": 0
+    },
+    "cycles": [
+      {
+        "atMs": 15662,
+        "charsTyped": 400,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 30490,
+        "charsTyped": 800,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 45368,
+        "charsTyped": 1200,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 33.000000000007276
+      },
+      {
+        "atMs": 60232,
+        "charsTyped": 1600,
+        "cycle": 4,
+        "partial": false,
+        "typingP95Ms": 33.000000000007276
+      },
+      {
+        "atMs": 75045,
+        "charsTyped": 2000,
+        "cycle": 5,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 89873,
+        "charsTyped": 2400,
+        "cycle": 6,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 104683,
+        "charsTyped": 2800,
+        "cycle": 7,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 119528,
+        "charsTyped": 3200,
+        "cycle": 8,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 134365,
+        "charsTyped": 3600,
+        "cycle": 9,
+        "partial": false,
+        "typingP95Ms": 33.00000000001455
+      },
+      {
+        "atMs": 149206,
+        "charsTyped": 4000,
+        "cycle": 10,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 164066,
+        "charsTyped": 4400,
+        "cycle": 11,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 178871,
+        "charsTyped": 4800,
+        "cycle": 12,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 193681,
+        "charsTyped": 5200,
+        "cycle": 13,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 208486,
+        "charsTyped": 5600,
+        "cycle": 14,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 223288,
+        "charsTyped": 6000,
+        "cycle": 15,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 238117,
+        "charsTyped": 6400,
+        "cycle": 16,
+        "partial": false,
+        "typingP95Ms": 33.000000000029104
+      },
+      {
+        "atMs": 252932,
+        "charsTyped": 6800,
+        "cycle": 17,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 267733,
+        "charsTyped": 7200,
+        "cycle": 18,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 282534,
+        "charsTyped": 7600,
+        "cycle": 19,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 297346,
+        "charsTyped": 8000,
+        "cycle": 20,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 300015,
+        "charsTyped": 8074,
+        "cycle": 21,
+        "partial": true,
+        "typingP95Ms": 34
+      }
+    ],
+    "rows": 15200,
+    "a11y": {
+      "available": true,
+      "hasNavigator": true,
+      "exposedRows": 15200,
+      "mountedRows": 36,
+      "roleCounts": {
+        "application": 1,
+        "frame": 1,
+        "panel": 2,
+        "filler": 5,
+        "separator": 1,
+        "button": 3,
+        "label": 2,
+        "scroll pane": 1,
+        "document web": 1,
+        "list box": 1,
+        "list item": 36,
+        "entry": 1,
+        "scroll bar": 1
+      }
+    },
+    "startup_ms": 103,
+    "soak_minutes": 5,
+    "actions": 9282,
+    "onset": null,
+    "slow_actions": 1,
+    "persist": {
+      "restart_body_match": false,
+      "body_diverged_from_seed": true,
+      "flush_count": 289,
+      "flush_conflicts": 0,
+      "flush_errors": 0,
+      "flush_p50_ms": 1.999999999970896,
+      "flush_p95_ms": 3
+    },
+    "persist_error": null
+  },
+  "verdicts": [
+    {
+      "gate": "peak_rss_mb",
+      "value": 556,
+      "threshold": "< 750",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p95_ms",
+      "value": 33,
+      "threshold": "< 50",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p99_ms",
+      "value": 34,
+      "threshold": "< 100",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "nav_p95_ms",
+      "value": 33,
+      "threshold": "< 150",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "no_typing_cliff",
+      "value": 1,
+      "threshold": "last decile / first decile < 1.5 (min 10 cycles)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_stall_rate",
+      "value": 0.0001,
+      "threshold": "< 0.01 (stalled + frameMs > 100 ms, over sample count)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "a11y_exposure",
+      "value": "15200 of 15200",
+      "threshold": "advertised rows == 15200",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "restart_body_match",
+      "value": "MISMATCH",
+      "threshold": "reopened body hash == pre-kill body hash",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "flush_conflicts",
+      "value": 0,
+      "threshold": "== 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_errors",
+      "value": 0,
+      "threshold": "== 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_p95_ms",
+      "value": 3,
+      "threshold": "< 50",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "54d0ac6"
+}

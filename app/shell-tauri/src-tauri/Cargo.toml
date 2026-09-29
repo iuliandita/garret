@@ -1,0 +1,101 @@
+[package]
+name = "app-shell-tauri"
+version = "0.0.0"
+edition = "2021"
+
+[workspace]
+
+[lib]
+name = "app_shell_tauri"
+crate-type = ["staticlib", "cdylib", "rlib"]
+test = false
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+command-boundary = { path = "command-boundary" }
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+argon2 = { version = "0.6.0", features = ["zeroize"] }
+zeroize = "1.9.0"
+age = { version = "0.12.1", default-features = false }
+tar = { version = "0.4.46", default-features = false }
+rusqlite = { version = "0.40.1", features = ["bundled", "collation"] }
+# Runtime creation only. Seeded ids stay the fixture's ids verbatim, which is
+# what keeps a seeded project reproducible and diffable.
+uuid = { version = "1", features = ["v7"] }
+sha2 = "=0.10.9"
+quick-xml = "=0.41.0"
+tauri-plugin-dialog = "2.7.2"
+# Salvage's working copy. Already in this crate's build graph as a
+# dev-dependency; promoted rather than added, because salvage must never let
+# SQLite touch the writer's file and a temp directory with RAII cleanup is the
+# whole mechanism for that.
+tempfile = "3.27.0"
+png = "0.18"
+zune-jpeg = "0.5"
+# `read_zip`'s DEFLATE arm (093): every DOCX a writer receives from Word, pandoc
+# or LibreOffice is deflated, and the stored-only reader refused them all.
+# Already in the build graph under `png`; promoted rather than added. Only
+# inflate is on the shipped path -- this application still writes STORED
+# entries; the deflate half is used by one test, to build a deflated fixture
+# `read_zip` has no other way to construct.
+miniz_oxide = "0.8"
+# Canonical registry alias checks. Already present in the locked graph; named
+# directly so this host code does not depend on a transitive package by accident.
+same-file = "1.0.6"
+# The new book default (159): `document_dir()`/`home_dir()`, nothing else.
+# Already present in the locked graph under tauri's own dependencies; named
+# directly rather than relied on transitively, since this host code now calls
+# it on its own account.
+dirs = "6.0"
+
+[target.'cfg(any(windows, target_os = "macos"))'.dependencies]
+# The native refusal is shown before Tauri or a manuscript is opened.
+# This version is already locked through tauri-plugin-dialog.
+rfd = { version = "0.16.0", default-features = false }
+
+[target.'cfg(windows)'.dependencies]
+webview2-com = "=0.38.2"
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem", "Win32_System_LibraryLoader", "Win32_System_RemoteDesktop", "Win32_System_Threading", "Win32_UI_Controls", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_WindowsAndMessaging"] }
+windows = { version = "0.61.3", features = ["Win32_Foundation", "Win32_System_Com", "Win32_UI_Shell", "Win32_UI_Shell_Common"] }
+
+[target.'cfg(unix)'.dependencies]
+# Safe effective-UID lookup for private encrypted staging; already in the lock graph.
+rustix = { version = "1.1.4", default-features = false, features = ["process", "fs"] }
+
+# LINUX ONLY. This application is Linux-only by an explicit scope decision; the
+# target cfg is what keeps a future Windows or macOS build from failing to
+# resolve rather than failing to compile.
+[target.'cfg(target_os = "linux")'.dependencies]
+# The mirror's stage-3 watcher, and nothing else. A safe wrapper over inotify,
+# chosen over raw libc because the host contains ZERO `unsafe` and that is an
+# invariant a watcher is not worth breaking, and over `notify` because that
+# crate's price is cross-platform abstraction this application does not have.
+# `default-features = false` drops its tokio/futures stream layer: the watcher
+# is one blocking read on its own thread and owns no async runtime.
+inotify = { version = "0.11.5", default-features = false }
+# Spell checking, and nothing else. Tauri already depends on this exact crate
+# and feature (tauri-runtime-wry pins `=2.0` with `v2_40`), so naming it here
+# unifies to the same compilation unit rather than adding one - and it is the
+# only way to reach WebKitWebContext, which owns the setting.
+webkit2gtk = { version = "2", features = ["v2_40"] }
+# 044's proof render, and nothing else. NEITHER IS A NEW PACKAGE: `gtk` 0.18 is
+# already in this crate's lock under `webkit2gtk` (whose print API takes
+# `gtk::PageSetup` and `gtk::PrintSettings`) and `javascriptcore-rs` under
+# `tauri`, so naming them here unifies to the same compilation unit rather than
+# adding one -- the argument this crate already made for `webkit2gtk` itself.
+# `gtk` is what states a sheet size and asks for the file print backend;
+# `javascriptcore-rs` is the type `evaluate_javascript` answers with.
+gtk = "0.18"
+javascriptcore-rs = "1.1"
+
+[[bin]]
+name = "app-shell-tauri"
+path = "src/main.rs"
+
+[dev-dependencies]
+tauri = { version = "2", features = ["test"] }
+tempfile = "3.27.0"

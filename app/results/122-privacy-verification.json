@@ -1,0 +1,142 @@
+{
+  "source_revision": "1a43893",
+  "checks": [
+    {
+      "check": "bun",
+      "command": "bun test app",
+      "exit_code": 0,
+      "summaries": [
+        "95 pass",
+        "95 fail",
+        "95 fail",
+        "256 pass",
+        "257 fail",
+        "750 pass",
+        "751 fail",
+        "3727 pass",
+        "0 fail",
+        "Ran 3727 tests across 180 files. [14.92s]"
+      ],
+      "log_sha256": "fde7a6d768c1bf5638c9567903775583434c35744b113bcbc90b841428ebdccd"
+    },
+    {
+      "check": "rust",
+      "command": "cargo test --offline",
+      "exit_code": 0,
+      "summaries": [
+        "test result: ok. 1555 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 7.06s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.03s"
+      ],
+      "log_sha256": "cddef02ffbc3fc13b1dd21a0281c874e5422a8faa119fe02b72d1d3325b51889"
+    },
+    {
+      "check": "tsc",
+      "command": "bunx tsc --noEmit -p app/tsconfig.json",
+      "exit_code": 0,
+      "summaries": [],
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "check": "private_logind_contract",
+      "command": "cargo test --offline private_bus_inhibitor_conceal_release_resume_and_loss -- --ignored",
+      "exit_code": 0,
+      "summaries": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1554 filtered out; finished in 0.01s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s"
+      ],
+      "log_sha256": "9f9b0aa0a1368a22496693688dd78eac0c35910c12ac9a0892fab1cfbfdffb45"
+    },
+    {
+      "check": "restored_release",
+      "command": "cargo build --release --offline",
+      "exit_code": 0,
+      "summaries": [
+        "    Finished `release` profile [optimized] target(s) in 38.23s"
+      ],
+      "log_sha256": "e318e9e5db117034f07c03dcff4d5abbcdeaa32462ab214316e28a637ea1fa85"
+    },
+    {
+      "check": "disabled_shortcut_still_acts",
+      "expected_negative_control": true,
+      "exit_code": 1,
+      "result": "KILLED",
+      "log_sha256": "93b73ad82fd5c737ef9a6a27b0aeda98c159a9887b113f2b39bec08ba0ce0148"
+    },
+    {
+      "check": "startup_read_does_not_wait",
+      "expected_negative_control": true,
+      "exit_code": 1,
+      "result": "KILLED",
+      "log_sha256": "b24a528ad9f87a250f207b66c905a63e8613763257dc1a2662f78f47b0320c71"
+    },
+    {
+      "check": "portable_authentication_reproduction",
+      "command": "python3 docs/local/diagnostics/122/authentication-reproduce.py --repo REPO",
+      "exit_code": 0,
+      "result": "baseline and restored tests passed; all seven authentication mutations killed; benchmark emitted"
+    },
+    {
+      "check": "desktop_fallback_rust",
+      "source_revision": "467070a",
+      "command": "cargo test --offline",
+      "exit_code": 0,
+      "summaries": [
+        "test result: ok. 1556 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 14.50s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.03s"
+      ],
+      "log_sha256": "159768f5819297e601f8d5b8e44539e977f3095bcae5a8b9aba1404fa6341bd1"
+    },
+    {
+      "check": "desktop_restored_release",
+      "source_revision": "467070a",
+      "command": "cargo build --release --offline",
+      "exit_code": 0,
+      "summaries": [
+        "    Finished `release` profile [optimized] target(s) in 42.47s"
+      ],
+      "log_sha256": "ee819ab460c71943a04dfee04116663d505be3ea3bb51e53f34be47140fa0c4f"
+    }
+  ],
+  "source_sha256": {
+    "app/shell-tauri/src-tauri/src/privacy_host.rs": "f3cbb5fba4f62644e642ecbcbc175e51b6bfa0f8a1f5ae128d45bfc23d08ecc4",
+    "app/shell-tauri/src-tauri/src/privacy_lifecycle.rs": "4bc4c6914b5555cc675cb17e24509efb5d4cc2d9fa2e4d454ed1be8e34595326",
+    "app/shell-tauri/src-tauri/src/privacy_native.rs": "a3eb2320f5ab6beee5184bd43ea42de618c300521b4d9ded837863cece5216eb",
+    "app/shell-tauri/src-tauri/src/privacy.rs": "812634ea26a10b29d83ab96e06b94ec99784da89c03e6ba367a2b2d49c297377",
+    "app/shell-tauri/src-tauri/src/main.rs": "7cc4afc832589dabbe823a4f05a3b755d5880d57213f415945542e8a72b7b5a9",
+    "app/ui/src/privacy.ts": "06efff50b8cd94a8cc8b573044bfc201b532bcbcad7fd26be12b64592998e7bf",
+    "app/ui/src/lifecycle.ts": "32a021a962971f5144e3020dc938cb9cad2b5a2a317ad03564cb91b4ab03b8ee"
+  },
+  "limitations": [
+    "Frame-by-frame compositor ordering not measured",
+    "GTK built-in Unicode composition verified; screen-reader speech and external IBus/Fcitx/CJK composition not exercised."
+  ],
+  "review": "Independent final read-only review found no additional concrete actionable code defects.",
+  "regressions": [
+    {
+      "check": "privacy_restored",
+      "exit_code": 0,
+      "elapsed_seconds": 26.2757770010503
+    },
+    {
+      "check": "dialog",
+      "exit_code": 0,
+      "elapsed_seconds": 32.945297966944054
+    },
+    {
+      "check": "menu",
+      "exit_code": 0,
+      "elapsed_seconds": 74.18004795908928
+    },
+    {
+      "check": "persist_stress_5m",
+      "exit_code": 0,
+      "elapsed_seconds": 309.24810049589723
+    }
+  ],
+  "regression_comparison": "122-privacy-regression-comparison.json",
+  "ordinary_rig_caveat": "Persistence a11y_exposure is UNKNOWN by design for the tree navigator, matching the baseline; all applicable recorded gates PASS.",
+  "desktop_verification": "122-privacy-desktop.json",
+  "additional_source_revision": "467070a",
+  "source_sha256_revision": "467070a",
+  "native_accessibility_verification": "122-privacy-native-accessibility.json"
+}

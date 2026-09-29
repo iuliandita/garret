@@ -1,0 +1,28 @@
+{"built":["<repo>/lab/bakeoff/dist/run.js"],"soakMs":360000,"lazyDocs":false,"containNav":false}
+electron: killed 3 orphaned shell process(es)
+319 |   rmSync(shellDist, { recursive: true, force: true });
+320 | 
+321 |   const stderrTail = (await stderrText).trim().split("\n").slice(-15).join("\n");
+322 |   if (!existsSync(sink)) {
+323 |     rmSync(work, { recursive: true, force: true });
+324 |     throw new Error(
+                    ^
+error: electron: shell produced no sink payload
+--- shell stderr ---
+SyntaxError: Cannot use import statement outside a module
+    at wrapSafe (node:internal/modules/cjs/loader:1750:18)
+    at Module._compile (node:internal/modules/cjs/loader:1793:20)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1953:10)
+    at Module.load (node:internal/modules/cjs/loader:1540:32)
+    at Module._load (node:internal/modules/cjs/loader:1342:12)
+    at c._load (node:electron/js2c/node_init:2:17999)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:262:19)
+    at loadCJSModuleWithModuleLoad (node:internal/modules/esm/translators:334:3)
+    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:235:7)
+    at ModuleJob.run (node:internal/modules/esm/module_job:430:25)
+[0m
+(electron:3972500): Gtk-WARNING **: 03:01:21.028: Theme parsing error: gtk-dark.css:1048:16: 'border-spacing' is not a valid property name
+
+(electron:3972500): Gtk-WARNING **: 03:01:21.119: Theme parsing error: gtk-dark.css:1048:16: 'border-spacing' is not a valid property name
+      at runShell (<repo>/lab/bakeoff/harness/src/matrix.ts:324:15)
+

@@ -1,0 +1,801 @@
+{
+  "run_id": "app-navigator-stress",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-smoke",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "peak_rss_mb": 581,
+    "typing_p95_ms": 1000,
+    "typing_p99_ms": 1001,
+    "nav_p95_ms": 1000,
+    "typing": {
+      "count": 16681,
+      "dispatch": {
+        "p50": 2.000000000029104,
+        "p95": 4.000000000058208,
+        "p99": 10
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 1000,
+        "p99": 1001
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 15640,
+        "40-100": 0,
+        "500-2000": 1041,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 1041,
+      "stalls": 0
+    },
+    "cycles": [
+      {
+        "atMs": 16022,
+        "charsTyped": 400,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 34.00000000000023
+      },
+      {
+        "atMs": 31367,
+        "charsTyped": 800,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 46712,
+        "charsTyped": 1200,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 62057,
+        "charsTyped": 1600,
+        "cycle": 4,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 77402,
+        "charsTyped": 2000,
+        "cycle": 5,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 92746,
+        "charsTyped": 2400,
+        "cycle": 6,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 108091,
+        "charsTyped": 2800,
+        "cycle": 7,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 123436,
+        "charsTyped": 3200,
+        "cycle": 8,
+        "partial": false,
+        "typingP95Ms": 34.00000000001455
+      },
+      {
+        "atMs": 138781,
+        "charsTyped": 3600,
+        "cycle": 9,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 154126,
+        "charsTyped": 4000,
+        "cycle": 10,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 169471,
+        "charsTyped": 4400,
+        "cycle": 11,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 184815,
+        "charsTyped": 4800,
+        "cycle": 12,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 200160,
+        "charsTyped": 5200,
+        "cycle": 13,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 215505,
+        "charsTyped": 5600,
+        "cycle": 14,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 230850,
+        "charsTyped": 6000,
+        "cycle": 15,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 246195,
+        "charsTyped": 6400,
+        "cycle": 16,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 261540,
+        "charsTyped": 6800,
+        "cycle": 17,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 276884,
+        "charsTyped": 7200,
+        "cycle": 18,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 292229,
+        "charsTyped": 7600,
+        "cycle": 19,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 307574,
+        "charsTyped": 8000,
+        "cycle": 20,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 322919,
+        "charsTyped": 8400,
+        "cycle": 21,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 338264,
+        "charsTyped": 8800,
+        "cycle": 22,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 353609,
+        "charsTyped": 9200,
+        "cycle": 23,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 368953,
+        "charsTyped": 9600,
+        "cycle": 24,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 384298,
+        "charsTyped": 10000,
+        "cycle": 25,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 399643,
+        "charsTyped": 10400,
+        "cycle": 26,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 414988,
+        "charsTyped": 10800,
+        "cycle": 27,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 430333,
+        "charsTyped": 11200,
+        "cycle": 28,
+        "partial": false,
+        "typingP95Ms": 34.00000000005821
+      },
+      {
+        "atMs": 445677,
+        "charsTyped": 11600,
+        "cycle": 29,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 461022,
+        "charsTyped": 12000,
+        "cycle": 30,
+        "partial": false,
+        "typingP95Ms": 34.00000000005821
+      },
+      {
+        "atMs": 476367,
+        "charsTyped": 12400,
+        "cycle": 31,
+        "partial": false,
+        "typingP95Ms": 34.00000000005821
+      },
+      {
+        "atMs": 491712,
+        "charsTyped": 12800,
+        "cycle": 32,
+        "partial": false,
+        "typingP95Ms": 34.00000000005821
+      },
+      {
+        "atMs": 507057,
+        "charsTyped": 13200,
+        "cycle": 33,
+        "partial": false,
+        "typingP95Ms": 34.00000000005821
+      },
+      {
+        "atMs": 522402,
+        "charsTyped": 13600,
+        "cycle": 34,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 537747,
+        "charsTyped": 14000,
+        "cycle": 35,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 553091,
+        "charsTyped": 14400,
+        "cycle": 36,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 568436,
+        "charsTyped": 14800,
+        "cycle": 37,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 583781,
+        "charsTyped": 15200,
+        "cycle": 38,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 599126,
+        "charsTyped": 15600,
+        "cycle": 39,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 1015184,
+        "charsTyped": 16000,
+        "cycle": 40,
+        "partial": false,
+        "typingP95Ms": 1001
+      },
+      {
+        "atMs": 1475470,
+        "charsTyped": 16400,
+        "cycle": 41,
+        "partial": false,
+        "typingP95Ms": 1003
+      },
+      {
+        "atMs": 1800505,
+        "charsTyped": 16681,
+        "cycle": 42,
+        "partial": true,
+        "typingP95Ms": 1001
+      }
+    ],
+    "rows": 15200,
+    "a11y": {
+      "available": true,
+      "hasNavigator": true,
+      "exposedRows": 15200,
+      "mountedRows": 38,
+      "roleCounts": {
+        "application": 1,
+        "frame": 1,
+        "panel": 2,
+        "filler": 5,
+        "separator": 1,
+        "button": 3,
+        "label": 2,
+        "scroll pane": 1,
+        "document web": 1,
+        "list box": 1,
+        "list item": 38,
+        "entry": 1,
+        "scroll bar": 1
+      }
+    },
+    "startup_ms": 24,
+    "soak_minutes": 30,
+    "control": {
+      "peak_rss_mb": 673,
+      "typing_p95_ms": 1000,
+      "typing_p99_ms": 1000,
+      "nav_p95_ms": 1000,
+      "typing": {
+        "count": 16618,
+        "dispatch": {
+          "p50": 2.000000000029104,
+          "p95": 4,
+          "p99": 5
+        },
+        "frame": {
+          "p50": 33,
+          "p95": 1000,
+          "p99": 1000
+        },
+        "histogram": {
+          "100-500": 7,
+          "20-40": 15543,
+          "40-100": 12,
+          "500-2000": 1050,
+          "<20": 6,
+          ">=2000": 0
+        },
+        "slowFrames": 1054,
+        "stalls": 0
+      },
+      "cycles": [
+        {
+          "atMs": 15676,
+          "charsTyped": 400,
+          "cycle": 1,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 32288,
+          "charsTyped": 800,
+          "cycle": 2,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 47667,
+          "charsTyped": 1200,
+          "cycle": 3,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 63011,
+          "charsTyped": 1600,
+          "cycle": 4,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 78423,
+          "charsTyped": 2000,
+          "cycle": 5,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 93768,
+          "charsTyped": 2400,
+          "cycle": 6,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 109179,
+          "charsTyped": 2800,
+          "cycle": 7,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 124524,
+          "charsTyped": 3200,
+          "cycle": 8,
+          "partial": false,
+          "typingP95Ms": 34.00000000001455
+        },
+        {
+          "atMs": 139919,
+          "charsTyped": 3600,
+          "cycle": 9,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 155264,
+          "charsTyped": 4000,
+          "cycle": 10,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 170659,
+          "charsTyped": 4400,
+          "cycle": 11,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 186004,
+          "charsTyped": 4800,
+          "cycle": 12,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 201382,
+          "charsTyped": 5200,
+          "cycle": 13,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 216727,
+          "charsTyped": 5600,
+          "cycle": 14,
+          "partial": false,
+          "typingP95Ms": 34.000000000029104
+        },
+        {
+          "atMs": 232122,
+          "charsTyped": 6000,
+          "cycle": 15,
+          "partial": false,
+          "typingP95Ms": 34.000000000029104
+        },
+        {
+          "atMs": 247467,
+          "charsTyped": 6400,
+          "cycle": 16,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 262878,
+          "charsTyped": 6800,
+          "cycle": 17,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 278223,
+          "charsTyped": 7200,
+          "cycle": 18,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 293601,
+          "charsTyped": 7600,
+          "cycle": 19,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 308946,
+          "charsTyped": 8000,
+          "cycle": 20,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 324291,
+          "charsTyped": 8400,
+          "cycle": 21,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 339686,
+          "charsTyped": 8800,
+          "cycle": 22,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 355031,
+          "charsTyped": 9200,
+          "cycle": 23,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 370426,
+          "charsTyped": 9600,
+          "cycle": 24,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 385771,
+          "charsTyped": 10000,
+          "cycle": 25,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 401182,
+          "charsTyped": 10400,
+          "cycle": 26,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 416527,
+          "charsTyped": 10800,
+          "cycle": 27,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 431922,
+          "charsTyped": 11200,
+          "cycle": 28,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 447267,
+          "charsTyped": 11600,
+          "cycle": 29,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 462661,
+          "charsTyped": 12000,
+          "cycle": 30,
+          "partial": false,
+          "typingP95Ms": 34.00000000005821
+        },
+        {
+          "atMs": 478006,
+          "charsTyped": 12400,
+          "cycle": 31,
+          "partial": false,
+          "typingP95Ms": 34.00000000005821
+        },
+        {
+          "atMs": 493885,
+          "charsTyped": 12800,
+          "cycle": 32,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 509230,
+          "charsTyped": 13200,
+          "cycle": 33,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 524641,
+          "charsTyped": 13600,
+          "cycle": 34,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 539986,
+          "charsTyped": 14000,
+          "cycle": 35,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 555381,
+          "charsTyped": 14400,
+          "cycle": 36,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 570726,
+          "charsTyped": 14800,
+          "cycle": 37,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 586121,
+          "charsTyped": 15200,
+          "cycle": 38,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 634818,
+          "charsTyped": 15600,
+          "cycle": 39,
+          "partial": false,
+          "typingP95Ms": 1000
+        },
+        {
+          "atMs": 1094861,
+          "charsTyped": 16000,
+          "cycle": 40,
+          "partial": false,
+          "typingP95Ms": 1001
+        },
+        {
+          "atMs": 1554907,
+          "charsTyped": 16400,
+          "cycle": 41,
+          "partial": false,
+          "typingP95Ms": 1001
+        },
+        {
+          "atMs": 1800931,
+          "charsTyped": 16618,
+          "cycle": 42,
+          "partial": true,
+          "typingP95Ms": 1001
+        }
+      ],
+      "rows": 15200,
+      "a11y": {
+        "available": true,
+        "hasNavigator": true,
+        "exposedRows": 15200,
+        "mountedRows": 15200,
+        "roleCounts": {
+          "application": 1,
+          "frame": 1,
+          "panel": 2,
+          "filler": 5,
+          "separator": 1,
+          "button": 3,
+          "label": 2,
+          "scroll pane": 1,
+          "document web": 1,
+          "list box": 1,
+          "list item": 15200,
+          "entry": 1,
+          "scroll bar": 1
+        }
+      },
+      "startup_ms": 358,
+      "verdicts": [
+        {
+          "gate": "peak_rss_mb",
+          "value": 673,
+          "threshold": "< 750",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "typing_p95_ms",
+          "value": 1000,
+          "threshold": "< 50",
+          "verdict": "FAIL"
+        },
+        {
+          "gate": "typing_p99_ms",
+          "value": 1000,
+          "threshold": "< 100",
+          "verdict": "FAIL"
+        },
+        {
+          "gate": "nav_p95_ms",
+          "value": 1000,
+          "threshold": "< 150",
+          "verdict": "FAIL"
+        },
+        {
+          "gate": "no_typing_cliff",
+          "value": 22.324,
+          "threshold": "last decile / first decile < 1.5 (min 10 cycles)",
+          "verdict": "FAIL"
+        },
+        {
+          "gate": "typing_stall_rate",
+          "value": 0.0634,
+          "threshold": "< 0.01 (stalled + frameMs > 100 ms, over sample count)",
+          "verdict": "FAIL"
+        },
+        {
+          "gate": "a11y_exposure",
+          "value": "15200 of 15200",
+          "threshold": "advertised rows == 15200",
+          "verdict": "PASS"
+        }
+      ]
+    }
+  },
+  "verdicts": [
+    {
+      "gate": "peak_rss_mb",
+      "value": 581,
+      "threshold": "< 750",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p95_ms",
+      "value": 1000,
+      "threshold": "< 50",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "typing_p99_ms",
+      "value": 1001,
+      "threshold": "< 100",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "nav_p95_ms",
+      "value": 1000,
+      "threshold": "< 150",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "no_typing_cliff",
+      "value": 15.235,
+      "threshold": "last decile / first decile < 1.5 (min 10 cycles)",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "typing_stall_rate",
+      "value": 0.0624,
+      "threshold": "< 0.01 (stalled + frameMs > 100 ms, over sample count)",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "a11y_exposure",
+      "value": "15200 of 15200",
+      "threshold": "advertised rows == 15200",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "04b7ac1"
+}

@@ -1,0 +1,28 @@
+{
+  "slice": 158,
+  "checks": {
+    "focused_status_and_project": "passed",
+    "status_order_regression": "passed",
+    "typescript": "passed",
+    "ui_build": "passed",
+    "diff_check": "passed"
+  },
+  "screenshots": [
+    {
+      "path": "app/results/screenshots/2026-09-21-158-status-dark.png",
+      "sha256": "e2eb18cceb5c6f2312ac882a7706bc367679a28bd7edc0b362a30959ccd16340"
+    },
+    {
+      "path": "app/results/screenshots/2026-09-21-158-status-light.png",
+      "sha256": "72b329f1995d3407e2658b658ca67daa7cb332e6d02c4095757a4f46798aed99"
+    }
+  ],
+  "environment": {
+    "renderer": "dmabuf-llvmpipe",
+    "isolation": "temporary manuscripts and owned virtual-display processes"
+  },
+  "limits": [
+    "Screenshots verify the popover in light and dark; action wiring and teardown are verified by the project test.",
+    "No full suites or stress runs for this UI-only shortcut."
+  ]
+}

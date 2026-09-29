@@ -1,0 +1,141 @@
+{
+  "run_id": "diag-session-sanity",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-smoke",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "mode": "virtual",
+    "soak_minutes": 2,
+    "typing_chars_per_cycle": 400,
+    "nav_jumps_per_cycle": 60,
+    "action_delay_ms": 0,
+    "display": "session",
+    "session_type": "wayland",
+    "gdk_backend": "wayland,x11,*",
+    "server_args": "n/a (live session)",
+    "input_pulse_ms": 0,
+    "ms_per_action": 33.35,
+    "peak_rss_mb": 526,
+    "startup_ms": 48,
+    "actions": 3599,
+    "onset": null,
+    "first_slow": null,
+    "slow_actions": 0,
+    "typing": {
+      "count": 3131,
+      "dispatch": {
+        "p50": 2,
+        "p95": 2.000000000014552,
+        "p99": 3
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34,
+        "p99": 34.00000000001455
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 3131,
+        "40-100": 0,
+        "500-2000": 0,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 0,
+      "stalls": 0
+    },
+    "nav": {
+      "count": 468,
+      "dispatch": {
+        "p50": 0,
+        "p95": 1.999999999992724,
+        "p99": 2.000000000007276
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34,
+        "p99": 34.00000000001455
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 468,
+        "40-100": 0,
+        "500-2000": 0,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 0,
+      "stalls": 0
+    },
+    "cycles": [
+      {
+        "atMs": 15333,
+        "charsTyped": 400,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 30678,
+        "charsTyped": 800,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 34.00000000000182
+      },
+      {
+        "atMs": 46006,
+        "charsTyped": 1200,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 61352,
+        "charsTyped": 1600,
+        "cycle": 4,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 76697,
+        "charsTyped": 2000,
+        "cycle": 5,
+        "partial": false,
+        "typingP95Ms": 34.000000000007276
+      },
+      {
+        "atMs": 92042,
+        "charsTyped": 2400,
+        "cycle": 6,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 107387,
+        "charsTyped": 2800,
+        "cycle": 7,
+        "partial": false,
+        "typingP95Ms": 34.00000000001455
+      },
+      {
+        "atMs": 120030,
+        "charsTyped": 3131,
+        "cycle": 8,
+        "partial": true,
+        "typingP95Ms": 34.00000000001455
+      }
+    ],
+    "rows": 15200
+  },
+  "verdicts": [],
+  "seed": "app-v1",
+  "rig_commit": "d5b4446"
+}

@@ -1,0 +1,144 @@
+{
+  "source_commit": "12b5563596ab4d0651cfba61fbccd7a60756a203",
+  "source_sha256": {
+    "app/ui/src/preferences.ts": "f95873c1095790b2b740f4d22c3c42533ebc7f5bf1cab1244e416be5908cc1ff",
+    "app/ui/style.css": "c92f2f186aeb25a1d4f2bea624e2dd97827792d6576def39f636a51cef9153f8",
+    "app/ui/test/prefs-legend-css.test.ts": "6543a09755398d83f4456308140ac8335f477ccd412b294eac8ebe8f74043bee",
+    "app/ui/test/preferences.test.ts": "1fb1b773a6a314d5e917a2b0f6b6e3345d579a36d190de6eb2742489a975bbfa"
+  },
+  "checks": {
+    "bun": {
+      "command": [
+        "bun",
+        "test",
+        "app"
+      ],
+      "exit_code": 0
+    },
+    "tsc": {
+      "command": [
+        "bunx",
+        "tsc",
+        "--noEmit",
+        "-p",
+        "app/tsconfig.json"
+      ],
+      "exit_code": 0
+    }
+  },
+  "bun_passed": 3883,
+  "bun_failed": 0,
+  "mutations": {
+    "source_commit": "5c671260206e5b29f89ddd1a93efe7a6ef0b6c62",
+    "source_restored": true,
+    "restored_ui_build_exit": 0,
+    "mutations": [
+      {
+        "mutation": "panel-grid-disabled",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "independent-label-tracks",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "special-groups-not-full-width",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "named-choice-wrapper",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      }
+    ]
+  },
+  "captures": [
+    {
+      "locale": "de",
+      "theme": "light",
+      "size": "1200x800",
+      "screenshot": "app/results/screenshots/154-prefs-before-de-light-1200x800.png",
+      "exit_code": 0,
+      "phase": "before",
+      "sha256": "8acefee4ece7935c06c6ac73c8737afb7a5d994501e3d777f8d5caf45c6e000e"
+    },
+    {
+      "locale": "de",
+      "theme": "dark",
+      "size": "1200x800",
+      "screenshot": "app/results/screenshots/154-prefs-before-de-dark-1200x800.png",
+      "exit_code": 0,
+      "phase": "before",
+      "sha256": "830ad600eef1851275ea6a197243bff84a2af28ed8a73a1b895bb727a5b3b21a"
+    },
+    {
+      "locale": "de",
+      "theme": "light",
+      "size": "640x480",
+      "screenshot": "app/results/screenshots/154-prefs-before-de-light-640x480.png",
+      "exit_code": 0,
+      "phase": "before",
+      "sha256": "7e12cea8d272d51b63e17c34282aed0362968d0b755156f2e0343dd69d691fc8"
+    },
+    {
+      "locale": "en",
+      "theme": "light",
+      "size": "1200x800",
+      "screenshot": "app/results/screenshots/154-prefs-before-en-light-1200x800.png",
+      "exit_code": 0,
+      "phase": "before",
+      "sha256": "43497e70db3fc4e17d085028e1c708750d6d0cf0d5a5c68e532e8cedff46944c"
+    },
+    {
+      "locale": "de",
+      "theme": "light",
+      "size": "1200x800",
+      "screenshot": "app/results/screenshots/154-prefs-after-de-light-1200x800.png",
+      "exit_code": 0,
+      "phase": "after",
+      "sha256": "066d9988145a7b3b0994c2afbb9514f7ff03264a8b26ab7e4ae2a0ff7c3a7f56"
+    },
+    {
+      "locale": "de",
+      "theme": "dark",
+      "size": "1200x800",
+      "screenshot": "app/results/screenshots/154-prefs-after-de-dark-1200x800.png",
+      "exit_code": 0,
+      "phase": "after",
+      "sha256": "e67e426634d41b1139052c0cf2c3e6855e036738c4fb6fa8229660a99db53592"
+    },
+    {
+      "locale": "de",
+      "theme": "light",
+      "size": "640x480",
+      "screenshot": "app/results/screenshots/154-prefs-after-de-light-640x480.png",
+      "exit_code": 0,
+      "phase": "after",
+      "sha256": "7e1b9391d2eb2326df27db274e977c5d2150728591cffc1ef6189186c49ddc02"
+    },
+    {
+      "locale": "en",
+      "theme": "light",
+      "size": "1200x800",
+      "screenshot": "app/results/screenshots/154-prefs-after-en-light-1200x800.png",
+      "exit_code": 0,
+      "phase": "after",
+      "sha256": "1207914e266573eef0a7f0c3268b6d05bc46fb3ae61189f12497dd94bc36ef16"
+    }
+  ],
+  "bottom_capture": {
+    "screenshot": "app/results/screenshots/154-prefs-after-de-dark-640x480-bottom.png",
+    "locale": "de",
+    "theme": "dark",
+    "size": "640x480",
+    "capture_exit": 0,
+    "scope": "Visual inspection of the scrolled panel, not an automated layout or performance gate.",
+    "sha256": "27867be5d949caa51ddcaf6894d923288880b0222f022a235245df92dab9fa92"
+  },
+  "visual_inspection": "German ordinary controls now share a label column in light/dark captures. Long labels remain intact; multirow choices stay inside the controls column. English remains readable. The small German window stays within its viewport; scrolling reveals dictionary, Bible row count, goal and privacy controls. Dictionary and Privacy retain full-width special layouts.",
+  "review": "No remaining findings after guarding special-group full width; its omission fails the test.",
+  "scope": "Preferences layout only. No typography values, manuscript rendering, storage or host behavior changed; no timing/memory result or platform-parity claim. Existing preferences interaction tests cover setting routing through the new neutral wrappers. Native screenshots verify layout on the local Linux WebKitGTK runtime; no new graded performance gate was introduced."
+}

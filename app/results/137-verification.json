@@ -1,0 +1,22 @@
+{
+  "source_commit": "fb7a956d7d3a7efe07b964e23612de81886332ac",
+  "bun": {
+    "passed": 3799,
+    "failed": 0
+  },
+  "focused": {
+    "passed": 23,
+    "failed": 0
+  },
+  "typecheck_exit": 0,
+  "mutants_killed": 6,
+  "source_restored": true,
+  "source_review": "no remaining findings",
+  "host_checks": "host source unchanged; full host suite passed in slice 135",
+  "scope": "runShell lifecycle cleanup and synthetic subprocess regressions",
+  "limitations": [
+    "trusted descendants retaining the owned group",
+    "no GUI or performance claim",
+    "asynchronous interval callback errors remain outside the enclosing async call"
+  ]
+}

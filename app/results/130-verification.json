@@ -1,0 +1,14 @@
+{
+  "stage": "complete",
+  "bun_passed": 3773,
+  "bun_failed": 0,
+  "typescript_exit": 0,
+  "captures_inspected": [
+    "app/results/screenshots/130-control-weight-cast-light.png",
+    "app/results/screenshots/130-control-weight-cast-dark.png",
+    "app/results/screenshots/130-control-weight-preview-light.png",
+    "app/results/screenshots/130-control-weight-preview-dark.png"
+  ],
+  "mutations_killed": 3,
+  "restored_ui_build_exit": 0
+}

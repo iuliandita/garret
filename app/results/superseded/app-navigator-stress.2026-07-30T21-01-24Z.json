@@ -1,0 +1,325 @@
+{
+  "run_id": "app-navigator-stress",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-smoke",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "peak_rss_mb": 564,
+    "typing_p95_ms": 34,
+    "typing_p99_ms": 34.00000000001455,
+    "nav_p95_ms": 34.00000000000364,
+    "typing": {
+      "count": 3109,
+      "dispatch": {
+        "p50": 1,
+        "p95": 2,
+        "p99": 2.000000000014552
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34,
+        "p99": 34.00000000001455
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 3104,
+        "40-100": 4,
+        "500-2000": 1,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 1,
+      "stalls": 0
+    },
+    "cycles": [
+      {
+        "atMs": 15980,
+        "charsTyped": 400,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 31325,
+        "charsTyped": 800,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 46786,
+        "charsTyped": 1200,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 62131,
+        "charsTyped": 1600,
+        "cycle": 4,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 77476,
+        "charsTyped": 2000,
+        "cycle": 5,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 92821,
+        "charsTyped": 2400,
+        "cycle": 6,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 108166,
+        "charsTyped": 2800,
+        "cycle": 7,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 120008,
+        "charsTyped": 3109,
+        "cycle": 8,
+        "partial": true,
+        "typingP95Ms": 34
+      }
+    ],
+    "rows": 15200,
+    "a11y": {
+      "available": true,
+      "hasNavigator": true,
+      "exposedRows": 15200,
+      "mountedRows": 36,
+      "roleCounts": {
+        "application": 1,
+        "frame": 1,
+        "panel": 2,
+        "filler": 5,
+        "separator": 1,
+        "button": 3,
+        "label": 2,
+        "scroll pane": 1,
+        "document web": 1,
+        "list box": 1,
+        "list item": 36,
+        "entry": 1,
+        "scroll bar": 1
+      }
+    },
+    "startup_ms": 34,
+    "soak_minutes": 2,
+    "control": {
+      "peak_rss_mb": 655,
+      "typing_p95_ms": 34,
+      "typing_p99_ms": 34.00000000001455,
+      "nav_p95_ms": 34,
+      "typing": {
+        "count": 3076,
+        "dispatch": {
+          "p50": 1,
+          "p95": 2,
+          "p99": 2.000000000014552
+        },
+        "frame": {
+          "p50": 33,
+          "p95": 34,
+          "p99": 34.00000000001455
+        },
+        "histogram": {
+          "100-500": 3,
+          "20-40": 3071,
+          "40-100": 1,
+          "500-2000": 1,
+          "<20": 0,
+          ">=2000": 0
+        },
+        "slowFrames": 4,
+        "stalls": 0
+      },
+      "cycles": [
+        {
+          "atMs": 17048,
+          "charsTyped": 400,
+          "cycle": 1,
+          "partial": false,
+          "typingP95Ms": 34.00000000000023
+        },
+        {
+          "atMs": 32393,
+          "charsTyped": 800,
+          "cycle": 2,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 47788,
+          "charsTyped": 1200,
+          "cycle": 3,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 63133,
+          "charsTyped": 1600,
+          "cycle": 4,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 78478,
+          "charsTyped": 2000,
+          "cycle": 5,
+          "partial": false,
+          "typingP95Ms": 34.000000000007276
+        },
+        {
+          "atMs": 93906,
+          "charsTyped": 2400,
+          "cycle": 6,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 109251,
+          "charsTyped": 2800,
+          "cycle": 7,
+          "partial": false,
+          "typingP95Ms": 34
+        },
+        {
+          "atMs": 120009,
+          "charsTyped": 3076,
+          "cycle": 8,
+          "partial": true,
+          "typingP95Ms": 34.00000000001455
+        }
+      ],
+      "rows": 15200,
+      "a11y": {
+        "available": true,
+        "hasNavigator": true,
+        "exposedRows": 15200,
+        "mountedRows": 15200,
+        "roleCounts": {
+          "application": 1,
+          "frame": 1,
+          "panel": 2,
+          "filler": 5,
+          "separator": 1,
+          "button": 3,
+          "label": 2,
+          "scroll pane": 1,
+          "document web": 1,
+          "list box": 1,
+          "list item": 15200,
+          "entry": 1,
+          "scroll bar": 1
+        }
+      },
+      "startup_ms": 395,
+      "verdicts": [
+        {
+          "gate": "peak_rss_mb",
+          "value": 655,
+          "threshold": "< 750",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "typing_p95_ms",
+          "value": 34,
+          "threshold": "< 50",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "typing_p99_ms",
+          "value": 34.00000000001455,
+          "threshold": "< 100",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "nav_p95_ms",
+          "value": 34,
+          "threshold": "< 150",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "no_typing_cliff",
+          "value": "7 complete cycles",
+          "threshold": "last decile / first decile < 1.5 (min 10 cycles)",
+          "verdict": "UNKNOWN"
+        },
+        {
+          "gate": "typing_stall_rate",
+          "value": 0.0013,
+          "threshold": "< 0.01 (stalled + frameMs > 100 ms, over sample count)",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "a11y_exposure",
+          "value": "15200 of 15200",
+          "threshold": "advertised rows == 15200",
+          "verdict": "PASS"
+        }
+      ]
+    }
+  },
+  "verdicts": [
+    {
+      "gate": "peak_rss_mb",
+      "value": 564,
+      "threshold": "< 750",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p95_ms",
+      "value": 34,
+      "threshold": "< 50",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p99_ms",
+      "value": 34.00000000001455,
+      "threshold": "< 100",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "nav_p95_ms",
+      "value": 34.00000000000364,
+      "threshold": "< 150",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "no_typing_cliff",
+      "value": "7 complete cycles",
+      "threshold": "last decile / first decile < 1.5 (min 10 cycles)",
+      "verdict": "UNKNOWN"
+    },
+    {
+      "gate": "typing_stall_rate",
+      "value": 0.0003,
+      "threshold": "< 0.01 (stalled + frameMs > 100 ms, over sample count)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "a11y_exposure",
+      "value": "15200 of 15200",
+      "threshold": "advertised rows == 15200",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "2080e6c"
+}

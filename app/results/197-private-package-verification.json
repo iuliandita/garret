@@ -1,0 +1,102 @@
+{
+  "packaged_source_revision": "c37ab535f2631e47ddd5d2d4c527b74eafa72cf7",
+  "linux": {
+    "scope": "Ubuntu 24.04 container, Mint 22 package base; Xvfb, not a Mint desktop certification",
+    "binary_sha256": "54ec67d662e87120dc9bac8d537f938edbed644583ddb0a626edcc7f2e744f92",
+    "package_sha256": "1fd1a6280ef617e491a4469ec2948331a23442a30809205826fcf7a0587b0625",
+    "build": "Source revision: c37ab535f2631e47ddd5d2d4c527b74eafa72cf7\nArchitecture: Linux x86_64\nMinimum glibc: 2.39\nBuilt UTC: 2026-09-25T18:11:58Z\nRuntime: system WebKitGTK 4.1 and GTK 3\n",
+    "checks": {
+      "checksums": {
+        "exit_code": 0
+      },
+      "linkage": {
+        "exit_code": 0
+      },
+      "unicode_import": {
+        "exit_code": 0
+      },
+      "inspect": {
+        "exit_code": 0
+      },
+      "validate": {
+        "exit_code": 0
+      },
+      "markdown_export": {
+        "exit_code": 0
+      },
+      "epub_export": {
+        "exit_code": 0
+      },
+      "docx_export": {
+        "exit_code": 0
+      },
+      "windows": {
+        "exit_code": 0
+      },
+      "gui": {
+        "ready": true,
+        "rows": 1,
+        "run": "interactive",
+        "asset_override": false,
+        "clean_exit": true
+      },
+      "focus": {
+        "exit_code": 0
+      },
+      "close": {
+        "exit_code": 0
+      }
+    },
+    "failure": null,
+    "unicode_round_trip": true,
+    "visual_review": {
+      "inspected": true,
+      "layout": "Title, imported prose, navigator and saved status visible",
+      "font_limit": "Minimal container lacks CJK glyph fonts; Chinese characters render as missing glyphs, but import/export preserves their bytes. No language font coverage certification."
+    }
+  },
+  "windows": {
+    "scope": "Windows executable non-GUI smoke under Wine; not a real Windows or WebView2 GUI test",
+    "checks": {
+      "package_integrity": true,
+      "package_checksums": true,
+      "unicode_import": {
+        "exit_code": 0,
+        "expected_exit_code": 0
+      },
+      "inspect": {
+        "exit_code": 0,
+        "expected_exit_code": 0
+      },
+      "validate": {
+        "exit_code": 0,
+        "expected_exit_code": 0
+      },
+      "markdown_export": {
+        "exit_code": 0,
+        "expected_exit_code": 0
+      },
+      "epub_export": {
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "archive_integrity": true
+      },
+      "docx_export": {
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "archive_integrity": true
+      }
+    },
+    "package_sha256": "f6ab1a33f550dd211bb15128f29bde0e86225866b09de98f79fcaf1437d0054a",
+    "build": "Source revision: c37ab535f2631e47ddd5d2d4c527b74eafa72cf7\nTarget: x86_64-pc-windows-msvc\nBuilt UTC: 2026-09-25T18:14:33Z\nSigning: unsigned\nWindows GUI verification: not performed\n",
+    "exe_sha256": "094a9654c54b610ce9065f8797d46db98e45619099a206f6c2d16be698515396",
+    "failure": null,
+    "unicode_round_trip": true
+  },
+  "limits": [
+    "Private unsigned packages; no public distribution or native Windows GUI certification.",
+    "Windows PDF proof, privacy locking and single-instance guard remain unavailable.",
+    "Windows filesystem permission/ACL behavior remains unverified; staging checks do not enforce Unix owner/mode semantics.",
+    "Cross-build warnings concern platform-gated unused code, an unused helper, and missing release-link debug symbols; build succeeds."
+  ]
+}

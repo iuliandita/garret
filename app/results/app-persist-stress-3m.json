@@ -1,0 +1,1384 @@
+{
+  "run_id": "app-persist-stress-3m",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-persist",
+  "environment": {
+    "kernel": "7.2.2-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 5.85,
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "peak_rss_mb": 745,
+    "typing_p95_ms": 34,
+    "typing_p99_ms": 34.000000000029104,
+    "nav_p95_ms": 34,
+    "typing": {
+      "count": 4708,
+      "dispatch": {
+        "p50": 1,
+        "p95": 2,
+        "p99": 2.000000000029104
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34,
+        "p99": 34.000000000029104
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 4703,
+        "40-100": 3,
+        "500-2000": 1,
+        "<20": 1,
+        ">=2000": 0
+      },
+      "slowFrames": 1,
+      "stalls": 0
+    },
+    "nav": {
+      "count": 663,
+      "dispatch": {
+        "p50": 0.9999999999708962,
+        "p95": 4,
+        "p99": 15
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34,
+        "p99": 34.00000000001455
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 662,
+        "40-100": 1,
+        "500-2000": 0,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 0,
+      "stalls": 0
+    },
+    "cycles": [
+      {
+        "atMs": 16232,
+        "charsTyped": 400,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 34.000000000000114
+      },
+      {
+        "atMs": 32410,
+        "charsTyped": 800,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 48589,
+        "charsTyped": 1200,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 64768,
+        "charsTyped": 1600,
+        "cycle": 4,
+        "partial": false,
+        "typingP95Ms": 34.000000000007276
+      },
+      {
+        "atMs": 80947,
+        "charsTyped": 2000,
+        "cycle": 5,
+        "partial": false,
+        "typingP95Ms": 34.000000000007276
+      },
+      {
+        "atMs": 97159,
+        "charsTyped": 2400,
+        "cycle": 6,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 113338,
+        "charsTyped": 2800,
+        "cycle": 7,
+        "partial": false,
+        "typingP95Ms": 34.00000000001455
+      },
+      {
+        "atMs": 129517,
+        "charsTyped": 3200,
+        "cycle": 8,
+        "partial": false,
+        "typingP95Ms": 34.00000000001455
+      },
+      {
+        "atMs": 146463,
+        "charsTyped": 3600,
+        "cycle": 9,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 162625,
+        "charsTyped": 4000,
+        "cycle": 10,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 178803,
+        "charsTyped": 4400,
+        "cycle": 11,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 180004,
+        "charsTyped": 4428,
+        "cycle": 12,
+        "partial": true,
+        "typingP95Ms": 34
+      }
+    ],
+    "rows": 20000,
+    "workload_script": "writing-v1",
+    "a11y": {
+      "available": true,
+      "hasNavigator": true,
+      "exposedRows": 1570,
+      "mountedRows": 46,
+      "treeRows": [
+        {
+          "id": "nav-row-19954",
+          "name": "Garden Winter 479",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1525,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19955",
+          "name": "Straße Storm 703",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1526,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19956",
+          "name": "Straße Lantern 848",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1527,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19957",
+          "name": "River Nocturne 198",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1528,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19958",
+          "name": "Winter Harbor 177",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1529,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19959",
+          "name": "Garden Ombré 642",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1530,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19960",
+          "name": "Lantern Straße 267",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1531,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19961",
+          "name": "café Winter 18",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1532,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19962",
+          "name": "café Lantern 256",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1533,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19963",
+          "name": "CAFÉ Harbor 778",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1534,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19964",
+          "name": "Winter Nocturne 256",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1535,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19965",
+          "name": "Lantern Garden 171",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1536,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19966",
+          "name": "CAFÉ CAFÉ 898",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1537,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19967",
+          "name": "Letter Straße 807",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1538,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19968",
+          "name": "Lantern Straße 444",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1539,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19969",
+          "name": "café Storm 88",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1540,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19970",
+          "name": "Winter Letter 338",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1541,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19971",
+          "name": "Garden River 471",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1542,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19972",
+          "name": "Lantern Harbor 741",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1543,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19973",
+          "name": "Nocturne Garden 225",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1544,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19974",
+          "name": "Harbor Storm 314",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1545,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19975",
+          "name": "Storm Storm 803",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1546,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19976",
+          "name": "Ombré CAFÉ 54",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1547,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19977",
+          "name": "Straße Nocturne 923",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1548,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19978",
+          "name": "CAFÉ Winter 85",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1549,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19979",
+          "name": "Straße Ombré 149",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1550,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19980",
+          "name": "River Lantern 831",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1551,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19981",
+          "name": "Storm Harbor 399",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1552,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19982",
+          "name": "Garden Nocturne 961",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1553,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19983",
+          "name": "Storm Harbor 437",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1554,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19984",
+          "name": "Lantern Harbor 952",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1555,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19985",
+          "name": "Nocturne CAFÉ 170",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1556,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19986",
+          "name": "Garden Garden 485",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1557,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19987",
+          "name": "Storm Nocturne 414",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1558,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19988",
+          "name": "Storm Winter 163",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1559,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19989",
+          "name": "Garden Lantern 327",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1560,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19990",
+          "name": "Letter Garden 953",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1561,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19991",
+          "name": "CAFÉ Garden 408",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1562,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19992",
+          "name": "Ombré Garden 603",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1563,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19993",
+          "name": "River café 298",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1564,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19994",
+          "name": "Ombré River 117",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1565,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19995",
+          "name": "Storm Lantern 740",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1566,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19996",
+          "name": "CAFÉ Ombré 726",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1567,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19997",
+          "name": "Ausência Lantern 185",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1568,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19998",
+          "name": "Ausência Ombré 29",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1569,
+          "expanded": false
+        },
+        {
+          "id": "nav-row-19999",
+          "name": "Nocturne Ombré 813",
+          "level": 1,
+          "setsize": 1570,
+          "posinset": 1570,
+          "expanded": false
+        }
+      ],
+      "roleCounts": {
+        "application": 1,
+        "frame": 1,
+        "panel": 8,
+        "filler": 5,
+        "separator": 1,
+        "button": 3,
+        "label": 2,
+        "scroll pane": 1,
+        "document web": 1,
+        "toggle button": 3,
+        "tree": 1,
+        "tree item": 46,
+        "landmark": 1,
+        "entry": 1,
+        "section": 2
+      }
+    },
+    "startup_ms": 264,
+    "soak_minutes": 3,
+    "actions": 5371,
+    "onset": null,
+    "slow_actions": 1,
+    "persist": {
+      "restart_body_match": true,
+      "body_diverged_from_seed": true,
+      "flush_count": 173,
+      "flush_conflicts": 0,
+      "flush_errors": 0,
+      "flush_p50_ms": 1.999999999992724,
+      "flush_p95_ms": 2.000000000029104
+    },
+    "persist_error": null,
+    "rss": {
+      "samples": 731,
+      "span_ms": 183680,
+      "peak_mb": 745,
+      "peak_at_ms": 170895,
+      "boot_window_ms": 45000,
+      "peak_in_boot_window": false,
+      "boot_window_peak_mb": 686,
+      "post_boot_samples": 552,
+      "post_boot_median_mb": 693,
+      "post_boot_max_mb": 745,
+      "post_boot_slope_mb_per_min": 36.91820006435441
+    },
+    "rss_series": [
+      {
+        "atMs": 0,
+        "rssMb": 55
+      },
+      {
+        "atMs": 1000,
+        "rssMb": 55
+      },
+      {
+        "atMs": 2000,
+        "rssMb": 55
+      },
+      {
+        "atMs": 3000,
+        "rssMb": 577
+      },
+      {
+        "atMs": 4000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 5000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 6000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 7000,
+        "rssMb": 667
+      },
+      {
+        "atMs": 8000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 9000,
+        "rssMb": 674
+      },
+      {
+        "atMs": 10000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 11000,
+        "rssMb": 672
+      },
+      {
+        "atMs": 12000,
+        "rssMb": 672
+      },
+      {
+        "atMs": 13000,
+        "rssMb": 674
+      },
+      {
+        "atMs": 14000,
+        "rssMb": 674
+      },
+      {
+        "atMs": 15000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 16000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 17000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 18000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 19000,
+        "rssMb": 671
+      },
+      {
+        "atMs": 20000,
+        "rssMb": 674
+      },
+      {
+        "atMs": 21000,
+        "rssMb": 676
+      },
+      {
+        "atMs": 22000,
+        "rssMb": 675
+      },
+      {
+        "atMs": 23000,
+        "rssMb": 677
+      },
+      {
+        "atMs": 24000,
+        "rssMb": 686
+      },
+      {
+        "atMs": 25000,
+        "rssMb": 678
+      },
+      {
+        "atMs": 26000,
+        "rssMb": 678
+      },
+      {
+        "atMs": 27000,
+        "rssMb": 678
+      },
+      {
+        "atMs": 28000,
+        "rssMb": 678
+      },
+      {
+        "atMs": 29000,
+        "rssMb": 676
+      },
+      {
+        "atMs": 30000,
+        "rssMb": 677
+      },
+      {
+        "atMs": 31000,
+        "rssMb": 677
+      },
+      {
+        "atMs": 32000,
+        "rssMb": 679
+      },
+      {
+        "atMs": 33000,
+        "rssMb": 679
+      },
+      {
+        "atMs": 34000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 35000,
+        "rssMb": 658
+      },
+      {
+        "atMs": 36000,
+        "rssMb": 658
+      },
+      {
+        "atMs": 37000,
+        "rssMb": 657
+      },
+      {
+        "atMs": 38000,
+        "rssMb": 657
+      },
+      {
+        "atMs": 39000,
+        "rssMb": 658
+      },
+      {
+        "atMs": 40000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 41000,
+        "rssMb": 659
+      },
+      {
+        "atMs": 42000,
+        "rssMb": 659
+      },
+      {
+        "atMs": 43000,
+        "rssMb": 659
+      },
+      {
+        "atMs": 44000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 45000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 46000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 47000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 48000,
+        "rssMb": 659
+      },
+      {
+        "atMs": 49000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 50000,
+        "rssMb": 661
+      },
+      {
+        "atMs": 51000,
+        "rssMb": 659
+      },
+      {
+        "atMs": 52000,
+        "rssMb": 659
+      },
+      {
+        "atMs": 53000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 54000,
+        "rssMb": 660
+      },
+      {
+        "atMs": 55000,
+        "rssMb": 662
+      },
+      {
+        "atMs": 56000,
+        "rssMb": 672
+      },
+      {
+        "atMs": 57000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 58000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 59000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 60000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 61000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 62000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 63000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 64000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 65000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 66000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 67000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 68000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 69000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 70000,
+        "rssMb": 663
+      },
+      {
+        "atMs": 71000,
+        "rssMb": 664
+      },
+      {
+        "atMs": 72000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 73000,
+        "rssMb": 666
+      },
+      {
+        "atMs": 74000,
+        "rssMb": 666
+      },
+      {
+        "atMs": 75000,
+        "rssMb": 666
+      },
+      {
+        "atMs": 76000,
+        "rssMb": 666
+      },
+      {
+        "atMs": 77000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 78000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 79000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 80000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 81000,
+        "rssMb": 668
+      },
+      {
+        "atMs": 82000,
+        "rssMb": 669
+      },
+      {
+        "atMs": 83000,
+        "rssMb": 671
+      },
+      {
+        "atMs": 84000,
+        "rssMb": 671
+      },
+      {
+        "atMs": 85000,
+        "rssMb": 671
+      },
+      {
+        "atMs": 86000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 87000,
+        "rssMb": 670
+      },
+      {
+        "atMs": 88000,
+        "rssMb": 683
+      },
+      {
+        "atMs": 89000,
+        "rssMb": 683
+      },
+      {
+        "atMs": 90000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 91000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 92000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 93000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 94000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 95000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 96000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 97000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 98000,
+        "rssMb": 673
+      },
+      {
+        "atMs": 99000,
+        "rssMb": 702
+      },
+      {
+        "atMs": 100000,
+        "rssMb": 699
+      },
+      {
+        "atMs": 101000,
+        "rssMb": 698
+      },
+      {
+        "atMs": 102000,
+        "rssMb": 698
+      },
+      {
+        "atMs": 103000,
+        "rssMb": 699
+      },
+      {
+        "atMs": 104000,
+        "rssMb": 707
+      },
+      {
+        "atMs": 105000,
+        "rssMb": 711
+      },
+      {
+        "atMs": 106000,
+        "rssMb": 704
+      },
+      {
+        "atMs": 107000,
+        "rssMb": 704
+      },
+      {
+        "atMs": 108000,
+        "rssMb": 702
+      },
+      {
+        "atMs": 109000,
+        "rssMb": 702
+      },
+      {
+        "atMs": 110000,
+        "rssMb": 701
+      },
+      {
+        "atMs": 111000,
+        "rssMb": 701
+      },
+      {
+        "atMs": 112000,
+        "rssMb": 702
+      },
+      {
+        "atMs": 113000,
+        "rssMb": 702
+      },
+      {
+        "atMs": 114000,
+        "rssMb": 702
+      },
+      {
+        "atMs": 115000,
+        "rssMb": 701
+      },
+      {
+        "atMs": 116000,
+        "rssMb": 701
+      },
+      {
+        "atMs": 117000,
+        "rssMb": 701
+      },
+      {
+        "atMs": 118000,
+        "rssMb": 702
+      },
+      {
+        "atMs": 119000,
+        "rssMb": 704
+      },
+      {
+        "atMs": 120000,
+        "rssMb": 707
+      },
+      {
+        "atMs": 121000,
+        "rssMb": 714
+      },
+      {
+        "atMs": 122000,
+        "rssMb": 714
+      },
+      {
+        "atMs": 123000,
+        "rssMb": 710
+      },
+      {
+        "atMs": 124000,
+        "rssMb": 713
+      },
+      {
+        "atMs": 125000,
+        "rssMb": 713
+      },
+      {
+        "atMs": 126000,
+        "rssMb": 712
+      },
+      {
+        "atMs": 127000,
+        "rssMb": 713
+      },
+      {
+        "atMs": 128000,
+        "rssMb": 715
+      },
+      {
+        "atMs": 129000,
+        "rssMb": 715
+      },
+      {
+        "atMs": 130000,
+        "rssMb": 691
+      },
+      {
+        "atMs": 131000,
+        "rssMb": 692
+      },
+      {
+        "atMs": 132000,
+        "rssMb": 692
+      },
+      {
+        "atMs": 133000,
+        "rssMb": 693
+      },
+      {
+        "atMs": 134000,
+        "rssMb": 689
+      },
+      {
+        "atMs": 135000,
+        "rssMb": 686
+      },
+      {
+        "atMs": 136000,
+        "rssMb": 687
+      },
+      {
+        "atMs": 137000,
+        "rssMb": 695
+      },
+      {
+        "atMs": 138000,
+        "rssMb": 695
+      },
+      {
+        "atMs": 139000,
+        "rssMb": 694
+      },
+      {
+        "atMs": 140000,
+        "rssMb": 691
+      },
+      {
+        "atMs": 141000,
+        "rssMb": 691
+      },
+      {
+        "atMs": 142000,
+        "rssMb": 690
+      },
+      {
+        "atMs": 143000,
+        "rssMb": 691
+      },
+      {
+        "atMs": 144000,
+        "rssMb": 692
+      },
+      {
+        "atMs": 145000,
+        "rssMb": 693
+      },
+      {
+        "atMs": 146000,
+        "rssMb": 693
+      },
+      {
+        "atMs": 147000,
+        "rssMb": 693
+      },
+      {
+        "atMs": 148000,
+        "rssMb": 694
+      },
+      {
+        "atMs": 149000,
+        "rssMb": 717
+      },
+      {
+        "atMs": 150000,
+        "rssMb": 726
+      },
+      {
+        "atMs": 151000,
+        "rssMb": 723
+      },
+      {
+        "atMs": 152000,
+        "rssMb": 723
+      },
+      {
+        "atMs": 153000,
+        "rssMb": 723
+      },
+      {
+        "atMs": 154000,
+        "rssMb": 735
+      },
+      {
+        "atMs": 155000,
+        "rssMb": 731
+      },
+      {
+        "atMs": 156000,
+        "rssMb": 732
+      },
+      {
+        "atMs": 157000,
+        "rssMb": 731
+      },
+      {
+        "atMs": 158000,
+        "rssMb": 732
+      },
+      {
+        "atMs": 159000,
+        "rssMb": 732
+      },
+      {
+        "atMs": 160000,
+        "rssMb": 732
+      },
+      {
+        "atMs": 161000,
+        "rssMb": 731
+      },
+      {
+        "atMs": 162000,
+        "rssMb": 734
+      },
+      {
+        "atMs": 163000,
+        "rssMb": 734
+      },
+      {
+        "atMs": 164000,
+        "rssMb": 734
+      },
+      {
+        "atMs": 165000,
+        "rssMb": 734
+      },
+      {
+        "atMs": 166000,
+        "rssMb": 736
+      },
+      {
+        "atMs": 167000,
+        "rssMb": 736
+      },
+      {
+        "atMs": 168000,
+        "rssMb": 734
+      },
+      {
+        "atMs": 169000,
+        "rssMb": 737
+      },
+      {
+        "atMs": 170000,
+        "rssMb": 745
+      },
+      {
+        "atMs": 171000,
+        "rssMb": 737
+      },
+      {
+        "atMs": 172000,
+        "rssMb": 738
+      },
+      {
+        "atMs": 173000,
+        "rssMb": 737
+      },
+      {
+        "atMs": 174000,
+        "rssMb": 737
+      },
+      {
+        "atMs": 175000,
+        "rssMb": 738
+      },
+      {
+        "atMs": 176000,
+        "rssMb": 742
+      },
+      {
+        "atMs": 177000,
+        "rssMb": 743
+      },
+      {
+        "atMs": 178000,
+        "rssMb": 743
+      },
+      {
+        "atMs": 179000,
+        "rssMb": 743
+      },
+      {
+        "atMs": 180000,
+        "rssMb": 740
+      },
+      {
+        "atMs": 181000,
+        "rssMb": 740
+      },
+      {
+        "atMs": 182000,
+        "rssMb": 717
+      },
+      {
+        "atMs": 183000,
+        "rssMb": 718
+      }
+    ]
+  },
+  "verdicts": [
+    {
+      "gate": "peak_rss_mb",
+      "value": 745,
+      "threshold": "< 750",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p95_ms",
+      "value": 34,
+      "threshold": "< 50",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p99_ms",
+      "value": 34.000000000029104,
+      "threshold": "< 100",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "nav_p95_ms",
+      "value": 34,
+      "threshold": "< 150",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "no_typing_cliff",
+      "value": 1,
+      "threshold": "last decile / first decile < 1.5 (min 10 cycles)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_stall_rate",
+      "value": 0.0002,
+      "threshold": "< 0.01 (stalled + frameMs > 100 ms, over sample count)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "a11y_exposure",
+      "value": "not applicable: tree navigator advertises per-sibling-group setsize, see a11y_tree_structure",
+      "threshold": "advertised rows == 20000 (flat list only)",
+      "verdict": "UNKNOWN"
+    },
+    {
+      "gate": "restart_body_match",
+      "value": "match",
+      "threshold": "reopened body hash == pre-kill body hash",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_conflicts",
+      "value": 0,
+      "threshold": "== 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_errors",
+      "value": 0,
+      "threshold": "== 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_p95_ms",
+      "value": 2.000000000029104,
+      "threshold": "< 50",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "d3063e44"
+}

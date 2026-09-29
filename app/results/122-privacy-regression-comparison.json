@@ -1,0 +1,1214 @@
+[
+  {
+    "result": "app-dialog-tiny.json",
+    "before_environment": {
+      "kernel": "7.2.2-1-cachyos",
+      "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+      "throttleScope": "none",
+      "loadAvg1m": 1.73,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+    },
+    "after_environment": {
+      "kernel": "7.2.3-1-cachyos",
+      "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+      "throttleScope": "none",
+      "loadAvg1m": 4.9,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+    },
+    "metrics": [
+      {
+        "metric": "dialog_opened",
+        "before": true,
+        "after": true
+      },
+      {
+        "metric": "class_matches_while_open",
+        "before": 2,
+        "after": 2,
+        "delta": 0
+      },
+      {
+        "metric": "wrote_chosen_path",
+        "before": true,
+        "after": true
+      },
+      {
+        "metric": "file_scenes",
+        "before": 30,
+        "after": 30,
+        "delta": 0
+      },
+      {
+        "metric": "store_scenes",
+        "before": 30,
+        "after": 30,
+        "delta": 0
+      },
+      {
+        "metric": "nonce_in_file",
+        "before": true,
+        "after": true
+      },
+      {
+        "metric": "cancel_dialog_opened",
+        "before": true,
+        "after": true
+      },
+      {
+        "metric": "cancel_files_written",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "import_dialog_opened",
+        "before": true,
+        "after": true
+      },
+      {
+        "metric": "library_projects_after_import",
+        "before": 1,
+        "after": 1,
+        "delta": 0
+      },
+      {
+        "metric": "imported_scenes",
+        "before": 30,
+        "after": 30,
+        "delta": 0
+      },
+      {
+        "metric": "peak_rss_mb",
+        "before": 574,
+        "after": 588,
+        "delta": 14
+      }
+    ],
+    "verdicts": [
+      {
+        "gate": "dialog_opens",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "dialog_writes_the_chosen_path",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "dialog_content_matches_the_store",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "dialog_export_includes_the_last_keystroke",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "dialog_cancel_writes_nothing",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "dialog_import_opens",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "dialog_imports_the_chosen_file",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "peak_rss_mb",
+        "before": "PASS",
+        "after": "PASS"
+      }
+    ]
+  },
+  {
+    "result": "app-menu-tiny.json",
+    "before_environment": {
+      "kernel": "7.2.3-1-cachyos",
+      "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+      "throttleScope": "none",
+      "loadAvg1m": 3.5,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+    },
+    "after_environment": {
+      "kernel": "7.2.3-1-cachyos",
+      "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+      "throttleScope": "none",
+      "loadAvg1m": 3.66,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+    },
+    "metrics": [
+      {
+        "metric": "menu_titles_found",
+        "before": 4,
+        "after": 4,
+        "delta": 0
+      },
+      {
+        "metric": "baseline_item_nodes",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "open_item_nodes",
+        "before": 19,
+        "after": 20,
+        "delta": 1
+      },
+      {
+        "metric": "unnamed_item_nodes",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "items_after_escape",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "items_after_activation",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "store_rows_before_create",
+        "before": 40,
+        "after": 40,
+        "delta": 0
+      },
+      {
+        "metric": "store_rows_after_create",
+        "before": 41,
+        "after": 41,
+        "delta": 0
+      },
+      {
+        "metric": "export_files_before",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "export_files_after",
+        "before": 1,
+        "after": 1,
+        "delta": 0
+      },
+      {
+        "metric": "exported_sections",
+        "before": 40,
+        "after": 40,
+        "delta": 0
+      },
+      {
+        "metric": "store_items",
+        "before": 40,
+        "after": 40,
+        "delta": 0
+      },
+      {
+        "metric": "live_row_trashed_in_store",
+        "before": false,
+        "after": false
+      },
+      {
+        "metric": "trashed_row_trashed_in_store",
+        "before": true,
+        "after": true
+      },
+      {
+        "metric": "peak_rss_mb",
+        "before": 649,
+        "after": 607,
+        "delta": -42
+      }
+    ],
+    "verdicts": [
+      {
+        "gate": "menu_opens",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "menu_roles_exposed",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "menu_creates_an_item",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "menu_exports",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "menu_context_label",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "menu_keyboard_opens",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "menu_closes_after_activation",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "peak_rss_mb",
+        "before": "PASS",
+        "after": "PASS"
+      }
+    ]
+  },
+  {
+    "result": "app-persist-stress-5m.json",
+    "before_environment": {
+      "kernel": "7.2.3-1-cachyos",
+      "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+      "throttleScope": "none",
+      "loadAvg1m": 5.36,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+    },
+    "after_environment": {
+      "kernel": "7.2.3-1-cachyos",
+      "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+      "throttleScope": "none",
+      "loadAvg1m": 4.29,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+    },
+    "metrics": [
+      {
+        "metric": "peak_rss_mb",
+        "before": 655,
+        "after": 669,
+        "delta": 14
+      },
+      {
+        "metric": "typing_p95_ms",
+        "before": 33,
+        "after": 33,
+        "delta": 0
+      },
+      {
+        "metric": "typing_p99_ms",
+        "before": 34,
+        "after": 34,
+        "delta": 0
+      },
+      {
+        "metric": "nav_p95_ms",
+        "before": 33,
+        "after": 33,
+        "delta": 0
+      },
+      {
+        "metric": "typing.count",
+        "before": 8188,
+        "after": 8192,
+        "delta": 4
+      },
+      {
+        "metric": "typing.dispatch.p50",
+        "before": 1,
+        "after": 1,
+        "delta": 0
+      },
+      {
+        "metric": "typing.dispatch.p95",
+        "before": 2,
+        "after": 2,
+        "delta": 0
+      },
+      {
+        "metric": "typing.dispatch.p99",
+        "before": 2.000000000029104,
+        "after": 2.000000000001819,
+        "delta": -2.7284841053187847e-11
+      },
+      {
+        "metric": "typing.frame.p50",
+        "before": 32,
+        "after": 32,
+        "delta": 0
+      },
+      {
+        "metric": "typing.frame.p95",
+        "before": 33,
+        "after": 33,
+        "delta": 0
+      },
+      {
+        "metric": "typing.frame.p99",
+        "before": 34,
+        "after": 34,
+        "delta": 0
+      },
+      {
+        "metric": "typing.histogram.100-500",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "typing.histogram.20-40",
+        "before": 8182,
+        "after": 8190,
+        "delta": 8
+      },
+      {
+        "metric": "typing.histogram.40-100",
+        "before": 4,
+        "after": 1,
+        "delta": -3
+      },
+      {
+        "metric": "typing.histogram.500-2000",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "typing.histogram.<20",
+        "before": 2,
+        "after": 1,
+        "delta": -1
+      },
+      {
+        "metric": "typing.histogram.>=2000",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "typing.slowFrames",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "typing.stalls",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "nav.count",
+        "before": 1156,
+        "after": 1156,
+        "delta": 0
+      },
+      {
+        "metric": "nav.dispatch.p50",
+        "before": 0.999999999985448,
+        "after": 0.999999999985448,
+        "delta": 0.0
+      },
+      {
+        "metric": "nav.dispatch.p95",
+        "before": 7,
+        "after": 6,
+        "delta": -1
+      },
+      {
+        "metric": "nav.dispatch.p99",
+        "before": 18,
+        "after": 15,
+        "delta": -3
+      },
+      {
+        "metric": "nav.frame.p50",
+        "before": 32,
+        "after": 32,
+        "delta": 0
+      },
+      {
+        "metric": "nav.frame.p95",
+        "before": 33,
+        "after": 33,
+        "delta": 0
+      },
+      {
+        "metric": "nav.frame.p99",
+        "before": 34,
+        "after": 34,
+        "delta": 0
+      },
+      {
+        "metric": "nav.histogram.100-500",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "nav.histogram.20-40",
+        "before": 1153,
+        "after": 1152,
+        "delta": -1
+      },
+      {
+        "metric": "nav.histogram.40-100",
+        "before": 1,
+        "after": 0,
+        "delta": -1
+      },
+      {
+        "metric": "nav.histogram.500-2000",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "nav.histogram.<20",
+        "before": 2,
+        "after": 4,
+        "delta": 2
+      },
+      {
+        "metric": "nav.histogram.>=2000",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "nav.slowFrames",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "nav.stalls",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "rows",
+        "before": 20000,
+        "after": 20000,
+        "delta": 0
+      },
+      {
+        "metric": "a11y.available",
+        "before": true,
+        "after": true
+      },
+      {
+        "metric": "a11y.hasNavigator",
+        "before": true,
+        "after": true
+      },
+      {
+        "metric": "a11y.exposedRows",
+        "before": 1570,
+        "after": 1570,
+        "delta": 0
+      },
+      {
+        "metric": "a11y.mountedRows",
+        "before": 35,
+        "after": 37,
+        "delta": 2
+      },
+      {
+        "metric": "a11y.roleCounts.application",
+        "before": 1,
+        "after": 1,
+        "delta": 0
+      },
+      {
+        "metric": "a11y.roleCounts.frame",
+        "before": 1,
+        "after": 1,
+        "delta": 0
+      },
+      {
+        "metric": "a11y.roleCounts.filler",
+        "before": 3,
+        "after": 3,
+        "delta": 0
+      },
+      {
+        "metric": "a11y.roleCounts.scroll pane",
+        "before": 1,
+        "after": 1,
+        "delta": 0
+      },
+      {
+        "metric": "a11y.roleCounts.document web",
+        "before": 1,
+        "after": 1,
+        "delta": 0
+      },
+      {
+        "metric": "a11y.roleCounts.tree",
+        "before": 1,
+        "after": 1,
+        "delta": 0
+      },
+      {
+        "metric": "a11y.roleCounts.tree item",
+        "before": 35,
+        "after": 37,
+        "delta": 2
+      },
+      {
+        "metric": "a11y.roleCounts.section",
+        "before": 38,
+        "after": 40,
+        "delta": 2
+      },
+      {
+        "metric": "a11y.roleCounts.landmark",
+        "before": 1,
+        "after": 1,
+        "delta": 0
+      },
+      {
+        "metric": "a11y.roleCounts.heading",
+        "before": 1,
+        "after": 1,
+        "delta": 0
+      },
+      {
+        "metric": "a11y.roleCounts.entry",
+        "before": 1,
+        "after": 1,
+        "delta": 0
+      },
+      {
+        "metric": "a11y.roleCounts.panel",
+        "before": 2,
+        "after": 2,
+        "delta": 0
+      },
+      {
+        "metric": "a11y.roleCounts.button",
+        "before": 1,
+        "after": 1,
+        "delta": 0
+      },
+      {
+        "metric": "startup_ms",
+        "before": 237,
+        "after": 181,
+        "delta": -56
+      },
+      {
+        "metric": "soak_minutes",
+        "before": 5,
+        "after": 5,
+        "delta": 0
+      },
+      {
+        "metric": "actions",
+        "before": 9344,
+        "after": 9348,
+        "delta": 4
+      },
+      {
+        "metric": "slow_actions",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "persist.restart_body_match",
+        "before": true,
+        "after": true
+      },
+      {
+        "metric": "persist.body_diverged_from_seed",
+        "before": true,
+        "after": true
+      },
+      {
+        "metric": "persist.flush_count",
+        "before": 291,
+        "after": 290,
+        "delta": -1
+      },
+      {
+        "metric": "persist.flush_conflicts",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "persist.flush_errors",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "persist.flush_p50_ms",
+        "before": 3,
+        "after": 2,
+        "delta": -1
+      },
+      {
+        "metric": "persist.flush_p95_ms",
+        "before": 7,
+        "after": 4,
+        "delta": -3
+      },
+      {
+        "metric": "rss.samples",
+        "before": 1187,
+        "after": 1185,
+        "delta": -2
+      },
+      {
+        "metric": "rss.span_ms",
+        "before": 304226,
+        "after": 303508,
+        "delta": -718
+      },
+      {
+        "metric": "rss.peak_mb",
+        "before": 655,
+        "after": 669,
+        "delta": 14
+      },
+      {
+        "metric": "rss.peak_at_ms",
+        "before": 304255,
+        "after": 303811,
+        "delta": -444
+      },
+      {
+        "metric": "rss.boot_window_ms",
+        "before": 45000,
+        "after": 45000,
+        "delta": 0
+      },
+      {
+        "metric": "rss.peak_in_boot_window",
+        "before": false,
+        "after": false
+      },
+      {
+        "metric": "rss.boot_window_peak_mb",
+        "before": 636,
+        "after": 638,
+        "delta": 2
+      },
+      {
+        "metric": "rss.post_boot_samples",
+        "before": 1012,
+        "after": 1010,
+        "delta": -2
+      },
+      {
+        "metric": "rss.post_boot_median_mb",
+        "before": 641,
+        "after": 645,
+        "delta": 4
+      },
+      {
+        "metric": "rss.post_boot_max_mb",
+        "before": 655,
+        "after": 669,
+        "delta": 14
+      },
+      {
+        "metric": "rss.post_boot_slope_mb_per_min",
+        "before": 3.324374074942395,
+        "after": 3.2768500256562363,
+        "delta": -0.04752404928615883
+      },
+      {
+        "metric": "rss_by_process.xvfb-run.rss.samples",
+        "before": 1187,
+        "after": 1185,
+        "delta": -2
+      },
+      {
+        "metric": "rss_by_process.xvfb-run.rss.span_ms",
+        "before": 304226,
+        "after": 303508,
+        "delta": -718
+      },
+      {
+        "metric": "rss_by_process.xvfb-run.rss.peak_mb",
+        "before": 4,
+        "after": 4,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.xvfb-run.rss.peak_at_ms",
+        "before": 303,
+        "after": 303,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.xvfb-run.rss.boot_window_ms",
+        "before": 45000,
+        "after": 45000,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.xvfb-run.rss.peak_in_boot_window",
+        "before": true,
+        "after": true
+      },
+      {
+        "metric": "rss_by_process.xvfb-run.rss.boot_window_peak_mb",
+        "before": 4,
+        "after": 4,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.xvfb-run.rss.post_boot_samples",
+        "before": 1012,
+        "after": 1010,
+        "delta": -2
+      },
+      {
+        "metric": "rss_by_process.xvfb-run.rss.post_boot_median_mb",
+        "before": 4,
+        "after": 4,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.xvfb-run.rss.post_boot_max_mb",
+        "before": 4,
+        "after": 4,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.xvfb-run.rss.post_boot_slope_mb_per_min",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.sleep.rss.samples",
+        "before": 11,
+        "after": 11,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.sleep.rss.span_ms",
+        "before": 2498,
+        "after": 2498,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.sleep.rss.peak_mb",
+        "before": 2,
+        "after": 2,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.sleep.rss.peak_at_ms",
+        "before": 303,
+        "after": 303,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.sleep.rss.boot_window_ms",
+        "before": 45000,
+        "after": 45000,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.sleep.rss.peak_in_boot_window",
+        "before": true,
+        "after": true
+      },
+      {
+        "metric": "rss_by_process.sleep.rss.boot_window_peak_mb",
+        "before": 2,
+        "after": 2,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.sleep.rss.post_boot_samples",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.Xvfb.rss.samples",
+        "before": 1187,
+        "after": 1185,
+        "delta": -2
+      },
+      {
+        "metric": "rss_by_process.Xvfb.rss.span_ms",
+        "before": 304226,
+        "after": 303508,
+        "delta": -718
+      },
+      {
+        "metric": "rss_by_process.Xvfb.rss.peak_mb",
+        "before": 55,
+        "after": 55,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.Xvfb.rss.peak_at_ms",
+        "before": 4598,
+        "after": 3590,
+        "delta": -1008
+      },
+      {
+        "metric": "rss_by_process.Xvfb.rss.boot_window_ms",
+        "before": 45000,
+        "after": 45000,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.Xvfb.rss.peak_in_boot_window",
+        "before": true,
+        "after": true
+      },
+      {
+        "metric": "rss_by_process.Xvfb.rss.boot_window_peak_mb",
+        "before": 55,
+        "after": 55,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.Xvfb.rss.post_boot_samples",
+        "before": 1012,
+        "after": 1010,
+        "delta": -2
+      },
+      {
+        "metric": "rss_by_process.Xvfb.rss.post_boot_median_mb",
+        "before": 48,
+        "after": 55,
+        "delta": 7
+      },
+      {
+        "metric": "rss_by_process.Xvfb.rss.post_boot_max_mb",
+        "before": 55,
+        "after": 55,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.Xvfb.rss.post_boot_slope_mb_per_min",
+        "before": 0.03455865058337846,
+        "after": 0,
+        "delta": -0.03455865058337846
+      },
+      {
+        "metric": "rss_by_process.app-shell-tauri.rss.samples",
+        "before": 1175,
+        "after": 1173,
+        "delta": -2
+      },
+      {
+        "metric": "rss_by_process.app-shell-tauri.rss.span_ms",
+        "before": 301219,
+        "after": 300508,
+        "delta": -711
+      },
+      {
+        "metric": "rss_by_process.app-shell-tauri.rss.peak_mb",
+        "before": 206,
+        "after": 212,
+        "delta": 6
+      },
+      {
+        "metric": "rss_by_process.app-shell-tauri.rss.peak_at_ms",
+        "before": 5840,
+        "after": 303811,
+        "delta": 297971
+      },
+      {
+        "metric": "rss_by_process.app-shell-tauri.rss.boot_window_ms",
+        "before": 45000,
+        "after": 45000,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.app-shell-tauri.rss.peak_in_boot_window",
+        "before": true,
+        "after": false
+      },
+      {
+        "metric": "rss_by_process.app-shell-tauri.rss.boot_window_peak_mb",
+        "before": 206,
+        "after": 208,
+        "delta": 2
+      },
+      {
+        "metric": "rss_by_process.app-shell-tauri.rss.post_boot_samples",
+        "before": 1012,
+        "after": 1010,
+        "delta": -2
+      },
+      {
+        "metric": "rss_by_process.app-shell-tauri.rss.post_boot_median_mb",
+        "before": 203,
+        "after": 205,
+        "delta": 2
+      },
+      {
+        "metric": "rss_by_process.app-shell-tauri.rss.post_boot_max_mb",
+        "before": 203,
+        "after": 212,
+        "delta": 9
+      },
+      {
+        "metric": "rss_by_process.app-shell-tauri.rss.post_boot_slope_mb_per_min",
+        "before": 0.5870938862503776,
+        "after": 0.65289972109807,
+        "delta": 0.06580583484769242
+      },
+      {
+        "metric": "rss_by_process.WebKitWebProces.rss.samples",
+        "before": 1174,
+        "after": 1172,
+        "delta": -2
+      },
+      {
+        "metric": "rss_by_process.WebKitWebProces.rss.span_ms",
+        "before": 300839,
+        "after": 300221,
+        "delta": -618
+      },
+      {
+        "metric": "rss_by_process.WebKitWebProces.rss.peak_mb",
+        "before": 335,
+        "after": 332,
+        "delta": -3
+      },
+      {
+        "metric": "rss_by_process.WebKitWebProces.rss.peak_at_ms",
+        "before": 304255,
+        "after": 303811,
+        "delta": -444
+      },
+      {
+        "metric": "rss_by_process.WebKitWebProces.rss.boot_window_ms",
+        "before": 45000,
+        "after": 45000,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.WebKitWebProces.rss.peak_in_boot_window",
+        "before": false,
+        "after": false
+      },
+      {
+        "metric": "rss_by_process.WebKitWebProces.rss.boot_window_peak_mb",
+        "before": 314,
+        "after": 309,
+        "delta": -5
+      },
+      {
+        "metric": "rss_by_process.WebKitWebProces.rss.post_boot_samples",
+        "before": 1012,
+        "after": 1010,
+        "delta": -2
+      },
+      {
+        "metric": "rss_by_process.WebKitWebProces.rss.post_boot_median_mb",
+        "before": 321,
+        "after": 316,
+        "delta": -5
+      },
+      {
+        "metric": "rss_by_process.WebKitWebProces.rss.post_boot_max_mb",
+        "before": 335,
+        "after": 332,
+        "delta": -3
+      },
+      {
+        "metric": "rss_by_process.WebKitWebProces.rss.post_boot_slope_mb_per_min",
+        "before": 2.8675926990990814,
+        "after": 2.7934617297865847,
+        "delta": -0.07413096931249674
+      },
+      {
+        "metric": "rss_by_process.WebKitNetworkPr.rss.samples",
+        "before": 1174,
+        "after": 1172,
+        "delta": -2
+      },
+      {
+        "metric": "rss_by_process.WebKitNetworkPr.rss.span_ms",
+        "before": 300839,
+        "after": 300221,
+        "delta": -618
+      },
+      {
+        "metric": "rss_by_process.WebKitNetworkPr.rss.peak_mb",
+        "before": 65,
+        "after": 67,
+        "delta": 2
+      },
+      {
+        "metric": "rss_by_process.WebKitNetworkPr.rss.peak_at_ms",
+        "before": 4353,
+        "after": 14512,
+        "delta": 10159
+      },
+      {
+        "metric": "rss_by_process.WebKitNetworkPr.rss.boot_window_ms",
+        "before": 45000,
+        "after": 45000,
+        "delta": 0
+      },
+      {
+        "metric": "rss_by_process.WebKitNetworkPr.rss.peak_in_boot_window",
+        "before": true,
+        "after": true
+      },
+      {
+        "metric": "rss_by_process.WebKitNetworkPr.rss.boot_window_peak_mb",
+        "before": 65,
+        "after": 67,
+        "delta": 2
+      },
+      {
+        "metric": "rss_by_process.WebKitNetworkPr.rss.post_boot_samples",
+        "before": 1012,
+        "after": 1010,
+        "delta": -2
+      },
+      {
+        "metric": "rss_by_process.WebKitNetworkPr.rss.post_boot_median_mb",
+        "before": 65,
+        "after": 67,
+        "delta": 2
+      },
+      {
+        "metric": "rss_by_process.WebKitNetworkPr.rss.post_boot_max_mb",
+        "before": 65,
+        "after": 67,
+        "delta": 2
+      },
+      {
+        "metric": "rss_by_process.WebKitNetworkPr.rss.post_boot_slope_mb_per_min",
+        "before": 0,
+        "after": 0,
+        "delta": 0
+      }
+    ],
+    "verdicts": [
+      {
+        "gate": "peak_rss_mb",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "typing_p95_ms",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "typing_p99_ms",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "nav_p95_ms",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "no_typing_cliff",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "typing_stall_rate",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "a11y_exposure",
+        "before": "UNKNOWN",
+        "after": "UNKNOWN"
+      },
+      {
+        "gate": "restart_body_match",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "flush_conflicts",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "flush_errors",
+        "before": "PASS",
+        "after": "PASS"
+      },
+      {
+        "gate": "flush_p95_ms",
+        "before": "PASS",
+        "after": "PASS"
+      }
+    ]
+  }
+]

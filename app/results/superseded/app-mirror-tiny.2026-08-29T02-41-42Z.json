@@ -1,0 +1,89 @@
+{
+  "run_id": "app-mirror-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-mirror",
+  "environment": {
+    "kernel": "7.1.8-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "fixture": "tiny",
+    "files_written": 40,
+    "store_documents": 30,
+    "file_holds_the_typed_sentence": true,
+    "file_holds_the_second_sentence": true,
+    "external_edit_survived_the_reopen": true,
+    "rows_offered": 1,
+    "accepted_body_in_the_store": true,
+    "snapshot_label": "Before accepting 1 change from the readable folder",
+    "comments_planted": 1,
+    "comments_orphaned": 0,
+    "file_unchanged_after_accept": true,
+    "manifest_matches_the_file": true,
+    "peak_rss_mb": 455,
+    "edited_path": "project/0000-Storm-Garden-905/0000-Lantern-Harbor-918/0000-Winter-Nocturne-978.md"
+  },
+  "verdicts": [
+    {
+      "gate": "mirror_writes_the_folder",
+      "value": "40 file(s) for 30 document(s)",
+      "threshold": "a file per document, and the fixture has documents",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "mirror_carries_a_prose_edit",
+      "value": "first sentence in the folder, second in the folder",
+      "threshold": "both -- an edit AFTER an entry's first write still reaches the folder (029)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "mirror_does_not_overwrite_an_outside_edit",
+      "value": "the writer's words are still on disk",
+      "threshold": "reopening a project does not rewrite a file edited outside it",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "mirror_offers_the_change",
+      "value": "1 row(s) in the change set",
+      "threshold": "> 0 -- the application noticed the edit and said so",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "mirror_accept_reaches_the_book",
+      "value": "the store holds the words from the file",
+      "threshold": "pressing the control writes the file's words into the manuscript",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "mirror_accept_is_undoable",
+      "value": "Before accepting 1 change from the readable folder",
+      "threshold": "a host-composed snapshot label -- the only inverse this application has",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "mirror_accept_orphans_the_notes",
+      "value": "0 of 1 note(s) collapsed",
+      "threshold": "every note on a rewritten body, and the fixture planted some",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "mirror_settles_after_an_accept",
+      "value": "file untouched, manifest agrees",
+      "threshold": "the pass after an accept does not rewrite what it just read",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 455,
+      "threshold": "<= 750",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "77c4d2e4"
+}

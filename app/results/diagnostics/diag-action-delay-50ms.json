@@ -1,0 +1,227 @@
+{
+  "run_id": "diag-action-delay-50ms",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-smoke",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "mode": "virtual",
+    "soak_minutes": 35,
+    "typing_chars_per_cycle": 400,
+    "nav_jumps_per_cycle": 60,
+    "action_delay_ms": 50,
+    "ms_per_action": 233.57,
+    "peak_rss_mb": 590,
+    "startup_ms": 24,
+    "actions": 8993,
+    "onset": {
+      "actionIndex": 7495,
+      "atMs": 601677,
+      "charsTyped": 6520,
+      "dispatchMs": 3,
+      "frameMs": 950,
+      "kind": "type",
+      "stalled": false
+    },
+    "slow_actions": 1499,
+    "typing": {
+      "count": 7824,
+      "dispatch": {
+        "p50": 4,
+        "p95": 7,
+        "p99": 7.000000000232831
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 950.0000000002328,
+        "p99": 951
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 5251,
+        "40-100": 0,
+        "500-2000": 1305,
+        "<20": 1268,
+        ">=2000": 0
+      },
+      "slowFrames": 1305,
+      "stalls": 0
+    },
+    "nav": {
+      "count": 1169,
+      "dispatch": {
+        "p50": 0,
+        "p95": 1.000000000116415,
+        "p99": 2
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 950.0000000002328,
+        "p99": 951
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 790,
+        "40-100": 0,
+        "500-2000": 194,
+        "<20": 185,
+        ">=2000": 0
+      },
+      "slowFrames": 194,
+      "stalls": 0
+    },
+    "cycles": [
+      {
+        "atMs": 37336,
+        "charsTyped": 400,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 74214,
+        "charsTyped": 800,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 111259,
+        "charsTyped": 1200,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 148386,
+        "charsTyped": 1600,
+        "cycle": 4,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 185430,
+        "charsTyped": 2000,
+        "cycle": 5,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 222459,
+        "charsTyped": 2400,
+        "cycle": 6,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 259520,
+        "charsTyped": 2800,
+        "cycle": 7,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 296231,
+        "charsTyped": 3200,
+        "cycle": 8,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 333009,
+        "charsTyped": 3600,
+        "cycle": 9,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 369670,
+        "charsTyped": 4000,
+        "cycle": 10,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 406497,
+        "charsTyped": 4400,
+        "cycle": 11,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 443342,
+        "charsTyped": 4800,
+        "cycle": 12,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 480003,
+        "charsTyped": 5200,
+        "cycle": 13,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 516630,
+        "charsTyped": 5600,
+        "cycle": 14,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 553374,
+        "charsTyped": 6000,
+        "cycle": 15,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 590002,
+        "charsTyped": 6400,
+        "cycle": 16,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 926886,
+        "charsTyped": 6800,
+        "cycle": 17,
+        "partial": false,
+        "typingP95Ms": 951
+      },
+      {
+        "atMs": 1387107,
+        "charsTyped": 7200,
+        "cycle": 18,
+        "partial": false,
+        "typingP95Ms": 951
+      },
+      {
+        "atMs": 1847342,
+        "charsTyped": 7600,
+        "cycle": 19,
+        "partial": false,
+        "typingP95Ms": 951
+      },
+      {
+        "atMs": 2100459,
+        "charsTyped": 7824,
+        "cycle": 20,
+        "partial": true,
+        "typingP95Ms": 951
+      }
+    ],
+    "rows": 15200
+  },
+  "verdicts": [],
+  "seed": "app-v1",
+  "rig_commit": "405810e"
+}

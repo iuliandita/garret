@@ -1,0 +1,57 @@
+{
+  "source_commit": "2998fae3fac65a1e23ae7b893156df28a08251ae",
+  "source_restored": true,
+  "ui_build_exit": 0,
+  "mutations": [
+    {
+      "mutation": "transaction-lock",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "block-new-opener",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "pending-opener",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "failed-save",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "background-editor",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "original-revision",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "late-reply",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "await-reconciliation",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "consume-handle",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "serialize-actions",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    }
+  ]
+}

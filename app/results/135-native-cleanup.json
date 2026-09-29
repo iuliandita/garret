@@ -1,0 +1,21 @@
+{
+  "source_commit": "7bcfa9b0dc8768b00263bdd2553444e6e945cf7a",
+  "release_sha256": "3de902a6f4caac6097a61fc55dda994b1a7ccbf6a660c9da2000a3426cbc6613",
+  "native_smoke_exit": 0,
+  "unrelated_processes_survived": {
+    "preexisting_xvfb": true,
+    "later_xvfb": true,
+    "later_shell": true
+  },
+  "observed_tree_retained_run_group": {
+    "xvfb-run": true,
+    "app-shell-tauri": true,
+    "Xvfb": true,
+    "WebKitWebProces": true,
+    "WebKitNetworkPr": true
+  },
+  "renderer": [
+    "dmabuf-llvmpipe"
+  ],
+  "scope": "isolated Xvfb and private session bus; same-name guards are inert synthetic processes"
+}

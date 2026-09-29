@@ -1,0 +1,87 @@
+{
+  "run_id": "app-first-run",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "none",
+  "workload": "app-first",
+  "environment": {
+    "kernel": "7.2.6-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 12.21,
+    "renderer": null,
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "window_opened": true,
+    "project_name": "Untitled book",
+    "project_file_stem": "default",
+    "starter_items": [
+      {
+        "id": "01a0bc39-33db-7441-957e-e9634adbf2be",
+        "type": "chapter",
+        "title": "Chapter 1",
+        "parent_id": null
+      },
+      {
+        "id": "01a0bc39-33db-7441-957e-e976aa171e1a",
+        "type": "scene",
+        "title": "Scene 1",
+        "parent_id": "01a0bc39-33db-7441-957e-e9634adbf2be"
+      }
+    ],
+    "words_after_typing": 6,
+    "quit_closed_the_window": true,
+    "stored_body_holds_the_sentence": true,
+    "peak_rss_mb": 549,
+    "sentence_words": 6,
+    "documents": 1
+  },
+  "verdicts": [
+    {
+      "gate": "first_run_opens",
+      "value": "a window appeared",
+      "threshold": "an empty data home with no fixture still produces a window",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "first_run_project_is_named",
+      "value": "the project is called \"Untitled book\"",
+      "threshold": "a writer's first book is not named after its file",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "first_run_starter_titles_localized",
+      "value": "2 starter item(s): chapter \"Chapter 1\" under root, scene \"Scene 1\" under 01a0bc39-33db-7441-957e-e9634adbf2be",
+      "threshold": "exactly one root chapter \"Kapitel 1\" containing one scene \"Szene 1\"",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "first_run_accepts_typing",
+      "value": "6 word(s) in the store",
+      "threshold": "> 0 -- typing into the starter scene reaches the store",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "first_run_quit_closes",
+      "value": "Ctrl+Q closed the window",
+      "threshold": "the application can be left from inside itself",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "first_run_keeps_the_writing",
+      "value": "the sentence is in the stored body",
+      "threshold": "the close drains what was typed before the process goes",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 549,
+      "threshold": "<= 750",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "7ebf4d90"
+}

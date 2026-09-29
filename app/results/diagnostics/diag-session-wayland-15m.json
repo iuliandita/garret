@@ -1,0 +1,472 @@
+{
+  "run_id": "diag-session-wayland-15m",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-smoke",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "mode": "virtual",
+    "soak_minutes": 15,
+    "typing_chars_per_cycle": 400,
+    "nav_jumps_per_cycle": 60,
+    "action_delay_ms": 0,
+    "display": "session",
+    "session_type": "wayland",
+    "gdk_backend": "wayland,x11,*",
+    "server_args": "n/a (live session)",
+    "input_pulse_ms": 0,
+    "ms_per_action": 37.2,
+    "peak_rss_mb": 539,
+    "startup_ms": 48,
+    "actions": 24218,
+    "onset": {
+      "actionIndex": 24155,
+      "atMs": 837777,
+      "charsTyped": 21007,
+      "dispatchMs": 30,
+      "frameMs": 501,
+      "kind": "type",
+      "stalled": false
+    },
+    "first_slow": {
+      "actionIndex": 24155,
+      "atMs": 837777,
+      "charsTyped": 21007,
+      "dispatchMs": 30,
+      "frameMs": 501,
+      "kind": "type",
+      "stalled": false
+    },
+    "slow_actions": 64,
+    "typing": {
+      "count": 21061,
+      "dispatch": {
+        "p50": 12,
+        "p95": 23,
+        "p99": 25
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 50,
+        "p99": 51
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 19084,
+        "40-100": 1922,
+        "500-2000": 55,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 55,
+      "stalls": 0
+    },
+    "nav": {
+      "count": 3157,
+      "dispatch": {
+        "p50": 0,
+        "p95": 1.000000000116415,
+        "p99": 2
+      },
+      "frame": {
+        "p50": 33,
+        "p95": 34,
+        "p99": 34.000000000116415
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 3147,
+        "40-100": 1,
+        "500-2000": 9,
+        "<20": 0,
+        ">=2000": 0
+      },
+      "slowFrames": 9,
+      "stalls": 0
+    },
+    "cycles": [
+      {
+        "atMs": 15349,
+        "charsTyped": 400,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 30694,
+        "charsTyped": 800,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 46039,
+        "charsTyped": 1200,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 61385,
+        "charsTyped": 1600,
+        "cycle": 4,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 76729,
+        "charsTyped": 2000,
+        "cycle": 5,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 92075,
+        "charsTyped": 2400,
+        "cycle": 6,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 107420,
+        "charsTyped": 2800,
+        "cycle": 7,
+        "partial": false,
+        "typingP95Ms": 34.00000000001455
+      },
+      {
+        "atMs": 122765,
+        "charsTyped": 3200,
+        "cycle": 8,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 138110,
+        "charsTyped": 3600,
+        "cycle": 9,
+        "partial": false,
+        "typingP95Ms": 34.00000000001455
+      },
+      {
+        "atMs": 153455,
+        "charsTyped": 4000,
+        "cycle": 10,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 168800,
+        "charsTyped": 4400,
+        "cycle": 11,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 184145,
+        "charsTyped": 4800,
+        "cycle": 12,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 199490,
+        "charsTyped": 5200,
+        "cycle": 13,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 214835,
+        "charsTyped": 5600,
+        "cycle": 14,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 230180,
+        "charsTyped": 6000,
+        "cycle": 15,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 245609,
+        "charsTyped": 6400,
+        "cycle": 16,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 260954,
+        "charsTyped": 6800,
+        "cycle": 17,
+        "partial": false,
+        "typingP95Ms": 34.000000000029104
+      },
+      {
+        "atMs": 276299,
+        "charsTyped": 7200,
+        "cycle": 18,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 291644,
+        "charsTyped": 7600,
+        "cycle": 19,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 306989,
+        "charsTyped": 8000,
+        "cycle": 20,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 322334,
+        "charsTyped": 8400,
+        "cycle": 21,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 337679,
+        "charsTyped": 8800,
+        "cycle": 22,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 353024,
+        "charsTyped": 9200,
+        "cycle": 23,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 368369,
+        "charsTyped": 9600,
+        "cycle": 24,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 383714,
+        "charsTyped": 10000,
+        "cycle": 25,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 399059,
+        "charsTyped": 10400,
+        "cycle": 26,
+        "partial": false,
+        "typingP95Ms": 34.00000000005821
+      },
+      {
+        "atMs": 414404,
+        "charsTyped": 10800,
+        "cycle": 27,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 429749,
+        "charsTyped": 11200,
+        "cycle": 28,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 445144,
+        "charsTyped": 11600,
+        "cycle": 29,
+        "partial": false,
+        "typingP95Ms": 34.00000000005821
+      },
+      {
+        "atMs": 460506,
+        "charsTyped": 12000,
+        "cycle": 30,
+        "partial": false,
+        "typingP95Ms": 34.00000000005821
+      },
+      {
+        "atMs": 475851,
+        "charsTyped": 12400,
+        "cycle": 31,
+        "partial": false,
+        "typingP95Ms": 34.00000000005821
+      },
+      {
+        "atMs": 491196,
+        "charsTyped": 12800,
+        "cycle": 32,
+        "partial": false,
+        "typingP95Ms": 34.00000000005821
+      },
+      {
+        "atMs": 506574,
+        "charsTyped": 13200,
+        "cycle": 33,
+        "partial": false,
+        "typingP95Ms": 34.00000000005821
+      },
+      {
+        "atMs": 521919,
+        "charsTyped": 13600,
+        "cycle": 34,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 537348,
+        "charsTyped": 14000,
+        "cycle": 35,
+        "partial": false,
+        "typingP95Ms": 34.000000000116415
+      },
+      {
+        "atMs": 552709,
+        "charsTyped": 14400,
+        "cycle": 36,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 568121,
+        "charsTyped": 14800,
+        "cycle": 37,
+        "partial": false,
+        "typingP95Ms": 34.000000000116415
+      },
+      {
+        "atMs": 583605,
+        "charsTyped": 15200,
+        "cycle": 38,
+        "partial": false,
+        "typingP95Ms": 35
+      },
+      {
+        "atMs": 599062,
+        "charsTyped": 15600,
+        "cycle": 39,
+        "partial": false,
+        "typingP95Ms": 34.000000000116415
+      },
+      {
+        "atMs": 614690,
+        "charsTyped": 16000,
+        "cycle": 40,
+        "partial": false,
+        "typingP95Ms": 40
+      },
+      {
+        "atMs": 630471,
+        "charsTyped": 16400,
+        "cycle": 41,
+        "partial": false,
+        "typingP95Ms": 46
+      },
+      {
+        "atMs": 646364,
+        "charsTyped": 16800,
+        "cycle": 42,
+        "partial": false,
+        "typingP95Ms": 49
+      },
+      {
+        "atMs": 663411,
+        "charsTyped": 17200,
+        "cycle": 43,
+        "partial": false,
+        "typingP95Ms": 50
+      },
+      {
+        "atMs": 680524,
+        "charsTyped": 17600,
+        "cycle": 44,
+        "partial": false,
+        "typingP95Ms": 50
+      },
+      {
+        "atMs": 699238,
+        "charsTyped": 18000,
+        "cycle": 45,
+        "partial": false,
+        "typingP95Ms": 51
+      },
+      {
+        "atMs": 718770,
+        "charsTyped": 18400,
+        "cycle": 46,
+        "partial": false,
+        "typingP95Ms": 51
+      },
+      {
+        "atMs": 737851,
+        "charsTyped": 18800,
+        "cycle": 47,
+        "partial": false,
+        "typingP95Ms": 51
+      },
+      {
+        "atMs": 756765,
+        "charsTyped": 19200,
+        "cycle": 48,
+        "partial": false,
+        "typingP95Ms": 51
+      },
+      {
+        "atMs": 775663,
+        "charsTyped": 19600,
+        "cycle": 49,
+        "partial": false,
+        "typingP95Ms": 51
+      },
+      {
+        "atMs": 793559,
+        "charsTyped": 20000,
+        "cycle": 50,
+        "partial": false,
+        "typingP95Ms": 50.999999999883585
+      },
+      {
+        "atMs": 811125,
+        "charsTyped": 20400,
+        "cycle": 51,
+        "partial": false,
+        "typingP95Ms": 50.000000000116415
+      },
+      {
+        "atMs": 828753,
+        "charsTyped": 20800,
+        "cycle": 52,
+        "partial": false,
+        "typingP95Ms": 50.000000000116415
+      },
+      {
+        "atMs": 900806,
+        "charsTyped": 21061,
+        "cycle": 53,
+        "partial": true,
+        "typingP95Ms": 1001
+      }
+    ],
+    "rows": 15200
+  },
+  "verdicts": [],
+  "seed": "app-v1",
+  "rig_commit": "d5b4446"
+}

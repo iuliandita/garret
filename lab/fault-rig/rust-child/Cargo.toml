@@ -1,0 +1,16 @@
+[package]
+name = "fault-rig-rust-child"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+# System libsqlite3 on purpose: `bundled` would compile a different SQLite and
+# turn a version gap into a candidate divergence. The spot-check asks whether
+# the binding matters, so the engine underneath must stay as close as possible.
+rusqlite = "0.40"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+panic = "abort"

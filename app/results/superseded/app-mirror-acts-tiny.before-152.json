@@ -1,0 +1,162 @@
+{
+  "run_id": "app-mirror-acts-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-mirror-acts",
+  "environment": {
+    "kernel": "7.2.3-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 6.35,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "files_in_folder_before": 0,
+    "files_in_folder_after": 40,
+    "store_documents": 30,
+    "state_sentence": "40 files, last written just now.",
+    "state_sentence_expected_count": 40,
+    "where_names_the_directory": true,
+    "where_sentence_redacted": "The mirror is written to <scratch>/project",
+    "settings_mirrored": [
+      "project"
+    ],
+    "project_slug": "project",
+    "rows_before_any_reopen": 1,
+    "edited_file_holds_the_writers_words": true,
+    "pass_window_ms": 13030,
+    "book_side_rev_moved": true,
+    "outside_edit_led_by_ms": 10935,
+    "watched_document_row_found": true,
+    "process_restarted": false,
+    "conflict_row_state_text": "The words changed here and in your book",
+    "conflict_state_expected": "The words changed here and in your book",
+    "sidecar_name": "0000-Winter-Nocturne-978.from-project.md",
+    "sidecar_exists": true,
+    "sidecar_holds_the_books_words": true,
+    "rows_at_conflict": 1,
+    "rows_about_other_files": 0,
+    "sidecar_named_in_a_row": false,
+    "thorough_process_restarted": false,
+    "thorough_metadata_preserved": true,
+    "thorough_was_invisible": true,
+    "thorough_pressed": true,
+    "thorough_row_found": true,
+    "thorough_survived_restart": true,
+    "thorough_rev_moved": true,
+    "thorough_pass_ms": 13000,
+    "thorough_file_preserved": true,
+    "peak_rss_mb": 490,
+    "scheme": "light",
+    "renderers": [
+      {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    ],
+    "prose_state_for_comparison": "The words changed",
+    "act_failed": null,
+    "omitted_gates": "latency, stall, cliff, a11y_exposure: one boot that presses a button and edits a file has nothing true to say about frame cadence.",
+    "scope": "The first boot grades the watcher without restarting; a fresh second boot grades the explicit full check, and a third grades restart persistence. Every row this rig reads was offered by a process that had already written the folder. The conflict is reached by moving the FILE first and the STORE second, so the paused entry cannot be overwritten by the pass in between."
+  },
+  "verdicts": [
+    {
+      "gate": "enable_writes_the_folder",
+      "value": "0 file(s) before, 40 after, for 30 document(s)",
+      "threshold": "the folder is empty before the press (the vacuity guard: a folder that already held files would prove nothing about it), the store has documents, and the folder holds at least one file per document afterward",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "enable_reports_where_and_how_many",
+      "value": "state \"40 files, last written just now.\" (expected count 40), where \"The mirror is written to <scratch>/project\" (names the directory: true)",
+      "threshold": "the state sentence names the count the rig itself counted on disk, and the where sentence named the WHOLE directory the rig handed the host. Not its basename: the sentence is \"The mirror is written to {dir}\", so a basename check passed on the word \"mirror\" appearing in its own wording, which this rig's first green run did",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "enable_is_remembered",
+      "value": "mirrored [project] (expected \"project\")",
+      "threshold": "settings.json's mirrored list includes this project's own slug",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "the_panel_offers_the_change_without_a_reopen",
+      "value": "1 row(s) offered in the same process that wrote the folder, the edited document among them (restarted: false)",
+      "threshold": "the change panel offers the outside edit as a row without the application being restarted, and one of those rows names the document that was edited. This is the PANEL's own scan on open, not the watcher's -- a sabotage with the watcher disabled still passes it, which is why the watcher has a gate of its own below",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "the_watcher_keeps_the_pass_off_an_edited_file",
+      "value": "13030 ms after the typing (the store's rev moved; the outside edit led by 10935 ms) the file still holds the words the writer put in it",
+      "threshold": "the typing reached the store (its rev moved -- otherwise no pass was owed and the file is unchanged for free), a pass window of at least 10000 ms went by AFTER the typing, and the file the writer edited from outside still holds their words. That is what the in-process watcher buys: it notices the edit in time to PAUSE the entry, so the pass leaves the file alone. With the watcher disabled this goes red and the panel gate above does not",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "conflict_is_reported",
+      "value": "row state \"The words changed here and in your book\" (expected \"The words changed here and in your book\")",
+      "threshold": "the conflicted row's state sentence equals the page's own catalog sentence for it",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "the_books_side_is_preserved",
+      "value": "sidecar \"0000-Winter-Nocturne-978.from-project.md\" exists true, holds the book's words true",
+      "threshold": "the sidecar exists, its name ends \".from-project.md\", and its body -- read by the harness's own Markdown reader -- holds the sentence the rig typed into the application",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "the_sidecar_is_not_offered_as_a_change",
+      "value": "1 row(s) at the conflict, 0 about another file, sidecar named in a row false",
+      "threshold": "rows were offered (the vacuity guard: with no rows at all, \"no row names the sidecar\" is true and proves nothing), every one of them is about the document the rig edited, and none names the sidecar itself",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "thorough_check_finds_a_preserved_metadata_edit",
+      "value": "metadata preserved true, invisible before true, pressed true, row found true",
+      "threshold": "same size and timestamp, no prior change row, explicit check pressed and a row found without restarting",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "thorough_check_keeps_the_pass_off_an_edited_file",
+      "value": "found after restart true, revision moved true, waited 13000 ms, complete file preserved true",
+      "threshold": "a thorough-only finding survives restart without rechecking and stays byte-identical after a real store revision change and at least 10000 ms for a mirror pass",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 490,
+      "threshold": "<= 750 MB (0 is no sample taken, not a real reading, and FAILS)",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "e07de8c5"
+}

@@ -1,0 +1,14 @@
+{
+  "apk_sha256": "4d3103f40e4feca9740479eff73a2fbf034f25b7484b31aaf7d2348393f10ea1",
+  "package": "cc.local.app",
+  "system_image": "system-images;android-36;google_apis;x86_64",
+  "steps": [
+    "fresh API 36 emulator booted",
+    "APK installed; book library rendered"
+  ],
+  "status": "FAIL",
+  "emulator_version": "Android emulator version 37.1.11.0 (build_id 15917651) (CL:N/A)",
+  "android_release": "16",
+  "android_api": "36",
+  "failure": "app displayed operation error at 03-created-book"
+}

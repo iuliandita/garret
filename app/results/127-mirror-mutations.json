@@ -1,0 +1,27 @@
+{
+  "slice": 127,
+  "source_commit": "3d850b3240b813d11fa8ae75fe70bf2e00efd878",
+  "mutations": [
+    {
+      "mutation": "skip full-check hash findings",
+      "unit_exit": 101,
+      "gui_exit": 1,
+      "failed_gates": [
+        "thorough_check_finds_a_preserved_metadata_edit",
+        "thorough_check_keeps_the_pass_off_an_edited_file"
+      ],
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "writer ignores persisted pauses",
+      "unit_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "writer ignores runtime pauses",
+      "unit_exit": 101,
+      "verdict": "KILLED"
+    }
+  ],
+  "restored_release_exit": 0
+}

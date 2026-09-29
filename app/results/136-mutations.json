@@ -1,0 +1,37 @@
+{
+  "source_commit": "0ba96d75f2917151c1c1c175ffecfca1dcf79c10",
+  "source_restored": true,
+  "gate_mutations": [
+    {
+      "gate": "folder_dialog_opens",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "gate": "folder_dialog_closes_after_choice",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "gate": "folder_dialog_creates_in_the_chosen_directory",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "gate": "folder_dialog_creates_a_readable_named_book",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "gate": "folder_dialog_cancel_opens_and_closes",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "gate": "folder_dialog_cancel_creates_nothing",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    }
+  ],
+  "native_negative_control": "expected creation gates failed; other gates passed"
+}

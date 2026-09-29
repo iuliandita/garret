@@ -1,0 +1,81 @@
+{
+  "run_id": "app-goals-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-goals",
+  "environment": {
+    "kernel": "7.1.8-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "typed_words": 109,
+    "today_before": 0,
+    "today_after": 109,
+    "today_after_restart": 109,
+    "anchored_day": "2026-08-20",
+    "rolled_day": "2026-08-20",
+    "today_after_rollover": 0,
+    "total_after_rollover": 2109,
+    "baseline_after_rollover": 2109,
+    "chosen_target": "500",
+    "recorded_target": "500",
+    "target_in_bar": "500",
+    "readout_h": 21,
+    "control_h": 25,
+    "today_in_text": "109/500",
+    "today_in_name": "109/500",
+    "peak_rss_mb": 548,
+    "scope": "the day is turned by rewriting the project's `day` meta row to a past date, not by waiting for midnight. That drives the comparison the host makes on every call, which is the same path a real midnight takes, and says nothing about a system clock changing under a running process.",
+    "omitted_gates": "no latency, stall, cliff or a11y_exposure figures: a run that types one passage and never clicks a navigator row has nothing true to say about frame cadence, and the exposure claim for this readout is words-cli's."
+  },
+  "verdicts": [
+    {
+      "gate": "goal_today_counts_new_words",
+      "value": "0 -> 109 for 109 words typed",
+      "threshold": "the day's figure rises by exactly what was written",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "goal_today_survives_a_restart",
+      "value": "109 before the kill, 109 after reopening",
+      "threshold": "the same day's figure, from the file rather than from memory",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "goal_new_day_resets",
+      "value": "day 2026-08-20, 0 today, baseline 2109 of 2109 words",
+      "threshold": "a turned day reports 0 today and re-anchors at the manuscript's total",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "goal_target_persists_and_renders",
+      "value": "chose 500, file holds 500, bar reads 500",
+      "threshold": "the clicked target reaches the file AND comes back into the bar on the next launch",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "goal_bar_stays_one_line",
+      "value": "readout 21px against a 25px control beside it",
+      "threshold": "the readout is no taller than a single-line control in the same strip",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "a11y_progress_agrees",
+      "value": "text 109/500, name 109/500",
+      "threshold": "the day's figure is the same in the visible text and in the accessible name",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 548,
+      "threshold": "< 750",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "n/a",
+  "rig_commit": "1bfb2425"
+}

@@ -1,0 +1,75 @@
+{
+  "run_id": "app-timeline-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-timeline",
+  "environment": {
+    "kernel": "7.2.3-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 0.75,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "timeline_zoom_p95_ms": 16,
+    "timeline_visible_count": 7,
+    "timeline_event_round_trip": true,
+    "timeline_open_scene": true,
+    "timeline_branch_swap": true,
+    "timeline_drag_moves": true,
+    "timeline_visible_status_count": 2,
+    "timeline_event_count": 2000,
+    "timeline_diagnostic": "",
+    "timeline_drag_tolerance_units": 3
+  },
+  "verdicts": [
+    {
+      "gate": "timeline_zoom_p95_ms",
+      "value": "16 ms",
+      "threshold": "< 50 ms, p95 over 200 Ctrl+wheel notches at 2,000 events",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "timeline_visible_dom_bounded",
+      "value": 7,
+      "threshold": "< 400 event and dot buttons in the tree after Fit, at 2,000 events",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "timeline_event_round_trip",
+      "value": "the typed title is in the file",
+      "threshold": "an event created by double-click and titled through the card is in the FILE after the flush debounce",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "timeline_open_scene",
+      "value": "#scene-heading names the linked scene",
+      "threshold": "pressing a card's Open scene through AT-SPI lands the scene in the editor; #scene-heading equals its title",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "timeline_branch_swap",
+      "value": "the branch's writing flag moved in the file",
+      "threshold": "pressing the seeded branch's 'Make this the one I am writing' through AT-SPI sets `writing` true in the FILE",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "timeline_drag_moves",
+      "value": "the dragged event's `at` grew by the expected units in the file",
+      "threshold": "an xdotool drag of 100px on a seeded event grows its `at` in the FILE by 100 / px-per-unit units",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "e6fac8cb"
+}

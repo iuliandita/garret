@@ -1,0 +1,13 @@
+{
+  "name": "bakeoff-shell-electron",
+  "private": true,
+  "type": "commonjs",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "bun build main.ts --target=node --format=cjs --external electron --outfile=main.js && bun build preload.ts --target=node --format=cjs --external electron --outfile=preload.js"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}

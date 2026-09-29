@@ -1,0 +1,60 @@
+{
+  "run_id": "app-home-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-home",
+  "environment": {
+    "kernel": "7.2.2-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 14.05,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "home_project_path": "",
+    "home_rows": 0,
+    "home_library_present": true,
+    "last_project_path": "",
+    "blank_project_path": "",
+    "blank_rows": 0,
+    "home_startup_ms": 34,
+    "last_startup_ms": 42,
+    "blank_startup_ms": 33,
+    "last_project_name": "",
+    "last_generation": 1,
+    "blank_library_present": true,
+    "omitted_gates": "latency, stall, cliff, a11y_exposure"
+  },
+  "verdicts": [
+    {
+      "gate": "home_boots_nothing_open",
+      "value": "nothing mounted, rows 0",
+      "threshold": "start=\"home\" with no APP_PROJECT mounts nothing (D2/D3); 100 gives it a library screen",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "start_last_boots_the_book",
+      "value": "NOTHING MOUNTED",
+      "threshold": "start=\"last\" is today's behaviour, unchanged: the recorded or newest book opens",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "start_blank_boots_nothing",
+      "value": "nothing mounted, rows 0",
+      "threshold": "start=\"blank\" mounts nothing: project_path empty and rows 0, in this slice or the next",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "dfe434fd"
+}

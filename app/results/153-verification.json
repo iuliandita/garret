@@ -1,0 +1,50 @@
+{
+  "source_commit": "ea909ca031e65b4268d3e235885ddb5e464ac4ce",
+  "source_sha256": {
+    "app/ui/test/menu-bar-german.test.ts": "7c0bc1bd3ec99a89b154f14e3d776bc809401c0c214f42b97d13c65a37303c2f",
+    "app/ui/test/fixtures/german-menu.ts": "fc5834cb18a725d7df822520e6398b8ee358fa68cb6fd4ebb752d96aec4c2c90",
+    "app/ui/test/navigator-select.test.ts": "a984df38568dc433d8906c2643cf1cf58063cdb385bef6b78e6f61db61284470"
+  },
+  "checks": {
+    "bun": {
+      "command": [
+        "bun",
+        "test",
+        "app"
+      ],
+      "exit_code": 0
+    },
+    "tsc": {
+      "command": [
+        "bunx",
+        "tsc",
+        "--noEmit",
+        "-p",
+        "app/tsconfig.json"
+      ],
+      "exit_code": 0
+    }
+  },
+  "bun_passed": 3880,
+  "bun_failed": 0,
+  "mutations": {
+    "source_commit": "a6157c1d4f96e9602d866c80e126b959b4e06f39",
+    "source_restored": true,
+    "restored_ui_build_exit": 0,
+    "mutations": [
+      {
+        "mutation": "english-file-key",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "ignored-host-language",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      }
+    ]
+  },
+  "review": "No findings. Root separately reviewed the fixture-only teardown repair.",
+  "fixture_cleanup": "The preexisting navigator-select fixture leaked every mounted navigator. The two-file navigator-select/nav-row-state order failed without the German test; afterEach now destroys owned navigators and removes their containers, including after assertion failure. Final full root suite includes generated fixture data and passes without skips.",
+  "scope": "Test-only: the real German module-scope catalog is injected before import in an isolated child, all four German menu chords enter localized menus, Escape closes them, and old English-only chords stay closed. Production behavior is unchanged. Native German menu evidence remains in slice088; host/native suites were not rerun for this test-only change."
+}

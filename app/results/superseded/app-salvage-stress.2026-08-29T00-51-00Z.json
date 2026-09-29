@@ -1,0 +1,692 @@
+{
+  "run_id": "app-salvage-stress",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-salvage",
+  "environment": {
+    "kernel": "7.1.8-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "workload_script": "salvage-v1",
+    "salvage": {
+      "fixture": "stress",
+      "store_items": 20000,
+      "store_documents": 15200,
+      "manifest_items_recovered": 20000,
+      "manifest_documents_recovered": 15200,
+      "document_files_written": 15200,
+      "manuscript_holds_stored_prose": true,
+      "synopses_planted": 2,
+      "synopses_recovered": 2,
+      "synopses_in_file": 2,
+      "synopsis_bodies_match": true,
+      "cast_members_planted": 2,
+      "cast_fields_planted": 2,
+      "cast_members_recovered": 2,
+      "cast_fields_recovered": 2,
+      "cast_file_agrees": true,
+      "appearances_planted": 2,
+      "appearances_recovered": 2,
+      "appearance_lines_found": 2,
+      "comments_planted": 3,
+      "comments_recovered": 3,
+      "comments_orphaned": 1,
+      "comment_orphan_marks": 1,
+      "comment_resolved_marks": 1,
+      "comment_bodies_match": true,
+      "collapsed_anchor_planted": true,
+      "healthy_complete": true,
+      "healthy_loss_kinds": [],
+      "wordlist_planted": [
+        "Zelenko",
+        "alderman",
+        "Ravensmoot"
+      ],
+      "wordlist_recovered": 3,
+      "wordlist_in_file": [
+        "Ravensmoot",
+        "Zelenko",
+        "alderman"
+      ],
+      "pictures_planted": 1,
+      "pictures_recovered": 1,
+      "picture_bytes_match": true,
+      "covers_planted": 2,
+      "covers_recovered": 2,
+      "cover_files_written": 2,
+      "design_planted": {
+        "design.font": "Crimson Text",
+        "design.page": "152400x228600 trade",
+        "design.margins": "19050,15875,15875,19050",
+        "design.glyph": "fleuron",
+        "design.chapter": "new-page drop-cap"
+      },
+      "design_recovered": {
+        "design.font": "Crimson Text",
+        "design.page": "152400x228600 trade",
+        "design.margins": "19050,15875,15875,19050",
+        "design.glyph": "fleuron",
+        "design.chapter": "new-page drop-cap"
+      },
+      "snapshots_planted": 1,
+      "snapshot_documents_planted": 2,
+      "snapshots_recovered": 1,
+      "versions_recovered": 2,
+      "snapshot_files_written": 2,
+      "snapshot_holds_the_past_draft": true,
+      "automatic_versions_planted": 2,
+      "versions_dropped": 2,
+      "damaged_exit_code": 3,
+      "damaged_complete": false,
+      "expected_loss_kinds": [
+        "missing_blob",
+        "missing_cover",
+        "orphan_appearance",
+        "orphan_cast_field",
+        "orphan_comment",
+        "orphan_doc",
+        "orphan_synopsis",
+        "unreadable_body",
+        "unreadable_design_row"
+      ],
+      "damaged_loss_kinds": [
+        "missing_blob",
+        "missing_cover",
+        "orphan_appearance",
+        "orphan_cast_field",
+        "orphan_comment",
+        "orphan_doc",
+        "orphan_synopsis",
+        "unreadable_body",
+        "unreadable_design_row"
+      ],
+      "damaged_raw_bodies": 1,
+      "exit_healthy": 0,
+      "exit_occupied_destination": 1,
+      "exit_unreadable_source": 2,
+      "exit_damaged": 3,
+      "salvage_ms": 540.8,
+      "peak_rss_mb": 100.7,
+      "manifests_read": 8,
+      "named_paths_in_manifests": [],
+      "corpus": [
+        {
+          "name": "header_torn",
+          "allowed_exits": [
+            2
+          ],
+          "exit_code": 2,
+          "wall_ms": 31.3,
+          "panicked": false,
+          "complete": null,
+          "items_recovered": null,
+          "documents_recovered": null,
+          "loss_kinds": [],
+          "digest": "de5c95e0783b441daa2b3a063cdff72ab85b9c90a3b38ff75c3e00ca26b6354b",
+          "digest_again": "de5c95e0783b441daa2b3a063cdff72ab85b9c90a3b38ff75c3e00ca26b6354b"
+        },
+        {
+          "name": "tail_lost_at_page_boundary",
+          "allowed_exits": [
+            2,
+            3
+          ],
+          "exit_code": 3,
+          "wall_ms": 328.5,
+          "panicked": false,
+          "complete": false,
+          "items_recovered": 17521,
+          "documents_recovered": 13206,
+          "loss_kinds": [
+            "enumeration_stopped",
+            "file_truncated",
+            "structure",
+            "unreadable_doc_row"
+          ],
+          "digest": "9deb3dab9a73393cb3437ea4be5c6d2a1ebf0f18f11802f8ed5b34cc3025c132",
+          "digest_again": "9deb3dab9a73393cb3437ea4be5c6d2a1ebf0f18f11802f8ed5b34cc3025c132"
+        },
+        {
+          "name": "tail_lost_mid_page",
+          "allowed_exits": [
+            2,
+            3
+          ],
+          "exit_code": 3,
+          "wall_ms": 332.2,
+          "panicked": false,
+          "complete": false,
+          "items_recovered": 17521,
+          "documents_recovered": 13206,
+          "loss_kinds": [
+            "enumeration_stopped",
+            "file_truncated",
+            "structure",
+            "unreadable_doc_row"
+          ],
+          "digest": "5ea0aff92debdaa80a72acd9de4356dfa373028b29f6795cb4f9ae948e719fef",
+          "digest_again": "5ea0aff92debdaa80a72acd9de4356dfa373028b29f6795cb4f9ae948e719fef"
+        },
+        {
+          "name": "torn_page_zeroed",
+          "allowed_exits": [
+            2,
+            3
+          ],
+          "exit_code": 3,
+          "wall_ms": 392.5,
+          "panicked": false,
+          "complete": false,
+          "items_recovered": 9925,
+          "documents_recovered": 15200,
+          "loss_kinds": [
+            "enumeration_stopped",
+            "orphan_doc",
+            "structure"
+          ],
+          "digest": "d8f765519338378df1062b487e469865add36fa7daa39a8df41e12de32553523",
+          "digest_again": "d8f765519338378df1062b487e469865add36fa7daa39a8df41e12de32553523"
+        },
+        {
+          "name": "torn_page_overwritten",
+          "allowed_exits": [
+            2,
+            3
+          ],
+          "exit_code": 3,
+          "wall_ms": 482.6,
+          "panicked": false,
+          "complete": false,
+          "items_recovered": 20000,
+          "documents_recovered": 15196,
+          "loss_kinds": [
+            "unreadable_doc_row"
+          ],
+          "digest": "27c14576650ceaba6509e521eca3b25d6be30614082f9307ddb2ff466495bb0c",
+          "digest_again": "27c14576650ceaba6509e521eca3b25d6be30614082f9307ddb2ff466495bb0c"
+        },
+        {
+          "name": "header_page_size_lie",
+          "allowed_exits": [
+            2,
+            3
+          ],
+          "exit_code": 2,
+          "wall_ms": 40.2,
+          "panicked": false,
+          "complete": null,
+          "items_recovered": null,
+          "documents_recovered": null,
+          "loss_kinds": [],
+          "digest": "75db3c53bdf9fadba489b763f1fa189ab3fd156d9cd21e2cd0a9c15626ef9c3f",
+          "digest_again": "75db3c53bdf9fadba489b763f1fa189ab3fd156d9cd21e2cd0a9c15626ef9c3f"
+        },
+        {
+          "name": "broken_interior_pointer",
+          "allowed_exits": [
+            2,
+            3
+          ],
+          "exit_code": 3,
+          "wall_ms": 444,
+          "panicked": false,
+          "complete": false,
+          "items_recovered": 20000,
+          "documents_recovered": 13261,
+          "loss_kinds": [
+            "unreadable_doc_row"
+          ],
+          "digest": "b254b14010f1cfa9753ea2d2ce3270825febbeab6588c5102626be78784cb670",
+          "digest_again": "b254b14010f1cfa9753ea2d2ce3270825febbeab6588c5102626be78784cb670"
+        },
+        {
+          "name": "orphaned_wal",
+          "allowed_exits": [
+            0,
+            2,
+            3
+          ],
+          "exit_code": 0,
+          "wall_ms": 490.3,
+          "panicked": false,
+          "complete": true,
+          "items_recovered": 20000,
+          "documents_recovered": 15200,
+          "loss_kinds": [],
+          "digest": "965224359ecce3652ed62bdaa52f3f42bc67834374eebb96d3061a885769a6e6",
+          "digest_again": "965224359ecce3652ed62bdaa52f3f42bc67834374eebb96d3061a885769a6e6"
+        }
+      ],
+      "corpus_healthy_items": 20000,
+      "corpus_healthy_documents": 15200
+    },
+    "source_bytes": 1,
+    "damage_plan": [
+      {
+        "name": "an item row is gone and its document, summary, notes and tag are not",
+        "expects": [
+          "orphan_doc",
+          "orphan_synopsis",
+          "orphan_comment",
+          "orphan_appearance"
+        ]
+      },
+      {
+        "name": "a stored body no longer parses as a document",
+        "expects": [
+          "unreadable_body"
+        ]
+      },
+      {
+        "name": "a cast member is gone and its details and tag are not",
+        "expects": [
+          "orphan_cast_field",
+          "orphan_appearance"
+        ]
+      },
+      {
+        "name": "the bytes every stored version names are gone",
+        "expects": [
+          "missing_blob"
+        ]
+      },
+      {
+        "name": "one design row will not read",
+        "expects": [
+          "unreadable_design_row"
+        ]
+      },
+      {
+        "name": "the front cover the book still names is not on disk",
+        "expects": [
+          "missing_cover"
+        ]
+      }
+    ],
+    "damaged_losses": [
+      {
+        "kind": "orphan_doc",
+        "detail": "a document is stored for it-004314, which is not an item in this file; the prose is recovered, its title and its place in the book are not",
+        "item_id": "it-004314"
+      },
+      {
+        "kind": "orphan_synopsis",
+        "detail": "a synopsis is stored for it-004314, which is not an item in this file; the summary is recovered, the row it was about is not",
+        "item_id": "it-004314"
+      },
+      {
+        "kind": "orphan_cast_field",
+        "detail": "detail rows are stored for cast member cm-ada, which is not in this file; what they say is recovered, who they were about is not",
+        "item_id": null
+      },
+      {
+        "kind": "orphan_appearance",
+        "detail": "somebody is recorded as appearing in it-004314, which is not an item in this file; who they are is recovered, the part, chapter or scene is not",
+        "item_id": "it-004314"
+      },
+      {
+        "kind": "orphan_appearance",
+        "detail": "cast member cm-ada is recorded as appearing in this book and is not in this file; the pair holds two ids and no words, so there was nothing to write out",
+        "item_id": null
+      },
+      {
+        "kind": "orphan_comment",
+        "detail": "notes are stored on it-004314, which is not an item in this file; what they say is recovered, the document they were about is not",
+        "item_id": "it-004314"
+      },
+      {
+        "kind": "missing_blob",
+        "detail": "version 1 of it-003939 names blob bcc905571b0171dcb87f6de29441c7b1c90a659243d430387df4d3207713dd32, which is not stored; that past state cannot be recovered",
+        "item_id": "it-003939"
+      },
+      {
+        "kind": "missing_blob",
+        "detail": "version 2 of it-004314 names blob bcc905571b0171dcb87f6de29441c7b1c90a659243d430387df4d3207713dd32, which is not stored; that past state cannot be recovered",
+        "item_id": "it-004314"
+      },
+      {
+        "kind": "missing_blob",
+        "detail": "version 3 of it-003939 names blob bcc905571b0171dcb87f6de29441c7b1c90a659243d430387df4d3207713dd32, which is not stored; that past state cannot be recovered",
+        "item_id": "it-003939"
+      },
+      {
+        "kind": "missing_blob",
+        "detail": "version 4 of it-003939 names blob bcc905571b0171dcb87f6de29441c7b1c90a659243d430387df4d3207713dd32, which is not stored; that past state cannot be recovered",
+        "item_id": "it-003939"
+      },
+      {
+        "kind": "unreadable_body",
+        "detail": "the body stored for it-003939 is not a document this build can read; its bytes were written verbatim to documents/it-003939.raw",
+        "item_id": "it-003939"
+      },
+      {
+        "kind": "unreadable_design_row",
+        "detail": "the design.font row could not be read: Invalid column type Blob at index: 0, name: value; whatever this book was designed as in that respect was not recovered",
+        "item_id": null
+      },
+      {
+        "kind": "missing_cover",
+        "detail": "the front cover is recorded as front.png, which is not in this project's picture directory; the book still says it had one and the picture is gone",
+        "item_id": null
+      }
+    ],
+    "corpus_plan": [
+      {
+        "name": "header_torn",
+        "injury": "the file is 60 bytes long: the 100-byte SQLite header itself is cut in half",
+        "represents": "the write that never got past the header, and the copy that died in its first block",
+        "allowed_exits": [
+          2
+        ],
+        "bytes": 60,
+        "wal_bytes": 0,
+        "sha256": "de5c95e0783b441daa2b3a063cdff72ab85b9c90a3b38ff75c3e00ca26b6354b",
+        "losses": []
+      },
+      {
+        "name": "tail_lost_at_page_boundary",
+        "injury": "the last 416 of 4157 pages are gone; the header still claims 4157",
+        "represents": "a book copied off a dying disk, or a write interrupted before the tail landed",
+        "allowed_exits": [
+          2,
+          3
+        ],
+        "bytes": 15323136,
+        "wal_bytes": 0,
+        "sha256": "9deb3dab9a73393cb3437ea4be5c6d2a1ebf0f18f11802f8ed5b34cc3025c132",
+        "losses": [
+          "enumeration_stopped",
+          "file_truncated",
+          "structure",
+          "unreadable_doc_row"
+        ]
+      },
+      {
+        "name": "tail_lost_mid_page",
+        "injury": "the file ends 1365 bytes into page 3742, so the last page is a fragment",
+        "represents": "the laptop that lost power in the middle of a page write",
+        "allowed_exits": [
+          2,
+          3
+        ],
+        "bytes": 15324501,
+        "wal_bytes": 0,
+        "sha256": "5ea0aff92debdaa80a72acd9de4356dfa373028b29f6795cb4f9ae948e719fef",
+        "losses": [
+          "enumeration_stopped",
+          "file_truncated",
+          "structure",
+          "unreadable_doc_row"
+        ]
+      },
+      {
+        "name": "torn_page_zeroed",
+        "injury": "page 1764 of the b-tree a rowid enumeration scans is all zeros",
+        "represents": "a page that never reached the platter: the filesystem hands back a hole where the index used to be, and the enumeration of a whole table dies part way through",
+        "allowed_exits": [
+          2,
+          3
+        ],
+        "bytes": 17027072,
+        "wal_bytes": 0,
+        "sha256": "d8f765519338378df1062b487e469865add36fa7daa39a8df41e12de32553523",
+        "losses": [
+          "enumeration_stopped",
+          "orphan_doc",
+          "structure"
+        ]
+      },
+      {
+        "name": "torn_page_overwritten",
+        "injury": "page 4123 of the doc table holds 0xa5 repeated",
+        "represents": "a block from somewhere else on the disk landing on the prose: the page header parses into nonsense rather than into nothing",
+        "allowed_exits": [
+          2,
+          3
+        ],
+        "bytes": 17027072,
+        "wal_bytes": 0,
+        "sha256": "27c14576650ceaba6509e521eca3b25d6be30614082f9307ddb2ff466495bb0c",
+        "losses": [
+          "unreadable_doc_row"
+        ]
+      },
+      {
+        "name": "header_page_size_lie",
+        "injury": "the header says the pages are 512 bytes and they are 4096",
+        "represents": "a torn header block: the file's geometry is described by a number that is wrong",
+        "allowed_exits": [
+          2,
+          3
+        ],
+        "bytes": 17027072,
+        "wal_bytes": 0,
+        "sha256": "75db3c53bdf9fadba489b763f1fa189ab3fd156d9cd21e2cd0a9c15626ef9c3f",
+        "losses": []
+      },
+      {
+        "name": "broken_interior_pointer",
+        "injury": "the first child pointer of page 8 points at page 999999",
+        "represents": "bit rot in a b-tree interior cell: the cursor is sent somewhere that is not there",
+        "allowed_exits": [
+          2,
+          3
+        ],
+        "bytes": 17027072,
+        "wal_bytes": 0,
+        "sha256": "b254b14010f1cfa9753ea2d2ce3270825febbeab6588c5102626be78784cb670",
+        "losses": [
+          "unreadable_doc_row"
+        ]
+      },
+      {
+        "name": "orphaned_wal",
+        "injury": "the database is untouched and a -wal sidecar of repeating bytes sits beside it, with neither a valid WAL header nor a frame checksum that could be recovered",
+        "represents": "the crash before the checkpoint, where what is left of the write-ahead log is not something SQLite can replay",
+        "allowed_exits": [
+          0,
+          2,
+          3
+        ],
+        "bytes": 17027072,
+        "wal_bytes": 8192,
+        "sha256": "965224359ecce3652ed62bdaa52f3f42bc67834374eebb96d3061a885769a6e6",
+        "losses": []
+      }
+    ],
+    "corpus_enumeration_tree": {
+      "table": "item",
+      "scanned": "sqlite_autoindex_item_1",
+      "root_page": 5,
+      "pages": 96
+    },
+    "snapshot_files": [
+      "it-004314.md",
+      "it-003939.md"
+    ],
+    "recovered_pictures": [
+      "back.png",
+      "front.png",
+      "ada.png"
+    ],
+    "salvage_ms_per_run": {
+      "healthy": 540.8,
+      "damaged": 483.4
+    },
+    "peak_rss_mb_per_run": {
+      "healthy": 100.7,
+      "damaged": 101.6
+    },
+    "omitted_gates": [
+      {
+        "gate": "latency, stall, cliff, a11y_exposure, a11y_tree_structure, startup_ms",
+        "reason": "salvage has NO PAGE SURFACE. Nothing here opens a window, spawns an Xvfb or attaches to AT-SPI, so there is no frame cadence, no navigator and no accessibility contract to grade. That is 047's reason for judging a GUI rig the wrong instrument for this command, and it is why this rig is a CLI one."
+      }
+    ],
+    "scope": {
+      "the_oracle": "FREE, and that is the design. The rig plants every row it grades and scripts every injury it inflicts, so what must come back is known exactly rather than inferred. Nothing here asks salvage what it did: the counts come from the manifest, the content from the written files read by the harness's own reader, and the store side from bun:sqlite.",
+      "the_reader": "app/harness/src/salvage-read.ts is the harness's OWN restatement of the six shapes salvage writes, built from the samples quoted in the 046, 048, 049 and 050 decision records and NOT from salvage.rs. Its tests parse those samples, never output taken from a run: a reader checked against the emitter's own bytes agrees with the emitter about anything, including a defect.",
+      "planting": "The synopses, cast, tags, notes, wordlist, design, covers, photograph and history are written with bun:sqlite and as files beside the store, exactly as shot-cli --cast and bible-cli plant and for their reason: the only route a writer has to most of these is a panel or an OS dialog, and what is graded here is the RECOVERY, not the attachment. The fixture is asserted to hold none of them first.",
+      "exit_codes": "0 is a complete salvage, 1 the operator asking wrongly (here: a destination that already exists), 2 a source that cannot be read (here: a zero-byte file, which SQLite would otherwise read as an empty database), and 3 an answer that carries losses. 3 IS SALVAGE WORKING. A rig that treated a non-zero exit as failure would grade this command backwards.",
+      "the_collapsed_anchor": "The healthy project deliberately carries a comment whose anchor has collapsed (from >= to), which is what the application itself derives 'an edit destroyed this passage' from. 049 decided it is a recovered note with a caveat and never a Loss, because the row read perfectly - so the healthy run must still be complete and exit 0. This is the one gate here whose subject is something salvage must NOT do.",
+      "peak_rss_mb": "The kernel's own high-water mark (VmHWM in /proc/<pid>/status), sampled every 20 ms while the command runs and taken as the last value read. VmHWM is monotonic, so the figure is a LOWER BOUND on the true peak: a poll that missed the busiest instant still reports the peak up to its last read, and only memory allocated after the final poll is invisible. It is the salvage PROCESS alone, not a process tree - this command spawns nothing.",
+      "the_corpus": "Eight files SQLite does not consider valid, generated from the seeded and planted project by a byte-exact procedure in salvage-corpus.ts: two truncations, two torn pages, a header that lies about the page size, a broken b-tree interior pointer, an unreplayable -wal sidecar, and a header cut in half. What is graded is NOT how much came back - it is that every one terminates, does not panic, reports what it could not read, and never says complete while short of the healthy salvage of the same project. Determinism is proven by generating the whole corpus a SECOND time from a separately seeded and separately planted base and comparing sha256 per entry.",
+      "the_corpus_target": "Which b-tree a rowid enumeration scans is MEASURED with EXPLAIN QUERY PLAN and not assumed: every table in this schema answers `SELECT rowid FROM <t>` through a covering index rather than through the table, so a corpus that tore a page out of the item TABLE could never stop an enumeration and the gate named for that branch would grade a file that cannot reach it.",
+      "what_the_corpus_does_not_claim": "A VALID uncheckpointed -wal is not in it: its header carries random salts and its frames carry checksums over them, so producing one means either running a process and killing it - whose bytes differ every run - or writing a WAL encoder, which is inventing an SQLite writer. A LOST -wal is not in it either: the file left behind is byte-identical to a healthy older database, so nothing in it says a newer commit ever existed and no oracle can tell the two apart. A corrupted page checksum is not in it because SQLite main-database pages carry none.",
+      "salvage_ms": "Wall clock from the spawn to the process exiting, so it covers the working copy, the twelve-table walk, every file written and the manifest. It is not a latency figure for any one part and the threshold is a liveness bound, not a budget."
+    }
+  },
+  "verdicts": [
+    {
+      "gate": "salvage_prose_recovered",
+      "value": "20000 item(s) and 15200 document(s), every one on disk",
+      "threshold": "every item and every document the store holds is counted in the manifest AND written under documents/, and the manuscript carries a sentence read out of the store (the last clause is the needle: 30 empty files satisfy every count)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_synopses_recovered",
+      "value": "2 summary(ies), each with its own body",
+      "threshold": "every planted synopsis is counted, is in synopses.md, and holds exactly its body",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_cast_recovered",
+      "value": "2 member(s) and 2 detail(s), grouped by kind with details in ordinal order",
+      "threshold": "every planted member and detail is counted and in cast.md, each member under its own kind's group with its summary and its details in the writer's ordinal order",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_appearances_recovered",
+      "value": "2 tag(s), each a line naming the item's title",
+      "threshold": "every planted tag is counted AND appears as a line under its member naming the item (039 asked for the title; a count alone would pass a list of uuid pairs)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_comments_recovered",
+      "value": "3 note(s), 1 resolved and 1 orphaned, each with its stored quote",
+      "threshold": "every planted note is counted and in comments.md with its range, its STORED quote and the writer's words, and the marks the file carries are not all absent",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_collapsed_anchor_is_not_a_loss",
+      "value": "the collapsed note came back marked (orphaned), counted, and the salvage is complete",
+      "threshold": "a project whose only irregularity is a collapsed comment anchor salvages COMPLETE with no loss of any kind, and the note comes back counted in comments_orphaned and marked (orphaned) in the file",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_wordlist_recovered",
+      "value": "3 word(s), alphabetically",
+      "threshold": "every taught word is counted and listed in wordlist.md, in alphabetical order. THE ORDER CLAUSE CANNOT FAIL THROUGH THIS RIG and the count and membership clauses carry the whole live claim: `dict_word.word` is UNIQUE, so `SELECT rowid FROM dict_word` is answered by a covering scan of that autoindex and the rows reach the writer already alphabetical whatever order the file was written in - measured with EXPLAIN QUERY PLAN, and no choice of planted words can change it. Deleting the sort from write_wordlist leaves this gate GREEN on a live run; the sort is pinned by 049 at that function's own boundary, where the input order is chosen",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_pictures_recovered",
+      "value": "1 photograph(s), byte-identical to the original",
+      "threshold": "every planted photograph is counted and copied into pictures/ BYTE FOR BYTE (a copy that re-encoded would satisfy a count and hand back a different picture)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_covers_recovered",
+      "value": "2 of 2 covers, both named in covers.md and both on disk",
+      "threshold": "both covers are counted, named by side in covers.md, and written into pictures/",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_design_recovered",
+      "value": "5 of 5 design rows, verbatim",
+      "threshold": "every planted design row is in the manifest's design object with its value VERBATIM (compared value by value: five nulls satisfy a count)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_snapshots_recovered",
+      "value": "1 named moment(s), 2 document(s) written, and the past draft is in them",
+      "threshold": "every named snapshot is counted and indexed, one file per document under snapshots/<id>/, and one of them holds the prose of the planted past draft (the last clause is the needle: empty files satisfy the counts)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_versions_dropped_counted",
+      "value": "2 automatic version(s) planted and 2 counted as dropped",
+      "threshold": "every automatic version in the file is counted in versions_dropped -- a deliberate omission is a figure and never a Loss, so an undercount here is silent loss",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_damage_is_reported",
+      "value": "exit 3, complete false, 9 kind(s) exactly as scripted, 1 body written verbatim",
+      "threshold": "the scripted damage produces exit 3, complete: false, EXACTLY the loss kinds the script owes and no others, and the body that no longer parses is written verbatim as .raw",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_exit_codes",
+      "value": "0 healthy, 1 occupied destination, 2 unreadable source, 3 answered with losses",
+      "threshold": "0 for a complete salvage, 1 for a destination that already exists, 2 for a source that cannot be read, 3 for an answer that carries losses",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_ms",
+      "value": 540.8,
+      "threshold": "<= 3000 ms for the whole command, sized against the STRESS fixture (20,000 items, 15,200 documents): a tiny run cannot reach this and its PASS is not evidence about the stress path",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 100.7,
+      "threshold": "<= 300 MB peak for the salvage PROCESS, sized against the stress fixture and far below the application's own 750: this command holds the walk and one document at a time, and a build that started holding every body at once is what this catches",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_manifest_names_no_path",
+      "value": "8 manifest(s) read, none naming a path",
+      "threshold": "no string in any manifest this run wrote is an absolute path or names the directory the run happened in - checked over every key of every manifest, the corpus's included, and NOT over the terminal report, which belongs to the operator who typed the path. At least two manifests must have been read: an empty list over no manifests is the same green as a clean one",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_corpus_terminates",
+      "value": "8 damaged file(s), every one answered inside its allowed exits",
+      "threshold": "at least 7 damaged files, every one of which terminates with an exit code its corpus entry allows and without a panic. A HANG IS GRADED HERE AND NOT BY THE CLOCK: the rig kills a run that passes its timeout, and a killed process exits on a signal, which is never an allowed exit",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_corpus_completeness_is_honest",
+      "value": "1 of 8 damaged file(s) called themselves complete and every one of them was (healthy: 20000 item(s), 15200 document(s))",
+      "threshold": "NO file in the corpus reports complete: true while having recovered fewer items or fewer documents than the healthy salvage of the same project, while carrying any loss, or while exiting anything but 0. Three readings of one claim: a build that set the flag from the loss list alone would satisfy one of them. THE VALUE LINE STATES HOW MANY FILES CLAIMED COMPLETENESS AT ALL, because a build that never said complete would satisfy this gate over an empty set - what refuses that build is salvage_exit_codes' own healthy run and salvage_collapsed_anchor_is_not_a_loss, not this gate",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_corpus_reports_what_it_lost",
+      "value": "every answer that came back short named a loss, and every refusal exited 2",
+      "threshold": "every corpus file that ANSWERED with fewer items or documents than the healthy salvage names at least one loss kind, and every file salvage refused to answer for exited 2 (the refusal path: a refusal that exited 0 or 3 would be a recovery nobody wrote)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_corpus_is_byte_exact",
+      "value": "8 file(s), each identical across two independent generations",
+      "threshold": "every corpus file is byte-identical to the one a SECOND generation produced from a separately seeded base, and no two entries are the same bytes. A corpus generated by a seeded byte-exact procedure is evidence; one that mutates a file at random is an anecdote, and two entries that collide are one entry grading twice",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_corpus_enumeration_stopped_is_reached",
+      "value": "the torn index page stops an enumeration and salvage says so; 9925 item(s) came back from it against 20000 healthy",
+      "threshold": "the file whose torn page is a page of the b-tree a rowid enumeration scans produces an `enumeration_stopped` loss. 046 recorded that kind as its one live mutation survivor and five slices inherited the hole, because page-level corruption is the only thing that reaches it and nothing in this repo constructed one. HOW MUCH CAME BACK BEFORE THE CURSOR DIED IS ON THE VALUE LINE AND IS NOT GRADED: at `tiny` the tree is a single page, so the enumeration dies having read nothing, and only at `stress` - where it is 96 pages and the torn one is in the middle - is the partial read the branch's comment promises actually observed",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_corpus_truncation_is_recovered",
+      "value": "tail_lost_at_page_boundary: 17521 item(s), tail_lost_mid_page: 17521 item(s)",
+      "threshold": "both tail-loss files come back with MORE THAN NOTHING. Before 052 a project whose end was cut off salvaged as 'this file does not hold a project this build can salvage' while every byte of the surviving manuscript was still in it: SQLite refuses to read a row out of a file whose header claims more pages than the file holds, and salvage now distrusts that number on its own working copy",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "salvage_corpus_ms",
+      "value": 490.3,
+      "threshold": "<= 5000 ms for the SLOWEST single file in the corpus, sized against the stress fixture where the slowest entry is the one that recovers the most. A liveness bound and not a budget: it separates slow from never, and a true hang is killed by the rig and graded by salvage_corpus_terminates",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "d94d1602"
+}

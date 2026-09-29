@@ -1,0 +1,561 @@
+{
+  "evidence_head": "0778068738a8f6a80b54a844c8862155840f381f",
+  "reused_full_bun": {
+    "passed": 3915,
+    "failed": 0
+  },
+  "reused_host_suites": [
+    {
+      "passed": 1650,
+      "failed": 0,
+      "ignored": 2
+    },
+    {
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0
+    }
+  ],
+  "focused_bun": {
+    "passed": 122,
+    "failed": 0
+  },
+  "typescript_exit": 0,
+  "native": [
+    {
+      "result": "app/results/app-book-identity-tiny-light.json",
+      "sha256": "fe09dd5687ead0ca47b1ef7add03ddbdde4882eb7f2594e1986c53731e59be3b",
+      "verdicts": [
+        {
+          "gate": "cancel_prompt_and_keyboard",
+          "value": "observed",
+          "threshold": "copied-book prompt appears and the keyboard choice dismisses it",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "cancel_keeps_manuscripts",
+          "value": "observed",
+          "threshold": "both manuscripts, versions and snapshots remain unchanged",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "cancel_identity",
+          "value": "observed",
+          "threshold": "only Separate gives the copied file a new identity",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "cancel_canonical_location",
+          "value": "observed",
+          "threshold": "Cancel preserves the registry; Same selects the copy; Separate records both identities",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "same_prompt_and_keyboard",
+          "value": "observed",
+          "threshold": "copied-book prompt appears and the keyboard choice dismisses it",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "same_keeps_manuscripts",
+          "value": "observed",
+          "threshold": "both manuscripts, versions and snapshots remain unchanged",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "same_identity",
+          "value": "observed",
+          "threshold": "only Separate gives the copied file a new identity",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "same_canonical_location",
+          "value": "observed",
+          "threshold": "Cancel preserves the registry; Same selects the copy; Separate records both identities",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "separate_prompt_and_keyboard",
+          "value": "observed",
+          "threshold": "copied-book prompt appears and the keyboard choice dismisses it",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "separate_keeps_manuscripts",
+          "value": "observed",
+          "threshold": "both manuscripts, versions and snapshots remain unchanged",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "separate_identity",
+          "value": "observed",
+          "threshold": "only Separate gives the copied file a new identity",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "separate_canonical_location",
+          "value": "observed",
+          "threshold": "Cancel preserves the registry; Same selects the copy; Separate records both identities",
+          "verdict": "PASS"
+        }
+      ],
+      "environment": {
+        "kernel": "7.2.6-1-cachyos",
+        "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+        "throttleScope": "8 logical CPUs; CPU quota 800%; nice 19; idle IO; memory high 6 GiB, maximum 8 GiB; no swap; one Cargo job; two Rust test threads",
+        "loadAvg1m": 2.45,
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        },
+        "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+      }
+    },
+    {
+      "result": "app/results/app-book-identity-tiny-dark.json",
+      "sha256": "980809cdef9ff4fd0a66a15bac12af9945aed7a1b688615cd1c487cde8846de8",
+      "verdicts": [
+        {
+          "gate": "cancel_prompt_and_keyboard",
+          "value": "observed",
+          "threshold": "copied-book prompt appears and the keyboard choice dismisses it",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "cancel_keeps_manuscripts",
+          "value": "observed",
+          "threshold": "both manuscripts, versions and snapshots remain unchanged",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "cancel_identity",
+          "value": "observed",
+          "threshold": "only Separate gives the copied file a new identity",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "cancel_canonical_location",
+          "value": "observed",
+          "threshold": "Cancel preserves the registry; Same selects the copy; Separate records both identities",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "same_prompt_and_keyboard",
+          "value": "observed",
+          "threshold": "copied-book prompt appears and the keyboard choice dismisses it",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "same_keeps_manuscripts",
+          "value": "observed",
+          "threshold": "both manuscripts, versions and snapshots remain unchanged",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "same_identity",
+          "value": "observed",
+          "threshold": "only Separate gives the copied file a new identity",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "same_canonical_location",
+          "value": "observed",
+          "threshold": "Cancel preserves the registry; Same selects the copy; Separate records both identities",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "separate_prompt_and_keyboard",
+          "value": "observed",
+          "threshold": "copied-book prompt appears and the keyboard choice dismisses it",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "separate_keeps_manuscripts",
+          "value": "observed",
+          "threshold": "both manuscripts, versions and snapshots remain unchanged",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "separate_identity",
+          "value": "observed",
+          "threshold": "only Separate gives the copied file a new identity",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "separate_canonical_location",
+          "value": "observed",
+          "threshold": "Cancel preserves the registry; Same selects the copy; Separate records both identities",
+          "verdict": "PASS"
+        }
+      ],
+      "environment": {
+        "kernel": "7.2.6-1-cachyos",
+        "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+        "throttleScope": "8 logical CPUs; CPU quota 800%; nice 19; idle IO; memory high 6 GiB, maximum 8 GiB; no swap; one Cargo job; two Rust test threads",
+        "loadAvg1m": 1.61,
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        },
+        "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+      }
+    },
+    {
+      "result": "app/results/app-mirror-acts-tiny.json",
+      "sha256": "c959da16e51bd802c111f58b91b289be2d754bd4c2f5dc28edc34890a3b74318",
+      "verdicts": [
+        {
+          "gate": "enable_writes_the_folder",
+          "value": "0 file(s) before, 40 after, for 30 document(s)",
+          "threshold": "the folder is empty before the press (the vacuity guard: a folder that already held files would prove nothing about it), the store has documents, and the folder holds at least one file per document afterward",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "enable_reports_where_and_how_many",
+          "value": "state \"40 files, last written just now.\" (expected count 40), where \"The mirror is written to <scratch>/by-id/01a0c0a7731a7b708237c5bac9a1f236\" (names the directory: true)",
+          "threshold": "the state sentence names the count the rig itself counted on disk, and the where sentence named the WHOLE directory the rig handed the host. Not its basename: the sentence is \"The mirror is written to {dir}\", so a basename check passed on the word \"mirror\" appearing in its own wording, which this rig's first green run did",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "enable_is_remembered",
+          "value": "mirrored [01a0c0a7731a7b708237c5bac9a1f236] (expected \"01a0c0a7731a7b708237c5bac9a1f236\")",
+          "threshold": "settings.json's mirrored list includes this project's own slug",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_panel_offers_the_change_without_a_reopen",
+          "value": "1 row(s) offered in the same process that wrote the folder, the edited document among them (restarted: false)",
+          "threshold": "the change panel offers the outside edit as a row without the application being restarted, and one of those rows names the document that was edited. This is the PANEL's own scan on open, not the watcher's -- a sabotage with the watcher disabled still passes it, which is why the watcher has a gate of its own below",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_watcher_keeps_the_pass_off_an_edited_file",
+          "value": "13022 ms after the typing (the store's rev moved; the outside edit led by 10934 ms) the file still holds the words the writer put in it",
+          "threshold": "the typing reached the store (its rev moved -- otherwise no pass was owed and the file is unchanged for free), a pass window of at least 10000 ms went by AFTER the typing, and the file the writer edited from outside still holds their words. That is what the in-process watcher buys: it notices the edit in time to PAUSE the entry, so the pass leaves the file alone. With the watcher disabled this goes red and the panel gate above does not",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "conflict_is_reported",
+          "value": "row state \"The words changed here and in your book\" (expected \"The words changed here and in your book\")",
+          "threshold": "the conflicted row's state sentence equals the page's own catalog sentence for it",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_books_side_is_preserved",
+          "value": "sidecar \"0000-Winter-Nocturne-978.from-project.md\" exists true, holds the book's words true",
+          "threshold": "the sidecar exists, its name ends \".from-project.md\", and its body -- read by the harness's own Markdown reader -- holds the sentence the rig typed into the application",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_sidecar_is_not_offered_as_a_change",
+          "value": "1 row(s) at the conflict, 0 about another file, sidecar named in a row false",
+          "threshold": "rows were offered (the vacuity guard: with no rows at all, \"no row names the sidecar\" is true and proves nothing), every one of them is about the document the rig edited, and none names the sidecar itself",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "thorough_check_finds_a_preserved_metadata_edit",
+          "value": "metadata preserved true, invisible before true, pressed true, row found true",
+          "threshold": "same size and timestamp, no prior change row, explicit check pressed and a row found without restarting",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "thorough_check_keeps_the_pass_off_an_edited_file",
+          "value": "found after restart true, revision moved true, waited 13001 ms, complete file preserved true",
+          "threshold": "a thorough-only finding survives restart without rechecking and stays byte-identical after a real store revision change and at least 10000 ms for a mirror pass",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_reports_updating_for_a_committed_pending_save",
+          "value": "scheduled warm-up reached the folder true, entire second marker reached SQLite true 1020 ms later, indicator \"The readable folder is being written\", second marker absent from folder true, captured true",
+          "threshold": "after the first scheduled pass reached the folder, a complete second save reaches SQLite within 0 < ms < 10000; while its bytes are absent, the visible popover has the exact accessible name \"The readable folder is being written\" and the visible popover is captured",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_returns_current_after_the_pending_save_lands",
+          "value": "second marker reached the folder true, indicator \"The readable folder matches what you have typed\" (expected \"The readable folder matches what you have typed\")",
+          "threshold": "the same pending save later reaches the actual folder and the still-open popover has the exact accessible name \"The readable folder matches what you have typed\"",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_actions_reap_every_owned_launch",
+          "value": "4 cleanup receipts; killed [0, 0, 0, 1]",
+          "threshold": "all four owned launches (three app sessions and Xvfb) completed cleanup; killed counts are nonnegative integers",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "peak_rss_mb",
+          "value": 562,
+          "threshold": "<= 750 MB (0 is no sample taken, not a real reading, and FAILS)",
+          "verdict": "PASS"
+        }
+      ],
+      "environment": {
+        "kernel": "7.2.6-1-cachyos",
+        "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+        "throttleScope": "8 logical CPUs; CPU quota 800%; nice 19; idle IO; memory high 6 GiB, maximum 8 GiB; no swap; one Cargo job; two Rust test threads",
+        "loadAvg1m": 2.86,
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        },
+        "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+      }
+    },
+    {
+      "result": "app/results/app-mirror-acts-stress.json",
+      "sha256": "22032f717dfaf88ef298a7d508377848c78dd63b87b190dd9ce3c8faae64497a",
+      "verdicts": [
+        {
+          "gate": "enable_writes_the_folder",
+          "value": "0 file(s) before, 20000 after, for 15200 document(s)",
+          "threshold": "the folder is empty before the press (the vacuity guard: a folder that already held files would prove nothing about it), the store has documents, and the folder holds at least one file per document afterward",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "enable_reports_where_and_how_many",
+          "value": "state \"20000 files, last written just now.\" (expected count 20000), where \"The mirror is written to <scratch>/by-id/01a0c0a9911476e19b3a2b7c993d1979\" (names the directory: true)",
+          "threshold": "the state sentence names the count the rig itself counted on disk, and the where sentence named the WHOLE directory the rig handed the host. Not its basename: the sentence is \"The mirror is written to {dir}\", so a basename check passed on the word \"mirror\" appearing in its own wording, which this rig's first green run did",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "enable_is_remembered",
+          "value": "mirrored [01a0c0a9911476e19b3a2b7c993d1979] (expected \"01a0c0a9911476e19b3a2b7c993d1979\")",
+          "threshold": "settings.json's mirrored list includes this project's own slug",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_panel_offers_the_change_without_a_reopen",
+          "value": "1 row(s) offered in the same process that wrote the folder, the edited document among them (restarted: false)",
+          "threshold": "the change panel offers the outside edit as a row without the application being restarted, and one of those rows names the document that was edited. This is the PANEL's own scan on open, not the watcher's -- a sabotage with the watcher disabled still passes it, which is why the watcher has a gate of its own below",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_watcher_keeps_the_pass_off_an_edited_file",
+          "value": "13022 ms after the typing (the store's rev moved; the outside edit led by 10962 ms) the file still holds the words the writer put in it",
+          "threshold": "the typing reached the store (its rev moved -- otherwise no pass was owed and the file is unchanged for free), a pass window of at least 10000 ms went by AFTER the typing, and the file the writer edited from outside still holds their words. That is what the in-process watcher buys: it notices the edit in time to PAUSE the entry, so the pass leaves the file alone. With the watcher disabled this goes red and the panel gate above does not",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "conflict_is_reported",
+          "value": "row state \"The words changed here and in your book\" (expected \"The words changed here and in your book\")",
+          "threshold": "the conflicted row's state sentence equals the page's own catalog sentence for it",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_books_side_is_preserved",
+          "value": "sidecar \"0000-Winter-Garden-443.from-project.md\" exists true, holds the book's words true",
+          "threshold": "the sidecar exists, its name ends \".from-project.md\", and its body -- read by the harness's own Markdown reader -- holds the sentence the rig typed into the application",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "the_sidecar_is_not_offered_as_a_change",
+          "value": "1 row(s) at the conflict, 0 about another file, sidecar named in a row false",
+          "threshold": "rows were offered (the vacuity guard: with no rows at all, \"no row names the sidecar\" is true and proves nothing), every one of them is about the document the rig edited, and none names the sidecar itself",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "thorough_check_finds_a_preserved_metadata_edit",
+          "value": "metadata preserved true, invisible before true, pressed true, row found true",
+          "threshold": "same size and timestamp, no prior change row, explicit check pressed and a row found without restarting",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "thorough_check_keeps_the_pass_off_an_edited_file",
+          "value": "found after restart true, revision moved true, waited 13001 ms, complete file preserved true",
+          "threshold": "a thorough-only finding survives restart without rechecking and stays byte-identical after a real store revision change and at least 10000 ms for a mirror pass",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_reports_updating_for_a_committed_pending_save",
+          "value": "scheduled warm-up reached the folder true, entire second marker reached SQLite true 1028 ms later, indicator \"The readable folder is being written\", second marker absent from folder true, captured true",
+          "threshold": "after the first scheduled pass reached the folder, a complete second save reaches SQLite within 0 < ms < 10000; while its bytes are absent, the visible popover has the exact accessible name \"The readable folder is being written\" and the visible popover is captured",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_returns_current_after_the_pending_save_lands",
+          "value": "second marker reached the folder true, indicator \"The readable folder matches what you have typed\" (expected \"The readable folder matches what you have typed\")",
+          "threshold": "the same pending save later reaches the actual folder and the still-open popover has the exact accessible name \"The readable folder matches what you have typed\"",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mirror_actions_reap_every_owned_launch",
+          "value": "4 cleanup receipts; killed [0, 0, 0, 1]",
+          "threshold": "all four owned launches (three app sessions and Xvfb) completed cleanup; killed counts are nonnegative integers",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "peak_rss_mb",
+          "value": 712,
+          "threshold": "<= 750 MB (0 is no sample taken, not a real reading, and FAILS)",
+          "verdict": "PASS"
+        }
+      ],
+      "environment": {
+        "kernel": "7.2.6-1-cachyos",
+        "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+        "throttleScope": "8 logical CPUs; CPU quota 800%; nice 19; idle IO; memory high 6 GiB, maximum 8 GiB; no swap; one Cargo job; two Rust test threads",
+        "loadAvg1m": 1.35,
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        },
+        "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+      }
+    }
+  ],
+  "mutation_evidence": [
+    {
+      "source_commit": "9906de4ed8d01e3512a8f605bde17a92c8272e19",
+      "test_profile": "debug",
+      "execution_limits": {
+        "max_cpus": 8,
+        "cargo_jobs": 1,
+        "nice": 19,
+        "memory_max_gib": 8
+      },
+      "source_restored": true,
+      "restored_release_build_exit": 0,
+      "mutations": [
+        {
+          "mutation": "shared-protection-directory",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "restore-keeps-identity",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "selected-open-creates-file",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "malformed-settings-default",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "stale-fork",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "fresh-inherits-legacy",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "fork-keeps-legacy",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "old-canonical-source",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "stale-copy-decision",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "missing-owner-ignored",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "new-book-claims-old-folders",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "mirror-source-id",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "mirror-equal-revision-content",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "mirror-paused-equal-revision",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "recovery-source-id",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "epub-ignores-identity",
+          "exit_code": 101,
+          "verdict": "KILLED"
+        }
+      ],
+      "prior_source_commit": "0f18bed81a69a413c6f82dc501ca4a992b4196f5",
+      "recheck_reason": "The checked_settings filter omitted the existing damaged-settings refusal test; rerun with the settings filter."
+    },
+    {
+      "source_commit": "19e765d5c352e85589fe90804d6ffc8127d677c1",
+      "source_restored": true,
+      "restored_ui_build_exit": 0,
+      "mutations": [
+        {
+          "mutation": "cancel-opens-same",
+          "exit_code": 1,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "missing-original-allows-separate",
+          "exit_code": 1,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "cancel-tears-down",
+          "exit_code": 1,
+          "verdict": "KILLED"
+        },
+        {
+          "mutation": "remembered-legacy-slug",
+          "exit_code": 1,
+          "verdict": "KILLED"
+        }
+      ]
+    }
+  ],
+  "native_negative_control": {
+    "source_commit": "0778068738a8f6a80b54a844c8862155840f381f",
+    "mutation": "same-button-forks",
+    "exit_code": 1,
+    "failed_gates": [
+      "same_identity",
+      "same_canonical_location"
+    ],
+    "source_restored": true,
+    "restored_ui_build_exit": 0
+  },
+  "comparisons": "app/results/156-baseline-comparisons.json",
+  "review": "No remaining implementation findings in identity foundation, protection locking or duplicate-name UI reviews. Copy-choice native evidence verifies routing/persistence; editor mount success remains covered separately by project-switch unit tests. Native dismissal currently checks Cancel, not every dialog control.",
+  "verification_policy": "Owner requested fewer builds/tests. Reused the completed full suites; after the final UI-only change ran switcher/project-switch tests and TypeScript. Did not repeat Rust, preview/project native regressions, persistence or memory soaks. No platform certification is claimed."
+}

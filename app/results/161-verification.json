@@ -1,0 +1,61 @@
+{
+  "slice": 161,
+  "commits": [
+    "b085fda",
+    "57889ba",
+    "5fd785e",
+    "baf1881"
+  ],
+  "merges": [
+    "9147370",
+    "a579380"
+  ],
+  "checks": {
+    "host_source_words_focused": "passed (19 tests)",
+    "host_broad_filters": "passed (229 tests: source_word progress writing_time goal recover identity mirror_undo stale generation)",
+    "full_host_suite_after_merge": "1702 passed, 1 failed: covers_need_no_schema_version_of_their_own, pre-existing on develop since 157",
+    "ui_focused": "passed (371 tests across 12 files after merge)",
+    "ui_stylesheet_and_statistics_panel": "passed (522 tests across 27 files after the note style fix)",
+    "typescript": "passed",
+    "ui_build": "passed",
+    "sabotage": "pause check removed, pause check moved after the ledger read, mirror-undo block removed, failed-flush check removed, single-click reset, destroy-mid-command guards removed and refocus disabled each turned their tests red"
+  },
+  "screenshots": [
+    {
+      "path": "app/results/screenshots/2026-09-23-161-stats-dark.png",
+      "sha256": "3cb95c6f808a4b2be3e8bb3526fe32e7fbdd597fe40235a2b3f3466e6747b8ad"
+    },
+    {
+      "path": "app/results/screenshots/2026-09-23-161-stats-light.png",
+      "sha256": "a54f9431ff8b345f13e1ab1bd9460b2cefd60cd201b7bd168376f5e6aadf08a2"
+    },
+    {
+      "path": "app/results/screenshots/2026-09-23-161-stats-paused-dark.png",
+      "sha256": "a095b023eed137544cd3b5ff545f38f7a3868c52edb049545911815293a4b881"
+    },
+    {
+      "path": "app/results/screenshots/2026-09-23-161-stats-paused-light.png",
+      "sha256": "51f9a4ce950b9b62ba6ae5733c136eca69e00bb8ae6bbf2d00a8f475cae6bbfe"
+    },
+    {
+      "path": "app/results/screenshots/2026-09-23-161-stats-reset-armed-dark.png",
+      "sha256": "6449c25a68d875275393e8716f0ee3ac77c440219b81e846f7f7b4e13160a74d"
+    },
+    {
+      "path": "app/results/screenshots/2026-09-23-161-stats-reset-armed-light.png",
+      "sha256": "82f7c0a4e3d28336743974e42ed59d3381cc437f72cf6897da6d323107f2f7bf"
+    }
+  ],
+  "environment": {
+    "renderer": "dmabuf-llvmpipe",
+    "isolation": "temporary manuscripts and owned virtual-display processes",
+    "window": "1200x2000 so the controls below the columns are in frame"
+  },
+  "limits": [
+    "Paused and armed captures use --theme, not --scheme, because a press needs the AT-SPI bus that --scheme cuts.",
+    "The first armed capture found the reset note unstyled at prose size; fixed in baf1881 and recaptured.",
+    "The controls sit in one row below both columns, beside the existing time control, not inside the saved-words group.",
+    "A recovered copy of a paused book stays paused and does not record its restored words.",
+    "Host refusal strings for stale books are English, like other host errors."
+  ]
+}

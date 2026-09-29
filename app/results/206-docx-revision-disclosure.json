@@ -1,0 +1,41 @@
+{
+  "source": "0eeb2611",
+  "scope": "Linux native ordinary DOCX import disclosure; synthetic independent OOXML fixture; no native Windows/macOS/Word testing",
+  "source_fixture_sha256": "7040bd2ac0360c56d4127c1066f547cb1259f7ca748ca97a42a0c20aa773ebd9",
+  "screenshots": [
+    {
+      "theme": "light",
+      "file": "app/results/screenshots/206-docx-revisions-light.png",
+      "sha256": "d14dadd40f168cf676d2c0f26db7a0cb6cca25a05c53f259a596d45d3aa93fb0",
+      "environment": {
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        },
+        "scope": "Synthetic DOCX ordinary import loss disclosure; Linux isolated display only"
+      },
+      "review": "Visible loss banner identifies two tracked revisions and states revisions/authors were not retained; keep-original instruction readable."
+    },
+    {
+      "theme": "dark",
+      "file": "app/results/screenshots/206-docx-revisions-dark.png",
+      "sha256": "8653f827104dbf3dfbf211448d3a18603d0e42fc85885bdb50eaa03a156fbcd2",
+      "environment": {
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        },
+        "scope": "Synthetic DOCX ordinary import loss disclosure; Linux isolated display only"
+      },
+      "review": "Visible loss banner identifies two tracked revisions and states revisions/authors were not retained; keep-original instruction readable."
+    }
+  ]
+}

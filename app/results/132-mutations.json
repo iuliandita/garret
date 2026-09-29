@@ -1,0 +1,103 @@
+{
+  "source_commit": "c545a29125c7f739b78b308876dd86117e8dce90",
+  "method": "compile each mutated copy of the committed module with its real tests; production source unchanged",
+  "source_unchanged": true,
+  "mutations": [
+    {
+      "mutation": "pending-repeat-allows-close",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "stale-hold",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "stale-release",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "release-keeps-generation",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "reset-keeps-generation",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "reset-keeps-phase",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "held-timeout",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "stale-timeout",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "locked-timeout",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "queued-timeout-after-lock",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "queued-timeout-keeps-generation",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "queued-timeout-does-not-hold",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "stale-confirm",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "duplicate-confirm",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "approval-before-preparation",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "old-preparation-approves-new",
+      "compile_exit": 0,
+      "test_exit": 101,
+      "verdict": "KILLED"
+    }
+  ]
+}

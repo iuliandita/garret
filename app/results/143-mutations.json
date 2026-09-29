@@ -1,0 +1,11 @@
+{
+  "source_commit": "1ad72f8a0a63d732edcb74adcdfc85f3188eab86",
+  "source_restored": true,
+  "mutations": [
+    {
+      "mutation": "report-unmeasured-memory-pass",
+      "verdict": "KILLED",
+      "exit_code": 1
+    }
+  ]
+}

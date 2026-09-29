@@ -1,0 +1,102 @@
+{
+  "run_id": "app-menu-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-menu",
+  "environment": {
+    "kernel": "7.1.8-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "menu_titles_found": 4,
+    "baseline_item_nodes": 0,
+    "open_item_nodes": 9,
+    "open_item_names": [
+      "New project…",
+      "Open project…",
+      "Rename project…",
+      "Import…",
+      "Export manuscript",
+      "Export as…",
+      "Back up now",
+      "Preferences…",
+      "Quit"
+    ],
+    "unnamed_item_nodes": 0,
+    "menubar_role": "menu bar",
+    "title_role": "combo box",
+    "item_role": "menu item",
+    "items_after_escape": 0,
+    "items_after_activation": 0,
+    "store_rows_before_create": 40,
+    "store_rows_after_create": 41,
+    "created_row_type": "scene",
+    "export_files_before": 0,
+    "export_files_after": 1,
+    "exported_sections": 40,
+    "store_items": 40,
+    "label_when_live": "Delete",
+    "label_when_trashed": "Restore",
+    "live_row_trashed_in_store": false,
+    "trashed_row_trashed_in_store": true,
+    "peak_rss_mb": 498,
+    "scope": "Six boots, two AT-SPI walks maximum each. Every figure about the store is SQLite read directly with bun:sqlite; every figure about the export is the file read off disk with the harness's own restatement of the format. The menu is driven entirely by keystrokes except the two navigator clicks, whose coordinates come from the store's own walk against a MEASURED pane top.",
+    "omitted_gates": "no latency, stall, cliff or a11y_exposure figures: a run that opens four menus and types nothing has nothing true to say about frame cadence, and the navigator's row exposure is the hierarchy rig's claim, not this one's. menu_roles_exposed RECORDS the ATK roles rather than asserting them - there is no prior measurement of menubar or menuitem mapping on WebKitGTK to assert against - and asserts instead the thing a collapsed role actually costs: an item exposed under a role that carries no name."
+  },
+  "verdicts": [
+    {
+      "gate": "menu_opens",
+      "value": "0 item node(s) closed -> 9 open, across 4 title(s)",
+      "threshold": "opening a menu exposes items AT-SPI could not see while it was closed",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "menu_roles_exposed",
+      "value": "menubar:menu bar title:combo box item:menu item; 0 unnamed of 9",
+      "threshold": "every exposed menu item carries a non-empty accessible name",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "menu_creates_an_item",
+      "value": "40 -> 41 row(s); created type scene",
+      "threshold": "Outline > New scene adds exactly one row of type `scene` to the STORE",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "menu_exports",
+      "value": "0 -> 1 file(s); 40 heading(s) read back against 40 walked item(s)",
+      "threshold": "File > Export manuscript writes one file with one heading per walked item",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "menu_context_label",
+      "value": "live row -> \"Delete\" (trashed in store: false); binned row -> \"Restore\" (trashed in store: true)",
+      "threshold": "the rendered Delete/Restore matches the selected row's bin state AS THE STORE HAS IT",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "menu_keyboard_opens",
+      "value": "Alt+F exposed 9 item(s); 0 left after Escape",
+      "threshold": "Alt+F opens the File menu and Escape closes it, with no pointer involved",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "menu_closes_after_activation",
+      "value": "0 item node(s) remain once an item has run",
+      "threshold": "activating an item leaves no menu painted",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 498,
+      "threshold": "< 750",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "n/a",
+  "rig_commit": "8839f27a"
+}

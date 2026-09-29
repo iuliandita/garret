@@ -1,0 +1,21 @@
+{
+  "source_commit": "cddbf46b43fd66fd07bb2dcf1f608baf15f17131",
+  "source_restored": true,
+  "mutations": [
+    {
+      "mutation": "omit-export-toggle",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "omit-words-toggle",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "omit-outline-toggle",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    }
+  ]
+}

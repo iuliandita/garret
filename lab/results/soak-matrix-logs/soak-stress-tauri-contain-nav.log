@@ -1,0 +1,4 @@
+{"built":["<repo>/lab/bakeoff/dist/run.js"],"soakMs":1800000,"lazyDocs":false,"containNav":true}
+tauri: killed 1 orphaned shell process(es)
+tauri: 5 fails (typing_p95, typing_p99, nav_p95, soak_projected_8h_rss_mb, soak_typing_p95_last_cycle)
+report -> <repo>/lab/results/report-bakeoff-stress-soak-tauri-contain-nav.md

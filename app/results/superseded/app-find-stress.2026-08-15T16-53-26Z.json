@@ -1,0 +1,122 @@
+{
+  "run_id": "app-find-stress",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-find",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "workload_script": "find-v1",
+    "peak_rss_mb": 567,
+    "startup_ms": 117,
+    "items": 20000,
+    "readable_documents": 15200,
+    "find": {
+      "fixture": "stress",
+      "find_limit": 200,
+      "oracle_matches": 14048,
+      "reported_total": 14048,
+      "typed_hits": 1,
+      "typed_item": "it-003939",
+      "typed_expected_item": "it-003939",
+      "title_hits": 1,
+      "title_found_expected": true,
+      "title_expected_kind": "part",
+      "case_variants_agree": true,
+      "case_variant_hits": 200,
+      "snippets_checked": 184,
+      "snippets_contained": 184,
+      "truncation_total": 14048,
+      "truncation_shown": 200,
+      "truncation_reported": true,
+      "empty_query_hits": 0,
+      "reveal_query": "ZZQXVNONCE",
+      "reveal_selection": "ZZQXVNONCE",
+      "peak_rss_mb": 567
+    },
+    "oracle_term": "river",
+    "oracle_term_items": 14048,
+    "title_term": "Winter CAFÉ 566",
+    "title_term_kind": "part",
+    "truncation_term": "river",
+    "nonce": "ZZQXVNONCE",
+    "omitted_gates": [
+      {
+        "gate": "latency, stall, cliff, a11y_exposure, a11y_tree_structure",
+        "reason": "the run types one sentence and presses Return a handful of times. It is not a soak and it never mutates the tree, so it has nothing true to say about frame cadence, a leak slope, or the navigator's accessibility contract -- that is the hierarchy run's claim. peak_rss_mb IS graded, on both fixtures, because the scan holds every stored body as text at once on top of the manuscript the page already has."
+      }
+    ],
+    "scope": {
+      "input": "Real X input throughout: xdotool keystrokes only -- Ctrl+F, the query, Return. No pointer input at all, so no result row is CLICKED and this run makes no claim that activating a result opens the scene. That claim is unit-tested in app/ui/test/find-bar.test.ts and is NOT graded here.",
+      "the_oracle": "The store, read directly with bun:sqlite through a recursive CTE this rig restates, with every body projected to text by projectText() -- the rig's OWN restatement of the plain-text walk, written from the format and not imported from store::document_text or find.rs. A projection taken from the implementation would agree with the implementation by construction and find_total_matches_oracle would say nothing.",
+      "folding": "The oracle folds with JavaScript toLowerCase(); find.rs folds per CHARACTER, because str::to_lowercase is context-dependent for Greek final sigma. Neither fixture contains Greek and every query term is drawn from the fixture, so the difference is unreachable on this run. A fixture that added Greek would surface it as a LOUD gate failure here, which is the intended behaviour rather than a gap.",
+      "alignment": "Result rows are aligned to walk items by the DOM id each row carries (`find-row-<itemId>`), never by title: 2,292 of the 20,000 stress items share a title. The snippet check reconstructs each row's expected `<title>, <kind>: ` prefix from the rig's own walk rather than parsing it out of the accessible name, so it verifies the title and the type as well as the snippet.",
+      "no_latency_gate": "THERE IS NO find_ms GATE, and that is a measurement rather than an omission. The only channel through which this rig can see that a search has finished is the accessibility tree, and polling AT-SPI fast enough to time a sub-second operation WEDGES the WebKitGTK bridge: the first version of this rig polled every 250 ms, got through two searches, and then found no matching application on the desktop at all. A poll interval slow enough to be safe is ~2500 ms, which is larger than the thing being measured, so any figure would be a measurement of the rig's own sleep. The scan's cost is argued in the design from the word-index measurement, and is stated there as an argument rather than as evidence.",
+      "truncation": "probed with \"river\", which the rig's own scan puts at 14048 items against a 200 cap."
+    }
+  },
+  "verdicts": [
+    {
+      "gate": "find_total_matches_oracle",
+      "value": "14048 == 14048",
+      "threshold": "the total the application reports == the number of items THIS RIG finds by scanning the store directly with bun:sqlite and projecting each body to text with its OWN restatement of the plain-text walk, never imported from find.rs. Both counts are of ITEMS, not occurrences. This is the completeness claim and it is the only one here: a search that silently misses a scene is indistinguishable, to a writer, from a scene that does not contain the word",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "find_locates_typed_sentence",
+      "value": "1 hit, at the item typed into (it-003939)",
+      "threshold": "a nonce sentence typed into the boot scene and drained is found by exactly one item, and that item is the one it was typed into. The sentence is a nonce so the count is exact rather than a lower bound; the rig verifies the sentence reached the STORE before searching, so a failure here is the search's and not the drain's",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "find_title_match",
+      "value": "found, and the item is a part",
+      "threshold": "a term taken from a seeded item's TITLE returns that item. Graded against a PART or a CHAPTER wherever the fixture has one, because those hold no document at all: restricting search to prose would silently exclude every part and chapter in the book, which is where a writer looks for a character name first",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "find_case_insensitive",
+      "value": "3 casings returned the same 200 item(s), in the same order",
+      "threshold": "lower, upper and mixed casings of one query return the same item ids in the same order. Compared by the DOM id each result row carries (`find-row-<itemId>`), never by title: 2,292 of the 20,000 stress items share a title",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "find_snippet_fidelity",
+      "value": "184 of 184 snippet(s) occur in their item's text",
+      "threshold": "every prose snippet, with its leading and trailing ellipsis characters removed, occurs VERBATIM in the text of that item's stored body as this rig projects it. A STRICT containment check, with no whitespace normalization on either side -- the snippet is an exact substring by construction, so normalizing would make a real difference invisible, which is what the export slice's fidelity gate had to give up. Title-only hits carry no snippet and are not counted here",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "find_truncation_honest",
+      "value": "200 shown of 14048, and the panel says so",
+      "threshold": "a query matching more than the 200-item cap shows exactly the cap, reports a total ABOVE it, and says on screen that the list is partial. A cap nobody is told about reads as completeness -- the same defect class as a silently truncated export. UNKNOWN rather than PASS where the fixture cannot produce enough matches to cap, because a gate that cannot fail must not report a pass",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "find_empty_query_empty_result",
+      "value": "no rows, no error",
+      "threshold": "searching for nothing returns nothing and raises no error. Matching the empty string against every document would return the entire book, which reads as a catastrophic bug rather than as an empty query",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "find_reveal_selects_the_match",
+      "value": "the editor selected \"ZZQXVNONCE\"",
+      "threshold": "after arrowing onto a result and pressing Return, the text the EDITOR shows selected is the query that was searched for, compared case-insensitively by folding one code point at a time. Read off AT-SPI's text interface against the live window, which is the only channel that can answer what a writer would SEE highlighted -- the page's own report would be the page checking itself, and the X PRIMARY selection returns the PREVIOUS selection when a chord selects nothing, which reads as success",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 567,
+      "threshold": "< 750 at the \"stress\" fixture. Graded on BOTH fixtures for the reason the export slice's review established: the scan holds every stored body as text at once, on top of the manuscript the page already has, and the highest peak any configuration has recorded is 691 MB",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "e536a7fa"
+}

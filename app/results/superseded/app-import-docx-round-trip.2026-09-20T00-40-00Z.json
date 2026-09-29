@@ -1,0 +1,56 @@
+{
+  "run_id": "app-import-docx-round-trip",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-import-docx",
+  "environment": {
+    "kernel": "7.2.6-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 3.68,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "items_a": 6,
+    "items_b": 6,
+    "title_depth_matches": 6,
+    "prose_matches": 5,
+    "scenes_compared": 5,
+    "loss_notice_shown": false,
+    "notice_kind": "none",
+    "notice_text": "(none)",
+    "scope": "project B (imported from A's own DOCX export) compared to project A -- never to the rig's Markdown source, which would grade the Markdown pair a second time instead of the DOCX one"
+  },
+  "verdicts": [
+    {
+      "gate": "import_docx_round_trip_items",
+      "value": "6 of 6 item(s); 6 of 6 title+depth matched",
+      "threshold": "the DOCX round trip holds the same item count, title and depth as project A",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "import_docx_round_trip_prose",
+      "value": "5 of 5",
+      "threshold": "every scene's prose equal to project A's (whitespace normalized both sides)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "import_docx_reports_no_loss",
+      "value": "no loss notice",
+      "threshold": "importing this crate's own DOCX export raises no loss notice",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "n/a",
+  "rig_commit": "7ebf4d90"
+}

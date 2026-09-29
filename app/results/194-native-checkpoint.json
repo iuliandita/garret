@@ -1,0 +1,145 @@
+{
+  "source": "ec4b775",
+  "images": [
+    {
+      "path": "app/results/screenshots/194-continuous-light.png",
+      "sha256": "8ea031835a8d08704ed106dec7e5b3e9306e427c4ae22fe458018e29d15c7d96",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/194-continuous-dark.png",
+      "sha256": "ca0336710fe1a7a4fff6c45ffa9a449d2f5dbcfbb9eabd1dc1c6eff810011338",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/194-warning-history-light.png",
+      "sha256": "2f4868eab0d177514560a22f9d4b9834ee33af0f2fee9cf9a8bc66bdfa1fdeee",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/194-warning-history-dark.png",
+      "sha256": "6c2042bd82f3e9ee9e03152ca2ab003df14939c837a7ad3f48bb55475f092a01",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/194-host-error-en-light.png",
+      "sha256": "379246770a354da2c96edf9f4d8da2aa2000fccffa736414067fa9ac3ef6386b",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/194-host-error-de-dark.png",
+      "sha256": "fc831143f0ab9158eb6600517e551da21ec9901719ea7194b77ed6c4a2532185",
+      "source": "fd12ac0",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/194-continuous-next-light.png",
+      "sha256": "d16898444d5f2d3d48a7afc47412b4a94d7d0063ce8647a9142a5bf6c3859478",
+      "source": "fd12ac0",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/194-library-membership-dark.png",
+      "sha256": "ce069b10f5cc46e679e00b3ffeaae062967e27886cbddefaf7bcf85d1683a4b5",
+      "source": "fd12ac0",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/194-library-membership-light.png",
+      "sha256": "d594232f6d5d31a5032cad7b5656b47939a0305b28d28393439a5ff15116bbfc",
+      "source": "fd12ac0",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/194-library-summary-dark.png",
+      "sha256": "a7701f6ab8614dc9cee0fe1009dc83edff79de9b3060f84cd3dfaed285749119",
+      "source": "fd12ac0",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/194-library-summary-light.png",
+      "sha256": "bfca7442bd51ef34bb95b90dacd5625e5d6da96e6755c8c8e0529895716b9fe8",
+      "source": "fd12ac0",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/194-mirror-preview-dark.png",
+      "sha256": "9feb6fdbaafb95073537df1d2103ce16f0de3e73ef6195716d7b7028fdf7cd5a",
+      "source": "fd12ac0",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/194-mirror-preview-light.png",
+      "sha256": "ced4626abc4366b3d07cbb8bb72f92f05d46e7ffec454707277816b2c6afd5fe",
+      "source": "fd12ac0",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/194-revision-planning-dark.png",
+      "sha256": "0e1368c7a3957d69c32a4966ce57b07a61fd0df9ca2e0e61d49c69e25366350a",
+      "source": "fd12ac0",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    },
+    {
+      "path": "app/results/screenshots/194-spelling-provider.png",
+      "sha256": "dbf04f5a0254c22e9f0aff1daad05169e9344df60a31554f8cf2835daf38ab2e",
+      "source": "fd12ac0",
+      "environment": {
+        "renderer": "dmabuf-llvmpipe"
+      },
+      "inspected": true
+    }
+  ],
+  "scope": "Virtual-display layout and localized failures; no physical hardware or performance claim.",
+  "remaining": "No remaining captures in this checkpoint. New analytics, knowledge and publishing surfaces require their own integration captures.",
+  "observations": [
+    "Library summary capture scrolls to the actual result below the shelf.",
+    "Mirror preview includes plaintext and destination disclosure plus explicit confirmation; encrypted archive controls are visible above it.",
+    "Alt+PageDown switches from Winter Nocturne 978 to River Ombré 479 in chapter editing.",
+    "German dark error capture uses themed library selects after the contrast fix.",
+    "Current revision panel shows descriptive task/pass fields.",
+    "WebKitGTK 2.52.6 visibly underlines the probe misspellings but exposes no invalid:spelling text attribute; see 194-spelling-provider.json."
+  ]
+}

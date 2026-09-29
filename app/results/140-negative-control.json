@@ -1,0 +1,8 @@
+{
+  "source_commit": "7f0143bba88f4c8a973072836788b9e568af72ca",
+  "exit_code": 1,
+  "reason": "typed passage did not commit to the boot scene",
+  "graded_result_unchanged": true,
+  "graded_result_sha256": "73085638b4f846699a0f3a173d3543032b0c9739f563b433fb0eeaaa7dd645f9",
+  "new_temporary_projects": 0
+}

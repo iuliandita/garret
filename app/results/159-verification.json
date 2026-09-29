@@ -1,0 +1,21 @@
+{
+  "slice": 159,
+  "commit": "d991484",
+  "merge": "8b1ee08",
+  "checks": {
+    "focused_new_book_import_restore_create": "passed (146 tests)",
+    "import_registration_regression": "passed; fails with the registration call removed",
+    "full_host_suite_after_159_160_merge": "1693 passed, 1 failed: covers_need_no_schema_version_of_their_own, pre-existing on develop since 157 raised SCHEMA_VERSION to 12"
+  },
+  "behaviour": [
+    "An absolute remembered custom folder wins.",
+    "A remembered hidden library is treated as the legacy default.",
+    "Default is dirs::document_dir()/Books, then $HOME/Books, else a clear error; no hidden or temporary fallback.",
+    "Lookup is pure; existing books are not moved.",
+    "Drop-folder import, dialog import and restore-as-new use the same destination and register the new book; the CLI import keeps its explicit destination."
+  ],
+  "limits": [
+    "No GUI capture: the only visible change is the destination text the switcher already renders.",
+    "Rebuilt from a written contract after the first implementation was lost with /tmp on 2026-09-23."
+  ]
+}

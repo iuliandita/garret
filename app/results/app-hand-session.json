@@ -1,0 +1,34 @@
+{
+  "run_id": "app-hand-session",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "session",
+  "workload": "app-hand",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "workload_script": "hand-v1",
+    "peak_rss_mb": 435,
+    "startup_ms": 17,
+    "rows": 1,
+    "doc_rows": 1,
+    "body_bytes": 127,
+    "omitted_gates": "latency, stall, cliff, a11y_exposure: run is too short and probing is disabled",
+    "close_path": "POSITIVE, confirmed on a live Hyprland/Wayland compositor (2026-08-10, after granting core:event:allow-listen): hyprctl dispatch closewindow triggers CloseRequested, confirm_close is invoked, and the 2 s fallback thread does not run. Root cause was the missing capabilities/ directory denying core:event listen; custom commands were unaffected because they bypass that ACL."
+  },
+  "verdicts": [
+    {
+      "gate": "hand_session_close",
+      "value": "POSITIVE: hyprctl dispatch closewindow fired Tauri's CloseRequested, and confirm_close was invoked before the 2 s fallback thread ran. The page's app://close-requested listener now completes the round trip, once core:event:allow-listen is granted.",
+      "threshold": "CloseRequested fires and confirm_close is invoked before the 2 s fallback closes the window",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "debdcdf2"
+}

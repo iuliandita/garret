@@ -1,0 +1,26 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "app-shell-tauri",
+  "version": "0.0.0",
+  "identifier": "cc.local.app",
+  "build": {
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "security": {
+      "csp": "default-src 'self' appdist:; connect-src 'self' appdist: ipc: http://ipc.localhost; script-src 'self' appdist:; style-src 'self' appdist: 'unsafe-inline'; img-src 'self' appdist: data:"
+    }
+  },
+  "bundle": {
+    "active": false,
+    "icon": [
+      "icons/icon.png",
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

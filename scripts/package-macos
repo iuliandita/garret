@@ -1,0 +1,132 @@
+#!/bin/bash
+# Native Mac preparation only; no cross-build or signing identity is provisioned.
+# Keep Bash 3.2 compatibility for the system shell on macOS.
+set -euo pipefail
+
+fail() { printf '%s\n' "$*" >&2; exit 1; }
+[[ $(uname -s) == Darwin ]] || fail "Build this package on a Mac with Apple command-line tools, Rust and Bun."
+[[ $# == 0 ]] || fail "Usage: scripts/package-macos"
+for tool in git bun cargo rustc xcrun codesign plutil ditto shasum; do
+  command -v "$tool" >/dev/null || fail "Required tool missing: $tool"
+done
+xcrun --sdk macosx --find clang >/dev/null
+sdk=$(xcrun --sdk macosx --show-sdk-path)
+[[ -d "$sdk" ]] || fail "The installed macOS SDK could not be found."
+
+architecture=$(uname -m)
+case "$architecture" in
+  arm64) target=aarch64-apple-darwin ;;
+  x86_64)
+    # This sysctl is absent on Intel Macs; absence is the expected fallback.
+    translated=$(sysctl -n sysctl.proc_translated 2>/dev/null || printf '0')
+    [[ "$translated" != 1 ]] || fail "Run from a native Apple Silicon shell, not Rosetta."
+    target=x86_64-apple-darwin ;;
+  *) fail "Unsupported native Mac architecture: $architecture" ;;
+esac
+rust_host=$(rustc -vV | sed -n 's/^host: //p')
+[[ "$rust_host" == "$target" ]] || fail "Rust host $rust_host does not match native target $target."
+
+here=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+repo=$(cd -- "$here/.." && pwd)
+revision=$(git -C "$repo" rev-parse HEAD)
+check_source() {
+  local current status
+  current=$(git -C "$repo" rev-parse HEAD)
+  status=$(git -C "$repo" status --porcelain)
+  [[ "$current" == "$revision" && -z "$status" ]] || fail "Source is dirty or changed during packaging; commit or set aside changes first."
+}
+check_source
+bundle_version=$(bun -e 'const c = await Bun.file(process.argv[1]).json(); console.log(c.version)' "$repo/app/shell-tauri/src-tauri/tauri.conf.json")
+[[ "$bundle_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "Bundle version must have three numeric components."
+
+# Rebuild the ignored UI, then the locked host; explicit target avoids config
+# silently redirecting the build to a different platform.
+(cd "$repo/app/ui" && bun run build)
+# Tauri requires frontendDist to exist; appdist serves the real UI separately.
+mkdir -p "$repo/app/shell-tauri/dist"
+(cd "$repo/app/shell-tauri/src-tauri" && cargo build --locked --release -j8 --target "$target" --target-dir "$repo/app/shell-tauri/src-tauri/target")
+bin="$repo/app/shell-tauri/src-tauri/target/$target/release/app-shell-tauri"
+[[ -x "$bin" && -f "$repo/app/ui/dist/index.html" ]] || fail "The executable or rebuilt interface is missing."
+check_source
+
+# Only system libraries may remain external. Do not distribute a binary that
+# silently depends on the builder's Homebrew/MacPorts installation or @rpath.
+dependencies=$(xcrun otool -L "$bin" | sed '1d; s/^[[:space:]]*//; s/ (compatibility version.*//')
+[[ -n "$dependencies" ]] || fail "Could not inspect dynamic dependencies."
+while IFS= read -r dependency; do
+  case "$dependency" in
+    *'/../'*|*'/./'*) fail "Unexpected dynamic dependency: $dependency" ;;
+    /System/Library/*|/usr/lib/*) ;;
+    *) fail "Non-system dynamic dependency must be resolved before packaging: $dependency" ;;
+  esac
+done <<< "$dependencies"
+minimum=$(xcrun otool -l "$bin" | awk '
+  $1 == "cmd" { command = $2 }
+  command == "LC_BUILD_VERSION" && $1 == "minos" { print $2 }
+  command == "LC_VERSION_MIN_MACOSX" && $1 == "version" { print $2 }
+')
+[[ "$minimum" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || fail "Could not determine the executable's minimum macOS version."
+
+out="$repo/app/dist-macos"
+mkdir -p "$out"
+# Each invocation preserves all prior packages, including an unfinished build.
+build=$(mktemp -d "$out/build-$(date -u +%Y%m%dT%H%M%SZ)-$architecture.XXXXXX")
+printf 'Packaging incomplete; do not distribute this directory.\n' > "$build/INCOMPLETE.txt"
+stage="$build/app"
+bundle="$stage/Writing studio.app"
+mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
+cp "$bin" "$bundle/Contents/MacOS/app-shell-tauri"
+chmod 755 "$bundle/Contents/MacOS/app-shell-tauri"
+# resolve_asset_root reads beside the executable; Resources alone is not read.
+cp -R "$repo/app/ui/dist" "$bundle/Contents/MacOS/dist"
+cp "$repo/app/shell-tauri/src-tauri/icons/icon.icns" "$bundle/Contents/Resources/icon.icns"
+cp "$here/macos/README.txt" "$stage/README.txt"
+cp "$repo/COPYING" "$repo/THIRD-PARTY-NOTICES.md" "$stage/"
+cat > "$bundle/Contents/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>CFBundleExecutable</key><string>app-shell-tauri</string>
+  <key>CFBundleIconFile</key><string>icon</string>
+  <key>CFBundleIdentifier</key><string>cc.local.app</string>
+  <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+  <key>CFBundleName</key><string>Writing studio</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>$bundle_version</string>
+  <key>CFBundleVersion</key><string>$bundle_version</string>
+  <key>LSMinimumSystemVersion</key><string>$minimum</string>
+  <key>NSHighResolutionCapable</key><true/>
+</dict></plist>
+PLIST
+plutil -lint "$bundle/Contents/Info.plist"
+# Ad-hoc integrity only: no identity, trusted certificate, timestamp or notarization.
+codesign --force --sign - --timestamp=none "$bundle"
+codesign --verify --strict --verbose=2 "$bundle"
+{
+  printf 'Source revision: %s\nTarget: %s\n' "$revision" "$target"
+  printf 'Built UTC: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf 'Minimum macOS from executable: %s\n' "$minimum"
+  printf 'Build macOS: %s\n' "$(sw_vers -productVersion)"
+  printf 'SDK version: %s\n' "$(xcrun --sdk macosx --show-sdk-version)"
+  printf 'Rust: %s\nBun: %s\n' "$(rustc --version)" "$(bun --version)"
+  printf 'Signing: ad-hoc local integrity only; no trusted identity or notarization\n'
+  printf 'Native functional verification: not performed by this script\n'
+  printf 'Dynamic dependencies:\n%s\n' "$dependencies"
+} > "$stage/BUILD.txt"
+check_source
+# Keep checksums outside the signed bundle, and cover every shipped file.
+(cd "$stage" && find . -type f -print0 > "$build/file-list")
+(cd "$stage" && while IFS= read -r -d '' file; do
+  shasum -a 256 "$file"
+done < "$build/file-list" > "$build/SHA256SUMS.txt")
+mv "$build/SHA256SUMS.txt" "$stage/SHA256SUMS.txt"
+rm "$build/file-list"
+(cd "$stage" && shasum -a 256 -c SHA256SUMS.txt)
+archive="$build/writing-studio-macos-$architecture.zip"
+ditto -c -k --sequesterRsrc --keepParent "$stage" "$archive"
+(cd "$build" && shasum -a 256 "$(basename "$archive")" > "$(basename "$archive").sha256")
+check_source
+rm "$build/INCOMPLETE.txt"
+printf '\nWrote %s\n' "$archive"
+printf 'Ad-hoc signed only. Gatekeeper approval and native functionality remain unverified.\n'

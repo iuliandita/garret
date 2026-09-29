@@ -1,0 +1,47 @@
+{
+  "source_commit": "7ebf4d9029c640c81592ffc55fd4804cb66052f2",
+  "source_restored": true,
+  "restored_release_build_exit": 0,
+  "mutations": [
+    {
+      "mutation": "english-store-title",
+      "verdict": "KILLED",
+      "exit_code": 101
+    },
+    {
+      "mutation": "ignore-captured-locale",
+      "verdict": "KILLED",
+      "exit_code": 101
+    },
+    {
+      "mutation": "english-cli-import",
+      "verdict": "KILLED",
+      "exit_code": 101
+    },
+    {
+      "mutation": "rename-existing-title",
+      "verdict": "KILLED",
+      "exit_code": 101
+    },
+    {
+      "mutation": "page-catalog-drift",
+      "verdict": "KILLED",
+      "exit_code": 1
+    },
+    {
+      "mutation": "localized-gate-always-passes",
+      "verdict": "KILLED",
+      "exit_code": 1
+    },
+    {
+      "mutation": "driver-ignores-catalog",
+      "verdict": "KILLED",
+      "exit_code": 1
+    },
+    {
+      "mutation": "startup-ignores-settings",
+      "verdict": "KILLED",
+      "exit_code": 1
+    }
+  ]
+}

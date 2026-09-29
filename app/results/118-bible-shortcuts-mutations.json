@@ -1,0 +1,22 @@
+[
+  {
+    "name": "persist-rows",
+    "verdict": "KILLED",
+    "exit": 101
+  },
+  {
+    "name": "lenient-rows",
+    "verdict": "KILLED",
+    "exit": 101
+  },
+  {
+    "name": "reveal-shortcut",
+    "verdict": "KILLED",
+    "exit": 1
+  },
+  {
+    "name": "premature-selection",
+    "verdict": "KILLED",
+    "exit": 1
+  }
+]

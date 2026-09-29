@@ -1,0 +1,17 @@
+[
+  {
+    "name": "ambiguous-token",
+    "verdict": "KILLED",
+    "exit": 1
+  },
+  {
+    "name": "explicit-precedence",
+    "verdict": "KILLED",
+    "exit": 1
+  },
+  {
+    "name": "last-name",
+    "verdict": "KILLED",
+    "exit": 1
+  }
+]

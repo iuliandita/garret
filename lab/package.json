@@ -1,0 +1,13 @@
+{
+  "name": "lab",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "gen": "bun fixtures/gen/src/cli.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "typescript": "^5.6.0"
+  }
+}

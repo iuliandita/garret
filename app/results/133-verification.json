@@ -1,0 +1,28 @@
+{
+  "source_commit": "ff787aa6e06b602d2f046b4c455ed60a43314a98",
+  "release_sha256": "3de902a6f4caac6097a61fc55dda994b1a7ccbf6a660c9da2000a3426cbc6613",
+  "release_rebuilt_after_mutations": true,
+  "cargo": [
+    {
+      "passed": 1582,
+      "failed": 0,
+      "ignored": 2
+    },
+    {
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0
+    }
+  ],
+  "bun": {
+    "passed": 3788,
+    "failed": 0
+  },
+  "typecheck_exit": 0,
+  "mutants_killed": 6,
+  "native_cases": 2,
+  "baseline_cases_missing_disclosure": 2,
+  "database_bytes_unchanged": true,
+  "source_review": "no findings",
+  "scope": "human CLI report only; no GUI, schema, export-body or JSON change"
+}

@@ -1,0 +1,114 @@
+{
+  "source": "324cb0a4caf7d2d9b8b7d5041259f6d1ea72ef1e",
+  "status": "PASS",
+  "scope": "Linux native review DOCX export, independent OOXML return, explicit attribution and atomic apply",
+  "variants": [
+    {
+      "pass": true,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "stored": {
+        "doc_rev": 2,
+        "decision": {
+          "state": "accepted",
+          "decision_author_id": 2,
+          "decision_author_name": "Elias"
+        },
+        "new_pending": [
+          {
+            "author_name": "Nora",
+            "mapped_from": 66,
+            "mapped_to": 66,
+            "after_json": "[{\"kind\":\"text\",\"text\":\" The tide waited.\",\"marks\":[\"strong\"]}]",
+            "state": "pending"
+          }
+        ],
+        "messages": [
+          {
+            "author_name": "Elias",
+            "body": "This keeps the unease without explaining it yet."
+          }
+        ]
+      },
+      "scope": "Linux native controls and independently edited OOXML; not native Word certification",
+      "variant": "light-en",
+      "package": {
+        "item_id": "it-000011",
+        "doc_rev": 1,
+        "group_id": 4,
+        "hunk_id": 4,
+        "source_sha256": "cc4cb64dc1c06f6da4ccc6477d19a9bfb741ea0125c176cffcac2efda8c82d8d",
+        "return_sha256": "ce396b147945ebdf2c9247190d75aff01fcfe148c6a4ebb6aa4bc791fa63b866",
+        "changed_parts": [
+          "word/document.xml"
+        ],
+        "accepted_text": "holding its breath",
+        "new_source_author": "Word Visitor",
+        "new_pending_text": " The tide waited.",
+        "source_is_native_word": false
+      }
+    },
+    {
+      "pass": true,
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "stored": {
+        "doc_rev": 2,
+        "decision": {
+          "state": "accepted",
+          "decision_author_id": 2,
+          "decision_author_name": "Elias"
+        },
+        "new_pending": [
+          {
+            "author_name": "Nora",
+            "mapped_from": 66,
+            "mapped_to": 66,
+            "after_json": "[{\"kind\":\"text\",\"text\":\" The tide waited.\",\"marks\":[\"strong\"]}]",
+            "state": "pending"
+          }
+        ],
+        "messages": [
+          {
+            "author_name": "Elias",
+            "body": "This keeps the unease without explaining it yet."
+          }
+        ]
+      },
+      "scope": "Linux native controls and independently edited OOXML; not native Word certification",
+      "variant": "dark-de",
+      "package": {
+        "item_id": "it-000011",
+        "doc_rev": 1,
+        "group_id": 4,
+        "hunk_id": 4,
+        "source_sha256": "6a5b7148dd0531837e78b5a35ed8cbd98f3bb2f161d68a6c8e154cfa5c33db37",
+        "return_sha256": "094db7472466a93ec5eff576eda5963e4019c48fb72d93e2915968ded47ee3dc",
+        "changed_parts": [
+          "word/document.xml"
+        ],
+        "accepted_text": "holding its breath",
+        "new_source_author": "Word Visitor",
+        "new_pending_text": " The tide waited.",
+        "source_is_native_word": false
+      }
+    }
+  ],
+  "limits": [
+    "Not native Word certification",
+    "Windows and macOS runtime not tested",
+    "No responsiveness measurement"
+  ]
+}

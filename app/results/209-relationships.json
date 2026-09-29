@@ -1,0 +1,40 @@
+{
+  "ui_source": "04f260c7b461d5becf5c1fd0dbbe78e380c098a3",
+  "host_source": "0eeb2611",
+  "scope": "Linux native UI using existing schema16 knowledge commands; synthetic linked cast fixture. No Windows/macOS runtime evidence.",
+  "visual_review": "Three complete diagram captions, incoming/outgoing direction, human names, notes and citations visible. Light and dark inspected. Full relationship list scrolls in existing panel.",
+  "screenshots": [
+    {
+      "theme": "light",
+      "file": "app/results/screenshots/209-relationships-light.png",
+      "sha256": "ed89346c1bf3f2860c29b100d67667857ac486e21f259a7c62c245413637c2ea",
+      "environment": {
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        },
+        "scope": "Synthetic canonical relationships; Linux isolated display only"
+      }
+    },
+    {
+      "theme": "dark",
+      "file": "app/results/screenshots/209-relationships-dark.png",
+      "sha256": "bdc4091f8127245257d29b92bf2428458e485ae07267fe68778963ea04e7907c",
+      "environment": {
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        },
+        "scope": "Synthetic canonical relationships; Linux isolated display only"
+      }
+    }
+  ]
+}

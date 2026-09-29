@@ -1,0 +1,85 @@
+{
+  "run_id": "app-import-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-import",
+  "environment": {
+    "kernel": "7.2.6-1-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 9.49,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "created": true,
+    "items": 6,
+    "oracle_items": 6,
+    "depth_matches": 6,
+    "title_matches": 6,
+    "prose_matches": 5,
+    "oracle_prose_sections": 5,
+    "marks_found": 2,
+    "oracle_marks": 2,
+    "peak_rss_mb": 625,
+    "project_name": "Harbour Lights",
+    "source_bytes": 448,
+    "scope": "prose compared with whitespace collapsed on both sides; the source is the rig's own manuscript, not an export, so this grades the FORMAT rather than a round trip against the emitter",
+    "omitted_gates": "no import_ms: the only channel for seeing that an import finished is AT-SPI, and polling it fast enough to time a sub-second operation is what kills the app (see find-cli). A safe interval is larger than the thing being measured."
+  },
+  "verdicts": [
+    {
+      "gate": "import_created_project",
+      "value": "a project was created and opens",
+      "threshold": "clicking the file in the panel produces a readable project",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "import_item_count",
+      "value": "6 of 6",
+      "threshold": "exactly the items the source file's headings describe",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "import_structure",
+      "value": "6 of 6",
+      "threshold": "every item at the depth its heading level implies",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "import_titles_verbatim",
+      "value": "6 of 6",
+      "threshold": "every title equal to the oracle's, byte for byte",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "import_prose_fidelity",
+      "value": "5 of 5",
+      "threshold": "every section's prose stored verbatim (whitespace normalized both sides)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "import_marks_survive",
+      "value": "2 of 2",
+      "threshold": "every emphasized run in the source carries a mark in the store",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 625,
+      "threshold": "< 750",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "n/a",
+  "rig_commit": "eaffb53b"
+}

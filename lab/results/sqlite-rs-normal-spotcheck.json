@@ -1,0 +1,158 @@
+{
+  "run_id": "sqlite-rs-normal-spotcheck",
+  "track": "fault-rig",
+  "candidate": "sqlite-rs",
+  "fixture": "normal",
+  "workload": "scripted-edit",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "0-3/8G",
+    "biasNotes": "cgroup-throttled approximation of reference hardware (4 threads, 8G); modern single-core speed exceeds a five-year-old laptop core. Gates remain hypotheses until a real-hardware pass."
+  },
+  "method": "Q3 binding hedge: the worst subset of the SIGKILL matrix plus both offline corruption cases, re-run with a rusqlite child writer using the same schema, pragmas (WAL, synchronous=FULL, wal_checkpoint(FULL) per commit) and per-op delta writes. Verification, corruption injection and salvage use the same bun:sqlite paths as the baseline, so only the WRITE path differs. SCOPE: confirms the durability result is independent of the binding; it re-measures no latency and cannot re-decide the encoding. Process-kill still tests atomicity only, not fsync durability.",
+  "metrics": {
+    "salvage": [
+      {
+        "sidecars": [],
+        "case": "corrupt@torn",
+        "candidate": "sqlite-rs",
+        "recovered_scenes": 0,
+        "recovered_assets": 0,
+        "loss_count": 1,
+        "losses": [
+          "database unopenable: SQLiteError: database disk image is malformed"
+        ],
+        "source_unmodified": true
+      },
+      {
+        "sidecars": [],
+        "case": "corrupt@flip",
+        "candidate": "sqlite-rs",
+        "recovered_scenes": 0,
+        "recovered_assets": 0,
+        "loss_count": 1,
+        "losses": [
+          "database unopenable: SQLiteError: file is not a database"
+        ],
+        "source_unmodified": true
+      }
+    ],
+    "spotcheck": {
+      "baseline_run_id": "sqlite-normal",
+      "baseline_rig_commit": "fe4b0f0",
+      "reader_binding": "bun:sqlite",
+      "writer_binding": "rusqlite 0.40 (system libsqlite3)",
+      "sqlite_version_reader": "3.53.0",
+      "sqlite_version_writer": "3.53.3",
+      "cases_compared": 11,
+      "agreements": 11,
+      "divergences": [],
+      "comparison": [
+        {
+          "case": "kill@fsync#1",
+          "baseline": "NEW_COMPLETE",
+          "candidate": "NEW_COMPLETE"
+        },
+        {
+          "case": "kill@fsync#2",
+          "baseline": "NEW_COMPLETE",
+          "candidate": "NEW_COMPLETE"
+        },
+        {
+          "case": "kill@fsync#3",
+          "baseline": "NEW_COMPLETE",
+          "candidate": "NEW_COMPLETE"
+        },
+        {
+          "case": "kill@rename#1",
+          "baseline": "NEW_COMPLETE",
+          "candidate": "NEW_COMPLETE"
+        },
+        {
+          "case": "kill@rename#2",
+          "baseline": "NEW_COMPLETE",
+          "candidate": "NEW_COMPLETE"
+        },
+        {
+          "case": "kill@rename#3",
+          "baseline": "NEW_COMPLETE",
+          "candidate": "NEW_COMPLETE"
+        },
+        {
+          "case": "kill@commit-done#1",
+          "baseline": "NEW_COMPLETE",
+          "candidate": "NEW_COMPLETE"
+        },
+        {
+          "case": "mutator+kill@fsync#1",
+          "baseline": "NEW_COMPLETE",
+          "candidate": "NEW_COMPLETE"
+        },
+        {
+          "case": "mutator+kill@rename#1",
+          "baseline": "NEW_COMPLETE",
+          "candidate": "NEW_COMPLETE"
+        },
+        {
+          "case": "corrupt@torn",
+          "baseline": "CORRUPT",
+          "candidate": "CORRUPT"
+        },
+        {
+          "case": "corrupt@flip",
+          "baseline": "CORRUPT",
+          "candidate": "CORRUPT"
+        }
+      ]
+    }
+  },
+  "verdicts": [
+    {
+      "case": "kill@fsync#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@fsync#2",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@fsync#3",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@rename#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@rename#2",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@rename#3",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "kill@commit-done#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "mutator+kill@fsync#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "mutator+kill@rename#1",
+      "verdict": "NEW_COMPLETE"
+    },
+    {
+      "case": "corrupt@torn",
+      "verdict": "CORRUPT"
+    },
+    {
+      "case": "corrupt@flip",
+      "verdict": "CORRUPT"
+    }
+  ],
+  "seed": "normal-seed",
+  "rig_commit": "1c7dfa7"
+}

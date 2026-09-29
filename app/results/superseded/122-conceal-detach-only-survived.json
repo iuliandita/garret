@@ -1,0 +1,39 @@
+{
+  "mutation": "remove_webview_detach_only",
+  "verdict": "SURVIVED",
+  "interpretation": "Native and webview hiding still concealed the integration fixture; this does not falsify the full concealment gate. Stronger negative control required.",
+  "observation": {
+    "theme": "light",
+    "locale": "en",
+    "fixture": "tiny",
+    "isolation": "private-xvfb-session-atspi",
+    "checks": {
+      "postload_edit_visible": true,
+      "native_unicode_enrollment": true,
+      "manual-lock": true,
+      "manual-lock_password_named_and_masked": true,
+      "wrong_secret_refused": true,
+      "unicode_unlock_restores_postload_edit": true,
+      "locked-restart": true,
+      "locked-restart_password_named_and_masked": true,
+      "restart_unlock_restores_saved_edit": true,
+      "corrupt_record_concealed_recovery": true,
+      "recovery_quit": true,
+      "failed-save-lock": true,
+      "failed-save-lock_password_named_and_masked": true,
+      "failed_save_close_held_beyond_timeout": true,
+      "failed_save_pending_edit_retained": true
+    },
+    "failure": null,
+    "environment": {
+      "renderer": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "source_commit": "dd015750160b06705c11eb2ed0b4626e8246b0f1",
+  "source_restored": true,
+  "mutations": [
+    {
+      "mutation": "target-omitted",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "duplicate-first-wins",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "empty-target-guard-omitted",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "theme": "light",
+  "fixture": "tiny",
+  "isolation": "private-xvfb-session-atspi",
+  "checks": {
+    "save_failure_banner_before_close": true,
+    "unsaved_prompt_captured": true,
+    "prompt_visible_before_repeat": true,
+    "sentinel_absent_from_db_while_locked": true,
+    "repeat_close_held": false,
+    "expected_repeat_bypass_observed": true
+  },
+  "failure": null,
+  "repeat_bypass": true,
+  "source_commit": "f3ed19d1e94a2fbdecab3df7ad7320357166068f",
+  "classification": "expected defect reproduced, not passing behavior",
+  "capture": "app/results/screenshots/132-close-prompt-before-light.png"
+}

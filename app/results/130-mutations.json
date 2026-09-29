@@ -1,0 +1,24 @@
+{
+  "source_commit": "fd834a6d205c3bceb63cea88bcc56604a40524ee",
+  "mutations": [
+    {
+      "mutation": "unreachable-tier-ancestor",
+      "exit_code": 1,
+      "failed_test": "the shipped body root reaches each rest tier",
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "unknown-computed-tier",
+      "exit_code": 1,
+      "failed_test": "every literal weight writer uses a supported tier",
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "unknown-markup-tier",
+      "exit_code": 1,
+      "failed_test": "every literal weight writer uses a supported tier",
+      "verdict": "KILLED"
+    }
+  ],
+  "restored_ui_build_exit": 0
+}

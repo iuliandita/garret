@@ -1,0 +1,21 @@
+{
+  "bun": {
+    "passed": 3712,
+    "failed": 0
+  },
+  "rust": {
+    "passed": 1538,
+    "failed": 0
+  },
+  "typescript": {
+    "exit_code": 0
+  },
+  "ui_build": {
+    "exit_code": 0
+  },
+  "example_release_build": {
+    "exit_code": 0
+  },
+  "note": "Rust socket tests require host execution; sandbox refusal was rerun successfully. Production code unchanged. Final example checked by seven sequential isolated GUI cases. Saved capture comparison confirms the complete native form; full application lock remains unimplemented.",
+  "visual_feasibility": "PASS"
+}

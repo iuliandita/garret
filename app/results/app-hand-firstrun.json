@@ -1,0 +1,34 @@
+{
+  "run_id": "app-hand-firstrun",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "firstrun",
+  "workload": "app-hand",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "workload_script": "hand-v1",
+    "peak_rss_mb": 512,
+    "startup_ms": 28,
+    "rows": 1,
+    "doc_rows": 1,
+    "body_bytes": 127,
+    "omitted_gates": "latency, stall, cliff, a11y_exposure: run is too short and probing is disabled",
+    "close_path": "unverified: no window manager under Xvfb; windowclose kills the process"
+  },
+  "verdicts": [
+    {
+      "gate": "hand_typing_roundtrip",
+      "value": "real keystrokes reached the editor and the store; ctrl+z removed the second sentence",
+      "threshold": "store body contains the typed sentence and not the undone one",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "3ebaa8cd"
+}

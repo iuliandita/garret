@@ -1,0 +1,21 @@
+{
+  "source_commit": "0392f6225045466f0e2683928b21a776baa6e6d8",
+  "mutations": [
+    {
+      "mutation": "escape-does-not-close",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "outside-click-does-not-close",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "late-accept-error-reaches-destroyed-panel",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    }
+  ],
+  "restored_ui_build_exit": 0
+}

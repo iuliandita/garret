@@ -1,0 +1,22 @@
+{
+  "source_commit": "7bcfa9b0dc8768b00263bdd2553444e6e945cf7a",
+  "source_restored": true,
+  "mutations": [
+    {
+      "mutation": "omit-term",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "omit-kill-escalation",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    },
+    {
+      "mutation": "ignore-orphan-descendants",
+      "exit_code": 1,
+      "verdict": "KILLED"
+    }
+  ],
+  "scope": "private synthetic subprocess tests; group ownership guards were never removed"
+}

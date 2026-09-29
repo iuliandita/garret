@@ -1,0 +1,49 @@
+{
+  "bun_tests_passed": 3712,
+  "rust_tests_passed": 1538,
+  "typescript_exit": 0,
+  "ui_build_exit": 0,
+  "mutations_killed": 4,
+  "graded_runs": {
+    "app-preview-tiny": {
+      "epub_summary_agrees_with_store": "PASS",
+      "option_toggle_lands": "PASS",
+      "epub_file_valid": "PASS",
+      "proof_rail_agrees_with_the_file_it_saved": "PASS",
+      "epub_save_ms": "PASS",
+      "proof_save_ms": "PASS",
+      "preview_rss_mb": "PASS"
+    },
+    "app-preview-stress": {
+      "epub_summary_agrees_with_store": "PASS",
+      "option_toggle_lands": "PASS",
+      "epub_file_valid": "PASS",
+      "proof_refused_at_the_render_bound": "PASS",
+      "epub_save_ms": "PASS",
+      "preview_rss_mb": "PASS"
+    },
+    "app-bible-tiny": {
+      "bible_note_created": "PASS",
+      "bible_excluded_from_manuscript": "PASS",
+      "synopsis_saved": "PASS",
+      "synopsis_prefills_on_reopen": "PASS",
+      "cast_member_created": "PASS",
+      "appearance_tagged": "PASS",
+      "cast_alias_saved": "PASS",
+      "cast_alias_marks": "PASS",
+      "picture_thumbnail_bounded": "PASS",
+      "picture_viewer_opens": "PASS",
+      "peak_rss_mb": "PASS"
+    },
+    "app-timeline-tiny": {
+      "timeline_zoom_p95_ms": "PASS",
+      "timeline_visible_dom_bounded": "PASS",
+      "timeline_event_round_trip": "PASS",
+      "timeline_open_scene": "PASS",
+      "timeline_branch_swap": "PASS",
+      "timeline_drag_moves": "PASS"
+    }
+  },
+  "captures": 138,
+  "states": 69
+}

@@ -1,0 +1,77 @@
+{
+  "run_id": "app-mreplace-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-mreplace",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "fixture": "tiny",
+    "documents": 30,
+    "query": "house",
+    "replacement": "QZBOOKWORD",
+    "scenes_holding_the_term": 24,
+    "expected_replacements": 47,
+    "expected_documents": 23,
+    "reported_replacements": 47,
+    "reported_documents": 23,
+    "live_matches_oracle": true,
+    "live_mismatch": null,
+    "doomed_item": "it-000029",
+    "doomed_untouched": true,
+    "snapshot_count": 1,
+    "snapshot_label": "Before replacing \"house\" with \"QZBOOKWORD\"",
+    "snapshot_documents": 30,
+    "expected_snapshot_label": "Before replacing \"house\" with \"QZBOOKWORD\"",
+    "reversible": true,
+    "reversible_mismatch": null,
+    "peak_rss_mb": 519,
+    "omitted_gates": "typing_p95_ms, typing_stall_rate, cliff_ratio and a11y_exposure are not evaluated: this run types one term and one replacement and spends its wall clock inside two transactions, so it has nothing true to say about frame cadence. The SPANNING refusal is not graded here either: the term is a single word by construction, so it cannot span a block, and the refusal is unit-tested with a fixture only the correct implementation satisfies."
+  },
+  "verdicts": [
+    {
+      "gate": "mreplace_rewrites_every_live_scene",
+      "value": "every one of 23 scene(s) holds the text the rig computed",
+      "threshold": "every live scene that held the term holds exactly what replacing it should produce, computed by the rig from the seeded bodies before anything ran",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "mreplace_count_agrees",
+      "value": "panel said 47 in 23 document(s); the rig counted 47 in 23",
+      "threshold": "the announced figures equal the occurrences and documents the rig found before the run",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "mreplace_is_reversible",
+      "value": "every document is byte-identical to the seed after restoring the snapshot",
+      "threshold": "restoring the snapshot the replace took, through the shipped history panel, returns every document in the manuscript byte for byte",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "mreplace_takes_a_named_snapshot",
+      "value": "\"Before replacing \"house\" with \"QZBOOKWORD\"\" over 30 document(s)",
+      "threshold": "the replace saved a snapshot naming the operation and covering EVERY document, the bin included -- a snapshot is of the file",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "mreplace_skips_the_bin",
+      "value": "it-000029, deleted before the replace, still holds the term",
+      "threshold": "a scene in the bin holding the term is not rewritten",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 519,
+      "threshold": "<= 750",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "mreplace-v1",
+  "rig_commit": "2b65cb57"
+}

@@ -1,0 +1,12 @@
+{
+  "age_version": "1.3.2",
+  "archive_sha256": "43d814978e2e4ecf529c52e11c91ab1517edb0c0c99b52f18286f86f983ce06b",
+  "tar_members": [
+    "inventory.json",
+    "project.db",
+    "project.pictures"
+  ],
+  "independent_database_integrity": "ok",
+  "restored_document_count": 30,
+  "document_bodies_identical": true
+}

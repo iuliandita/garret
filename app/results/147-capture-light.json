@@ -1,0 +1,17 @@
+{
+  "source_commit": "a97c791ff4b11c8b786c57fe044367dd4aec06b3",
+  "theme": "light",
+  "renderer": {
+    "dmabufDisabledByEnv": false,
+    "glesMapped": true,
+    "llvmpipe": true,
+    "gdkBackend": "x11",
+    "path": "dmabuf-llvmpipe",
+    "webProcesses": 1
+  },
+  "screenshots": [
+    "app/results/screenshots/147-statistics-light-top.png",
+    "app/results/screenshots/147-statistics-light-scrolled.png"
+  ],
+  "scope": "Visual capture only; wheel movement and rows require inspection."
+}

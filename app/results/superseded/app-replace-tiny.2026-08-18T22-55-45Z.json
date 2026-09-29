@@ -1,0 +1,117 @@
+{
+  "run_id": "app-replace-tiny",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "tiny",
+  "workload": "app-replace",
+  "environment": {
+    "kernel": "7.1.2-3-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass (A2)."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "workload_script": "replace-v1",
+    "peak_rss_mb": 519,
+    "startup_ms": 122,
+    "items": 40,
+    "readable_documents": 30,
+    "boots": 5,
+    "atspi_walks": 1,
+    "replace": {
+      "fixture": "tiny",
+      "query": "door",
+      "replacement": "QZREPLACEDX",
+      "target_item": "it-000013",
+      "other_item": "it-000015",
+      "expected_occurrences": 3,
+      "reported_count": null,
+      "all_matches_oracle": true,
+      "restart_matches_oracle": true,
+      "reopen_ready": true,
+      "other_body_unchanged": true,
+      "other_still_contains_term": true,
+      "one_matches_oracle": true,
+      "one_occurrences_left": 2,
+      "undo_diverged_first": true,
+      "undo_matches_original": true,
+      "marks_probed": true,
+      "marks_kept": true,
+      "peak_rss_mb": 519
+    },
+    "panel_status_text": "21 results for \"door\".",
+    "panel_notice_text": null,
+    "omitted_gates": [
+      {
+        "gate": "latency, stall, cliff, a11y_exposure, a11y_tree_structure",
+        "reason": "the run types one word per boot and presses Return a handful of times. It is not a soak and it never mutates the tree, so it has nothing true to say about frame cadence, a leak slope, or the navigator's accessibility contract. peak_rss_mb IS graded: a replace-all holds the whole open document plus a plan of every match."
+      },
+      {
+        "gate": "a11y exposure of the replace controls",
+        "reason": "would cost a second AT-SPI walk in the boot that already spends the run's only one. Several walks in one window kill this application at a boundary observed between the third and the fifth, and the controls' accessible names are pinned by unit tests in app/ui/test/find-bar.test.ts. A walk budget is a measurement, not caution."
+      }
+    ],
+    "scope": {
+      "input": "Keystrokes only, no pointer input at all: Ctrl+F, the query, Return, then Edit > Replace... (driven by Alt+E and ArrowDown through menu-drive.ts, whose index is parsed from menu-bar.ts rather than restated), the replacement, Tab, Return. That sidesteps the recorded hazard that `xdotool click --window` sends synthetic button events the toolkit discards while reporting success, and it costs no widget geometry -- geometry would cost a walk.",
+      "the_oracle": "The store, read directly with bun:sqlite through a recursive CTE this rig restates, with every body projected by projectText() -- the rig's OWN restatement, written from the format and not imported from store::document_text, find-locate.ts or replace.ts. The expected post-replace text is computed by the rig from the SEEDED body before any boot, so no gate below is the application's account of itself.",
+      "folding": "The rig folds ONE CODE POINT AT A TIME, restated from find-locate.ts's rule: String.prototype.toLowerCase implements Final_Sigma and would disagree with the host on a Greek word. Every query is drawn from the fixture and restricted to ASCII, so the difference is unreachable on this run and would surface as a loud failure rather than a quiet one.",
+      "the_expected_text": "Computed on the PROJECTED text while the application computes on document positions. Sound only because the query is a single ASCII word: it cannot span the synthetic block separator, and the replacement introduces no block boundary. Both are enforced by how the term is chosen, not assumed.",
+      "restart": "runShell kills the shell rather than closing it (SIGTERM to the wrapper, then pkill, then -9), so nothing graceful runs and no CloseRequested handler can save the day. replace_all_changes_the_store reads the store WHILE THE APP RUNS and replace_survives_a_restart reads it after the kill and a reopen: two measurements, not one taken twice.",
+      "the_announced_count": "Read off the live accessibility tree, which is the only channel it has: the panel writes the figure to a notice banner and `search()` overwrites #find-status synchronously in the same tick. The banner's SENTENCE is not exposed to AT-SPI -- the walk finds the element by its DOM id and the only text in its subtree is the dismiss button's accessible name -- so the gate reports UNKNOWN rather than a pass it did not earn. It read 3 == 3 on the build of 2026-08-18 that put the message directly in the banner div, four runs running; it went blind when the banner grew a <span> and a dismiss button.",
+      "marks": "The seeded corpora carry no marks at all, so the emphasis is built by the rig with the shipped Ctrl+I and verified in the store BEFORE the replace. If that precondition fails the gate reports UNKNOWN; a gate that cannot fail must not report a pass."
+    }
+  },
+  "verdicts": [
+    {
+      "gate": "replace_all_changes_the_store",
+      "value": "the target scene's stored body is the rig's expected text (3 occurrence(s) of \"door\" -> \"QZREPLACEDX\")",
+      "threshold": "the store holds exactly what replacing every occurrence should produce",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "replace_all_count_agrees",
+      "value": "the panel never announced a count",
+      "threshold": "the announced count equals the occurrences the rig found before the replace",
+      "verdict": "UNKNOWN"
+    },
+    {
+      "gate": "replace_is_scoped_to_the_scene",
+      "value": "it-000015 is byte-identical and still holds \"door\"",
+      "threshold": "a different scene holding the same term is untouched, and still holds it",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "replace_survives_a_restart",
+      "value": "the reopened project still holds the rig's expected text",
+      "threshold": "the replacement is in the file after a kill and a reopen, not merely on screen",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "replace_one_replaces_one",
+      "value": "exactly the first occurrence changed; 2 of 3 left",
+      "threshold": "one Replace changes the first occurrence and nothing else",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "replace_undo_restores",
+      "value": "one undo restored the seeded text exactly",
+      "threshold": "a single Undo after Replace all returns the scene to what it was",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "replace_keeps_the_marks",
+      "value": "the replacement text node carries the em mark the match sat in",
+      "threshold": "a replacement inside an italicised run is still italicised in the store",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "peak_rss_mb",
+      "value": 519,
+      "threshold": "< 750",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "1c3ee78a"
+}

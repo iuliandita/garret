@@ -1,0 +1,909 @@
+{
+  "slice": "122",
+  "revision": "1a43893",
+  "status": "verified_for_local_linux_integration",
+  "scope": "Isolated X11 and native Wayland integration, real desktop lock and suspend/resume verified. Native Tab order, keyboard submission, AT-SPI error events and GTK Unicode composition verified. Speech and external IMEs not certified.",
+  "runs": {
+    "english_light": {
+      "theme": "light",
+      "fixture": "tiny",
+      "isolation": "private-xvfb-session-atspi",
+      "checks": {
+        "postload_edit_visible": true,
+        "native_unicode_enrollment": true,
+        "manual-lock": true,
+        "manual-lock_password_named_and_masked": true,
+        "wrong_secret_refused": true,
+        "unicode_unlock_restores_postload_edit": true,
+        "locked-restart": true,
+        "locked-restart_password_named_and_masked": true,
+        "restart_unlock_restores_saved_edit": true,
+        "corrupt_record_concealed_recovery": true,
+        "recovery_quit": true,
+        "failed-save-lock": true,
+        "failed-save-lock_password_named_and_masked": true,
+        "failed_save_close_held_beyond_timeout": true,
+        "failed_save_pending_edit_retained": true
+      },
+      "failure": null
+    },
+    "german_dark": {
+      "theme": "dark",
+      "locale": "de",
+      "fixture": "tiny",
+      "isolation": "private-xvfb-session-atspi",
+      "checks": {
+        "postload_edit_visible": true,
+        "native_unicode_enrollment": true,
+        "manual-lock": true,
+        "manual-lock_password_named_and_masked": true,
+        "wrong_secret_refused": true,
+        "unicode_unlock_restores_postload_edit": true,
+        "locked-restart": true,
+        "locked-restart_password_named_and_masked": true,
+        "restart_unlock_restores_saved_edit": true,
+        "corrupt_record_concealed_recovery": true,
+        "recovery_quit": true,
+        "failed-save-lock": true,
+        "failed-save-lock_password_named_and_masked": true,
+        "failed_save_close_held_beyond_timeout": true,
+        "failed_save_pending_edit_retained": true
+      },
+      "failure": null,
+      "environment": {
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        }
+      }
+    },
+    "startup_relock": {
+      "theme": "light",
+      "locale": "en",
+      "fixture": "tiny",
+      "isolation": "private-xvfb-session-atspi",
+      "checks": {
+        "postload_edit_visible": true,
+        "native_unicode_enrollment": true,
+        "startup-initial-lock": true,
+        "startup-initial-lock_password_named_and_masked": true,
+        "startup-forced-relock": true,
+        "startup-forced-relock_password_named_and_masked": true,
+        "second_authentication_restores_saved_prose": true,
+        "real_locked_doc_load_rejection": true,
+        "same_mount_read_replayed_after_unlock": true,
+        "no_terminal_startup_failure": true,
+        "recovered_startup_close": true
+      },
+      "failure": null,
+      "environment": {
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        }
+      },
+      "ipc": {
+        "error": null,
+        "forced_midmount_lock": true,
+        "probe": "privacy-startup-relock-real-ipc",
+        "real_locked_rejection": true,
+        "replayed_doc_load_succeeded": true,
+        "startup_failure": false,
+        "startup_ready": true
+      }
+    },
+    "close_boundary": {
+      "theme": "light",
+      "fixture": "tiny",
+      "isolation": "private-xvfb-session-atspi",
+      "checks": {
+        "postload_edit_visible": true,
+        "native_unicode_enrollment": true,
+        "boundary-locked": true,
+        "boundary-locked_password_named_and_masked": true,
+        "close_a_held_beyond_timeout": true,
+        "locked_doc_load_rejected": true,
+        "locked_unknown_rejected": true,
+        "locked_status_allowed": true,
+        "locked_empty_flush_allowed": true,
+        "locked_sink_rejected": true,
+        "stale_attempt_captured": true,
+        "stale_real_ipc_acknowledgement_rejected": true,
+        "current_real_ipc_acknowledgement_closes": true
+      },
+      "failure": null,
+      "environment": {
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        }
+      },
+      "ipc": {
+        "attempt_a": 1,
+        "attempt_b": 2,
+        "confirm_b_sent": true,
+        "error": null,
+        "held_a": true,
+        "locked_doc_load_rejected": true,
+        "locked_empty_flush_allowed": true,
+        "locked_sink_rejected": true,
+        "locked_status_allowed": true,
+        "locked_unknown_rejected": true,
+        "probe": "privacy-real-ipc-close-boundary",
+        "stale_a_returned": true,
+        "survived_stale_a": true
+      }
+    },
+    "idle": {
+      "theme": "light",
+      "locale": "en",
+      "fixture": "tiny",
+      "isolation": "private-xvfb-session-atspi",
+      "checks": {
+        "postload_edit_visible": true,
+        "native_unicode_enrollment": true,
+        "native_policy_controls_persist": true,
+        "replaced_default_shortcut_inactive": true,
+        "manual-lock": true,
+        "manual-lock_password_named_and_masked": true,
+        "wrong_secret_refused": true,
+        "unicode_unlock_restores_postload_edit": true,
+        "one-minute-idle-lock": true,
+        "one-minute-idle-lock_password_named_and_masked": true,
+        "idle_unlock_restores_postload_edit": true,
+        "native_chooser_activity_prevents_idle_lock": true,
+        "active_chooser_cancels_normally": true,
+        "locked-restart": true,
+        "locked-restart_password_named_and_masked": true,
+        "restart_unlock_restores_saved_edit": true,
+        "corrupt_record_concealed_recovery": true,
+        "recovery_quit": true,
+        "failed-save-lock": true,
+        "failed-save-lock_password_named_and_masked": true,
+        "failed_save_close_held_beyond_timeout": true,
+        "failed_save_pending_edit_retained": true
+      },
+      "failure": null,
+      "environment": {
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        }
+      },
+      "idle_wait_seconds": 59.978,
+      "chooser_activity_seconds": [
+        20.042,
+        40.041,
+        60.043,
+        80.043
+      ]
+    },
+    "lifecycle": {
+      "theme": "light",
+      "fixture": "tiny",
+      "isolation": "private-xvfb-session-atspi-system-logind",
+      "platform_limit": "Synthetic private-logind events only; physical desktop lock, suspend, and compositor timing are unverified",
+      "checks": {
+        "private_system_logind_ready_before_app": true,
+        "postload_edit_visible": true,
+        "native_unicode_enrollment": true,
+        "manual-lock": true,
+        "manual-lock_password_named_and_masked": true,
+        "wrong_secret_refused": true,
+        "unicode_unlock_restores_postload_edit": true,
+        "logind-session-lock": true,
+        "logind-session-lock_password_named_and_masked": true,
+        "logind_session_lock_unlock_preserves_edit": true,
+        "logind-locked-hint": true,
+        "logind-locked-hint_password_named_and_masked": true,
+        "logind-hint-unlock-does-not-authenticate": true,
+        "logind-hint-unlock-does-not-authenticate_password_named_and_masked": true,
+        "logind-lock-cancels-native-export": true,
+        "logind-lock-cancels-native-export_password_named_and_masked": true,
+        "configured-shortcut-cancels-native-export": true,
+        "configured-shortcut-cancels-native-export_password_named_and_masked": true,
+        "native_export_reopens_after_lock_cancellation": true,
+        "logind-before-sleep": true,
+        "logind-before-sleep_password_named_and_masked": true,
+        "x11_only_lock_window_at_first_inhibitor_eof": true,
+        "logind-resume-does-not-authenticate": true,
+        "logind-resume-does-not-authenticate_password_named_and_masked": true,
+        "logind_resume_reacquires_inhibitor": true,
+        "logind-second-sleep": true,
+        "logind-second-sleep_password_named_and_masked": true,
+        "x11_only_lock_window_at_second_inhibitor_eof": true,
+        "logind-failed-resume-stays-locked": true,
+        "logind-failed-resume-stays-locked_password_named_and_masked": true,
+        "failed_inhibitor_reacquisition_visible": true,
+        "service_loss_updates_open_native_settings": true,
+        "locked-restart": true,
+        "locked-restart_password_named_and_masked": true,
+        "restart_unlock_restores_saved_edit": true,
+        "corrupt_record_concealed_recovery": true,
+        "recovery_quit": true,
+        "failed-save-lock": true,
+        "failed-save-lock_password_named_and_masked": true,
+        "failed_save_close_held_beyond_timeout": true,
+        "failed_save_pending_edit_retained": true
+      },
+      "failure": null,
+      "environment": {
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        }
+      },
+      "sleep_inhibitor_release": {
+        "event": "inhibitor-released",
+        "sequence": 19,
+        "monotonic_ns": 699044121245146,
+        "inhibitor": 1,
+        "eof_monotonic_ns": 699044102537726,
+        "display_observed": true,
+        "visible_titles": [
+          "Application locked"
+        ],
+        "visible_lock_only": true,
+        "x11_observed_ns": 699044102776084,
+        "x11_observation_finished_ns": 699044121233905
+      },
+      "second_sleep_inhibitor_release": {
+        "event": "inhibitor-released",
+        "sequence": 29,
+        "monotonic_ns": 699045845828767,
+        "inhibitor": 2,
+        "eof_monotonic_ns": 699045823110251,
+        "display_observed": true,
+        "visible_titles": [
+          "Application locked"
+        ],
+        "visible_lock_only": true,
+        "x11_observed_ns": 699045823334884,
+        "x11_observation_finished_ns": 699045845815803
+      }
+    },
+    "restored_after_sabotage": {
+      "theme": "light",
+      "locale": "en",
+      "fixture": "tiny",
+      "isolation": "private-xvfb-session-atspi",
+      "checks": {
+        "postload_edit_visible": true,
+        "native_unicode_enrollment": true,
+        "manual-lock": true,
+        "manual-lock_password_named_and_masked": true,
+        "wrong_secret_refused": true,
+        "unicode_unlock_restores_postload_edit": true,
+        "locked-restart": true,
+        "locked-restart_password_named_and_masked": true,
+        "restart_unlock_restores_saved_edit": true,
+        "corrupt_record_concealed_recovery": true,
+        "recovery_quit": true,
+        "failed-save-lock": true,
+        "failed-save-lock_password_named_and_masked": true,
+        "failed_save_close_held_beyond_timeout": true,
+        "failed_save_pending_edit_retained": true
+      },
+      "failure": null,
+      "environment": {
+        "renderer": {
+          "dmabufDisabledByEnv": false,
+          "glesMapped": true,
+          "llvmpipe": true,
+          "gdkBackend": "x11",
+          "path": "dmabuf-llvmpipe",
+          "webProcesses": 1
+        }
+      }
+    }
+  },
+  "authentication": {
+    "schema_version": 1,
+    "scope": "host authentication core",
+    "evidence_basis": "existing recorded mutation runs, not rerun during packaging",
+    "mutations": [
+      {
+        "name": "busy-bypass",
+        "source_revision": "6558275ceebe1ed3ee9272612cca711e4f544718",
+        "status": "killed",
+        "process_exit_code": 101,
+        "exit_code_basis": "recorded execution result",
+        "failed_tests": [
+          "privacy::tests::privacy_concurrent_operation_and_stale_result_cannot_unlock_or_disable"
+        ],
+        "test_summaries": [
+          "test result: FAILED. 8 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s"
+        ],
+        "source_log": "busy-bypass.log",
+        "source_log_sha256": "5e2b39b358b4a45353f2f87055ea228115353ff1085f22801b4a3c614a33c30e"
+      },
+      {
+        "name": "dispatch-generation-bypass",
+        "source_revision": "7dc5df8cb5d6830d4ef3a3cd65f46d514a2ff657",
+        "status": "killed",
+        "process_exit_code": 101,
+        "exit_code_basis": "recorded execution result",
+        "failed_tests": [
+          "privacy::tests::privacy_lock_between_dispatch_and_admission_rejects_operations"
+        ],
+        "test_summaries": [
+          "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.03s"
+        ],
+        "source_log": "dispatch-generation-bypass.log",
+        "source_log_sha256": "953ba2f146b02689fd91831912a094899659cff66bd3dcab664c1087dc2de186"
+      },
+      {
+        "name": "failed-persist-unlocked",
+        "source_revision": "6558275ceebe1ed3ee9272612cca711e4f544718",
+        "status": "killed",
+        "process_exit_code": 101,
+        "exit_code_basis": "recorded execution result",
+        "failed_tests": [
+          "privacy::tests::privacy_missing_credential_is_corrupt_and_failed_enrollment_stays_concealed",
+          "privacy::tests::privacy_failed_persistence_is_concealed_and_preserves_record"
+        ],
+        "test_summaries": [
+          "test result: FAILED. 7 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.31s"
+        ],
+        "source_log": "failed-persist-unlocked.log",
+        "source_log_sha256": "cd8a32f739ce3b44b846794948748c99904ebd02d5d3c2f9990759fdb805bd4a"
+      },
+      {
+        "name": "generation-bypass",
+        "source_revision": "6558275ceebe1ed3ee9272612cca711e4f544718",
+        "status": "killed",
+        "process_exit_code": 101,
+        "exit_code_basis": "recorded execution result",
+        "failed_tests": [
+          "privacy::tests::privacy_concurrent_operation_and_stale_result_cannot_unlock_or_disable"
+        ],
+        "test_summaries": [
+          "test result: FAILED. 8 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s"
+        ],
+        "source_log": "generation-bypass.log",
+        "source_log_sha256": "6adf7f81221657ed631e28fe4261fa1202de7efa16fd8384643383b7774054ed"
+      },
+      {
+        "name": "hash-cost-bypass",
+        "source_revision": "6558275ceebe1ed3ee9272612cca711e4f544718",
+        "status": "killed",
+        "process_exit_code": 101,
+        "exit_code_basis": "recorded execution result",
+        "failed_tests": [
+          "privacy::tests::privacy_bounded_hash_and_strict_record"
+        ],
+        "test_summaries": [
+          "test result: FAILED. 8 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s"
+        ],
+        "source_log": "hash-cost-bypass.log",
+        "source_log_sha256": "e62e64e045f42b05072ffb4d9f2829c7d3f267633bba39981811aa96680130f0"
+      },
+      {
+        "name": "shortcut-legacy-default",
+        "source_revision": "78205b0d526ae982ca21f26245eb32f846ff8db5",
+        "status": "killed",
+        "process_exit_code": 101,
+        "exit_code_basis": "recorded execution result",
+        "failed_tests": [
+          "privacy::tests::privacy_shortcut_roundtrip_and_legacy_default"
+        ],
+        "test_summaries": [
+          "test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.09s"
+        ],
+        "source_log": "shortcut-legacy-default.log",
+        "source_log_sha256": "45199d9f37c177c21acb38373adcec425380f51ddf618ca44e19258a8b9f1dbe"
+      },
+      {
+        "name": "wrong-secret-bypass",
+        "source_revision": "6558275ceebe1ed3ee9272612cca711e4f544718",
+        "status": "killed",
+        "process_exit_code": 101,
+        "exit_code_basis": "recorded execution result",
+        "failed_tests": [
+          "privacy::tests::privacy_changed_secret_and_disabled_are_durable",
+          "privacy::tests::privacy_wrong_secret_backoff_and_reset"
+        ],
+        "test_summaries": [
+          "test result: FAILED. 7 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s"
+        ],
+        "source_log": "wrong-secret-bypass.log",
+        "source_log_sha256": "68aa71bf245b4649e3688abb4179d0cc288debc8f40ac5fba0654aa886e75d56"
+      }
+    ],
+    "benchmark": {
+      "algorithm": "argon2id",
+      "clock": "std::time::Instant",
+      "iterations": 2,
+      "memory_kib": 19456,
+      "parallelism": 1,
+      "profile": "release",
+      "samples": [
+        {
+          "enrollment_ns": 18328753,
+          "iteration": 1,
+          "unlock_ns": 17604252
+        },
+        {
+          "enrollment_ns": 15981564,
+          "iteration": 2,
+          "unlock_ns": 16977715
+        },
+        {
+          "enrollment_ns": 16321041,
+          "iteration": 3,
+          "unlock_ns": 17132175
+        },
+        {
+          "enrollment_ns": 16448472,
+          "iteration": 4,
+          "unlock_ns": 16114193
+        },
+        {
+          "enrollment_ns": 16966925,
+          "iteration": 5,
+          "unlock_ns": 16439364
+        }
+      ],
+      "schema_version": 1,
+      "version": 19
+    },
+    "benchmark_source_revision": "6558275ceebe1ed3ee9272612cca711e4f544718"
+  },
+  "ui_mutations": {
+    "schema_version": 1,
+    "feature": "privacy page lifecycle",
+    "source_revision": "39ac4455462df11bd18832b264825d6af117ec72",
+    "source_files": [
+      {
+        "file": "app/ui/src/lifecycle.ts",
+        "sha256": "9c9b417f30555a52bf4a5cf01e6515645448f71d1ddf4d2223ad4ca384397e02"
+      },
+      {
+        "file": "app/ui/test/lifecycle.test.ts",
+        "sha256": "51223c0b4eaccb95e63cad1de5d36ba083af395fb67d275bad3d0fed7b33c8c2"
+      }
+    ],
+    "runner": {
+      "command": [
+        "bun",
+        "test",
+        "app/ui/test/lifecycle.test.ts"
+      ],
+      "timeout_seconds": 30,
+      "stdout_stderr": "captured separately then concatenated stdout followed by stderr",
+      "exit_code_provenance": "Original mutation runner reported subprocess.returncode=1 for each mutant in this session; no mutation was rerun for packaging."
+    },
+    "discipline": {
+      "committed_before_mutation": true,
+      "source_restored_after_each_mutant": true,
+      "tracked_diff_empty_after_run": true
+    },
+    "mutants": [
+      {
+        "name": "ignore locked failure",
+        "source": "app/ui/src/lifecycle.ts",
+        "replacement_scope": "first occurrence only",
+        "original": "if (rejected || deps.session.failed() || deps.session.dirtyCount() > 0) {",
+        "replacement": "if (false) {",
+        "outcome": "killed",
+        "exit_code": 1,
+        "source_log": {
+          "file": "privacy-mut-ignore-locked-failure.log",
+          "sha256": "586a3b2bcd85e315c99d15cfd6d7067f55c75ef44d458a17bcaeb422d8f4aadf",
+          "bytes": 3980,
+          "summary": {
+            "pass": 14,
+            "fail": 4
+          },
+          "failed_tests": [
+            "concealed lifecycle > locked close holds failed work without asking or releasing",
+            "concealed lifecycle > locked close refuses rejected drains and dirty healthy schedulers",
+            "concealed lifecycle > status failure is concealed and a clean locked close confirms",
+            "a lock arriving during a failed close drain cannot raise the discard prompt"
+          ]
+        }
+      },
+      {
+        "name": "skip lock flush",
+        "source": "app/ui/src/lifecycle.ts",
+        "replacement_scope": "first occurrence only",
+        "original": "      await deps.session.flushPending();",
+        "replacement": "      void deps.session.flushPending();",
+        "outcome": "killed",
+        "exit_code": 1,
+        "source_log": {
+          "file": "privacy-mut-skip-lock-flush.log",
+          "sha256": "3c76527511aec8dabf01cf1bd1d2bc24ae8411d299682fe278715fbebd2587ca",
+          "bytes": 3344,
+          "summary": {
+            "pass": 17,
+            "fail": 1
+          },
+          "failed_tests": [
+            "concealed lifecycle > lock acknowledgements wait for the live session, including empty startup"
+          ]
+        }
+      },
+      {
+        "name": "always successful lock drain",
+        "source": "app/ui/src/lifecycle.ts",
+        "replacement_scope": "first occurrence only",
+        "original": "ok = !deps.session.failed() && deps.session.dirtyCount() === 0;",
+        "replacement": "ok = true;",
+        "outcome": "killed",
+        "exit_code": 1,
+        "source_log": {
+          "file": "privacy-mut-always-successful-lock-drain.log",
+          "sha256": "41807e1969c3353d97c1adda3de1f37f0e7209592c4ddf67d17679d277429682",
+          "bytes": 2526,
+          "summary": {
+            "pass": 17,
+            "fail": 1
+          },
+          "failed_tests": [
+            "concealed lifecycle > lock acknowledgements wait for the live session, including empty startup"
+          ]
+        }
+      },
+      {
+        "name": "skip post-drain lock recheck",
+        "source": "app/ui/src/lifecycle.ts",
+        "replacement_scope": "first occurrence only",
+        "original": "locked = locked || (await deps.privacyLocked?.().catch(() => true) ?? false);",
+        "replacement": "locked = locked;",
+        "outcome": "killed",
+        "exit_code": 1,
+        "source_log": {
+          "file": "privacy-mut-skip-post-drain-lock-recheck.log",
+          "sha256": "378bedad025bc09f95f19f264eb045ec74f36a53d8856f97b0dc553c1aa3ceb6",
+          "bytes": 2368,
+          "summary": {
+            "pass": 17,
+            "fail": 1
+          },
+          "failed_tests": [
+            "a lock arriving during a failed close drain cannot raise the discard prompt"
+          ]
+        }
+      },
+      {
+        "name": "declare listeners ready early",
+        "source": "app/ui/src/lifecycle.ts",
+        "replacement_scope": "first occurrence only",
+        "original": "await Promise.all([lockListener, closeListener]);",
+        "replacement": "void Promise.all([lockListener, closeListener]);",
+        "outcome": "killed",
+        "exit_code": 1,
+        "source_log": {
+          "file": "privacy-mut-declare-listeners-ready-early.log",
+          "sha256": "37f8dc8058ba692338ccc986a9a90cf1b469d855da4685445270777077bb1043",
+          "bytes": 2208,
+          "summary": {
+            "pass": 17,
+            "fail": 1
+          },
+          "failed_tests": [
+            "readiness waits for registration and refuses either failed listener"
+          ]
+        }
+      }
+    ],
+    "totals": {
+      "attempted": 5,
+      "killed": 5,
+      "survived": 0,
+      "did_not_build": 0,
+      "timed_out": 0
+    },
+    "verification_logs": [
+      {
+        "file": "privacy-ui-verified.log",
+        "sha256": "2d1d58664a34b257b40d6d6ee535ae8aa78e89d82c13dc24a037663cf27b66de",
+        "bytes": 15214,
+        "summary": {
+          "pass": 158,
+          "fail": 0
+        },
+        "failed_tests": []
+      },
+      {
+        "file": "privacy-ui-suite.log",
+        "sha256": "270fbe627d0605903184942ae94c09deb686b7a3773bb3ec639f2a8ae439e835",
+        "bytes": 273151,
+        "summary": {
+          "pass": 2768,
+          "fail": 2
+        },
+        "failed_tests": [
+          "mountProject failure surface > raiseFailure shows a persist banner and latches",
+          "a row wears its revision state > every state has a description element, mounted once and removed on destroy",
+          "mountProject failure surface > raiseFailure shows a persist banner and latches",
+          "a row wears its revision state > every state has a description element, mounted once and removed on destroy"
+        ]
+      },
+      {
+        "file": "privacy-ui-suite-final.log",
+        "sha256": "9a7e91d9703471eb190847d86bcc323d4676c32f2b9ae28b354723d978fc03d1",
+        "bytes": 273065,
+        "summary": {
+          "pass": 2769,
+          "fail": 1
+        },
+        "failed_tests": [
+          "a row wears its revision state > every state has a description element, mounted once and removed on destroy",
+          "a row wears its revision state > every state has a description element, mounted once and removed on destroy"
+        ]
+      },
+      {
+        "file": "privacy-ui-suite-recheck.log",
+        "sha256": "a5e47e5b47b1212f69f6c3be8f655192ec4074688cb7b157a8b36039a5049539",
+        "bytes": 272839,
+        "summary": {
+          "pass": 2769,
+          "fail": 1
+        },
+        "failed_tests": [
+          "a row wears its revision state > every state has a description element, mounted once and removed on destroy",
+          "a row wears its revision state > every state has a description element, mounted once and removed on destroy"
+        ]
+      },
+      {
+        "file": "privacy-ui-same-worktree-baseline.log",
+        "sha256": "e71aceb2d00bdc4fdb990928fa5b55a48bb8e1b9351f0ece00df587f9f2111d6",
+        "bytes": 272122,
+        "summary": {
+          "pass": 2761,
+          "fail": 1
+        },
+        "failed_tests": [
+          "a row wears its revision state > every state has a description element, mounted once and removed on destroy",
+          "a row wears its revision state > every state has a description element, mounted once and removed on destroy"
+        ]
+      },
+      {
+        "file": "privacy-ui-baseline.log",
+        "sha256": "cb7ce4a59174457490a304427afaa7e8776df157f5747e3b08c8ca840b8c0c75",
+        "bytes": 271328,
+        "summary": {
+          "pass": 2762,
+          "fail": 0
+        },
+        "failed_tests": []
+      }
+    ],
+    "verification_notes": [
+      "Final focused UI verification passed 158 tests with zero failures.",
+      "The first full changed-worktree suite exceeded its default 5-second timeout in a project failure-surface test.",
+      "Both subsequent full changed-worktree runs with timeout 30000 failed nav-row-state.test.ts:262: the draft description element remained after destroy.",
+      "Restoring all UI changes to the parent revision in the same isolated worktree reproduced that exact nav-row-state failure; files were restored to the committed revision afterward.",
+      "The unchanged main-worktree baseline passed 2762 tests. The isolated-worktree baseline failed one test out of 2762. This is evidence of environment or order sensitivity, not a claim that the full suite passed.",
+      "TypeScript check passed in the original execution, but its successful no-output result exists in tool history rather than a saved log."
+    ]
+  },
+  "close_mutations": [
+    {
+      "mutation": "close_attempt_dropped",
+      "exit_code": 1,
+      "killed": true
+    },
+    {
+      "mutation": "discard_after_new_lock",
+      "exit_code": 1,
+      "killed": true
+    }
+  ],
+  "concealment_negative_controls": [
+    "superseded/122-conceal-detach-only-survived.json",
+    "superseded/122-concealment-killed.json"
+  ],
+  "screenshots": {
+    "app/results/screenshots/122-privacy-en-light-manual-lock.png": {
+      "sha256": "68b80e9d56025e70a2debb53c10ed1f466dfc54bf0449ef868cfe8c8c81bd297",
+      "source_case": "manual-lock"
+    },
+    "app/results/screenshots/122-privacy-en-light-native-settings.png": {
+      "sha256": "1a7fdbe1f98a8a002cee830913057d9fd64567f3cf2ffaef74f217a59a825d52",
+      "source_case": "native-settings"
+    },
+    "app/results/screenshots/122-privacy-en-light-failed-save-held.png": {
+      "sha256": "1b23b85b4bd6cf03ded8a115fb2011e60c41261627a5eb2753cd64f02d6da5b4",
+      "source_case": "failed-save-held"
+    },
+    "app/results/screenshots/122-privacy-en-light-corrupt-record-recovery.png": {
+      "sha256": "796714199d663948552fca23cc8eceab16d09d7c499697c6573656f678e43723",
+      "source_case": "corrupt-record-recovery"
+    },
+    "app/results/screenshots/122-privacy-de-dark-manual-lock.png": {
+      "sha256": "741330144332936b9424d00242bbd84d54e5793145b5b5cc0b02ebf6350bef20",
+      "source_case": "manual-lock"
+    },
+    "app/results/screenshots/122-privacy-de-dark-native-settings.png": {
+      "sha256": "321db8ae7dc51192742e5aabe1d79791457c56a609d2cabde42e6b16e0dfae11",
+      "source_case": "native-settings"
+    },
+    "app/results/screenshots/122-privacy-de-dark-failed-save-held.png": {
+      "sha256": "8ed0c2dac64c686996431bcf7790f0dedc3a9f50e5cf46493e9638508cc7b20b",
+      "source_case": "failed-save-held"
+    },
+    "app/results/screenshots/122-privacy-de-dark-corrupt-record-recovery.png": {
+      "sha256": "f4c21a219b414d86545edd3c8a67864f620adc695cb479403649aaa0faad2a7d",
+      "source_case": "corrupt-record-recovery"
+    }
+  },
+  "reproduction": {
+    "private_diagnostics": "docs/local/diagnostics/122/README.md",
+    "remaining_desktop_plan": "docs/local/diagnostics/122/desktop-test-plan.md"
+  },
+  "authentication_reproduced_on_integrated_source": {
+    "schema_version": 1,
+    "scope": "host authentication core",
+    "source_revision": "60dcaed78372fa397b6d93fd6d68ce01c7814247",
+    "source_sha256": "812634ea26a10b29d83ab96e06b94ec99784da89c03e6ba367a2b2d49c297377",
+    "commands": {
+      "tests": "cargo test --release --lib privacy --offline",
+      "benchmark": "cargo run --release --offline"
+    },
+    "mutations": [
+      {
+        "status": "killed",
+        "process_exit_code": 101,
+        "failed_tests": [
+          "privacy::tests::privacy_wrong_secret_backoff_and_reset",
+          "privacy::tests::privacy_changed_secret_and_disabled_are_durable"
+        ],
+        "test_summaries": [
+          "test result: FAILED. 10 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s"
+        ],
+        "name": "wrong-secret-bypass"
+      },
+      {
+        "status": "killed",
+        "process_exit_code": 101,
+        "failed_tests": [
+          "privacy::tests::privacy_concurrent_operation_and_stale_result_cannot_unlock_or_disable"
+        ],
+        "test_summaries": [
+          "test result: FAILED. 11 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s"
+        ],
+        "name": "generation-bypass"
+      },
+      {
+        "status": "killed",
+        "process_exit_code": 101,
+        "failed_tests": [
+          "privacy::tests::privacy_bounded_hash_and_strict_record"
+        ],
+        "test_summaries": [
+          "test result: FAILED. 11 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s"
+        ],
+        "name": "hash-cost-bypass"
+      },
+      {
+        "status": "killed",
+        "process_exit_code": 101,
+        "failed_tests": [
+          "privacy::tests::privacy_missing_credential_is_corrupt_and_failed_enrollment_stays_concealed",
+          "privacy::tests::privacy_failed_persistence_is_concealed_and_preserves_record"
+        ],
+        "test_summaries": [
+          "test result: FAILED. 10 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s"
+        ],
+        "name": "failed-persist-unlocked"
+      },
+      {
+        "status": "killed",
+        "process_exit_code": 101,
+        "failed_tests": [
+          "privacy::tests::privacy_concurrent_operation_and_stale_result_cannot_unlock_or_disable"
+        ],
+        "test_summaries": [
+          "test result: FAILED. 11 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s"
+        ],
+        "name": "busy-bypass"
+      },
+      {
+        "status": "killed",
+        "process_exit_code": 101,
+        "failed_tests": [
+          "privacy::tests::privacy_lock_between_dispatch_and_admission_rejects_operations"
+        ],
+        "test_summaries": [
+          "test result: FAILED. 11 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s"
+        ],
+        "name": "dispatch-generation-bypass"
+      },
+      {
+        "status": "killed",
+        "process_exit_code": 101,
+        "failed_tests": [
+          "privacy::tests::privacy_shortcut_roundtrip_and_legacy_default"
+        ],
+        "test_summaries": [
+          "test result: FAILED. 11 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s"
+        ],
+        "name": "shortcut-legacy-default"
+      }
+    ],
+    "benchmark": {
+      "algorithm": "argon2id",
+      "clock": "std::time::Instant",
+      "iterations": 2,
+      "memory_kib": 19456,
+      "parallelism": 1,
+      "profile": "release",
+      "samples": [
+        {
+          "enrollment_ns": 15619117,
+          "iteration": 1,
+          "unlock_ns": 15585593
+        },
+        {
+          "enrollment_ns": 13626359,
+          "iteration": 2,
+          "unlock_ns": 13864116
+        },
+        {
+          "enrollment_ns": 15302641,
+          "iteration": 3,
+          "unlock_ns": 13088808
+        },
+        {
+          "enrollment_ns": 13378522,
+          "iteration": 4,
+          "unlock_ns": 13097645
+        },
+        {
+          "enrollment_ns": 14584652,
+          "iteration": 5,
+          "unlock_ns": 14512505
+        }
+      ],
+      "schema_version": 1,
+      "version": 19
+    },
+    "baseline": {
+      "status": "passed",
+      "process_exit_code": 0,
+      "failed_tests": [],
+      "test_summaries": [
+        "test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s"
+      ]
+    },
+    "restored": {
+      "status": "passed",
+      "process_exit_code": 0,
+      "failed_tests": [],
+      "test_summaries": [
+        "test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s"
+      ]
+    },
+    "benchmark_command": {
+      "status": "passed",
+      "process_exit_code": 0,
+      "failed_tests": [],
+      "test_summaries": []
+    }
+  },
+  "desktop_verification": "122-privacy-desktop.json",
+  "native_accessibility_verification": "122-privacy-native-accessibility.json"
+}

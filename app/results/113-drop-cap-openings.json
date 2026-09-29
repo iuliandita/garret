@@ -1,0 +1,29 @@
+{
+  "fixture": "sample",
+  "opening_paragraphs": {
+    "before": {
+      "OEBPS/text/0001.xhtml": 0,
+      "OEBPS/text/0002.xhtml": 0,
+      "OEBPS/text/0003.xhtml": 0,
+      "OEBPS/text/0004.xhtml": 0,
+      "OEBPS/text/0005.xhtml": 0,
+      "OEBPS/text/0006.xhtml": 0,
+      "OEBPS/text/0007.xhtml": 0,
+      "OEBPS/text/0008.xhtml": 0,
+      "OEBPS/text/0009.xhtml": 0,
+      "OEBPS/text/0010.xhtml": 0
+    },
+    "after": {
+      "OEBPS/text/0001.xhtml": 1,
+      "OEBPS/text/0002.xhtml": 1,
+      "OEBPS/text/0003.xhtml": 1,
+      "OEBPS/text/0004.xhtml": 1,
+      "OEBPS/text/0005.xhtml": 1,
+      "OEBPS/text/0006.xhtml": 1,
+      "OEBPS/text/0007.xhtml": 1,
+      "OEBPS/text/0008.xhtml": 1,
+      "OEBPS/text/0009.xhtml": 1,
+      "OEBPS/text/0010.xhtml": 1
+    }
+  }
+}

@@ -1,0 +1,382 @@
+{
+  "source_commit": "a06330721327987efe1c7074105690142c8968ab",
+  "bun_passed": 3788,
+  "bun_failed": 0,
+  "typescript_exit": 0,
+  "ui_build_exit": 0,
+  "negative_controls": {
+    "source_commit": "a06330721327987efe1c7074105690142c8968ab",
+    "native_controls": [
+      {
+        "rig": "hier",
+        "exit_code": 2,
+        "observed_rows": 20000,
+        "injected_floor": 20001,
+        "result_unchanged": true,
+        "verdict": "KILLED"
+      },
+      {
+        "rig": "persist",
+        "exit_code": 2,
+        "observed_rows": 20000,
+        "injected_floor": 20001,
+        "result_unchanged": true,
+        "verdict": "KILLED"
+      }
+    ],
+    "unit_mutations": [
+      {
+        "mutation": "invalid-observed-count",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "invalid-floor",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      },
+      {
+        "mutation": "fractional-manifest",
+        "exit_code": 1,
+        "verdict": "KILLED"
+      }
+    ]
+  },
+  "comparisons": [
+    {
+      "result": "app-persist-stress-5m.json",
+      "baseline": "app/results/superseded/app-persist-stress-5m.2026-09-16T22-40-57Z.json",
+      "baseline_sha256": "0ec69f39ee19ef889262b5295517273a300497b18e8fb1b1044ba12cd5bd8a01",
+      "source_commit": "a0633072",
+      "fixture_floor": 20000,
+      "rows": 20000,
+      "renderer_before": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "renderer_after": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "gates_before": [
+        {
+          "gate": "peak_rss_mb",
+          "value": 669,
+          "threshold": "< 750",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "typing_p95_ms",
+          "value": 33,
+          "threshold": "< 50",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "typing_p99_ms",
+          "value": 34,
+          "threshold": "< 100",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "nav_p95_ms",
+          "value": 33,
+          "threshold": "< 150",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "no_typing_cliff",
+          "value": 1,
+          "threshold": "last decile / first decile < 1.5 (min 10 cycles)",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "typing_stall_rate",
+          "value": 0,
+          "threshold": "< 0.01 (stalled + frameMs > 100 ms, over sample count)",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "a11y_exposure",
+          "value": "not applicable: tree navigator advertises per-sibling-group setsize, see a11y_tree_structure",
+          "threshold": "advertised rows == 20000 (flat list only)",
+          "verdict": "UNKNOWN"
+        },
+        {
+          "gate": "restart_body_match",
+          "value": "match",
+          "threshold": "reopened body hash == pre-kill body hash",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "flush_conflicts",
+          "value": 0,
+          "threshold": "== 0",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "flush_errors",
+          "value": 0,
+          "threshold": "== 0",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "flush_p95_ms",
+          "value": 4,
+          "threshold": "< 50",
+          "verdict": "PASS"
+        }
+      ],
+      "gates_after": [
+        {
+          "gate": "peak_rss_mb",
+          "value": 689,
+          "threshold": "< 750",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "typing_p95_ms",
+          "value": 33,
+          "threshold": "< 50",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "typing_p99_ms",
+          "value": 34,
+          "threshold": "< 100",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "nav_p95_ms",
+          "value": 33,
+          "threshold": "< 150",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "no_typing_cliff",
+          "value": 1,
+          "threshold": "last decile / first decile < 1.5 (min 10 cycles)",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "typing_stall_rate",
+          "value": 0.0004,
+          "threshold": "< 0.01 (stalled + frameMs > 100 ms, over sample count)",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "a11y_exposure",
+          "value": "not applicable: tree navigator advertises per-sibling-group setsize, see a11y_tree_structure",
+          "threshold": "advertised rows == 20000 (flat list only)",
+          "verdict": "UNKNOWN"
+        },
+        {
+          "gate": "restart_body_match",
+          "value": "match",
+          "threshold": "reopened body hash == pre-kill body hash",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "flush_conflicts",
+          "value": 0,
+          "threshold": "== 0",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "flush_errors",
+          "value": 0,
+          "threshold": "== 0",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "flush_p95_ms",
+          "value": 5,
+          "threshold": "< 50",
+          "verdict": "PASS"
+        }
+      ],
+      "rss_before": {
+        "samples": 1185,
+        "span_ms": 303508,
+        "peak_mb": 669,
+        "peak_at_ms": 303811,
+        "boot_window_ms": 45000,
+        "peak_in_boot_window": false,
+        "boot_window_peak_mb": 638,
+        "post_boot_samples": 1010,
+        "post_boot_median_mb": 645,
+        "post_boot_max_mb": 669,
+        "post_boot_slope_mb_per_min": 3.2768500256562363
+      },
+      "rss_after": {
+        "samples": 1203,
+        "span_ms": 303539,
+        "peak_mb": 689,
+        "peak_at_ms": 288528,
+        "boot_window_ms": 45000,
+        "peak_in_boot_window": false,
+        "boot_window_peak_mb": 671,
+        "post_boot_samples": 1024,
+        "post_boot_median_mb": 676,
+        "post_boot_max_mb": 689,
+        "post_boot_slope_mb_per_min": 2.0075390641171538
+      }
+    },
+    {
+      "result": "app-hier-w2-stress-5m.json",
+      "baseline": "app/results/superseded/app-hier-w2-stress-5m.2026-08-20T22-32-07Z.json",
+      "baseline_sha256": "47d331ffa5f170b0622c78c62bb6c367ddcfe340564beb6830dcb05aaa8ae730",
+      "source_commit": "a0633072",
+      "fixture_floor": 20000,
+      "rows": 20000,
+      "renderer_before": null,
+      "renderer_after": {
+        "dmabufDisabledByEnv": false,
+        "glesMapped": true,
+        "llvmpipe": true,
+        "gdkBackend": "x11",
+        "path": "dmabuf-llvmpipe",
+        "webProcesses": 1
+      },
+      "gates_before": [
+        {
+          "gate": "peak_rss_mb",
+          "value": 641,
+          "threshold": "< 750",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "typing_p95_ms",
+          "value": 34,
+          "threshold": "< 50",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "typing_p99_ms",
+          "value": 34.000000000029104,
+          "threshold": "< 100",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "nav_p95_ms",
+          "value": 34.000000000000455,
+          "threshold": "< 150",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "no_typing_cliff",
+          "value": 1,
+          "threshold": "last decile / first decile < 1.5 (min 10 cycles)",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "typing_stall_rate",
+          "value": 0.0001,
+          "threshold": "< 0.01 (stalled + frameMs > 100 ms, over sample count)",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "tree_shape_match",
+          "value": "match",
+          "threshold": "reopened walk == pre-kill walk (ids, parents, positions, order)",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "a11y_tree_structure",
+          "value": "98 of 98 exposed; 0 level and 0 setsize mismatch(es) over 98 probed row(s)",
+          "threshold": "exposed == store nodes; 0 level and 0 setsize mismatches",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mutation_errors",
+          "value": 0,
+          "threshold": "== 0",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mutation_p95_ms",
+          "value": 1,
+          "threshold": "< 50",
+          "verdict": "PASS"
+        }
+      ],
+      "gates_after": [
+        {
+          "gate": "peak_rss_mb",
+          "value": 634,
+          "threshold": "< 750",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "typing_p95_ms",
+          "value": 33,
+          "threshold": "< 50",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "typing_p99_ms",
+          "value": 34,
+          "threshold": "< 100",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "nav_p95_ms",
+          "value": 33,
+          "threshold": "< 150",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "no_typing_cliff",
+          "value": 0.971,
+          "threshold": "last decile / first decile < 1.5 (min 10 cycles)",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "typing_stall_rate",
+          "value": 0,
+          "threshold": "< 0.01 (stalled + frameMs > 100 ms, over sample count)",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "tree_shape_match",
+          "value": "match",
+          "threshold": "reopened walk == pre-kill walk (ids, parents, positions, order)",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "a11y_tree_structure",
+          "value": "66 of 66 exposed; 0 level and 0 setsize mismatch(es) over 66 probed row(s)",
+          "threshold": "exposed == store nodes; 0 level and 0 setsize mismatches",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mutation_errors",
+          "value": 0,
+          "threshold": "== 0",
+          "verdict": "PASS"
+        },
+        {
+          "gate": "mutation_p95_ms",
+          "value": 1,
+          "threshold": "< 50",
+          "verdict": "PASS"
+        }
+      ],
+      "rss_before": null,
+      "rss_after": null
+    }
+  ],
+  "limits": [
+    "Hierarchy baseline does not record its renderer; performance attribution is unsupported.",
+    "Persistence tree accessibility remains UNKNOWN, not PASS.",
+    "The owner-deferred software-renderer memory climb is not fixed by passing peak gates.",
+    "Hierarchy process exit and temporary log were lost across the session interruption; its completed result is retained."
+  ]
+}
