@@ -193,20 +193,16 @@ describe("the parser refuses a source it cannot trust", () => {
   });
 
   test("the shipped outline views use the shorter wrapped route", async () => {
-    // The TEST was stale, not the parser: these literals were written
-    // when Outline held 37 items, and Review proposals... was appended as the
-    // 38th. One Up from item 0 wraps to the last item, so index i is
-    // 38 - i presses: 7 for the table view (31), 6 for the cards view (32).
-    // The last item's index is pinned beside them, so the next append fails
-    // here, naming the count, rather than as a bare off-by-one.
+    // Creation comes first in the grouped menu. Labels and separators are
+    // not keyboard stops: table and cards remain actions 28 and 29 of 38.
     expect(menuRoute("menu-review-proposals", REAL).index).toBe(37);
     const sent: string[] = [];
     const driver = menuDriver(":99", "123", (_display, args) => sent.push(args.at(-1) ?? ""), REAL);
     await driver.activate("menu-view-table");
-    expect(sent).toEqual(["alt+o", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Return"]);
+    expect(sent).toEqual(["alt+o", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Return"]);
     sent.length = 0;
     await driver.activate("menu-view-cards");
-    expect(sent).toEqual(["alt+o", "Up", "Up", "Up", "Up", "Up", "Up", "Return"]);
+    expect(sent).toEqual(["alt+o", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Return"]);
   });
 
   test("a German route is not served from the English catalog cache", () => {
