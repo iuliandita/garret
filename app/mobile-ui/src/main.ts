@@ -10,10 +10,13 @@ window.__appLocale = locale;
 const m = mobileMessages(locale);
 document.documentElement.lang = locale;
 const native = (window as Window & { __TAURI__?: { core: { invoke: Invoke } } }).__TAURI__;
+const appearanceBridge = (window as Window & { garretAppearance?: { current(): string; set(value: string): void } }).garretAppearance;
 const lifecycle = window as Window & { __mobileWriting?: boolean };
 window.addEventListener("mobile-back", () => workspace?.back());
 let workspace: MobileWorkspace | undefined;
-let theme: "light" | "dark" = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+const savedTheme = appearanceBridge?.current();
+let theme: "light" | "dark" = savedTheme === "light" || savedTheme === "dark"
+  ? savedTheme : matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 let busy = false;
 const mount = document.querySelector<HTMLElement>("#app")!;
 
@@ -87,7 +90,11 @@ async function library(errorText?: string, resumeOpen = true) {
   const appearance = element("button", theme === "dark" ? m.light : m.dark);
   appearance.type = "button";
   appearance.setAttribute("aria-label", `${m.appearance}: ${theme === "dark" ? m.light : m.dark}`);
-  appearance.addEventListener("click", () => { theme = theme === "dark" ? "light" : "dark"; void library(); });
+  appearance.addEventListener("click", () => {
+    theme = theme === "dark" ? "light" : "dark";
+    appearanceBridge?.set(theme);
+    void library();
+  });
   header.append(appearance);
   const error = element("p", errorText ?? "");
   error.setAttribute("role", "alert"); error.hidden = !errorText;
