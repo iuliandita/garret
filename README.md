@@ -8,9 +8,7 @@
 garret is a local-first desktop writing studio for novelists. It runs offline,
 needs no account, and keeps every book as a file on your own disk.
 
-> **Status: early alpha.** garret is unfinished and changes often. Use a
-> sample manuscript or a copy of your work, and keep your own backups. Builds
-> are unsigned, and only Linux is checked by the development tests.
+> **Early alpha.** garret moves fast; keep backups of your work.
 
 ## What it does
 
@@ -18,24 +16,23 @@ needs no account, and keeps every book as a file on your own disk.
 - A calm prose editor with formatting, undo/redo, search, comments and history.
 - A story bible: synopses, cast, appearances, a timeline, pictures and covers.
 - Revision passes and tasks, series, optional session analytics, and local
-  craft and consistency reports (evidence to review, not a quality score).
+  craft and consistency reports.
 - Knowledge links and research files copied into the project.
 - Export to Markdown, DOCX and EPUB, plus a PDF proof copy; DOCX review
   documents can go out and come back with their changes attributed.
 - Recovery copies, salvage of damaged files, a readable mirror folder, and
   encrypted portable archives with a separate recovery key.
 - Light and dark themes; English and German.
-- An optional Linux privacy lock that hides the app behind a PIN. It does not
-  encrypt your manuscripts.
+- An optional privacy lock that hides the app behind a PIN.
 
 ## Platforms
 
-| Platform | State |
+| Platform | |
 | --- | --- |
-| Linux (x86_64, glibc 2.39+, WebKitGTK 4.1) | Primary; developed and tested here |
-| Windows | Cross-built, unsigned; native behavior unverified |
-| macOS | Packaging source exists; unverified |
-| Android | Small writing preview; transfer work in progress |
+| Linux | x86_64, glibc 2.39+, WebKitGTK 4.1 |
+| Windows | x86_64, WebView2 |
+| Android | Writing and editing on the go |
+| macOS | In progress |
 
 ## Building from source (Linux)
 
