@@ -7868,7 +7868,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  width: 380px;
+  width: 420px;
   /* The row is `minmax(0, 1fr)` and this is the flex-column half of the same
      rule: without it the pages box below refuses to shrink past its content and
      the rail grows instead of scrolling. */
@@ -7885,8 +7885,8 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 #preview-rail-head {
   display: flex;
   align-items: center;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
 @media (max-width: 900px) {
@@ -7895,7 +7895,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
     position: fixed;
     inset: 39px 0 34px auto;
     z-index: 9;
-    width: min(380px, 100vw);
+    width: min(420px, 100vw);
   }
 }
 
@@ -7904,6 +7904,46 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   margin-right: auto;
   font-size: var(--text-lg);
   font-weight: 600;
+}
+
+#preview-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+#preview-actions button {
+  padding-inline: 8px;
+}
+
+#preview-rail button#preview-options-toggle {
+  align-self: flex-start;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+#preview-options-toggle::before {
+  content: "▸ ";
+}
+
+#preview-options-toggle[aria-expanded="true"]::before {
+  content: "▾ ";
+}
+
+#preview-options[hidden] {
+  display: none;
+}
+
+#preview-options > #preview-ornament,
+#preview-options > #preview-chapter {
+  margin-top: 10px;
 }
 
 /* The options. Two named groups, each a legend and a row of toggles, matching

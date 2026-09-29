@@ -197,6 +197,20 @@ describe("the rail's own shape", () => {
     press("#preview-close");
     expect(h.rail.isOpen()).toBe(false);
   });
+
+  test("book appearance opens through a named button while Close stays available", async () => {
+    const h = mount();
+    await h.rail.open("epub");
+    const toggle = document.querySelector<HTMLButtonElement>("#preview-options-toggle")!;
+    const options = document.querySelector<HTMLElement>("#preview-options")!;
+    expect(toggle.textContent).toBe(EN["preview.options"]);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(options.hidden).toBe(true);
+    press("#preview-options-toggle");
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(options.hidden).toBe(false);
+    expect(document.querySelector("#preview-close")).not.toBeNull();
+  });
 });
 
 describe("what it renders", () => {

@@ -1366,6 +1366,7 @@ export const DE = {
   "preview.refresh": "Aktualisieren",
   "preview.save-as": "Sichern unter…",
   "preview.close": "Schließen",
+  "preview.options": "Buchgestaltung",
   "preview.epub.note":
     "Aus dem Buch im gespeicherten Stand erzeugt. Drücken Sie Aktualisieren, wenn Sie weitergeschrieben haben. Wie ein Lesegerät die Seite setzt, wird abweichen. Das EPUB enthält das vordere Cover, aber nicht das hintere.",
   "preview.pdf.note":
