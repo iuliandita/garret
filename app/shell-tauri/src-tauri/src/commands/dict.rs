@@ -23,7 +23,7 @@ pub(crate) fn dict_list(
 /// SYNCED AFTER THE STORE WRITE SUCCEEDS, not before: a word that failed to
 /// save (empty, already there) must not reach the checker's file either.
 ///
-/// THEN THE CHECKER IS TOLD (111). Enchant reads a personal wordlist when the
+/// THEN THE CHECKER IS TOLD. Enchant reads a personal wordlist when the
 /// dictionary is requested, not on every lookup, so a rewritten `.dic` sat
 /// unread until the next launch -- the "may not stop being underlined" note in
 /// the panel was honest. Re-applying the spelling languages makes WebKit drop

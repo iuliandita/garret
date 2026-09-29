@@ -204,7 +204,7 @@ export interface WordCountView {
 
 /** The bar. Compact: it sits beside five controls in a strip whose height three
  *  rigs restate, and at the sentence length it dominated a readout's worth of
- *  space. "in the book" since 236: "2,000 saved" beside the save indicator read
+ *  space. "in the book" was replaced: "2,000 saved" beside the save indicator read
  *  as a save state. The name below keeps "saved", which is where the lag
  *  behind the keystroke is still said. */
 const sceneDisplay = (words: number): string =>
@@ -259,7 +259,7 @@ export function createWordCount(deps: WordCountDeps): WordCountView {
   project.id = "word-count-project";
   project.textContent = projectDisplay(projectFigure);
 
-  // A GAP, NOT A SECOND MIDDLE DOT (239): one dot per line at most, and the
+  // A GAP, NOT A SECOND MIDDLE DOT: one dot per line at most, and the
   // day's figure is a different thought from the two counts before it. The
   // space keeps the text's word break; the stylesheet draws the gap.
   const todaySeparator = document.createElement("span");

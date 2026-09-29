@@ -1,7 +1,7 @@
 // app/shell-tauri/src-tauri/src/docx_import.rs
-// DOCX -> outline, the import half of 092's export. Product spec section 12:
+// DOCX -> outline, the import half of the export. Product spec section 12:
 // "DOCX import/export for editor handoff, supported by round-trip fixtures
-// and explicit loss reports". Plan 093.
+// and explicit loss reports".
 //
 // PURE, exactly as `import.rs` and `docx.rs` are: no I/O, no `Store`, no
 // `Path`. Bytes in, a structure out.

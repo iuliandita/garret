@@ -71,7 +71,7 @@ describe("the device-loss strings say which protection they are", () => {
   });
 
   test("the heading names device loss and never says 'recovery'", () => {
-    // 015's maintenance note: a panel with one "Recovery" heading covering
+    // The maintenance note: a panel with one "Recovery" heading covering
     // both protections is the design's forbidden blur with a different shape.
     const heading = (EN as Record<string, string>)["switcher.archive.heading"];
     expect(heading).toBeDefined();

@@ -2092,7 +2092,7 @@ describe("evaluateHomeGates (099/100)", () => {
   });
 });
 
-describe("evaluateTimelineGates (102)", () => {
+describe("evaluateTimelineGates", () => {
   const okTimeline: TimelineMetrics = {
     timeline_zoom_p95_ms: 8,
     timeline_visible_count: 220,

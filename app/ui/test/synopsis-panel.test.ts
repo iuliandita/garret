@@ -1,10 +1,10 @@
 // The synopsis panel: what a part, a chapter or a scene is about.
 //
-// TWO MODES (097, W4): Read shows what the store holds as a paragraph, Edit
+// TWO MODES: Read shows what the store holds as a paragraph, Edit
 // is the textarea this panel has always had. An EMPTY synopsis has no Read
 // state -- opening on one, or saving one down to nothing, goes straight to
 // Edit -- and most of this file is about that boundary plus the ROW-CAPTURE
-// rule this panel has kept since 036: a writer types paragraphs into a
+// rule this panel has kept: a writer types paragraphs into a
 // textarea and the selection is still live behind the panel - an arrow key
 // reaches the navigator while it is open - so a save that read the selection
 // at press time would put this chapter's summary on whatever row the writer
@@ -260,7 +260,7 @@ describe("autosize", () => {
   });
 
   test("pressing Edit on a long-existing synopsis autosizes without typing", async () => {
-    // NAMED FOR ITS OWN CLAIM (097 review, ticket 11): the panel's `open`
+    // NAMED FOR ITS OWN CLAIM: the panel's `open`
     // already autosizes the field once, before Read is even painted, so a
     // test that never pressed Edit was passing for a route it never ran --
     // `onEditClick`'s own call to `autosize` was unverified by anything.
@@ -275,7 +275,7 @@ describe("autosize", () => {
   });
 
   test("a real scrollHeight sizes the field directly, clamped to the bound", async () => {
-    // 097 review, ticket 05: a paragraph with no literal newline used to open
+    // a paragraph with no literal newline used to open
     // at the 4-row minimum no matter how long it read once wrapped. happy-dom
     // never lays text out -- `scrollHeight` is always 0 here, which is what
     // the fallback test above exercises -- so this fakes a real engine's
@@ -452,7 +452,7 @@ describe("saving", () => {
   });
 
   test("a save that resolves after Escape does not repaint the dismissed panel", async () => {
-    // 097 review, ticket 07: `close` (Escape, Cancel on an empty synopsis, an
+    // `close` (Escape, Cancel on an empty synopsis, an
     // outside click) used to leave `generation` untouched, so a `commit`
     // still in flight when it fires held the SAME generation the write
     // started with -- its own guard never tripped, and the answer repainted a
@@ -560,7 +560,7 @@ describe("dismissal", () => {
   });
 
   test("a click outside leaves it open, saves nothing and moves no focus", async () => {
-    // 241: the inspector. Clicking the prose beside it is the point, so an
+    // the inspector. Clicking the prose beside it is the point, so an
     // outside click leaves it open, exactly as it leaves the preview rail.
     const r = rig();
     const elsewhere = document.createElement("button");
@@ -611,7 +611,7 @@ describe("teardown", () => {
     }) as typeof document.removeEventListener;
     try {
       const r = rig();
-      // 241: no outside-click closer on the inspector.
+      // no outside-click closer on the inspector.
       expect(added).not.toContain("click");
       r.panel.destroy();
       expect([...removed].sort()).toEqual([...added].sort());

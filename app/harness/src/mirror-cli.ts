@@ -2,10 +2,10 @@
 // Graded READABLE-MIRROR run: the folder is written, an edit made outside it is
 // noticed and not overwritten, and the writer takes that edit into their book.
 //
-// THE STANDING P0 THIS CLOSES. Slices 019, 020, 021 and 029 each ended with the
+// THE STANDING P0 THIS CLOSES. Four earlier changes each ended with the
 // same sentence in their write-back: no rig covers the mirror, and every claim
 // about it in this repository is checked by a `cargo` test over a temp
-// directory. 029 was total -- every prose edit invisible to the folder,
+// directory. One of them was total -- every prose edit invisible to the folder,
 // permanently, for four slices -- and it was found by READING the code, by no
 // test and no instrument. `mirror_carries_a_prose_edit` below is the gate that
 // would have caught it, and the sabotage run that proves it can go red is in
@@ -21,7 +21,7 @@
 // THE ORACLE IS `mirror-read.ts`, NEVER THE HOST'S PARSER. The design names an
 // independent restatement as an obligation of this comparison
 // (`readable-mirror-design.md:549-559`), and until this rig existed that module
-// shipped with no gate consuming it -- flagged as such in 021's write-back.
+// shipped with no gate consuming it -- flagged as such in an earlier write-back.
 //
 // THREE THINGS THAT COST THIS RIG'S ANCESTOR FIVE RUNS, all recorded in
 // mirror-shot.ts and all still true here:

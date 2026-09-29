@@ -61,7 +61,7 @@ function isChordValue(value: string): boolean {
  *  the moment an entry stops colliding, which is what keeps this from
  *  becoming a place a real translation gap hides. */
 const ALLOWLIST: readonly string[] = [
-  // The banner's disclosure summary (236): the same loanword in both.
+  // The banner's disclosure summary: the same loanword in both.
   "Details",
   "Neutral",
   "System",
@@ -69,7 +69,7 @@ const ALLOWLIST: readonly string[] = [
   "Sans",
   "Mono",
   "Zoom",
-  // Preferences' start-select label (099): a genuine German loanword,
+  // Preferences' start-select label: a genuine German loanword,
   // identical in both catalogs on purpose -- shortened from a full sentence
   // after a review capture showed the sentence wrapping onto its own
   // full-width line above the row, breaking the label-left layout every
@@ -91,7 +91,7 @@ const ALLOWLIST: readonly string[] = [
   "PDF",
   "Word",
   "{width} x {height} mm ({widthIn} x {heightIn} in)",
-  // A research copy's size (239): the SI unit symbols read the same in both.
+  // A research copy's size: the SI unit symbols read the same in both.
   "{size} KB",
   "{size} MB",
 ];

@@ -178,7 +178,7 @@ describe("the manuscript is the lit surface", () => {
   });
 });
 
-describe("the bundled prose serif (243)", () => {
+describe("the bundled prose serif", () => {
   const ui = join(import.meta.dir, "..");
   const faces = [...css.matchAll(/@font-face\s*{([^}]*)}/g)].map((m) => m[1]!);
 

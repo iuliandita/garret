@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { CATALOGS, DE, EN } from "../src/i18n";
 
-// 088: the Alt letter that opens each menu is a catalog value, so German
+// the Alt letter that opens each menu is a catalog value, so German
 // opens Datei with Alt+D and the Help panel says so. These invariants hold
 // per catalog; the German letters are also asserted literally, because a
 // catalog copied from English satisfies every relational check below.

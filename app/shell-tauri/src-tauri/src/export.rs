@@ -498,10 +498,10 @@ impl Format {
 /// is decoration: the command reports the count, the page says it in the export
 /// notice, and the graded run gates on it.
 ///
-/// BYTES, NOT A STRING, since 040. Markdown is text and every other format on
+/// BYTES, NOT A STRING. Markdown is text and every other format on
 /// the publishing track is not -- an EPUB is a zip container and a PDF is
 /// binary -- so a renderer that could only answer in `String` would have to be
-/// rewritten by whichever slice added the first one, along with every caller.
+/// rewritten by whichever change added the first one, along with every caller.
 /// The Markdown renderer still builds a `String` internally and hands over its
 /// UTF-8: nothing about the emitted bytes changed when this type did.
 pub struct Manuscript {

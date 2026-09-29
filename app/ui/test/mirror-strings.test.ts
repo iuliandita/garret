@@ -61,7 +61,7 @@ suite("the mirror never describes itself as protection", () => {
   });
 
   test("nothing here calls the folder a merge or a sync", () => {
-    // THIS GUARD SURVIVED 022 AND CHANGED WHAT IT MEANS. Until acceptance
+    // THIS GUARD SURVIVED AND CHANGED WHAT IT MEANS. Until acceptance
     // shipped it said the application never reads a file back, which is no
     // longer true. What is still true, and is the stronger claim, is HOW it
     // reads one: a whole document replaces a whole document, once, because the

@@ -29,7 +29,7 @@
 // Bibel, Pseudonym, Fokusmodus, Schreibmaschinenmodus.
 
 export const DE = {
-  // panel-shell.ts: the Close icon every anchored panel shares (238).
+  // panel-shell.ts: the Close icon every anchored panel shares.
   "panel.close": "{title} schließen",
   "help.about": "Erklärung zu {label}",
   "menu.review-proposals": "Vorschläge prüfen...",
@@ -1620,7 +1620,7 @@ export const DE = {
   "timeline.card.field.branch": "Zweig",
   "timeline.card.field.branch.main": "Die Haupthandlung",
 
-  // ---- branches (103) ------------------------------------------------------
+  // ---- branches ------------------------------------------------------
   "timeline.toolbar.add-branch": "+ Zweig",
   "timeline.branch.form.title": "Neuer Zweig",
   "timeline.branch.field.name": "Name",
@@ -1637,7 +1637,7 @@ export const DE = {
   "timeline.branch.delete.count.one": "Löscht {count} Ereignis mit.",
   "timeline.branch.delete.count.other": "Löscht {count} Ereignisse mit.",
 
-  // ---- the calendar, eras, the scale panel (103) ---------------------------
+  // ---- the calendar, eras, the scale panel ---------------------------
   "timeline.toolbar.scale": "Skala: {unit}",
   "timeline.toolbar.edit-scale": "Skala bearbeiten…",
   "timeline.scale.panel.title": "Skala bearbeiten",
@@ -1665,7 +1665,7 @@ export const DE = {
   "timeline.scale.save": "Speichern",
   "timeline.scale.cancel": "Abbrechen",
 
-  // ---- cast tracks and track naming (103) -----------------------------------
+  // ---- cast tracks and track naming -----------------------------------
   "timeline.track.new.thread": "Ein Handlungsstrang",
   "timeline.track.new.cast": "Ein Besetzungsmitglied",
   "timeline.track.default": "Spur {n}",
@@ -1674,7 +1674,7 @@ export const DE = {
   "timeline.track.delete": "Spur löschen",
   "timeline.track.gone": "(nicht mehr in der Besetzung)",
 
-  // ---- drag and the collapsed dots (103) ------------------------------------
+  // ---- drag and the collapsed dots ------------------------------------
   "timeline.drag.at": "{at}",
   "timeline.drag.at-dated": "{at} ({date})",
 
@@ -1714,7 +1714,7 @@ export const DE = {
   "outline.gone.move": "Dieser Eintrag ist nicht mehr in Ihrer Gliederung, er konnte deshalb nicht verschoben werden. ({id})",
   "outline.gone.delete": "Dieser Eintrag ist nicht mehr in Ihrer Gliederung, er konnte deshalb nicht gelöscht werden. ({id})",
   "outline.gone.restore": "Dieser Eintrag ist nicht mehr in Ihrer Gliederung, er konnte deshalb nicht wiederhergestellt werden. ({id})",
-  // ---- 085: structural undo ------------------------------------------------
+  // ---- structural undo ------------------------------------------------------
   "outline.undo.label.create": "Hinzufügen von {title}",
   "outline.undo.label.move": "Verschieben von {title}",
   "outline.undo.label.rename": "Umbenennen von {title}",
@@ -1928,7 +1928,7 @@ export const DE = {
     "Vergleich von {title}: was Ihr Buch hat, gegen das, was die Datei hat.",
   "mirror.changes.diff.region.full": "{intro} {summary}",
 
-  // ---- taking a change into the book (022) --------------------------------
+  // ---- taking a change into the book --------------------------------
   "mirror.changes.accept": "Diese Wörter übernehmen",
   "mirror.changes.accept.name": "Die Wörter der Datei in {title} übernehmen",
   "mirror.changes.accept.all.one": "Die Wörter aus 1 Datei übernehmen",

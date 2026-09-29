@@ -26,7 +26,7 @@
 // figure with the full-size viewer open on it.
 //
 // WALK BUDGET: zero AT-SPI walks in boots 1 and 2, ONE in boot 3, FIVE in
-// boot 4 (105) and TWO in boot 5, which is `menu-cli`'s recorded ceiling for
+// boot 4 and TWO in boot 5, which is `menu-cli`'s recorded ceiling for
 // a boot that is not counting keystrokes. Boot 3's is new (097 review): it
 // reopens on a row boot 2 gave a synopsis, so the panel now opens in READ --
 // #synopsis-field and #synopsis-save are `display: none` there and a tab
@@ -87,11 +87,11 @@ const SECTION_GAP = 16;
 /** RESTATED from app/ui/src/item-types.ts's RESERVED_ROOT_TYPES: the bin, the
  *  bible, and the two matter sections, which is where SECTION_GAP is drawn. */
 const RESERVED_ROOT_TYPES = ["trash", "bible", "front", "back"];
-/** #project-bar plus #nav-header, both 39px by design (the bar declares it
- *  since 067), exactly as `switch-cli` restates them. Every navigator y below
+/** #project-bar plus #nav-header, both 39px by design (the bar declares it),
+ *  exactly as `switch-cli` restates them. Every navigator y below
  *  is offset by the pair. */
 const NAV_TOP = 39 + 39;
-/** #footer { height: 34px }, since 067. The navigator's rows still start at
+/** #footer { height: 34px }. The navigator's rows still start at
  *  NAV_TOP, but the pane ends this much before the window does, so the
  *  "every row is on screen" guard subtracts it. */
 const FOOTER_HEIGHT = 34;
@@ -571,7 +571,7 @@ const afterResave = query<{ body: string }>(projectPath, "SELECT body FROM synop
 // puts two tab stops between the field and the create. The appearances panel
 // focuses ITSELF, and its list holds one checkbox per member -- so with one
 // member, Tab reaches the box and a second Tab reaches Save.
-// ALIAS_TYPED (105): typed into the sheet's first (and only) blank alias row
+// ALIAS_TYPED: typed into the sheet's first (and only) blank alias row
 // after Save, "Quill" -- the leftmost, whole-word occurrence " Quill" below
 // puts into the scene's own prose. Not a name this build's matcher could
 // confuse with the member's own -- `MIN_CAST_NAME_LENGTH`'s three-character
@@ -601,7 +601,7 @@ await boot("cast", {
     await tabsThenReturn(key, 1);
     await Bun.sleep(SAVE_MS);
 
-    // THE ALIAS (105). Reopen the Cast panel, select the one entry, then
+    // THE ALIAS. Reopen the Cast panel, select the one entry, then
     // press BY ID AND BY NAME through AT-SPI, not by a Tab count: the first
     // version counted "one Tab to the alias row, eight to Save" from
     // cast-panel.ts's DOM order and the run stored no alias at all -- a
@@ -645,7 +645,7 @@ await boot("cast", {
     key("Escape");
     await Bun.sleep(SAVE_MS);
 
-    // THE PROSE (105). Escape above returned focus to the editor
+    // THE PROSE. Escape above returned focus to the editor
     // (`onDismiss`); `ctrl+End` puts the caret at the end of the scene's own
     // text so the LEADING SPACE below is what keeps "Quill" a whole word --
     // typed anywhere else it risks landing mid-word with nothing this rig
@@ -655,7 +655,7 @@ await boot("cast", {
     xdo(display, ["type", "--delay", "40", ` ${ALIAS_TYPED}`]);
     await Bun.sleep(SETTLE_MS);
 
-    // THE HOVER (105), `cast-hover.ts`'s own two-walk shape: one AT-SPI walk
+    // THE HOVER, `cast-hover.ts`'s own two-walk shape: one AT-SPI walk
     // to find the alias in the prose and where it is drawn, one to read the
     // card's own name back. NO SEPARATE CONFIRM WALK: `castCardText` already
     // answers null when no card (or no named node under one) is there, which
@@ -751,7 +751,7 @@ if (target === undefined) {
       await Bun.sleep(SAVE_MS);
       // ONE Tab and a Return select the FIRST entry. The book already holds
       // the member boot 4 created, so the panel opens with the add row
-      // collapsed (096) and focus on the panel itself rather than
+      // collapsed and focus on the panel itself rather than
       // `#cast-new-name` -- the very first Tab reaches the first entry, `shot-cli
       // --cast`'s own count for the same non-empty case.
       await tabsThenReturn(key, 1);

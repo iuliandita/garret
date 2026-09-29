@@ -1,5 +1,5 @@
 // app/harness/test/preflight-gates.test.ts
-// The five preflight gates (107), and the failing direction of each. The two
+// The five preflight gates, and the failing direction of each. The two
 // numeric gates are exercised AT their boundary and one step past it, with an
 // explicit non-zero threshold passed in so the test is about the comparison
 // and not about the placeholder constant reading FAIL by design.

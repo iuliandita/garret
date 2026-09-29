@@ -89,7 +89,7 @@ describe("the panel does not lie about the editor's keymap", () => {
   });
 
   test("the four Alt menu chords match the menu bar's own keys", () => {
-    // 088: the bar names a catalog key per menu and the letter lives there.
+    // the bar names a catalog key per menu and the letter lives there.
     // `menu-accelerators.test.ts` pins the letter to the title in every
     // catalog; this is the panel's half, through the active catalog.
     const menu = readFileSync(join(SOURCE, "menu-bar.ts"), "utf8");
@@ -136,7 +136,7 @@ describe("the panel itself", () => {
     }
   });
 
-  test("the groups flow inside #help-columns and the heading stays outside it (089)", () => {
+  test("the groups flow inside #help-columns and the heading stays outside it", () => {
     const { container, panel } = mount();
     try {
       const columns = container.querySelector<HTMLElement>("#help-panel > .panel-body > #help-columns");
@@ -372,7 +372,7 @@ describe("the panel shows every group, in columns that grow down", () => {
   // into two columns. The columns then sat on the panel itself, beside its
   // max-height, and a multicol box with a constrained height does not scroll:
   // it spawns a third column SIDEWAYS, and the Menus group lived there,
-  // off-screen, in both languages (089, found by a capture). happy-dom does no
+  // off-screen, in both languages (found by a capture). happy-dom does no
   // layout, so this parses the stylesheet the way theme.test.ts does.
   const CSS = readFileSync(join(SOURCE, "..", "style.css"), "utf8");
   const block = (selector: string): string => {
@@ -385,7 +385,7 @@ describe("the panel shows every group, in columns that grow down", () => {
     expect(block("#help-columns")).toMatch(/column-count:\s*2/);
     expect(block("#help-columns")).not.toMatch(/max-height|\bheight:/);
     expect(block("#help-panel")).not.toContain("column-count");
-    // The shell's body is what scrolls (238), and this one never sideways.
+    // The shell's body is what scrolls, and this one never sideways.
     expect(block(".panel-body")).toMatch(/overflow-y:\s*auto/);
     expect(block("#help-panel .panel-body")).toMatch(/overflow-x:\s*hidden/);
     expect(block("#help-panel .panel-body")).not.toContain("column-count");
@@ -405,7 +405,7 @@ describe("the panel does not lie about the bars' own keys", () => {
   // the find panel's arrows walk its results - and nothing checked them. This
   // is the same guard at a third and fourth surface: it does not prove the
   // CURRENT rows are right, it fails when a NEW key is bound and not shown.
-  // Each is read with the panel shell, which binds their Escape since 238.
+  // Each is read with the panel shell, which binds their Escape.
   const SURFACES = ["find-bar.ts", "rename-panel.ts"];
   const SHELL = "panel-shell.ts";
 
@@ -536,7 +536,7 @@ describe("the context menu's chords are bound and shown", () => {
   });
 });
 
-describe("the outline's undo/redo chord is bound and shown (085)", () => {
+describe("the outline's undo/redo chord is bound and shown", () => {
   const NAVIGATOR = readFileSync(join(SOURCE, "navigator", "index.ts"), "utf8");
 
   test("the navigator's keydown handler answers Ctrl+Z and Ctrl+Y", () => {

@@ -1,5 +1,5 @@
 // app/ui/src/spell-redraw.ts
-// Make WebKit forget one word's spelling marker (111).
+// Make WebKit forget one word's spelling marker.
 //
 // THE CHECKER IS WEBKIT'S AND ITS MARKERS LIVE ON DOM TEXT NODES. Adding a word
 // to the dictionary changes what the NEXT check answers; it does not revisit a

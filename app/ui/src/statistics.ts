@@ -450,7 +450,7 @@ export interface StatRow {
   readonly label: string;
   /** Already formatted. A word when there is no number, never `0`: "none"
    *  where the scope does not exist, "not counted" where it could not be
-   *  measured (243; the glyph it replaced said neither). */
+   *  measured (the glyph it replaced said neither). */
   readonly value: string;
   /** THE NUMBER ITSELF, for the CSV/JSON export. null where `value` shows the
    *  dash: an absence stays an absence in a data file too, and an empty cell
@@ -751,7 +751,7 @@ function sourceWordGroups(summary: SourceWordSummary | undefined): StatGroup[] {
     rows: [{ key: "sources-unavailable", label: t("stats.sources.unavailable"), value: UNCOUNTED, raw: null,
       detail: t("stats.sources.unavailable.detail"), definition: t("stats.sources.definition") + gaps }],
   }];
-  // The writer's own date and time (239), not an ISO stamp: this sentence is
+  // The writer's own date and time, not an ISO stamp: this sentence is
   // read, and the export carries the same words beside the raw figures.
   // No start, no sentence: "Measurement started" needs a date after it.
   const since = summary.started_at === null

@@ -15,7 +15,7 @@
 // reaches the navigator), and a save that read the selection at press time
 // would put this chapter's summary onto whatever row they had wandered to.
 //
-// READ FIRST, EDIT SECOND (097, W4), the cast sheet's own shape: `#synopsis-
+// READ FIRST, EDIT SECOND, the cast sheet's own shape: `#synopsis-
 // read` shows what the store holds as a PARAGRAPH, in the editor's own prose
 // face, with an Edit control; `#synopsis-form` is the field this panel has
 // always had, plus a Cancel beside Save. `panel.dataset.mode` is the only
@@ -68,7 +68,7 @@ export interface SynopsisPanel {
   destroy(): void;
 }
 
-/** The textarea's own bound (097, decision 1): a paragraph is not a two-line
+/** The textarea's own bound: a paragraph is not a two-line
  *  slot with a scrollbar, and a synopsis is not an epic either -- 16 lines is
  *  already taller than this panel's own comfortable height. */
 const MIN_ROWS = 4;
@@ -111,7 +111,7 @@ export function createSynopsisPanel(deps: SynopsisPanelDeps): SynopsisPanel {
   // which is information rather than an interruption.
   status.setAttribute("role", "status");
 
-  // ---- read (097, W4) -----------------------------------------------------
+  // ---- read -----------------------------------------------------
   const readBlock = document.createElement("div");
   readBlock.id = "synopsis-read";
 
@@ -155,7 +155,7 @@ export function createSynopsisPanel(deps: SynopsisPanelDeps): SynopsisPanel {
   // The panel's reason for existing, so it is the one filled control on it.
   saveButton.dataset.weight = "primary";
 
-  // ONE ROW, RIGHT-ALIGNED (097 review, ticket 04): `#synopsis-form` is a
+  // ONE ROW, RIGHT-ALIGNED: `#synopsis-form` is a
   // column flex so the field can stretch to the panel's width, and the
   // default cross-axis `stretch` that comes with it stretched Cancel and
   // Save to that same width too -- two full-height stacked buttons instead
@@ -206,13 +206,13 @@ export function createSynopsisPanel(deps: SynopsisPanelDeps): SynopsisPanel {
     return lineHeightPx;
   }
 
-  /** Grows the field with what is typed, never past the bound (097, decision
-   *  1): a paragraph is not a two-line slot with a scrollbar, and this is also
+  /** Grows the field with what is typed, never past the bound:
+   *  a paragraph is not a two-line slot with a scrollbar, and this is also
    *  run whenever the field's own value changes from OUTSIDE typing -- opening
    *  Edit on a long-existing synopsis -- so the box is never undersized for
    *  content that was already there.
    *
-   *  SIZED FROM `scrollHeight`, NOT THE LINE COUNT (097 review): a paragraph
+   * SIZED FROM `scrollHeight`, NOT THE LINE COUNT: a paragraph
    *  with not one literal newline in it used to open at the 4-row minimum
    *  regardless of how long it read, wrapped or not -- the box is reset to
    *  the minimum FIRST so `scrollHeight` reports the content's own overflow
@@ -336,7 +336,7 @@ export function createSynopsisPanel(deps: SynopsisPanelDeps): SynopsisPanel {
     fillField(stored ?? "");
     // SHOW FIRST, MEASURE SECOND. `autosize` reads `scrollHeight`, and a field
     // inside a `display: none` block measures 0, which sends it down the
-    // newline fallback: the 097 edit capture showed a one-paragraph synopsis
+    // newline fallback: an earlier capture showed a one-paragraph synopsis
     // at four rows with a scrollbar for exactly this order.
     setMode("edit");
     autosize();

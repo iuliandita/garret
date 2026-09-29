@@ -5,7 +5,7 @@
 // THE PATH NO OTHER RIG HERE TAKES, and until 2026-08-26 the only path in the
 // application with no coverage of any kind. Every other graded rig seeds a
 // project through the host and boots it with `APP_PROJECT`; every screenshot in
-// `app/results/screenshots/` is of a seeded project. Slices 023 and 024 fixed
+// `app/results/screenshots/` is of a seeded project. This path once had
 // four defects that were all visible in the FIRST FRAME of the unseeded path -
 // no way to quit the application from inside it, a starter project called
 // `default`, no rename anywhere, and an import section naming no folder - and
@@ -243,8 +243,8 @@ async function main(): Promise<void> {
   // library and its own default project, and a rig that made either one first
   // has quietly done the application's first act for it.
   //
-  // ONLY `settings.json` ITSELF IS PLANTED, and only since 100 flipped
-  // `Start`'s default to `Home`: this rig's whole subject is the
+  // ONLY `settings.json` ITSELF IS PLANTED, and only since `Start`'s default
+  // flipped to `Home`: this rig's whole subject is the
   // CREATED-DEFAULT path (`open_from_library`'s `Choice::Default` arm), which
   // `Start::Home` would skip entirely with no `APP_PROJECT` to fall back to --
   // this rig has none, because the project this asserts on does not exist

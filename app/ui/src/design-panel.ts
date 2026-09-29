@@ -252,7 +252,7 @@ export function createDesignPanel(deps: DesignPanelDeps): DesignPanel {
       source: t(`design.transfer.source.${preview.source}`),
     });
     review.append(intro);
-    // A LIST OF SENTENCES, one per setting (239): "Body font changes from
+    // A LIST OF SENTENCES, one per setting: "Body font changes from
     // Crimson Text to Author's Serif", never a log line with an arrow and a
     // "build default (no saved choice)" standing in for "the default".
     const list = document.createElement("ul");

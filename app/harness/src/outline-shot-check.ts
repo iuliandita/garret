@@ -91,7 +91,7 @@ export function assertOutlineViewShown(probe: unknown, mode: "table" | "cards" |
 export type OutlineBox = [number, number, number, number];
 export interface OutlineRowGeometry { row: OutlineBox; first: OutlineBox; move: OutlineBox }
 
-/** The table rows the probe found, for `--outline-act` (242). Refuses a probe
+/** The table rows the probe found, for `--outline-act`. Refuses a probe
  *  without enough rows rather than clicking at a guessed coordinate. */
 export function outlineRows(probe: unknown, needed: number): OutlineRowGeometry[] {
   const box = (value: unknown): value is OutlineBox => Array.isArray(value) && value.length === 4 && value.every((n) => typeof n === "number");

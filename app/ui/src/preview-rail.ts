@@ -3,7 +3,7 @@
 // four options that change it and the Save that writes it.
 //
 // ONE RAIL FOR BOTH BOOK FORMATS, and that is a decision rather than an
-// economy. 043 built this for the EPUB; 044 shows a proof copy in it. Two rails
+// economy. This was built for the EPUB; it also shows a proof copy for the PDF. Two rails
 // would be two answers to where a preview lives, two Closes, two Save controls
 // and two places to forget the six stylesheet lists -- and the FOUR OPTIONS ARE
 // THE SAME OPTIONS, because `design.glyph` and `design.chapter` are the book\u2019s
@@ -293,13 +293,13 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
         words: String(view.words),
       }),
     ];
-    // WHAT WAS MEASURED, NOT WHAT WAS ASKED FOR. 040 recorded that this
-    // application ships no font files and that a writer whose machine lacks the
+    // WHAT WAS MEASURED, NOT WHAT WAS ASKED FOR. This
+    // application ships no font files, and a writer whose machine lacks the
     // face "gets something else and is told nothing". They are told now.
     if (!view.font_resolved) {
       lines.push(t("preview.pdf.font-missing", { font: view.font }));
     }
-    // 040's other open gap: the gutter minimum is banded by page count, which
+    // Another open gap: the gutter minimum is banded by page count, which
     // nothing knew until a book was laid out.
     const verdict = gutterVerdict(view.gutter_minimum_um, view.inner_um);
     if (verdict !== "unknown") {
@@ -371,7 +371,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   /** Put the summary's sentences on the screen AND in its accessible name.
    *
    *  `#preview-summary` is `role="status"`, and WebKitGTK maps that to an ATK
-   *  STATUS BAR WHOSE CHILDREN IT PRUNES. 109's walk read the node as `status
+   *  STATUS BAR WHOSE CHILDREN IT PRUNES. A walk of the live application read the node as `status
    *  bar name="" text="" kids=0` while "40 sections, 2000 words." was on the
    *  screen in front of the writer: the one sentence saying what this rail is
    *  showing reached assistive technology as nothing at all. `#word-count`
@@ -404,7 +404,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
    *
    *  THE ONLY ARITHMETIC ON THIS SURFACE, and it is a unit conversion rather
    *  than a measurement: `covers.ts`'s rule is that the page holds no threshold,
-   *  and the threshold here arrived from the host. 040's panel converts the
+   *  and the threshold here arrived from the host. The design panel converts the
    *  same way and neither stores what it displayed. */
   function millimetres(um: number): string {
     return String(Math.round(um / 10) / 100);
@@ -459,7 +459,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     } catch (error: unknown) {
       if (destroyed || mine !== generation) return;
       // NO REPAINT HERE, AND THAT IS DELIBERATE RATHER THAN AN OMISSION.
-      // 040's design panel repaints in its catch because it can be showing a
+      // The design panel repaints in its catch because it can be showing a
       // value the writer typed; this rail paints ONLY from the host's answer,
       // so on a refusal the pressed states already say exactly what the file
       // holds. A `paintOptions()` here was written first and a mutation

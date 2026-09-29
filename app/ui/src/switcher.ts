@@ -18,7 +18,7 @@ import { createIcon } from "./icons";
  *  section above is a second copy on this device; the archive section is a file
  *  to carry away. This is the writer's own manuscript in ordinary Markdown, so
  *  they can open one scene in any editor. Every string here is written under
- *  that constraint: 019 writes files and never reads one back, so the panel
+ *  that constraint: this writes files and never reads one back, so the panel
  *  must not imply an edit made outside would come home. */
 export type { MirrorReport } from "./mirror-indicator";
 
@@ -121,7 +121,7 @@ export interface SwitcherDeps {
   listImports(): Promise<ImportReport>;
   /** Import one of them as a new project. Like createProject, does NOT switch.
    *  Resolves with the loss report as well as the summary, so a DOCX source
-   *  that could not carry everything is said out loud (093's decision 7). */
+   *  that could not carry everything is said out loud). */
   importProject(filename: string): Promise<ImportOutcome>;
   /** The verified recovery points for this project, newest first. */
   listRecoveryPoints(): Promise<RecoveryPoint[]>;
@@ -175,7 +175,7 @@ export interface SwitcherDeps {
   /** Drop a MISSING book from the list. The host refuses a file that is still
    *  there and a path it never recorded; nothing on disk is touched. */
   forgetProject(path: string): Promise<void>;
-  /** One click to the cast (095, W2). The header's own button opens the same
+  /** One click to the cast. The header's own button opens the same
    *  panel the Outline menu's `menu-cast` does; this is that route, not a
    *  second implementation. */
   openCast(): void;
@@ -191,12 +191,12 @@ export interface SwitcherDeps {
    *  route in, the unit no longer has one of its own and the page decides. */
   onDismiss: () => void;
   /** Whether any copy failed, went stale or is paused (the footer dot's
-   *  amber, 236). Read on every open: Backups and archives opens by itself
-   *  only then (240). Absent means never. */
+   *  amber). Read on every open: Backups and archives opens by itself
+   *  only then. Absent means never. */
   copiesNeedAttention?: () => boolean;
 }
 
-/** The last folder a path names, for the panel's short form of a path (240).
+/** The last folder a path names, for the panel's short form of a path.
  *  `file` takes the folder the file is IN; otherwise the path is a folder.
  *  Both separators, because a Windows build hands back backslashes. Falls
  *  back to the whole path when there is no segment to take, so the line
@@ -224,8 +224,8 @@ export interface Switcher {
    *  File > Rename project... calls this: one implementation, two routes. */
   beginRename(): void;
   /** Show or hide the header's own book-shaped controls -- the rename button,
-   *  its field, and the cast button beside it. `false` at the empty boot
-   *  (099): `createSwitcher` builds these into `#nav-header` unconditionally,
+   *  its field, and the cast button beside it. `false` at the empty boot:
+   *  `createSwitcher` builds these into `#nav-header` unconditionally,
    *  before main.ts knows whether a book is open, so with nothing open they
    *  would otherwise sit beside `library.no-book`'s sentence reading a
    *  leftover project name and offering a Cast panel with nothing in it --
@@ -291,7 +291,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   nameField.hidden = true;
   nameField.setAttribute("aria-label", t("switcher.rename.label"));
 
-  // THE CAST BUTTON, AT THE HEADER'S RIGHT END (095, W2). Fits the pattern of
+  // THE CAST BUTTON, AT THE HEADER'S RIGHT END. Fits the pattern of
   // the application menu's own button: an icon, an aria-label out of the
   // catalog, and `title` carrying the same word to a sighted writer who has
   // not clicked it yet.
@@ -336,8 +336,8 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   // list that are both navigation.
   create.dataset.weight = "primary";
 
-  // WHERE THE BOOK WILL GO, shown before the writer commits. 019's enable act,
-  // for its reason: the resolved destination is the thing being consented to,
+  // WHERE THE BOOK WILL GO, shown before the writer commits, for its
+  // reason: the resolved destination is the thing being consented to,
   // and this is the one that catches a book about to land somewhere the writer
   // did not mean -- a synced folder, or the library when they thought they had
   // chosen otherwise.
@@ -417,7 +417,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   legacyRecovery.id = "project-legacy-recovery";
   legacyRecovery.hidden = true;
 
-  // DEVICE-LOSS PROTECTION, AND ITS OWN SECTION. 015's maintenance note is
+  // DEVICE-LOSS PROTECTION, AND ITS OWN SECTION. The maintenance note is
   // explicit that this must not be folded into the recovery heading above it:
   // the design's section 6 argument is that in-project history, same-device
   // recovery and a file the writer moves off the computer themselves are three
@@ -537,7 +537,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   // Same reason as the project list above.
   archiveList.tabIndex = -1;
 
-  // PROGRESSIVE DISCLOSURE (240). The panel opened on four encryption
+  // PROGRESSIVE DISCLOSURE. The panel opened on four encryption
   // buttons, two lists and three explanations a writer reaches for rarely,
   // under the books they came to open. Two disclosures hold them: the
   // import folder while it is empty, and everything about copies. The
@@ -728,7 +728,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   async function reload(): Promise<void> {
     const mine = ++generation;
     renderMessage(t("switcher.loading"));
-    // The folder's name, the whole path on hover (240): the absolute path
+    // The folder's name, the whole path on hover: the absolute path
     // was the first thing the panel said, and it is the least of what a
     // writer came for. The title carries it for the one who wants it.
     const path = deps.currentPath();
@@ -781,7 +781,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       if (mine !== generation) return;
       importWhere.textContent = t("switcher.import.where", { dir: report.dir });
       renderImports(report.files);
-      // Collapsed only while there is nothing to import (240): a file waiting
+      // Collapsed only while there is nothing to import: a file waiting
       // in the folder is the reason to show it.
       if (report.files.length > 0) expand(importToggle, importBody, true);
     } catch (error) {
@@ -1631,7 +1631,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       // changed since the panel was opened.
       setOpen(true);
       // Each open starts from the rule, not from how the last one was left:
-      // closed unless asked for, or unless a copy needs attention (240).
+      // closed unless asked for, or unless a copy needs attention.
       expand(importToggle, importBody, focus === "import");
       expand(copiesToggle, copies, focus === "copies" || (deps.copiesNeedAttention?.() ?? false));
       // ORDER IS LOAD-BEARING. `reloadImports` reads `generation` WITHOUT

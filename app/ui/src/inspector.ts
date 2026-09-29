@@ -1,5 +1,5 @@
 // app/ui/src/inspector.ts
-// THE INSPECTOR (241): the panels that are ABOUT the manuscript and are worked
+// THE INSPECTOR: the panels that are ABOUT the manuscript and are worked
 // beside it (comments, synopsis, cast, appearances, history, review, craft,
 // statistics) sit in the third grid column, where the preview rail lives,
 // instead of hanging over the prose from the header. AMENDS "a panel covers

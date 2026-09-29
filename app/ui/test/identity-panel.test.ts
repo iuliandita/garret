@@ -180,7 +180,7 @@ describe("the pen names panel", () => {
   });
 
   test("pinning requires preview and passes only its token and identity ID", async () => {
-    // THE CONTAINMENT, ASSERTED ON THE WIRE. 042's rule one surface further in:
+    // THE CONTAINMENT, ASSERTED ON THE WIRE. The rule, one surface further in:
     // a page-composed pin is a page-composed BYLINE, and the whole guarantee of
     // this feature is that what travels inside a project file came from the
     // vault's own public and publishing tiers. The host reads the identity out

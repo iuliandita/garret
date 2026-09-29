@@ -79,8 +79,8 @@ declare global {
     __appLocale?: string;
     /** Whether minutes with an edit are counted, from settings.json. */
     __appTimeTracking?: string;
-    /** Whether a cast member's name is marked in the open scene's prose
-     *  (098), from settings.json. A bare boolean, unlike every other
+    /** Whether a cast member's name is marked in the open scene's prose,
+     *  from settings.json. A bare boolean, unlike every other
      *  injected preference: there is no spelling of it to validate. */
     __appMarkCastNames?: boolean;
     __appProject?: string;
@@ -204,11 +204,11 @@ async function main(): Promise<void> {
   let zoom: Zoom = zoomFrom(window.__appZoom);
   // The same shape as `dailyTarget` and `timeTracking`, and for the same
   // reason: a project mounted after the writer flips this must start on the
-  // new value. Absent reads as on -- the host's own default (098, W5).
+  // new value. Absent reads as on -- the host's own default.
   let markCastNames = window.__appMarkCastNames !== false;
   let privacyStatus: PrivacyStatus = { enabled: false, locked: true, recovery: false, shortcut: "ctrl_alt_l" };
   // The preferences panel's dictionary route, set once the panel exists
-  // (below, beside the menu bar): the mount hands it to every project (111).
+  // (below, beside the menu bar): the mount hands it to every project.
   let addWordToDictionary: ((word: string) => Promise<string>) | undefined;
 
   const mountAt = async (generation: number): Promise<MountedProject> =>
@@ -251,7 +251,7 @@ async function main(): Promise<void> {
   // actually presses it - the same late-binding `openHelp: () => help.open()`
   // relies on further down this function.
   let switcherHandle: Switcher | undefined;
-  // Same reason, same shape: the library screen (100) is built beside the
+  // Same reason, same shape: the library screen is built beside the
   // switcher, once `invoke` is known to exist, but `mountEmpty`'s button is
   // built before that.
   let libraryHandle: Library | undefined;
@@ -298,7 +298,7 @@ async function main(): Promise<void> {
     let current = mounted;
     let currentPath = projectPath;
     let currentGeneration = window.__appGeneration ?? 1;
-    // "project" is the pre-099 placeholder, overwritten below the instant
+    // "project" is the earlier placeholder, overwritten below the instant
     // `project_current` answers; at an empty boot nothing ever answers, so an
     // empty boot starts on the empty string instead, which is what a real
     // switch's own name updates land on top of just the same.
@@ -328,7 +328,7 @@ async function main(): Promise<void> {
         throw new Error("page shell is missing #project-controls: index.html and main.ts disagree");
       }
       // The strip above the outline, where the book's NAME lives as of slice
-      // 028. Thrown for rather than defaulted: a missing header would leave the
+      // Thrown for rather than defaulted: a missing header would leave the
       // application with no title anywhere and no rename at all, silently.
       const navHeader = document.getElementById("nav-header");
       if (navHeader === null) {
@@ -525,7 +525,7 @@ async function main(): Promise<void> {
       // leftover project and offering a Cast panel with nothing in it.
       switcher.setBookOpen(projectPath !== "");
 
-      // The library screen (100): built once, beside the switcher, as
+      // The library screen: built once, beside the switcher, as
       // application chrome that outlives any one project. `menu-library`
       // opens it whether or not a book is mounted; `openProjects` below
       // routes New/Open to it only while nothing is, because its other

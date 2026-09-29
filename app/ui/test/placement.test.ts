@@ -67,7 +67,7 @@ describe("planPlacement: a book with nothing in it yet", () => {
   // backwards.
   //
   // NONE OF THE FIXTURES ABOVE START FROM AN EMPTY BOOK. Every one of them opens
-  // with a part, which is exactly why 027's mutation pass could not see this.
+  // with a part, which is exactly why a mutation pass could not see this.
   const newBook = (): ProjectItem[] => [item("s1", null, 0, "scene")];
 
   test("a chapter with no part to live in MAKES one", () => {
@@ -206,7 +206,7 @@ describe("planPlacement: the reported tree, every type", () => {
   // two free to regress.
   test("nothing is created inside the selected scene", () => {
     // THE CLAIM IS `parentId`, asserted per type rather than as a whole object:
-    // since 030 a chapter also carries a holder to build, and an equality
+    // a chapter also carries a holder to build, and an equality
     // assertion would have made this test about that instead of about the
     // swallowing it exists to forbid.
     for (const type of ["part", "chapter", "scene"]) {
@@ -277,17 +277,17 @@ describe("planPlacement: refusals and edges", () => {
 
 describe("planAdoption: the book's first part takes the chapters in", () => {
   // THE SECOND HALF OF THE OWNER'S RULE OF 2026-08-27: "chapters inside parts,
-  // scenes inside chapters". With a chapter in every new book (033 moved that
+  // scenes inside chapters". With a chapter in every new book (that move is
   // into the host), the first New part in any book meets root-level chapters --
   // and a part created beside them reads as an empty part misfiled below the
-  // work it was meant to hold, which is the exact screenshot 030 answered.
+  // work it was meant to hold, which is the exact screenshot this answers.
   //
   // SEPARATE FROM `planPlacement`, and deliberately: placement answers where
   // the new row goes, adoption answers what moves into it. They are computed
   // from different halves of the walk (the selection's ancestry; the root
   // group) and one of them is a create while the other is a move.
 
-  /** A book as 033 leaves it, plus a second chapter the writer added.
+  /** A book in its usual shape, plus a second chapter the writer added.
    *
    *   Chapter 1
    *     Scene 1
@@ -319,7 +319,7 @@ describe("planAdoption: the book's first part takes the chapters in", () => {
   });
 
   test("a part anywhere counts, not only one at the root", () => {
-    // The reported tree of 030 has a part INSIDE a scene. It is a part the
+    // The reported tree has a part INSIDE a scene. It is a part the
     // writer put there, so this book is not the untouched one this rule is for.
     const nested: ProjectItem[] = [
       item("sc1", null, 0, "scene"),
@@ -354,7 +354,7 @@ describe("planAdoption: the book's first part takes the chapters in", () => {
   });
 
   test("a chapter press that BUILDS its part adopts too", () => {
-    // 030's holder is a part like any other, and the press that creates it is
+    // The holder is a part like any other, and the press that creates it is
     // the commonest way a book gets its first one. Keying on the TYPES BEING
     // CREATED rather than on the type the writer asked for is what makes the
     // two paths agree: New chapter in an unorganized book yields one part
@@ -396,7 +396,7 @@ describe("a selection inside a section that is not the manuscript", () => {
     const place = planPlacement(withBible(), "synopsis", "scene");
     // The bible is not an ancestor a manuscript row can follow. Following it
     // puts the writer's new scene BELOW their whole world-building section, at
-    // the bottom of the navigator, which is the 033 screenshot with a different
+    // the bottom of the navigator, which is the same screenshot with a different
     // root in it.
     expect(place.parentId).toBe(null);
     expect(place.afterId).toBe("ch1");
@@ -456,8 +456,8 @@ describe("planAdoption and the bible", () => {
 });
 
 describe("planAdoption and the matter sections", () => {
-  /** THE THIRD RESERVED ROOT BROKE 033'S FILTER, and this is the fixture that
-   *  says so. `manuscriptItemsIn` -- what the caller passed before 041 -- KEEPS
+  /** THE THIRD RESERVED ROOT BROKE THIS FILTER, and this is the fixture that
+   *  says so. `manuscriptItemsIn` -- what the caller passed before -- KEEPS
    *  front matter, because front matter is in the book. So a `part` a writer
    *  parked in their front matter would satisfy "this book already has a part"
    *  and suppress adoption forever, leaving every root chapter homeless: a

@@ -54,7 +54,7 @@ pub const MARGINS_KEY: &str = "design.margins";
 /// The longest family name this application will store. A bound rather than a
 /// list, because a writer whose machine has a face this application never heard
 /// of should be able to set their book in it -- but the value ends up inside a
-/// stylesheet declaration in 043 and 044, and an unbounded string out of a store
+/// stylesheet declaration, and an unbounded string out of a store
 /// nobody validated is not a font name.
 pub const FONT_MAX_CHARS: usize = 100;
 
@@ -621,8 +621,8 @@ mod tests {
     fn an_unknown_word_in_the_chapter_row_costs_only_itself() {
         // The chapter row is a SET, so leniency is per WORD and not merely per
         // key -- one word this build does not know cannot take the two beside
-        // it down with it. That is 040's per-key rule at the next resolution
-        // down, and it is what makes the row safe to widen in 044.
+        // it down with it. That is the per-key rule at the next resolution
+        // down, and it is what makes the row safe to widen.
         let dir = tempdir().unwrap();
         let s = store(&dir);
         s.set_meta(CHAPTER_KEY, "new-page hyphenate drop-cap")
@@ -868,7 +868,7 @@ mod tests {
         ] {
             assert_eq!(parse_font(bad), None, "{bad:?} parsed");
         }
-        // Bounded, because it goes into a stylesheet declaration in 043/044 and
+        // Bounded, because it goes into a stylesheet declaration and
         // an unbounded value from a store nobody validated is not a font name.
         assert_eq!(parse_font(&"x".repeat(FONT_MAX_CHARS + 1)), None);
         assert!(parse_font(&"x".repeat(FONT_MAX_CHARS)).is_some());

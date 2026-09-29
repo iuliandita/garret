@@ -4,7 +4,7 @@ import { isCompositionKey } from "./composition-key";
 //
 // UNTIL THIS SLICE THERE WAS NO WAY OUT OF THIS APPLICATION FROM INSIDE IT. The
 // File menu offered no Quit and no chord mapped to one, so the unsaved-work
-// prompt built by plans 011 and 012 -- the loudest moment this application has,
+// prompt -- the loudest moment this application has,
 // and the only failure here whose cost is unbounded -- could be reached only by
 // clicking the window manager's close button. On a WM-less server there was no
 // way to reach it at all, which is how a first-run session ended in a SIGTERM.

@@ -5,7 +5,7 @@ import { DE, EN, createMessages, formatDate, formatDateTime, formatNumber } from
 
 const SOURCE = join(import.meta.dir, "..", "src");
 
-// 090: digits are grouped for the language the writer chose, not for the
+// digits are grouped for the language the writer chose, not for the
 // process locale. `messages.number` carries the catalog's tag; every figure
 // on the page goes through `formatNumber`, and the walk below refuses the
 // bare call that would silently follow the shell again.

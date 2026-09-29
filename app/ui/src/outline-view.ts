@@ -83,7 +83,7 @@ const MOVE_ORDER: readonly { direction: MoveDirection; key: string }[] = [
   { direction: "indent", key: "move-in" },
 ];
 
-/** Which of the four moves a row's Move menu offers as enabled (242).
+/** Which of the four moves a row's Move menu offers as enabled.
  *
  *  `planMove` itself, against the walk the view was painted from, so the menu
  *  greys exactly what the navigator's Alt+Arrow would find inert. The store
@@ -108,7 +108,7 @@ const ROW_MOVE_KEYS: Readonly<Record<string, MoveDirection>> = {
   ArrowRight: "indent",
 };
 
-/** The outline view's row keys (242), as a pure answer.
+/** The outline view's row keys, as a pure answer.
  *
  *  The navigator's model restated for a table: arrows and Home/End walk the
  *  rows, Enter and Space activate, Alt+Arrow is the navigator's own move chord
@@ -147,7 +147,7 @@ export type DropPlan =
   | { kind: "refused" };
 
 /** Resolve a pointer over `overId`'s row (its upper or lower half) into the
- *  move steps a drop there means (242).
+ *  move steps a drop there means.
  *
  *  WITHIN ONE PARENT ONLY. The store's own moves are the four the navigator
  *  has; a drop is resolved into a run of up or down steps, each planned by the
@@ -212,7 +212,7 @@ export interface OutlineViewDeps {
   onOpen(id: string): void;
   /** May answer with the unit's outcome; a drag announces only a run that
    *  moved something. `count` is a drag's whole run of steps in one
-   *  direction, which must land as ONE undo entry (243); the keyboard and the
+   *  direction, which must land as ONE undo entry; the keyboard and the
    *  Move menu send one step and leave it out. */
   onMove(id: string, direction: MoveDirection, count?: number): void | Promise<OutlineOutcome>;
   onUndo(): void;
@@ -292,7 +292,7 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
     const actions = document.createElement("div");
     actions.className = "outline-view-actions";
     actions.append(button(t("outline-view.undo"), deps.onUndo, false, "undo"), button(t("outline-view.redo"), deps.onRedo, false, "redo"));
-    // One line of controls above the rows (242): three stacked strips of
+    // One line of controls above the rows: three stacked strips of
     // buttons read as three toolbars and pushed the first row down the page.
     const controlsBar = document.createElement("div");
     controlsBar.className = "outline-view-controls";
@@ -329,7 +329,7 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
       const counted = counts.get(item.id);
       const words = formatCount(counted) || t("outline-view.uncounted");
       const openable = isOpenableType(item.type);
-      // A title is text, and a link where the row opens (242): the bordered
+      // A title is text, and a link where the row opens: the bordered
       // chip read as a button beside the real buttons. Parts and chapters are
       // not openable, so theirs is plain text and the row itself selects.
       const title: HTMLElement = openable
@@ -454,7 +454,7 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
     return [...element.querySelectorAll<HTMLElement>(".outline-view-row")];
   }
 
-  /** Roving tabindex (242): one row, and that row's own controls, are in the
+  /** Roving tabindex: one row, and that row's own controls, are in the
    *  Tab order; every other row is reached with the arrows. A hundred rows of
    *  three controls each would otherwise be three hundred Tab stops. */
   function setActive(id: string): void {
@@ -520,7 +520,7 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
     }
   }
 
-  // THE MOVE MENU (242): one dropdown for the view, the shared `menu-panel.ts`,
+  // THE MOVE MENU: one dropdown for the view, the shared `menu-panel.ts`,
   // opened under the row's Move button. The four items call the same
   // `deps.onMove` the four buttons did, with the same catalog labels.
   const menu = createMenuPanel({
@@ -585,7 +585,7 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
   document.addEventListener("keydown", onDocumentKey);
   document.addEventListener("click", onDocumentClick, true);
 
-  // DRAG TO REORDER (242). Pointer events with capture on the grip, not HTML5
+  // DRAG TO REORDER. Pointer events with capture on the grip, not HTML5
   // drag and drop: WebKitGTK's native drag starts a toolkit drag session that
   // the X test rigs cannot drive and that paints its own ghost. The drop is
   // `planDrop`'s run of up or down steps, sent through `deps.onMove` as one

@@ -230,7 +230,7 @@ describe("mountTimeline", () => {
     m.destroy();
   });
 
-  // CAPTURE-FOUND (104): "Kellstide 1, year 1 after Kell" ticks overlapped
+  // CAPTURE-FOUND: "Kellstide 1, year 1 after Kell" ticks overlapped
   // their neighbours at every zoom; with a calendar a tick reads month and
   // day only (the band row names the year) and ticks stand 130px apart.
   test("calendar ticks read month and day, at least 130px apart", () => {
@@ -461,7 +461,7 @@ describe("mountTimeline", () => {
     m.destroy();
   });
 
-  // ------------------------------------------------------- branches (103)
+  // ------------------------------------------------------- branches
 
   describe("branches", () => {
     function branchBody(): string {
@@ -577,7 +577,7 @@ describe("mountTimeline", () => {
     });
   });
 
-  // ---------------------------------------------------- cast tracks (103)
+  // ---------------------------------------------------- cast tracks
 
   describe("cast tracks", () => {
     function castTrackBody(): string {
@@ -609,7 +609,7 @@ describe("mountTimeline", () => {
     });
   });
 
-  // ------------------------------------------------------- track rename (103)
+  // ------------------------------------------------------- track rename
 
   describe("track rename", () => {
     test("double-click on a thread track's header opens an inline field; Enter commits", () => {
@@ -724,7 +724,7 @@ describe("mountTimeline", () => {
     });
   });
 
-  // --------------------------------------------------------------- drag (103)
+  // --------------------------------------------------------------- drag
 
   describe("drag", () => {
     function dragBody(): string {
@@ -883,7 +883,7 @@ describe("mountTimeline", () => {
         const btn = container.querySelector<HTMLButtonElement>(".tl-event")!;
         stubCapture(btn);
         btn.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 0, clientY: 10, pointerId: 1 }));
-        // Past the branch lane's own top (100), well past the 4px threshold.
+        // Past the branch lane's own top, well past the 4px threshold.
         btn.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 0, clientY: 110, pointerId: 1 }));
         btn.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientY: 110, pointerId: 1 }));
         expect(dirty).toHaveLength(1);
@@ -922,7 +922,7 @@ describe("mountTimeline", () => {
     });
   });
 
-  // ------------------------------------------------------ collapsed dots (103)
+  // ------------------------------------------------------ collapsed dots
 
   describe("collapsed dots", () => {
     function crowdedBody(): string {

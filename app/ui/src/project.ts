@@ -171,7 +171,7 @@ export interface MountDeps {
   timeTracking?: () => TimeTracking;
   /** Persist the switch. The panel re-reads afterwards. */
   setTimeTracking?: (tracking: TimeTracking) => Promise<void>;
-  /** Whether the cast-marks plugin is fed any names at all (098, W5). Same
+  /** Whether the cast-marks plugin is fed any names at all. Same
    *  shape as `dailyTarget`: a getter, held outside the mount, read once at
    *  mount to seed the plugin -- a live toggle reaches the OPEN mount through
    *  `MountedProject.setMarkCastNames` instead, `current`'s own route in
@@ -179,7 +179,7 @@ export interface MountDeps {
   markCastNames?: () => boolean;
   bibleRows?: () => number;
   /** Add one word to the open book's dictionary and answer it as stored
-   *  (111). Owned by the preferences panel, which paints the list, so the
+   *  Owned by the preferences panel, which paints the list, so the
    *  panel and the host agree the moment the menu item runs. Absent in every
    *  test that does not care; the menu item then reports it cannot. */
   addToDictionary?: (word: string) => Promise<string>;
@@ -223,12 +223,12 @@ export interface MountedProject {
   announce(message: string): void;
   /** The writer chose a different daily goal. */
   setDailyTarget(target: DailyTarget): void;
-  /** The writer flipped "Mark cast names in the text" (098). Takes effect on
+  /** The writer flipped "Mark cast names in the text". Takes effect on
    *  the open scene at once -- see `preferences.ts`'s own `onMarkCastNames`. */
   setMarkCastNames(on: boolean): void;
   setBibleRows?(rows: number): void;
   /** Whether a copy failed, went stale or is paused: the status dot's amber.
-   *  The project panel opens Backups and archives by itself on it (240). */
+   *  The project panel opens Backups and archives by itself on it. */
   copiesNeedAttention?(): boolean;
   /** An accessor, not a snapshot: the latch is set by a failure that can arrive
    *  long after mounting, and the sink payload is written at the very end. */
@@ -264,7 +264,7 @@ export interface MenuProjectActions {
   exportProject(): void;
   /** Export through the operating system's own save dialog. */
   exportAs(): void;
-  /** The DOCX editor handoff (092), through the same OS save dialog. */
+  /** The DOCX editor handoff, through the same OS save dialog. */
   exportDocx(): void;
   /** Take a recovery point on this device now. */
   backupNow(): void;
@@ -276,7 +276,7 @@ export interface MenuProjectActions {
   openMirrorChanges(): void;
   openComments(): void;
   addComment(): void;
-  /** The word under the caret into this book's dictionary (111). */
+  /** The word under the caret into this book's dictionary. */
   addToDictionary(): void;
   openStatistics(): void;
   openAnalytics(): void;
@@ -309,7 +309,7 @@ export interface MenuProjectActions {
   canNavForward(): boolean;
   undo(): void;
   redo(): void;
-  /** 085's structural stack, distinct from the prose undo above. */
+  /** The outline's structural stack, distinct from the prose undo above. */
   outlineUndo(): void;
   outlineRedo(): void;
   outlineUndoLabel(): string | null;
@@ -485,7 +485,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // and doing nothing is the correct answer to it.
   let moveItem: ((itemId: string, direction: MoveDirection, count?: number) => Promise<OutlineOutcome>) | null = null;
   let removeItem: ((itemId: string) => void) | null = null;
-  // The same cycle again, for structural undo/redo (085): the navigator
+  // The same cycle again, for structural undo/redo: the navigator
   // reports Ctrl+Z at construction, the outline unit holding the stack is
   // built below it. A Ctrl+Z before it exists is one during boot, and doing
   // nothing is the correct answer to it.
@@ -643,7 +643,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   };
   // The cast list this mount last read, held for two readers: the marks
   // plugin's feed and the hover card's `memberFor` -- one read serves both,
-  // and neither makes a host call of its own (098, W5, decision 5).
+  // and neither makes a host call of its own.
   let castMembers: readonly CastMemberRow[] = [];
   // Read once at mount, on `dailyTarget`'s own reasoning; a live toggle
   // reaches this mount through `setMarkCastNames` below instead.
@@ -664,7 +664,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // Built after the bubble, once #editor exists to give it as the pane. Null
   // until then so the keystroke feed below is correctly a no-op.
   let chromeFade: ChromeFade | null = null;
-  // The open timeline, or null while the open document is prose (102). Built
+  // The open timeline, or null while the open document is prose. Built
   // and torn down from session's onTimelineDoc/the prose branch of
   // sessionEditor.replaceDoc below -- ONE variable, so "is a timeline open"
   // has one answer for focusEditor, markOpen, commentsOf and Add comment
@@ -675,10 +675,10 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       // Once per document-changing transaction, same as the word count
       // above: the module arms once and returns early after, so the
       // per-keystroke cost past the first is an attribute read and a class
-      // check (071).
+      // check.
       chromeFade?.onType();
       // A card floating over prose that just changed under it would be
-      // describing text that may no longer be there (098, W5).
+      // describing text that may no longer be there.
       castCard?.onDocChanged();
       // Outside the persistMode fork on purpose: the scene figure is a display
       // of what is on screen, and verify mode shows a document too.
@@ -757,7 +757,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   });
   formatBubble.setActive(editor.activeMarks());
 
-  /** One body for the bubble's control and the Edit item (111): the host
+  /** One body for the bubble's control and the Edit item: the host
    *  stores the word, the preferences panel repaints its list, and the writer
    *  hears which word landed -- the checker's underline is WebKit's and goes
    *  on its own schedule. A refusal (already there, nothing open) is reported
@@ -783,7 +783,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   }
   // The bubble is fixed on body and placed from the selection's own
   // coordinates; sliding #editor to recentre while it rests on screen
-  // would detach it from the text it is next to (071 fix-up review item 4).
+  // would detach it from the text it is next to.
   // formatBubble is already built above, so no optional chaining is needed
   // to read it here -- kept anyway because destroy() nulls neither, and a
   // future reorder should not silently start reading a stale null.
@@ -794,7 +794,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     blocked: () => formatBubble?.shown() === true,
   });
 
-  // NO HOST CALL ON HOVER (098, W5, decision 5): the card reads `castMembers`,
+  // NO HOST CALL ON HOVER: the card reads `castMembers`,
   // the same list `namesForCast` below feeds the editor plugin from, loaded
   // once at mount and refreshed only when the cast panel reports a change.
   castCard = createCastCard({
@@ -841,7 +841,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   void loadCastNames();
 
   /** Ctrl+Shift+I with the caret inside a marked run: the keyboard route to
-   *  the same card a hover shows (098, W5). On the DOCUMENT, `onCommentChord`'s
+   * the same card a hover shows. On the DOCUMENT, `onCommentChord`'s
    *  own reason: the editor's keymap only fires while the editor has focus. */
   const onCastCardChord = (event: Event): void => {
     if (!(event instanceof KeyboardEvent) || isCompositionKey(event)) return;
@@ -864,7 +864,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // The failure surface. One element, role=alert, raised once. The rescue copy
   // the spec also describes is deferred to the history slice.
   let persistError: string | null = null;
-  // Extracted to banner.ts (099) so the empty workspace can raise into the
+  // Extracted to banner.ts so the empty workspace can raise into the
   // SAME surface with nothing mounted - see that module for the shape and for
   // why each mount holds its own instance rather than a shared one.
   const noticeBanner = createBanner();
@@ -966,8 +966,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     // can have been edited) and for the open one once mapping has been
     // capped, so the last positions known to be right are the ones that
     // stay.
-    // A TIMELINE'S ITEM ID IS CHECKED BEFORE `flushAnchorsFor` EVER RUNS
-    // (102). `flushAnchorsFor` answers by comparing `itemId` against
+    // A TIMELINE'S ITEM ID IS CHECKED BEFORE `flushAnchorsFor` EVER RUNS.
+    // `flushAnchorsFor` answers by comparing `itemId` against
     // `session.activeDocId()`, and a timeline's id EQUALS that once it is
     // open -- `session.ts`'s own `docId` moves for either document kind. The
     // ProseMirror editor stays hidden and unchanged underneath it, so
@@ -994,7 +994,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   {
     flusher.register(activeDocId, activeDocRev);
     session = createSession({
-      // WRAPPED, not the raw editor (102): `replaceDoc` is the prose arm's
+      // WRAPPED, not the raw editor: `replaceDoc` is the prose arm's
       // own apply step, and the moment it runs is the moment any timeline
       // that was open stops being the pane's content -- so this is where its
       // mount is torn down and the ProseMirror DOM (hidden while a timeline
@@ -1110,7 +1110,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         // succeeds. Clearing before that read prevents the outgoing count from
         // being actionable during the switch.
         sceneNotes?.clear();
-        // EVERYTHING BELOW IS PROSE-ONLY (102). A timeline has no scene word
+        // EVERYTHING BELOW IS PROSE-ONLY. A timeline has no scene word
         // count, no comment anchors and no cast marks -- `sessionEditor`'s
         // own `onTimelineDoc` branch is what actually mounted it, and
         // reaching any of these three would either read the HIDDEN
@@ -1153,8 +1153,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         // again after the initial load.
         editor.setCastNames(namesForCast(castMembers));
       },
-      // A timeline is its own pane's content, not the ProseMirror editor
-      // (102): focus goes wherever the writer can actually type or press
+      // A timeline is its own pane's content, not the ProseMirror editor:
+      // focus goes wherever the writer can actually type or press
       // something, which `timelineMount.focus()` puts on the first event.
       focusEditor: () => (timelineMount !== null ? timelineMount.focus() : editor.focus()),
       onFailure: (message) => raiseNotice(t("project.error.open-document", { error: message })),
@@ -1313,7 +1313,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       // unhandled rejection here would never reach the sink. The unit reports
       // its own failures through onFailure. The outcome is handed back for the
       // outline view's drag, which announces only a run that moved something.
-      // A drag's run is ONE undo entry (243), so it goes through moveBy.
+      // A drag's run is ONE undo entry, so it goes through moveBy.
       const moved = count === 1 ? unit.move(itemId, direction) : unit.moveBy(itemId, direction, count);
       return moved.catch(() => "failed" as const);
     };
@@ -1529,8 +1529,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     exportBar = createExportBar({
       drain: () => flusher.drain(),
       // The host writes Markdown and says so; the page does not tell it which
-      // format to write, because there is only one command. When 043 adds a
-      // second, the format the bar was asked for is what chooses the command.
+      // format to write, because there is only one command. When a
+      // second is added, the format the bar was asked for is what chooses the command.
       exportProject: async () => (await invoke("project_export")) as ExportWritten,
       // The host returns null when the writer cancelled. It is carried through
       // as null rather than mapped to an error, because it is not one.
@@ -1710,7 +1710,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     });
   }
 
-  // THE SCENE'S NAME OPENS GO TO (240). Ctrl+P was reachable only from the
+  // THE SCENE'S NAME OPENS GO TO. Ctrl+P was reachable only from the
   // Outline menu and Help; the name of where the writer is, is where a writer
   // clicks to go somewhere else. Its own text stays its accessible name; the
   // tip says what a press does and names the chord, on hover and on focus.
@@ -1797,7 +1797,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   };
   document.addEventListener("keydown", onHistoryChord);
 
-  // Ctrl+E (240): File > Export manuscript (Markdown), the one export a writer
+  // Ctrl+E: File > Export manuscript (Markdown), the one export a writer
   // repeats. On the document for Ctrl+P's reasons. Everywhere, the prose and a
   // text field included: no field here has its own Ctrl+E, and the export
   // drains first, so a keystroke typed just before is in the file.
@@ -1831,8 +1831,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     // the change set and refuses any id whose row is not applicable.
     accept: async (ids) =>
       (await invoke("mirror_accept", { ids: [...ids] })) as MirrorAcceptOutcome,
-    // THE FOURTH `replaceDoc` PATH, and plan 001's write-back names it three
-    // slices before it existed: "THERE ARE NOW THREE `replaceDoc` PATHS. A
+    // THE FOURTH `replaceDoc` PATH, and an earlier plan's write-back names it before
+    // it existed: "THERE ARE NOW THREE `replaceDoc` PATHS. A
     // fourth is where this comes back." `reloadOpenDocument` is the third and
     // it already carries the whole obligation -- it swaps the body, registers
     // the new revision with the scheduler, reloads the notes the swap left the
@@ -2489,13 +2489,13 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         (await invoke("cast_picture_pick", { id })) as CastMemberRow | null,
       clearPicture: async (id) =>
         (await invoke("cast_picture_clear", { id })) as CastMemberRow,
-      // A FOURTH COMMAND, and it is the one 038 recorded as missing: there was
+      // A FOURTH COMMAND, and it is the one recorded as missing: there was
       // no way to see a picture full size at all. It is a separate read and not
       // a bigger thumbnail on the panel's own read, because it is megabytes
       // rather than kilobytes and nobody should pay for it by opening a panel.
       fullPicture: async (id) => (await invoke("cast_picture_full", { id })) as PictureView,
       showFullSize: (dataUri, label) => pictureViewer?.show(dataUri, label),
-      // EVERY "DONE" FROM THIS PANEL IS A CAST CHANGE (098, decision 5): a
+      // EVERY "DONE" FROM THIS PANEL IS A CAST CHANGE: a
       // create, a save, a remove or a picture edit can all change what the
       // plugin should be looking for or what the card should show, and the
       // panel reports every one of them through this one channel.
@@ -2530,8 +2530,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // HOW THE BOOK IS SET WHEN IT LEAVES: the body font, the page and the four
   // margins. PER BOOK, in the project's own `meta` rows -- not in
   // `settings.json`, which is per machine, and not in the preferences panel,
-  // which is per writer. Nothing consumes it yet: 043 (EPUB) needs the font and
-  // 044 (PDF) needs all three, and the publishing track's design record is
+  // which is per writer. Nothing consumes it yet: the EPUB export needs the font and
+  // the PDF export needs all three, and the publishing track's design record is
   // explicit that the mechanism is built first and alone rather than shaped by
   // whichever renderer needed it.
   let designPanel: DesignPanel | null = null;
@@ -2571,14 +2571,14 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   }
 
   // THE PICTURE ON THE FRONT OF THE BOOK AND THE ONE ON THE BACK. Beside the
-  // design and not inside it: 040's panel holds nothing that can grow and has
+  // design and not inside it: that panel holds nothing that can grow and has
   // no scroll for exactly that reason, and two cover previews are tall enough to
   // push its margin fields under the fold of a default window. The two are
   // coupled in FACT -- a cover is judged against the design's page size, which
   // this panel states -- and separate in SURFACE.
   //
   // A COVER IS NOT AN ARGUMENT TO `book_design_set`. Every axis of that command
-  // is a value the page composed; a cover name is a filename on disk, and 038's
+  // is a value the page composed; a cover name is a filename on disk, and
   // "the page never names a path, in either direction" is what keeps the two
   // apart. Three commands of its own, exactly as a cast member's picture has.
   let coversPanel: CoversPanel | null = null;
@@ -2602,13 +2602,13 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     onDismiss: () => editor.focus(),
   });
 
-  // 053. PEN NAMES, AND THE REPORT THE EXPORT CHECKS PRODUCE. Two panels and
+  // PEN NAMES, AND THE REPORT THE EXPORT CHECKS PRODUCE. Two panels and
   // one menu item: the report is opened FROM the pen-names panel, so it is
   // reachable without spending a second File slot -- and it is a separate unit
   // because it is the one surface here whose lists grow with the book.
   //
   // THE PANEL SENDS AN ID AND NEVER A PIN. `identity_pin` takes the identity's
-  // id and the host reads that identity out of the vault itself, which is 042's
+  // id and the host reads that identity out of the vault itself, which is the
   // containment rule one surface further in: a page-composed pin is a
   // page-composed byline.
   let identityPanel: IdentityPanel | null = null;
@@ -2729,7 +2729,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     referenceRail.setItems(liveItemsIn(latestItems));
   }
 
-  // THE COLUMN IS SHARED (241): an inspector opening closes whichever rail is
+  // THE COLUMN IS SHARED: an inspector opening closes whichever rail is
   // showing, and F6 moves between it and the prose.
   const uninstallInspector = setInspectorHost({
     closeRails: () => {
@@ -2895,7 +2895,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         navigator.selectById(itemId);
         revisionPanel?.open();
       },
-      // Synopsis and Who appears here (095, W2), both the same shape as
+      // Synopsis and Who appears here, both the same shape as
       // Revision state above: the two panels read the SELECTION and the
       // navigator's own `activeTitle()`, so the captured row is made the
       // selection first. Swallowed like every other panel opener in this file:
@@ -3126,7 +3126,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       canNavForward: () => navHistory.canGoForward(openableIds()),
       undo: () => { if (!continuousChapter?.crossBoundarySelection()) editor.undo(); },
       redo: () => { if (!continuousChapter?.crossBoundarySelection()) editor.redo(); },
-      // 085's structural stack, distinct from the editor's prose undo above.
+      // The outline's structural stack, distinct from the editor's prose undo above.
       // Swallowed like every other outline call from a synchronous menu
       // handler: the unit banners its own failures.
       outlineUndo: () => void outline?.undo().catch(() => undefined),
@@ -3314,7 +3314,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       formatBubble?.destroy();
       // Wakes the chrome (never leaves a hidden header behind a torn-down
       // editor) and removes its own document-level listeners and observer,
-      // same shape as the bubble's own teardown just above (071).
+      // same shape as the bubble's own teardown just above.
       chromeFade?.destroy();
       // Removes its own document-level pointer, keydown and scroll listeners,
       // the bubble's own reason: leaked, they would outlive every element

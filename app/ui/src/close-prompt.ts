@@ -66,7 +66,7 @@ export function createClosePrompt(deps: ClosePromptDeps): ClosePrompt {
   const discardButton = document.createElement("button");
   discardButton.type = "button";
   discardButton.id = "close-prompt-discard";
-  // Danger TEXT on the default surface (236), not a filled red slab: the
+  // Danger TEXT on the default surface, not a filled red slab: the
   // loudest thing in the prompt must not be the button that loses work.
   discardButton.dataset.weight = "danger";
   discardButton.textContent = t("close-prompt.discard");

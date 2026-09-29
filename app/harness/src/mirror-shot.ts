@@ -23,14 +23,14 @@
 // after a windowed `mousemove`, because WebKitGTK ignores `click --window` and
 // the pointer only hovers.
 //
-// NOT A GRADED RIG. `mirror-cli.ts` beside it is the graded one (022); this
+// NOT A GRADED RIG. `mirror-cli.ts` beside it is the graded one; this
 // stays because a capture is a measurement of its own and the two want
 // different things from the same two boots -- this one paints a panel with a
 // diff open and photographs it, and grades nothing.
 //
 // THE COMPARE CONTROL IS FOUND BY ITS ACCESSIBLE NAME, not a restated
-// coordinate: 079 replaced a `["524", "295"]` window-coordinate constant that
-// had already rotted once (022 moved the row and the number did not follow)
+// coordinate: this replaced a `["524", "295"]` window-coordinate constant that
+// had already rotted once (the row moved and the number did not follow)
 // with an AT-SPI walk after the panel settles. A name that is not there
 // refuses the capture with the names AT-SPI actually found, rather than
 // clicking whatever now sits at the old point and calling that success.

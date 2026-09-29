@@ -7,8 +7,8 @@
 // to exercise this one mapping would run the whole script rather than the
 // mapping. Extracting it here is what makes it testable at all.
 //
-// `"sample"` IS THE ONE NAME THAT DOES NOT RESOLVE UNDER `lab/fixtures/out/`
-// (094): it is a fixture built from real prose and JSON at
+// `"sample"` IS THE ONE NAME THAT DOES NOT RESOLVE UNDER `lab/fixtures/out/`:
+// it is a fixture built from real prose and JSON at
 // `app/fixtures/sample/src/`, committed beside `lab`'s synthetic ones rather
 // than among them, because nothing about it is generated the way `tiny`,
 // `normal` and `stress` are.

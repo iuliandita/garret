@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 
-// THE TWO STRIPS ARE CLICK-GEOMETRY CONSTANTS, and from 067 they are WRITTEN
+// THE TWO STRIPS ARE CLICK-GEOMETRY CONSTANTS, and they are WRITTEN
 // DOWN rather than summed from a line box. switch-cli, outline-cli and
 // bible-cli restate 39 + 39 for the navigator's first row; the same three
 // subtract the footer from the window before deciding the rows fit.
@@ -46,7 +46,7 @@ describe("the strips are exact", () => {
     }
   });
 
-  // 103 carry-in from 102's review: --track-3 equalled --danger in the light
+  // --track-3 equalled --danger in the light
   // theme, colliding with the event card's armed-Delete red.
   test("--track-3 is never --danger, in any block", () => {
     const palettes = [...stripped.matchAll(/\{([^{}]*)\}/g)]

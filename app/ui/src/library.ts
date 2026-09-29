@@ -564,7 +564,7 @@ export function createLibrary(deps: LibraryDeps): Library {
     const token = ++summaryGeneration;
     if (!isOpen || !summaryOpen) return;
     clear(summaryPanel);
-    // What the summary counts is the heading's help (239), not a paragraph
+    // What the summary counts is the heading's help, not a paragraph
     // above the figures.
     const heading = document.createElement("h3");
     heading.textContent = t("library.summary.title");
@@ -627,7 +627,7 @@ export function createLibrary(deps: LibraryDeps): Library {
         documents: plural("library.summary.documents", documents, { count: formatNumber(documents) }),
         words: plural("library.summary.words", words, { count: formatNumber(words) }),
       });
-      // Sources that moved, joined as a list, never a row of middle dots (239).
+      // Sources that moved, joined as a list, never a row of middle dots.
       const activity = (Object.keys(totals) as Array<keyof SourceTotals>)
         .filter((source) => totals[source].added !== 0 || totals[source].deleted !== 0)
         .map((source) => t(`library.summary.source.${source}`, {
@@ -640,7 +640,7 @@ export function createLibrary(deps: LibraryDeps): Library {
         : t("library.summary.activity", { counted: formatNumber(availableActivity), total: formatNumber(checked),
           values: activity.length === 0 ? t("library.summary.activity-none") : activity.join(", ") });
       if (!activityLine.isConnected) summaryPanel.append(activityLine);
-      // WHAT WAS LEFT OUT, one sentence per non-zero reason (239). The log
+      // WHAT WAS LEFT OUT, one sentence per non-zero reason. The log
       // line this replaces printed nine counters, most of them zero.
       const left = ([
         ["library.summary.left.failed", failed],
@@ -809,7 +809,7 @@ export function createLibrary(deps: LibraryDeps): Library {
       title.className = "shelf-title";
       title.textContent = book.name;
       // The pen name on its own line, so the meta line carries one middle
-      // dot at most (239): "last opened just now · 2,000 words".
+      // dot at most: "last opened just now · 2,000 words".
       const by = document.createElement("span");
       by.className = "shelf-by";
       by.textContent = book.identity_name ?? "";
@@ -958,7 +958,7 @@ export function createLibrary(deps: LibraryDeps): Library {
       if (el.dataset.path !== path) continue;
       if (el.classList.contains("desk-meta") || el.classList.contains("shelf-meta")) {
         // A shelf tile is 120px wide, so its count takes a line of its own
-        // rather than wrapping onto one that starts with a middle dot (239).
+        // rather than wrapping onto one that starts with a middle dot.
         el.textContent = el.classList.contains("shelf-meta")
           ? [el.textContent ?? "", text].filter((part) => part !== "").join("\n")
           : metaJoin([el.textContent ?? "", text]);

@@ -193,7 +193,7 @@ describe("which catalog the page uses", () => {
   });
 
   test("a REAL second catalog is chosen by its own tag, not just an injected one", () => {
-    // 084's own falsifiability requirement: with `de` a real shipped catalog
+    // The falsifiability requirement: with `de` a real shipped catalog
     // rather than a fixture, `catalogFor("de")` answering `EN` and answering
     // `DE` are now different claims.
     const chosen = catalogFor("de");

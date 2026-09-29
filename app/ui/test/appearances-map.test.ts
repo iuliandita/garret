@@ -247,15 +247,15 @@ describe("the rolled-up view", () => {
   });
 
   test("a row with two kinds in ONE bucket gets ONE LINE PER KIND, not one dump", async () => {
-    // 097, W4, ticket 05: Ada (a character) and The harbour (a place) tagged
+    // Ada (a character) and The harbour (a place) tagged
     // directly on the same row used to read as one undifferentiated line.
     const r = rig();
     r.stored = { c1: ["m-ada", "m-harbour"] };
 
     await r.panel.open();
 
-    // THE VISIBLE LABEL IS SAID ONCE, on the first line only (097 review,
-    // ticket 08) -- a second "Here:" naming the harbour alone would read as a
+    // THE VISIBLE LABEL IS SAID ONCE, on the first line only --
+    // a second "Here:" naming the harbour alone would read as a
     // separate claim about the row rather than a continuation of the first.
     const lines = hereLines("c1");
     expect(lines).toEqual(["Here: Ada", "The harbour"]);
@@ -313,7 +313,7 @@ describe("the rolled-up view", () => {
   });
 
   test("names within one kind sort by the writer's locale, not by code unit", async () => {
-    // 097 review, ticket 09: a plain `.sort()` orders by UTF-16 code unit,
+    // a plain `.sort()` orders by UTF-16 code unit,
     // which puts every capital before every lowercase letter -- "Zoe, ana"
     // rather than the alphabetical "ana, Zoe" a writer actually reads.
     const r = rig();
@@ -427,7 +427,7 @@ describe("dismissal", () => {
   });
 
   test("a click outside leaves it open and does NOT move focus", async () => {
-    // 241: the inspector. Clicking the prose beside it is the point, so an
+    // the inspector. Clicking the prose beside it is the point, so an
     // outside click leaves it open, exactly as it leaves the preview rail.
     const r = rig();
     const outside = document.createElement("button");

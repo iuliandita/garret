@@ -1,8 +1,8 @@
 // app/ui/src/timeline-card.ts
-// The event card (102, design section 4): read mode, then an in-place form.
+// The event card: read mode, then an in-place form.
 //
 // ON <body>, `position: fixed`, LIKE `#format-bubble` AND `#cast-card`, AND
-// FOR THEIR REASON: `#editor { will-change: transform }` (064) holds only
+// FOR THEIR REASON: `#editor { will-change: transform }` holds only
 // while `#editor` has no positioned descendant. The lanes themselves ARE a
 // recorded exception to that rule (see timeline-view.ts's header) but the
 // card is not one more of them -- it floats OVER the lanes and the prose
@@ -30,7 +30,7 @@ export interface TimelineCardDeps {
    *  distinction `timeline.scene.gone` reports. */
   sceneTitle(sceneId: string): string | undefined;
   calendar(): TimelineCalendar | null;
-  /** The document's branches (103, plan item 1): "The card's branch select
+  /** The document's branches: "The card's branch select
    *  moves an event between main and branches." */
   branches(): readonly TimelineBranch[];
   /** One field at a time so the caller can turn each into its own undo

@@ -26,13 +26,13 @@
 // two behave differently: a direct tag stays when the scenes move, a derived
 // one does not.
 //
-// EACH OF THOSE TWO IS ITSELF ONE LINE PER KIND THAT HAS ANYBODY IN IT (097,
-// W4). A "Here" line naming Meddow and Ines Varo in one breath read the two
+// EACH OF THOSE TWO IS ITSELF ONE LINE PER KIND THAT HAS ANYBODY IN IT. A
+// "Here" line naming Meddow and Ines Varo in one breath read the two
 // as the same kind of thing -- a character and a place -- so `paintBucket`
 // calls `line` once per `CAST_KINDS` entry that is non-empty, glyph first, in
 // the order the cast and tagging panels already use. THE VISIBLE "Here:" OR
-// "Further down:" IS SAID ONCE PER BUCKET, on its first line only (097
-// review, ticket 08) -- repeating the same word on every kind read as three
+// "Further down:" IS SAID ONCE PER BUCKET, on its first line only --
+// repeating the same word on every kind read as three
 // separate claims about one row -- and every line's `aria-label` names its
 // own kind and bucket regardless, because a reader who cannot see which line
 // is indented under the label has no other way to know.
@@ -162,8 +162,8 @@ export function createAppearancesMap(deps: AppearancesMapDeps): AppearancesMap {
     }
   }
 
-  /** The sentence for one row's names IN ONE KIND (097, W4, ticket 05; review
-   *  ticket 08). A row's "Here" or "Further down" used to be a single line
+  /** The sentence for one row's names IN ONE KIND. A row's "Here" or
+   *  "Further down" used to be a single line
    *  naming everybody regardless of kind, which read Meddow and Ines Varo --
    *  a place and a character -- as the same kind of thing; this is one such
    *  line PER KIND that has anybody in it, so the glyph tells them apart the
@@ -284,7 +284,7 @@ export function createAppearancesMap(deps: AppearancesMapDeps): AppearancesMap {
       // `01a046f9-...`. It can only happen when the two reads disagree, which
       // is a member deleted between them.
       //
-      // GROUPED BY KIND (097, W4, ticket 05), not one flat list: `CAST_KINDS`
+      // GROUPED BY KIND, not one flat list: `CAST_KINDS`
       // is the panel-wide order a writer already reads in the cast and the
       // tagging panel, and `kindOf` comes from the same `members_` read as
       // `nameOf` so the two can never disagree about who is what kind.
@@ -300,8 +300,8 @@ export function createAppearancesMap(deps: AppearancesMapDeps): AppearancesMap {
         else named_.push(named);
       }
       if (hereByKind.size === 0 && belowByKind.size === 0) continue;
-      // THE WRITER'S OWN LOCALE, `paintMembers`'s own rule (097 review, ticket
-      // 09): a plain `.sort()` orders by UTF-16 code unit, which puts every
+      // THE WRITER'S OWN LOCALE, `paintMembers`'s own rule: a plain
+      // `.sort()` orders by UTF-16 code unit, which puts every
       // capital before every lowercase letter and reads "Zoe, ada" as
       // alphabetical to nobody.
       for (const names of hereByKind.values()) names.sort((x, y) => x.localeCompare(y));

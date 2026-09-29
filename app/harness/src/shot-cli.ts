@@ -31,7 +31,7 @@
 //   APP_GUI=1 bun app/harness/src/shot-cli.ts <tiny|normal|stress|sample> [options]
 //   APP_GUI=1 bun app/harness/src/shot-cli.ts tiny --mirror-changes [--theme light|dark] [--out path]
 //
-// `sample` (094) resolves to `app/fixtures/sample` rather than
+// `sample` resolves to `app/fixtures/sample` rather than
 // `lab/fixtures/out/sample` -- see `fixture-name.ts`. It is the one fixture
 // with its own real cast, synopses and appearances, built from prose rather
 // than generated, so `--cast`, `--synopsis`, `--appears` and `--appears-map`
@@ -57,7 +57,7 @@
 //   --projects            open the project panel (the Projects button)
 //   --ghost-book          plant a remembered book whose file is GONE in the
 //                         data home's settings, so --projects shows the missing
-//                         row and its Forget control (059)
+//                         row and its Forget control
 //   --menu <name>         open an application menu (file, edit, outline, help)
 //   --outline-view <table|cards|reading>  open and verify a central manuscript view
 //   --reference         open the selected scene as a saved reference
@@ -90,7 +90,7 @@
 //                         by use. Does NOT open the panel: the panel covers the
 //                         prose, so the underline in the manuscript and the rows
 //                         in the list are two pictures and not one.
-//   --review-demo         plant two review proposals on the open scene (239):
+//   --review-demo         plant two review proposals on the open scene:
 //                         Mara's with one pending change and Jonas's with two,
 //                         so the proposal list's summary line is in the
 //                         picture. Planted, like --comments-demo; open the
@@ -102,7 +102,7 @@
 //                         anchor. Planted, like --comments-demo, and it changes
 //                         no character and no position: only which runs the
 //                         same text is split into. The FIRST run carries all
-//                         three, but a caret alone shows nothing since 069 --
+//                         three, but a caret alone shows nothing --
 //                         see --select-word.
 //   --select-word         select into the first run with Ctrl+Shift+Right, so
 //                         the bubble toolbar has something non-collapsed to
@@ -136,7 +136,7 @@
 //                         historical reason beside the current warning form.
 //   --library-series      the library with planted shared series/universe membership
 //   --host-error          open malformed future membership through the real command
-//   --library             the library screen (100): boots with NOTHING
+//   --library             the library screen: boots with NOTHING
 //                         mounted (start=home, no APP_PROJECT) over a library
 //                         of three books, two pen names planted, one extra
 //                         book pinned to each -- so the strip's filter hides
@@ -163,11 +163,11 @@
 //                         ornament is on a chapter and a book's chapters sit
 //                         below its title page and its contents.
 //   --select-last-word    after --type, select the LAST typed word backwards
-//                         with Ctrl+Shift+Left (111): the bubble then rests
+//                         with Ctrl+Shift+Left: the bubble then rests
 //                         on one word and its dictionary control is shown.
 //                         Same 600 ms wait as --select-word; needs --type.
 //   --type-after <text>   after --press, put the caret at the line's end and
-//                         type this (111), then sleep TYPE_SETTLE_MS so the
+//                         type this, then sleep TYPE_SETTLE_MS so the
 //                         checker has drawn what it thinks of the new text.
 //                         The one way to photograph whether a word just added
 //                         through the bubble is still underlined when typed
@@ -192,7 +192,7 @@
 //                         of is what the four items actually build. Driven
 //                         through the shared menu driver, so it takes no AT-SPI
 //                         walk and composes with --scheme.
-//   --timeline-row         press Outline > New timeline ONCE (101), so the
+//   --timeline-row         press Outline > New timeline ONCE, so the
 //                         navigator shows the calendar-range glyph on a bible
 //                         row and its one timeline underneath -- a real press,
 //                         `--matter-demo`'s own argument for one over a plant.
@@ -200,7 +200,7 @@
 //                         with no further action. Driven through the shared
 //                         menu driver, so it takes no AT-SPI walk and composes
 //                         with --scheme.
-//   --timeline             the lanes (102) over ~12 planted events on 4
+//   --timeline             the lanes over ~12 planted events on 4
 //                         tracks (one meeting, one range), seeded into a
 //                         TEMP COPY of the chosen fixture so the committed
 //                         one is never written into, titled "Story clock"
@@ -233,7 +233,7 @@
 //                         that starts it. Same refusals.
 //   --timeline-scale       --timeline's own seed and Fit, then a SECOND
 //                         walk pressing "Edit scale…", so the scale panel
-//                         (103) is on screen. Same refusals.
+//                         is on screen. Same refusals.
 //   --timeline-far         --timeline's own seed and Fit, then repeated
 //                         presses of the SAME located Zoom out button until
 //                         the planted cluster collapses into dots
@@ -250,14 +250,14 @@
 //                         with nothing written opens straight into Edit, with
 //                         the caret already in the field, and <text> is typed
 //                         there -- no click and no coordinate. A row that
-//                         already has one opens in Read instead (097), which
+//                         already has one opens in Read instead, which
 //                         is what `sample`'s scenes show: this flag SUPPRESSES
 //                         typing under that fixture rather than corrupting
 //                         real prose with demo text. Driven through the shared
 //                         menu driver, so it takes no AT-SPI walk on its own
 //                         and composes with --scheme.
 //   --synopsis-edit       the same as --synopsis, then presses `#synopsis-edit`
-//                         so the capture shows the FIELD (097) rather than the
+//                         so the capture shows the FIELD rather than the
 //                         read paragraph -- the shape a row with something
 //                         already written opens in by default. Reached by ONE
 //                         AT-SPI WALK, `--cast-edit`'s own mechanism. Taken
@@ -272,9 +272,9 @@
 //                         fixture project has none and the empty state is a
 //                         different picture. Then TABS ONCE to the first entry
 //                         and presses Return, so the capture shows the list AND
-//                         the READ SHEET (096), which opens by default on a
-//                         selection. ONE TAB, not three: 096 collapsed the add
-//                         row by default (it used to sit open above the list,
+//                         the READ SHEET, which opens by default on a
+//                         selection. ONE TAB, not three: an earlier change
+//                         collapsed the add row by default (it used to sit open above the list,
 //                         which is what the earlier three-tab count crossed),
 //                         so the panel now takes focus on itself and the very
 //                         first Tab reaches the first entry regardless of how
@@ -291,7 +291,7 @@
 //                         the state every new book is in and the one a writer
 //                         meets first.
 //   --cast-edit           the same as --cast, then presses `#cast-edit` so the
-//                         capture shows TODAY'S FORM (096) rather than the
+//                         capture shows TODAY'S FORM rather than the
 //                         read sheet. Reached by ONE AT-SPI WALK, the same
 //                         mechanism --press already uses, rather than a
 //                         further keyboard count: how many Tabs separate the
@@ -343,7 +343,7 @@
 //                         --scheme (which cuts the very bus AT-SPI needs).
 //   --cast-alias           `--cast-card`'s own walk, narrowed to hover the
 //                         FIRST occurrence of a bare ALIAS -- excluding any
-//                         match that is a member's own full name (105).
+//                         match that is a member's own full name.
 //                         `sample`-only, and cannot combine with --cast-card
 //                         or the same three flags --cast-card refuses.
 //   --hover <element-id>  put the pointer on the control with this DOM id and
@@ -369,7 +369,7 @@
 //                         --theme instead.
 //   --prefs               open the preferences panel (the Preferences button)
 //   --prefs-scroll <n>    with --prefs, scroll the panel's body by n wheel
-//                         notches (240), so its second section is in the
+//                         notches, so its second section is in the
 //                         picture. A real wheel over the panel, restated
 //                         geometry, no walk: composes with --scheme.
 //   --prose f,s,m         force the typography, e.g. mono,larger,narrow
@@ -381,7 +381,7 @@
 //                         that appended would mix scripts and say nothing about
 //                         how a paragraph of the operator's sample is set.
 //   --fade gone|woken     photograph what typing in focus mode does to the
-//                         chrome (071): "gone" sleeps past the 1.5s arm and the
+//                         chrome: "gone" sleeps past the 1.5s arm and the
 //                         1000ms fade; "woken" also moves the pointer and
 //                         sleeps past the 120ms wake. Needs --modes
 //                         paragraph,<typewriter> and --type <text>, because the
@@ -487,7 +487,7 @@ const TYPE_DELAY_MS = 20;
  *  openTimelineByQuickOpen's comment for the rig run that found it. */
 const SHOT_TIMELINE_TITLE = "Story clock";
 
-/** A fixture that CARRIES a timeline (the sample since 104) is captured on
+/** A fixture that CARRIES a timeline (the sample) is captured on
  *  its own: nothing is planted, Quick Open gets the fixture's title, and
  *  --timeline-card presses its earliest event by title. Fixtures without one
  *  (tiny, stress) keep the planted "Story clock" corpus. */
@@ -581,9 +581,9 @@ interface Options {
    *  See the flag reference above for why 600 ms and why it composes with
    *  --scheme and --marks-demo. */
   selectWord: boolean;
-  /** Ctrl+Shift+Left after --type, selecting the last typed word (111). */
+  /** Ctrl+Shift+Left after --type, selecting the last typed word. */
   selectLastWord: boolean;
-  /** Typed after --press, at the end of the line (111). */
+  /** Typed after --press, at the end of the line. */
   typeAfter: string | null;
   /** Add this word to the project's own dictionary before the window opens, so
    *  a capture can show what the checker does with it already there -- see
@@ -632,7 +632,7 @@ interface Options {
    *  meets first. Driven through the shared menu driver, so it takes NO AT-SPI
    *  walk and composes with --scheme. */
   synopsis: string | null;
-  /** The same open as --synopsis, then presses `#synopsis-edit` (097) by an
+  /** The same open as --synopsis, then presses `#synopsis-edit` by an
    *  AT-SPI walk rather than a further keyboard count -- `--cast-edit`'s own
    *  reason: Read is the panel's default on a row that has anything written,
    *  and this is the flag that shows the field underneath it instead. */
@@ -658,7 +658,7 @@ interface Options {
   warningHistory: boolean;
   identitiesEdit: boolean;
   identitiesRepin: boolean;
-  /** The library screen (100): boots with nothing mounted and `start=home`,
+  /** The library screen: boots with nothing mounted and `start=home`,
    *  a library of three books, two pen names planted and two of the three
    *  books pinned one each -- so the strip's filter has something to hide. */
   library: boolean;
@@ -679,7 +679,7 @@ interface Options {
   previewStyled: boolean;
   /** How far to scroll the preview before capturing, in wheel notches. */
   previewScroll: number;
-  /** The same for the preferences panel's body (240). */
+  /** The same for the preferences panel's body. */
   prefsScroll: number;
   /** Plant, open the panel, and press the front cover's View full size. TWO
    *  TABS AND A RETURN rather than a coordinate: the panel takes focus itself,
@@ -687,7 +687,7 @@ interface Options {
    *  which needs no AT-SPI walk and therefore composes with --scheme. */
   coversFull: boolean;
   matterDemo: boolean;
-  /** Press Outline > New timeline once (101), so the navigator shows the
+  /** Press Outline > New timeline once, so the navigator shows the
    *  bible's calendar-range glyph on a real row a create actually built --
    *  `matterDemo`'s own argument for a press over a plant. Nothing is
    *  collapsed by default (`navigator/index.ts`'s `collapsed` set starts
@@ -714,7 +714,7 @@ interface Options {
    *  ("No events yet…") is what a book with nothing planted actually shows,
    *  and `--timeline-row` alone never opens what it creates. */
   timelineEmpty: boolean;
-  /** `--timeline`'s own small corpus, plus ONE planted branch (103) forked
+  /** `--timeline`'s own small corpus, plus ONE planted branch forked
    *  at the corpus's own zero, so the dashed lane group under the main
    *  lanes has something to draw. Opened and Fit exactly as `--timeline`. */
   timelineBranch: boolean;
@@ -723,7 +723,7 @@ interface Options {
    *  calls out as its own capture ("a branch as the one being written"). */
   timelineSwapped: boolean;
   /** `--timeline`'s own seed and Fit, then a SECOND walk pressing "Edit
-   *  scale…" so the scale panel (103) is the thing on screen. */
+   *  scale…" so the scale panel is the thing on screen. */
   timelineScale: boolean;
   /** `--timeline`'s own seed and Fit, then repeated presses of Zoom out
    *  (the SAME walk's button, no new lookup between presses -- its
@@ -738,15 +738,15 @@ interface Options {
   cast: boolean;
   castEmpty: boolean;
   castDeleted: boolean;
-  /** The same plant and selection as --cast, then presses `#cast-edit` (096)
+  /** The same plant and selection as --cast, then presses `#cast-edit`
    *  by an AT-SPI walk rather than a further keyboard count -- see the flag's
    *  own help text for why a fixed Tab count cannot cross fixtures here. */
   castEdit: boolean;
-  /** Hover the FIRST cast mark in the open scene's prose (098, W5) and
+  /** Hover the FIRST cast mark in the open scene's prose and
    *  capture the card. `sample`-only -- see the flag's own help text. */
   castCard: boolean;
   /** Hover the FIRST occurrence of a bare ALIAS -- not a member's own name --
-   *  in the open scene's prose (105) and capture the card. `sample`-only,
+   *  in the open scene's prose and capture the card. `sample`-only,
    *  `castCard`'s own reason: the leftmost cast match; here narrowed to the
    *  alias family. */
   castAlias: boolean;
@@ -760,7 +760,7 @@ interface Options {
    *  whose sentence and control layout nothing else photographs. */
   castMissing: boolean;
   menuItem: string | null;
-  /** Photograph the chrome fade (071): "gone" past the hide, "woken" past a
+  /** Photograph the chrome fade: "gone" past the hide, "woken" past a
    *  subsequent pointer displacement too. Null for no --fade. */
   fade: "gone" | "woken" | null;
   /** The menu item ids to activate in order on a fresh, unseeded data home.
@@ -781,7 +781,7 @@ interface Options {
 }
 
 /** The flag's menu names, by the id `menu-bar.ts` gives each menu. The chord
- *  is NOT restated here: since 088 the letter is a catalog value, and a
+ *  is NOT restated here: the letter is a catalog value, and a
  *  restated letter that stopped matching would deliver the chord and the
  *  Downs and Return after it into the focused editor, and still capture. So
  *  it is read through `menuChord`, from the source that decides it. */
@@ -1778,7 +1778,7 @@ function refuseUndrivableCombination(o: Options): void {
     throw new Error("--cast-alias cannot be combined with --scheme: use --theme to force the palette.");
   }
   if (o.castAlias && o.fixture !== "sample") {
-    // `sample` is the one fixture the aliases slice seeded (105); the graded
+    // `sample` is the one fixture the aliases feature seeded; the graded
     // fixtures carry no cast at all -- `--cast-card`'s own reason.
     throw new Error(
       "--cast-alias only works on the sample fixture, which has a cast with aliases in its prose.",
@@ -1973,7 +1973,7 @@ if (options.outlineAct !== null && options.outlineView !== "table") {
 }
 refuseUndrivableCombination(options);
 const FIXTURE = resolveFixtureDir(options.fixture);
-// THE ONE FIXTURE WITH ITS OWN REAL CAST, SYNOPSES AND APPEARANCES (094): the
+// THE ONE FIXTURE WITH ITS OWN REAL CAST, SYNOPSES AND APPEARANCES: the
 // four flags below plant DEMO data over whatever a fixture already holds, and
 // planting it over `sample`'s real content would bury the very thing that
 // fixture exists to show. Every site below skips its plant under `sample` and
@@ -2094,7 +2094,7 @@ if (
     sceneIds: [],
     seed: 102,
   });
-  // --timeline-branch/--timeline-swapped's own addition (103): ONE branch
+  // --timeline-branch/--timeline-swapped's own addition: ONE branch
   // forked at the corpus's own zero on its first track, with one event on
   // it -- enough for the dashed lane group to draw and, for
   // --timeline-swapped, for the swap to move something visible.
@@ -2152,7 +2152,7 @@ if (options.firstRun === null && !options.blank && !options.libraryEmpty) {
  *  pen names planted, `projectPath` and one extra book pinned to the first
  *  and the other extra book pinned to the second -- so the strip's filter
  *  actually hides something. `DEMO_VAULT`, `plantDemoIdentities` and
- *  `pinBook` live in `demo-vault.ts` (107), shared with `preflight-cli.ts`. */
+ *  `pinBook` live in `demo-vault.ts`, shared with `preflight-cli.ts`. */
 const libraryExtraPaths: string[] = [];
 if (options.library) {
   plantDemoIdentities(appDataHome, projectPath);
@@ -2874,7 +2874,7 @@ if (options.outlineEmpty || options.outlineLongSynopsis) {
     }
     if (options.outlineLongSynopsis) {
       // The first scene in manuscript order where the book has part > chapter >
-      // scene (tiny), so the clamped synopsis is on screen (242); any scene
+      // scene (tiny), so the clamped synopsis is on screen; any scene
       // otherwise, as before.
       const scene = (db.query("SELECT s.id FROM item s JOIN item c ON s.parent_id = c.id JOIN item p ON c.parent_id = p.id WHERE s.type = 'scene' AND p.parent_id IS NULL AND p.type = 'part' ORDER BY p.position, c.position, s.position LIMIT 1").get()
         ?? db.query("SELECT id FROM item WHERE type = 'scene' LIMIT 1").get()) as { id: string } | null;
@@ -2896,7 +2896,7 @@ if (options.craftKnowledge || options.craftReports) plantCraftDemo(projectPath);
 // split, so the anchors planted here still cover the words they name.
 if (options.commentsDemo) plantDemoComments(projectPath);
 if (options.reviewDemo) plantDemoReview(projectPath);
-// SUPPRESSED UNDER `sample` (094): that fixture carries a real cast already,
+// SUPPRESSED UNDER `sample`: that fixture carries a real cast already,
 // and planting the demo one over it would bury the thing the capture is meant
 // to show. The panel below still opens; it just paints what `sample` holds.
 if (options.cast && !isSample) plantDemoCast(projectPath, !options.castMissing);
@@ -3004,7 +3004,7 @@ try {
       // was cut for a capture that needed it, which failed as exit 4 from the
       // probe -- the same message, in the same place, that the paragraph above
       // exists to explain.
-      // --cast-edit (096) added to the list for the reason --hover and
+      // --cast-edit added to the list for the reason --hover and
       // --status are on it: it takes an AT-SPI walk (the same mechanism
       // --press uses) and that walk is on this same bus. Its own validation
       // already refuses it alongside --scheme, but refusing the combination
@@ -3012,19 +3012,19 @@ try {
       // never asked for -- this line was still cutting it unconditionally,
       // which is the exit-4 "could not read widget geometry from AT-SPI"
       // this comment exists to explain for the older three. --press shared
-      // the same gap from 077 until 111, recorded in the 096 write-back as a
+      // the same gap for a long stretch, recorded in an earlier write-back as a
       // pre-existing issue and finally on the list below: its walk is on
       // this bus like every other.
-      // --synopsis-edit (097) added for the identical reason: it takes the
-      // same AT-SPI walk `--cast-edit` does. --cast-card (098) too, though its
+      // --synopsis-edit added for the identical reason: it takes the
+      // same AT-SPI walk `--cast-edit` does. --cast-card too, though its
       // own walk reads the editable's text interface rather than a DOM id
       // (see the option's own comment below for why) -- it is still a walk on
       // this bus and needs it kept open the same way.
-      // --projects and --prefs LEFT this list in 243. Both open by keystrokes
+      // --projects and --prefs were later left off this list. Both open by keystrokes
       // through the menu now (no walk), yet the bus stayed up for them, so the
       // portal answered with the operator's desktop scheme and `--scheme light
       // --prefs` photographed a dark page while the log said "desktop scheme
-      // light" (237's 07-prefs-light). The rig, not the app.
+      // light" (see 07-prefs-light). The rig, not the app.
       ...(options.outlineView !== null ||
       options.hover !== null ||
       options.press !== null ||
@@ -3033,7 +3033,7 @@ try {
       options.status ||
       options.castEdit ||
       options.castCard ||
-      // --cast-alias (105) too, `--cast-card`'s own reason one narrower.
+      // --cast-alias too, `--cast-card`'s own reason one narrower.
       options.castAlias ||
       options.synopsisEdit ||
       options.libraryForm ||
@@ -3046,7 +3046,7 @@ try {
       // empty needs none of it -- New timeline is a menu press by id and
       // opening the fresh row is the same arithmetic bible-cli.ts uses for a
       // reserved-root child, no walk at all. --timeline-branch,
-      // --timeline-swapped, --timeline-scale and --timeline-far (103) all
+      // --timeline-swapped, --timeline-scale and --timeline-far all
       // press Fit too, plus their own second press, so they join this list
       // for the same reason.
       options.timeline ||
@@ -3203,7 +3203,7 @@ try {
           await Bun.sleep(1500);
           if (options.fade === "woken") {
             // A displacement, not a position: the module ignores a mousemove at
-            // the same coordinates (decision 2 of the 071 plan), so this moves
+            // the same coordinates, so this moves
             // the pointer BY 40px from wherever the window mapped it. 400 ms is
             // the 120 ms wake with margin.
             xdo(display, ["mousemove_relative", "--", "40", "40"]);
@@ -3306,7 +3306,7 @@ try {
         // it rather than opening whatever now sits at a restated index.
         await localizedMenuDriver(display, wid).activate("menu-synopsis");
         await Bun.sleep(TYPE_SETTLE_MS);
-        // ONLY ON A ROW WITH NOTHING WRITTEN (097): an empty synopsis opens
+        // ONLY ON A ROW WITH NOTHING WRITTEN: an empty synopsis opens
         // straight into Edit with the caret already in the field, which is
         // what lets this type with no click and no coordinate. A row that
         // HAS one -- `sample`'s scenes, the only fixture that plants any --
@@ -3473,7 +3473,7 @@ try {
 
       if (options.timelineScale) {
         // --timeline's own seed and Fit, then a SECOND walk pressing "Edit
-        // scale…" so the scale panel (103) is what the capture shows.
+        // scale…" so the scale panel is what the capture shows.
         await openTimelineByQuickOpen(timelineTitle);
 
         const fitNodes = locateNodes(rootPid);
@@ -3532,7 +3532,7 @@ try {
         // Whatever menu ids were named (the default two, or none), in order,
         // on the fresh empty data home this run already booted. 1200 ms
         // between presses is the settle the standalone first-run capture
-        // this flag folds into (079) used.
+        // this flag folds into used.
         const driver = localizedMenuDriver(display, wid);
         for (const itemId of options.firstRun) {
           await driver.activate(itemId);
@@ -3654,8 +3654,8 @@ try {
 
       if (options.previewFormat !== null) {
         // By ID through the shared driver, which reads the item's index out of
-        // menu-bar.ts: this item sits BELOW the exports, which is where 043 put
-        // it so the debounce window `export-cli` spends walking down to Export
+        // menu-bar.ts: this item sits BELOW the exports, which is where it is put
+        // so the debounce window `export-cli` spends walking down to Export
         // is unchanged -- and reading the index rather than restating it is
         // what makes that safe to have done.
         //
@@ -3901,13 +3901,13 @@ try {
       }
 
       if (options.castCard || options.castAlias) {
-        // EXTRACTED TO `cast-hover.ts` (105), used by shot-cli.ts and
+        // EXTRACTED TO `cast-hover.ts`, used by shot-cli.ts and
         // bible-cli.ts alike: the AT-SPI walk that finds the leftmost cast
         // match's screen rect and confirms the card appeared over it. See
         // that file's own header for why this reads the entry's TEXT
         // INTERFACE rather than a DOM id.
         //
-        // --cast-card ACCEPTS THE FIRST MATCH FOUND (105): the leftmost cast
+        // --cast-card ACCEPTS THE FIRST MATCH FOUND: the leftmost cast
         // match in the prose, whichever family it comes from -- a card that
         // never opens or names the alias is exactly the shape the alias
         // slice's own matcher change could get wrong, and this flag's whole

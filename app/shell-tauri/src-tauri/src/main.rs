@@ -231,7 +231,7 @@ fn preview_content_matches(ticket: &MirrorPreviewTicket, dir: &Path, digest: [u8
 /// than a paused one, and would be a different sentence in the indicator.
 ///
 /// Populated by the scan. EMPTY until then, and an empty set means the pass
-/// behaves exactly as 019 shipped it.
+/// behaves exactly as it did before this existed.
 type PauseIds = std::collections::HashSet<String>;
 type PauseHandle = std::sync::Arc<std::sync::Mutex<PauseIds>>;
 
@@ -622,7 +622,7 @@ fn flush_into_with_sources(
     // document as a corrupt one -- `word_index`'s own fresh scan already
     // excludes the type by a SQL join; this is the incremental path's
     // equivalent, since `apply_flush` sees only bodies, never types. Carried
-    // in from 101's review: a flusher over a timeline did not exist yet when
+    // in from an earlier review: a flusher over a timeline did not exist yet when
     // that scan-side exclusion was written, so nothing had exercised this arm.
     let counted: Vec<store::FlushEntry> = entries
         .iter()
@@ -1056,11 +1056,11 @@ fn project_list(data_home: State<'_, DataHome>) -> Vec<projects::ProjectSummary>
 
 /// Where a new book goes when the writer has not chosen a folder.
 ///
-/// The remembered folder if there is one, `<Documents>/Books` otherwise (159):
+/// The remembered folder if there is one, `<Documents>/Books` otherwise:
 /// `projects::resolve_new_book_dir` is the pure decision, and this supplies it
 /// the real environment. A writer who keeps their books somewhere chooses
 /// once; a writer who never chooses gets a visible default instead of the
-/// hidden library a pre-159 build put them in.
+/// hidden library an earlier build put them in.
 ///
 /// FALLIBLE, where the old library-backed default never was: a machine with
 /// no Documents folder and no usable `$HOME` has nowhere to default to, and
@@ -1115,7 +1115,7 @@ pub(crate) fn create_into_dir(
 
 /// `create_into_dir`'s registration, on its own: an outside-the-library path
 /// is added to `Settings.books` (once), and `dir` becomes the remembered
-/// `new_book_dir`. Shared with `create_imported_into_dir` (159) so an import
+/// `new_book_dir`. Shared with `create_imported_into_dir` so an import
 /// or a restore that lands outside the hidden library is exactly as openable
 /// afterwards as a book created there through a folder dialog.
 ///
@@ -1143,7 +1143,7 @@ fn project_create(
     // acts, so a failed open cannot lose a just-created manuscript.
     //
     // INTO THE REMEMBERED FOLDER, which is `<Documents>/Books` until a writer
-    // chooses otherwise (159). The plain create is still one act with no
+    // chooses otherwise. The plain create is still one act with no
     // dialog.
     let dir = new_book_dir(&data_home.0)?;
     create_into_dir(&data_home.0, &dir, &name, &strings.0)
@@ -1152,9 +1152,9 @@ fn project_create(
 /// Where the next new book would go, so the panel can show it before the writer
 /// commits.
 ///
-/// 019's enable act, for its reason: the resolved destination is the thing being
-/// consented to, and a writer who cannot see it cannot consent to it. FALLIBLE
-/// since 159: a resolver error is exactly the thing the writer has to be told
+/// This command's enable act, for its reason: the resolved destination is the thing being
+/// consented to, and a writer who cannot see it cannot consent to it. FALLIBLE:
+/// a resolver error is exactly the thing the writer has to be told
 /// before consenting to anything, not a path silently swallowed into a blank
 /// panel.
 #[command_boundary::command]
@@ -1271,7 +1271,7 @@ pub(crate) struct ImportOutcome {
 /// What a page could do with this if it were compromised is read a manuscript
 /// the writer themselves put in the drop directory — and nothing outside it.
 ///
-/// INTO THE SAME REMEMBERED FOLDER `project_create` uses (159), not the
+/// INTO THE SAME REMEMBERED FOLDER `project_create` uses, not the
 /// hidden library `Library` state still names for `may_open`'s reason: an
 /// imported book is a new book, and the OPEN DECISION this slice's contract
 /// records is that it must land where a new book lands rather than staying
@@ -9341,7 +9341,7 @@ mod tests {
         assert_eq!(super::capture_archive_source(&state, Some(2)).unwrap().path, path);
     }
 
-    // ---- accepting from the readable folder (022) --------------------------
+    // ---- accepting from the readable folder --------------------------
 
     #[test]
     fn the_acceptance_label_says_what_happened_and_counts_in_words() {

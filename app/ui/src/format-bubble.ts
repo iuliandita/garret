@@ -63,7 +63,7 @@
 // fixed` in viewport coordinates, so scrolling #editor out from under a live
 // selection leaves it parked over whatever prose scrolled into its place.
 // Re-placing it on every scroll tick would mean per-frame layout work
-// exactly where 064's memory record says the scroll path has to stay cheap;
+// exactly where the memory record says the scroll path has to stay cheap;
 // hiding is one listener per event and, once the bar is hidden, no work at
 // all on the ticks that follow. The next selection change shows it again,
 // in the right place.
@@ -93,7 +93,7 @@ export interface FormatBubbleDeps {
   toggleUnderline: () => void;
   addComment: () => void;
   findInBook: (query: string) => void;
-  /** Add one word to the open book's dictionary (111). The control shows only
+  /** Add one word to the open book's dictionary. The control shows only
    *  while the selection IS one word (`isOneWord`), read at show time: a
    *  double-click on an underlined name is the whole reason it is here, and
    *  offering it over a sentence would be offering to add the sentence. */
@@ -125,7 +125,7 @@ export interface FormatBubble {
   /** Whether the bar is on screen right now -- the same state hide()/show()
    *  toggle on `bar.hidden`. chrome-fade.ts reads this to hold its hide
    *  timer rather than sliding #editor out from under a bubble resting on
-   *  the selection (071). */
+   *  the selection. */
   shown(): boolean;
   destroy(): void;
 }

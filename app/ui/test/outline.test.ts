@@ -1344,7 +1344,7 @@ describe("createOutline: the book's first part adopts the loose chapters", () =>
   });
 
   test("a chapter press that builds its own part adopts through it", async () => {
-    // 030's holder is a part like any other. Without this the commonest way a
+    // The holder is a part like any other. Without this the commonest way a
     // book gets its first part -- pressing New chapter -- would leave every
     // other chapter outside it.
     const r = await seeded({ walks: [loose()], selected: "s1" });
@@ -1965,7 +1965,7 @@ describe("createOutline: undo", () => {
       expect(r.done).toEqual(["Undone: moving s1."]);
     });
 
-    test("moveBy lands a run of steps as ONE undo entry that puts the row back (243)", async () => {
+    test("moveBy lands a run of steps as ONE undo entry that puts the row back", async () => {
       // Three scenes under c1; s1 walks down past s2 and s3 in one drag.
       const three = (): ProjectItem[] => [
         item("p1", null, 0, 1, "p1", "part"),

@@ -200,7 +200,7 @@ impl Store {
     }
 
     /// How many items in this file carry one. Reached by this module's tests
-    /// only (091): `cli::inspect` never took the figure.
+    /// only: `cli::inspect` never took the figure.
     #[cfg(test)]
     pub fn synopsis_count(&self) -> Result<u64> {
         let n: i64 = self

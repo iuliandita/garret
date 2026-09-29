@@ -167,7 +167,7 @@ fn set_start(data_home: &Path, start: &str) -> std::result::Result<(), String> {
     projects::update_settings(data_home, |settings| settings.start = parsed)
 }
 
-/// Record which pen name the library screen is filtered to (100), or take the
+/// Record which pen name the library screen is filtered to, or take the
 /// filter off. Unlike `settings_set_theme` there IS a matching getter --
 /// `library_overview` -- because this value is read back by a surface that
 /// mounts and unmounts as the writer opens and closes the screen, not once at
@@ -241,7 +241,7 @@ fn set_writing_modes(
 }
 
 /// Record whether a cast member's name is marked in the open scene's prose
-/// (098). A plain bool, unlike every other preference here: there is no
+/// A plain bool, unlike every other preference here: there is no
 /// misspelling to refuse, and any value Tauri deserializes into the argument
 /// is one this build already understands.
 #[command_boundary::command]

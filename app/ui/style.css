@@ -5,10 +5,10 @@
 @import url("./review-panel.css");
 @import url("./review-transport.css");
 
-/* THE PROSE SERIF, BUNDLED (243). Crimson Pro 1.003, SIL OFL 1.1 (text in
+/* THE PROSE SERIF, BUNDLED. Crimson Pro 1.003, SIL OFL 1.1 (text in
    THIRD-PARTY-NOTICES.md), converted to WOFF2 with no subsetting. Served from
    dist beside this file, FLAT, because the packages checksum `dist/*` and a
-   subfolder would break that line (245's brand PNGs travel the same way).
+   subfolder would break that line (the brand PNGs travel the same way).
    Four faces: what the prose can ask for (bold, italic, both). The UI's own
    font is untouched; only --prose-family names this family. */
 @font-face {
@@ -96,13 +96,13 @@
      something to look at, not something to stop for. Never the same value as
      --danger in any palette; chrome-heights.test.ts checks. */
   --amber: #b7791f;
-  /* A completed action's mark (236): the success notice's check and nothing
+  /* A completed action's mark: the success notice's check and nothing
      else. Green-leaning but pulled toward this palette's accent and ink, so
      it reads as part of the page rather than a traffic light. Restated in
      every block, the --cover-N rule: one formula for the three light blocks
-     and a brighter one for the six dark blocks (237). Never --danger. */
+     and a brighter one for the six dark blocks. Never --danger. */
   --success: color-mix(in oklab, #3f9460 55%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
-  /* Elevation, declared once per theme (237): a light panel is lifted by a
+  /* Elevation, declared once per theme: a light panel is lifted by a
      shadow tinted from its own ink and draws no edge; a dark panel draws a
      soft edge and no wide shadow, which a dark page cannot show anyway.
      The edge stays 1px in both, transparent in light, so no box moves. */
@@ -113,10 +113,10 @@
      changes the scheme, and the dark blocks always match alongside it. */
   color-scheme: light;
   --nav-width: 320px;
-  /* The library screen's generated cover (100): six tints, each a mix of a
+  /* The library screen's generated cover: six tints, each a mix of a
      token that already varies per palette and per scheme, so a writer who
      picks a different family or a different theme gets tints tuned to it
-     rather than the same six hexes everywhere -- 095's own reason for using
+     rather than the same six hexes everywhere -- the reason for using
      `color-mix` with a fallback, followed here. Restated verbatim in every
      block below (theme.test.ts's own three-block rule, and the two-family
      rule beside it): the FORMULA is identical text in each, and what differs
@@ -127,13 +127,13 @@
   --cover-4: color-mix(in oklab, var(--accent-strong) 22%, var(--nav-bg));
   --cover-5: color-mix(in oklab, var(--accent) 34%, var(--nav-bg));
   --cover-6: color-mix(in oklab, var(--amber) 34%, var(--nav-bg));
-  /* Eight track colours (102), NINE-BLOCK-RESTATED like --cover-N: a
+  /* Eight track colours, NINE-BLOCK-RESTATED like --cover-N: a
      track's ink is tuned by each palette's own --accent/--amber/--danger/
      --accent-strong rather than inverted from one set of hexes. --track-3
-     is a MIX of --danger rather than --danger itself (103 carry-in from
-     102's review: a track colour equalling --danger collided with the
+     is a MIX of --danger rather than --danger itself: a track colour
+     equalling --danger collided with the
      event card's armed-Delete red -- theme.test.ts checks the two differ
-     in every block). Era tints (--era-1..6) are 103's own, six blocks
+     in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
   --track-2: var(--amber);
@@ -143,7 +143,7 @@
   --track-6: color-mix(in oklab, var(--amber) 55%, var(--fg));
   --track-7: color-mix(in oklab, var(--danger) 55%, var(--fg));
   --track-8: color-mix(in oklab, var(--accent-strong) 55%, var(--muted));
-  /* Six era tints (103, plan item 6): the SAME restated color-mix formula
+  /* Six era tints: the SAME restated color-mix formula
      as --cover-N and --track-N in every block, mixing each of the first
      six track colours lightly into --nav-bg -- a light palette gets a
      subtle band and a dark palette's already-dark --nav-bg is what the
@@ -184,7 +184,7 @@
 .analytics-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 16px; }
 .analytics-controls > h3, .analytics-controls > p { width: 100%; margin: 0; }
 .analytics-label { display: grid; gap: 5px; font-size: var(--text-sm); color: var(--muted); }
-/* 239: the checkbox before its words, on one line. */
+/* the checkbox before its words, on one line. */
 .analytics-check { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--control-h); font-size: var(--text-sm); color: var(--fg); }
 .analytics-figure > span { display: inline-flex; align-items: center; }
 #analytics-workspace input, #analytics-workspace select {
@@ -194,7 +194,7 @@
 /* The date's digits are WebKit's inner fields, which WebKitGTK paints with a
    dimmed -webkit-text-fill-color (not `color`, and not from its UA sheet: a
    capture with `color: red` here left them grey), so an editable From read as
-   disabled (243). Separate rules: an engine without one of these
+   disabled. Separate rules: an engine without one of these
    pseudo-elements drops only that rule. */
 input[type="date"]::-webkit-datetime-edit-month-field { -webkit-text-fill-color: var(--fg); }
 input[type="date"]::-webkit-datetime-edit-day-field { -webkit-text-fill-color: var(--fg); }
@@ -273,13 +273,13 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --cover-4: color-mix(in oklab, var(--accent-strong) 22%, var(--nav-bg));
   --cover-5: color-mix(in oklab, var(--accent) 34%, var(--nav-bg));
   --cover-6: color-mix(in oklab, var(--amber) 34%, var(--nav-bg));
-  /* Eight track colours (102), NINE-BLOCK-RESTATED like --cover-N: a
+  /* Eight track colours, NINE-BLOCK-RESTATED like --cover-N: a
      track's ink is tuned by each palette's own --accent/--amber/--danger/
      --accent-strong rather than inverted from one set of hexes. --track-3
-     is a MIX of --danger rather than --danger itself (103 carry-in from
-     102's review: a track colour equalling --danger collided with the
+     is a MIX of --danger rather than --danger itself: a track colour
+     equalling --danger collided with the
      event card's armed-Delete red -- theme.test.ts checks the two differ
-     in every block). Era tints (--era-1..6) are 103's own, six blocks
+     in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
   --track-2: var(--amber);
@@ -289,7 +289,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --track-6: color-mix(in oklab, var(--amber) 55%, var(--fg));
   --track-7: color-mix(in oklab, var(--danger) 55%, var(--fg));
   --track-8: color-mix(in oklab, var(--accent-strong) 55%, var(--muted));
-  /* Six era tints (103, plan item 6): the SAME restated color-mix formula
+  /* Six era tints: the SAME restated color-mix formula
      as --cover-N and --track-N in every block, mixing each of the first
      six track colours lightly into --nav-bg -- a light palette gets a
      subtle band and a dark palette's already-dark --nav-bg is what the
@@ -329,13 +329,13 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --cover-4: color-mix(in oklab, var(--accent-strong) 22%, var(--nav-bg));
   --cover-5: color-mix(in oklab, var(--accent) 34%, var(--nav-bg));
   --cover-6: color-mix(in oklab, var(--amber) 34%, var(--nav-bg));
-  /* Eight track colours (102), NINE-BLOCK-RESTATED like --cover-N: a
+  /* Eight track colours, NINE-BLOCK-RESTATED like --cover-N: a
      track's ink is tuned by each palette's own --accent/--amber/--danger/
      --accent-strong rather than inverted from one set of hexes. --track-3
-     is a MIX of --danger rather than --danger itself (103 carry-in from
-     102's review: a track colour equalling --danger collided with the
+     is a MIX of --danger rather than --danger itself: a track colour
+     equalling --danger collided with the
      event card's armed-Delete red -- theme.test.ts checks the two differ
-     in every block). Era tints (--era-1..6) are 103's own, six blocks
+     in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
   --track-2: var(--amber);
@@ -345,7 +345,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --track-6: color-mix(in oklab, var(--amber) 55%, var(--fg));
   --track-7: color-mix(in oklab, var(--danger) 55%, var(--fg));
   --track-8: color-mix(in oklab, var(--accent-strong) 55%, var(--muted));
-  /* Six era tints (103, plan item 6): the SAME restated color-mix formula
+  /* Six era tints: the SAME restated color-mix formula
      as --cover-N and --track-N in every block, mixing each of the first
      six track colours lightly into --nav-bg -- a light palette gets a
      subtle band and a dark palette's already-dark --nav-bg is what the
@@ -385,13 +385,13 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
     --cover-4: color-mix(in oklab, var(--accent-strong) 22%, var(--nav-bg));
     --cover-5: color-mix(in oklab, var(--accent) 34%, var(--nav-bg));
     --cover-6: color-mix(in oklab, var(--amber) 34%, var(--nav-bg));
-  /* Eight track colours (102), NINE-BLOCK-RESTATED like --cover-N: a
+  /* Eight track colours, NINE-BLOCK-RESTATED like --cover-N: a
      track's ink is tuned by each palette's own --accent/--amber/--danger/
      --accent-strong rather than inverted from one set of hexes. --track-3
-     is a MIX of --danger rather than --danger itself (103 carry-in from
-     102's review: a track colour equalling --danger collided with the
+     is a MIX of --danger rather than --danger itself: a track colour
+     equalling --danger collided with the
      event card's armed-Delete red -- theme.test.ts checks the two differ
-     in every block). Era tints (--era-1..6) are 103's own, six blocks
+     in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
   --track-2: var(--amber);
@@ -401,7 +401,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --track-6: color-mix(in oklab, var(--amber) 55%, var(--fg));
   --track-7: color-mix(in oklab, var(--danger) 55%, var(--fg));
   --track-8: color-mix(in oklab, var(--accent-strong) 55%, var(--muted));
-  /* Six era tints (103, plan item 6): the SAME restated color-mix formula
+  /* Six era tints: the SAME restated color-mix formula
      as --cover-N and --track-N in every block, mixing each of the first
      six track colours lightly into --nav-bg -- a light palette gets a
      subtle band and a dark palette's already-dark --nav-bg is what the
@@ -442,13 +442,13 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
     --cover-4: color-mix(in oklab, var(--accent-strong) 22%, var(--nav-bg));
     --cover-5: color-mix(in oklab, var(--accent) 34%, var(--nav-bg));
     --cover-6: color-mix(in oklab, var(--amber) 34%, var(--nav-bg));
-  /* Eight track colours (102), NINE-BLOCK-RESTATED like --cover-N: a
+  /* Eight track colours, NINE-BLOCK-RESTATED like --cover-N: a
      track's ink is tuned by each palette's own --accent/--amber/--danger/
      --accent-strong rather than inverted from one set of hexes. --track-3
-     is a MIX of --danger rather than --danger itself (103 carry-in from
-     102's review: a track colour equalling --danger collided with the
+     is a MIX of --danger rather than --danger itself: a track colour
+     equalling --danger collided with the
      event card's armed-Delete red -- theme.test.ts checks the two differ
-     in every block). Era tints (--era-1..6) are 103's own, six blocks
+     in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
   --track-2: var(--amber);
@@ -458,7 +458,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --track-6: color-mix(in oklab, var(--amber) 55%, var(--fg));
   --track-7: color-mix(in oklab, var(--danger) 55%, var(--fg));
   --track-8: color-mix(in oklab, var(--accent-strong) 55%, var(--muted));
-  /* Six era tints (103, plan item 6): the SAME restated color-mix formula
+  /* Six era tints: the SAME restated color-mix formula
      as --cover-N and --track-N in every block, mixing each of the first
      six track colours lightly into --nav-bg -- a light palette gets a
      subtle band and a dark palette's already-dark --nav-bg is what the
@@ -496,13 +496,13 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
     --cover-4: color-mix(in oklab, var(--accent-strong) 22%, var(--nav-bg));
     --cover-5: color-mix(in oklab, var(--accent) 34%, var(--nav-bg));
     --cover-6: color-mix(in oklab, var(--amber) 34%, var(--nav-bg));
-  /* Eight track colours (102), NINE-BLOCK-RESTATED like --cover-N: a
+  /* Eight track colours, NINE-BLOCK-RESTATED like --cover-N: a
      track's ink is tuned by each palette's own --accent/--amber/--danger/
      --accent-strong rather than inverted from one set of hexes. --track-3
-     is a MIX of --danger rather than --danger itself (103 carry-in from
-     102's review: a track colour equalling --danger collided with the
+     is a MIX of --danger rather than --danger itself: a track colour
+     equalling --danger collided with the
      event card's armed-Delete red -- theme.test.ts checks the two differ
-     in every block). Era tints (--era-1..6) are 103's own, six blocks
+     in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
   --track-2: var(--amber);
@@ -512,7 +512,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --track-6: color-mix(in oklab, var(--amber) 55%, var(--fg));
   --track-7: color-mix(in oklab, var(--danger) 55%, var(--fg));
   --track-8: color-mix(in oklab, var(--accent-strong) 55%, var(--muted));
-  /* Six era tints (103, plan item 6): the SAME restated color-mix formula
+  /* Six era tints: the SAME restated color-mix formula
      as --cover-N and --track-N in every block, mixing each of the first
      six track colours lightly into --nav-bg -- a light palette gets a
      subtle band and a dark palette's already-dark --nav-bg is what the
@@ -553,13 +553,13 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --cover-4: color-mix(in oklab, var(--accent-strong) 22%, var(--nav-bg));
   --cover-5: color-mix(in oklab, var(--accent) 34%, var(--nav-bg));
   --cover-6: color-mix(in oklab, var(--amber) 34%, var(--nav-bg));
-  /* Eight track colours (102), NINE-BLOCK-RESTATED like --cover-N: a
+  /* Eight track colours, NINE-BLOCK-RESTATED like --cover-N: a
      track's ink is tuned by each palette's own --accent/--amber/--danger/
      --accent-strong rather than inverted from one set of hexes. --track-3
-     is a MIX of --danger rather than --danger itself (103 carry-in from
-     102's review: a track colour equalling --danger collided with the
+     is a MIX of --danger rather than --danger itself: a track colour
+     equalling --danger collided with the
      event card's armed-Delete red -- theme.test.ts checks the two differ
-     in every block). Era tints (--era-1..6) are 103's own, six blocks
+     in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
   --track-2: var(--amber);
@@ -569,7 +569,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --track-6: color-mix(in oklab, var(--amber) 55%, var(--fg));
   --track-7: color-mix(in oklab, var(--danger) 55%, var(--fg));
   --track-8: color-mix(in oklab, var(--accent-strong) 55%, var(--muted));
-  /* Six era tints (103, plan item 6): the SAME restated color-mix formula
+  /* Six era tints: the SAME restated color-mix formula
      as --cover-N and --track-N in every block, mixing each of the first
      six track colours lightly into --nav-bg -- a light palette gets a
      subtle band and a dark palette's already-dark --nav-bg is what the
@@ -612,13 +612,13 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --cover-4: color-mix(in oklab, var(--accent-strong) 22%, var(--nav-bg));
   --cover-5: color-mix(in oklab, var(--accent) 34%, var(--nav-bg));
   --cover-6: color-mix(in oklab, var(--amber) 34%, var(--nav-bg));
-  /* Eight track colours (102), NINE-BLOCK-RESTATED like --cover-N: a
+  /* Eight track colours, NINE-BLOCK-RESTATED like --cover-N: a
      track's ink is tuned by each palette's own --accent/--amber/--danger/
      --accent-strong rather than inverted from one set of hexes. --track-3
-     is a MIX of --danger rather than --danger itself (103 carry-in from
-     102's review: a track colour equalling --danger collided with the
+     is a MIX of --danger rather than --danger itself: a track colour
+     equalling --danger collided with the
      event card's armed-Delete red -- theme.test.ts checks the two differ
-     in every block). Era tints (--era-1..6) are 103's own, six blocks
+     in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
   --track-2: var(--amber);
@@ -628,7 +628,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --track-6: color-mix(in oklab, var(--amber) 55%, var(--fg));
   --track-7: color-mix(in oklab, var(--danger) 55%, var(--fg));
   --track-8: color-mix(in oklab, var(--accent-strong) 55%, var(--muted));
-  /* Six era tints (103, plan item 6): the SAME restated color-mix formula
+  /* Six era tints: the SAME restated color-mix formula
      as --cover-N and --track-N in every block, mixing each of the first
      six track colours lightly into --nav-bg -- a light palette gets a
      subtle band and a dark palette's already-dark --nav-bg is what the
@@ -666,13 +666,13 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --cover-4: color-mix(in oklab, var(--accent-strong) 22%, var(--nav-bg));
   --cover-5: color-mix(in oklab, var(--accent) 34%, var(--nav-bg));
   --cover-6: color-mix(in oklab, var(--amber) 34%, var(--nav-bg));
-  /* Eight track colours (102), NINE-BLOCK-RESTATED like --cover-N: a
+  /* Eight track colours, NINE-BLOCK-RESTATED like --cover-N: a
      track's ink is tuned by each palette's own --accent/--amber/--danger/
      --accent-strong rather than inverted from one set of hexes. --track-3
-     is a MIX of --danger rather than --danger itself (103 carry-in from
-     102's review: a track colour equalling --danger collided with the
+     is a MIX of --danger rather than --danger itself: a track colour
+     equalling --danger collided with the
      event card's armed-Delete red -- theme.test.ts checks the two differ
-     in every block). Era tints (--era-1..6) are 103's own, six blocks
+     in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
   --track-2: var(--amber);
@@ -682,7 +682,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --track-6: color-mix(in oklab, var(--amber) 55%, var(--fg));
   --track-7: color-mix(in oklab, var(--danger) 55%, var(--fg));
   --track-8: color-mix(in oklab, var(--accent-strong) 55%, var(--muted));
-  /* Six era tints (103, plan item 6): the SAME restated color-mix formula
+  /* Six era tints: the SAME restated color-mix formula
      as --cover-N and --track-N in every block, mixing each of the first
      six track colours lightly into --nav-bg -- a light palette gets a
      subtle band and a dark palette's already-dark --nav-bg is what the
@@ -696,7 +696,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --era-6: color-mix(in oklab, var(--track-6) 20%, var(--nav-bg));
 }
 
-/* THE SHARED SCALES (237), one statement for every palette. A second :root
+/* THE SHARED SCALES, one statement for every palette. A second :root
    rule rather than more lines in the palette above, because these are not
    colours: theme.test.ts requires each family to restate every palette token,
    and none of these differs by family or scheme. The derived tones mix the
@@ -812,7 +812,7 @@ body {
      That is what keeps the three rigs that click at `x + w - 4` of the
      editable's AT-SPI extents measuring the same box they always did. */
   grid-template-columns: var(--nav-width) 1fr auto;
-  /* Three rows since 067: header, panes, footer. The header and the footer
+  /* Three rows: header, panes, footer. The header and the footer
      span every column and both declare their own height (39px and 34px), so
      `auto` here resolves to those numbers and nothing in either strip can
      change what the panes get. The book's name is in #nav-header, not the
@@ -852,7 +852,7 @@ body {
    #project-bar is 39px and that number is a click-geometry constant restated in
    outline-cli and switch-cli - TWO rigs, counted rather than remembered; every
    other rig named in this file's older comments restates nothing geometric.
-   Since 067 the bar DECLARES that height, so a taller control overflows the
+   The bar DECLARES that height, so a taller control overflows the
    strip rather than growing it - and it overflows VISIBLY, uncropped, because
    #project-bar declares no overflow and cannot (every panel is `top: 100%`
    inside it). That is its own defect and a capture shows it, so the ceiling
@@ -921,7 +921,7 @@ body {
   transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
-/* THE STRIP CONTROLS KEEP THE 24px BOX (237). The panel default above is 30px
+/* THE STRIP CONTROLS KEEP THE 24px BOX. The panel default above is 30px
    and 14px; these four sit in #project-bar's or #nav-header's 27px content
    box, and the bubble is a toolbar of icons, so they restate the old box:
    13px text in an 18px line box, 2px of vertical padding and the 1px edge.
@@ -1010,7 +1010,7 @@ body {
 
 /* Armed, and only armed - see #find-replace-book below. The one chrome action
    with no inverse short of the history, so it must not read as Search.
-   Danger is the WORD in --danger on the default surface (237), never a
+   Danger is the WORD in --danger on the default surface, never a
    filled slab: the ink already says it, and a red block was the loudest
    thing in any panel that showed one. */
 #app button[data-weight="danger"] {
@@ -1037,7 +1037,7 @@ body {
    element is toggled with the `hidden` attribute, and a display here would
    override it.
 
-   UNSCOPED since 067: the footer's status dot carries one too, and the rules
+   UNSCOPED: the footer's status dot carries one too, and the rules
    are the same rules. Position is still per host - the strip's tip opens
    downward, the footer's upward, below. */
 .tip-anchor {
@@ -1149,7 +1149,7 @@ body {
   border-color: transparent;
 }
 
-/* Pressed reads as pressed: one tone deeper, never the accent slab (237).
+/* Pressed reads as pressed: one tone deeper, never the accent slab.
    No transform: a control that moves inside a bar whose height two rigs
    restate is a control that can change what a click lands on. */
 #project-bar button:active,
@@ -1198,7 +1198,7 @@ body {
    reason #format-bubble button[aria-pressed="true"]:hover does: the shared
    :hover and :active above repaint the background to a tone and leave colour
    alone, so the pressed state would vanish under the pointer. Pressed is a
-   tonal fill with accent ink since 237, not the accent slab that made the
+   tonal fill with accent ink, not the accent slab that made the
    sidebar toggle the most saturated thing on screen. (1,2,1) against those (1,1,1) rules, and
    placed after them so document order agrees. Ink and background only, never
    geometry. */
@@ -1269,7 +1269,7 @@ body {
   color: var(--danger);
 }
 
-/* THE PANEL SHELL (238). panel-shell.ts gives every anchored panel the same
+/* THE PANEL SHELL. panel-shell.ts gives every anchored panel the same
    frame: surface, padding, a header (title, optional subtitle, Close), the
    body and an optional footer. Each panel's own rule keeps only where it
    hangs and how big it is; nothing below states a position or a width.
@@ -1390,7 +1390,7 @@ body {
   height: 16px;
 }
 
-/* 239: the help mark after a figure's label, whose tooltip is the figure's
+/* the help mark after a figure's label, whose tooltip is the figure's
    definition. A 14px glyph in an 18px square, muted until the pointer or
    focus reaches it; no surface at rest or on hover, so a column of them reads
    as punctuation rather than as a row of buttons. (1,1,0) beats the (1,0,1)
@@ -1556,7 +1556,7 @@ body {
   outline: none;
 }
 
-/* ONE FIELD (237). Text inputs, selects and textareas share the panel
+/* ONE FIELD. Text inputs, selects and textareas share the panel
    control's 30px, its radius and one border token, so a field and the button
    beside it (#find-query and Find, #rename-field and Rename) sit on one line
    box. :where() keeps it at zero specificity: every rule below that sets a
@@ -1575,7 +1575,7 @@ body {
   border-radius: var(--radius-control);
 }
 
-/* ONE CHECKBOX, DRAWN (243). 237 set color-scheme and accent-color and the
+/* ONE CHECKBOX, DRAWN. This sets color-scheme and accent-color and the
    dark capture still showed WebKitGTK's white native box: its form controls
    follow the GTK theme, not the page's scheme, so a dark app on a light
    desktop got a light box. Drawn here instead, at zero specificity so a
@@ -1621,9 +1621,9 @@ body {
   opacity: 0.5;
 }
 
-/* #project-bar is 39px BY DECLARATION since 067, border-box like #nav-header,
+/* #project-bar is 39px BY DECLARATION, border-box like #nav-header,
    and that number is a click-geometry constant restated in outline-cli,
-   switch-cli and bible-cli. Before 067 it was the sum of a line box and its
+   switch-cli and bible-cli. It used to be the sum of a line box and its
    padding; the word count that set that line box now lives in #footer, and
    without this line the bar would quietly become 37px. Anything taller than
    the content box (27px, now that the border-bottom below is gone) overflows
@@ -1660,7 +1660,7 @@ body {
   min-width: 0;
 }
 
-/* SINCE 240 THE NAME IS THE GO TO BUTTON, and it still reads as the name:
+/* THE NAME IS THE GO TO BUTTON, and it still reads as the name:
    no surface at rest, the strip's 24px box (14px text in an 18px line box,
    2px padding, the 1px edge) so the 39px bar cannot grow. Still the one
    item that yields: the tooltip's anchor shrinks with it and the button
@@ -1755,7 +1755,7 @@ body.nav-hidden #nav-column {
 
 /* `display: inline-flex` above beats the user-agent `[hidden]` rule on
    specificity alone -- page-ui.md's recorded collision, hit again by
-   `mountEmpty` hiding this at the empty boot (099) and missed the first
+   `mountEmpty` hiding this at the empty boot and missed the first
    time because `.hidden === true` on the element is true regardless of
    which rule the stylesheet actually applies. */
 #status-controls[hidden] {
@@ -1790,7 +1790,7 @@ body.nav-hidden #nav-column {
   background: var(--amber);
 }
 
-/* Amber carries words (236): the button widens around them and never grows
+/* Amber carries words: the button widens around them and never grows
    taller, the 24px box goals-cli measures against the readout. */
 #status-dot[data-state="amber"] {
   gap: 6px;
@@ -1842,8 +1842,8 @@ body.nav-hidden #nav-column {
   outline: 2px solid var(--accent);
 }
 
-/* One action under the sentence it answers (236), on the default control
-   surface, which the shared lists give it since 237. The sentence above it is
+/* One action under the sentence it answers, on the default control
+   surface, which the shared lists give it. The sentence above it is
    what the button is about. */
 .status-action {
   align-self: flex-start;
@@ -1890,7 +1890,7 @@ body.nav-hidden #nav-column {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  /* Since 095: `#nav-cast` sits after this in the header's flex row, so the
+  /* `#nav-cast` sits after this in the header's flex row, so the
      name has to be told to take the leftover room rather than its own content
      width - the same `flex: 1 1 auto; min-width: 0` `.nav-title` already
      carries, for the same ellipsis reason. */
@@ -1909,7 +1909,7 @@ body.nav-hidden #nav-column {
 
 /* Fills the header's leftover room exactly, so the title does not jump
    sideways when it becomes editable. Same font as the label for the same
-   reason. `width: 100%` until 095 -- correct while the field was the only
+   reason. `width: 100%` was correct while the field was the only
    flexible thing on the line, wrong once `#nav-cast` sits beside it: a
    percentage width is resolved against the flex BASIS, not the space left
    after a sibling, and would run the field under the button. `flex: 1 1 auto;
@@ -1924,7 +1924,7 @@ body.nav-hidden #nav-column {
   font-weight: 600;
 }
 
-/* THE CAST BUTTON, AT THE HEADER'S RIGHT END (095, W2). It follows #app-menu's
+/* THE CAST BUTTON, AT THE HEADER'S RIGHT END. It follows #app-menu's
    own pattern -- an icon-only control, 24px tall like every #project-bar
    control -- so `#nav-cast` (BY ID, not `#nav-header button`) joins the three
    shared selector lists above rather than restating the box on its own.
@@ -1947,7 +1947,7 @@ body.nav-hidden #nav-column {
   margin: 1px;
 }
 
-/* FIRST in the footer since 067, with no padding of its own: the footer's
+/* FIRST in the footer, with no padding of its own: the footer's
    34px is a click-geometry constant the three navigator rigs subtract from the
    window, and nowrap because a wrapped count is a second line box. No
    margin-left: auto any more - the footer's spacer is #status-controls.
@@ -1967,7 +1967,7 @@ body.nav-hidden #nav-column {
   text-overflow: ellipsis;
 }
 
-/* 239: the day's figure sits after a gap rather than a second middle dot.
+/* the day's figure sits after a gap rather than a second middle dot.
    Width only, inside the nowrap line; `hidden` still removes it. */
 #word-count-today-separator {
   margin-left: var(--space-3);
@@ -2012,7 +2012,7 @@ body.nav-hidden #nav-column {
 }
 
 /* The second copy on this device, a line of its own in the status popover
-   since 067. It may wrap: the popover is a column, not a strip, so the
+   It may wrap: the popover is a column, not a strip, so the
    yield order the footer once needed is gone with it. Still 13px and muted,
    and still NO height and NO padding of its own - recovery-indicator.test.ts
    parses this block, and the popover's own padding is the only spacing. */
@@ -2077,16 +2077,16 @@ body.nav-hidden #nav-column {
    of exactly the menu titles' metrics (13px text, 18px line box, 2px padding,
    1px border = a 24px border box), which is what made the retirement cost zero
    geometry - a claim measured by re-running the two rigs that restate the
-   39px, never argued from a comment. Since 067 the bar declares its height and
+   39px, never argued from a comment. The bar declares its height and
    the count has left it, so the titles fit under the bar's 27px content box
-   (070: no border-bottom to subtract any more) rather than set the line. */
+ rather than set the line. */
 #project-panel {
   position: absolute;
   top: 100%;
   left: 12px;
   z-index: 10;
   min-width: 320px;
-  /* One width, open or folded (240): sized to its content the panel was
+  /* One width, open or folded: sized to its content the panel was
      narrow folded and jumped to the window's width when Backups and
      archives opened on the encrypted-archive row. */
   width: 520px;
@@ -2186,7 +2186,7 @@ body.nav-hidden #nav-column {
   overflow-wrap: break-all;
 }
 
-/* THE TWO DISCLOSURES (240): the empty import folder, and Backups and
+/* THE TWO DISCLOSURES: the empty import folder, and Backups and
    archives. Quiet text with the navigator's own chevron (a rotated corner,
    so the pack needs no new glyph), pointing right while closed and down
    while open. Blocks, so each opens the line under itself. */
@@ -2546,10 +2546,10 @@ body.nav-hidden #nav-column {
      five-button Goal row where it was: the longest row must stay on one line. */
   width: 384px;
   max-width: calc(100vw - 24px);
-  /* 098: an eleventh group (Cast names) pushed the panel's own content past
+  /* an eleventh group (Cast names) pushed the panel's own content past
      the bottom of a 640x480 window with nothing to stop it -- a capture at
      that floor showed Dictionary and Goal clipped by the window edge, the
-     `#help-panel` (089) and `#menu-panel` (087) defect in a third panel.
+     `#help-panel` and `#menu-panel` defect in a third panel.
      Same fix, `#help-panel`'s own static number: this panel has no per-open
      JS measurement of the room below it the way `#menu-panel` does, so a
      fixed viewport fraction is what `#help-panel` already proved sufficient
@@ -2562,7 +2562,7 @@ body.nav-hidden #nav-column {
   display: none;
 }
 
-/* The body owns the longest-label track (154) since the shell (238): the
+/* The body owns the longest-label track since the shell: the
    groups are its children now, not the panel's. */
 #prefs-panel .panel-body {
   display: grid;
@@ -2600,7 +2600,7 @@ body.nav-hidden #nav-column {
   min-width: 0;
 }
 
-/* SEGMENTED GROUPS (237): a row of choices where one is pressed. The panel
+/* SEGMENTED GROUPS: a row of choices where one is pressed. The panel
    default's 14px and 12px sides wrapped Preferences' Size row onto a second
    line in the first capture, so a choice is one step smaller and tighter, on
    the same 30px box. The Preferences look, shared by the book design panel
@@ -2614,7 +2614,7 @@ body.nav-hidden #nav-column {
   padding: var(--space-1) var(--space-2);
 }
 
-/* THE SHARED CLASS (238) for a panel's views: the Preferences look on any
+/* THE SHARED CLASS for a panel's views: the Preferences look on any
    row of buttons where one is pressed. Tabs inside a panel are this, never
    buttons dressed as tabs, and Close is never one of them. */
 .segmented {
@@ -2631,7 +2631,7 @@ body.nav-hidden #nav-column {
   color: var(--fg);
 }
 
-/* THE TWO SECTIONS (240), Writing and Application. A heading spans both
+/* THE TWO SECTIONS, Writing and Application. A heading spans both
    grid tracks; more space above it than below, and none above the first,
    which sits under the panel title. The rules that used to divide the goal
    and the dictionary from their neighbours went with them: the headings
@@ -2660,7 +2660,7 @@ body.nav-hidden #nav-column {
 /* The `display: block` above beats the user-agent `[hidden]` rule on
    specificity alone (two ids against one attribute selector) -- page-ui.md's
    recorded collision, restated here for the group `setDictionary(null)`
-   hides at an empty boot (099). */
+   hides at an empty boot. */
 #prefs-panel #prefs-dict[hidden] {
   display: none;
 }
@@ -2725,7 +2725,7 @@ body.nav-hidden #nav-column {
    recorded as getting wrong. The column is what made it necessary; widening the
    column is the fix, not a shorter lie.
 
-   `flex: 0 0 auto` rather than a fixed pixel basis, from 084: a FIXED basis
+   `flex: 0 0 auto` rather than a fixed pixel basis: a FIXED basis
    forces the text itself to wrap when a legend outgrows it, which is what
    `76px` did to "Schreibmaschinenmodus" and "Erscheinungsbild" the day German
    shipped. `min-width: 76px` preserves the original minimum. The panel grid
@@ -2862,7 +2862,7 @@ body.nav-hidden #nav-column {
   color: var(--fg);
 }
 
-/* THE LIBRARY SCREEN JOINS IT TOO (100), for the identity panel's own reason:
+/* THE LIBRARY SCREEN JOINS IT TOO, for the identity panel's own reason:
    the pen-name strip's pills are a selection, not an act -- exactly one of
    "All" or one pen name is the filter in effect, and `aria-pressed` is what
    says which to a screen reader. Not a descendant of #project-bar either, the
@@ -2873,7 +2873,7 @@ body.nav-hidden #nav-column {
   color: var(--fg);
 }
 
-/* #timeline-scale-panel JOINS THE SIXTH LIST TOO (103, item 6): "Use a
+/* #timeline-scale-panel JOINS THE SIXTH LIST TOO: "Use a
    calendar" is a selection, not an act -- exactly on or off -- and without
    this rule that state is announced to a screen reader and invisible to
    everybody else, #design-panel's own first-capture defect. Not a
@@ -2891,7 +2891,7 @@ body.nav-hidden #nav-column {
    THE TWO SIDES SIT BESIDE EACH OTHER and that is a height decision, not a
    decorative one. Stacked, this panel is two previews plus four sentences plus
    six controls tall, which runs past the bottom of a default 800px window --
-   and 040 recorded that a panel with no unbounded list needs no scroll, which
+   and a panel with no unbounded list needs no scroll, which
    is only true while it fits. Side by side it is half as tall and every control
    is reachable without one.
 
@@ -2920,7 +2920,7 @@ body.nav-hidden #nav-column {
    three groups read badly in a 380px column, and the list of names above them is
    a row of three controls that wraps at less than this.
 
-   IT HAS A SCROLL AND THE OTHER PANELS DO NOT. 040's rule is that the fix is to
+   IT HAS A SCROLL AND THE OTHER PANELS DO NOT. The rule is that the fix is to
    have no unbounded list rather than to scroll one, and it was right about a
    panel whose controls sit BELOW the list. Here the list of pen names grows with
    the library and the form below it is nine fields tall, so there is no
@@ -3388,8 +3388,8 @@ body.nav-hidden #nav-column {
   font-weight: 600;
 }
 
-/* Version history, docked in the inspector (241, end of this file), which sets its place and
-   width; 243 deleted the old anchored-popover position and size rules here. */
+/* Version history, docked in the inspector, which sets its place and
+   width; the old anchored-popover position and size rules were deleted here. */
 #history-panel[hidden] {
   display: none;
 }
@@ -3419,7 +3419,7 @@ body.nav-hidden #nav-column {
    fixed width, because "no change" and "−1,204" differ by a factor of two and a
    fixed column sized for one truncates the other.
 
-   TWO LINES SINCE THE INSPECTOR (241): at 328px of pane the two buttons and
+   TWO LINES SINCE THE INSPECTOR: at 328px of pane the two buttons and
    the figures left the time one letter wide, and a snapshot's name ran down
    the panel a character per line. The time takes the first line; the figures
    and the two actions share the second, the actions at its right edge. */
@@ -3746,7 +3746,7 @@ body.nav-hidden #nav-column {
   cursor: default;
   /* TWO OR THREE CHILDREN NOW - a title, a word count, and sometimes the
      state mark - so the row is a flex line rather than a text node.
-     `align-items: baseline` and NOT `center`: since 070 the title and the
+     `align-items: baseline` and NOT `center`: the title and the
      count are the same 14px, but the state mark is 13px, and centring
      different sizes sits the smaller one visually high. Baselines are what a
      reader's eye uses.
@@ -3781,7 +3781,7 @@ body.nav-hidden #nav-column {
   isolation: isolate;
 }
 
-/* THE WORLD'S GLYPH, BETWEEN THE CHEVRON AND THE TITLE (095, W1 -- reworked
+/* THE WORLD'S GLYPH, BETWEEN THE CHEVRON AND THE TITLE (reworked
    after the initial ship, which painted it as a SIBLING before `.nav-title`
    and so put it before the chevron too: `.nav-title::before` (the chevron
    two rules down) always renders before an element's own children no matter
@@ -3873,7 +3873,7 @@ body.nav-hidden #nav-column {
 #nav .nav-count {
   flex: 0 0 auto;
   font-size: inherit;
-  /* 400 on every row (243): a count set in a chapter's or the open row's
+  /* 400 on every row: a count set in a chapter's or the open row's
      weight competed with the title it measures. */
   font-weight: 400;
   font-variant-numeric: tabular-nums;
@@ -3910,7 +3910,7 @@ body.nav-hidden #nav-column {
    one step under the row's own 14px (and the count's, which inherits it). */
 #nav .nav-state {
   flex: 0 0 auto;
-  /* 13px, one step under the row's 14px (070): MEASURED by capture. At 11px
+  /* 13px, one step under the row's 14px: MEASURED by capture. At 11px
      the quarter and the three-quarter marks are two small dark blobs and the
      progression stops being readable, which is the one thing the mark has to
      do without help from the colour; a size closer to the row's own reads
@@ -3928,7 +3928,7 @@ body.nav-hidden #nav-column {
 /* A row with a synopsis: a section sign after the title, muted, small enough to
    read as a mark and not a character of the title. Language-neutral; the
    pointer gets "Has a synopsis" from the span's `title` and the screen reader
-   the same sentence from #nav-state-descriptions. Its own span since 243,
+   the same sentence from #nav-state-descriptions. Its own span,
    outside `.nav-title`'s clip, which used to cut it off every long title.
    The title grows, so the mark lands in a column beside the appearance
    diamond rather than trailing each title at a different x. Empty, it is
@@ -3999,7 +3999,7 @@ body.nav-hidden #nav-column {
 
    The band is what fixes it: a part needs a surface to sit on rather than more
    weight, because more weight is the chapter's channel and the two would stop
-   being distinguishable. Since 237 the title is sentence case at the row's own
+   being distinguishable. The title is sentence case at the row's own
    14px and 500, with no tracking (calm-panels record): no label in the
    application is set in spaced capitals any more.
 
@@ -4012,7 +4012,7 @@ body.nav-hidden #nav-column {
   font-weight: 500;
 }
 
-/* 500, like the part, since 243: the column holds two weights, 400 and 500.
+/* 500, like the part: the column holds two weights, 400 and 500.
    The part keeps its band, which is what tells the two apart. */
 #nav [role="treeitem"][data-type="chapter"] {
   font-weight: 500;
@@ -4032,7 +4032,7 @@ body.nav-hidden #nav-column {
    exists to draw.
 
    The PART treatment minus its background, plus the muted ink (sentence case
-   since 237, like the part). A part is the
+   like the part). A part is the
    book's own top level and keeps the paper behind it; these two are asides. No
    height, no padding, no border: the recorded rule is that a background can
    restyle a navigator row and a border cannot, because the content box's
@@ -4045,7 +4045,7 @@ body.nav-hidden #nav-column {
   font-weight: 500;
 }
 
-/* THE SEPARATOR: WHERE THE BOOK STOPS (095, W1; fixed after the initial ship
+/* THE SEPARATOR: WHERE THE BOOK STOPS (fixed after the initial ship
    drew the line INSIDE the row's own 24px box, which left no room for the
    10px/6px spacing the design calls for and was reverted). The room now
    comes from the virtual list itself: `virtual-list.ts`'s SECTION_GAP inserts
@@ -4179,7 +4179,7 @@ body.nav-hidden #nav-column {
   overflow-y: auto;
   background: var(--bg);
   padding: 24px;
-  /* A flex column, since 070: #scene-heading is the pane's first child and
+  /* A flex column: #scene-heading is the pane's first child and
      the ProseMirror page its second, and the page grows to fill whatever the
      heading leaves (see its own flex: 1 0 auto, below) rather than the pane
      stacking two independently-sized blocks. */
@@ -4197,7 +4197,7 @@ body.nav-hidden #nav-column {
      on the memory climb. Remove this and re-run `persist-cli 5` before
      believing it was decorative. */
   will-change: transform;
-  /* 071: the recentring transform below is the only thing that ever moves
+  /* the recentring transform below is the only thing that ever moves
      this element, so one declaration covers it -- a `transition` costs
      nothing until the property it names actually changes. */
   transition: transform var(--chrome-ms) ease-out;
@@ -4259,7 +4259,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 #outline-view h1 { margin: 0 0 18px; font-size: var(--text-xl); }
 #outline-view .outline-view-scope { margin: -12px 0 18px; color: var(--muted); font-size: var(--text-sm); }
 #outline-view h1:focus { outline: none; }
-/* One line of controls above the rows (242): Return, the pages, undo and
+/* One line of controls above the rows: Return, the pages, undo and
    redo side by side, wrapping only when the pane is narrow. */
 .outline-view-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-5); margin-bottom: var(--space-4); }
 .outline-view-toolbar,
@@ -4268,7 +4268,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 .outline-view-row-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
 .outline-view-pages span { color: var(--muted); font-variant-numeric: tabular-nums; }
 
-/* THE TABLE (242). No mid-word breaks anywhere: the old `overflow-wrap:
+/* THE TABLE. No mid-word breaks anywhere: the old `overflow-wrap:
    anywhere` let the synopsis column shrink to one letter per line
    ("synopsi/s"). Words wrap at spaces only, the short columns never wrap,
    and the title and synopsis columns carry minimums instead. */
@@ -4398,7 +4398,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 }
 #menu-panel [role="menuitemradio"][aria-checked="true"] .menu-item-label::before { content: "✓ "; color: var(--accent); }
 
-/* THE RECORDED EXCEPTION (102): a timeline's lanes ARE positioned
+/* THE RECORDED EXCEPTION: a timeline's lanes ARE positioned
    descendants of #editor -- they are the pane's content while one is open,
    not a float over it, unlike every other surface this application floats
    (the bubble toolbar, the cast card, the timeline's own event card, all on
@@ -4410,7 +4410,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   will-change: auto;
 }
 
-/* The timeline view (102): the pane's content while a timeline is open.
+/* The timeline view: the pane's content while a timeline is open.
    `#timeline-view` itself carries no position -- it is the lanes' children
    (the lane rows below) that are positioned, which is what #editor.timeline-open
    above exists to answer for. */
@@ -4437,7 +4437,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   gap: 8px;
 }
 
-/* The measuring instrument, `#library-timing`'s own clip (100): off screen,
+/* The measuring instrument, `#library-timing`'s own clip: off screen,
    never display:none, so a rig reads it through AT-SPI and a writer never
    sees two figures they did not ask for. */
 .timeline-status {
@@ -4471,7 +4471,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   flex: 1 0 auto;
 }
 
-/* ERAS' OWN ROW (103, plan item 2), a sibling of #timeline-scale so its
+/* ERAS' OWN ROW, a sibling of #timeline-scale so its
    existing flat shape is untouched -- see timeline-view.ts's own comment.
    Present even with no eras, at a fixed 14px: computing whether to collapse
    the row is a second geometry the ticks row does not need. */
@@ -4565,7 +4565,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   touch-action: none;
 }
 
-/* KEPT, NOT REMOVED (103 carry-in from 102's review): a keyboard open of an
+/* KEPT, NOT REMOVED: a keyboard open of an
    EMPTY timeline has no event button to land on, so focus falls back to the
    lanes themselves -- the browser's default ring used to draw around
    `#timeline-view`, the whole pane (toolbar and empty state included). An
@@ -4633,14 +4633,14 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 }
 
 /* A meeting (an event on two or more tracks) draws smaller on each lane it
-   touches -- the dotted vertical join between them is 103's (drag and the
+   touches -- the dotted vertical join between them is drag's (drag and the
    lane-group swap land with it); this slice only distinguishes the dot from
    an ordinary pill. */
 .tl-event.tl-meeting {
   border-style: dashed;
 }
 
-/* POSITIONED BY ITS `.tl-dot-anchor` WRAPPER, NOT ITSELF (103): tooltip.ts's
+/* POSITIONED BY ITS `.tl-dot-anchor` WRAPPER, NOT ITSELF: tooltip.ts's
    `createTooltip` moves the control inside an anchor span it owns
    (page-ui.md's "tooltip.ts, sibling not child"), so the coordinate
    timeline-view.ts computes goes on that anchor and the button underneath
@@ -4675,7 +4675,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   display: none;
 }
 
-/* The card (102, design section 4): on <body>, position: fixed, like
+/* The card: on <body>, position: fixed, like
    #format-bubble and #cast-card, and for their reason -- see
    timeline-card.ts's own header. */
 #timeline-card {
@@ -4742,7 +4742,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   margin-top: 8px;
 }
 
-/* ---------------------------------------------------------- 103 additions */
+/* ------------------------------------------------------- theme additions */
 
 #timeline-scale-label {
   font-size: var(--text-xs);
@@ -4750,7 +4750,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   white-space: nowrap;
 }
 
-/* THE SCALE PANEL AND THE BRANCH FORM (103, item 2 and item 1): on <body>,
+/* THE SCALE PANEL AND THE BRANCH FORM: on <body>,
    position: fixed, `#timeline-card`'s own reason -- both are placed by
    `placeBubble` against a fixed anchor and neither may live inside #editor. */
 #timeline-scale-panel,
@@ -4807,7 +4807,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 }
 
 /* An era row holds five controls in a 360px panel; the name lost every
-   share it was given ("The sp", then "Au" in 104's captures), so it takes a
+   share it was given ("The sp", then "Au" in earlier captures), so it takes a
    line of its own and the numbers, tint and Remove wrap under it. */
 .timeline-scale-era-row {
   flex-wrap: wrap;
@@ -4841,7 +4841,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   margin-top: 8px;
 }
 
-/* THE LANE HEADER'S INLINE RENAME (103, plan item 3): the header's own text
+/* THE LANE HEADER'S INLINE RENAME: the header's own text
    node is replaced with a real `<input>` while `renamingTrackId` is set, so
    it inherits the header's own row without its own layout rule. */
 .timeline-lane-rename {
@@ -4854,7 +4854,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   padding: 1px 4px;
 }
 
-/* A CAST TRACK WHOSE MEMBER IS GONE (103, plan item 3, design section 2):
+/* A CAST TRACK WHOSE MEMBER IS GONE:
    the lane and its header stay -- the events on it are the writer's -- but
    the name reads in muted ink rather than the ordinary track ink. */
 .timeline-lane-gone .timeline-lane-header {
@@ -4862,7 +4862,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   font-style: italic;
 }
 
-/* --------------------------------------------------- branches (103, item 1) */
+/* ------------------------------------------------------------- branches */
 
 .timeline-branch-group {
   border-top: 1px dashed var(--border);
@@ -4922,7 +4922,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   border-top: 1px dashed var(--border);
 }
 
-/* --------------------------------------------------------- drag (103, item 4) */
+/* ----------------------------------------------------------------- drag */
 
 #timeline-drag-tip {
   position: absolute;
@@ -4950,7 +4950,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   cursor: grab;
 }
 
-/* ----------------------------------------------------- collapsed dots (103) */
+/* ----------------------------------------------------- collapsed dots */
 
 .tl-dot-anchor {
   position: absolute;
@@ -5179,8 +5179,8 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   text-indent: 1.5em;
 }
 
-/* The selection under long text was left to the platform until 237; the
-   calm-panels record themes it per palette (::selection near the top): a
+/* The selection under long text was left to the platform for a while; the
+   calm-panels record now themes it per palette (::selection near the top): a
    translucent accent under the ink, whose contrast was checked per palette. */
 
 #persist-error {
@@ -5188,7 +5188,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 }
 
 /* ---------------------------------------------------------------------------
-   The application menu, since 068: one button at the header's right end and
+   The application menu: one button at the header's right end and
    a list of the four titles under it; the dropdown opens beside the row.
 
    #app-menu is a header control and keeps the header's 24px box; its glyph
@@ -5273,7 +5273,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   top: 0;
   z-index: 11;
   min-width: 240px;
-  /* 087: the Outline menu is 22 rows and left the window at the 640x480
+  /* the Outline menu is 22 rows and left the window at the 640x480
      floor. max-height is set per open in menu-bar.ts from the room below
      the title's row; a focused button scrolls itself into view, so keyboard
      use needs nothing more. */
@@ -5317,7 +5317,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   display: none;
 }
 
-/* THE THREE TIMELINE MENUS (103): the track-kind chooser (+ Track), the
+/* THE THREE TIMELINE MENUS: the track-kind chooser (+ Track), the
    cast-member picker it and Relink... both open, and the lane header's own
    context menu. NOT merged into #nav-context-menu's own rule above --
    `nav-context-menu.test.ts` asserts on that exact literal block, and a
@@ -5343,9 +5343,9 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   display: none;
 }
 
-/* THE BUBBLE TOOLBAR (069). On <body>, position: fixed, viewport
+/* THE BUBBLE TOOLBAR. On <body>, position: fixed, viewport
    coordinates written by format-bubble.ts from bubble-placement.ts: #editor
-   is a scroll box with a compositing layer (064) and nothing positioned may
+   is a scroll box with a compositing layer and nothing positioned may
    live inside it. Above the panels' z-index 10, below the context menu. */
 #format-bubble {
   position: fixed;
@@ -5371,7 +5371,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   margin: 1px;
 }
 
-/* Pressed is tonal with accent ink since 237, like the header toggles: three
+/* Pressed is tonal with accent ink, like the header toggles: three
    pressed marks in a row were three accent slabs over the prose. */
 #format-bubble button[aria-pressed="true"],
 #format-bubble button[aria-pressed="true"]:hover {
@@ -5424,13 +5424,13 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 
 /* One line per item: the dropdown widens instead. "Export manuscript
    (Markdown)" beside its Ctrl+E wrapped to two lines at the 240px floor
-   in the first 240 capture, and a two-line row reads as two items. */
+   in an early capture, and a two-line row reads as two items. */
 #menu-panel .menu-item-label,
 #menu-panel .menu-item-shortcut {
   white-space: nowrap;
 }
 
-/* Between two groups of a dropdown (240). A hairline with space on both
+/* Between two groups of a dropdown. A hairline with space on both
    sides, inset like the rows' text so it reads as a pause, not a box. */
 .menu-separator {
   height: 1px;
@@ -5449,7 +5449,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   max-width: calc(100vw - 24px);
   max-height: 70vh;
   overflow-y: auto;
-  /* 089: the columns live on #help-columns, NOT here. A multicol box with a
+  /* the columns live on #help-columns, NOT here. A multicol box with a
      max-height does not scroll when its content outgrows it; it spawns a third
      column sideways, behind a horizontal scrollbar, and the Menus group lived
      there off-screen in both languages. */
@@ -5472,7 +5472,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
      below a scroll fold - a shortcuts panel a writer has to scroll is one that
      hides the shortcut they came looking for. The window is 1200px wide and
      this was 380, so the room to use was horizontal. No height here, so the
-     box grows down and the panel above it scrolls (089). */
+     box grows down and the panel above it scrolls. */
   column-count: 2;
   column-gap: 28px;
 }
@@ -5667,7 +5667,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   font-weight: 600;
 }
 
-/* A problem is AMBER, not danger (237): --danger is "your work is not in the
+/* A problem is AMBER, not danger: --danger is "your work is not in the
    file" and a problem is something to look at. Amber ink fails 4.5:1 on the
    light palettes, so the amber is the surface and the words stay --fg. */
 .app-banner[data-tone="problem"] {
@@ -5676,7 +5676,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   border-bottom-color: color-mix(in oklab, var(--amber) 45%, var(--bg));
 }
 
-/* Success is the info surface plus a check (236): good news is not louder than
+/* Success is the info surface plus a check: good news is not louder than
    other news, it is only marked as an outcome. */
 .app-banner[data-tone="info"],
 .app-banner[data-tone="success"] {
@@ -5779,7 +5779,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   padding: 10px 16px;
   font-size: var(--text-md);
   color: var(--muted);
-  /* A panel surface (237): --muted on --chrome-bg is 4.48:1 in Editorial
+  /* A panel surface: --muted on --chrome-bg is 4.48:1 in Editorial
      light, under the 4.5 floor. */
   background: var(--bg);
   border: 1px solid var(--panel-edge);
@@ -5893,8 +5893,8 @@ body.chrome-hidden #footer {
    `:not(.nav-hidden)` because that toggle already removes the navigator
    column from the grid -- #editor is already centred and shifting it
    again would recentre a column that never moved. The strip the pane
-   leaves at the right shows `body`'s own --bg, the prose tone since 070.
-   Nor with an inspector open (241): the inspector stays through focus mode,
+   leaves at the right shows `body`'s own --bg, the prose tone.
+   Nor with an inspector open: the inspector stays through focus mode,
    since the writer opened it on purpose and it lives outside the faded
    chrome, and a shifted pane would slide the prose under nothing and leave
    a gap against the inspector's edge. */
@@ -5902,7 +5902,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   transform: translateX(calc(var(--nav-width) / -2));
 }
 
-/* 071's half of the same reduced-motion rule, and it MUST come after
+/* Half of the same reduced-motion rule, and it MUST come after
    `body.chrome-hidden` above rather than beside the ProseMirror rule near
    the top of this section: both blocks set `--chrome-ms`/`--chrome-vis-
    delay` on selectors of EQUAL specificity (`body.chrome-hidden` and
@@ -5932,9 +5932,9 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   padding-bottom: 58vh;
 }
 
-/* Statistics, docked in the inspector (241, end of this file), which sets its place and
-   width; 243 deleted the old anchored-popover position and size rules here. One
-   column at the inspector's width; the body scrolls (238). */
+/* Statistics, docked in the inspector, which sets its place and
+   width; the old anchored-popover position and size rules were deleted here. One
+   column at the inspector's width; the body scrolls. */
 #stats-panel[hidden] {
   display: none;
 }
@@ -5947,11 +5947,11 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   margin-bottom: 8px;
 }
 
-/* ONE COLUMN SINCE THE INSPECTOR (241). Two columns in 328px of pane left
+/* ONE COLUMN SINCE THE INSPECTOR. Two columns in 328px of pane left
    every label two or three words wide beside its figure; the body scrolls. */
 #stats-groups {
   /* Clear of the body's overlay scrollbar, which otherwise sits on the
-     figures (239 capture). */
+     figures). */
   padding-right: var(--space-3);
 }
 
@@ -6108,8 +6108,8 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
 }
 #revision-planning .planning-done { text-decoration: line-through; }
 
-/* WHAT THIS IS ABOUT. Opened from Outline > Synopsis..., docked in the inspector (241, end of this file), which sets its place and
-   width; 243 deleted the old anchored-popover position and size rules here. */
+/* WHAT THIS IS ABOUT. Opened from Outline > Synopsis..., docked in the inspector, which sets its place and
+   width; the old anchored-popover position and size rules were deleted here. */
 #synopsis-panel[hidden] {
   display: none;
 }
@@ -6123,7 +6123,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   overflow-wrap: break-word;
 }
 
-/* READ FIRST, EDIT SECOND (097, W4): `panel.dataset.mode` below is the only
+/* READ FIRST, EDIT SECOND: `panel.dataset.mode` below is the only
    thing that decides which of these two is on screen, the cast panel's own
    `#cast-panel[data-mode=...]` precedent -- neither block is ever added to or
    removed from the DOM for it, only shown or hidden by the two rules at the
@@ -6135,7 +6135,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   gap: 8px;
 }
 
-/* THE EDITOR'S OWN PROSE FACE (097, decision 1), `#cast-sheet-summary`'s own
+/* THE EDITOR'S OWN PROSE FACE, `#cast-sheet-summary`'s own
    variable: this is what a writer reads, not a form label, so it reads like
    the manuscript rather than like UI chrome. */
 #synopsis-text {
@@ -6153,7 +6153,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   flex-direction: column;
 }
 
-/* THE BUTTON ROW (097 review, ticket 04). `#synopsis-form`'s own `column`
+/* THE BUTTON ROW. `#synopsis-form`'s own `column`
    flow stretches a direct child to the full width by default, which is right
    for the field and was wrong for Cancel and Save -- two full-width stacked
    buttons rather than one line. This anchor opts them BACK into a row, right-
@@ -6189,10 +6189,10 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   margin-bottom: 8px;
 }
 
-/* THE CAST. Opened from Outline > Cast..., docked in the inspector (241, end of this file), which sets its place and
-   width; 243 deleted the old anchored-popover position and size rules here. */
+/* THE CAST. Opened from Outline > Cast..., docked in the inspector, which sets its place and
+   width; the old anchored-popover position and size rules were deleted here. */
 #cast-panel {
-  /* ONE NUMBER, TWO READERS (096 follow-up): an entry row's own total
+  /* ONE NUMBER, TWO READERS: an entry row's own total
      footprint -- 18px line-height + 2px top/bottom padding + 1px top/bottom
      (transparent) border + 2px margin-bottom, all stated on .cast-entry and
      its shared button rule -- declared here once so #cast-entries' max-
@@ -6220,7 +6220,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
    opened as an 8px sliver nobody could read what they were typing in. Here
    there are two, and `min-width: 0` is what lets the field shrink instead of
    pushing them out of the panel. */
-/* 096: THE ROW CAN BE HIDDEN NOW, collapsed behind `#cast-new-toggle` when
+/* THE ROW CAN BE HIDDEN NOW, collapsed behind `#cast-new-toggle` when
    the cast is not empty -- so the `display: flex` two rules below needs its
    own `[hidden]` override, the convention every toggled panel in this file
    follows and the one this row never needed while it was always visible.
@@ -6249,7 +6249,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
 /* THE LIST. Its own scroll box, so a long cast scrolls WITHOUT taking the
    form below it off the screen.
 
-   NINE WHOLE ROWS, NO PARTIAL TENTH (096 follow-up: the first capture cut
+   NINE WHOLE ROWS, NO PARTIAL TENTH (an early capture cut
    "Thren" in half at this box's own bottom edge). 19px is the FIRST GROUP
    TITLE's own measured block (a 17px line box plus its 2px margin-bottom):
    the list always opens on a title before any row, so "9 rows" measured
@@ -6276,7 +6276,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   margin-bottom: 10px;
 }
 
-/* The list's two text rows start where its entries do (238): the shared
+/* The list's two text rows start where its entries do: the shared
    control's 12px sides put their words a step right of every name above.
    Two ids, to beat `#cast-panel button`. */
 #cast-panel #cast-new-toggle,
@@ -6299,12 +6299,12 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   font-size: var(--text-sm);
   font-weight: 500;
   color: var(--muted);
-  /* Sentence case since 237; the tight leading keeps the measured 19px
+  /* Sentence case; the tight leading keeps the measured 19px
      block #cast-entries' max-height counts. */
   line-height: var(--leading-tight);
 }
 
-/* A PLAIN ROW, NOT A BOXED ONE (096, ticket 02): the shared #cast-panel
+/* A PLAIN ROW, NOT A BOXED ONE: the shared #cast-panel
    button rule two-hundred-odd lines up gives every button here a border and
    a filled background, which reads as a stack of boxes in a LIST rather than
    rows of one. Both are cleared to transparent here; the pill below is the
@@ -6323,7 +6323,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   margin-bottom: 2px;
   background: transparent;
   border-color: transparent;
-  /* A list row, not the 30px panel control (237): 14px on the tight leading,
+  /* A list row, not the 30px panel control: 14px on the tight leading,
      2px of padding and the 1px edge keep the measured 24px box. */
   padding: 2px var(--space-2);
   /* THE SECOND READER of --cast-entry-row-height (#cast-panel, above): the
@@ -6359,7 +6359,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
 }
 
 /* THE CHOSEN ONE: the outline's own pill, sharing its --accent-soft tone and
-   6px radius rather than restating them as fresh hex (096, W3 -- "share the
+   6px radius rather than restating them as fresh hex (to "share the
    variables, do not copy hex"). Weight, not just colour, for the same reason
    the revision panel's choices and the preferences panel's groups carry it. */
 #cast-entries .cast-entry[aria-pressed="true"] {
@@ -6377,7 +6377,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
 }
 
 /* HOVER IS THE SAME PILL, not the shared #cast-panel button:hover's filled
-   box (096 review). #cast-entries .cast-entry:hover already outranks that
+   box. #cast-entries.cast-entry:hover already outranks that
    rule on specificity (two classes beat one id-scoped type selector's
    pseudo-class), so restating the pill here is what actually wins the
    cascade rather than one more rule that coincidentally also matches. */
@@ -6395,7 +6395,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   z-index: -1;
 }
 
-/* ONE RING, ON THE PILL (238). The shared focus ring is drawn round the
+/* ONE RING, ON THE PILL. The shared focus ring is drawn round the
    whole button, which is wider than the pill, so a selected row with focus
    read as two nested boxes. The ring moves onto the pill's own shape; the
    pill's background, when the row has one, is untouched. */
@@ -6412,7 +6412,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   z-index: -1;
 }
 
-/* "ADD…", the last row of the list (096, W3, ticket 02): a text button, not
+/* "ADD…", the last row of the list: a text button, not
    a filled one, sharing #project-bar's own quiet tier -- #cast-panel is a
    descendant of #project-bar (#cast-controls is display: contents inside
    it), so that selector already reaches it. */
@@ -6448,7 +6448,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   display: none;
 }
 
-/* MISSED THE FIRST TIME (096 review): `display: grid` beats the UA
+/* MISSED THE FIRST TIME: `display: grid` beats the UA
    `[hidden] { display: none }` the same way #cast-new-row's `display: flex`
    already did above -- author rules outrank the UA stylesheet regardless of
    specificity. Without this, `sheetRecord.hidden = true` (the no-selection
@@ -6502,12 +6502,12 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   flex: 0 0 auto;
 }
 
-/* THE PICTURE COLUMN, AT THE TOP RIGHT (096, W3, ticket 07; the column fix
+/* THE PICTURE COLUMN, AT THE TOP RIGHT (the column fix
    above replaces the float this used to be -- see #cast-sheet-record). Its
    own grid column, second and last, so it never shares a row with the
    summary's text or the fields below overrun it.
 
-   NO FIXED HEIGHT HERE (096 review): the 96px square is real -- both
+   NO FIXED HEIGHT HERE: the 96px square is real -- both
    .cast-sheet-picture-frame and .cast-sheet-picture-empty state it
    themselves, below -- but the COLUMN also holds the Add-a-picture button
    under an empty square, and a fixed 96px on this element left that button
@@ -6539,7 +6539,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
    "No picture yet." sentence the form still carries -- that sentence is
    Edit's, this square is Read's. Its own explicit 96x96, not a percentage
    of the column: the column no longer states a height for it to be a
-   percentage OF (096 review, above). */
+   percentage OF (see above). */
 .cast-sheet-picture-empty {
   display: flex;
   align-items: center;
@@ -6565,13 +6565,13 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   /* ALLOWED TO WRAP inside the 96px column, unlike every other button in
      this panel -- "Add a picture..." is the widest label in the narrowest
      box on the sheet, and clipping or overflowing it was the second half of
-     the capture's defect (096 follow-up): it wrapped onto its own line fine
+     the capture's defect: it wrapped onto its own line fine
      once the picture stopped floating, but a button's own default is still
      stated explicitly here rather than left to inherit. */
   white-space: normal;
 }
 
-/* ALSO CALLED, before the summary (105) -- who this is, then what they are
+/* ALSO CALLED, before the summary -- who this is, then what they are
    called, then the paragraph. `#cast-sheet-summary`'s own rules, one row up:
    the picture is pinned to the second column and this is what keeps the
    aliases line out of it, and it reads as prose rather than as UI chrome for
@@ -6609,7 +6609,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   display: none;
 }
 
-/* THE FIELDS, A DEFINITION GRID (096, W3, ticket 08): two columns rather than
+/* THE FIELDS, A DEFINITION GRID: two columns rather than
    the form's two INPUTS side by side, so a long value wraps instead of being
    clipped -- ticket 08's whole complaint. */
 .cast-sheet-fields {
@@ -6641,7 +6641,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   display: none;
 }
 
-/* THE TWO MODES, NEITHER EVER REBUILT (096, W3): `data-mode` on #cast-panel
+/* THE TWO MODES, NEITHER EVER REBUILT: `data-mode` on #cast-panel
    is the only thing that decides which of #cast-sheet / #cast-detail is on
    screen for a selected member. Each selector needs #cast-panel's own id to
    out-specificity the OTHER surface's plain #cast-sheet / #cast-detail rules
@@ -6691,7 +6691,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   min-width: 0;
 }
 
-/* ONE INPUT PER ROW, `.cast-field-row`'s own flex/gap/margin (105): an alias
+/* ONE INPUT PER ROW, `.cast-field-row`'s own flex/gap/margin: an alias
    has no label half to sit beside, but the row still wants the same spacing
    between it and its neighbours in the block above. */
 .cast-alias-row {
@@ -6714,7 +6714,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
 }
 
 /* THE PICTURE, on its own block between the summary and the detail list, which
-   is where a CAPTURE put it: 037 left the field list unbounded on purpose, so
+   is where a CAPTURE put it: the field list is unbounded on purpose, so
    anything after it sits at an unbounded depth, and the first picture of this
    panel had the photograph, Save and Delete all below the fold of a default
    window. Tenth defect found by looking.
@@ -6847,7 +6847,7 @@ body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-
   text-underline-offset: 3px;
 }
 
-/* THE CAST'S OWN MARK (098, W5). A THIRD CHANNEL from the two above: the
+/* THE CAST'S OWN MARK. A THIRD CHANNEL from the two above: the
    comment anchor is a dotted BORDER, the writer's own underline is a SOLID
    text-decoration, and this is a dotted text-decoration at 45% of the row's
    own ink -- no colour, no weight, so the manuscript still reads as prose
@@ -6869,8 +6869,8 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   text-decoration-color: transparent;
 }
 
-/* THE HOVER CARD (098, W5). On <body>, position: fixed, `#format-bubble`'s
-   own reason: #editor is a scroll box with a compositing layer (064) and
+/* THE HOVER CARD. On <body>, position: fixed, `#format-bubble`'s
+   own reason: #editor is a scroll box with a compositing layer and
    nothing positioned may live inside it. */
 #cast-card {
   position: fixed;
@@ -6963,7 +6963,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   top: 100%;
   right: 12px;
   z-index: 10;
-  /* 400, up from 380 (238): the margin row always ran 6px into the old
+  /* 400, up from 380: the margin row always ran 6px into the old
      padding, and the shell's scrolling body clips what the panel let spill. */
   width: 400px;
   max-width: calc(100vw - 24px);
@@ -7106,7 +7106,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   overflow-wrap: anywhere;
 }
 
-/* 239: one sentence per setting that changes. */
+/* one sentence per setting that changes. */
 #design-transfer-review .design-transfer-changes {
   margin: var(--space-1) 0;
   padding-left: var(--space-4);
@@ -7116,8 +7116,8 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 }
 
 /* THE NOTES ON THIS SCENE. Opened from Edit > Comments… or Ctrl+Alt+M,
-   docked in the inspector (241, end of this file), which sets its place and
-   width; 243 deleted the old anchored-popover position and size rules here. */
+   docked in the inspector, which sets its place and
+   width; the old anchored-popover position and size rules were deleted here. */
 #comments-panel[hidden] {
   display: none;
 }
@@ -7198,7 +7198,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 /* An orphan is marked in the ROW as well as in its sentence, so a reader
    scanning the list sees which ones have lost their passage before they read a
    word. The tint is the colour; the `unlink` glyph opening its meta line is
-   what survives greyscale (243 replaced a side stripe). */
+   what survives greyscale (a side stripe was replaced). */
 .comment-row[data-orphaned="true"] {
   background: color-mix(in srgb, var(--muted) 10%, transparent);
 }
@@ -7357,7 +7357,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 }
 
 /* The discard control carries `data-weight="danger"` and is painted as danger
-   TEXT on the default control surface (236): a filled red button was the
+   TEXT on the default control surface: a filled red button was the
    loudest thing in a prompt whose safe answer is the other one. It does not
    change under the pointer: a control asking a question must not invite the
    press that cannot be taken back. */
@@ -7383,9 +7383,9 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
    other panel here, so its anchor in the strip carries no height and the bar's
    39px click-geometry constant -- restated in five rigs -- is untouched.
 
-   #mirror-changes WAS IN NONE OF THE SHARED SELECTOR LISTS until 022, and a
+   #mirror-changes WAS IN NONE OF THE SHARED SELECTOR LISTS, and a
    capture is what said so -- the recorded #comments-panel defect exactly: the
-   four lists at the top of this file name every panel by id, so 021's Compare
+   four lists at the top of this file name every panel by id, so an earlier Compare
    button rendered browser-default in a panel whose whole job is to be read.
    It joins FIVE of the six. It joins the self-focusing `:focus` list because
    Escape is heard from this non-modal region, which takes programmatic focus
@@ -7485,7 +7485,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   color: var(--fg-soft);
 }
 
-/* The batch control, above the list for 040's reason: the list is what grows,
+/* The batch control, above the list: the list is what grows,
    and a control below it is one a writer with forty changed files cannot
    reach. */
 /* NO `[hidden] { display: none }` OF ITS OWN. That rule exists elsewhere in
@@ -7517,8 +7517,8 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 }
 
 /* WHO APPEARS HERE. Opened from Outline > Who appears here...,
-   docked in the inspector (241, end of this file), which sets its place and
-   width; 243 deleted the old anchored-popover position and size rules here. */
+   docked in the inspector, which sets its place and
+   width; the old anchored-popover position and size rules were deleted here. */
 #appears-panel[hidden] {
   display: none;
 }
@@ -7566,7 +7566,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   overflow-wrap: break-word;
 }
 
-/* The drawn box (243) has no text, so its baseline is its bottom edge and a
+/* The drawn box has no text, so its baseline is its bottom edge and a
    baseline row sat it above the name. Top-aligned instead, centred on the
    first line's 17px (13px at the tight leading), which still keeps it beside
    the first line of a name that wraps. */
@@ -7575,7 +7575,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   margin-top: 1px;
 }
 
-/* THE KIND GLYPH (097, W4, ticket 05's sibling on this list): centred rather
+/* THE KIND GLYPH: centred rather
    than baseline-aligned like the row's other two children, `.cast-entry-
    icon`'s own size -- 14px, muted, decorative -- so a character, a place and
    a point of interest read apart in the same glance the cast panel's own
@@ -7623,8 +7623,8 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 }
 
 /* WHO APPEARS WHERE. The book's own answer, so it reads no selection; every
-   row carries a title and up to two lines of names. Docked in the inspector (241, end of this file), which sets its place and
-   width; 243 deleted the old anchored-popover position and size rules here.
+   row carries a title and up to two lines of names. Docked in the inspector, which sets its place and
+   width; the old anchored-popover position and size rules were deleted here.
 
    NOT A VIRTUAL LIST, and that is a property of what it paints rather than an
    omission: only rows somebody appears in are listed, so its length is bounded
@@ -7674,7 +7674,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
    channel that reaches a reader who cannot see the difference between --fg and
    --muted. The tint is the second channel, not the only one.
 
-   NOW ONE LINE PER KIND (097, W4, ticket 05), so a row can carry several of
+   NOW ONE LINE PER KIND, so a row can carry several of
    each; the glyph beside a line is a THIRD channel, decorative and
    `aria-hidden`, that sorts a mixed "Here" or "Further down" the way the cast
    panel's own list already sorts its entries. */
@@ -7688,7 +7688,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   overflow-wrap: break-word;
 }
 
-/* HERE IS INK AND ONE SIZE UP FROM FURTHER DOWN (097, W4) -- the outline's
+/* HERE IS INK AND ONE SIZE UP FROM FURTHER DOWN -- the outline's
    own dimmed-count tone, restated here: a direct tag on this row is the fact
    a writer came to read, and what arrived from below is context for it. */
 .appears-map-here {
@@ -7715,7 +7715,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   height: 12px;
 }
 
-/* THE LABEL'S OWN INDENT (097 review, ticket 08). "Here:" and "Further down:"
+/* THE LABEL'S OWN INDENT. "Here:" and "Further down:"
    are said once per bucket now, on the first kind line only -- every line
    after it carries `data-continued` and no label of its own, so this is what
    still reads it as belonging under the line above rather than as a fresh,
@@ -7794,7 +7794,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 .saved-prose { user-select: text; overflow-wrap: anywhere; line-height: 1.6; }
 .saved-prose p { margin: 0 0 1em; }
 .reference-body { min-height: 0; overflow-y: auto; }
-/* Docked in the inspector (241), which sets its place and width. */
+/* Docked in the inspector, which sets its place and width. */
 #craft-panel {
   color: var(--fg);
 }
@@ -7822,7 +7822,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   white-space: normal;
   overflow-wrap: anywhere;
 }
-/* 239: a row's note and citation on their own quieter line, not strung
+/* a row's note and citation on their own quieter line, not strung
    onto the row with middle dots. */
 #craft-panel .craft-row-detail { display: block; color: var(--muted); font-size: var(--text-sm); }
 #craft-panel .craft-exports { display: flex; flex-wrap: wrap; align-items: center; }
@@ -8035,7 +8035,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 #library {
   position: fixed;
   inset: 0;
-  /* Below any banner (238): both are fixed, and the banner's z-index put it
+  /* Below any banner: both are fixed, and the banner's z-index put it
      over the room's first row. banner.ts publishes its height. */
   top: var(--banner-h, 0px);
   z-index: 20;
@@ -8486,7 +8486,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   }
 }
 
-/* Pixels, not a scaled viewBox (243): the drawing is laid out for the
+/* Pixels, not a scaled viewBox: the drawing is laid out for the
    inspector's 328px of content and its text is the panel's own size. */
 #craft-relationships .relationship-diagram { max-height: 320px; overflow-y: auto; margin: var(--space-2) 0 var(--space-3); }
 #craft-relationships svg { display: block; }
@@ -8499,7 +8499,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 #relationship-list li { padding: 8px 0; border-bottom: 1px solid var(--border); }
 #relationship-list button { white-space: normal; overflow-wrap: anywhere; text-align: left; height: auto; }
 
-/* ------------------------------------------------------------ the inspector (241)
+/* ------------------------------------------------------------ the inspector
 
    THE THIRD COLUMN AGAIN, the rail's shape and for the rail's reason. The
    dock and its anchors are `display: contents`, so an open panel IS the grid
@@ -8529,7 +8529,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   max-height: none;
   min-height: 0;
   transform: none;
-  /* The body scrolls (238); the pane clips the enter slide of its children
+  /* The body scrolls; the pane clips the enter slide of its children
      so it never reaches past the window's edge. */
   overflow: hidden;
   background: var(--nav-bg);

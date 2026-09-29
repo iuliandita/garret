@@ -1,5 +1,5 @@
 // app/ui/test/editor-focus.test.ts
-// selectionRect() and the onFocus/onBlur hooks the bubble toolbar (069) reads.
+// selectionRect() and the onFocus/onBlur hooks the bubble toolbar reads.
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { expect, test } from "bun:test";
 

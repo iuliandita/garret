@@ -659,7 +659,7 @@ console.log(`  the bar counts against ${targetInBar}`);
 // figures wrapped onto a second line the readout is about twice this tall and
 // the control beside it is not.
 //
-// THE ANCHOR IS THE FOOTER'S STATUS DOT, since 067 moved the readout off
+// THE ANCHOR IS THE FOOTER'S STATUS DOT, since the readout moved off
 // #project-bar and into #footer. `status-dot` rather than a menu title because
 // the titles stayed in the header, and a control in another strip says nothing
 // about whether THIS one wrapped. The dot is the one control unconditionally

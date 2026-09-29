@@ -137,7 +137,7 @@ function holderFor(itemType: string): readonly string[] {
  *  matter section?
  *
  *  `RESERVED_ROOT_TYPES`, NOT `NON_MANUSCRIPT_ROOT_TYPES`, and the distinction
- *  is 041's whole point. Front matter IS part of the book, so it is not in the
+ *  is the whole point. Front matter IS part of the book, so it is not in the
  *  second list -- but it is a SECTION, so a new chapter must no more be filed
  *  after it than after the bible, and a selection inside it is no more an anchor
  *  than a selection inside the bin.
@@ -308,7 +308,7 @@ export function planPlacement(
  *  writer whose manuscript already contains one has shown they know what parts
  *  are, and their next part is an empty container they intend to fill
  *  themselves -- sweeping every loose chapter into it would restructure a book
- *  that is already structured. 085 gave this application a structural undo,
+ *  that is already structured. This application has a structural undo,
  *  and Ctrl+Z is exactly what takes an adoption back, but the bound stays: how
  *  far it reaches is its own decision, not a side effect of undo existing --
  *  a LATER part adopting would move chapters a writer placed by hand, which is

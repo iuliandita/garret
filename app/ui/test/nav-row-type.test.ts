@@ -39,7 +39,7 @@ function block(selector: string): string {
 /** The declaration block of the rule a selector belongs to, whether it stands
  *  alone or SHARES its block with others in a group. `block` above insists on
  *  `selector {` and therefore only ever finds the last selector of a group --
- *  which is how the bible's rule, grouped with the bin's since 035, was outside
+ *  which is how the bible's rule, grouped with the bin's, was outside
  *  the line-height guard without anything saying so. */
 function groupedBlock(selector: string): string {
   const at = css.indexOf(selector);
@@ -89,7 +89,7 @@ describe("the navigator row declares its own type", () => {
     // error.
     // EVERY type the outline can produce, not the three it started with. A
     // section header that rendered exactly like a chapter is the defect the
-    // bible's rule exists for, and 041 added two more sections and a document
+    // bible's rule exists for, and two more sections and a document
     // type to go under them.
     for (const type of TYPES) {
       expect(css).toContain(`#nav [role="treeitem"][data-type="${type}"]`);

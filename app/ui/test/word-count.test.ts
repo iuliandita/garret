@@ -152,7 +152,7 @@ describe("word count rendering", () => {
     await rig.view.refreshProject();
 
     expect(text(rig, "word-count-scene")).toBe("1,234 words");
-    // "in the book" (236): "saved" beside the save indicator read as a save
+    // "in the book": "saved" beside the save indicator read as a save
     // state. The lag is still said, in the name.
     expect(text(rig, "word-count-project")).toBe("45,678 in the book");
   });
