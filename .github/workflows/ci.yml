@@ -61,7 +61,7 @@ jobs:
         working-directory: app/shell-tauri/src-tauri
         # Skipped tests are tracked in https://github.com/iuliandita/garret/issues/1
         run: |
-          cargo test --locked --bin app-shell-tauri -- --exact \
+          cargo test --locked --bin garret -- --exact \
             --skip recovery::tests::a_snapshot_of_a_file_older_than_the_picture_column_reports_no_pictures \
             --skip salvage::tests::a_file_that_predates_the_tables_salvages_exactly_as_it_did \
             --skip salvage::tests::a_v1_file_recovers_its_prose_and_is_not_asked_about_a_history \

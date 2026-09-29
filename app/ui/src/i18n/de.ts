@@ -1765,7 +1765,7 @@ export const DE = {
   "recovery.name.stale": "Die Wiederherstellung ist veraltet: Der letzte Sicherungsversuch ist {when} fehlgeschlagen. Der jüngste gute Wiederherstellungspunkt auf diesem Gerät stammt weiterhin von {earlier}.",
   "recovery.notice.done": "Wiederherstellungspunkt auf diesem Gerät angelegt.",
   "recovery.notice.failed": "Es konnte kein Wiederherstellungspunkt angelegt werden: {error}",
-  "recovery.startup.point": "Dieses Projekt hat einen Wiederherstellungspunkt von {when} auf demselben Gerät. Er liegt neben der Projektdatei und geht deshalb mit dem Rechner verloren. Ihn wiederherzustellen legt ein NEUES Projekt an und ersetzt nichts: Öffnen Sie ein anderes Projekt und nutzen Sie die Liste der Wiederherstellungspunkte in der Projektansicht, oder rufen Sie `app-shell-tauri restore <point.point> <library-dir>` in einem Terminal auf.",
+  "recovery.startup.point": "Dieses Projekt hat einen Wiederherstellungspunkt von {when} auf demselben Gerät. Er liegt neben der Projektdatei und geht deshalb mit dem Rechner verloren. Ihn wiederherzustellen legt ein NEUES Projekt an und ersetzt nichts: Öffnen Sie ein anderes Projekt und nutzen Sie die Liste der Wiederherstellungspunkte in der Projektansicht, oder rufen Sie `garret restore <point.point> <library-dir>` in einem Terminal auf.",
   "recovery.startup.none": "Für dieses Projekt gibt es auf diesem Gerät keinen Wiederherstellungspunkt.",
 
   // ---- switcher.ts: restoring from a recovery point ----------------------
@@ -2099,7 +2099,7 @@ export const DE = {
 
   // ---- main.ts: the surface a writer sees when nothing else could be built -
   "startup.failed.title": "Dieses Projekt konnte nicht geöffnet werden",
-  "startup.failed.advice": "Ihre Arbeit ist nicht verloren: Die Projektdatei selbst ist unangetastet. Schließen Sie dieses Fenster und öffnen Sie ein anderes Projekt. Um dieses hier anzusehen, ohne es zu öffnen, rufen Sie die Anwendung in einem Terminal auf: `app-shell-tauri validate <project.db>`, oder `salvage <project.db> <out-dir>`, um herauszuschreiben, was sich retten lässt.",
+  "startup.failed.advice": "Ihre Arbeit ist nicht verloren: Die Projektdatei selbst ist unangetastet. Schließen Sie dieses Fenster und öffnen Sie ein anderes Projekt. Um dieses hier anzusehen, ohne es zu öffnen, rufen Sie die Anwendung in einem Terminal auf: `garret validate <project.db>`, oder `salvage <project.db> <out-dir>`, um herauszuschreiben, was sich retten lässt.",
 
   // ---- close-prompt.ts: the blocking prompt at close with a failed autosave
   "close-prompt.heading": "Ungesicherte Arbeit",

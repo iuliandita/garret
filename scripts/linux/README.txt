@@ -32,12 +32,12 @@ Running it
 Extract the whole archive, then open a terminal in the extracted folder:
 
     cd app
-    ./app-shell-tauri
+    ./garret
 
 Keep the dist folder beside the executable. No administrator rights are
 needed to run the app. If the window misbehaves under Wayland, try:
 
-    GDK_BACKEND=x11 ./app-shell-tauri
+    GDK_BACKEND=x11 ./garret
 
 To check the extracted files:
 

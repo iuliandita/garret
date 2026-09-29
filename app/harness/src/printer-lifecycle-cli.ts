@@ -201,14 +201,14 @@ function sourceState(): { revision: string; diff_sha256: string } {
 
 async function buildTest(): Promise<string> {
   const proc = Bun.spawn([
-    "cargo", "test", "--release", "--locked", "--no-run", "--bin", "app-shell-tauri",
+    "cargo", "test", "--release", "--locked", "--no-run", "--bin", "garret",
     "--message-format=json",
   ], { cwd: resolve(ROOT, "app/shell-tauri/src-tauri"), stdout: "pipe", stderr: "inherit" });
   const output = await new Response(proc.stdout).text();
   if (await proc.exited !== 0) throw new Error("could not build the printer test executable");
   const artifacts = output.split("\n").filter(Boolean).map((line) => JSON.parse(line))
     .filter((item) => item.reason === "compiler-artifact" && item.profile?.test === true
-      && item.target?.name === "app-shell-tauri" && typeof item.executable === "string");
+      && item.target?.name === "garret" && typeof item.executable === "string");
   if (artifacts.length !== 1) throw new Error("Cargo did not identify exactly one printer test executable");
   return artifacts[0].executable;
 }

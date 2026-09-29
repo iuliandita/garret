@@ -773,7 +773,7 @@ console.log("\n[2/4] interactive run");
  *  it. It did exit, reproducibly, and the symptom is `could not read widget
  *  geometry from AT-SPI (exit 4)`, which reads as a bridge failure and is
  *  really the shell being gone (confirmed by polling `pgrep -x
- *  app-shell-tauri` through a run).
+ *  garret` through a run).
  *
  *  MORE SPACING DID NOT HELP. Raising the settle from 1500 ms to 4000 ms moved
  *  the death EARLIER on the next run, which is what a race looks like: the
@@ -964,7 +964,7 @@ async function drive(phase: "a" | "b"): Promise<RunOutcome<{ ready: boolean; err
       // server with it, against a recorded three-to-five boundary. The failure
       // reads as `could not read widget geometry from AT-SPI (exit 4)`, which
       // looks like a bridge problem and is really the shell being gone
-      // (confirmed by polling `pgrep -x app-shell-tauri` through a run).
+      // (confirmed by polling `pgrep -x garret` through a run).
       const boot = locateNodes(rootPid);
       // #nav's own box: the pane's top edge and its height, exactly, from the
       // one node that states them. Everything about a row coordinate comes from

@@ -8,7 +8,7 @@ a sample manuscript or a copy of your work, and keep your original backup.
 Running it
 ----------
 Extract the entire ZIP, open the app folder and double-click
-app-shell-tauri.exe. Keep the dist folder beside the executable.
+garret.exe. Keep the dist folder beside the executable.
 Use a 64-bit Intel/AMD Windows PC. No installer or administrator rights are
 required by this package.
 

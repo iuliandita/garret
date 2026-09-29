@@ -56,7 +56,7 @@ if [[ $(git -C "$repo" rev-parse HEAD) != "$revision" || -n $(git -C "$repo" sta
   exit 1
 fi
 
-exe="$repo/app/shell-tauri/src-tauri/target/$target/release/app-shell-tauri.exe"
+exe="$repo/app/shell-tauri/src-tauri/target/$target/release/garret.exe"
 [ -f "$exe" ] || { echo "no binary at $exe" >&2; exit 1; }
 
 # Rebuilt from nothing every time. An incremental staging directory would carry
@@ -75,9 +75,9 @@ cp "$repo/COPYING" "$repo/THIRD-PARTY-NOTICES.md" "$stage/"
   printf 'Built UTC: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   printf 'Signing: unsigned\nWindows GUI verification: not performed\n'
 } > "$stage/BUILD.txt"
-(cd "$stage" && sha256sum app-shell-tauri.exe dist/* > SHA256SUMS.txt)
+(cd "$stage" && sha256sum garret.exe dist/* > SHA256SUMS.txt)
 
-zip="$out/writing-studio-windows-x86_64.zip"
+zip="$out/garret-windows-x86_64.zip"
 (cd "$out" && zip -qr "$(basename "$zip")" app)
 (cd "$out" && sha256sum "$(basename "$zip")" > "$(basename "$zip").sha256")
 

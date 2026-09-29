@@ -3835,7 +3835,7 @@ fn main() {
         let (fixture, db) = match (argv.get(2), argv.get(3)) {
             (Some(f), Some(d)) => (f, d),
             _ => {
-                eprintln!("usage: app-shell-tauri --seed <fixture-dir> <project-path>");
+                eprintln!("usage: garret --seed <fixture-dir> <project-path>");
                 process::exit(2);
             }
         };
@@ -8177,7 +8177,7 @@ mod tests {
 
     /// The path a `cargo build --release` binary sits at, inside `root`.
     fn release_exe(root: &Path) -> PathBuf {
-        root.join("app/shell-tauri/src-tauri/target/release/app-shell-tauri")
+        root.join("app/shell-tauri/src-tauri/target/release/garret")
     }
 
     #[test]

@@ -27,7 +27,7 @@ writing.
 bunx tsc --noEmit -p app/tsconfig.json   # typecheck
 bun test ./app/ui                        # interface tests
 bun test ./app/harness                   # harness unit tests
-cd app/shell-tauri/src-tauri && cargo test --bin app-shell-tauri
+cd app/shell-tauri/src-tauri && cargo test --bin garret
 ```
 
 The host tests need the built interface in `app/shell-tauri/dist`

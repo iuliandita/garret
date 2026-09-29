@@ -388,7 +388,7 @@ pub fn render_via(
 
 /// The same, owning the main loop.
 ///
-/// THE CLI PATH, and it is why `app-shell-tauri export --format pdf` needs a
+/// THE CLI PATH, and it is why `garret export --format pdf` needs a
 /// display where the other two formats do not. That is stated in the usage and
 /// refused with a sentence rather than a crash: a proof copy is laid out by a
 /// web engine, and a web engine needs somewhere to render.

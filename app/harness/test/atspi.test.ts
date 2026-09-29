@@ -21,7 +21,7 @@ describe("parseAtspiDump", () => {
   test("reports the setsize the rows advertise, not the number mounted", () => {
     const dump = [
       header(1),
-      line("application", "app-shell-tauri"),
+      line("application", "garret"),
       line("list box", "scene navigator", 3),
       line("list item", "Scene A", 0, "posinset:1;setsize:15200"),
       line("list item", "Scene B", 0, "posinset:2;setsize:15200"),
@@ -37,7 +37,7 @@ describe("parseAtspiDump", () => {
   test("roleCounts counts roles instead of listing one entry per node", () => {
     const dump = [
       header(1),
-      line("application", "app-shell-tauri"),
+      line("application", "garret"),
       line("list box", "scene navigator", 3),
       line("list item", "Scene A", 0, "posinset:1;setsize:15200"),
       line("list item", "Scene B", 0, "posinset:2;setsize:15200"),
@@ -75,7 +75,7 @@ describe("parseAtspiDump", () => {
   });
 
   test("a tree with no navigator is available but exposes nothing", () => {
-    const dump = [header(1), line("application", "app-shell-tauri")].join("\n");
+    const dump = [header(1), line("application", "garret")].join("\n");
     const p = parseAtspiDump(dump);
     expect(p.available).toBe(true);
     expect(p.hasNavigator).toBe(false);
@@ -85,10 +85,10 @@ describe("parseAtspiDump", () => {
   test("two matching applications cannot be attributed to one window, so the probe refuses", () => {
     const dump = [
       header(2),
-      line("application", "app-shell-tauri"),
+      line("application", "garret"),
       line("list box", "scene navigator", 3),
       line("list item", "Scene A", 0, "posinset:1;setsize:15200"),
-      line("application", "app-shell-tauri"),
+      line("application", "garret"),
       line("list box", "scene navigator", 3),
       line("list item", "Scene A", 0, "posinset:1;setsize:15200"),
     ].join("\n");
@@ -105,7 +105,7 @@ describe("parseAtspiDump", () => {
   test("parses level, setsize and expanded from treeitem attributes", () => {
     const dump = [
       "#apps\t1",
-      "application\tapp-shell-tauri\t\t1\t",
+      "application\tgarret\t\t1\t",
       "tree\tmanuscript navigator\tfocusable\t2\t",
       "tree item\tPart One\tfocusable,expanded\t0\tid:nav-row-0;level:1;setsize:2;posinset:1",
       "tree item\tCh A\tfocusable,expanded\t0\tid:nav-row-1;level:2;setsize:2;posinset:1",
@@ -151,7 +151,7 @@ describe("parseAtspiDump", () => {
   test("a flat list dump still parses, with no tree rows", () => {
     const dump = [
       header(1),
-      line("application", "app-shell-tauri"),
+      line("application", "garret"),
       line("list box", "scene navigator", 3),
       line("list item", "Scene A", 0, "posinset:1;setsize:15200"),
       line("list item", "Scene B", 0, "posinset:2;setsize:15200"),
@@ -182,7 +182,7 @@ describe("parseAtspiDump", () => {
 
   test("a dump with no header is not parsed optimistically", () => {
     const dump = [
-      line("application", "app-shell-tauri"),
+      line("application", "garret"),
       line("list box", "scene navigator", 3),
       line("list item", "Scene A", 0, "posinset:1;setsize:15200"),
     ].join("\n");

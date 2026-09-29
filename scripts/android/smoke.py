@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fresh headless Android book/edit/reopen smoke check. Run inside write-android-emulator."""
+"""Fresh headless Android book/edit/reopen smoke check. Run inside garret-android-emulator."""
 
 from __future__ import annotations
 
@@ -119,7 +119,7 @@ def main() -> int:
     parser.add_argument("evidence", type=Path)
     args = parser.parse_args()
     if not Path("/.dockerenv").is_file():
-        parser.error("run in the isolated write-android-emulator Docker container")
+        parser.error("run in the isolated garret-android-emulator Docker container")
     apk = args.apk.resolve(strict=True)
     out = args.evidence.resolve()
     out.mkdir(parents=True, exist_ok=True)

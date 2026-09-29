@@ -451,7 +451,7 @@ describe("the manual backup a writer asked for", () => {
 describe("the sentence on the screen that explains a failed open", () => {
   test("a verified point is named, with its time and with `on this device`", () => {
     expect(startupRecoverySentence(report(), NOW)).toBe(
-      "This project has a same-device recovery point from 5 minutes ago. It sits beside the project file, so it is lost with the computer. Restoring it adds a NEW project and replaces nothing: open another project and use the recovery list in the project panel, or run `app-shell-tauri restore <point.point> <library-dir>` from a terminal.",
+      "This project has a same-device recovery point from 5 minutes ago. It sits beside the project file, so it is lost with the computer. Restoring it adds a NEW project and replaces nothing: open another project and use the recovery list in the project panel, or run `garret restore <point.point> <library-dir>` from a terminal.",
     );
   });
 
@@ -471,7 +471,7 @@ describe("the sentence on the screen that explains a failed open", () => {
     // painted when this renders. The terminal subcommand needs no window, which
     // is why the advice paragraph beside it already names `validate` and
     // `salvage`.
-    expect(startupRecoverySentence(report(), NOW)).toContain("app-shell-tauri restore");
+    expect(startupRecoverySentence(report(), NOW)).toContain("garret restore");
   });
 
   test("it still refuses to imply device-loss coverage", () => {

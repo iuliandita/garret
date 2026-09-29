@@ -25,8 +25,8 @@ without changing the host toolchain. It contains no application, manuscripts
 or signing keys.
 
 ```sh
-docker build -t write-android -f scripts/android/Dockerfile scripts/android
-docker run --rm --cpus 8 write-android tauri --version
+docker build -t garret-android -f scripts/android/Dockerfile scripts/android
+docker run --rm --cpus 8 garret-android tauri --version
 ```
 
 The image targets an x86_64 Linux build host. Mount only the source and dedicated
@@ -38,7 +38,7 @@ SDK licenses. Platform tools follow the stable SDK package; record the installed
 revision with build evidence. Image creation alone verifies neither the app
 build nor runtime behavior.
 
-Build `write-android` from `scripts/android/Dockerfile`, then run
+Build `garret-android` from `scripts/android/Dockerfile`, then run
 `scripts/package-android` from a clean committed checkout. It rebuilds the UI,
 builds both native architectures, signs with a retained private local key,
 checks signature/alignment, and writes a source-bound directory under
@@ -49,8 +49,8 @@ losing them prevents in-place updates. Do not share generated signing material.
 
 ## Isolated runtime check
 
-Build `write-android-emulator` from `scripts/android/Dockerfile.emulator` after
-building `write-android`. Run only in a fresh container with a fresh emulator;
+Build `garret-android-emulator` from `scripts/android/Dockerfile.emulator` after
+building `garret-android`. Run only in a fresh container with a fresh emulator;
 the driver refuses execution outside Docker. Set `apk` to the exact APK path
 and `evidence` to an empty output directory before running:
 
@@ -59,7 +59,7 @@ docker run --rm --init --network none --device /dev/kvm \
   --cpus 8 --memory 8g --pids-limit 1024 \
   -v "$PWD/scripts/android/smoke.py:/test/smoke.py:ro" \
   -v "$apk:/test/app.apk:ro" -v "$evidence:/evidence" \
-  write-android-emulator nice -n 10 python3 /test/smoke.py /test/app.apk /evidence
+  garret-android-emulator nice -n 10 python3 /test/smoke.py /test/app.apk /evidence
 ```
 
 The driver records the APK hash, UI checkpoints and screenshots. It verifies

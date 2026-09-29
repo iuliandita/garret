@@ -25,7 +25,7 @@
 # must already be bound to the output (`hyprctl keyword workspace "<n>,
 # monitor:<output>"`) and a window rule must send the app there
 # (`hyprctl keyword windowrule "workspace <n> silent, match:class
-# ^([Aa]pp-shell-tauri)$"`); both are session-only and neither is set here.
+# ^([Gg]arret)$"`); both are session-only and neither is set here.
 # WIDE_FIXTURE=<dir> seeds that fixture instead of the stress one
 # (`app/fixtures/sample` for the sample's own timeline), and
 # WIDE_OPEN=<title> opens that document through Quick Open (Ctrl+P, the
@@ -38,7 +38,7 @@ out="$2"
 zoom="${3:-100}"
 : "${WIDE_OUTPUT:?set WIDE_OUTPUT to the Hyprland output the workspace is on}"
 : "${WIDE_WORKSPACE:?set WIDE_WORKSPACE to the workspace the window rule sends the app to}"
-BIN=app/shell-tauri/src-tauri/target/release/app-shell-tauri
+BIN=app/shell-tauri/src-tauri/target/release/garret
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/data/cc.local.app"
@@ -86,7 +86,7 @@ if [[ -n "${WIDE_OPEN:-}" ]]; then
   wtype -k Return
   sleep 2.5
 fi
-geom=$(hyprctl clients -j | python3 -c "import json,sys; c=[c for c in json.load(sys.stdin) if c['class'].lower()=='app-shell-tauri'][0]; print(f\"{c['at'][0]},{c['at'][1]} {c['size'][0]}x{c['size'][1]}\")")
+geom=$(hyprctl clients -j | python3 -c "import json,sys; c=[c for c in json.load(sys.stdin) if c['class'].lower()=='garret'][0]; print(f\"{c['at'][0]},{c['at'][1]} {c['size'][0]}x{c['size'][1]}\")")
 grim -g "$geom" "$out"
 hyprctl dispatch workspace "$prev" >/dev/null
 kill "$pid" || true

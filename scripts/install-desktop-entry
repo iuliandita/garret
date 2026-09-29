@@ -7,8 +7,8 @@ set -euo pipefail
 here=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 repo=$(cd -- "$here/.." && pwd)
 
-# The application's data-directory identifier (APP_DIR in main.rs). There is no
-# product name, so the entry borrows the only stable identifier there is.
+# The application's data-directory identifier (APP_DIR in main.rs), kept as the
+# entry id so it stays stable across product renames; Name carries "garret".
 id="cc.local.app"
 # XDG honoured for the same reason the host honours it, and because it is what
 # makes this script testable without writing into a real desktop menu.
@@ -31,7 +31,7 @@ cat > "$target" <<EOF
 [Desktop Entry]
 $marker
 Type=Application
-Name=Writing studio (development build)
+Name=garret (development build)
 Comment=Local-first writing studio, launched from a working copy
 Exec=$repo/scripts/run-app
 Icon=$repo/app/shell-tauri/src-tauri/icons/icon.png

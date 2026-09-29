@@ -93,32 +93,32 @@ pub fn is_subcommand(arg: &str) -> bool {
 
 const USAGE: &str = "\
 usage:
-  app-shell-tauri inspect   <project.db> [--json]
-  app-shell-tauri analytics <project.db> [--json]
-  app-shell-tauri search    <project.db> <query> [--limit N] [--json]
-  app-shell-tauri validate  <project.db> [--json]
-  app-shell-tauri export    <project.db> <dest> [--format markdown|epub|pdf]
+  garret inspect   <project.db> [--json]
+  garret analytics <project.db> [--json]
+  garret search    <project.db> <query> [--limit N] [--json]
+  garret validate  <project.db> [--json]
+  garret export    <project.db> <dest> [--format markdown|epub|pdf]
                             (pdf is laid out by a web engine and needs a display)
-  app-shell-tauri history   <project.db> [--item ID] [--json]
-  app-shell-tauri knowledge <project.db> [--json]
-  app-shell-tauri salvage   <project.db> <out-dir> [--json]
-  app-shell-tauri restore   <point.point|legacy-point.db> <library-dir> [--allow-picture-gaps]
-  app-shell-tauri import    <manuscript> <library-dir> [--json]
+  garret history   <project.db> [--item ID] [--json]
+  garret knowledge <project.db> [--json]
+  garret salvage   <project.db> <out-dir> [--json]
+  garret restore   <point.point|legacy-point.db> <library-dir> [--allow-picture-gaps]
+  garret import    <manuscript> <library-dir> [--json]
                             (manuscript is Markdown or DOCX, decided by content)
-  app-shell-tauri preflight <project.db> [--json] [--format markdown|epub|pdf|docx]
+  garret preflight <project.db> [--json] [--format markdown|epub|pdf|docx]
                             (the export safety check, without writing a file)
-  app-shell-tauri keygen <recovery-key.txt>
-  app-shell-tauri archive-encrypt <project.db|complete.point> <dest.age> --key <file|->
-  app-shell-tauri archive-verify <archive.age> --key <file|->
-  app-shell-tauri archive-restore <archive.age> <library-dir> --key <file|->
+  garret keygen <recovery-key.txt>
+  garret archive-encrypt <project.db|complete.point> <dest.age> --key <file|->
+  garret archive-verify <archive.age> --key <file|->
+  garret archive-restore <archive.age> <library-dir> --key <file|->
                             (--key - reads one X25519 identity from non-TTY stdin)
-  app-shell-tauri archive-stage-list <parent-dir>
-  app-shell-tauri archive-stage-clean <parent-dir> <stage-name>
-  app-shell-tauri mirror-preview <project.db> [--json]
+  garret archive-stage-list <parent-dir>
+  garret archive-stage-clean <parent-dir> <stage-name>
+  garret mirror-preview <project.db> [--json]
                             (read-only disclosure; enabling requires GUI confirmation)
-  app-shell-tauri design-export <project.db> <dest.book-design.json>
-  app-shell-tauri design-preview <project.db> <design-file|salvage-manifest.json> [--json]
-  app-shell-tauri design-apply <project.db> <design-file|salvage-manifest.json> <preview-token> [--json]
+  garret design-export <project.db> <dest.book-design.json>
+  garret design-preview <project.db> <design-file|salvage-manifest.json> [--json]
+  garret design-apply <project.db> <design-file|salvage-manifest.json> <preview-token> [--json]
                             (close the project in the GUI first; applies only a fresh preview)
 
 exit codes: 0 answered  1 usage  2 could not open/read  3 the answer is a failure";
