@@ -3243,11 +3243,10 @@ try {
       if (options.prefs && options.prefsScroll > 0) {
         // --preview-scroll's own mechanism: the real pointer and a bare wheel
         // click (a `--window` click is synthetic and WebKit ignores it for
-        // scrolling). The point is inside #prefs-panel, restated from
-        // style.css: 384px wide, 12px from the right of the default 1200px
-        // window, hung below the 39px header.
+        // scrolling). Aim inside the panel at the actual capture width.
         await Bun.sleep(PAINT_SETTLE_MS);
-        xdo(display, ["mousemove", String(1200 - 12 - 192), "300"]);
+        const prefsWidth = Math.min(480, geometry.width - 24);
+        xdo(display, ["mousemove", String(Math.round(geometry.width - 12 - prefsWidth / 2)), "300"]);
         for (let n = 0; n < options.prefsScroll; n += 1) {
           xdo(display, ["click", "5"]);
           await Bun.sleep(20);

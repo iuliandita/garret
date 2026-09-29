@@ -2542,9 +2542,7 @@ body.nav-hidden #nav-column {
      buttons above it, reading as a fifth group with no name. flex-wrap is still
      on below, because a narrow window is a real case and a wrapped row is better
      than a clipped one; this width is what stops it happening at rest. */
-  /* 384px, up from 360px, to pay for the wider legend column and leave the
-     five-button Goal row where it was: the longest row must stay on one line. */
-  width: 384px;
+  width: 480px;
   max-width: calc(100vw - 24px);
   /* an eleventh group (Cast names) pushed the panel's own content past
      the bottom of a 640x480 window with nothing to stop it -- a capture at
@@ -2567,7 +2565,7 @@ body.nav-hidden #nav-column {
 #prefs-panel .panel-body {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
-  column-gap: 4px;
+  column-gap: 12px;
 }
 
 #prefs-panel [role="group"] {
@@ -2598,6 +2596,21 @@ body.nav-hidden #nav-column {
   align-items: center;
   gap: 4px;
   min-width: 0;
+}
+
+@media (max-width: 600px) {
+  #prefs-panel .panel-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #prefs-panel .prefs-choice-group {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 6px;
+  }
+
+  #prefs-panel .prefs-choices {
+    grid-column: 1;
+  }
 }
 
 /* SEGMENTED GROUPS: a row of choices where one is pressed. The panel
