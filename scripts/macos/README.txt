@@ -24,7 +24,7 @@ requirement, not certification on every macOS version above it.
 Running a supplied package
 --------------------------
 Extract the complete ZIP. Keep the README, BUILD.txt and checksums. Move
-Writing studio.app to a writable location if desired and double-click it.
+garret.app to a writable location if desired and double-click it.
 Use the architecture named in BUILD.txt: arm64 for Apple Silicon or x86_64
 for Intel. This is not a universal binary. Keep the application bundle
 intact; the interface lives beside the executable inside its Contents folder.

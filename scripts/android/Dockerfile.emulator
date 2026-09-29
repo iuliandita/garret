@@ -1,6 +1,6 @@
 # Separate from the APK build image: the large system image is only needed for
 # isolated runtime checks, never for packaging an APK.
-FROM write-android
+FROM garret-android
 
 USER root
 # Channel zero is stable. The Google APIs image is not a Play Store image and

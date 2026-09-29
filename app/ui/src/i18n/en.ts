@@ -2074,7 +2074,7 @@ export const EN = {
   "recovery.name.stale": "Recovery is stale: the last backup attempt failed {when}. The most recent good recovery point on this device is still from {earlier}.",
   "recovery.notice.done": "Recovery point taken on this device.",
   "recovery.notice.failed": "Could not take a recovery point: {error}",
-  "recovery.startup.point": "This project has a same-device recovery point from {when}. It sits beside the project file, so it is lost with the computer. Restoring it adds a NEW project and replaces nothing: open another project and use the recovery list in the project panel, or run `app-shell-tauri restore <point.point> <library-dir>` from a terminal.",
+  "recovery.startup.point": "This project has a same-device recovery point from {when}. It sits beside the project file, so it is lost with the computer. Restoring it adds a NEW project and replaces nothing: open another project and use the recovery list in the project panel, or run `garret restore <point.point> <library-dir>` from a terminal.",
   "recovery.startup.none": "There is no same-device recovery point for this project.",
 
   // ---- switcher.ts: restoring from a recovery point ----------------------
@@ -2514,7 +2514,7 @@ export const EN = {
 
   // ---- main.ts: the surface a writer sees when nothing else could be built -
   "startup.failed.title": "This project could not be opened",
-  "startup.failed.advice": "Your work is not lost: the project file itself is untouched. Close this window and open a different project. To look at this one without opening it, run the application from a terminal: `app-shell-tauri validate <project.db>`, or `salvage <project.db> <out-dir>` to write out what can be recovered.",
+  "startup.failed.advice": "Your work is not lost: the project file itself is untouched. Close this window and open a different project. To look at this one without opening it, run the application from a terminal: `garret validate <project.db>`, or `salvage <project.db> <out-dir>` to write out what can be recovered.",
 
   // ---- close-prompt.ts: the blocking prompt at close with a failed autosave
   "close-prompt.heading": "Unsaved work",

@@ -16,7 +16,7 @@ import { probeRenderer, type RendererRecord } from "./renderer";
 import { descendantsByComm, sumTreeRssKb, treeRssByCommKb } from "./rss";
 import type { RssSample } from "./rss-series";
 
-export const BIN = "app/shell-tauri/src-tauri/target/release/app-shell-tauri";
+export const BIN = "app/shell-tauri/src-tauri/target/release/garret";
 
 // -s 0 disables the X screensaver. Xvfb defaults to blanking after 600 s, and
 // the workload dispatches transactions programmatically without generating X
@@ -43,18 +43,18 @@ export function xvfbArgs(serverArgs: string = SERVER_ARGS): string[] {
 // deadline) and only delays the report when the host has genuinely hung.
 export const STARTUP_GRACE_MS = 300_000;
 
-export const SHELL_PROC_NAME = "app-shell-tauri";
+export const SHELL_PROC_NAME = "garret";
 
 // Match the window by WM_CLASS, not by title: the title carries the open
 // project's name and changes again on every project switch, so a title match is
 // a match against data. The class is fixed by the binary.
 //
 // The two spellings are one recorded property of this app: native Wayland
-// reports the lowercase app_id `app-shell-tauri`, XWayland reports GTK3's
-// capitalized WM_CLASS `App-shell-tauri`. Xvfb is plain X11, but hand-cli runs
+// reports the lowercase app_id `garret`, XWayland reports GTK3's
+// capitalized WM_CLASS `Garret`. Xvfb is plain X11, but hand-cli runs
 // on the live session, so both must match. `xdotool search` takes an extended
 // regex and has no case-insensitivity flag, hence the character class.
-export const SHELL_WINDOW_CLASS_PATTERN = "^[Aa]pp-shell-tauri$";
+export const SHELL_WINDOW_CLASS_PATTERN = "^[Gg]arret$";
 
 // --onlyvisible, because GTK creates a second window carrying the same WM_CLASS:
 // an unmapped 10x10 group-leader beside the real 900x900 toplevel. The title

@@ -1,4 +1,4 @@
-use app_shell_tauri::{mobile_core, store, strings};
+use garret_lib::{mobile_core, store, strings};
 
 #[cfg(target_os = "linux")]
 #[test]

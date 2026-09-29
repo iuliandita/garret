@@ -10,7 +10,7 @@ if [[ -n $(git -C "$repo" status --porcelain) ]]; then
   exit 1
 fi
 
-cache="${XDG_CACHE_HOME:-$HOME/.cache}/write-android-build"
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/garret-android-build"
 keys="${ANDROID_SIGNING_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/garret/android-signing}"
 out="$repo/app/dist-android/$revision"
 mkdir -p "$cache/cargo" "$cache/builder" "$keys" "$out"
@@ -34,9 +34,9 @@ if [[ -d "$repo/docs/local" ]]; then
 fi
 
 (cd "$repo/app/mobile-ui" && bun run build)
-"${container[@]}" write-android tauri android init --ci --skip-targets-install
+"${container[@]}" garret-android tauri android init --ci --skip-targets-install
 python3 "$here/android/prepare.py"
-"${container[@]}" write-android nice -n 10 tauri android build --ci --apk --target aarch64 x86_64
+"${container[@]}" garret-android nice -n 10 tauri android build --ci --apk --target aarch64 x86_64
 
 if [[ $(git -C "$repo" rev-parse HEAD) != "$revision" || -n $(git -C "$repo" status --porcelain) ]]; then
   echo "source changed during the build; refusing to label this package" >&2
@@ -53,7 +53,7 @@ print(apks[0])
 PY
 )
 cp "$unsigned" "$out/unsigned.apk"
-"${container[@]}" --mount "type=bind,src=$keys,dst=/signing" --env APK_SIGNING_PASSWORD write-android sh -eu -c '
+"${container[@]}" --mount "type=bind,src=$keys,dst=/signing" --env APK_SIGNING_PASSWORD garret-android sh -eu -c '
   if [ ! -f /signing/preview.jks ]; then
     keytool -genkeypair -keystore /signing/preview.jks \
       -storepass:env APK_SIGNING_PASSWORD -keypass:env APK_SIGNING_PASSWORD \
@@ -63,9 +63,9 @@ cp "$unsigned" "$out/unsigned.apk"
   "$tools/zipalign" -P 16 -f 4 "$1/unsigned.apk" "$1/aligned.apk"
   "$tools/apksigner" sign --ks /signing/preview.jks \
     --ks-pass env:APK_SIGNING_PASSWORD --key-pass env:APK_SIGNING_PASSWORD \
-    --out "$1/writing-preview-android.apk" "$1/aligned.apk"
-  "$tools/apksigner" verify --verbose "$1/writing-preview-android.apk"
-  "$tools/zipalign" -c -P 16 4 "$1/writing-preview-android.apk"
+    --out "$1/garret-android.apk" "$1/aligned.apk"
+  "$tools/apksigner" verify --verbose "$1/garret-android.apk"
+  "$tools/zipalign" -c -P 16 4 "$1/garret-android.apk"
 ' sh "/src/app/dist-android/$revision"
 unset APK_SIGNING_PASSWORD
 {
@@ -76,7 +76,7 @@ unset APK_SIGNING_PASSWORD
   printf 'Distribution: preview build, locally signed; not published to an app store\n'
   printf 'Runtime behavior: see separate verification receipt\n'
 } > "$out/BUILD.txt"
-(cd "$out" && sha256sum writing-preview-android.apk > SHA256SUMS.txt)
+(cd "$out" && sha256sum garret-android.apk > SHA256SUMS.txt)
 cp "$here/android/README.md" "$out/README.md"
 cp "$repo/COPYING" "$repo/THIRD-PARTY-NOTICES.md" "$out/"
-printf 'APK: %s\n' "$out/writing-preview-android.apk"
+printf 'APK: %s\n' "$out/garret-android.apk"

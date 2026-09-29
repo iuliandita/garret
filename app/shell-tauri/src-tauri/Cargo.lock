@@ -134,41 +134,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
-name = "app-shell-tauri"
-version = "0.0.0"
-dependencies = [
- "age",
- "argon2",
- "command-boundary",
- "dirs",
- "gtk",
- "inotify",
- "javascriptcore-rs",
- "miniz_oxide",
- "png 0.18.1",
- "quick-xml",
- "rfd",
- "rusqlite",
- "rustix",
- "same-file",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "tar",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tempfile",
- "uuid",
- "webkit2gtk",
- "webview2-com",
- "windows",
- "windows-sys 0.61.2",
- "zeroize",
- "zune-jpeg",
-]
-
-[[package]]
 name = "arc-swap"
 version = "1.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1371,6 +1336,41 @@ dependencies = [
  "memchr",
  "pin-project-lite",
  "slab",
+]
+
+[[package]]
+name = "garret"
+version = "0.0.0"
+dependencies = [
+ "age",
+ "argon2",
+ "command-boundary",
+ "dirs",
+ "gtk",
+ "inotify",
+ "javascriptcore-rs",
+ "miniz_oxide",
+ "png 0.18.1",
+ "quick-xml",
+ "rfd",
+ "rusqlite",
+ "rustix",
+ "same-file",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tar",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tempfile",
+ "uuid",
+ "webkit2gtk",
+ "webview2-com",
+ "windows",
+ "windows-sys 0.61.2",
+ "zeroize",
+ "zune-jpeg",
 ]
 
 [[package]]

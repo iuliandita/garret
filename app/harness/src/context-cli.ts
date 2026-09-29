@@ -533,7 +533,7 @@ async function main(): Promise<void> {
         // NAME AND SIZE, because the name alone cannot settle it. GTK publishes
         // a group-leader window named after the BINARY, and the recorded note
         // says it is a 10x10 unmapped one -- so an extra window called
-        // "app-shell-tauri" is exactly what a leader that had somehow become
+        // "garret" is exactly what a leader that had somehow become
         // visible would look like. A menu-sized box is not.
         captured.editorWindowNames = after.map((id) => {
           try {

@@ -2736,7 +2736,7 @@ mod tests {
         assert_eq!(archive.file, format!("my-book-{}.point", point_id(NOW)));
         let snapshot = out.join(&archive.file);
         assert!(snapshot.is_dir());
-        // An ORDINARY project file, so `app-shell-tauri validate` and
+        // An ORDINARY project file, so `garret validate` and
         // `restore` on some OTHER machine read it with no new reader.
         assert!(
             crate::cli::validate(&crate::backup_bundle::db_path(&snapshot))

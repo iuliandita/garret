@@ -9,7 +9,7 @@ set -euo pipefail
 here=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 repo=$(cd -- "$here/.." && pwd)
 
-bin="$repo/app/shell-tauri/src-tauri/target/release/app-shell-tauri"
+bin="$repo/app/shell-tauri/src-tauri/target/release/garret"
 
 # app/ui/dist is gitignored and goes stale SILENTLY -- two graded rig runs have
 # measured a previous build because of it. Always rebuilt, never skipped on the

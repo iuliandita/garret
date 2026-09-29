@@ -129,8 +129,8 @@ function hyprClients(): HyprClient[] {
 // GDK_BACKEND=x11.
 //
 // Case-insensitive on class: confirmed live that Hyprland reports the SAME
-// binary's WM_CLASS differently depending on backend — "app-shell-tauri"
-// native-Wayland (app_id, lowercase), "App-shell-tauri" over XWayland
+// binary's WM_CLASS differently depending on backend — "garret"
+// native-Wayland (app_id, lowercase), "Garret" over XWayland
 // (WM_CLASS class component, GTK3-style capitalized). Title is "app" either
 // way (the WebviewWindowBuilder .title() call in main.rs).
 function findSessionWindow(): HyprClient {

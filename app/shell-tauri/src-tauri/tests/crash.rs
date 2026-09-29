@@ -10,7 +10,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 
 fn binary() -> &'static str {
-    env!("CARGO_BIN_EXE_app-shell-tauri")
+    env!("CARGO_BIN_EXE_garret")
 }
 
 /// Runs the child in `mode`, kills it after `kill_after` acknowledgements, and

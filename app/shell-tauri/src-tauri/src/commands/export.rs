@@ -50,7 +50,7 @@ pub(crate) struct ExportResult {
 /// its own, which `no_writer_facing_literal_in_the_renderers` now enforces.
 /// The word comes from `strings`, which comes from the locale in
 /// `settings.json`, which is the same file the theme comes from and the only
-/// source a `app-shell-tauri export` run with no window can read.
+/// source a `garret export` run with no window can read.
 pub(crate) const CONTENTS_KEY: &str = "book.contents";
 
 /// Export the project at `path` into `dest`.
@@ -980,7 +980,7 @@ mod tests {
     #[test]
     fn the_language_a_headless_run_writes_in_comes_from_the_settings_file() {
         // THE SEAM THE WHOLE ARCHITECTURE RESTS ON, and the case that decides
-        // it: `app-shell-tauri export`, `validate` and `salvage` run with no
+        // it: `garret export`, `validate` and `salvage` run with no
         // window and no page to ask, so the language has to come off disk.
         //
         // `fr` NAMES A LANGUAGE THIS BUILD DOES NOT SHIP, `en` and `de` being

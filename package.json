@@ -1,5 +1,5 @@
 {
-  "name": "workspace-root",
+  "name": "garret",
   "private": true,
   "type": "module",
   "workspaces": ["app/*"],

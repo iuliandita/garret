@@ -57,7 +57,7 @@ launcher. Release-style packages come from `scripts/package-linux`,
 ```sh
 bun test ./app                                   # interface and harness tests
 bunx tsc --noEmit -p app/tsconfig.json           # typecheck
-cd app/shell-tauri/src-tauri && cargo test --bin app-shell-tauri
+cd app/shell-tauri/src-tauri && cargo test --bin garret
 ```
 
 `app/harness` drives the real app under Xvfb and AT-SPI to grade latency,
