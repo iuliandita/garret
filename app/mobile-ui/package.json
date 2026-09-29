@@ -3,5 +3,5 @@
   "private": true,
   "type": "module",
   "version": "0.0.0",
-  "scripts": { "build": "bun build src/main.ts src/workspace.ts --outdir dist --target browser && cp index.html style.css dist/" }
+  "scripts": { "build": "bun build src/main.ts src/workspace.ts --outdir dist --target browser && cp index.html style.css ../ui/brand/garret-wordmark-ink.png ../ui/brand/garret-wordmark-paper.png dist/" }
 }
