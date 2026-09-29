@@ -304,3 +304,32 @@ test("closing before the initial animation frame persists the restored position 
   expect(remembered).toHaveLength(count);
   f.mount.remove();
 });
+
+
+test("opening Outline brings an existing save failure and recovery action into the modal", async () => {
+  let departed = 0;
+  const f = fixture({ flush: async () => { throw new Error("disk full"); }, beforeLeave: async () => { departed++; } });
+  f.workspace.editor.typeChar("unsaved before Outline");
+  expect(await f.workspace.drain()).toBe(false);
+  const alert = f.mount.querySelector<HTMLElement>("section > .mobile-error")!;
+  const before = f.workspace.editor.serialize();
+  expect(alert.hidden).toBe(false);
+  const outline = showOutline(f.mount);
+  expect(alert.parentElement === outline).toBe(true);
+  const copy = alert.querySelector<HTMLButtonElement>("button")!;
+  expect(outline.contains(copy)).toBe(true);
+  copy.click();
+  const recovery = f.mount.querySelector<HTMLDialogElement>(".mobile-recovery")!;
+  expect(recovery.open).toBe(true);
+  expect(recovery.querySelector("textarea")!.value).toContain("unsaved before Outline");
+  f.workspace.back();
+  expect(recovery.open).toBe(false);
+  expect(outline.open).toBe(true);
+  expect(departed).toBe(0);
+  f.workspace.back();
+  await nextTask();
+  expect(outline.open).toBe(false);
+  expect(alert.parentElement === f.mount.querySelector("section")).toBe(true);
+  expect(f.workspace.editor.serialize()).toBe(before);
+  f.workspace.editor.destroy(); f.mount.remove();
+});

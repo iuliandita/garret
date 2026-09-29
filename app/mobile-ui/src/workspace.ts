@@ -343,9 +343,12 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
   window.addEventListener("pagehide", onBackground);
   window.addEventListener("mobile-background", onBackground);
   books.addEventListener("click", () => { void close().then(ok => { if (ok) opts.onLeave(); }); });
-  outlineButton.addEventListener("click", () => outline.showModal());
+  outlineButton.addEventListener("click", () => {
+    if (!error.hidden) outline.querySelector("header")!.after(error);
+    outline.showModal();
+  });
   get('[data-action="close-outline"]').addEventListener("click", () => outline.close());
-  outline.addEventListener("close", () => { root.querySelector("header")!.after(error); });
+  outline.addEventListener("close", () => { if (!outline.open) root.querySelector("header")!.after(error); });
   sceneChanged();
   mount.append(root);
   const position = opts.initialPosition;
