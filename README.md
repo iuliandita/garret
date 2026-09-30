@@ -18,7 +18,7 @@ or an internet connection to write. Your books stay on your own disk.
 
 ![garret writing view](docs/screenshots/editor-light.png)
 
-[Full screenshot gallery](docs/screenshots/README.md) | [Sample books](app/fixtures/classics/README.md)
+[Website](https://usegarret.com) | [Full screenshot gallery](docs/screenshots/README.md) | [Sample books](app/fixtures/classics/README.md)
 
 ## Write, plan, and revise
 
