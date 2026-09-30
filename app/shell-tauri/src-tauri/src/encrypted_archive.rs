@@ -495,19 +495,37 @@ fn publish_bundle(bundle: &Path, dest: &Path, key: &Identity, temp: &Stage, owne
         backup_bundle::sync_directory(temp.path())?;
     }
     let bytes = fs::metadata(&cipher).map_err(|_| "encrypted archive size unreadable")?.len();
-    fs::hard_link(&cipher, dest).map_err(|e| format!("encrypted archive publish failed: {e}"))?;
-    if let Err(error) = backup_bundle::sync_directory(parent) {
-        if fs::remove_file(dest).is_err() {
-            return Err(format!("encrypted archive publication not durable: {error}; new destination could not be removed"));
+    // Only independently verified ciphertext enters the destination filesystem.
+    let destination_stage = stage(parent)?;
+    let result = (|| {
+        let staged_cipher = destination_stage.path().join("cipher.age");
+        let mut input = safe_file(&cipher, u64::MAX)?;
+        let mut output = OpenOptions::new().write(true).create_new(true).open(&staged_cipher)
+            .map_err(|e| format!("ciphertext destination staging unavailable: {e}"))?;
+        if io::copy(&mut input, &mut output).map_err(|_| "ciphertext copy failed")? != bytes {
+            return Err("ciphertext copy incomplete".into());
         }
-        return Err(format!("encrypted archive publication not durable: {error}"));
-    }
-    let info = ArchiveInfo {
-        file: dest.file_name().unwrap_or_default().to_string_lossy().into_owned(),
-        bytes,
-        recipient: key.to_public().to_string(), encrypted: true,
-    };
-    Ok(info)
+        output.sync_all().map_err(|_| "ciphertext copy sync failed")?;
+        drop(output);
+        let check = Builder::new().prefix("encrypted-copy-check-").tempdir_in(temp.path())
+            .map_err(|_| "private ciphertext copy verification staging unavailable")?;
+        extract_verified_bundle(&staged_cipher, key, check.path())?;
+        check.close().map_err(|_| "verified plaintext cleanup failed")?;
+        fs::hard_link(&staged_cipher, dest).map_err(|e| format!("encrypted archive publish failed: {e}"))?;
+        if let Err(error) = backup_bundle::sync_directory(parent) {
+            if fs::remove_file(dest).is_err() {
+                return Err(format!("encrypted archive publication not durable: {error}; new destination could not be removed"));
+            }
+            return Err(format!("encrypted archive publication not durable: {error}"));
+        }
+        let info = ArchiveInfo {
+            file: dest.file_name().unwrap_or_default().to_string_lossy().into_owned(),
+            bytes,
+            recipient: key.to_public().to_string(), encrypted: true,
+        };
+        Ok(info)
+    })();
+    finish_stage(destination_stage, result)
 }
 
 #[cfg(not(target_os = "android"))]
@@ -516,23 +534,23 @@ fn finish_stage<T>(temp: Stage, result: Result<T, String>) -> Result<T, String> 
     match (result, cleanup) {
         (Ok(value), Ok(())) => Ok(value),
         (Err(error), Ok(())) => Err(error),
-        (Ok(_), Err(_)) => Err("operation finished but private staging cleanup failed; inspect the retained staging directory".into()),
-        (Err(error), Err(_)) => Err(format!("{error}; private staging cleanup also failed")),
+        (Ok(_), Err(_)) => Err("operation finished but archive staging cleanup failed; inspect the retained staging directory".into()),
+        (Err(error), Err(_)) => Err(format!("{error}; archive staging cleanup also failed")),
     }
 }
 
 #[cfg(not(target_os = "android"))]
-pub fn create_from_bundle(bundle: &Path, dest: &Path, key: &Identity) -> Result<ArchiveInfo, String> {
-    let parent = dest.parent().ok_or("encrypted archive destination has no parent")?;
-    let temp = stage(parent)?;
+pub fn create_from_bundle(bundle: &Path, dest: &Path, key: &Identity, data_home: &Path) -> Result<ArchiveInfo, String> {
+    dest.parent().ok_or("encrypted archive destination has no parent")?;
+    let temp = stage(&private_stage_root(data_home)?)?;
     let result = publish_bundle(bundle, dest, key, &temp, false);
     finish_stage(temp, result)
 }
 
 #[cfg(not(target_os = "android"))]
-pub fn create_from_project(source: &Path, dest: &Path, key: &Identity) -> Result<ArchiveInfo, String> {
-    let parent = dest.parent().ok_or("encrypted archive destination has no parent")?;
-    let temp = stage(parent)?;
+pub fn create_from_project(source: &Path, dest: &Path, key: &Identity, data_home: &Path) -> Result<ArchiveInfo, String> {
+    dest.parent().ok_or("encrypted archive destination has no parent")?;
+    let temp = stage(&private_stage_root(data_home)?)?;
     let result = (|| {
         let reader = Store::open_readonly(source).map_err(|e| format!("project unreadable: {e}"))?;
         let bundle = temp.path().join("snapshot.point");
@@ -710,6 +728,53 @@ mod tests {
 
     #[cfg(not(target_os = "android"))]
     #[test]
+    fn archive_creation_requires_private_staging_and_preserves_destination_on_refusal() {
+        let root = tempfile::tempdir().unwrap();
+        let home = tempfile::tempdir().unwrap();
+        let destination = tempfile::tempdir().unwrap();
+        let db = project(root.path());
+        let point = root.path().join("source.point");
+        let reader = Store::open_readonly(&db).unwrap();
+        assert!(backup_bundle::write(&db, &reader, &point).unwrap().verified);
+        let key = Identity::generate();
+        let cipher = destination.path().join("backup.age");
+        let private = private_stage_root(home.path()).unwrap();
+        let held = stage(&private).unwrap();
+        assert!(create_from_project(&db, &cipher, &key, home.path()).unwrap_err().contains("another encrypted archive job"));
+        assert!(create_from_bundle(&point, &cipher, &key, home.path()).unwrap_err().contains("another encrypted archive job"));
+        assert_eq!(fs::read_dir(destination.path()).unwrap().count(), 0);
+        held.close().unwrap();
+        create_from_bundle(&point, &cipher, &key, home.path()).unwrap();
+        verify(&cipher, &key, home.path()).unwrap();
+        assert!(point.exists());
+        assert!(list_stages(&private).unwrap().is_empty());
+        assert!(list_stages(destination.path()).unwrap().is_empty());
+        let names: BTreeSet<_> = fs::read_dir(destination.path()).unwrap()
+            .map(|entry| entry.unwrap().file_name()).collect();
+        assert_eq!(names, BTreeSet::from(["backup.age".into(), STAGE_LOCK.into()]));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn private_archive_staging_publishes_exclusively_across_filesystems() {
+        use std::os::unix::fs::MetadataExt;
+        let root = tempfile::tempdir().unwrap();
+        let destination = tempfile::tempdir_in("/dev/shm").unwrap();
+        assert_ne!(fs::metadata(root.path()).unwrap().dev(), fs::metadata(destination.path()).unwrap().dev());
+        let db = project(root.path());
+        let key = Identity::generate();
+        let cipher = destination.path().join("backup.age");
+        create_from_project(&db, &cipher, &key, root.path()).unwrap();
+        let original = fs::read(&cipher).unwrap();
+        verify(&cipher, &key, root.path()).unwrap();
+        assert!(create_from_project(&db, &cipher, &key, root.path()).is_err());
+        assert_eq!(fs::read(&cipher).unwrap(), original);
+        assert!(list_stages(destination.path()).unwrap().is_empty());
+        assert!(list_stages(&private_stage_root(root.path()).unwrap()).unwrap().is_empty());
+    }
+
+    #[cfg(not(target_os = "android"))]
+    #[test]
     fn complete_real_picture_bundle_encrypts_and_restores_without_touching_source() {
         let root = tempfile::tempdir().unwrap();
         let db = project(root.path());
@@ -723,14 +788,14 @@ mod tests {
         let before = fs::read(&db).unwrap();
         let key = Identity::generate();
         let dest = root.path().join("portable.age");
-        let written = create_from_project(&db, &dest, &key).unwrap();
+        let written = create_from_project(&db, &dest, &key, root.path()).unwrap();
         assert!(written.encrypted);
         assert_eq!(written.recipient, key.to_public().to_string());
         assert!(written.bytes > 0);
         assert_eq!(fs::read(&db).unwrap(), before);
         assert!(!backup_bundle::marker_present(&db).unwrap());
         verify(&dest, &key, root.path()).unwrap();
-        assert!(create_from_project(&db, &dest, &key).is_err());
+        assert!(create_from_project(&db, &dest, &key, root.path()).is_err());
         let wrong = Identity::generate();
         let library = root.path().join("library");
         assert!(restore(&dest, &wrong, &library, "book", 1_700_000_000_000, root.path()).is_err());
@@ -753,7 +818,7 @@ mod tests {
         Store::open(&db).unwrap();
         let key = Identity::generate();
         let cipher = root.path().join("empty.age");
-        create_from_project(&db, &cipher, &key).unwrap();
+        create_from_project(&db, &cipher, &key, root.path()).unwrap();
         let input = File::open(&cipher).unwrap();
         let mut plaintext = Vec::new();
         age::Decryptor::new(input).unwrap()
@@ -774,11 +839,11 @@ mod tests {
         let key = Identity::generate();
         fs::remove_file(pictures::dir_for(&db).join("face.png")).unwrap();
         let dest = root.path().join("incomplete.age");
-        let error = create_from_project(&db, &dest, &key).unwrap_err();
+        let error = create_from_project(&db, &dest, &key, root.path()).unwrap_err();
         assert!(error.contains("complete snapshot required") && error.contains("face.png"), "{error}");
         assert!(!dest.exists());
         fs::write(pictures::dir_for(&db).join("face.png"), include_bytes!("../fixtures/two-halves.png")).unwrap();
-        create_from_project(&db, &dest, &key).unwrap();
+        create_from_project(&db, &dest, &key, root.path()).unwrap();
         let original = fs::read(&dest).unwrap();
         for changed in [original[..original.len() - 1].to_vec(), {
             let mut bytes = original.clone(); let middle = bytes.len() / 2; bytes[middle] ^= 1; bytes

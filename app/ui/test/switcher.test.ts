@@ -160,6 +160,8 @@ interface RigOptions {
   archiveStatus?: () => Promise<ArchiveReport>;
   makeArchive?: () => Promise<Archive>;
   generateArchiveKey?: () => Promise<{ recipient: string } | null>;
+  encryptedBackupDestination?: () => Promise<string | null>;
+  chooseEncryptedBackupDestination?: () => Promise<string | null>;
   makeEncryptedArchive?: () => Promise<{ file: string; recipient: string; encrypted: true } | null>;
   verifyEncryptedArchive?: () => Promise<{ file: string; encrypted: true } | null>;
   restoreEncryptedArchive?: () => Promise<ProjectSummary | null>;
@@ -286,6 +288,8 @@ function mount(options: RigOptions = {}): Rig {
       return options.makeArchive?.() ?? Promise.resolve(ARCHIVES[0]!);
     },
     generateArchiveKey: options.generateArchiveKey,
+    encryptedBackupDestination: options.encryptedBackupDestination,
+    chooseEncryptedBackupDestination: options.chooseEncryptedBackupDestination,
     makeEncryptedArchive: options.makeEncryptedArchive,
     verifyEncryptedArchive: options.verifyEncryptedArchive,
     restoreEncryptedArchive: options.restoreEncryptedArchive,
@@ -1497,6 +1501,126 @@ describe("unresolved legacy folders", () => {
 });
 
 describe("the copy that leaves this computer", () => {
+  test("a chosen backup folder is remembered and cancelling leaves it unchanged", async () => {
+    let destination = "/backups/writing";
+    let next: string | null = "/drive/books";
+    const rig = mount({
+      encryptedBackupDestination: async () => destination,
+      chooseEncryptedBackupDestination: async () => {
+        if (next !== null) destination = next;
+        return next;
+      },
+    });
+    await open(rig);
+    expect(el(rig.container, "project-backup-destination").textContent).toContain("/backups/writing");
+    click(el(rig.container, "project-backup-destination-choose"));
+    await settle();
+    expect(el(rig.container, "project-backup-destination").textContent).toContain("/drive/books");
+    next = null;
+    click(el(rig.container, "project-backup-destination-choose"));
+    await settle();
+    expect(el(rig.container, "project-backup-destination").textContent).toContain("/drive/books");
+    expect(rig.calls.dones).toEqual([]);
+    expect(rig.calls.notices).toEqual([]);
+    expect(el(rig.container, "project-backup-destination-note").textContent).toContain("not automatic");
+    teardown(rig);
+  });
+
+  test("backup explanations stay behind accessible help marks", async () => {
+    const rig = mount({ encryptedBackupDestination: async () => null });
+    await open(rig);
+    const note = el(rig.container, "project-encrypted-archive-note");
+    const help = el(rig.container, "project-encrypted-archive-note-help");
+    expect(note.hidden).toBe(true);
+    expect(help.getAttribute("aria-describedby")).toBe(note.id);
+    expect(note.textContent).toContain("Keep your working book outside cloud folders");
+    help.dispatchEvent(new Event("mouseenter"));
+    expect(help.parentElement?.querySelector(".tip")?.textContent).toContain("recovery key");
+    help.dispatchEvent(new Event("mouseleave"));
+    expect(help.parentElement?.querySelector(".tip")).toBeNull();
+    help.dispatchEvent(new Event("focus"));
+    expect(help.parentElement?.querySelector(".tip")).not.toBeNull();
+    help.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(help.parentElement?.querySelector(".tip")).toBeNull();
+    teardown(rig);
+  });
+
+  test("an older folder read cannot overwrite the newly chosen destination", async () => {
+    let release: ((dir: string) => void) | undefined;
+    const pending = new Promise<string>((resolve) => { release = resolve; });
+    const rig = mount({
+      encryptedBackupDestination: () => pending,
+      chooseEncryptedBackupDestination: async () => "/drive/new",
+    });
+    await open(rig);
+    click(el(rig.container, "project-backup-destination-choose"));
+    await settle();
+    release?.("/drive/old");
+    await settle();
+    expect(el(rig.container, "project-backup-destination").textContent).toContain("/drive/new");
+    teardown(rig);
+  });
+
+  test("an old folder read cannot repaint after its delayed privacy check", async () => {
+    let release: (() => void) | undefined;
+    let checks = 0;
+    const pending = new Promise<boolean>((resolve) => { release = () => resolve(true); });
+    const rig = mount({
+      encryptedBackupDestination: async () => "/drive/old",
+      chooseEncryptedBackupDestination: async () => "/drive/new",
+      canReportArchive: () => ++checks === 1 ? pending : Promise.resolve(true),
+    });
+    await open(rig);
+    click(el(rig.container, "project-backup-destination-choose"));
+    await settle();
+    release?.();
+    await settle();
+    expect(el(rig.container, "project-backup-destination").textContent).toContain("/drive/new");
+    teardown(rig);
+  });
+
+  test("choosing a backup folder blocks other encrypted actions until the picker returns", async () => {
+    let release: ((dir: null) => void) | undefined;
+    const pending = new Promise<null>((resolve) => { release = resolve; });
+    let picks = 0;
+    const rig = mount({
+      encryptedBackupDestination: async () => null,
+      chooseEncryptedBackupDestination: () => { picks++; return pending; },
+      makeEncryptedArchive: async () => { throw new Error("must wait for the picker"); },
+    });
+    await open(rig);
+    click(el(rig.container, "project-backup-destination-choose"));
+    click(el(rig.container, "project-backup-destination-choose"));
+    expect(picks).toBe(1);
+    expect((el(rig.container, "project-archive-encrypted") as HTMLButtonElement).disabled).toBe(true);
+    release?.(null);
+    await settle();
+    await settle();
+    expect((el(rig.container, "project-archive-encrypted") as HTMLButtonElement).disabled).toBe(false);
+    expect(el(rig.container, "project-backup-destination").textContent).toContain("No backup folder chosen");
+    teardown(rig);
+  });
+
+  test("folder failures are reported and late picker results stay hidden after a reopen", async () => {
+    let release: ((dir: string) => void) | undefined;
+    const pending = new Promise<string>((resolve) => { release = resolve; });
+    let opening = 1;
+    const rig = mount({
+      encryptedBackupDestination: async () => { throw new Error("folder unavailable"); },
+      chooseEncryptedBackupDestination: () => pending,
+      currentGeneration: () => opening,
+    });
+    await open(rig);
+    expect(el(rig.container, "project-backup-destination").textContent).toContain("could not be read");
+    expect(rig.calls.notices).toContain("folder unavailable");
+    click(el(rig.container, "project-backup-destination-choose"));
+    opening = 2;
+    release?.("/private/late");
+    await settle();
+    expect(el(rig.container, "project-backup-destination").textContent).not.toContain("/private/late");
+    teardown(rig);
+  });
+
   test("encrypted file actions stay separate from ordinary folder archives", async () => {
     const calls: string[] = [];
     const rig = mount({
@@ -1507,8 +1631,8 @@ describe("the copy that leaves this computer", () => {
     });
     await open(rig);
     const note = el(rig.container, "project-encrypted-archive-note").textContent ?? "";
-    expect(note).toContain("one .age file");
-    expect(note).toContain("second copy");
+    expect(note).toContain("protected copy of your whole book");
+    expect(note).toContain("spare copy separately");
     expect(el(rig.container, "project-archive-note").textContent).toContain("whole folder");
     const beforeShelf = rig.calls.list;
     for (const id of ["project-archive-key", "project-archive-encrypted", "project-archive-encrypted-verify", "project-archive-encrypted-restore"]) {

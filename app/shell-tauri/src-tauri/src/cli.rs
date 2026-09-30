@@ -1324,9 +1324,9 @@ fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
                 .map_err(Refusal::Unreadable)?;
             read(&|| {
                 let result = if source.is_dir() {
-                    crate::encrypted_archive::create_from_bundle(&source, &dest, &key)?
+                    crate::encrypted_archive::create_from_bundle(&source, &dest, &key, &crate::data_home())?
                 } else {
-                    crate::encrypted_archive::create_from_project(&source, &dest, &key)?
+                    crate::encrypted_archive::create_from_project(&source, &dest, &key, &crate::data_home())?
                 };
                 println!("encrypted archive written: {} (recipient {})", result.file, result.recipient);
                 Ok(EXIT_OK)
