@@ -4319,6 +4319,8 @@ fn main() {
             commands::dialogs::__wire_project_create_pick,
             commands::dialogs::__wire_project_move,
             commands::dialogs::__wire_project_import_pick,
+            commands::dialogs::__wire_encrypted_backup_destination,
+            commands::dialogs::__wire_encrypted_backup_destination_pick,
             commands::dialogs::__wire_encrypted_key_generate,
             commands::dialogs::__wire_encrypted_archive_create,
             commands::dialogs::__wire_encrypted_archive_verify,
@@ -7537,6 +7539,7 @@ mod tests {
             books: Vec::new(),
             book_locations: Vec::new(),
             new_book_dir: None,
+            encrypted_backup_dir: None,
             theme: crate::projects::Theme::Dark,
             typography: crate::projects::Typography {
                 family: crate::projects::ProseFamily::Mono,

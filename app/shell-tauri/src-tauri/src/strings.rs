@@ -219,6 +219,7 @@ fn interpolate(template: &str, vars: &[(&str, &str)]) -> String {
 const EN_ENTRIES: &[(&str, &str)] = &[
     // 041's generated table of contents, in the Markdown export, the EPUB's
     // navigation document and the PDF proof alike.
+    ("backup.dialog.destination", "Choose encrypted backup folder"),
     ("book.contents", "Contents"),
     ("item.numbered.chapter", "Chapter {n}"),
     ("item.numbered.scene", "Scene {n}"),
@@ -350,6 +351,7 @@ const EN_ENTRIES: &[(&str, &str)] = &[
 /// `english_and_german_hold_the_same_keys` are what say so rather than this
 /// comment.
 const DE_ENTRIES: &[(&str, &str)] = &[
+    ("backup.dialog.destination", "Ordner für verschlüsselte Sicherungen wählen"),
     ("book.contents", "Inhalt"),
     ("item.numbered.chapter", "Kapitel {n}"),
     ("item.numbered.scene", "Szene {n}"),
