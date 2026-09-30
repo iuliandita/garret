@@ -28,11 +28,14 @@ fi
 export APK_SIGNING_PASSWORD
 APK_SIGNING_PASSWORD=$(cat "$keys/password")
 
-container=(docker run --rm --cpus 8 --user "$(id -u):$(id -g)"
+cpus=$(getconf _NPROCESSORS_ONLN)
+if (( cpus > 8 )); then cpus=8; fi
+container=(docker run --rm --cpus "$cpus" --user "$(id -u):$(id -g)"
   --mount "type=bind,src=$repo,dst=/src"
   --mount "type=bind,src=$cache/cargo,dst=/cargo"
   --mount "type=bind,src=$cache/builder,dst=/home/builder"
-  --env CARGO_HOME=/cargo --env CARGO_BUILD_JOBS=8
+  --env CARGO_HOME=/cargo --env "CARGO_BUILD_JOBS=$cpus"
+  --env "JAVA_TOOL_OPTIONS=-XX:ActiveProcessorCount=$cpus"
   --workdir /src/app/shell-tauri)
 # Untracked local notes stay out of the build container.
 if [[ -d "$repo/docs/local" ]]; then

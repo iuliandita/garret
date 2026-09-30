@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 import tomllib
 import zipfile
 
@@ -122,17 +123,30 @@ def verify_downloads() -> None:
             raise ValueError(f"Download checksum failed: {name}")
 
 
+def verify_remote_assets(names: set[str], complete: bool = False) -> None:
+    value = check()
+    folder = ROOT / "app/dist-release/downloads"
+    expected = {path.name for path in folder.iterdir()
+                if path.name.startswith(f"garret-{value}-") or path.name == "SHA256SUMS.txt"}
+    if not names <= expected or (complete and names != expected):
+        raise ValueError("The draft release has missing or unexpected assets; inspect it before publishing.")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check").add_argument("--tag")
     commands.add_parser("verify-downloads")
+    commands.add_parser("verify-remote-assets").add_argument("--complete", action="store_true")
     commands.add_parser("set-version").add_argument("version")
     commands.add_parser("collect").add_argument("platform", choices=["linux", "windows", "android", "macos-arm64", "macos-x86_64"])
     args = parser.parse_args()
     try:
         if args.command == "check":
             print(check(args.tag))
+        elif args.command == "verify-remote-assets":
+            assets = json.load(sys.stdin)["assets"]
+            verify_remote_assets({asset["name"] for asset in assets}, args.complete)
         elif args.command == "verify-downloads":
             verify_downloads()
         elif args.command == "set-version":

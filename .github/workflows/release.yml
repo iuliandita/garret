@@ -244,5 +244,7 @@ jobs:
             echo 'This release is already public; use a new version instead of replacing downloads.' >&2
             exit 1
           fi
+          gh release view "$TAG" --repo "$REPO" --json assets | python3 ../../../scripts/release.py verify-remote-assets
           gh release upload "$TAG" --repo "$REPO" --clobber garret-* SHA256SUMS.txt
+          gh release view "$TAG" --repo "$REPO" --json assets | python3 ../../../scripts/release.py verify-remote-assets --complete
           gh release edit "$TAG" --repo "$REPO" --draft=false --prerelease --latest=false

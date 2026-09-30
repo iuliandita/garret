@@ -78,6 +78,20 @@ class ReleaseTests(unittest.TestCase):
             self.assertEqual(set(archive.namelist()), {"BUILD.txt", "README.md", "COPYING", "THIRD-PARTY-NOTICES.md"})
         self.assertEqual((out / "garret-0.0.1-android.apk").read_bytes(), b"garret-android.apk")
 
+    def test_draft_resume_refuses_unchecked_remote_assets(self):
+        out = self.root / "app/dist-release/downloads"
+        out.mkdir(parents=True)
+        names = {"garret-0.0.1-android.apk", "garret-0.0.1-android.apk.sha256", "SHA256SUMS.txt"}
+        for name in names:
+            (out / name).write_text("checked locally")
+        release.verify_remote_assets(set())
+        release.verify_remote_assets(names, complete=True)
+        for remote in (names | {"password"}, names | {"garret-0.0.0-android.apk"}):
+            with self.assertRaises(ValueError):
+                release.verify_remote_assets(remote)
+        with self.assertRaises(ValueError):
+            release.verify_remote_assets(set(), complete=True)
+
     def test_publication_refuses_missing_extra_empty_or_tampered_downloads(self):
         out = self.root / "app/dist-release/downloads"
         out.mkdir(parents=True)
