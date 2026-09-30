@@ -65,10 +65,10 @@ are included too. All of these tools are free.
 | Linux | x86_64, glibc 2.39+, WebKitGTK 4.1 |
 | Windows | x86_64, WebView2 |
 | Android | Writing and editing on the go |
-| macOS | In progress |
+| macOS | Apple Silicon and Intel alpha builds; native testing needed |
 
-Downloadable, installable versions for Linux, Windows, and Android are coming
-soon. For now, you can [build garret from source](#building-from-source-linux).
+Get [alpha testing builds from GitHub Releases](https://github.com/iuliandita/garret/releases),
+or [build garret from source](#building-from-source-linux).
 
 <p>
   <img src="docs/screenshots/android-editor-light.png" alt="Android writing view in light mode" width="240">
