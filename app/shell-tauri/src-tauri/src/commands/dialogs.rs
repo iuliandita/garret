@@ -348,6 +348,81 @@ pub(crate) fn design_import_apply(
     Ok(applied)
 }
 
+fn canonical_backup_destination(path: &Path) -> Result<PathBuf, String> {
+    if !path.is_absolute() {
+        return Err("encrypted backup folder must be an absolute path".into());
+    }
+    let canonical = fs::canonicalize(path)
+        .map_err(|_| "encrypted backup folder unavailable; reconnect it or choose another folder")?;
+    if !canonical.is_dir() {
+        return Err("encrypted backup destination is not a folder".into());
+    }
+    Ok(canonical)
+}
+
+fn encrypted_backup_start(data_home: &Path) -> Result<PathBuf, String> {
+    match projects::read_settings_checked(data_home)?.encrypted_backup_dir {
+        Some(path) => canonical_backup_destination(Path::new(&path)),
+        None => {
+            let dir = export_dir(data_home);
+            fs::create_dir_all(&dir).map_err(|e| format!("archive destination unavailable: {e}"))?;
+            Ok(dir)
+        }
+    }
+}
+
+fn encrypted_archive_default_name(dir: &Path, now_ms: i64) -> String {
+    let timestamp = crate::recovery::point_id(now_ms);
+    let stem = format!("archive-{}.{:03}Z", timestamp.trim_end_matches('Z'), now_ms.rem_euclid(1000));
+    let mut name = format!("{stem}.age");
+    let mut ordinal = 2;
+    while dir.join(&name).exists() {
+        name = format!("{stem}-{ordinal}.age");
+        ordinal += 1;
+    }
+    name
+}
+
+#[command_boundary::command]
+pub(crate) fn encrypted_backup_destination(
+    app: tauri::AppHandle,
+    data_home: State<'_, DataHome>,
+) -> Result<Option<String>, String> {
+    let epoch = dialog_epoch(&app);
+    dialog_still_owned(&app, epoch)?;
+    let destination = projects::read_settings_checked(&data_home.0)?.encrypted_backup_dir;
+    dialog_still_owned(&app, epoch)?;
+    Ok(destination)
+}
+
+#[command_boundary::command]
+pub(crate) async fn encrypted_backup_destination_pick(
+    app: tauri::AppHandle,
+    data_home: State<'_, DataHome>,
+    strings: State<'_, HostStrings>,
+) -> Result<Option<String>, String> {
+    let epoch = dialog_epoch(&app);
+    dialog_still_owned(&app, epoch)?;
+    let remembered = projects::read_settings_checked(&data_home.0)?.encrypted_backup_dir;
+    let start = remembered.as_deref().map(PathBuf::from)
+        .filter(|path| path.is_dir())
+        .or_else(dirs::home_dir)
+        .unwrap_or_else(|| export_dir(&data_home.0));
+    let title = strings.0.t("backup.dialog.destination");
+    let picked = ask_for_folder(&app, &start, &title).await;
+    dialog_still_owned(&app, epoch)?;
+    let Some(picked) = picked else { return Ok(None); };
+    let dir = canonical_backup_destination(&picked)?;
+    let destination = dir.to_str().ok_or("encrypted backup folder is not a Unicode path")?.to_string();
+    projects::update_settings_checked(&data_home.0, |settings| {
+        canonical_backup_destination(&dir)?;
+        dialog_still_owned(&app, epoch)?;
+        settings.encrypted_backup_dir = Some(destination.clone());
+        Ok(())
+    })?;
+    Ok(Some(destination))
+}
+
 #[command_boundary::command]
 pub(crate) async fn encrypted_key_generate(
     app: tauri::AppHandle,
@@ -380,12 +455,15 @@ pub(crate) async fn encrypted_archive_create(
     };
     let epoch = dialog_epoch(&app);
     dialog_still_owned(&app, epoch)?;
-    let dir = export_dir(&data_home.0);
-    fs::create_dir_all(&dir).map_err(|e| format!("archive destination unavailable: {e}"))?;
-    let Some(key_path) = ask_for_named_open(&app, &dir, KEY_OPEN_DIALOG_TITLE, "Recovery key", "txt").await else { return Ok(None); };
+    let dir = encrypted_backup_start(&data_home.0)?;
+    let key_dir = export_dir(&data_home.0);
+    let Some(key_path) = ask_for_named_open(&app, &key_dir, KEY_OPEN_DIALOG_TITLE, "Recovery key", "txt").await else { return Ok(None); };
     dialog_still_owned(&app, epoch)?;
     let key = crate::encrypted_archive::key_from_path(&key_path)?;
-    let dialog = SaveDialog { title: ENCRYPTED_SAVE_DIALOG_TITLE, filter_label: "Encrypted archive", extensions: &["age"], default_name: "archive.age".into() };
+    if !dir.is_dir() {
+        return Err("encrypted backup folder unavailable; reconnect it or choose another folder".into());
+    }
+    let dialog = SaveDialog { title: ENCRYPTED_SAVE_DIALOG_TITLE, filter_label: "Encrypted archive", extensions: &["age"], default_name: encrypted_archive_default_name(&dir, crate::store::now_ms()) };
     let Some(dest) = ask_for_export_path(&app, &dir, &dialog).await else { return Ok(None); };
     dialog_still_owned(&app, epoch)?;
     {
@@ -396,9 +474,10 @@ pub(crate) async fn encrypted_archive_create(
         }
     }
     if dest == key_path { return Err("archive destination is the recovery key".into()); }
+    let stage_home = data_home.0.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
         let _passing = crate::recovery::PASSING.lock().map_err(|_| "backup is busy")?;
-        crate::encrypted_archive::create_from_project(&source, &dest, &key)
+        crate::encrypted_archive::create_from_project(&source, &dest, &key, &stage_home)
     }).await.map_err(|_| "encrypted archive task failed")??;
     Ok(Some(result))
 }
@@ -1015,6 +1094,51 @@ pub(crate) async fn covers_pick(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn encrypted_backup_destination_requires_an_existing_absolute_directory() {
+        let root = tempfile::tempdir().unwrap();
+        let folder = root.path().join("backups");
+        assert!(super::canonical_backup_destination(&folder).is_err());
+        assert!(!folder.exists());
+        std::fs::create_dir(&folder).unwrap();
+        assert_eq!(super::canonical_backup_destination(&folder).unwrap(), std::fs::canonicalize(&folder).unwrap());
+        let file = root.path().join("file");
+        std::fs::write(&file, "existing").unwrap();
+        assert!(super::canonical_backup_destination(&file).is_err());
+        assert!(super::canonical_backup_destination(std::path::Path::new(".")).is_err());
+    }
+
+    #[test]
+    fn encrypted_backup_start_never_recreates_or_falls_back_from_a_missing_destination() {
+        let root = tempfile::tempdir().unwrap();
+        let missing = root.path().join("unmounted/backups");
+        crate::projects::update_settings(root.path(), |settings| {
+            settings.encrypted_backup_dir = Some(missing.to_string_lossy().into_owned());
+        }).unwrap();
+        assert!(super::encrypted_backup_start(root.path()).is_err());
+        assert!(!missing.exists());
+        assert!(!crate::export_dir(root.path()).exists());
+        let valid = root.path().join("backups");
+        std::fs::create_dir(&valid).unwrap();
+        crate::projects::update_settings(root.path(), |settings| {
+            settings.encrypted_backup_dir = Some(valid.to_string_lossy().into_owned());
+        }).unwrap();
+        assert_eq!(super::encrypted_backup_start(root.path()).unwrap(), std::fs::canonicalize(valid).unwrap());
+    }
+
+    #[test]
+    fn encrypted_archive_default_name_is_dated_and_skips_existing_files() {
+        let root = tempfile::tempdir().unwrap();
+        let first = super::encrypted_archive_default_name(root.path(), 123);
+        assert_eq!(first, "archive-1970-01-01T00-00-00.123Z.age");
+        std::fs::write(root.path().join(&first), "existing").unwrap();
+        let second = super::encrypted_archive_default_name(root.path(), 123);
+        assert_eq!(second, "archive-1970-01-01T00-00-00.123Z-2.age");
+        std::fs::write(root.path().join(&second), "existing").unwrap();
+        assert_eq!(super::encrypted_archive_default_name(root.path(), 123), "archive-1970-01-01T00-00-00.123Z-3.age");
+        assert_ne!(super::encrypted_archive_default_name(root.path(), 124), first);
+    }
+
     use super::{export_save_dialog, EXPORT_DIALOG_TITLE};
     use crate::export::Format;
 

@@ -105,6 +105,28 @@ Settings and recovery copies live under `~/.local/share/cc.local.app/`. Pictures
 and research originals sit in folders next to each book, so back up a book's
 `.db` file together with those folders, with the app closed.
 
+### Keep a safe copy of your book
+
+Keep your working book outside cloud-synced folders. **Back up now** makes a
+local recovery copy; it cannot protect your work if you lose the device.
+
+1. Open **File > Open book > Backups and archives**.
+2. Choose **Create recovery key** and keep the key separately from your backups.
+   A lost key means you cannot restore an encrypted archive.
+3. Select **Choose backup folder**, then **Make encrypted archive** and save
+   the archive there. Use a Google Drive or Dropbox synced folder, or a USB
+   drive. You can also copy the archive there afterward.
+4. Use **Verify encrypted archive** to check the saved archive with your key.
+
+garret remembers the backup destination folder. Making and saving each archive
+is manual. **Restore encrypted archive** restores it as a separate book.
+
+## Support garret
+
+If you would like to support development, you can
+[leave a tip on Ko-fi](https://ko-fi.com/Q3O027XM2F). It is entirely optional;
+every feature remains free.
+
 ## License
 
 garret is free software under the GNU General Public License, version 3 or

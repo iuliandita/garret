@@ -11,6 +11,7 @@ import { formatWhen, type RecoveryPoint } from "./recovery-indicator";
 import type { Archive, ArchiveReport } from "./archive-indicator";
 import type { MirrorReport } from "./mirror-indicator";
 import { createIcon } from "./icons";
+import { createHelpTip, type HelpTip } from "./help-tip";
 
 /** What the host says about the readable mirror.
  *
@@ -142,6 +143,8 @@ export interface SwitcherDeps {
   makeArchive(): Promise<Archive>;
   /** Native dialogs choose every key and archive path. The page receives only public results. */
   generateArchiveKey?(): Promise<{ recipient: string } | null>;
+  encryptedBackupDestination?(): Promise<string | null>;
+  chooseEncryptedBackupDestination?(): Promise<string | null>;
   makeEncryptedArchive?(): Promise<{ file: string; recipient: string; encrypted: true } | null>;
   verifyEncryptedArchive?(): Promise<{ file: string; encrypted: true } | null>;
   restoreEncryptedArchive?(): Promise<ProjectSummary | null>;
@@ -455,6 +458,17 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   const encryptedNote = document.createElement("div");
   encryptedNote.id = "project-encrypted-archive-note";
   encryptedNote.textContent = t("switcher.archive.encrypted.note");
+  const backupWhere = document.createElement("div");
+  backupWhere.id = "project-backup-destination";
+  backupWhere.hidden = deps.encryptedBackupDestination === undefined;
+  const backupChoose = document.createElement("button");
+  backupChoose.id = "project-backup-destination-choose";
+  backupChoose.type = "button";
+  backupChoose.textContent = t("switcher.archive.destination.choose");
+  backupChoose.hidden = deps.chooseEncryptedBackupDestination === undefined;
+  const backupNote = document.createElement("div");
+  backupNote.id = "project-backup-destination-note";
+  backupNote.textContent = t("switcher.archive.destination.note");
   const archiveKey = document.createElement("button");
   archiveKey.id = "project-archive-key";
   archiveKey.type = "button";
@@ -561,27 +575,48 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   importBody.hidden = true;
   importBody.append(importWhere, importList);
 
+  const copyHelp: HelpTip[] = [];
+  function explain(label: HTMLElement, note: HTMLElement): void {
+    const help = createHelpTip({ label: label.textContent ?? "", definition: note.textContent ?? "", id: `${note.id}-help` });
+    const description = help.anchor.querySelector(".help-tip-text");
+    if (description) description.id = note.id;
+    help.button.setAttribute("aria-describedby", note.id);
+    label.append(help.anchor);
+    copyHelp.push(help);
+  }
+  const encryptedHeading = document.createElement("div");
+  encryptedHeading.id = "project-encrypted-archive-heading";
+  encryptedHeading.textContent = t("switcher.archive.encrypted.heading");
+  explain(recoveryHeading, recoveryNote);
+  explain(archiveHeading, archiveNote);
+  explain(encryptedHeading, encryptedNote);
+  const backupChoice = document.createElement("div");
+  backupChoice.id = "project-backup-choice";
+  backupChoice.append(backupChoose);
+  backupChoice.hidden = backupChoose.hidden;
+  explain(backupChoice, backupNote);
+  explain(mirrorHeading, mirrorNote);
+
   const copiesToggle = disclosure("project-copies-toggle", "project-copies", "switcher.copies");
   const copies = document.createElement("div");
   copies.id = "project-copies";
   copies.hidden = true;
   copies.append(
     recoveryHeading,
-    recoveryNote,
     recoveryList,
     legacyRecovery,
     archiveHeading,
-    archiveNote,
     archiveWhere,
     archiveNow,
     archiveList,
-    encryptedNote,
+    encryptedHeading,
+    backupWhere,
+    backupChoice,
     archiveKey,
     archiveEncrypted,
     archiveVerify,
     archiveRestore,
     mirrorHeading,
-    mirrorNote,
     mirrorWhere,
     mirrorState,
     legacyMirror,
@@ -1262,13 +1297,38 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   };
 
   let encryptedBusy = false;
+  let destinationGeneration = 0;
+  function renderBackupDestination(dir: string | null): void {
+    backupWhere.textContent = dir === null
+      ? t("switcher.archive.destination.none")
+      : t("switcher.archive.destination.where", { dir });
+  }
+  async function reloadBackupDestination(): Promise<void> {
+    if (!deps.encryptedBackupDestination) return;
+    const mine = generation;
+    const request = ++destinationGeneration;
+    const path = deps.currentPath();
+    const opened = deps.currentGeneration?.();
+    backupWhere.textContent = t("switcher.archive.destination.loading");
+    try {
+      const dir = await deps.encryptedBackupDestination();
+      if (await archiveActionCurrent(mine, path, opened) && request === destinationGeneration) {
+        renderBackupDestination(dir);
+      }
+    } catch (error) {
+      if (await archiveActionCurrent(mine, path, opened) && request === destinationGeneration) {
+        backupWhere.textContent = t("switcher.archive.destination.error");
+        deps.onNotice(messageOf(error));
+      }
+    }
+  }
   const encryptedAction = (action: () => Promise<string | null>, refreshShelf = false): void => {
     if (encryptedBusy) return;
     const mine = generation;
     const path = deps.currentPath();
     const opened = deps.currentGeneration?.();
     encryptedBusy = true;
-    for (const button of [archiveKey, archiveEncrypted, archiveVerify, archiveRestore]) button.disabled = true;
+    for (const button of [backupChoose, archiveKey, archiveEncrypted, archiveVerify, archiveRestore]) button.disabled = true;
     void (async (): Promise<void> => {
       try {
         const done = await action();
@@ -1282,9 +1342,23 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
         }
       } finally {
         encryptedBusy = false;
-        if (!destroyed) for (const button of [archiveKey, archiveEncrypted, archiveVerify, archiveRestore]) button.disabled = false;
+        if (!destroyed) for (const button of [backupChoose, archiveKey, archiveEncrypted, archiveVerify, archiveRestore]) button.disabled = false;
       }
     })();
+  };
+  const onBackupChoose = (): void => {
+    const mine = generation;
+    const path = deps.currentPath();
+    const opened = deps.currentGeneration?.();
+    encryptedAction(async () => {
+      const dir = await deps.chooseEncryptedBackupDestination?.();
+      if (await archiveActionCurrent(mine, path, opened)) {
+        ++destinationGeneration;
+        if (dir) renderBackupDestination(dir);
+        else await reloadBackupDestination();
+      }
+      return null;
+    });
   };
   const onArchiveKey = (): void => encryptedAction(async () => {
     const key = await deps.generateArchiveKey?.();
@@ -1579,6 +1653,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   recoveryList.addEventListener("click", onRecoveryClick);
   archiveNow.addEventListener("click", onArchiveNow);
   archiveKey.addEventListener("click", onArchiveKey);
+  backupChoose.addEventListener("click", onBackupChoose);
   archiveEncrypted.addEventListener("click", onArchiveEncrypted);
   archiveVerify.addEventListener("click", onArchiveVerify);
   archiveRestore.addEventListener("click", onArchiveRestore);
@@ -1644,6 +1719,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       void reloadImports();
       void reloadRecovery();
       void reloadArchives();
+      void reloadBackupDestination();
       void reloadMirror();
       void reloadLegacyProtection();
       if (focus === "create") {
@@ -1667,6 +1743,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       if (destroyed) return;
       destroyed = true;
       closeMirrorPreview(false);
+      for (const help of copyHelp) help.destroy();
       // Pending reads must not repaint detached controls.
       generation++;
       legacyGeneration++;
@@ -1676,6 +1753,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       recoveryList.removeEventListener("click", onRecoveryClick);
       archiveNow.removeEventListener("click", onArchiveNow);
       archiveKey.removeEventListener("click", onArchiveKey);
+      backupChoose.removeEventListener("click", onBackupChoose);
       archiveEncrypted.removeEventListener("click", onArchiveEncrypted);
       archiveVerify.removeEventListener("click", onArchiveVerify);
       archiveRestore.removeEventListener("click", onArchiveRestore);

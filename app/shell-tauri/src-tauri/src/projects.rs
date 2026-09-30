@@ -1744,6 +1744,9 @@ pub struct Settings {
     /// is the thing being consented to.
     #[serde(default)]
     pub new_book_dir: Option<String>,
+    /// Native-picker preference for encrypted archives only.
+    #[serde(default, deserialize_with = "lenient_encrypted_backup_dir")]
+    pub encrypted_backup_dir: Option<String>,
     /// Whether a cast member's name is marked, quietly, where it appears in the
     /// open scene's prose (the world design's W5). DEFAULT ON: the sample
     /// project ships with it visible, and a writer who has never touched
@@ -1768,6 +1771,11 @@ pub struct Settings {
     /// whole-file fallback, same as every other bare `Option<String>` here.
     #[serde(default)]
     pub home_identity: Option<String>,
+}
+
+fn lenient_encrypted_backup_dir<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<String>, D::Error> {
+    let value = serde_json::Value::deserialize(d)?;
+    Ok(value.as_str().filter(|value| !value.trim().is_empty()).map(str::to_owned))
 }
 
 impl Default for Settings {
@@ -1795,6 +1803,7 @@ impl Default for Settings {
             books: Vec::new(),
             book_locations: Vec::new(),
             new_book_dir: None,
+            encrypted_backup_dir: None,
             mark_cast_names: default_mark_cast_names(),
             start: Start::default(),
             recent: Vec::new(),
@@ -1804,7 +1813,7 @@ impl Default for Settings {
 }
 
 impl Settings {
-    /// Expand the five path fields against `home`, in place. `read_settings`'s
+    /// Expand the six path fields against `home`, in place. `read_settings`'s
     /// one caller, right after parse -- every other function in this file
     /// keeps working on absolute in-memory paths, unchanged.
     fn expand_paths(&mut self, home: &Path) {
@@ -1820,12 +1829,15 @@ impl Settings {
         if let Some(p) = &mut self.new_book_dir {
             *p = expand_home(p, home);
         }
+        if let Some(p) = &mut self.encrypted_backup_dir {
+            *p = expand_home(p, home);
+        }
         for r in &mut self.recent {
             r.path = expand_home(&r.path, home);
         }
     }
 
-    /// A clone with the five path fields contracted against `home`, for
+    /// A clone with the six path fields contracted against `home`, for
     /// `write_settings` to serialise. `self` is untouched.
     fn contracted(&self, home: &Path) -> Settings {
         let mut copy = self.clone();
@@ -1839,6 +1851,9 @@ impl Settings {
             location.path = contract_home(&location.path, home);
         }
         if let Some(p) = &mut copy.new_book_dir {
+            *p = contract_home(p, home);
+        }
+        if let Some(p) = &mut copy.encrypted_backup_dir {
             *p = contract_home(p, home);
         }
         for r in &mut copy.recent {
@@ -2339,7 +2354,7 @@ where
 /// as default: this is a preferences file, losing it costs the user one click,
 /// and refusing to launch over it would be worse.
 ///
-/// The five path fields are expanded against the real `HOME`; with none
+/// The six path fields are expanded against the real `HOME`; with none
 /// usable a `~` value reads back literally, which lists as a missing book
 /// rather than a deleted one.
 pub fn read_settings(data_home: &Path) -> Settings {
@@ -2414,7 +2429,7 @@ pub fn update_settings_checked(
 /// half-written settings file that failed to parse on every launch would be
 /// worse than none.
 ///
-/// The five path fields are contracted against the real `HOME` before the
+/// The six path fields are contracted against the real `HOME` before the
 /// bytes are written; with none usable the file is written absolute, as
 /// it always was.
 pub fn write_settings(data_home: &Path, s: &Settings) -> Result<(), String> {
@@ -3305,6 +3320,21 @@ mod tests {
     }
 
     #[test]
+    fn encrypted_backup_dir_is_lenient_without_losing_other_preferences() {
+        for value in ["null", "7", "true", "[]", "{}", "\"\"", "\"  \""] {
+            let settings: Settings = serde_json::from_str(&format!(
+                r#"{{"last_project":"/books/a.db","theme":"dark","encrypted_backup_dir":{value}}}"#
+            )).unwrap();
+            assert_eq!(settings.last_project.as_deref(), Some("/books/a.db"));
+            assert_eq!(settings.theme, Theme::Dark);
+            assert_eq!(settings.encrypted_backup_dir, None);
+        }
+        let settings: Settings = serde_json::from_str(r#"{"encrypted_backup_dir":"/backups"}"#).unwrap();
+        assert_eq!(settings.encrypted_backup_dir.as_deref(), Some("/backups"));
+        assert_eq!(Settings::default().encrypted_backup_dir, None);
+    }
+
+    #[test]
     fn settings_round_trip() {
         let dir = tempdir().unwrap();
         write_settings(
@@ -3318,6 +3348,7 @@ mod tests {
                 books: Vec::new(),
                 book_locations: Vec::new(),
                 new_book_dir: None,
+                encrypted_backup_dir: None,
                 theme: Theme::Dark,
                 typography: Typography {
                     family: ProseFamily::Mono,
@@ -3571,14 +3602,14 @@ mod tests {
     }
 
     #[test]
-    fn read_settings_expands_all_five_path_fields() {
+    fn read_settings_expands_all_six_path_fields() {
         let dir = tempdir().unwrap();
         let home = tempdir().unwrap();
         let path = settings_path(dir.path());
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(
             &path,
-            br#"{"last_project":"~/a.db","books":["~/b.db"],"book_locations":[{"book_id":"book-1","path":"~/location.db"}],"mirrored_book_ids":["book-1"],"new_book_dir":"~/dir","recent":[{"path":"~/c.db","opened_at":1}]}"#,
+            br#"{"last_project":"~/a.db","books":["~/b.db"],"book_locations":[{"book_id":"book-1","path":"~/location.db"}],"mirrored_book_ids":["book-1"],"new_book_dir":"~/dir","encrypted_backup_dir":"~/backup","recent":[{"path":"~/c.db","opened_at":1}]}"#,
         )
         .unwrap();
         let read = read_settings_with(dir.path(), Some(home.path()));
@@ -3590,10 +3621,11 @@ mod tests {
         assert_eq!(read.mirrored_book_ids, ["book-1"]);
         assert_eq!(read.new_book_dir.as_deref(), Some(want("dir")).as_deref());
         assert_eq!(read.recent[0].path, want("c.db"));
+        assert_eq!(read.encrypted_backup_dir.as_deref(), Some(want("backup")).as_deref());
     }
 
     #[test]
-    fn write_settings_contracts_all_five_path_fields_and_leaves_no_trace_of_home() {
+    fn write_settings_contracts_all_six_path_fields_and_leaves_no_trace_of_home() {
         let dir = tempdir().unwrap();
         let home = tempdir().unwrap();
         let mut s = Settings::default();
@@ -3605,6 +3637,7 @@ mod tests {
             path: under("location.db"),
         }];
         s.new_book_dir = Some(under("dir"));
+        s.encrypted_backup_dir = Some(under("backup"));
         s.recent = vec![RecentBook {
             path: under("c.db"),
             opened_at: 1,
@@ -3710,6 +3743,7 @@ mod tests {
                 path: sentinel.clone(),
             }],
             new_book_dir: Some(sentinel.clone()),
+            encrypted_backup_dir: Some(sentinel.clone()),
             mark_cast_names: true,
             start: Start::default(),
             recent: vec![RecentBook {
@@ -3720,7 +3754,7 @@ mod tests {
         };
         let contracted = s.contracted(home.path());
         let body = serde_json::to_string(&contracted).unwrap();
-        assert_eq!(body.matches("~/SENTINEL").count(), 5, "{body}");
+        assert_eq!(body.matches("~/SENTINEL").count(), 6, "{body}");
         assert_eq!(body.matches(sentinel.as_str()).count(), 0, "{body}");
     }
 

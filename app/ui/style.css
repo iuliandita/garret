@@ -2351,7 +2351,8 @@ body.nav-hidden #nav-column {
    font-family of its own -- the only mono stack in this stylesheet is
    `--prose-family`, which is the writer's setting for their manuscript and not
    a chrome token to borrow. */
-#project-archive-where {
+#project-archive-where,
+#project-backup-destination {
   margin-top: 4px;
   color: var(--muted);
   font-size: var(--text-xs);
@@ -2376,15 +2377,17 @@ body.nav-hidden #nav-column {
   background: var(--accent-soft);
 }
 
-#project-encrypted-archive-note {
+#project-encrypted-archive-heading {
   margin-top: 10px;
   padding-top: 8px;
   border-top: 1px solid var(--border);
   color: var(--muted);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
+  font-weight: 500;
 }
 
 #project-archive-key,
+#project-backup-destination-choose,
 #project-archive-encrypted,
 #project-archive-encrypted-verify,
 #project-archive-encrypted-restore {
