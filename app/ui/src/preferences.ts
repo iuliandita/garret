@@ -52,7 +52,6 @@ import {
   type Typography,
 } from "./typography";
 import { ZOOMS, isZoom, type Zoom } from "./zoom";
-import { bibleRowsFrom, MAX_BIBLE_ROWS, MIN_BIBLE_ROWS } from "./bible-rows";
 
 /** The two languages this build ships a catalog for. A `<select>`, not a row
  *  of buttons like every group above it: the row-of-buttons choice is
@@ -108,7 +107,6 @@ export interface PreferencesDeps {
   /** Whether the cast-marks plugin is fed any names at all. On by
    *  default: the design record's own sample shows the marks. */
   initialMarkCastNames: boolean;
-  initialBibleRows?: number;
   /** This project's own spelling wordlist, alphabetically -- what `dict_list`
    *  answered when the window opened. Per-project, unlike everything else in
    *  this panel, which is why `setDictionary` exists: the panel is mounted
@@ -146,8 +144,6 @@ export interface PreferencesDeps {
   /** A plain bool at the host, unlike every other row here: there is no
    *  misspelling of on/off to refuse. */
   persistMarkCastNames: (on: boolean) => Promise<void>;
-  persistBibleRows?: (rows: number) => Promise<void>;
-  onBibleRows?: (rows: number) => void;
   /** Told on a successful change, so the currently mounted project can feed
    *  the editor plugin at once rather than waiting for the writer to switch
    *  scenes -- `onWritingModes`'s own reason and shape. */
@@ -330,6 +326,7 @@ interface GroupSpec<T extends string> {
    *  it is not. Defaults to the legend, which is right for the four whose one
    *  word is the whole name. */
   name?: string;
+  description?: string;
   values: readonly T[];
   labels: Record<T, string>;
 }
@@ -352,7 +349,6 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   // is a plain bool, and this string is only ever converted at that one
   // boundary (see `onPanelClick`'s own branch below).
   let markCastNames: SpellingMode = deps.initialMarkCastNames ? "on" : "off";
-  let bibleRows = bibleRowsFrom(deps.initialBibleRows);
   // Applied here as well as by the head script, because the panel must agree
   // with the page even when the head script did not run - which is every test,
   // and any future embedding of this page.
@@ -413,6 +409,15 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
       buttons.set(button.id, button);
     }
     group.append(choices);
+    if (spec.description) {
+      const note = document.createElement("p");
+      note.id = `${spec.id}-note`;
+      note.className = "prefs-choice-note";
+      note.textContent = spec.description;
+      group.append(note);
+      choices.setAttribute("aria-describedby", note.id);
+      for (const button of choices.children) button.setAttribute("aria-describedby", note.id);
+    }
     return group;
   }
 
@@ -436,10 +441,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   languageGroup.append(languageLegend);
   const languageSelect = document.createElement("select");
   languageSelect.id = "prefs-language";
-  // NO aria-label of its own - `languageGroup`'s already carries the name,
-  // the same one name every other group here gives once, on the group, with
-  // its legend `aria-hidden` beside it. A second `aria-label` here would
-  // announce "Language" twice for one control.
+  languageSelect.setAttribute("aria-label", t("prefs.language"));
   for (const value of LOCALES) {
     const option = document.createElement("option");
     option.value = value;
@@ -467,8 +469,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   startGroup.append(startLegend);
   const startSelect = document.createElement("select");
   startSelect.id = "prefs-start";
-  // NO aria-label of its own, `languageSelect`'s own reason: the group already
-  // carries the name.
+  startSelect.setAttribute("aria-label", t("prefs.start.label"));
   for (const value of STARTS) {
     const option = document.createElement("option");
     option.value = value;
@@ -529,30 +530,6 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     values: DAILY_TARGETS,
     labels: GOAL_LABELS,
   });
-  const bibleRowsGroup = document.createElement("div");
-  bibleRowsGroup.id = "prefs-bible-rows-group";
-  bibleRowsGroup.className = "prefs-choice-group";
-  bibleRowsGroup.setAttribute("role", "group");
-  bibleRowsGroup.setAttribute("aria-label", t("prefs.name.bible-rows"));
-  const bibleRowsLegend = document.createElement("span");
-  bibleRowsLegend.className = "prefs-legend";
-  bibleRowsLegend.setAttribute("aria-hidden", "true");
-  bibleRowsLegend.textContent = t("prefs.legend.bible-rows");
-  const bibleRowsSelect = document.createElement("select");
-  bibleRowsSelect.id = "prefs-bible-rows";
-  bibleRowsSelect.setAttribute("aria-label", t("prefs.name.bible-rows"));
-  for (let rows = MIN_BIBLE_ROWS; rows <= MAX_BIBLE_ROWS; rows += 1) {
-    const option = document.createElement("option");
-    option.value = String(rows);
-    option.textContent = String(rows);
-    bibleRowsSelect.append(option);
-  }
-  bibleRowsSelect.value = String(bibleRows);
-  const bibleRowsChoices = document.createElement("div");
-  bibleRowsChoices.className = "prefs-choices";
-  bibleRowsChoices.append(bibleRowsSelect);
-  bibleRowsGroup.append(bibleRowsLegend, bibleRowsChoices);
-
   // WHERE THE WRITER SITS, not how the application looks and not what they are
   // trying to do: a third kind of thing in the one panel there is. Both axes are
   // separate groups rather than one four-button row, because they are
@@ -560,6 +537,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   // choice of one.
   const focusGroup = buildGroup<FocusMode>({
     id: "prefs-focus",
+    description: t("prefs.focus.note"),
     legend: t("prefs.legend.focus"),
     values: FOCUS_MODES,
     labels: FOCUS_LABELS,
@@ -575,6 +553,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   });
   const typewriterGroup = buildGroup<TypewriterMode>({
     id: "prefs-typewriter",
+    description: t("prefs.typewriter.note"),
     legend: t("prefs.legend.typewriter"),
     values: TYPEWRITER_MODES,
     labels: TYPEWRITER_LABELS,
@@ -586,6 +565,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   // surface.
   const markCastNamesGroup = buildGroup<SpellingMode>({
     id: "prefs-mark-cast-names",
+    description: t("prefs.mark-cast-names.note"),
     legend: t("prefs.legend.mark-cast-names"),
     name: t("prefs.name.mark-cast-names"),
     values: SPELLING_MODES,
@@ -773,7 +753,6 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     languageGroup,
     startGroup,
     zoomGroup,
-    bibleRowsGroup,
   );
   if (deps.openPrivacy) {
     const privacy = document.createElement("div");
@@ -867,28 +846,6 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     })();
   };
   languageSelect.addEventListener("change", onLanguageChange);
-
-  const onBibleRowsChange = (): void => {
-    const rows = Number(bibleRowsSelect.value);
-    if (!Number.isInteger(rows) || rows < MIN_BIBLE_ROWS || rows > MAX_BIBLE_ROWS) return;
-    const previous = bibleRows;
-    bibleRows = rows;
-    bibleRowsSelect.disabled = true;
-    void (async () => {
-      try {
-        await deps.persistBibleRows?.(rows);
-        if (!destroyed) deps.onBibleRows?.(rows);
-      } catch (error: unknown) {
-        if (destroyed) return;
-        bibleRows = previous;
-        bibleRowsSelect.value = String(previous);
-        deps.onNotice(t("prefs.error.save", { what: t("prefs.what.bible-rows"), error: messageOf(error) }));
-      } finally {
-        if (!destroyed) bibleRowsSelect.disabled = false;
-      }
-    })();
-  };
-  bibleRowsSelect.addEventListener("change", onBibleRowsChange);
 
   /** Rolled back on a refusal, the language select's own shape and for the
    *  same reason: a <select> shows what was chosen, with no `aria-pressed`
@@ -1091,7 +1048,6 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
       dictInput.removeEventListener("keydown", onDictInputKeyDown);
       dictList.removeEventListener("click", onDictListClick);
       languageSelect.removeEventListener("change", onLanguageChange);
-      bibleRowsSelect.removeEventListener("change", onBibleRowsChange);
       startSelect.removeEventListener("change", onStartChange);
       // THE ONE THAT MATTERS: it is on the document, so it outlives these
       // elements and would accumulate one live closure per project switch.

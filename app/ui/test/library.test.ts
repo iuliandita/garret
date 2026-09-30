@@ -175,7 +175,7 @@ describe("pure helpers", () => {
 });
 
 describe("createLibrary", () => {
-  test("open paints one desk and N-1 shelf tiles, plus the New book tile", async () => {
+  test("open paints one desk and N-1 shelf tiles, with New book above the desk", async () => {
     const r = rig();
     r.answer = overview([
       book({ path: "a", name: "A", opened_at: 30 }),
@@ -185,10 +185,13 @@ describe("createLibrary", () => {
     r.library.open();
     await flush();
     const shelf = document.querySelectorAll("#library-shelf .shelf-tile");
-    // Two real books on the shelf (A is the desk) plus the New book tile.
-    expect(shelf.length).toBe(3);
+    // Only books belong on the shelf; creation stays above the desk.
+    expect(shelf.length).toBe(2);
+    expect(document.querySelector("#library-new-book-area")?.nextElementSibling?.id).toBe("library-desk");
     expect(document.getElementById("library-new-book-tile")).not.toBeNull();
     expect(document.querySelector("#library-desk h3")?.textContent).toBe("A");
+    expect(document.getElementById("library")?.classList.contains("library-is-empty")).toBe(false);
+    expect(document.getElementById("library-group-filters")?.hidden).toBe(false);
   });
 
   test("the wordmark leads the room and stays out of the accessible tree", () => {
@@ -214,6 +217,11 @@ describe("createLibrary", () => {
     await flush();
     expect(document.getElementById("library-empty")?.hidden).toBe(false);
     expect(document.getElementById("library-desk")?.children.length).toBe(0);
+    expect(document.getElementById("library")?.classList.contains("library-is-empty")).toBe(true);
+    expect(document.getElementById("library-group-filters")?.hidden).toBe(true);
+    expect(document.getElementById("library-desk")?.hidden).toBe(true);
+    expect(document.querySelector("#library > h3")?.hasAttribute("hidden")).toBe(true);
+    expect(document.getElementById("library-new-book-tile")?.textContent).toContain("New book");
   });
 
   test("selecting a pen name filters the shelf and persists the choice", async () => {
@@ -238,7 +246,7 @@ describe("createLibrary", () => {
     // shelf but the New book tile.
     expect(document.querySelector("#library-desk h3")?.textContent).toBe("A");
     const shelf = document.querySelectorAll("#library-shelf .shelf-tile");
-    expect(shelf.length).toBe(1);
+    expect(shelf.length).toBe(0);
     expect(document.getElementById("library-new-book-tile")).not.toBeNull();
   });
 
@@ -254,12 +262,45 @@ describe("createLibrary", () => {
     expect(input).not.toBeNull();
     input.value = "The Harbour";
     expect(input.closest("button") === null).toBe(true);
-    expect(document.getElementById("library-new-book-create") === null).toBe(true);
+    expect(document.getElementById("library-new-book-create")?.textContent).toBe("Create");
     expect(document.activeElement === input).toBe(true);
     input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     await flush();
     expect(r.created).toEqual([{ name: "The Harbour", identityId: "i1" }]);
     expect(r.library.isOpen()).toBe(false);
+  });
+
+  test("a populated library has visible Create and Cancel controls", async () => {
+    const r = rig();
+    r.answer = overview([book()]);
+    r.library.open();
+    await flush();
+    (document.getElementById("library-new-book-tile") as HTMLButtonElement).click();
+    const input = document.getElementById("library-new-book-name") as HTMLInputElement;
+    input.value = "Discard this";
+    (document.getElementById("library-new-book-cancel") as HTMLButtonElement).click();
+    expect(document.getElementById("library-new-book-name")).toBeNull();
+    expect(document.activeElement?.id).toBe("library-new-book-tile");
+    expect(r.created).toEqual([]);
+    (document.getElementById("library-new-book-tile") as HTMLButtonElement).click();
+    (document.getElementById("library-new-book-name") as HTMLInputElement).value = "The Harbour";
+    (document.getElementById("library-new-book-create") as HTMLButtonElement).click();
+    await flush();
+    expect(r.created).toEqual([{ name: "The Harbour", identityId: null }]);
+    r.library.destroy();
+  });
+
+  test("the empty-library Create button uses the same book creation path", async () => {
+    const r = rig();
+    r.answer = overview([]);
+    r.library.open();
+    await flush();
+    (document.getElementById("library-new-book-tile") as HTMLButtonElement).click();
+    const input = document.getElementById("library-new-book-name") as HTMLInputElement;
+    input.value = "The Harbour";
+    (document.getElementById("library-new-book-create") as HTMLButtonElement).click();
+    await flush();
+    expect(r.created).toEqual([{ name: "The Harbour", identityId: null }]);
   });
 
   test("Escape cancels the new-book name and returns focus without closing the library", async () => {

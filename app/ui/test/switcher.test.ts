@@ -1166,7 +1166,7 @@ describe("switcher import", () => {
 });
 
 describe("an empty library says so", () => {
-  test("a library with no projects renders a message, not a blank listbox", async () => {
+  test("a library with no books renders a message, not a blank listbox", async () => {
     // A listbox that paints nothing is indistinguishable from one that failed to
     // paint. The import half of this panel has always carried an empty state;
     // the project half did not, and a screenshot caught the blank gap - every
@@ -1177,7 +1177,7 @@ describe("an empty library says so", () => {
       await open(rig);
       const list = el(rig.container, "project-list") as HTMLElement;
       expect(list.children.length).toBe(1);
-      expect(list.textContent ?? "").toMatch(/No projects in the library yet/);
+      expect(list.textContent ?? "").toMatch(/No books in the library yet/);
       // Not an option: there is nothing to activate, and a row carrying
       // role=option would be a listbox entry a keyboard user can land on and
       // press Return against for no effect.

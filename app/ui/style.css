@@ -87,7 +87,7 @@
      separate token instead of an opacity on --accent. */
   --accent-soft: #dee5f1;
   --control-bg: #fffdf9;
-  --control-border: #d5cec1;
+  --control-border: #8e8475;
   /* The one alarming colour in the application. Used by the save indicator's
      failed state and nothing else so far: if a writer sees this, their work is
      not in the file. */
@@ -261,7 +261,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --accent-strong: #313a43;
   --accent-soft: #dfe3e7;
   --control-bg: #ffffff;
-  --control-border: #cfcfd2;
+  --control-border: #85858a;
   --danger: #b3261e;
   --amber: #b7791f;
   --success: color-mix(in oklab, #3f9460 55%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -317,7 +317,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --accent-strong: #33533d;
   --accent-soft: #dbe7dc;
   --control-bg: #fbfdf9;
-  --control-border: #c8d4bf;
+  --control-border: #77866f;
   --danger: #a3241c;
   --amber: #b7791f;
   --success: color-mix(in oklab, #3f9460 55%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -372,7 +372,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
     --accent-strong: #a9c3ea;
     --accent-soft: #2b3446;
     --control-bg: #26262d;
-    --control-border: #3d3d46;
+    --control-border: #7c7c89;
     --danger: #f2b8b5;
     --amber: #e0b25a;
     --success: color-mix(in oklab, #5cc987 70%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -430,7 +430,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
     --accent-strong: #bfc9d4;
     --accent-soft: #2b323a;
     --control-bg: #26262a;
-    --control-border: #3b3b41;
+    --control-border: #7b7b83;
     --danger: #f2b8b5;
     --amber: #e0b25a;
     --success: color-mix(in oklab, #5cc987 70%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -484,7 +484,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
     --accent-strong: #a0cfba;
     --accent-soft: #22332f;
     --control-bg: #1e262c;
-    --control-border: #35424a;
+    --control-border: #728794;
     --danger: #f2b8b5;
     --amber: #e0b25a;
     --success: color-mix(in oklab, #5cc987 70%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -540,7 +540,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --accent-strong: #a9c3ea;
   --accent-soft: #2b3446;
   --control-bg: #26262d;
-  --control-border: #3d3d46;
+  --control-border: #7c7c89;
   --danger: #f2b8b5;
   --amber: #e0b25a;
   --success: color-mix(in oklab, #5cc987 70%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -600,7 +600,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --accent-strong: #bfc9d4;
   --accent-soft: #2b323a;
   --control-bg: #26262a;
-  --control-border: #3b3b41;
+  --control-border: #7b7b83;
   --danger: #f2b8b5;
   --amber: #e0b25a;
   --success: color-mix(in oklab, #5cc987 70%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -654,7 +654,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --accent-strong: #a0cfba;
   --accent-soft: #22332f;
   --control-bg: #1e262c;
-  --control-border: #35424a;
+  --control-border: #728794;
   --danger: #f2b8b5;
   --amber: #e0b25a;
   --success: color-mix(in oklab, #5cc987 70%, color-mix(in oklab, var(--accent) 40%, var(--fg)));
@@ -1995,7 +1995,7 @@ body.nav-hidden #nav-column {
   width: 48px;
   height: 4px;
   border-radius: var(--radius-pill);
-  background: var(--control-border);
+  background: var(--border);
   overflow: hidden;
   flex: 0 0 auto;
 }
@@ -2307,7 +2307,7 @@ body.nav-hidden #nav-column {
 }
 
 .project-legacy-heading {
-  color: var(--text);
+  color: var(--fg);
 }
 
 .project-legacy-note {
@@ -2542,9 +2542,7 @@ body.nav-hidden #nav-column {
      buttons above it, reading as a fifth group with no name. flex-wrap is still
      on below, because a narrow window is a real case and a wrapped row is better
      than a clipped one; this width is what stops it happening at rest. */
-  /* 384px, up from 360px, to pay for the wider legend column and leave the
-     five-button Goal row where it was: the longest row must stay on one line. */
-  width: 384px;
+  width: 480px;
   max-width: calc(100vw - 24px);
   /* an eleventh group (Cast names) pushed the panel's own content past
      the bottom of a 640x480 window with nothing to stop it -- a capture at
@@ -2567,7 +2565,7 @@ body.nav-hidden #nav-column {
 #prefs-panel .panel-body {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
-  column-gap: 4px;
+  column-gap: 12px;
 }
 
 #prefs-panel [role="group"] {
@@ -2598,6 +2596,21 @@ body.nav-hidden #nav-column {
   align-items: center;
   gap: 4px;
   min-width: 0;
+}
+
+@media (max-width: 600px) {
+  #prefs-panel .panel-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #prefs-panel .prefs-choice-group {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 6px;
+  }
+
+  #prefs-panel .prefs-choices {
+    grid-column: 1;
+  }
 }
 
 /* SEGMENTED GROUPS: a row of choices where one is pressed. The panel
@@ -2745,7 +2758,6 @@ body.nav-hidden #nav-column {
    shared one; this adds the drawn arrow the native paint cannot. */
 #prefs-language,
 #prefs-start,
-#prefs-bible-rows,
 #design-page-select,
 #proof-page-select,
 #cast-panel select,
@@ -3711,21 +3723,6 @@ body.nav-hidden #nav-column {
   background: var(--nav-bg);
 }
 
-#bible-section {
-  flex: 0 0 auto;
-  padding: 8px 10px;
-  background: var(--nav-bg);
-}
-
-#bible-section h2 { margin: 0 0 4px; font-size: var(--text-md); }
-#bible-list { max-height: min(calc(var(--bible-visible-rows) * 24px), 40vh); overflow-y: auto; }
-#bible-list button { display: block; width: 100%; height: 24px; overflow: hidden; border: 0; background: none; color: var(--fg); text-align: left; text-overflow: ellipsis; white-space: nowrap; padding-left: calc(6px + var(--bible-level) * 14px); }
-#bible-list button[data-bible-folder="true"] { font-weight: 600; }
-#bible-list button[data-bible-folder="true"]::before { content: "▾"; display: inline-block; width: 15px; color: var(--muted); }
-#bible-list button[data-bible-folder="true"][aria-expanded="false"]::before { content: "▸"; }
-#bible-list button[aria-current="true"],
-#bible-list button[aria-pressed="true"] { background: var(--accent-soft); border-radius: var(--radius-control); }
-
 #nav:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
@@ -4075,7 +4072,7 @@ body.nav-hidden #nav-column {
    `var(--border)` (the hairline colour used everywhere else) reads too faint
    against `--nav-bg` in the dark theme - the two are close enough in
    lightness that the line all but disappears - so this one hairline is
-   `color-mix(in srgb, var(--text) 18%, transparent)` instead, which keeps a
+   `color-mix(in srgb, var(--fg) 18%, transparent)` instead, which keeps a
    readable line in both themes without a new custom property. The fallback
    `border-top` is written FIRST and the color-mix one after, so an engine
    without color-mix() support still draws the plain `--border` line rather
@@ -4094,7 +4091,7 @@ body.nav-hidden #nav-column {
   left: 12px;
   right: 12px;
   border-top: 1px solid var(--border);
-  border-top: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
 }
 
 /* A bible document is prose the writer writes, so it reads like a scene -- in
@@ -4252,6 +4249,32 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   overflow: auto;
   padding: 26px clamp(24px, 5vw, 72px);
   background: var(--bg);
+}
+
+#outline-view:not([hidden]):has(.outline-view-table-scroll) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#outline-view:not([hidden]):has(.outline-view-table-scroll) > :not(.outline-view-table-scroll) { flex-shrink: 0; }
+.outline-view-table-scroll { min-height: 0; overflow: auto; }
+.outline-view-table-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-view-scroll-hint { display: none; }
+#outline-view:has(.outline-view-table-scroll[data-overflow="true"]) .outline-view-scroll-hint { display: block; margin: 0 0 8px; color: var(--muted); font-size: var(--text-sm); }
+.outline-view-table td.outline-view-row-actions,
+.outline-view-table th[data-column="actions"] { position: sticky; right: 0; background: var(--bg); }
+.outline-view-table-scroll[data-overflow="true"] .outline-view-row-actions,
+.outline-view-table-scroll[data-overflow="true"] th[data-column="actions"] { box-shadow: -8px 0 12px -12px var(--fg); }
+.outline-view-table .outline-view-row[data-selected="true"] > .outline-view-row-actions { background: linear-gradient(var(--accent-soft), var(--accent-soft)), var(--bg); }
+
+@media (max-width: 1120px) {
+  body:has(#outline-view:not([hidden]) .outline-view-table-scroll) #nav-column,
+  body:has(#outline-view:not([hidden]) .outline-view-table-scroll) #outline-toggle { visibility: hidden; }
+  #outline-view:has(.outline-view-table-scroll) { grid-column: 1 / -1; padding: 16px; }
+  #outline-view:has(.outline-view-table-scroll) h1 { margin-bottom: 12px; }
+  #outline-view:has(.outline-view-table-scroll) .outline-view-scope { margin: -6px 0 12px; }
+  #outline-view:has(.outline-view-table-scroll) .outline-view-controls { gap: 8px 16px; margin-bottom: 8px; }
 }
 
 #outline-view button:disabled { opacity: .5; }
@@ -5898,7 +5921,7 @@ body.chrome-hidden #footer {
    since the writer opened it on purpose and it lives outside the faded
    chrome, and a shifted pane would slide the prose under nothing and leave
    a gap against the inspector's edge. */
-body.chrome-hidden:not(.nav-hidden):not([data-reference-open="true"]):not([data-continuous-open="true"]):not([data-inspector-open="true"]) #editor {
+body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="true"]):not([data-continuous-open="true"]):not([data-inspector-open="true"]) #editor {
   transform: translateX(calc(var(--nav-width) / -2));
 }
 
@@ -7414,7 +7437,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 
 #mirror-changes-note,
 #mirror-changes-status {
-  color: var(--fg-soft);
+  color: var(--muted);
   font-size: var(--text-sm);
   margin-bottom: 8px;
 }
@@ -7437,7 +7460,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 .mirror-change-state,
 .mirror-change-title-was,
 .mirror-change-direction {
-  color: var(--fg-soft);
+  color: var(--muted);
   font-size: var(--text-sm);
 }
 
@@ -7482,7 +7505,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   margin-top: 6px;
   font-size: var(--text-sm);
   font-weight: 600;
-  color: var(--fg-soft);
+  color: var(--muted);
 }
 
 /* The batch control, above the list: the list is what grows,
@@ -7502,7 +7525,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 
 .mirror-change-legend,
 .mirror-change-summary {
-  color: var(--fg-soft);
+  color: var(--muted);
   font-size: var(--text-sm);
   margin-top: 6px;
 }
@@ -7855,7 +7878,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  width: 380px;
+  width: 420px;
   /* The row is `minmax(0, 1fr)` and this is the flex-column half of the same
      rule: without it the pages box below refuses to shrink past its content and
      the rail grows instead of scrolling. */
@@ -7872,8 +7895,8 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 #preview-rail-head {
   display: flex;
   align-items: center;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
 @media (max-width: 900px) {
@@ -7882,7 +7905,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
     position: fixed;
     inset: 39px 0 34px auto;
     z-index: 9;
-    width: min(380px, 100vw);
+    width: min(420px, 100vw);
   }
 }
 
@@ -7891,6 +7914,46 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   margin-right: auto;
   font-size: var(--text-lg);
   font-weight: 600;
+}
+
+#preview-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+#preview-actions button {
+  padding-inline: 8px;
+}
+
+#preview-rail button#preview-options-toggle {
+  align-self: flex-start;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+#preview-options-toggle::before {
+  content: "▸ ";
+}
+
+#preview-options-toggle[aria-expanded="true"]::before {
+  content: "▾ ";
+}
+
+#preview-options[hidden] {
+  display: none;
+}
+
+#preview-options > #preview-ornament,
+#preview-options > #preview-chapter {
+  margin-top: 10px;
 }
 
 /* The options. Two named groups, each a legend and a row of toggles, matching
@@ -8065,6 +8128,10 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   margin: 4px 0 10px;
 }
 
+#library-group-filters[hidden] {
+  display: none;
+}
+
 
 #library-membership,
 #library-summary {
@@ -8183,10 +8250,10 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 
 /* The identity's wordmark: ink on the light palettes, paper on the dark ones,
    switched by the same two selectors the palette tokens use. The masters are
-   224px wide for 2x displays. */
+   224px wide. */
 #library-wordmark {
   flex: none;
-  width: 112px;
+  width: 144px;
   aspect-ratio: 224 / 95;
   background: url("garret-wordmark-ink.png") left center / contain no-repeat;
 }
@@ -8225,6 +8292,10 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   padding-bottom: 24px;
   border-bottom: 1px solid var(--border-soft);
   margin-bottom: 24px;
+}
+
+#library-desk[hidden] {
+  display: none;
 }
 
 #library-desk .desk-cover {
@@ -8404,6 +8475,79 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 #library-empty,
 #library-more {
   color: var(--muted);
+}
+
+/* With no books, the next action leads. The shelf's cover-shaped placeholder
+   returns as soon as there is a book to sit beside. */
+#library > h3[hidden] {
+  display: none;
+}
+
+#library.library-is-empty #library-heading {
+  margin-top: 24px;
+}
+
+#library.library-is-empty #library-empty {
+  margin: 4px 0 12px;
+}
+
+#library.library-is-empty #library-shelf {
+  display: block;
+}
+
+#library button#library-new-book-tile {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 18px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-control);
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+}
+
+#library button#library-new-book-tile:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+#library button#library-new-book-tile .cover-new {
+  width: auto;
+  height: auto;
+  border: 0;
+  color: inherit;
+  font-family: var(--ui-family, sans-serif);
+  font-size: var(--text-xl);
+}
+
+#library button#library-new-book-tile .shelf-title {
+  font-family: inherit;
+  font-size: var(--text-md);
+  font-weight: 500;
+}
+
+#library div#library-new-book-tile {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#library #library-new-book-name {
+  width: min(320px, 100%);
+  height: 44px;
+  text-align: left;
+}
+
+#library.library-is-empty button#library-new-book-create {
+  min-height: 44px;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
 }
 
 /* --------------------------------------------------- the pen-name form
@@ -8610,3 +8754,47 @@ body[data-inspector-open="true"] #scene-notes {
     display: none;
   }
 }
+
+#library-new-book-area { margin: 0 0 24px; }
+#library #library-new-book-tile { width: auto; }
+#library #library-new-book-name { border-style: solid; background: var(--control-bg); }
+#prefs-panel .prefs-choice-note {
+  grid-column: 2;
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-ui);
+}
+@media (max-width: 600px) {
+  #prefs-panel .prefs-choice-note { grid-column: 1; }
+}
+
+/* Narrow writing keeps the full pane; the outline opens over it temporarily. */
+body.nav-narrow { grid-template-columns: 0 minmax(0, 1fr) auto; }
+body.nav-narrow:not(.nav-hidden) #nav-column {
+  position: fixed;
+  inset: 39px auto 34px 0;
+  width: min(var(--nav-width), calc(100vw - 48px));
+  z-index: 7;
+  background: var(--nav-bg);
+  box-shadow: var(--shadow-panel);
+}
+#outline-backdrop {
+  position: fixed;
+  inset: 39px 0 34px;
+  z-index: 6;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: color-mix(in srgb, var(--fg) 12%, transparent);
+}
+#outline-backdrop[hidden] { display: none; }
+
+.menu-group-label { padding: 4px 8px; color: var(--muted); font-size: var(--text-xs); }
+#help-guide h3, #help-panel .panel-body > h3 { margin: 0 0 8px; font-size: var(--text-md); font-weight: 500; }
+#help-guide { margin-bottom: 20px; }
+#help-guide details { margin: 0 0 8px; }
+#help-guide summary { cursor: pointer; }
+#help-guide summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#help-guide p { margin: 6px 0 12px; max-width: 70ch; font-size: var(--text-sm); line-height: var(--leading-ui); }
+@media (max-width: 600px) { #help-columns { column-count: 1; } }

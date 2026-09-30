@@ -57,6 +57,8 @@ export type IconName =
   | "x"
   | "circle-help"
   | "grip-vertical"
+  | "sun"
+  | "moon"
   | "unlink";
 
 const NS = "http://www.w3.org/2000/svg";
@@ -66,6 +68,16 @@ const NS = "http://www.w3.org/2000/svg";
  *  Keys are the pack's icon names, deliberately: a reader who wants to see one
  *  drawn can look it up upstream by the name in this table. */
 export const ICON_PATHS: Readonly<Record<IconName, readonly string[]>> = Object.freeze({
+  // Lucide's sun circle as two arcs, followed by its rays.
+  sun: Object.freeze([
+    "M16 12a4 4 0 1 1-8 0a4 4 0 0 1 8 0",
+    "M12 2v2", "M12 20v2", "M4.93 4.93l1.41 1.41",
+    "M17.66 17.66l1.41 1.41", "M2 12h2", "M20 12h2",
+    "M6.34 17.66l-1.41 1.41", "M19.07 4.93l-1.41 1.41",
+  ]),
+  moon: Object.freeze([
+    "M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401",
+  ]),
   bold: Object.freeze(["M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8"]),
   italic: Object.freeze(["M19 4L10 4", "M14 20L5 20", "M15 4L9 20"]),
   underline: Object.freeze(["M6 4v6a6 6 0 0 0 12 0V4", "M4 20L20 20"]),

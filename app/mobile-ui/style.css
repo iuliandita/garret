@@ -15,12 +15,12 @@ body { margin: 0; }
 }
 .mobile-workspace button {
   font: inherit; color: inherit; background: transparent; border: 0; border-radius: 8px;
-  min-height: 44px; min-width: 44px; padding: 8px 12px; cursor: pointer;
+  min-height: 48px; min-width: 48px; padding: 8px 12px; cursor: pointer;
 }
 .mobile-workspace button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .mobile-workspace button:disabled { opacity: .5; cursor: wait; }
 .mobile-workspace button[aria-pressed="true"], .mobile-workspace button[aria-current] { background: var(--selected); }
-.mobile-header { display: flex; align-items: center; gap: 4px; padding: 6px 8px; background: var(--chrome); }
+.mobile-header { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--chrome); }
 .mobile-book-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; color: var(--muted); }
 .mobile-page { overflow-y: auto; flex: 1; min-height: 0; padding: 28px max(22px, calc((100% - 650px) / 2)); overscroll-behavior: contain; }
 .mobile-scene-title { margin: 0 0 24px; font-size: 20px; font-weight: 550; line-height: 1.4; overflow-wrap: anywhere; }
@@ -41,25 +41,32 @@ body { margin: 0; }
 .mobile-outline::backdrop { background: rgb(0 0 0 / .4); }
 .mobile-outline header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .mobile-outline h2 { font-size: 20px; margin: 0; }
-.mobile-outline nav { display: grid; gap: 4px; margin-block: 16px; }
+.mobile-outline nav { display: grid; gap: 8px; margin-block: 16px; }
+.mobile-outline-context { margin: 16px 0 0; font-size: 14px; line-height: 1.5; font-weight: 600; overflow-wrap: anywhere; color: var(--muted); }
 .mobile-outline nav button { text-align: start; overflow-wrap: anywhere; line-height: 1.45; }
 .mobile-outline form { display: grid; gap: 8px; }
 .mobile-outline label { display: grid; gap: 8px; font-size: 14px; }
-.mobile-outline input { font: inherit; font-size: 16px; padding: 12px; min-height: 44px; border: 1px solid var(--muted); border-radius: 8px; color: var(--fg); background: var(--bg); }
+.mobile-outline input { font: inherit; font-size: 16px; padding: 12px; min-height: 48px; border: 1px solid var(--muted); border-radius: 8px; color: var(--fg); background: var(--bg); }
 .mobile-outline form button { background: var(--selected); }
 .mobile-recovery textarea { width: 100%; min-height: 35dvh; font: 16px/1.5 system-ui, sans-serif; color: var(--fg); background: var(--bg); border: 1px solid var(--muted); padding: 12px; }
 .mobile-library { padding: max(24px, env(safe-area-inset-top)) 24px; overflow-y: auto; }
-.mobile-library > * { width: 100%; max-width: 650px; margin-inline: auto; }
+.mobile-library > * { flex-shrink: 0; width: 100%; max-width: 650px; margin-inline: auto; }
 .mobile-library header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.mobile-library h1 { font: 30px/1.3 Georgia, serif; margin-block: 12px; }
+.mobile-wordmark { width: 144px; aspect-ratio: 224 / 95; flex: none; background: url("garret-wordmark-ink.png") left center / contain no-repeat; }
+.mobile-appearance { display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.mobile-appearance svg { width: 22px; height: 22px; }
+.mobile-library[data-theme="dark"] .mobile-wordmark { background-image: url("garret-wordmark-paper.png"); }
+.mobile-library h1 { font: 30px/1.3 Georgia, serif; margin: 18px auto 4px; }
 .mobile-library h2 { font-size: 20px; }
 .mobile-library p { line-height: 1.5; color: var(--muted); }
 .mobile-library [role="alert"] { color: var(--danger); }
 .mobile-library nav { display: grid; gap: 8px; margin-block: 20px; }
-.mobile-library nav button { text-align: start; background: var(--chrome); overflow-wrap: anywhere; }
-.mobile-library form { margin-top: 24px; }
+.mobile-library nav button { display: flex; align-items: center; gap: 16px; text-align: start; padding: 4px 0; overflow-wrap: anywhere; }
+.mobile-book-cover { display: flex; align-items: center; justify-content: center; width: 48px; height: 70px; flex: none; border-radius: 3px; background: var(--selected); box-shadow: 0 1px 4px rgb(0 0 0 / 18%); font: 26px/1 Georgia, serif; }
+.mobile-book-name { font: 18px/1.3 Georgia, serif; }
+.mobile-library form { margin-block: 16px 24px; }
 .mobile-library label { display: grid; gap: 8px; }
-.mobile-library input { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--muted); border-radius: 8px; padding: 12px; width: 100%; min-height: 44px; }
+.mobile-library input { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--muted); border-radius: 8px; padding: 12px; width: 100%; min-height: 48px; }
 .mobile-library form button { margin-top: 16px; background: var(--selected); }
 @media (max-height: 480px) {
   .mobile-page { padding-block: 12px; }

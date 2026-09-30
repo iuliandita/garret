@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { resolveFixtureDir } from "../src/fixture-name";
+import { CLASSIC_FIXTURES, isClassicFixture, resolveFixtureDir } from "../src/fixture-name";
 
 function diagnostic(result: ReturnType<typeof Bun.spawnSync>): string {
   return (result.stderr?.toString() ?? "")
@@ -13,7 +13,16 @@ describe("resolveFixtureDir", () => {
     expect(resolveFixtureDir("sample")).toBe("app/fixtures/sample");
   });
 
-  test("every other name resolves under lab/fixtures/out", () => {
+  test("classic excerpts resolve to their own populated fixtures", () => {
+    for (const name of CLASSIC_FIXTURES) {
+      expect(resolveFixtureDir(name)).toBe(`app/fixtures/classics/${name}`);
+      expect(isClassicFixture(name)).toBe(true);
+    }
+    expect(isClassicFixture("sample")).toBe(false);
+    expect(isClassicFixture("../alice")).toBe(false);
+  });
+
+  test("graded fixtures resolve under lab/fixtures/out", () => {
     expect(resolveFixtureDir("tiny")).toBe("lab/fixtures/out/tiny");
     expect(resolveFixtureDir("normal")).toBe("lab/fixtures/out/normal");
     expect(resolveFixtureDir("stress")).toBe("lab/fixtures/out/stress");

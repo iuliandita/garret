@@ -1,0 +1,270 @@
+[
+  {
+    "kind": "character",
+    "name": "Jonathan Harker",
+    "summary": "English solicitor records his journey and confinement in shorthand.",
+    "aliases": [
+      "Harker"
+    ],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Journal narrator"
+      },
+      {
+        "label": "Relationship",
+        "value": "Engaged to Mina"
+      }
+    ],
+    "appears": [
+      "3 May: Bistritz",
+      "4 May: The Crucifix",
+      "5 May: The Borgo Pass",
+      "5 May: The Count Welcomes His Guest",
+      "7 May: English Books and Carfax",
+      "8 May: The Mirror and Locked Doors",
+      "A Prisoner in the Castle",
+      "12 May: The Count Descends the Wall",
+      "15 May: The Deserted Rooms",
+      "16 May: The Three Women"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Count Dracula",
+    "summary": "Courteous host who conducts business about an English estate while controlling Harker's movements.",
+    "aliases": [
+      "Dracula",
+      "the Count"
+    ],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Host and client"
+      },
+      {
+        "label": "Continuity",
+        "value": "No reflection; does not eat with Harker; crawls down the castle wall"
+      }
+    ],
+    "appears": [
+      "5 May: The Count Welcomes His Guest",
+      "7 May: English Books and Carfax",
+      "8 May: The Mirror and Locked Doors",
+      "A Prisoner in the Castle",
+      "12 May: The Count Descends the Wall",
+      "15 May: The Deserted Rooms",
+      "16 May: The Three Women"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Borgo Pass driver",
+    "summary": "Mysterious driver brings Harker to the castle and controls the wolves with a gesture.",
+    "aliases": [
+      "driver"
+    ],
+    "fields": [
+      {
+        "label": "Identity",
+        "value": "Harker later infers that the driver was the Count; initially presented as a driver"
+      }
+    ],
+    "appears": [
+      "5 May: The Borgo Pass"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Bistritz landlady",
+    "summary": "Warns Harker about St. George's Eve and places a rosary with a crucifix around his neck.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Landlady at the Golden Krone"
+      }
+    ],
+    "appears": [
+      "3 May: Bistritz",
+      "4 May: The Crucifix"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Bistritz landlord",
+    "summary": "Receives Dracula's instructions and hands Harker a letter.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Landlord at the Golden Krone"
+      }
+    ],
+    "appears": [
+      "3 May: Bistritz",
+      "4 May: The Crucifix"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Three women",
+    "summary": "Three unnamed women approach the sleeping Harker; Dracula forbids them to touch him.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "One fair-haired woman and two dark-haired women"
+      },
+      {
+        "label": "Continuity",
+        "value": "Their identities are not supplied in this excerpt"
+      }
+    ],
+    "appears": [
+      "16 May: The Three Women"
+    ]
+  },
+  {
+    "kind": "place",
+    "name": "Bistritz",
+    "summary": "Town where Harker stays before the journey to the Borgo Pass.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Setting",
+        "value": "Golden Krone Hotel"
+      }
+    ],
+    "appears": [
+      "3 May: Bistritz",
+      "4 May: The Crucifix",
+      "5 May: The Borgo Pass"
+    ]
+  },
+  {
+    "kind": "place",
+    "name": "Borgo Pass",
+    "summary": "Meeting place where Harker changes from the public coach to the Count's carriage.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Setting",
+        "value": "Night journey through the mountains"
+      }
+    ],
+    "appears": [
+      "5 May: The Borgo Pass"
+    ]
+  },
+  {
+    "kind": "place",
+    "name": "Castle Dracula",
+    "summary": "Isolated castle with locked exits, steep walls and deserted rooms.",
+    "aliases": [
+      "the castle"
+    ],
+    "fields": [
+      {
+        "label": "Setting",
+        "value": "Courtyard; dining-room; library; bedroom; disused rooms"
+      }
+    ],
+    "appears": [
+      "5 May: The Borgo Pass",
+      "5 May: The Count Welcomes His Guest",
+      "7 May: English Books and Carfax",
+      "8 May: The Mirror and Locked Doors",
+      "A Prisoner in the Castle",
+      "12 May: The Count Descends the Wall",
+      "15 May: The Deserted Rooms",
+      "16 May: The Three Women"
+    ]
+  },
+  {
+    "kind": "place",
+    "name": "Carfax",
+    "summary": "English estate whose purchase Harker discusses with Dracula.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Discussed property near Purfleet; not a location visited in the excerpt"
+      }
+    ],
+    "appears": []
+  },
+  {
+    "kind": "poi",
+    "name": "Crucifix",
+    "summary": "Gift of the landlady that seems to protect Harker when Dracula reaches toward his throat.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Protective object"
+      }
+    ],
+    "appears": [
+      "4 May: The Crucifix",
+      "5 May: The Borgo Pass",
+      "8 May: The Mirror and Locked Doors"
+    ]
+  },
+  {
+    "kind": "poi",
+    "name": "Shaving mirror",
+    "summary": "Harker's mirror shows no reflection of Dracula; the Count throws it out of the window.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Evidence of an uncanny difference"
+      }
+    ],
+    "appears": [
+      "8 May: The Mirror and Locked Doors"
+    ]
+  },
+  {
+    "kind": "poi",
+    "name": "Harker's journal",
+    "summary": "Shorthand record of the journey and increasing fear.",
+    "aliases": [
+      "diary"
+    ],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Narrative document"
+      }
+    ],
+    "appears": [
+      "3 May: Bistritz",
+      "4 May: The Crucifix",
+      "5 May: The Borgo Pass",
+      "5 May: The Count Welcomes His Guest",
+      "7 May: English Books and Carfax",
+      "8 May: The Mirror and Locked Doors",
+      "A Prisoner in the Castle",
+      "12 May: The Count Descends the Wall",
+      "15 May: The Deserted Rooms",
+      "16 May: The Three Women"
+    ]
+  },
+  {
+    "kind": "poi",
+    "name": "Bag",
+    "summary": "Moving bag offered to the three women; Harker hears what sounds like a half-smothered child.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Object of an alarming, uncertain observation"
+      }
+    ],
+    "appears": [
+      "16 May: The Three Women"
+    ]
+  }
+]

@@ -1,4 +1,6 @@
 import { mobileMessages } from "./messages";
+import { createIcon } from "../../ui/src/icons";
+import { openingScene, readWritingPosition, writeWritingPosition, type WritingPosition } from "./position";
 import type { MobileDocument, MobileScene, MobileWorkspace } from "./workspace";
 import type { FlushAck } from "../../ui/src/store/flush";
 
@@ -10,10 +12,13 @@ window.__appLocale = locale;
 const m = mobileMessages(locale);
 document.documentElement.lang = locale;
 const native = (window as Window & { __TAURI__?: { core: { invoke: Invoke } } }).__TAURI__;
+const appearanceBridge = (window as Window & { garretAppearance?: { current(): string; set(value: string): void } }).garretAppearance;
 const lifecycle = window as Window & { __mobileWriting?: boolean };
 window.addEventListener("mobile-back", () => workspace?.back());
 let workspace: MobileWorkspace | undefined;
-let theme: "light" | "dark" = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+const savedTheme = appearanceBridge?.current();
+let theme: "light" | "dark" = savedTheme === "light" || savedTheme === "dark"
+  ? savedTheme : matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 let busy = false;
 const mount = document.querySelector<HTMLElement>("#app")!;
 
@@ -38,7 +43,11 @@ async function open(command: "mobile_open" | "mobile_create", args: Record<strin
   try {
     const book = await native.core.invoke<OpenBook>(command, args);
     opened = book;
-    const first = book.scenes[0];
+    let position: WritingPosition | undefined;
+    let positionUnavailable = false;
+    try { position = readWritingPosition(localStorage, book.id); }
+    catch { positionUnavailable = true; }
+    const first = openingScene(book.scenes, position);
     if (!first) throw new Error("No writing scene");
     const generation = book.generation;
     const initial = await native.core.invoke<MobileDocument>("mobile_document", { generation, itemId: first.id });
@@ -47,6 +56,9 @@ async function open(command: "mobile_open" | "mobile_create", args: Record<strin
     const container = element("div");
     workspace = createMobileWorkspace(container, {
       bookTitle: book.name, locale, theme, scenes: book.scenes, initial,
+      initialPosition: position?.sceneId === first.id ? position : undefined,
+      positionUnavailable,
+      savePosition: position => writeWritingPosition(localStorage, book.id, position),
       loadDoc: itemId => native.core.invoke<MobileDocument>("mobile_document", { generation, itemId }),
       flush: (entries, attribution) => native.core.invoke<FlushAck[]>("mobile_flush", { generation, entries, attribution }),
       createScene: title => native.core.invoke<{ scenes: MobileScene[]; item_id: string }>("mobile_scene_create", { generation, title }),
@@ -79,16 +91,25 @@ async function library(errorText?: string, resumeOpen = true) {
   root.className = "mobile-workspace mobile-library";
   root.dataset.theme = theme;
   const header = element("header");
+  const wordmark = element("span");
+  wordmark.className = "mobile-wordmark";
+  wordmark.setAttribute("aria-hidden", "true");
   const title = element("h1", m.libraryTitle);
-  header.append(title);
-  const appearance = element("button", theme === "dark" ? m.light : m.dark);
+  header.append(wordmark);
+  const appearance = element("button");
+  appearance.className = "mobile-appearance";
+  appearance.append(createIcon(theme === "dark" ? "sun" : "moon"));
   appearance.type = "button";
   appearance.setAttribute("aria-label", `${m.appearance}: ${theme === "dark" ? m.light : m.dark}`);
-  appearance.addEventListener("click", () => { theme = theme === "dark" ? "light" : "dark"; void library(); });
+  appearance.addEventListener("click", () => {
+    theme = theme === "dark" ? "light" : "dark";
+    appearanceBridge?.set(theme);
+    void library();
+  });
   header.append(appearance);
   const error = element("p", errorText ?? "");
   error.setAttribute("role", "alert"); error.hidden = !errorText;
-  root.append(header, element("p", m.libraryHint), error);
+  root.append(header, title, element("p", m.libraryHint), error);
   mount.replaceChildren(root);
   if (!native) { error.textContent = m.nativeRequired; error.hidden = false; return; }
   setBusy(true);
@@ -102,8 +123,14 @@ async function library(errorText?: string, resumeOpen = true) {
     }
     const list = element("nav"); list.setAttribute("aria-label", m.books);
     for (const book of catalog.books) {
-      const button = element("button", book.unavailable ? m.unavailableBook : book.name);
+      const button = element("button");
       button.type = "button";
+      const cover = element("span", book.unavailable ? "" : (Array.from(book.name.trim())[0] ?? ""));
+      cover.className = "mobile-book-cover";
+      cover.setAttribute("aria-hidden", "true");
+      const bookTitle = element("span", book.unavailable ? m.unavailableBook : book.name);
+      bookTitle.className = "mobile-book-name";
+      button.append(cover, bookTitle);
       if (book.unavailable) {
         button.dataset.unavailable = "true";
         button.disabled = true;
@@ -111,7 +138,6 @@ async function library(errorText?: string, resumeOpen = true) {
       list.append(button);
     }
     if (catalog.books.length === 0) root.append(element("p", m.empty));
-    root.append(list);
     const form = element("form");
     const label = element("label", m.bookName);
     const input = element("input"); input.name = "title"; input.required = true; input.maxLength = 120;
@@ -123,7 +149,7 @@ async function library(errorText?: string, resumeOpen = true) {
       const name = input.value.trim();
       if (name) void open("mobile_create", { name });
     });
-    root.append(form);
+    root.append(form, list);
   } catch { message(m.operationError); }
   finally { setBusy(false); }
 }

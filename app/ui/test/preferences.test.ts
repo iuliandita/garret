@@ -25,7 +25,6 @@ function rig(
   // do not care who is told about a writing-mode change, so this stays last
   // and defaults to nobody.
   onWritingModes?: (modes: WritingModes) => void,
-  initialBibleRows?: number,
   openPrivacy?: () => Promise<void>,
 ) {
   const container = document.createElement("div");
@@ -48,8 +47,6 @@ function rig(
   const starts: Start[] = [];
   const markCastNames: boolean[] = [];
   const markCastNamesAnnounced: boolean[] = [];
-  const bibleRows: number[] = [];
-  const bibleRowsAnnounced: number[] = [];
   let reject: string | null = null;
   let dictReject: string | null = null;
 
@@ -83,12 +80,6 @@ function rig(
       if (reject !== null) throw new Error(reject);
     },
     initialDailyTarget,
-    initialBibleRows,
-    persistBibleRows: async (rows) => {
-      bibleRows.push(rows);
-      if (reject !== null) throw new Error(reject);
-    },
-    onBibleRows: (rows) => bibleRowsAnnounced.push(rows),
     initialWritingModes,
     initialZoom,
     persistZoom: async (zoom) => {
@@ -163,11 +154,6 @@ function rig(
     if (!(el instanceof HTMLSelectElement)) throw new Error("no #prefs-start select mounted");
     return el;
   };
-  const bibleRowsSelect = (): HTMLSelectElement => {
-    const el = container.querySelector("#prefs-bible-rows");
-    if (!(el instanceof HTMLSelectElement)) throw new Error("no #prefs-bible-rows select mounted");
-    return el;
-  };
 
   return {
     container,
@@ -190,13 +176,10 @@ function rig(
     starts,
     markCastNames,
     markCastNamesAnnounced,
-    bibleRows,
-    bibleRowsAnnounced,
     dictInput,
     dictWords,
     languageSelect,
     startSelect,
-    bibleRowsSelect,
     byId,
     panel,
     failWith(message: string) {
@@ -226,12 +209,6 @@ function rig(
       select.dispatchEvent(new Event("change"));
       await settle();
     },
-    async changeBibleRows(value: string) {
-      const select = bibleRowsSelect();
-      select.value = value;
-      select.dispatchEvent(new Event("change"));
-      await settle();
-    },
   };
 }
 
@@ -252,7 +229,6 @@ describe("the preferences panel", () => {
       "prefs-typewriter", "prefs-spelling", "prefs-mark-cast-names", "prefs-dict",
       `# ${t("prefs.section.app")}`,
       "prefs-palette", "prefs-theme", "prefs-language-group", "prefs-start-group", "prefs-zoom",
-      "prefs-bible-rows-group",
       ...(r.panel().querySelector("#prefs-privacy") === null ? [] : ["prefs-privacy"]),
     ]);
   });
@@ -263,7 +239,6 @@ describe("the preferences panel", () => {
       ["prefs-theme", ["prefs-theme-system", "prefs-theme-light", "prefs-theme-dark"]],
       ["prefs-language-group", ["prefs-language"]],
       ["prefs-start-group", ["prefs-start"]],
-      ["prefs-bible-rows-group", ["prefs-bible-rows"]],
     ]);
     for (const [id, controls] of expectedControls) {
       const group = r.panel().querySelector(`#${id}`);
@@ -468,37 +443,6 @@ describe("the preferences panel", () => {
   });
 });
 
-describe("preferences: Bible shortcuts", () => {
-  test("uses an accessible select with every offered row count", () => {
-    const r = rig();
-    const select = r.bibleRowsSelect();
-    expect(select.getAttribute("aria-label")).toBe(t("prefs.name.bible-rows"));
-    expect([...select.options].map((option) => option.value)).toEqual(
-      Array.from({ length: 20 }, (_, index) => String(index + 1)),
-    );
-  });
-
-  test("invalid injected row counts read as five", () => {
-    expect(rig("system", DEFAULT_TYPOGRAPHY, DEFAULT_DAILY_TARGET, DEFAULT_WRITING_MODES, DEFAULT_ZOOM, "en", "last", undefined, 21).bibleRowsSelect().value).toBe("5");
-  });
-
-  test("persists a changed count and updates the live project", async () => {
-    const r = rig();
-    await r.changeBibleRows("12");
-    expect(r.bibleRows).toEqual([12]);
-    expect(r.bibleRowsAnnounced).toEqual([12]);
-  });
-
-  test("refusal restores the previous selection and re-enables it", async () => {
-    const r = rig();
-    r.failWith("read-only");
-    await r.changeBibleRows("12");
-    expect(r.bibleRowsSelect().value).toBe("5");
-    expect(r.bibleRowsSelect().disabled).toBe(false);
-    expect(r.bibleRowsAnnounced).toEqual([]);
-  });
-});
-
 describe("preferences: the daily goal", () => {
   test("every offered target has a button, and the chosen one is pressed", () => {
     const r = rig("system", DEFAULT_TYPOGRAPHY, "500");
@@ -623,14 +567,10 @@ describe("the language chooser", () => {
     expect(r.dones).toEqual([]);
   });
 
-  test("the select carries no name of its own; the group names it once", () => {
-    // The pattern every other group in this panel follows: one accessible
-    // name, on the group, with its legend `aria-hidden` beside it. A second
-    // `aria-label` on the select itself would announce "Language" twice for
-    // one control.
+  test("the select carries a localized accessible name", () => {
     const r = rig();
     const select = r.languageSelect();
-    expect(select.getAttribute("aria-label")).toBeNull();
+    expect(select.getAttribute("aria-label")).toBe(t("prefs.language"));
     const group = r.container.querySelector("#prefs-language-group");
     expect(group?.getAttribute("aria-label")).toBe(t("prefs.language"));
   });
@@ -685,10 +625,10 @@ describe("the start select", () => {
     expect(r.startSelect().value).toBe("last");
   });
 
-  test("the select carries no name of its own; the group names it once", () => {
+  test("the select carries a localized accessible name", () => {
     const r = rig();
     const select = r.startSelect();
-    expect(select.getAttribute("aria-label")).toBeNull();
+    expect(select.getAttribute("aria-label")).toBe(t("prefs.start.label"));
     const group = r.container.querySelector("#prefs-start-group");
     expect(group?.getAttribute("aria-label")).toBe(t("prefs.start.label"));
   });
@@ -1002,11 +942,23 @@ describe("the project dictionary", () => {
 
 test("privacy preferences routes to native settings and states the file boundary", async () => {
   let calls = 0;
-  rig(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+  rig(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined,
     async () => { calls += 1; });
   const button = document.getElementById("prefs-privacy-open") as HTMLButtonElement;
   expect(button.textContent).toBe(t("privacy.settings"));
   expect(document.getElementById("prefs-privacy")?.textContent).toContain(t("privacy.boundary"));
   button.click(); await settle();
   expect(calls).toBe(1);
+});
+
+
+test("ambiguous writing modes carry readable descriptions on their controls", () => {
+  const r = rig();
+  for (const stem of ["focus", "typewriter", "mark-cast-names"]) {
+    const note = r.container.querySelector(`#prefs-${stem}-note`);
+    expect(note?.textContent).toBe(t(`prefs.${stem}.note`));
+    for (const button of r.container.querySelectorAll(`#prefs-${stem} button`)) {
+      expect(button.getAttribute("aria-describedby")).toBe(`prefs-${stem}-note`);
+    }
+  }
 });

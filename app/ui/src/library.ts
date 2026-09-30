@@ -276,6 +276,9 @@ export function createLibrary(deps: LibraryDeps): Library {
   const bioLine = document.createElement("p");
   bioLine.id = "library-heading-bio";
 
+  const newBookArea = document.createElement("div");
+  newBookArea.id = "library-new-book-area";
+
   const desk = document.createElement("div");
   desk.id = "library-desk";
   desk.className = "desk";
@@ -307,7 +310,7 @@ export function createLibrary(deps: LibraryDeps): Library {
   timing.id = "library-timing";
   timing.className = "library-timing";
 
-  root.append(wordmark, strip, groupFilters, membershipPanel, heading, bioLine, desk, shelfHeading, empty, shelf, more, summaryPanel, timing);
+  root.append(wordmark, strip, groupFilters, membershipPanel, heading, bioLine, newBookArea, desk, shelfHeading, empty, shelf, more, summaryPanel, timing);
   document.body.append(root);
 
   const penNameForm = createPenNameForm({
@@ -842,7 +845,7 @@ export function createLibrary(deps: LibraryDeps): Library {
     newBookTile.id = "library-new-book-tile";
     newBookTile.classList.add("shelf-tile", "new-book");
     paintNewBookTile(newBookTile, false);
-    shelf.append(newBookTile);
+    newBookArea.replaceChildren(newBookTile);
   }
 
   function paintNewBookTile(tile: HTMLElement, editing: boolean): void {
@@ -891,10 +894,20 @@ export function createLibrary(deps: LibraryDeps): Library {
         document.getElementById("library-new-book-tile")?.focus();
       }
     });
-    const label = document.createElement("span");
-    label.className = "shelf-title";
-    label.textContent = t("library.new-book");
-    tile.append(input, label);
+    const create = document.createElement("button");
+    create.type = "button";
+    create.id = "library-new-book-create";
+    create.textContent = t("library.new-book.create");
+    create.addEventListener("click", () => void createBook(input.value.trim()));
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.id = "library-new-book-cancel";
+    cancel.textContent = t("library.new-book.cancel");
+    cancel.addEventListener("click", () => {
+      paintNewBookTile(tile, false);
+      document.getElementById("library-new-book-tile")?.focus();
+    });
+    tile.append(input, create, cancel);
     input.focus();
   }
 
@@ -911,6 +924,11 @@ export function createLibrary(deps: LibraryDeps): Library {
   function paint(): void {
     const closeAllowed = deps.currentPath() !== "";
     closeButton.hidden = !closeAllowed;
+    const isEmptyLibrary = latest.books.length === 0 && latest.more === 0;
+    root.classList.toggle("library-is-empty", isEmptyLibrary);
+    groupFilters.hidden = isEmptyLibrary;
+    desk.hidden = isEmptyLibrary;
+    shelfHeading.hidden = isEmptyLibrary;
 
     paintStrip();
     paintGroupFilters();

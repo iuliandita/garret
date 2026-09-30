@@ -10,6 +10,10 @@ needs no account, and keeps every book as a file on your own disk.
 
 > **Early alpha.** garret moves fast; keep backups of your work.
 
+![garret writing view](docs/screenshots/editor-light.png)
+
+[Full screenshot gallery](docs/screenshots/README.md) | [Sample books](app/fixtures/classics/README.md)
+
 ## What it does
 
 - Books with parts, chapters and scenes; a navigator, an outline table and cards.
@@ -33,6 +37,11 @@ needs no account, and keeps every book as a file on your own disk.
 | Windows | x86_64, WebView2 |
 | Android | Writing and editing on the go |
 | macOS | In progress |
+
+<p>
+  <img src="docs/screenshots/android-editor-light.png" alt="Android writing view in light mode" width="240">
+  <img src="docs/screenshots/android-editor-dark.png" alt="Android writing view in dark mode" width="240">
+</p>
 
 ## Building from source (Linux)
 

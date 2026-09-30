@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo=$(cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$repo"
+bin=app/shell-tauri/src-tauri/target/release/garret
+out=${1:-app/dist-samples}
+names=(pride-and-prejudice alice dracula)
+
+if [[ $# -gt 1 || ! -x "$bin" ]]; then
+  echo "usage: scripts/build-samples [output-directory] (requires a built host)" >&2
+  exit 1
+fi
+for name in "${names[@]}"; do
+  if [[ -e "$out/$name.db" ]]; then
+    echo "refusing to overwrite $out/$name.db; choose a new output directory" >&2
+    exit 1
+  fi
+done
+mkdir -p "$out"
+scratch=$(mktemp -d)
+trap 'rm -rf -- "$scratch"' EXIT
+for name in "${names[@]}"; do
+  fixture="app/fixtures/classics/$name"
+  python3 "$fixture/src/extract.py"
+  XDG_DATA_HOME="$scratch" bun app/harness/src/sample-build.ts --src "$fixture/src" --out "$fixture"
+  "$bin" --seed "$fixture" "$out/$name.db"
+  "$bin" validate "$out/$name.db" --json
+done
+bun app/harness/src/classic-identities.ts "$out"
+printf 'Sample books are in %s. Open the .db files in garret.\n' "$out"

@@ -5,6 +5,8 @@ import { join } from "node:path";
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
 import { createFocusToggle, createOutlineToggle, NAV_HIDDEN_CLASS } from "../src/chrome-toggles";
+import { createEditor } from "../src/editor";
+import { createDocumentOpener } from "../src/open";
 
 describe("the outline toggle", () => {
   test("is a named, pressed icon button that hides the navigator for this session", () => {
@@ -102,4 +104,87 @@ describe("the pressed state changes no geometry", () => {
       }
     });
   }
+});
+
+
+test("narrow windows collapse automatically, open an overlay, and preserve manual choices on widening", () => {
+  const original = window.matchMedia;
+  const media = original.call(window, "(max-width: 900px)");
+  let narrow = false;
+  Object.defineProperty(media, "matches", { get: () => narrow });
+  window.matchMedia = () => media;
+  const container = document.createElement("span");
+  document.body.append(container);
+  const toggle = createOutlineToggle({ container, body: document.body });
+  const button = container.querySelector("button") as HTMLButtonElement;
+  try {
+    button.click();
+    narrow = true;
+    media.dispatchEvent(new Event("change"));
+    expect(document.body.classList.contains(NAV_HIDDEN_CLASS)).toBe(true);
+    expect(document.body.classList.contains("nav-narrow")).toBe(true);
+    button.click();
+    expect(document.body.classList.contains(NAV_HIDDEN_CLASS)).toBe(false);
+    expect(button.getAttribute("aria-expanded")).toBe("true");
+    expect((document.getElementById("outline-backdrop") as HTMLElement).hidden).toBe(false);
+    narrow = false;
+    media.dispatchEvent(new Event("change"));
+    expect(document.body.classList.contains(NAV_HIDDEN_CLASS)).toBe(false);
+    button.click();
+    narrow = true;
+    media.dispatchEvent(new Event("change"));
+    narrow = false;
+    media.dispatchEvent(new Event("change"));
+    expect(document.body.classList.contains(NAV_HIDDEN_CLASS)).toBe(true);
+  } finally { toggle.destroy(); container.remove(); window.matchMedia = original; }
+});
+
+test("an outline overlay closes on successful editor focus and Escape, keeping containers and busy opens available", async () => {
+  const original = window.matchMedia;
+  const media = original.call(window, "(max-width: 900px)");
+  Object.defineProperty(media, "matches", { value: true });
+  window.matchMedia = () => media;
+  const container = document.createElement("span");
+  const column = document.createElement("div");
+  column.id = "nav-column";
+  const nav = document.createElement("div");
+  nav.id = "nav";
+  nav.setAttribute("role", "tree");
+  const row = document.createElement("div");
+  row.setAttribute("role", "treeitem");
+  row.dataset.type = "chapter";
+  nav.append(row);
+  column.append(nav);
+  document.body.append(container, column);
+  const pane = document.createElement("div");
+  pane.id = "editor";
+  document.body.append(pane);
+  const editor = createEditor(pane, { kind: "blocks", blocks: [{ type: "paragraph", text: "one two" }] });
+  let outcome: "busy" | "same" = "busy";
+  const open = createDocumentOpener({
+    session: { switchTo: async () => outcome },
+    typeOf: () => row.dataset.type,
+    markOpen: () => undefined,
+    focusEditor: () => editor.focus(),
+    onFailure: () => undefined,
+  });
+  const toggle = createOutlineToggle({ container, body: document.body });
+  const button = container.querySelector("button") as HTMLButtonElement;
+  try {
+    expect(document.body.classList.contains(NAV_HIDDEN_CLASS)).toBe(true);
+    button.click();
+    await open("chapter");
+    expect(document.body.classList.contains(NAV_HIDDEN_CLASS)).toBe(false);
+    row.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(document.body.classList.contains(NAV_HIDDEN_CLASS)).toBe(true);
+    expect(document.activeElement).toBe(button);
+    button.click();
+    row.dataset.type = "scene";
+    await open("scene");
+    expect(document.body.classList.contains(NAV_HIDDEN_CLASS)).toBe(false);
+    outcome = "same";
+    await open("scene");
+    expect(document.body.classList.contains(NAV_HIDDEN_CLASS)).toBe(true);
+    expect(document.activeElement).toBe(pane.querySelector(".ProseMirror"));
+  } finally { toggle.destroy(); editor.destroy(); pane.remove(); container.remove(); column.remove(); window.matchMedia = original; }
 });

@@ -24,6 +24,7 @@ struct Surface {
     entry: gtk::Entry,
     submit: gtk::Button,
     message: gtk::Label,
+    recovery_help: gtk::Expander,
     detached: Cell<bool>,
     position: i32,
     packing: (bool, bool, u32, gtk::PackType),
@@ -69,6 +70,13 @@ pub fn install(app: &tauri::AppHandle) -> Result<(), tauri::Error> {
                 a.set_role(gtk::atk::Role::Alert);
             }
             column.add(&message);
+            let recovery_help = gtk::Expander::new(Some(&strings.t("privacy.forgot_secret")));
+            let advice = gtk::Label::new(Some(&strings.t("privacy.reset_advice")));
+            advice.set_line_wrap(true);
+            advice.set_max_width_chars(56);
+            advice.set_xalign(0.0);
+            recovery_help.add(&advice);
+            column.add(&recovery_help);
             let submit = gtk::Button::with_label(&strings.t("privacy.unlock"));
             column.add(&submit);
             let quit = gtk::Button::with_label(&strings.t("privacy.quit"));
@@ -85,6 +93,7 @@ pub fn install(app: &tauri::AppHandle) -> Result<(), tauri::Error> {
                 entry,
                 submit,
                 message,
+                recovery_help,
                 detached: Cell::new(false),
                 activity: Cell::new(Instant::now()),
                 pointer: Cell::new(None),
@@ -179,6 +188,7 @@ impl Surface {
             config.close();
         }
         self.entry.set_text("");
+        self.recovery_help.set_expanded(false);
         let status = app.state::<privacy::Privacy>().status();
         let recovery = status.state == LockState::Recovery;
         self.entry.set_sensitive(status.state == LockState::Locked);
@@ -576,9 +586,28 @@ pub fn settings(app: &tauri::AppHandle) {
     }
     let scroll = gtk::ScrolledWindow::new(gtk::Adjustment::NONE, gtk::Adjustment::NONE);
     scroll.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Automatic);
+    scroll.set_overlay_scrolling(false);
     scroll.add(&column);
     let outer = gtk::Box::new(gtk::Orientation::Vertical, 0);
     outer.pack_start(&scroll, true, true, 0);
+    let scroll_hint = gtk::Label::new(Some(&strings.t("privacy.more_preferences")));
+    scroll_hint.set_line_wrap(true);
+    scroll_hint.set_margin_start(24);
+    scroll_hint.set_margin_end(24);
+    scroll_hint.set_no_show_all(true);
+    outer.pack_start(&scroll_hint, false, false, 8);
+    let adjustment = scroll.vadjustment();
+    for value_change in [false, true] {
+        let hint = scroll_hint.clone();
+        let update = move |adjustment: &gtk::Adjustment| {
+            hint.set_visible(adjustment.value() + adjustment.page_size() + 1.0 < adjustment.upper());
+        };
+        if value_change {
+            adjustment.connect_value_changed(update);
+        } else {
+            adjustment.connect_changed(update);
+        }
+    }
     let cancel = gtk::Button::with_label(&strings.t("privacy.choose_cancel"));
     let weak_window = window.downgrade();
     cancel.connect_clicked(move |_| {

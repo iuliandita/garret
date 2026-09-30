@@ -4,5 +4,6 @@ app/dist-windows/
 app/dist-linux/
 app/dist-macos/
 app/dist-android/
+app/dist-samples/
 # Screenshots captured by the harness rigs during development.
 app/results/screenshots/

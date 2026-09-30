@@ -4,7 +4,7 @@ const en = {
   saved: "Saved on this device", pending: "Saving...", failed: "Not saved",
   saveError: "Your latest changes could not be saved. Keep this book open and copy your text before restarting.",
   openError: "This scene could not be opened. Your current scene is still here.",
-  words: "words", untitled: "Untitled scene", unsupported: "This scene contains content this version cannot safely edit.",
+  word: "word", words: "words", untitled: "Untitled scene", unsupported: "This scene contains content this version cannot safely edit.",
   libraryTitle: "Your books", libraryHint: "Write offline. Your books stay on this device.",
   newBook: "New book", bookName: "Book title", create: "Create book", empty: "Start with a new book.",
   loading: "Opening...", operationError: "This action could not be completed. Please try again.",
@@ -14,6 +14,8 @@ const en = {
   closeError: "The book could not be closed. Reopen the app before opening another book.",
   recoverText: "Copy unsaved text", recoveryHint: "Select and copy this text before closing the app. Formatting is not included.",
   unavailableBook: "Book unavailable on this device",
+  untitledPart: "Untitled part", untitledChapter: "Untitled chapter",
+  positionError: "Your writing position could not be remembered on this device. Your text is still saved normally.",
 };
 const de: typeof en = {
   books: "Bücher", outline: "Gliederung", close: "Schließen", bold: "Fett", italic: "Kursiv",
@@ -21,7 +23,7 @@ const de: typeof en = {
   saved: "Auf diesem Gerät gespeichert", pending: "Speichert...", failed: "Nicht gespeichert",
   saveError: "Deine letzten Änderungen konnten nicht gespeichert werden. Lass dieses Buch geöffnet und kopiere deinen Text vor einem Neustart.",
   openError: "Diese Szene konnte nicht geöffnet werden. Deine aktuelle Szene ist weiterhin hier.",
-  words: "Wörter", untitled: "Unbenannte Szene", unsupported: "Diese Szene enthält Inhalte, die diese Version nicht sicher bearbeiten kann.",
+  word: "Wort", words: "Wörter", untitled: "Unbenannte Szene", unsupported: "Diese Szene enthält Inhalte, die diese Version nicht sicher bearbeiten kann.",
   libraryTitle: "Deine Bücher", libraryHint: "Schreibe offline. Deine Bücher bleiben auf diesem Gerät.",
   newBook: "Neues Buch", bookName: "Buchtitel", create: "Buch erstellen", empty: "Beginne mit einem neuen Buch.",
   loading: "Wird geöffnet...", operationError: "Diese Aktion konnte nicht abgeschlossen werden. Bitte versuche es erneut.",
@@ -31,5 +33,7 @@ const de: typeof en = {
   closeError: "Das Buch konnte nicht geschlossen werden. Öffne die App erneut, bevor du ein anderes Buch öffnest.",
   recoverText: "Ungespeicherten Text kopieren", recoveryHint: "Markiere und kopiere diesen Text, bevor du die App schließt. Formatierungen sind nicht enthalten.",
   unavailableBook: "Buch auf diesem Gerät nicht verfügbar",
+  untitledPart: "Unbenannter Teil", untitledChapter: "Unbenanntes Kapitel",
+  positionError: "Deine Schreibposition konnte auf diesem Gerät nicht gespeichert werden. Dein Text wird weiterhin wie gewohnt gespeichert.",
 };
 export function mobileMessages(locale: "en" | "de") { return locale === "de" ? de : en; }

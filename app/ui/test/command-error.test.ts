@@ -82,7 +82,7 @@ test("a banner can lift exactly the diagnostic out of a sentence built around it
   expect(headline).not.toContain("Technical details");
   expect(headline).not.toContain("..");
   // The caller's own recovery sentence after {error} survives.
-  expect(headline).toContain("The project you were in is still open.");
+  expect(headline).toContain("The book you were in is still open.");
   // Text this module did not write is left whole.
   expect(splitHostDetail("Technical details: typed by a writer")).toEqual({ headline: "Technical details: typed by a writer", detail: null });
 });

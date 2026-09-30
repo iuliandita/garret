@@ -84,6 +84,7 @@ function inertEditor(): Editor {
     commentsCapped: () => false,
     textIn: () => "",
     selectRange: () => false,
+    restoreSelection: () => undefined,
     selection: () => ({ from: 0, to: 0 }),
     selectionRect: (): SelectionBox | null => null,
     replaceMatch: () => false,

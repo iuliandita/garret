@@ -33,6 +33,29 @@
 // UNKNOWN once. Change a string here only with a rig run behind it.
 
 export const EN = {
+  "library.new-book.cancel": "Cancel",
+  "chrome.outline.close": "Close outline",
+  "prefs.focus.note": "Dim other paragraphs and fade the frame while you type. Move the pointer or press Escape to show it again.",
+  "prefs.typewriter.note": "Keep the line you are writing near the center of the pane as you type or move the caret.",
+  "prefs.mark-cast-names.note": "Underline names from your cast. Hover over a marked name or press Ctrl+Shift+I to show its entry.",
+  "library.pen-name.sort-note": "Optional. For Jane Smith, use Smith, Jane to sort by surname.",
+  "help.guide.heading": "Writing guide",
+  "help.shortcuts.heading": "Keyboard shortcuts",
+  "help.guide.structure.title": "Structure a book",
+  "help.guide.structure.body": "Use Outline > New scene to add a writing space. New chapter and New part group scenes. Select an item and use the Move commands to reorder or nest it. Delete moves manuscript items to the bin; select them there to Restore. Book overview shows titles, synopses and revision states together.",
+  "help.guide.annotate.title": "Annotate a passage",
+  "help.guide.annotate.body": "Select prose, then choose Edit > Add comment or press Ctrl+Alt+M. Edit > Comments lists the notes for the open scene and lets you return to a passage or resolve a note. Outline > Synopsis describes the selected scene or chapter rather than a passage.",
+  "help.guide.export.title": "Export the manuscript",
+  "help.guide.export.body": "File offers Markdown for readable text and Word for an editor. EPUB preview and PDF proof show the book with its publishing layout. Set Book design, Covers and Pen names before preparing a publication. Exports are copies; writing continues in the original book.",
+  "help.guide.protect.title": "Protect copies of your work",
+  "help.guide.protect.body": "Writing saves automatically. File > Back up now creates a recovery point on this device. Open the book settings through File > Open book to configure backups and archives, and keep a copy off this computer. A readable folder is useful for reading and exchange; it is not a full backup. Privacy lock conceals the window; it does not encrypt manuscript files.",
+  "menu.outline.group.create": "Add to the book",
+  "menu.outline.group.navigate": "Navigate",
+  "menu.outline.group.structure": "Arrange the outline",
+  "menu.outline.group.plan": "Plan scenes and cast",
+  "menu.outline.group.views": "Read and compare",
+  "menu.outline.group.review": "Review the book",
+  "editor.name": "Manuscript editor",
   // panel-shell.ts: the Close icon every anchored panel shares.
   "panel.close": "Close {title}",
   "help.about": "About {label}",
@@ -633,7 +656,7 @@ export const EN = {
   "history.row.compare": "Compare",
   "history.row.compare.label": "compare {version} with this scene as it is now",
   "history.done.restored": "Restored. The version you replaced is in this scene's history.",
-  "history.error.read": "Could not read this project's history: {error}",
+  "history.error.read": "Could not read this book's history: {error}",
   "history.error.compare": "Could not compare that version: {error}",
   "history.error.restore": "Could not restore: {error}",
   "history.error.unknown-rev": "This scene's revision is not known yet; nothing was restored.",
@@ -728,7 +751,7 @@ export const EN = {
   // Ctrl. `help.test.ts` parses `editor.ts`'s keymap and compares it against
   // what this panel claims, and it reads the claim through `SHORTCUTS`, so
   // these values are what that guard sees.
-  "help.heading": "Keyboard shortcuts",
+  "help.heading": "Help",
   "help.group.writing": "Writing",
   "help.group.moving": "Moving around",
   "help.group.find": "In the find panel",
@@ -827,7 +850,6 @@ export const EN = {
   "prefs.legend.size": "Size",
   "prefs.legend.width": "Width",
   "prefs.legend.goal": "Goal",
-  "prefs.legend.bible-rows": "Bible shortcuts",
   "prefs.legend.zoom": "Zoom",
   "prefs.legend.focus": "Focus",
   "prefs.legend.spelling": "Spelling",
@@ -850,7 +872,6 @@ export const EN = {
   "prefs.language.de": "Deutsch",
   "prefs.language.applied": "The language changes when the application is next opened.",
   "prefs.name.goal": "Daily goal",
-  "prefs.name.bible-rows": "visible Bible shortcuts",
   // What the window opens onto next launch. A <select>, LOCALES'
   // own reason -- each answer is a full sentence, not a short word a row
   // of buttons fits. The label itself stays SHORT (a review capture showed
@@ -867,9 +888,6 @@ export const EN = {
   "prefs.what.typography": "typography",
   "prefs.what.writing-modes": "writing modes",
   "prefs.what.daily-goal": "daily goal",
-  "prefs.what.bible-rows": "visible Bible shortcuts",
-  "bible.heading": "Bible",
-  "bible.folder.label": "Folder: {title}. Activate to expand or collapse.",
   "prefs.what.zoom": "zoom",
   "prefs.what.language": "language",
   "prefs.what.mark-cast-names": "cast names",
@@ -878,12 +896,12 @@ export const EN = {
   // This project's own spelling wordlist -- see store::dict and
   // commands/spell.rs. Beside the spelling toggle rather than a panel of its
   // own: the project bar is five controls wide and cannot take a sixth.
-  "prefs.dict.word.label": "add a word to this project's dictionary",
+  "prefs.dict.word.label": "add a word to this book's dictionary",
   "prefs.dict.add": "Add",
   "prefs.dict.remove": "Remove {word}",
   "prefs.dict.empty": "No words added yet.",
-  "prefs.dict.error.add": "Could not add {word} to this project's dictionary: {error}",
-  "prefs.dict.error.remove": "Could not remove {word} from this project's dictionary: {error}",
+  "prefs.dict.error.add": "Could not add {word} to this book's dictionary: {error}",
+  "prefs.dict.error.remove": "Could not remove {word} from this book's dictionary: {error}",
   "prefs.dict.note":
     "An underline already drawn stays until you edit that line; adding a word from the prose (select it) clears it at once.",
   // ---- find-bar.ts: find, replace and replace-everywhere ------------------
@@ -1124,7 +1142,7 @@ export const EN = {
   "appears.map.error.read": "Could not read who appears where: {error}",
 
   // ---- switcher.ts: the project panel -------------------------------------
-  "switcher.name.label": "New project name",
+  "switcher.name.label": "New book name",
   "switcher.create": "Create",
   // WHERE THE BOOK WILL GO, said before the writer commits, for its reason:
   // the resolved destination is the thing being consented
@@ -1140,8 +1158,8 @@ export const EN = {
   "switcher.import.show": "Show the import folder",
   "switcher.move": "Move this book\u2026",
   "switcher.move.hint": "Move the file and its pictures folder to another folder. The name stays.",
-  "switcher.loading": "Loading projects...",
-  "switcher.empty": "No projects in the library yet. Name one below and create it.",
+  "switcher.loading": "Loading books...",
+  "switcher.empty": "No books in the library yet. Name one below and create it.",
   "switcher.row.located": "{name}, {path}",
   "switcher.row.error": "{name} - {error}",
   "switcher.row.missing": "{name} - not found at {path}",
@@ -1149,12 +1167,12 @@ export const EN = {
   "switcher.forget": "Forget",
   "switcher.forget.label": "Forget {name}",
   "switcher.forget.hint": "Remove this book from the list. No file is touched.",
-  "switcher.error.list": "Could not list projects.",
-  "switcher.refuse.no-name": "Type a name for the new project, then Create.",
+  "switcher.error.list": "Could not list books.",
+  "switcher.refuse.no-name": "Type a name for the new book, then Create.",
   "switcher.import.heading": "Import",
   "switcher.import.list.label": "files to import",
-  "switcher.title": "Projects",
-  "switcher.rename.label": "the name of the open project",
+  "switcher.title": "Books",
+  "switcher.rename.label": "the name of the open book",
   // The button's tooltip AND its accessible description of what pressing it
   // does. The visible text is the book's title, which says what the control is
   // ABOUT and not what it does - the one case in this page where those differ.
@@ -1265,7 +1283,7 @@ export const EN = {
   "design.error.margin": "{typed} is not a measurement in millimetres.",
   "design.error.margin.unit": "{typed} is not a measurement in {unit}.",
   "design.error.save": "Book design not saved: {error}",
-  "design.transfer.heading": "Move book design between projects",
+  "design.transfer.heading": "Move book design between books",
   "design.transfer.export": "Export design file…",
   "design.transfer.preview": "Preview design file or salvage report…",
   "design.transfer.apply": "Apply these design changes",
@@ -1574,6 +1592,7 @@ export const EN = {
   "preview.refresh": "Refresh",
   "preview.save-as": "Save as\u2026",
   "preview.close": "Close",
+  "preview.options": "Book appearance",
   // ON DEMAND, and the line says why rather than leaving a writer wondering
   // whether the rail is broken. A full render is O(the manuscript) and this
   // application's keystroke path is measured and gated; a preview that
@@ -1641,7 +1660,7 @@ export const EN = {
   "menu.edit": "Edit",
   "menu.outline": "Outline",
   "menu.view.manuscript": "Manuscript view",
-  "menu.view.table": "Table view",
+  "menu.view.table": "Book overview",
   "menu.view.cards": "Cards view",
   "menu.view.reading": "Read manuscript",
   "menu.view.continuous": "Edit chapter continuously",
@@ -1688,7 +1707,7 @@ export const EN = {
   "menu.edit.key": "E",
   "menu.outline.key": "O",
   "menu.help.key": "H",
-  "outline-view.table": "Table",
+  "outline-view.table": "Book overview",
   "outline-view.cards": "Cards",
   "outline-view.return": "Return to editor",
   "outline-view.pages.label": "Outline pages",
@@ -1698,6 +1717,7 @@ export const EN = {
   "outline-view.page.other": "Page {page} of {pages}, {count} items",
   "outline-view.empty": "No manuscript items yet.",
   "outline-view.scope": "Manuscript order · Bin and bible excluded",
+  "outline-view.scroll-hint": "Scroll horizontally to see all columns.",
   "outline-view.column.title": "Title",
   "outline-view.column.type": "Type",
   "outline-view.column.state": "Revision",
@@ -1727,8 +1747,8 @@ export const EN = {
   "outline-view.type.front": "Front matter",
   "outline-view.type.back": "Back matter",
   "outline-view.type.matter": "Matter page",
-  "menu.project-new": "New project\u2026",
-  "menu.project-open": "Open project\u2026",
+  "menu.project-new": "New book\u2026",
+  "menu.project-open": "Open book\u2026",
   // ---- book-copy-prompt.ts -------------------------------------------------
   "book-copy.label": "Choose how to open this copy",
   "book-copy.heading": "This is a copy of a book you already opened",
@@ -1738,7 +1758,7 @@ export const EN = {
   "book-copy.separate": "Separate book",
   "book-copy.cancel": "Cancel",
   "book-copy.separate.unavailable": "Separate book is unavailable because the original file cannot be checked.",
-  "menu.project-rename": "Rename project\u2026",
+  "menu.project-rename": "Rename book\u2026",
   "menu.import": "Import\u2026",
   "menu.book-design": "Book design\u2026",
   "menu.covers": "Covers\u2026",
@@ -1810,7 +1830,7 @@ export const EN = {
   "menu.outline-undo.empty": "Undo outline change (nothing to undo)",
   "menu.outline-redo": "Redo {what}",
   "menu.outline-redo.empty": "Redo outline change (nothing to redo)",
-  "menu.shortcuts": "Keyboard shortcuts",
+  "menu.shortcuts": "Writing guide and shortcuts",
   "menu.shortcut.undo": "Ctrl+Z",
   "menu.shortcut.redo": "Ctrl+Shift+Z",
   "menu.shortcut.find": "Ctrl+F",
@@ -1974,7 +1994,7 @@ export const EN = {
   "outline.front-matter-title": "Front matter",
   "outline.back-matter-title": "Back matter",
   "outline.reason.parent-missing": "its parent {parentId} is not in the outline",
-  "outline.attempt": "{attempt} Your writing is untouched, and the outline below is what your project holds.",
+  "outline.attempt": "{attempt} Your writing is untouched, and the outline below is what your book holds.",
   "outline.attempt.create": "That item could not be added.",
   "outline.attempt.rename": "That item could not be renamed.",
   "outline.attempt.set-state": "That item's revision state could not be set.",
@@ -1992,9 +2012,9 @@ export const EN = {
   "outline.section-change.accept": "Move item",
   "outline.attempt.generic": "That change to the outline could not be made.",
   "outline.failed.command": "{attempt} ({command} failed: {error})",
-  "outline.failed.reread": "The outline could not be re-read from your project, so what you see below may be out of date. (project_items failed: {error})",
-  "outline.failed.read": "The outline could not be read from your project. (project_items failed: {error})",
-  "outline.failed.malformed": "That item could not be moved: your project and this page disagree about the shape of the outline. ({id}: {reason})",
+  "outline.failed.reread": "The outline could not be re-read from your book, so what you see below may be out of date. (project_items failed: {error})",
+  "outline.failed.read": "The outline could not be read from your book. (project_items failed: {error})",
+  "outline.failed.malformed": "That item could not be moved: your book and this page disagree about the shape of the outline. ({id}: {reason})",
   "outline.failed.no-bin": "The deleted-items folder could not be created, so nothing was deleted.",
   "outline.failed.no-bible": "The bible section could not be created, so no document was added.",
   "outline.failed.no-matter": "That section could not be created, so no page was added.",
@@ -2028,7 +2048,7 @@ export const EN = {
   "words.scene.other": "{count} words",
   "words.scene.spoken": "{display} in this scene",
   "words.project": "{figure} in the book",
-  "words.project.spoken": "{figure} saved in the project",
+  "words.project.spoken": "{figure} saved in the book",
   "words.progress.spoken": ", {progress}",
 
   // ---- goals.ts: the daily figure -----------------------------------------
@@ -2074,8 +2094,8 @@ export const EN = {
   "recovery.name.stale": "Recovery is stale: the last backup attempt failed {when}. The most recent good recovery point on this device is still from {earlier}.",
   "recovery.notice.done": "Recovery point taken on this device.",
   "recovery.notice.failed": "Could not take a recovery point: {error}",
-  "recovery.startup.point": "This project has a same-device recovery point from {when}. It sits beside the project file, so it is lost with the computer. Restoring it adds a NEW project and replaces nothing: open another project and use the recovery list in the project panel, or run `garret restore <point.point> <library-dir>` from a terminal.",
-  "recovery.startup.none": "There is no same-device recovery point for this project.",
+  "recovery.startup.point": "This book has a same-device recovery point from {when}. It sits beside the book file, so it is lost with the computer. Restoring it adds a NEW book and replaces nothing: open another book and use the recovery list in the book panel, or run `garret restore <point.point> <library-dir>` from a terminal.",
+  "recovery.startup.none": "There is no same-device recovery point for this book.",
 
   // ---- switcher.ts: restoring from a recovery point ----------------------
   // A RESTORE NEVER REPLACES ANYTHING. It makes a new project beside the one
@@ -2089,7 +2109,7 @@ export const EN = {
   // Name the image gap on older database-only points while describing the
   // complete folder required for new points.
   "switcher.recovery.note":
-    "Restoring adds a new project. Nothing is replaced. New recovery point folders include referenced original pictures. Older database-only points do not.",
+    "Restoring adds a new book. Nothing is replaced. New recovery point folders include referenced original pictures. Older database-only points do not.",
   "switcher.recovery.list.label": "recovery points",
   "switcher.recovery.row": "From {when}",
   "switcher.recovery.row.partial": "From {when} (manuscript available; some pictures incomplete)",
@@ -2098,10 +2118,10 @@ export const EN = {
   "switcher.recovery.partial.confirm": "Restore manuscript with picture gaps",
   "switcher.recovery.empty": "No recovery point has been taken on this device yet.",
   "switcher.recovery.error": "The recovery points could not be read.",
-  "switcher.recovery.done": "Restored as a new project: {name}",
-  "switcher.recovery.done.partial": "Restored as a new project: {name}. Some original pictures are missing or unverified; their references remain in the book.",
-  "switcher.recovery.done.legacy": "Restored as a new project: {name}. This older point did not include original pictures or covers.",
-  "switcher.legacy.notice": "Older recovery or readable folders could not be linked to this book. Open the project panel to inspect their locations.",
+  "switcher.recovery.done": "Restored as a new book: {name}",
+  "switcher.recovery.done.partial": "Restored as a new book: {name}. Some original pictures are missing or unverified; their references remain in the book.",
+  "switcher.recovery.done.legacy": "Restored as a new book: {name}. This older point did not include original pictures or covers.",
+  "switcher.legacy.notice": "Older recovery or readable folders could not be linked to this book. Open the book panel to inspect their locations.",
   "switcher.legacy.recovery.heading": "Older recovery folder to inspect",
   "switcher.legacy.recovery.note": "This preserved folder may belong to an older copy. Copy a .db file from it before opening that copy as a separate book for inspection.",
   "switcher.legacy.mirror.heading": "Older readable folder to inspect",
@@ -2156,7 +2176,7 @@ export const EN = {
   "switcher.archive.encrypted.verify": "Verify encrypted archive",
   "switcher.archive.encrypted.verified": "Encrypted archive verified: {file}",
   "switcher.archive.encrypted.restore": "Restore encrypted archive",
-  "switcher.archive.encrypted.restored": "Encrypted archive restored as a new project: {name}",
+  "switcher.archive.encrypted.restored": "Encrypted archive restored as a new book: {name}",
   "switcher.archive.encrypted.failed": "Encrypted archive action failed: {error}",
 
   // ---- mirror ------------------------------------------------------------
@@ -2169,7 +2189,7 @@ export const EN = {
   "switcher.mirror.note":
     "The mirror keeps your manuscript as ordinary Markdown files, one per scene, within ten seconds of what you have typed. It is a copy to read and edit elsewhere, not a backup: it is on this computer, and this application writes it rather than reading it back.",
   "switcher.mirror.where": "The mirror is written to {dir}",
-  "switcher.mirror.off": "The mirror is off for this project.",
+  "switcher.mirror.off": "The mirror is off for this book.",
   "switcher.mirror.on.one": "{count} file, last written {when}.",
   "switcher.mirror.on.other": "{count} files, last written {when}.",
   "switcher.mirror.pending": "The mirror is on. Nothing has been written yet.",
@@ -2188,9 +2208,9 @@ export const EN = {
   "switcher.mirror.preview.pin.pinned": "This book has a pinned pen name. Names and aliases of the other known identities were checked.",
   "switcher.mirror.preview.pin.stale": "This book's pinned pen name is older than the private list. The pin was not changed by this preview.",
   "switcher.mirror.preview.scope.destination": "Resolved destination path",
-  "switcher.mirror.preview.scope.project_name": "Project name and mirror manifest",
+  "switcher.mirror.preview.scope.project_name": "Book name and mirror manifest",
   "switcher.mirror.preview.scope.markdown": "Rendered file names, headings and prose",
-  "switcher.mirror.preview.scope.wordlist": "Project wordlist",
+  "switcher.mirror.preview.scope.wordlist": "Book wordlist",
   "switcher.mirror.preview.state.ran": "Known other-identity names and aliases were checked. Review the findings below before enabling.",
   "switcher.mirror.preview.state.clear": "No known other-identity names or aliases were found in the checked files. This cannot rule out names missing from the private list.",
   "switcher.mirror.preview.state.vacuous": "There was no emitted text to compare. This is not a clean identity check.",
@@ -2256,7 +2276,7 @@ export const EN = {
     "The readable folder matches what you have typed. One file is worth a look: {where}",
   "mirror.name.unavailable": "The readable folder matches what you have typed, but its identity check is unavailable. Inspect the folder before sharing or syncing it.",
   "mirror.name.not_applicable": "The readable folder matches what you have typed. No known pen names or aliases were available for comparison, so identity exposure was not checked.",
-  "mirror.name.off": "No readable folder is being written for this project",
+  "mirror.name.off": "No readable folder is being written for this book",
 
   // ---- mirror-changes.ts --------------------------------------------------
   // THE DIRECTION IS SAID FOUR TIMES -- row summary, row accessible name, diff
@@ -2337,7 +2357,7 @@ export const EN = {
   "mirror.changes.undo.name": "Undo taking the words into {title}",
   "mirror.changes.undo.note": "Undo restores the words in {title}. Orphaned comments stay orphaned.",
   "mirror.changes.undo.error": "Could not undo taking the words in: {error}",
-  "mirror.changes.undo.error.destroyed": "This project is no longer open.",
+  "mirror.changes.undo.error.destroyed": "This book is no longer open.",
   "mirror.changes.undo.error.busy": "Another undo is still running.",
   "mirror.changes.undo.error.opening": "A document is still opening.",
   "mirror.changes.undo.error.unsaved": "Your latest changes could not be saved. Undo is unavailable.",
@@ -2388,7 +2408,7 @@ export const EN = {
   "nav.appearances.described": "Has tagged people, places, or things",
   "nav.history.no-back": "Nothing earlier to go back to.",
   "nav.history.no-forward": "Nothing further forward.",
-  "loading.opening": "Opening the project...",
+  "loading.opening": "Opening the book...",
   "banner.dismiss": "dismiss this message",
   "banner.details": "Details",
   "project.error.persist": "Not saved: {message} Editing is paused, and your latest changes are only in this window.",
@@ -2509,12 +2529,12 @@ export const EN = {
   "library.timing.words": "Words {ms} ms",
   "library.done.book-created": "{name} created.",
   "help.library": "Open the library",
-  "switch.error.closed": "Could not open {path}: {error}. The previous project was closed, so nothing is open. Choose a project to continue.",
-  "switch.error.kept": "Could not switch to {path}: {error}. The project you were in is still open.",
+  "switch.error.closed": "Could not open {path}: {error}. The previous book was closed, so nothing is open. Choose a book to continue.",
+  "switch.error.kept": "Could not switch to {path}: {error}. The book you were in is still open.",
 
   // ---- main.ts: the surface a writer sees when nothing else could be built -
-  "startup.failed.title": "This project could not be opened",
-  "startup.failed.advice": "Your work is not lost: the project file itself is untouched. Close this window and open a different project. To look at this one without opening it, run the application from a terminal: `garret validate <project.db>`, or `salvage <project.db> <out-dir>` to write out what can be recovered.",
+  "startup.failed.title": "This book could not be opened",
+  "startup.failed.advice": "Your work is not lost: the book file itself is untouched. Close this window and open a different book. To look at this one without opening it, run the application from a terminal: `garret validate <project.db>`, or `salvage <project.db> <out-dir>` to write out what can be recovered.",
 
   // ---- close-prompt.ts: the blocking prompt at close with a failed autosave
   "close-prompt.heading": "Unsaved work",

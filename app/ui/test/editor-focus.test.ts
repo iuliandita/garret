@@ -62,3 +62,30 @@ test("unionSelectionRect: collapsed asks nothing, a throw is null, one line unio
   ).toBeNull();
   expect(unionSelectionRect(1, 4, () => ({ left: 0, top: 0, right: 0, bottom: 0 }))).toBeNull();
 });
+
+
+test("the shared editor is a named multiline text box, including an empty scene", () => {
+  const editor = mountEditor("");
+  const dom = document.querySelector("#editor .ProseMirror") as HTMLElement;
+  expect(dom.getAttribute("role")).toBe("textbox");
+  expect(dom.getAttribute("aria-label")).toBe("Manuscript editor");
+  expect(dom.getAttribute("aria-multiline")).toBe("true");
+  editor.destroy();
+});
+
+test("restoreSelection restores a caret, clamps stale endpoints and changes no prose or scroll", () => {
+  let changes = 0;
+  const editor = mountEditor("one two three", { onChange: () => changes++ });
+  const pane = document.querySelector("#editor") as HTMLElement;
+  pane.scrollTop = 80;
+  editor.restoreSelection(5, 5);
+  expect(editor.selection()).toEqual({ from: 5, to: 5 });
+  editor.restoreSelection(-10, 9000);
+  expect(editor.selection()).toEqual({ from: 1, to: 14 });
+  editor.restoreSelection(Number.NaN, Number.POSITIVE_INFINITY);
+  expect(editor.selection()).toEqual({ from: 1, to: 1 });
+  expect(pane.scrollTop).toBe(80);
+  expect(changes).toBe(0);
+  expect(editor.textIn(1, 14)).toBe("one two three");
+  editor.destroy();
+});

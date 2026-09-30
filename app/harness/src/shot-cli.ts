@@ -446,7 +446,8 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { pinBook, plantDemoIdentities } from "./demo-vault";
 import { parseFirstRun } from "./first-run";
-import { resolveFixtureDir } from "./fixture-name";
+import { CLASSIC_FIXTURES, isClassicFixture, resolveFixtureDir } from "./fixture-name";
+import { pinClassicBook, writeClassicVault } from "./classic-identities";
 import { catalogText, KEY_STEP_MS, menuChord, menuDriver, type MenuId } from "./menu-drive";
 import { centreOf, locateNodes } from "./nodes";
 import { assertOutlineViewShown, outlineRows, type OutlineBox, PY_OUTLINE_VIEW } from "./outline-shot-check";
@@ -1978,7 +1979,7 @@ const FIXTURE = resolveFixtureDir(options.fixture);
 // planting it over `sample`'s real content would bury the very thing that
 // fixture exists to show. Every site below skips its plant under `sample` and
 // opens the panel on what is there instead.
-const isSample = options.fixture === "sample";
+const isSample = options.fixture === "sample" || isClassicFixture(options.fixture);
 
 if (process.env.APP_GUI !== "1") {
   console.log("APP_GUI=1 not set; screenshot skipped (needs a display and a built shell).");
@@ -2154,20 +2155,32 @@ if (options.firstRun === null && !options.blank && !options.libraryEmpty) {
  *  actually hides something. `DEMO_VAULT`, `plantDemoIdentities` and
  *  `pinBook` live in `demo-vault.ts`, shared with `preflight-cli.ts`. */
 const libraryExtraPaths: string[] = [];
-if (options.library) {
-  plantDemoIdentities(appDataHome, projectPath);
-  for (const name of ["second-book", "third-book"]) {
+if (isClassicFixture(options.fixture) && options.firstRun === null && !options.blank && !options.libraryEmpty && !options.identitiesEmpty) {
+  writeClassicVault(appDataHome, options.identitiesRepin ? options.fixture : undefined);
+  pinClassicBook(projectPath, options.fixture);
+}
+if (options.library || (isClassicFixture(options.fixture) && options.projects)) {
+  const classics = isClassicFixture(options.fixture);
+  if (!classics) plantDemoIdentities(appDataHome, projectPath);
+  const extraNames = classics
+    ? CLASSIC_FIXTURES.filter((name) => name !== options.fixture)
+    : ["second-book", "third-book"];
+  for (const name of extraNames) {
     const extra = join(workDir, `${name}.db`);
-    const seeded = Bun.spawnSync([BIN, "--seed", FIXTURE, extra], { stdout: "inherit", stderr: "inherit" });
+    const fixture = classics ? resolveFixtureDir(name) : FIXTURE;
+    const seeded = Bun.spawnSync([BIN, "--seed", fixture, extra], { stdout: "inherit", stderr: "inherit" });
     if (seeded.exitCode !== 0) {
       console.error(`seeding ${name} failed (exit ${seeded.exitCode}).`);
       cleanup();
       process.exit(1);
     }
     libraryExtraPaths.push(extra);
+    if (classics) pinClassicBook(extra, name);
   }
-  pinBook(libraryExtraPaths[0]!, "i1");
-  pinBook(libraryExtraPaths[1]!, "i2");
+  if (!classics) {
+    pinBook(libraryExtraPaths[0]!, "i1");
+    pinBook(libraryExtraPaths[1]!, "i2");
+  }
 }
 if (options.librarySeries || options.hostError) {
   for (const path of [projectPath, ...libraryExtraPaths]) {
@@ -2185,7 +2198,7 @@ if (options.librarySeries || options.hostError) {
 // reads `list_known` (the library scan plus `settings.books`). Without this
 // line the first capture showed two pen names and "No books yet." over three
 // seeded books. `--ghost-book`'s own route, with real files.
-if (options.library || options.libraryOverBook) {
+if (options.library || options.libraryOverBook || (isClassicFixture(options.fixture) && options.projects)) {
   const settingsPath = join(appDataHome, "cc.local.app", "settings.json");
   const settings = JSON.parse(readFileSync(settingsPath, "utf8")) as Record<string, unknown>;
   settings.books = [projectPath, ...libraryExtraPaths];
@@ -2486,7 +2499,7 @@ function plantDemoReview(path: string): void {
   }
 }
 
-function plantDemoComments(path: string): string {
+function plantDemoComments(path: string, classic: boolean): string {
   const db = new Database(path);
   try {
     const row = db
@@ -2524,6 +2537,14 @@ function plantDemoComments(path: string): string {
          (item_id, body, anchor_from, anchor_to, quote, resolved_at, created_at, updated_at)
        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)`,
     );
+    if (classic) {
+      const quote = cut(0, Math.min(text.length, 60));
+      insert.run(row.id, "Sample editorial note: preserve the original wording and punctuation.",
+        quote[0], quote[1], quote[2], null, now - 4 * 60_000);
+      insert.run(row.id, "Sample source check: compared this opening with the retained edition.",
+        quote[0], quote[1], quote[2], now, now - 90 * 60_000);
+      return row.id;
+    }
     insert.run(row.id, "Is she looking at it, or past it?", live[0], live[1], live[2], null, now - 4 * 60_000);
     insert.run(row.id, "Fixed - the tense agrees now.", settled[0], settled[1], settled[2], now, now - 90 * 60_000);
     // The orphan: a collapsed pair, which is exactly what the mapping leaves
@@ -2894,7 +2915,7 @@ if (options.craftKnowledge || options.craftReports) plantCraftDemo(projectPath);
 // that node six characters long. Run the other way round, --comments-demo
 // refuses the fixture it was about to annotate. Positions are unmoved by the
 // split, so the anchors planted here still cover the words they name.
-if (options.commentsDemo) plantDemoComments(projectPath);
+if (options.commentsDemo) plantDemoComments(projectPath, isClassicFixture(options.fixture));
 if (options.reviewDemo) plantDemoReview(projectPath);
 // SUPPRESSED UNDER `sample`: that fixture carries a real cast already,
 // and planting the demo one over it would bury the thing the capture is meant
@@ -2921,7 +2942,9 @@ if (options.covers) plantDemoCovers(projectPath);
 // --identities-empty SUPPRESSES THE PLANT, which is --covers-empty's lever: an
 // empty vault is the state every library is in today and it is a different
 // picture, not a different panel.
-if (options.identities) plantDemoIdentities(appDataHome, projectPath, options.identitiesRepin);
+if (options.identities && !isClassicFixture(options.fixture)) {
+  plantDemoIdentities(appDataHome, projectPath, options.identitiesRepin);
+}
 if (options.warningHistory) {
   const db = new Database(projectPath);
   try {
@@ -3243,11 +3266,10 @@ try {
       if (options.prefs && options.prefsScroll > 0) {
         // --preview-scroll's own mechanism: the real pointer and a bare wheel
         // click (a `--window` click is synthetic and WebKit ignores it for
-        // scrolling). The point is inside #prefs-panel, restated from
-        // style.css: 384px wide, 12px from the right of the default 1200px
-        // window, hung below the 39px header.
+        // scrolling). Aim inside the panel at the actual capture width.
         await Bun.sleep(PAINT_SETTLE_MS);
-        xdo(display, ["mousemove", String(1200 - 12 - 192), "300"]);
+        const prefsWidth = Math.min(480, geometry.width - 24);
+        xdo(display, ["mousemove", String(Math.round(geometry.width - 12 - prefsWidth / 2)), "300"]);
         for (let n = 0; n < options.prefsScroll; n += 1) {
           xdo(display, ["click", "5"]);
           await Bun.sleep(20);
