@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo=$(cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$repo"
+out=app/dist-site
+mkdir -p "$out/images" "$out/brand"
+cp site/index.html site/style.css "$out/"
+for image in editor-light dark cast timeline review epub android-editor-light android-editor-dark; do
+  cp "docs/screenshots/$image.png" "$out/images/"
+done
+cp assets/brand/garret/garret-wordmark-{ink,paper}.png "$out/brand/"
+cp assets/brand/garret/garret-appicon-light.png "$out/brand/"
