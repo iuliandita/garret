@@ -474,9 +474,10 @@ pub(crate) async fn encrypted_archive_create(
         }
     }
     if dest == key_path { return Err("archive destination is the recovery key".into()); }
+    let stage_home = data_home.0.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
         let _passing = crate::recovery::PASSING.lock().map_err(|_| "backup is busy")?;
-        crate::encrypted_archive::create_from_project(&source, &dest, &key)
+        crate::encrypted_archive::create_from_project(&source, &dest, &key, &stage_home)
     }).await.map_err(|_| "encrypted archive task failed")??;
     Ok(Some(result))
 }
