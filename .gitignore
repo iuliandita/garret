@@ -6,5 +6,6 @@ app/dist-macos/
 app/dist-android/
 app/dist-samples/
 app/dist-site/
+app/dist-release/
 # Screenshots captured by the harness rigs during development.
 app/results/screenshots/

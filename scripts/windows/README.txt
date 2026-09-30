@@ -2,8 +2,9 @@ garret - Windows test preview
 =============================
 
 This is garret, an unfinished writing studio, shared for testing. This build
-is unsigned and has NOT been verified on a real Windows machine. Please use
-a sample manuscript or a copy of your work, and keep your original backup.
+is unsigned. Testers have run garret successfully on Windows with no issues
+reported. Please use a sample manuscript or a copy of your work, and keep
+your original backup.
 
 Running it
 ----------
@@ -55,7 +56,8 @@ key separately, create an archive, and restore it into a new location. Losing
 all copies of the key makes the encrypted archive unreadable. This does not
 encrypt the live manuscript, its ordinary recovery copies or readable mirror.
 
-These features are implemented; their Windows behavior still needs testing.
+These features are implemented. Further Windows testing and feedback help
+cover different machines and workflows.
 
 Known Windows limitations
 -------------------------
@@ -67,8 +69,8 @@ Known Windows limitations
 - A per-user single-instance guard is implemented, but its native Windows
   behavior remains unverified. Check that a second launch does not create a
   second running editor; use only one copy at a time.
-- Window rendering, scaling, accessibility, printing and sleep/resume have
-  not been verified on a real Windows machine.
+- Scaling, accessibility, printing and sleep/resume have not been separately
+  certified across Windows configurations.
 
 Where your work lives
 ---------------------

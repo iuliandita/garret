@@ -87,6 +87,53 @@ Do not squash or rebase these branch-to-branch PRs. Both branches still require
 PRs and passing `interface` and `host` checks, including for administrators.
 Force pushes and branch deletion remain blocked.
 
+## Alpha testing releases
+
+The **Alpha builds** workflow packages Linux x86_64, Windows x86_64, Android
+arm64/x86_64, and macOS for Apple Silicon and Intel. Packaging changes are
+built on pull requests. **Run workflow** makes testing artifacts without
+publishing a release. Android artifacts from these build-only runs use a
+disposable signing key; use the published release APK for updates.
+
+To prepare the first release, the source version is `0.0.1`. For later releases:
+
+```sh
+python3 scripts/release.py set-version 0.0.2
+```
+
+Commit the changed Cargo manifest/lockfile and Tauri configuration files through
+a PR into `develop`. Wait for CI to pass on the resulting `develop` commit.
+Then create and push an annotated tag from that exact commit:
+
+```sh
+git switch develop
+git pull --ff-only
+git tag -a v0.0.1 -m "garret 0.0.1 alpha"
+git push origin v0.0.1
+```
+
+Replace the version in both commands for subsequent releases. Tags in `v0.x.y`
+are alpha prereleases, even without an `-alpha` suffix. Each version must match
+the checked-in source. Stable `v1.x.y` releases are a separate release policy.
+
+A tag starts the builds. Only after every platform succeeds does the workflow
+assemble a draft release, verify all download checksums, and publish it as a
+prerelease. No partial set is published, and an existing public release is not
+replaced. A failed upload leaves a draft that a rerun can finish. Use a new
+version to replace a public build.
+
+Android tag builds require repository secrets `ANDROID_KEYSTORE_BASE64` and
+`ANDROID_KEYSTORE_PASSWORD`, containing the retained testing keystore and its
+password. The keystore uses alias `preview`. Keep an offline copy: a new key
+cannot update an app installed with the old one. Release builds refuse missing
+signing material. Keys are restored only for tag builds and removed from the
+runner afterward. No app store or paid signing account is required.
+
+macOS packages use ad-hoc signing without notarization. They need native tester
+feedback; successful packaging does not certify platform behavior. Windows
+packages use `scripts/package-windows-native.ps1` on a native Windows builder;
+`scripts/package-windows` remains available for local Linux cross-builds.
+
 ## Commit style
 
 Conventional commits: `type(scope): description`, for example

@@ -44,7 +44,8 @@ builds both native architectures, signs with a retained private local key,
 checks signature/alignment, and writes a source-bound directory under
 `app/dist-android/`. The key and its password live in `$ANDROID_SIGNING_DIR`
 (default `~/.config/garret/android-signing`), outside the checkout; a missing
-key is generated on first use. Keep the signing key and password private and backed up;
+key is generated on first local use. CI release builds refuse missing signing
+material; build-only CI runs explicitly use a disposable key. Keep the signing key and password private and backed up;
 losing them prevents in-place updates. Do not share generated signing material.
 
 ## Isolated runtime check

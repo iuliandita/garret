@@ -75,6 +75,14 @@ soon. For now, you can [build garret from source](#building-from-source-linux).
   <img src="docs/screenshots/android-editor-dark.png" alt="Android writing view in dark mode" width="240">
 </p>
 
+## Testing builds
+
+Download alpha builds from [GitHub Releases](https://github.com/iuliandita/garret/releases).
+Choose the download for your device, extract the whole desktop package, and
+follow the included instructions. Android uses an APK; the phone app has fewer
+features and does not sync books automatically. Keep a backup before trying a
+new build.
+
 ## Building from source (Linux)
 
 You need [Bun](https://bun.sh), a stable Rust toolchain, and the

@@ -27,6 +27,7 @@ bin="$repo/app/shell-tauri/src-tauri/target/release/garret"
 (cd "$repo/app/ui" && bun run build)
 # Tauri requires frontendDist to exist; appdist serves the real UI separately.
 mkdir -p "$repo/app/shell-tauri/dist"
+cp -R "$repo/app/ui/dist/." "$repo/app/shell-tauri/dist/"
 (cd "$repo/app/shell-tauri/src-tauri" && cargo build --locked --release -j8 --target-dir "$repo/app/shell-tauri/src-tauri/target")
 
 [ -x "$bin" ] || { echo "no binary at $bin" >&2; exit 1; }
@@ -52,6 +53,7 @@ cp "$here/linux/README.txt" "$stage/README.txt"
 cp "$repo/COPYING" "$repo/THIRD-PARTY-NOTICES.md" "$stage/"
 {
   printf 'Source revision: %s\n' "$revision"
+  printf 'Application version: %s\n' "$(python3 "$here/release.py" check)"
   printf 'Architecture: Linux x86_64\nMinimum glibc: %s\n' "${floor#GLIBC_}"
   printf 'Built UTC: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   printf 'Runtime: system WebKitGTK 4.1 and GTK 3\n'

@@ -44,6 +44,7 @@ bundle_version=$(bun -e 'const c = await Bun.file(process.argv[1]).json(); conso
 (cd "$repo/app/ui" && bun run build)
 # Tauri requires frontendDist to exist; appdist serves the real UI separately.
 mkdir -p "$repo/app/shell-tauri/dist"
+cp -R "$repo/app/ui/dist/." "$repo/app/shell-tauri/dist/"
 (cd "$repo/app/shell-tauri/src-tauri" && cargo build --locked --release -j8 --target "$target" --target-dir "$repo/app/shell-tauri/src-tauri/target")
 bin="$repo/app/shell-tauri/src-tauri/target/$target/release/garret"
 [[ -x "$bin" && -f "$repo/app/ui/dist/index.html" ]] || fail "The executable or rebuilt interface is missing."
@@ -104,6 +105,7 @@ plutil -lint "$bundle/Contents/Info.plist"
 codesign --force --sign - --timestamp=none "$bundle"
 codesign --verify --strict --verbose=2 "$bundle"
 {
+  printf 'Application version: %s\n' "$bundle_version"
   printf 'Source revision: %s\nTarget: %s\n' "$revision" "$target"
   printf 'Built UTC: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   printf 'Minimum macOS from executable: %s\n' "$minimum"

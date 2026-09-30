@@ -12,6 +12,12 @@ fi
 
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/garret-android-build"
 keys="${ANDROID_SIGNING_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/garret/android-signing}"
+if [[ ${CI:-} == true && ${ANDROID_ALLOW_NEW_KEY:-0} != 1 ]]; then
+  [[ -s "$keys/preview.jks" && -s "$keys/password" ]] || {
+    echo "release signing key/password missing; refusing to generate a replacement" >&2
+    exit 1
+  }
+fi
 out="$repo/app/dist-android/$revision"
 mkdir -p "$cache/cargo" "$cache/builder" "$keys" "$out"
 chmod 700 "$keys"
@@ -70,6 +76,7 @@ cp "$unsigned" "$out/unsigned.apk"
 unset APK_SIGNING_PASSWORD
 {
   printf 'Source revision: %s\n' "$revision"
+  printf 'Application version: %s\n' "$(python3 "$here/release.py" check)"
   printf 'Architectures: Android arm64-v8a and x86_64\n'
   printf 'Minimum Android API: 24\n'
   printf 'Built UTC: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
