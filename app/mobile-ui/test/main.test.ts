@@ -32,6 +32,18 @@ test("a long Library exposes New book before its list and loads the device's rem
   try {
     await import("../src/main");
     await waitFor(() => app.querySelectorAll("nav button").length === 100);
+    const appearance = app.querySelector<HTMLButtonElement>(".mobile-appearance")!;
+    const firstTheme = app.querySelector<HTMLElement>(".mobile-library")!.dataset.theme;
+    const firstIcon = appearance.querySelector("path")!.getAttribute("d");
+    expect(appearance.textContent).toBe("");
+    expect(appearance.getAttribute("aria-label")).toBe(`Appearance: ${firstTheme === "dark" ? "Light" : "Dark"}`);
+    expect(appearance.querySelector("svg")!.getAttribute("aria-hidden")).toBe("true");
+    appearance.click();
+    await waitFor(() => app.querySelectorAll("nav button").length === 100);
+    const switched = app.querySelector<HTMLButtonElement>(".mobile-appearance")!;
+    expect(app.querySelector<HTMLElement>(".mobile-library")!.dataset.theme).toBe(firstTheme === "dark" ? "light" : "dark");
+    expect(switched.getAttribute("aria-label")).toBe(`Appearance: ${firstTheme === "dark" ? "Dark" : "Light"}`);
+    expect(switched.querySelector("path")!.getAttribute("d")).not.toBe(firstIcon);
     const form = app.querySelector("form")!;
     const list = app.querySelector("nav")!;
     expect(form.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);

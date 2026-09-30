@@ -28,6 +28,8 @@ const NAMES: IconName[] = [
   "circle-check",
   "x",
   "circle-help",
+  "sun",
+  "moon",
 ];
 
 beforeEach(() => {
