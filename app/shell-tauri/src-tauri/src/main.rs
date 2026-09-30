@@ -3395,7 +3395,7 @@ fn resolve_asset_root(env_dist: Option<&Path>, exe: Option<&Path>) -> AssetRoot 
     let Some(exe_dir) = exe.and_then(Path::parent) else {
         return AssetRoot::Missing(Vec::new());
     };
-    let candidates = [
+    let mut candidates = vec![
         exe_dir.join("dist"),
         // The repo layout, so a `cargo build` binary at
         // app/shell-tauri/src-tauri/target/release/ finds app/ui/dist with no
@@ -3403,6 +3403,10 @@ fn resolve_asset_root(env_dist: Option<&Path>, exe: Option<&Path>) -> AssetRoot 
         // shell-tauri -> app. A development convenience, and only that.
         exe_dir.join("../../../../ui/dist"),
     ];
+    // macOS seals resources separately from executable code inside app bundles.
+    if exe_dir.ends_with("Contents/MacOS") {
+        candidates.insert(1, exe_dir.join("../Resources/dist"));
+    }
     match candidates.iter().find(|c| is_build(c)) {
         Some(found) => AssetRoot::Found(found.clone()),
         None => AssetRoot::Missing(candidates.to_vec()),
@@ -8234,6 +8238,20 @@ mod tests {
             resolve_asset_root(None, Some(&exe)),
             AssetRoot::Found(beside)
         );
+    }
+
+    #[test]
+    fn the_page_is_found_in_macos_bundle_resources() {
+        let dir = tempdir().unwrap();
+        let exe = dir.path().join("garret.app/Contents/MacOS/garret");
+        std::fs::create_dir_all(exe.parent().unwrap()).unwrap();
+        let resources = built_dist(dir.path().join("garret.app/Contents/Resources/dist"));
+        match resolve_asset_root(None, Some(&exe)) {
+            AssetRoot::Found(found) => assert_eq!(found.canonicalize().unwrap(), resources.canonicalize().unwrap()),
+            other => panic!("expected bundle resources, got {other:?}"),
+        }
+        let override_dir = built_dist(dir.path().join("staged"));
+        assert_eq!(resolve_asset_root(Some(&override_dir), Some(&exe)), AssetRoot::Found(override_dir));
     }
 
     #[test]

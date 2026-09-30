@@ -27,7 +27,7 @@ Extract the complete ZIP. Keep the README, BUILD.txt and checksums. Move
 garret.app to a writable location if desired and double-click it.
 Use the architecture named in BUILD.txt: arm64 for Apple Silicon or x86_64
 for Intel. This is not a universal binary. Keep the application bundle
-intact; the interface lives beside the executable inside its Contents folder.
+intact; the interface lives in Contents/Resources/dist.
 No Rust, Bun or development tools are required just to run a supplied app.
 
 The bundle has an ad-hoc integrity signature only. It has no trusted signing
