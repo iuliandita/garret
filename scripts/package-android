@@ -45,7 +45,7 @@ fi
 (cd "$repo/app/mobile-ui" && bun run build)
 "${container[@]}" garret-android tauri android init --ci --skip-targets-install
 python3 "$here/android/prepare.py"
-"${container[@]}" garret-android nice -n 10 tauri android build --ci --apk --target aarch64 x86_64
+"${container[@]}" garret-android nice -n 10 tauri android build --ci --apk --target aarch64 x86_64 -- --locked
 
 if [[ $(git -C "$repo" rev-parse HEAD) != "$revision" || -n $(git -C "$repo" status --porcelain) ]]; then
   echo "source changed during the build; refusing to label this package" >&2
