@@ -5,8 +5,14 @@
   </picture>
 </p>
 
-garret is a local-first desktop writing studio for novelists. It runs offline,
-needs no account, and keeps every book as a file on your own disk.
+## A writing studio for the whole book.
+
+**garret** <img src="assets/brand/garret/garret-middle-dot.svg" alt="·" width="8" height="16"> is a powerful writing studio for novelists, completely free and open
+source. It brings your manuscript, story planning, research, and revisions
+into one app.
+
+There are no subscriptions or paid feature unlocks. You don't need an account
+or an internet connection to write. Your books stay on your own disk.
 
 > **Early alpha.** garret moves fast; keep backups of your work.
 
@@ -14,20 +20,43 @@ needs no account, and keeps every book as a file on your own disk.
 
 [Full screenshot gallery](docs/screenshots/README.md) | [Sample books](app/fixtures/classics/README.md)
 
-## What it does
+## Write, plan, and revise
 
-- Books with parts, chapters and scenes; a navigator, an outline table and cards.
-- A calm prose editor with formatting, undo/redo, search, comments and history.
-- A story bible: synopses, cast, appearances, a timeline, pictures and covers.
-- Revision passes and tasks, series, optional session analytics, and local
-  craft and consistency reports.
-- Knowledge links and research files copied into the project.
-- Export to Markdown, DOCX and EPUB, plus a PDF proof copy; DOCX review
-  documents can go out and come back with their changes attributed.
-- Recovery copies, salvage of damaged files, a readable mirror folder, and
-  encrypted portable archives with a separate recovery key.
-- Light and dark themes; English and German.
-- An optional privacy lock that hides the app behind a PIN.
+Write in a calm editor with formatting, book-wide search, undo/redo, and
+scene history. Arrange parts, chapters, and scenes with outlines and cards.
+Choose light or dark mode, in English or German.
+
+### Keep the story straight
+
+Build a story bible for your world, notes, and continuity rules. Keep character
+profiles, aliases, pictures, and appearances alongside your manuscript. Write
+scene synopses, connect research files, and use the timeline to follow events
+across character and story tracks.
+
+![Story timeline in garret](docs/screenshots/timeline.png)
+
+### Work with your editor
+
+Send a DOCX review document to your editor and import the returned changes
+with attribution. Accept or reject proposals in garret, keep comments attached
+to the text, and organize the next draft into revision passes and tasks.
+
+![Attributed editorial review in garret](docs/screenshots/review.png)
+
+### Prepare the book
+
+Export to Markdown, DOCX, or EPUB, or make a PDF proof copy. Set up book design,
+front and back matter, covers, and pen names before exporting.
+
+### Keep control of your work
+
+Books live on your own disk. Recovery copies, scene history, salvage tools,
+and a readable mirror folder help you recover work. Encrypted portable archives
+include a separate recovery key. An optional PIN lock conceals the app when
+you step away; it does not encrypt manuscript files.
+
+Series, optional session analytics, and local craft and consistency reports
+are included too. All of these tools are free.
 
 ## Platforms
 
@@ -37,6 +66,9 @@ needs no account, and keeps every book as a file on your own disk.
 | Windows | x86_64, WebView2 |
 | Android | Writing and editing on the go |
 | macOS | In progress |
+
+Downloadable, installable versions for Linux, Windows, and Android are coming
+soon. For now, you can [build garret from source](#building-from-source-linux).
 
 <p>
   <img src="docs/screenshots/android-editor-light.png" alt="Android writing view in light mode" width="240">
@@ -63,15 +95,8 @@ launcher. Release-style packages come from `scripts/package-linux`,
 
 ## Checks
 
-```sh
-bun test ./app                                   # interface and harness tests
-bunx tsc --noEmit -p app/tsconfig.json           # typecheck
-cd app/shell-tauri/src-tauri && cargo test --bin garret
-```
-
-`app/harness` drives the real app under Xvfb and AT-SPI to grade latency,
-persistence and interface behavior; `app/results` holds the recorded
-measurements. `lab` holds the frozen prototypes that chose the stack.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, checks, and
+pull request instructions.
 
 ## Where your work lives
 
