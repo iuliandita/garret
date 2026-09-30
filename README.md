@@ -67,6 +67,9 @@ are included too. All of these tools are free.
 | Android | Writing and editing on the go |
 | macOS | In progress |
 
+Downloadable, installable versions for Linux, Windows, and Android are coming
+soon. For now, you can [build garret from source](#building-from-source-linux).
+
 <p>
   <img src="docs/screenshots/android-editor-light.png" alt="Android writing view in light mode" width="240">
   <img src="docs/screenshots/android-editor-dark.png" alt="Android writing view in dark mode" width="240">
