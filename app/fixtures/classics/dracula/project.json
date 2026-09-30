@@ -1,0 +1,128 @@
+{
+  "meta": {
+    "name": "Dracula",
+    "seed": "sample-v1"
+  },
+  "items": [
+    {
+      "id": "sc-000000",
+      "type": "part",
+      "title": "Opening chapters",
+      "parentId": null
+    },
+    {
+      "id": "sc-000001",
+      "type": "chapter",
+      "title": "Chapter I: Jonathan Harker's Journal",
+      "parentId": "sc-000000"
+    },
+    {
+      "id": "sc-000002",
+      "type": "scene",
+      "title": "3 May: Bistritz",
+      "parentId": "sc-000001"
+    },
+    {
+      "id": "sc-000003",
+      "type": "scene",
+      "title": "4 May: The Crucifix",
+      "parentId": "sc-000001"
+    },
+    {
+      "id": "sc-000004",
+      "type": "scene",
+      "title": "5 May: The Borgo Pass",
+      "parentId": "sc-000001"
+    },
+    {
+      "id": "sc-000005",
+      "type": "chapter",
+      "title": "Chapter II: Jonathan Harker's Journal",
+      "parentId": "sc-000000"
+    },
+    {
+      "id": "sc-000006",
+      "type": "scene",
+      "title": "5 May: The Count Welcomes His Guest",
+      "parentId": "sc-000005"
+    },
+    {
+      "id": "sc-000007",
+      "type": "scene",
+      "title": "7 May: English Books and Carfax",
+      "parentId": "sc-000005"
+    },
+    {
+      "id": "sc-000008",
+      "type": "scene",
+      "title": "8 May: The Mirror and Locked Doors",
+      "parentId": "sc-000005"
+    },
+    {
+      "id": "sc-000009",
+      "type": "chapter",
+      "title": "Chapter III: Jonathan Harker's Journal",
+      "parentId": "sc-000000"
+    },
+    {
+      "id": "sc-000010",
+      "type": "scene",
+      "title": "A Prisoner in the Castle",
+      "parentId": "sc-000009"
+    },
+    {
+      "id": "sc-000011",
+      "type": "scene",
+      "title": "12 May: The Count Descends the Wall",
+      "parentId": "sc-000009"
+    },
+    {
+      "id": "sc-000012",
+      "type": "scene",
+      "title": "15 May: The Deserted Rooms",
+      "parentId": "sc-000009"
+    },
+    {
+      "id": "sc-000013",
+      "type": "scene",
+      "title": "16 May: The Three Women",
+      "parentId": "sc-000009"
+    },
+    {
+      "id": "sc-000014",
+      "type": "bible",
+      "title": "Bible",
+      "parentId": null
+    },
+    {
+      "id": "sc-000015",
+      "type": "note",
+      "title": "Excerpt synopsis",
+      "parentId": "sc-000014"
+    },
+    {
+      "id": "sc-000016",
+      "type": "note",
+      "title": "Setting and movement",
+      "parentId": "sc-000014"
+    },
+    {
+      "id": "sc-000017",
+      "type": "note",
+      "title": "Relationships and limits of knowledge",
+      "parentId": "sc-000014"
+    },
+    {
+      "id": "sc-000018",
+      "type": "note",
+      "title": "Journal style and continuity",
+      "parentId": "sc-000014"
+    },
+    {
+      "id": "sc-000019",
+      "type": "note",
+      "title": "Source and sample editorial notes",
+      "parentId": "sc-000014"
+    }
+  ]
+}

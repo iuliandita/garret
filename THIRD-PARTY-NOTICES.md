@@ -1,5 +1,15 @@
 # Third-party notices
 
+## Classic sample manuscripts
+
+The repository's development fixtures contain the first three chapters of
+Jane Austen's *Pride and Prejudice*, Lewis Carroll's *Alice's Adventures in
+Wonderland*, and Bram Stoker's *Dracula*. Project Gutenberg lists these original
+English texts as public domain in the USA. The complete source files, production
+credits, and Project Gutenberg licenses are retained under
+`app/fixtures/classics/*/src/source.txt`. These fixtures are not included in
+installable builds. Added editorial annotations are separate from the original prose.
+
 This application is GPL-3.0-or-later; its own licence is in `COPYING`. What
 follows is everything vendored INTO the source tree from somewhere else, and the
 licence it arrived under. A dependency resolved at build time is not listed here

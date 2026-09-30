@@ -14,6 +14,13 @@
 // `normal` and `stress` are.
 const SAMPLE_FIXTURE_DIR = "app/fixtures/sample";
 
+export const CLASSIC_FIXTURES = ["pride-and-prejudice", "alice", "dracula"] as const;
+
+export function isClassicFixture(name: string): boolean {
+  return (CLASSIC_FIXTURES as readonly string[]).includes(name);
+}
+
 export function resolveFixtureDir(name: string): string {
+  if (isClassicFixture(name)) return `app/fixtures/classics/${name}`;
   return name === "sample" ? SAMPLE_FIXTURE_DIR : `lab/fixtures/out/${name}`;
 }

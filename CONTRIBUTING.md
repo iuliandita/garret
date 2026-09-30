@@ -37,7 +37,9 @@ are known to fail; CI skips exactly those and links the tracking issue.
 The GUI rigs in `app/harness` drive the real app under Xvfb and AT-SPI and need
 `xvfb`, `xdotool` and the AT-SPI bus. Run them on an isolated display, never on
 your live desktop session. Screenshots they capture land in
-`app/results/screenshots/`, which is not committed.
+`app/results/screenshots/`, which is not committed. The curated public gallery
+lives in `docs/screenshots/`. Rebuild its [classic sample books](app/fixtures/classics/README.md)
+when refreshing those captures.
 
 ## Code style
 
@@ -48,7 +50,8 @@ your live desktop session. Screenshots they capture land in
 - User-facing text lives in the English and German catalogs under
   `app/ui/src/i18n/`; change both.
 - Nothing that identifies a person or a machine goes into tracked files:
-  no home paths, hostnames or real manuscripts in fixtures or results.
+  no home paths, hostnames or private manuscripts in fixtures or results.
+  Public-domain sample texts retain their source credits and licenses.
 
 ## Submitting a PR
 

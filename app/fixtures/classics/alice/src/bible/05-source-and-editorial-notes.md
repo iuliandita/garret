@@ -1,0 +1,5 @@
+# Source and sample editorial notes
+
+Sample editorial material for the first three chapters.
+
+Original English prose: Lewis Carroll, Alice's Adventures in Wonderland, Project Gutenberg ebook 11, https://www.gutenberg.org/ebooks/11 . The downloaded UTF-8 text and its complete credits and license are preserved unchanged in source.txt; its credits name Arthur DiBianca and David Widger. This manuscript extracts only Chapters I, II and III, from "Down the Rabbit-Hole" through "A Caucus-Race and a Long Tale", stopping before Chapter IV. extract.py reproduces the manuscript offline from source.txt. The added book/part/chapter/scene hierarchy is organizational. Prose wording, punctuation, paragraph and line breaks, and underscore emphasis are retained; leading indentation is removed so letters and verse do not become Markdown code blocks. No illustrations are imported. All synopses, cast descriptions and fields, bible notes, timeline descriptions and editorial scene labels are sample editorial material, not text by Carroll. Timeline coordinates are scene ordinals, not invented dates.

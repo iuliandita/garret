@@ -1,0 +1,330 @@
+[
+  {
+    "kind": "character",
+    "name": "Alice",
+    "summary": "Curious girl whose changes in size and encounters with talking animals unsettle her sense of identity.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Viewpoint character"
+      },
+      {
+        "label": "Continuity",
+        "value": "Her clothes grow and shrink with her."
+      }
+    ],
+    "appears": [
+      "Down the Rabbit-Hole",
+      "The Pool of Tears",
+      "A Caucus-Race and a Long Tale"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Alice's sister",
+    "summary": "Reads beside Alice on the bank before Alice follows the Rabbit.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Companion on the bank"
+      }
+    ],
+    "appears": [
+      "Down the Rabbit-Hole"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "White Rabbit",
+    "summary": "A hurried rabbit with pink eyes, a waistcoat and a pocket watch.",
+    "aliases": [
+      "Rabbit"
+    ],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Leads Alice toward the rabbit-hole"
+      },
+      {
+        "label": "Objects",
+        "value": "Watch; later white kid gloves and a fan"
+      }
+    ],
+    "appears": [
+      "Down the Rabbit-Hole",
+      "The Pool of Tears"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Mouse",
+    "summary": "Swims in the pool, objects to talk of cats and dogs, and tells a tale.",
+    "aliases": [
+      "the Mouse"
+    ],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Member of the wet company"
+      }
+    ],
+    "appears": [
+      "The Pool of Tears",
+      "A Caucus-Race and a Long Tale"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Dodo",
+    "summary": "Organizes the Caucus-race and arranges the distribution of prizes.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Race organizer"
+      }
+    ],
+    "appears": [
+      "The Pool of Tears",
+      "A Caucus-Race and a Long Tale"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Duck",
+    "summary": "Joins the company that comes ashore from the pool.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Member of the wet company"
+      }
+    ],
+    "appears": [
+      "The Pool of Tears",
+      "A Caucus-Race and a Long Tale"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Lory",
+    "summary": "Argues with Alice about age and authority.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Member of the wet company"
+      }
+    ],
+    "appears": [
+      "The Pool of Tears",
+      "A Caucus-Race and a Long Tale"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Eaglet",
+    "summary": "Objects to the Dodo using long words.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Member of the wet company"
+      }
+    ],
+    "appears": [
+      "The Pool of Tears",
+      "A Caucus-Race and a Long Tale"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Crab",
+    "summary": "Tells her daughter to take a lesson from the Mouse.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Member of the wet company"
+      }
+    ],
+    "appears": [
+      "A Caucus-Race and a Long Tale"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Young Crab",
+    "summary": "Answers her mother sharply.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Daughter of the older Crab"
+      }
+    ],
+    "appears": [
+      "A Caucus-Race and a Long Tale"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Magpie",
+    "summary": "Leaves when Alice speaks of her cat.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Member of the wet company"
+      }
+    ],
+    "appears": [
+      "A Caucus-Race and a Long Tale"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Canary",
+    "summary": "Calls her children away when Alice speaks of Dinah.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Mother in the wet company"
+      }
+    ],
+    "appears": [
+      "A Caucus-Race and a Long Tale"
+    ]
+  },
+  {
+    "kind": "place",
+    "name": "Rabbit-hole",
+    "summary": "The passage Alice follows from the bank into a deep well.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Setting",
+        "value": "Cupboards and shelves line the well"
+      }
+    ],
+    "appears": [
+      "Down the Rabbit-Hole"
+    ]
+  },
+  {
+    "kind": "place",
+    "name": "Hall of doors",
+    "summary": "A long hall with locked doors and a small passage to a garden.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Setting",
+        "value": "Low hall lit by lamps"
+      }
+    ],
+    "appears": [
+      "Down the Rabbit-Hole",
+      "The Pool of Tears"
+    ]
+  },
+  {
+    "kind": "place",
+    "name": "Pool of tears",
+    "summary": "Alice swims in the tears she shed while very large.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Setting",
+        "value": "Company gathers on the bank in Chapter III"
+      }
+    ],
+    "appears": [
+      "The Pool of Tears",
+      "A Caucus-Race and a Long Tale"
+    ]
+  },
+  {
+    "kind": "poi",
+    "name": "Golden key",
+    "summary": "A small key opens the tiny door into the garden.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Access to the garden"
+      }
+    ],
+    "appears": [
+      "Down the Rabbit-Hole",
+      "The Pool of Tears"
+    ]
+  },
+  {
+    "kind": "poi",
+    "name": "DRINK ME bottle",
+    "summary": "The labeled bottle makes Alice shrink.",
+    "aliases": [
+      "DRINK ME"
+    ],
+    "fields": [
+      {
+        "label": "Effect",
+        "value": "Shrinks Alice"
+      }
+    ],
+    "appears": [
+      "Down the Rabbit-Hole"
+    ]
+  },
+  {
+    "kind": "poi",
+    "name": "EAT ME cake",
+    "summary": "The small cake makes Alice grow very tall.",
+    "aliases": [
+      "EAT ME"
+    ],
+    "fields": [
+      {
+        "label": "Effect",
+        "value": "Makes Alice grow"
+      }
+    ],
+    "appears": [
+      "Down the Rabbit-Hole",
+      "The Pool of Tears"
+    ]
+  },
+  {
+    "kind": "poi",
+    "name": "Rabbit's fan",
+    "summary": "Fanning herself makes Alice shrink again.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Another cause of changing size"
+      }
+    ],
+    "appears": [
+      "The Pool of Tears"
+    ]
+  },
+  {
+    "kind": "poi",
+    "name": "Thimble",
+    "summary": "Alice receives her own thimble as a prize.",
+    "aliases": [],
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Caucus-race prize"
+      }
+    ],
+    "appears": [
+      "A Caucus-Race and a Long Tale"
+    ]
+  }
+]
