@@ -41,6 +41,21 @@ your live desktop session. Screenshots they capture land in
 lives in `docs/screenshots/`. Rebuild its [classic sample books](app/fixtures/classics/README.md)
 when refreshing those captures.
 
+## Website
+
+The GitHub Pages site is plain HTML and CSS in `site/`. It uses the wordmark
+and screenshots already in the repository. Build and preview it locally with:
+
+```sh
+bash scripts/build-site
+python3 -m http.server 8080 --bind 127.0.0.1 --directory app/dist-site
+```
+
+Open `http://127.0.0.1:8080`. The Website workflow builds the site on pull
+requests and deploys changes from `develop`. Before the first deployment,
+select **GitHub Actions** as the publishing source in the repository's
+**Settings > Pages**. No app build is needed for website changes.
+
 ## Code style
 
 - TypeScript is strict; no `any`. Match the surrounding style, and do not
