@@ -74,7 +74,18 @@ select **GitHub Actions** as the publishing source in the repository's
 2. Keep commits focused and run the checks above.
 3. Open a PR against `develop` and fill in the template. `main` only receives
    release merges from `develop`.
-4. PRs are squash-merged once CI passes and review is done.
+4. Feature and fix PRs are squash-merged once CI passes and review is done.
+
+### Promoting and synchronizing branches
+
+Promote `develop` to `main` through a PR using **Create a merge commit**.
+After the promotion, open a PR from `main` back to `develop` and merge it
+the same way. These merges preserve the shared history between the two
+long-lived branches, so later promotions do not repeat already merged work.
+
+Do not squash or rebase these branch-to-branch PRs. Both branches still require
+PRs and passing `interface` and `host` checks, including for administrators.
+Force pushes and branch deletion remain blocked.
 
 ## Commit style
 
