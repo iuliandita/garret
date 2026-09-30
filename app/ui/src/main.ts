@@ -15,7 +15,6 @@ import { ACTION_EFFECTS, buildWorkload, WORKLOAD_SCRIPT } from "./measure/worklo
 import { type ProjectItem } from "./store/source";
 import { bodyHash } from "./store/hash";
 import { dailyTargetFrom } from "./goals";
-import { bibleRowsFrom } from "./bible-rows";
 import { timeTrackingFrom } from "./writing-time";
 import { wireLifecycle } from "./lifecycle";
 import { createClosePrompt } from "./close-prompt";
@@ -111,7 +110,6 @@ declare global {
      *  script: a goal cannot flash, so it does not have to be on the root
      *  before first paint. */
     __appDailyTarget?: string;
-    __appBibleRows?: number;
     __appMutations?: number;
     __appRun?: string;
     /** Which open of which project the host currently holds. Sent with every
@@ -190,7 +188,6 @@ async function main(): Promise<void> {
   // writer changes their goal starts on the new one instead of on the one the
   // window launched with.
   let dailyTarget = dailyTargetFrom(window.__appDailyTarget);
-  let bibleRows = bibleRowsFrom(window.__appBibleRows);
   // The same shape, for the same reason: the switch is read per edit and a
   // project mounted after it was flipped must see the new state.
   let timeTracking = timeTrackingFrom(window.__appTimeTracking);
@@ -234,7 +231,6 @@ async function main(): Promise<void> {
       listen: window.__TAURI__?.event?.listen,
       generation,
       dailyTarget: () => dailyTarget,
-      bibleRows: () => bibleRows,
       timeTracking: () => timeTracking,
       setTimeTracking: async (tracking) => {
         // PERSIST FIRST, then the module's copy: a switch that reached the
@@ -674,7 +670,6 @@ async function main(): Promise<void> {
           await invoke("settings_set_theme", { theme });
         },
         initialDailyTarget: dailyTarget,
-        initialBibleRows: bibleRows,
         initialSpelling: window.__appSpelling === "off" ? "off" : "on",
         persistSpelling: async (spelling) => {
           // The host both records this AND applies it to the live webview: the
@@ -715,13 +710,6 @@ async function main(): Promise<void> {
         },
         persistDailyTarget: async (target) => {
           await invoke("settings_set_daily_target", { target });
-        },
-        persistBibleRows: async (rows) => {
-          await invoke("settings_set_bible_rows", { rows });
-        },
-        onBibleRows: (rows) => {
-          bibleRows = rows;
-          current.setBibleRows?.(rows);
         },
         persistWritingModes: async (modes) => {
           // Spread rather than passed whole, like the typography: the command's

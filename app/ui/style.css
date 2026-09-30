@@ -2758,7 +2758,6 @@ body.nav-hidden #nav-column {
    shared one; this adds the drawn arrow the native paint cannot. */
 #prefs-language,
 #prefs-start,
-#prefs-bible-rows,
 #design-page-select,
 #proof-page-select,
 #cast-panel select,
@@ -3723,21 +3722,6 @@ body.nav-hidden #nav-column {
   position: relative;
   background: var(--nav-bg);
 }
-
-#bible-section {
-  flex: 0 0 auto;
-  padding: 8px 10px;
-  background: var(--nav-bg);
-}
-
-#bible-section h2 { margin: 0 0 4px; font-size: var(--text-md); }
-#bible-list { max-height: min(calc(var(--bible-visible-rows) * 24px), 40vh); overflow-y: auto; }
-#bible-list button { display: block; width: 100%; height: 24px; overflow: hidden; border: 0; background: none; color: var(--fg); text-align: left; text-overflow: ellipsis; white-space: nowrap; padding-left: calc(6px + var(--bible-level) * 14px); }
-#bible-list button[data-bible-folder="true"] { font-weight: 600; }
-#bible-list button[data-bible-folder="true"]::before { content: "▾"; display: inline-block; width: 15px; color: var(--muted); }
-#bible-list button[data-bible-folder="true"][aria-expanded="false"]::before { content: "▸"; }
-#bible-list button[aria-current="true"],
-#bible-list button[aria-pressed="true"] { background: var(--accent-soft); border-radius: var(--radius-control); }
 
 #nav:focus-visible {
   outline: 2px solid var(--accent);
