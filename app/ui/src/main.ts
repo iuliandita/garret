@@ -454,6 +454,8 @@ async function main(): Promise<void> {
         archiveStatus: async () => (await invoke("archive_status")) as ArchiveReport,
         makeArchive: async () => (await invoke("project_archive_now", { generation: await prepareArchive() })) as Archive,
         generateArchiveKey: async () => (await invoke("encrypted_key_generate")) as { recipient: string } | null,
+        encryptedBackupDestination: async () => (await invoke("encrypted_backup_destination")) as string | null,
+        chooseEncryptedBackupDestination: async () => (await invoke("encrypted_backup_destination_pick")) as string | null,
         makeEncryptedArchive: async () => (await invoke("encrypted_archive_create", { expectedGeneration: await prepareArchive() })) as { file: string; recipient: string; encrypted: true } | null,
         verifyEncryptedArchive: async () => (await invoke("encrypted_archive_verify")) as { file: string; encrypted: true } | null,
         restoreEncryptedArchive: async () => (await invoke("encrypted_archive_restore")) as ProjectSummary | null,
