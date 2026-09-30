@@ -850,7 +850,6 @@ export const EN = {
   "prefs.legend.size": "Size",
   "prefs.legend.width": "Width",
   "prefs.legend.goal": "Goal",
-  "prefs.legend.bible-rows": "Bible shortcuts",
   "prefs.legend.zoom": "Zoom",
   "prefs.legend.focus": "Focus",
   "prefs.legend.spelling": "Spelling",
@@ -873,7 +872,6 @@ export const EN = {
   "prefs.language.de": "Deutsch",
   "prefs.language.applied": "The language changes when the application is next opened.",
   "prefs.name.goal": "Daily goal",
-  "prefs.name.bible-rows": "visible Bible shortcuts",
   // What the window opens onto next launch. A <select>, LOCALES'
   // own reason -- each answer is a full sentence, not a short word a row
   // of buttons fits. The label itself stays SHORT (a review capture showed
@@ -890,9 +888,6 @@ export const EN = {
   "prefs.what.typography": "typography",
   "prefs.what.writing-modes": "writing modes",
   "prefs.what.daily-goal": "daily goal",
-  "prefs.what.bible-rows": "visible Bible shortcuts",
-  "bible.heading": "Bible",
-  "bible.folder.label": "Folder: {title}. Activate to expand or collapse.",
   "prefs.what.zoom": "zoom",
   "prefs.what.language": "language",
   "prefs.what.mark-cast-names": "cast names",

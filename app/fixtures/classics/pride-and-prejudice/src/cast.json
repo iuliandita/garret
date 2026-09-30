@@ -1,0 +1,405 @@
+[
+  {
+    "kind": "character",
+    "name": "Elizabeth Bennet",
+    "aliases": [
+      "Lizzy",
+      "Eliza"
+    ],
+    "summary": "The Bennet daughter whose quick wit turns an overheard insult into a story for her friends.",
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Bennet daughter"
+      },
+      {
+        "label": "In the excerpt",
+        "value": "Lively, playful; amused by the ridiculous."
+      }
+    ],
+    "appears": [
+      "Mr. Bennet's visit",
+      "The assembly"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Jane Bennet",
+    "aliases": [
+      "Jane",
+      "Miss Bennet"
+    ],
+    "summary": "The eldest Bennet daughter. Bingley singles her out at the assembly and dances with her twice.",
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Eldest Bennet daughter"
+      },
+      {
+        "label": "In the excerpt",
+        "value": "Her pleasure at the ball is quieter than her mother's."
+      }
+    ],
+    "appears": [
+      "The assembly"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Mr. Bennet",
+    "aliases": [],
+    "summary": "He quietly visits Bingley while letting his family believe he has refused. His teasing leaves his wife struggling to understand him.",
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Father of five daughters"
+      },
+      {
+        "label": "In the excerpt",
+        "value": "Quick parts, sarcastic humor, reserve, and caprice."
+      }
+    ],
+    "appears": [
+      "A new neighbor",
+      "Mr. Bennet's visit",
+      "The assembly"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Mrs. Bennet",
+    "aliases": [],
+    "summary": "Bingley's arrival offers a marriage prospect for her daughters. She pushes for an introduction, then celebrates Jane's success and resents Darcy.",
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Mother of five daughters"
+      },
+      {
+        "label": "In the excerpt",
+        "value": "Visiting, news, and finding husbands for her daughters."
+      }
+    ],
+    "appears": [
+      "A new neighbor",
+      "Mr. Bennet's visit",
+      "The assembly"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Mary Bennet",
+    "aliases": [
+      "Mary"
+    ],
+    "summary": "She tries to offer a thoughtful observation in the family conversation. At the assembly she hears herself praised as accomplished.",
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Bennet daughter"
+      },
+      {
+        "label": "In the excerpt",
+        "value": "Books and accomplishment."
+      }
+    ],
+    "appears": [
+      "Mr. Bennet's visit",
+      "The assembly"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Catherine Bennet",
+    "aliases": [
+      "Kitty",
+      "Catherine"
+    ],
+    "summary": "Her coughing irritates her mother during the conversation about Bingley. She and Lydia enjoy being supplied with partners at the ball.",
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Bennet daughter"
+      },
+      {
+        "label": "In the excerpt",
+        "value": "Dancing and company."
+      }
+    ],
+    "appears": [
+      "Mr. Bennet's visit",
+      "The assembly"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Lydia Bennet",
+    "aliases": [
+      "Lydia"
+    ],
+    "summary": "The youngest Bennet daughter points out that she is the tallest. At the assembly, having partners matters more to her than anything else.",
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Youngest Bennet daughter"
+      },
+      {
+        "label": "In the excerpt",
+        "value": "Confident and eager for dancing."
+      }
+    ],
+    "appears": [
+      "Mr. Bennet's visit",
+      "The assembly"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Mr. Bingley",
+    "aliases": [
+      "Bingley"
+    ],
+    "summary": "Netherfield's new tenant is sociable, good-looking, and delighted with the assembly. He urges Darcy to dance and admires Jane.",
+    "fields": [
+      {
+        "label": "Role",
+        "value": "New tenant at Netherfield"
+      },
+      {
+        "label": "In the excerpt",
+        "value": "Lively, unreserved, easy manners."
+      }
+    ],
+    "appears": [
+      "The assembly"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Mr. Darcy",
+    "aliases": [
+      "Darcy"
+    ],
+    "summary": "Bingley's wealthy friend initially draws admiration, then alienates the room. Elizabeth overhears him dismiss her as a potential dance partner.",
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Bingley's friend"
+      },
+      {
+        "label": "In the excerpt",
+        "value": "Fastidious; reluctant to dance with strangers."
+      }
+    ],
+    "appears": [
+      "The assembly"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Miss Bingley",
+    "aliases": [],
+    "summary": "One of Bingley's fashionable sisters. Darcy dances with her at the assembly.",
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Bingley's unmarried sister"
+      },
+      {
+        "label": "In the excerpt",
+        "value": "An air of decided fashion."
+      }
+    ],
+    "appears": [
+      "The assembly"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Mrs. Hurst",
+    "aliases": [],
+    "summary": "Bingley's married sister attends the assembly with her husband. Darcy dances with her.",
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Bingley's married sister"
+      },
+      {
+        "label": "In the excerpt",
+        "value": "Fashionable member of the Netherfield party."
+      }
+    ],
+    "appears": [
+      "The assembly"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Mr. Hurst",
+    "aliases": [],
+    "summary": "Bingley's brother-in-law is part of the five-person party that arrives at the assembly.",
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Mrs. Hurst's husband"
+      },
+      {
+        "label": "In the excerpt",
+        "value": "Introduced largely through appearance and company."
+      }
+    ],
+    "appears": [
+      "The assembly"
+    ]
+  },
+  {
+    "kind": "place",
+    "name": "Longbourn",
+    "aliases": [],
+    "summary": "The village where the Bennets live. The family returns here after the assembly.",
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Bennet home"
+      },
+      {
+        "label": "In the excerpt",
+        "value": "Domestic conversations frame the social outing."
+      }
+    ],
+    "appears": [
+      "A new neighbor",
+      "Mr. Bennet's visit",
+      "The assembly"
+    ]
+  },
+  {
+    "kind": "place",
+    "name": "Netherfield Park",
+    "aliases": [
+      "Netherfield"
+    ],
+    "summary": "The estate rented by Bingley. Its new tenant becomes the subject of neighborhood speculation.",
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Nearby estate"
+      },
+      {
+        "label": "In the excerpt",
+        "value": "The reported fortune makes the tenancy socially significant."
+      }
+    ],
+    "appears": []
+  },
+  {
+    "kind": "place",
+    "name": "The assembly room",
+    "aliases": [],
+    "summary": "The public dance where Bingley meets the neighborhood and Elizabeth overhears Darcy's judgment.",
+    "fields": [
+      {
+        "label": "Role",
+        "value": "Social gathering place"
+      },
+      {
+        "label": "In the excerpt",
+        "value": "Introductions and dance partners make private judgments public."
+      }
+    ],
+    "appears": [
+      "The assembly"
+    ]
+  },
+  {
+    "kind": "character",
+    "name": "Mrs. Long",
+    "aliases": [],
+    "summary": "Neighbor whose news about Netherfield starts the Bennets' conversation. Mrs. Bennet doubts she will help with an introduction because she has two nieces of her own.",
+    "fields": [
+      {
+        "label": "In the excerpt",
+        "value": "Mentioned in chapters 1-2; not shown directly in the narrated action."
+      }
+    ],
+    "appears": []
+  },
+  {
+    "kind": "character",
+    "name": "Mr. Morris",
+    "aliases": [],
+    "summary": "The person reported to have arranged the letting of Netherfield to Bingley.",
+    "fields": [
+      {
+        "label": "In the excerpt",
+        "value": "Mentioned in Mrs. Long's account in chapter 1."
+      }
+    ],
+    "appears": []
+  },
+  {
+    "kind": "character",
+    "name": "Lady Lucas",
+    "aliases": [],
+    "summary": "Neighbor who supplies a favorable report of Bingley and reassures Mrs. Bennet about his trip to London.",
+    "fields": [
+      {
+        "label": "In the excerpt",
+        "value": "Reported conversations in chapter 3; no direct speech in the excerpt."
+      }
+    ],
+    "appears": []
+  },
+  {
+    "kind": "character",
+    "name": "Sir William Lucas",
+    "aliases": [],
+    "summary": "Lady Lucas reports his favorable impression of Bingley.",
+    "fields": [
+      {
+        "label": "In the excerpt",
+        "value": "Mentioned in chapter 3."
+      }
+    ],
+    "appears": []
+  },
+  {
+    "kind": "character",
+    "name": "Miss Lucas",
+    "aliases": [],
+    "summary": "Bingley's first dance partner at the assembly, according to Mrs. Bennet's report.",
+    "fields": [
+      {
+        "label": "In the excerpt",
+        "value": "A reported dance partner in chapter 3; no scene appearance tag."
+      }
+    ],
+    "appears": []
+  },
+  {
+    "kind": "character",
+    "name": "Maria Lucas",
+    "aliases": [],
+    "summary": "A dance partner named by Mrs. Bennet when recounting Bingley's evening.",
+    "fields": [
+      {
+        "label": "In the excerpt",
+        "value": "Mentioned in chapter 3; no scene appearance tag."
+      }
+    ],
+    "appears": []
+  },
+  {
+    "kind": "character",
+    "name": "Miss King",
+    "aliases": [],
+    "summary": "A dance partner named by Mrs. Bennet when recounting Bingley's evening.",
+    "fields": [
+      {
+        "label": "In the excerpt",
+        "value": "Mentioned in chapter 3; no scene appearance tag."
+      }
+    ],
+    "appears": []
+  }
+]

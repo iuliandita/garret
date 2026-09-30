@@ -25,7 +25,6 @@ function rig(
   // do not care who is told about a writing-mode change, so this stays last
   // and defaults to nobody.
   onWritingModes?: (modes: WritingModes) => void,
-  initialBibleRows?: number,
   openPrivacy?: () => Promise<void>,
 ) {
   const container = document.createElement("div");
@@ -48,8 +47,6 @@ function rig(
   const starts: Start[] = [];
   const markCastNames: boolean[] = [];
   const markCastNamesAnnounced: boolean[] = [];
-  const bibleRows: number[] = [];
-  const bibleRowsAnnounced: number[] = [];
   let reject: string | null = null;
   let dictReject: string | null = null;
 
@@ -83,12 +80,6 @@ function rig(
       if (reject !== null) throw new Error(reject);
     },
     initialDailyTarget,
-    initialBibleRows,
-    persistBibleRows: async (rows) => {
-      bibleRows.push(rows);
-      if (reject !== null) throw new Error(reject);
-    },
-    onBibleRows: (rows) => bibleRowsAnnounced.push(rows),
     initialWritingModes,
     initialZoom,
     persistZoom: async (zoom) => {
@@ -163,11 +154,6 @@ function rig(
     if (!(el instanceof HTMLSelectElement)) throw new Error("no #prefs-start select mounted");
     return el;
   };
-  const bibleRowsSelect = (): HTMLSelectElement => {
-    const el = container.querySelector("#prefs-bible-rows");
-    if (!(el instanceof HTMLSelectElement)) throw new Error("no #prefs-bible-rows select mounted");
-    return el;
-  };
 
   return {
     container,
@@ -190,13 +176,10 @@ function rig(
     starts,
     markCastNames,
     markCastNamesAnnounced,
-    bibleRows,
-    bibleRowsAnnounced,
     dictInput,
     dictWords,
     languageSelect,
     startSelect,
-    bibleRowsSelect,
     byId,
     panel,
     failWith(message: string) {
@@ -226,12 +209,6 @@ function rig(
       select.dispatchEvent(new Event("change"));
       await settle();
     },
-    async changeBibleRows(value: string) {
-      const select = bibleRowsSelect();
-      select.value = value;
-      select.dispatchEvent(new Event("change"));
-      await settle();
-    },
   };
 }
 
@@ -252,7 +229,6 @@ describe("the preferences panel", () => {
       "prefs-typewriter", "prefs-spelling", "prefs-mark-cast-names", "prefs-dict",
       `# ${t("prefs.section.app")}`,
       "prefs-palette", "prefs-theme", "prefs-language-group", "prefs-start-group", "prefs-zoom",
-      "prefs-bible-rows-group",
       ...(r.panel().querySelector("#prefs-privacy") === null ? [] : ["prefs-privacy"]),
     ]);
   });
@@ -263,7 +239,6 @@ describe("the preferences panel", () => {
       ["prefs-theme", ["prefs-theme-system", "prefs-theme-light", "prefs-theme-dark"]],
       ["prefs-language-group", ["prefs-language"]],
       ["prefs-start-group", ["prefs-start"]],
-      ["prefs-bible-rows-group", ["prefs-bible-rows"]],
     ]);
     for (const [id, controls] of expectedControls) {
       const group = r.panel().querySelector(`#${id}`);
@@ -465,37 +440,6 @@ describe("the preferences panel", () => {
     await settle();
     expect(r.root.getAttribute("data-prose-size")).toBe(DEFAULT_TYPOGRAPHY.size);
     expect(r.typographies).toEqual([]);
-  });
-});
-
-describe("preferences: Bible shortcuts", () => {
-  test("uses an accessible select with every offered row count", () => {
-    const r = rig();
-    const select = r.bibleRowsSelect();
-    expect(select.getAttribute("aria-label")).toBe(t("prefs.name.bible-rows"));
-    expect([...select.options].map((option) => option.value)).toEqual(
-      Array.from({ length: 20 }, (_, index) => String(index + 1)),
-    );
-  });
-
-  test("invalid injected row counts read as five", () => {
-    expect(rig("system", DEFAULT_TYPOGRAPHY, DEFAULT_DAILY_TARGET, DEFAULT_WRITING_MODES, DEFAULT_ZOOM, "en", "last", undefined, 21).bibleRowsSelect().value).toBe("5");
-  });
-
-  test("persists a changed count and updates the live project", async () => {
-    const r = rig();
-    await r.changeBibleRows("12");
-    expect(r.bibleRows).toEqual([12]);
-    expect(r.bibleRowsAnnounced).toEqual([12]);
-  });
-
-  test("refusal restores the previous selection and re-enables it", async () => {
-    const r = rig();
-    r.failWith("read-only");
-    await r.changeBibleRows("12");
-    expect(r.bibleRowsSelect().value).toBe("5");
-    expect(r.bibleRowsSelect().disabled).toBe(false);
-    expect(r.bibleRowsAnnounced).toEqual([]);
   });
 });
 
@@ -998,7 +942,7 @@ describe("the project dictionary", () => {
 
 test("privacy preferences routes to native settings and states the file boundary", async () => {
   let calls = 0;
-  rig(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+  rig(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined,
     async () => { calls += 1; });
   const button = document.getElementById("prefs-privacy-open") as HTMLButtonElement;
   expect(button.textContent).toBe(t("privacy.settings"));

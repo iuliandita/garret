@@ -1,0 +1,92 @@
+{
+  "meta": {
+    "name": "Pride and Prejudice",
+    "seed": "sample-v1"
+  },
+  "items": [
+    {
+      "id": "sc-000000",
+      "type": "part",
+      "title": "Opening chapters",
+      "parentId": null
+    },
+    {
+      "id": "sc-000001",
+      "type": "chapter",
+      "title": "Chapter 1",
+      "parentId": "sc-000000"
+    },
+    {
+      "id": "sc-000002",
+      "type": "scene",
+      "title": "A new neighbor",
+      "parentId": "sc-000001"
+    },
+    {
+      "id": "sc-000003",
+      "type": "chapter",
+      "title": "Chapter 2",
+      "parentId": "sc-000000"
+    },
+    {
+      "id": "sc-000004",
+      "type": "scene",
+      "title": "Mr. Bennet's visit",
+      "parentId": "sc-000003"
+    },
+    {
+      "id": "sc-000005",
+      "type": "chapter",
+      "title": "Chapter 3",
+      "parentId": "sc-000000"
+    },
+    {
+      "id": "sc-000006",
+      "type": "scene",
+      "title": "The assembly",
+      "parentId": "sc-000005"
+    },
+    {
+      "id": "sc-000007",
+      "type": "bible",
+      "title": "Bible",
+      "parentId": null
+    },
+    {
+      "id": "sc-000008",
+      "type": "note",
+      "title": "Book synopsis - opening excerpt",
+      "parentId": "sc-000007"
+    },
+    {
+      "id": "sc-000009",
+      "type": "note",
+      "title": "Setting and social rules",
+      "parentId": "sc-000007"
+    },
+    {
+      "id": "sc-000010",
+      "type": "note",
+      "title": "Family and first impressions",
+      "parentId": "sc-000007"
+    },
+    {
+      "id": "sc-000011",
+      "type": "note",
+      "title": "Voice and style sheet",
+      "parentId": "sc-000007"
+    },
+    {
+      "id": "sc-000012",
+      "type": "note",
+      "title": "Continuity checks",
+      "parentId": "sc-000007"
+    },
+    {
+      "id": "sc-000013",
+      "type": "note",
+      "title": "Source and sample annotations",
+      "parentId": "sc-000007"
+    }
+  ]
+}

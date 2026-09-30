@@ -22,7 +22,6 @@ import { createOutlineView, createOutlineViewTransitions, type OutlineView, type
 import { createContinuousChapter, type ContinuousChapter } from "./continuous-chapter";
 import { createSession, type Session } from "./session";
 import { TIMELINE_TYPE } from "./item-types";
-import { mountBibleSection, type BibleSection } from "./bible-section";
 import { mountTimeline, type TimelineMount } from "./timeline-view";
 import {
   createOutline,
@@ -177,7 +176,6 @@ export interface MountDeps {
    *  `MountedProject.setMarkCastNames` instead, `current`'s own route in
    *  main.ts. */
   markCastNames?: () => boolean;
-  bibleRows?: () => number;
   /** Add one word to the open book's dictionary and answer it as stored
    *  Owned by the preferences panel, which paints the list, so the
    *  panel and the host agree the moment the menu item runs. Absent in every
@@ -226,7 +224,6 @@ export interface MountedProject {
   /** The writer flipped "Mark cast names in the text". Takes effect on
    *  the open scene at once -- see `preferences.ts`'s own `onMarkCastNames`. */
   setMarkCastNames(on: boolean): void;
-  setBibleRows?(rows: number): void;
   /** Whether a copy failed, went stale or is paused: the status dot's amber.
    *  The project panel opens Backups and archives by itself on it. */
   copiesNeedAttention?(): boolean;
@@ -470,7 +467,6 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   let projectLeaving = false;
   let reviewReconcileFailed = false;
   let reviewPanel: ReviewPanel | null = null;
-  let bibleSection: BibleSection | null = null;
   // Where the writer has been. Per project and it dies with the project: the
   // trail names item ids, and the next manuscript's ids describe different
   // scenes - two projects seeded from the same generator share them outright.
@@ -617,7 +613,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         raiseNotice(t("project.error.open-document", { error: String(err) }));
       });
     },
-    onSelect: (itemId) => { outlineView?.selectById(itemId); bibleSection?.setSelectedId(itemId); },
+    onSelect: (itemId) => outlineView?.selectById(itemId),
     onMove: (itemId, direction) => moveItem?.(itemId, direction),
     onRemove: (itemId) => removeItem?.(itemId),
     onUndo: () => undoItem?.(),
@@ -1094,8 +1090,6 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         if (typeOf(itemId) === "scene") continuousChapter?.activeChanged(itemId);
         else continuousChapter?.exit();
         navigator.setOpen(itemId);
-        bibleSection?.setActiveId(itemId);
-        bibleSection?.setSelectedId(itemId);
         paintSceneName(itemId);
         // ON ACTIVATION, and only here. markOpen is the success path of an
         // actual switch - the "same" and "busy" outcomes never reach it - so
@@ -1171,24 +1165,6 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         inflightOpens -= 1;
       }
     };
-    bibleSection = mountBibleSection({
-      container: navColumnEl,
-      items: storeItems,
-      bibleRows: deps.bibleRows?.() ?? 5,
-      onSelect: (itemId) => navigator.revealAndSelectById?.(itemId),
-      onOpen: (itemId) => {
-        void (async () => {
-          try {
-            await openDocument?.(itemId);
-            if (!projectDestroyed && session?.activeDocId() === itemId && liveItemsIn(latestItems).some((item) => item.id === itemId)) {
-              navigator.revealAndSelectById?.(itemId);
-            }
-          } catch (err: unknown) {
-            raiseNotice(t("project.error.open-document", { error: String(err) }));
-          }
-        })();
-      },
-    });
     // ONE IMMEDIATE READ at mount, so a manuscript opens with its figures rather
   // than four seconds of blank counts. Not awaited: the walk and the first
   // document are what the writer is waiting for, and a figure that arrives a
@@ -1203,8 +1179,6 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     // the reason the hierarchy run is re-recorded for this slice.
     navigator.selectById(activeDocId);
     navigator.setOpen(activeDocId);
-    bibleSection.setActiveId(activeDocId);
-    bibleSection.setSelectedId(activeDocId);
     paintSceneName(activeDocId);
     // The boot document is the trail's first entry. It does not go through
     // markOpen - nothing switched, the page opened it - so without this the
@@ -1261,7 +1235,6 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         }
         navigator.reload(storeSourceFrom(readingOrderItems(items), deps.seed));
         outlineView?.setItems(items);
-        bibleSection?.setItems(items);
         // The ONE place the header follows a rename. Every route to one - the
         // rename panel from the menu or the row's context menu - ends in the
         // unit's rename, and the unit re-reads on both of its outcomes, so a
@@ -1294,7 +1267,6 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       // by the opener's own rule.
       onCreated: (id) => {
         navigator.selectById(id);
-        bibleSection?.setSelectedId(id);
         void openDocument?.(id);
       },
       // NOT raiseFailure. That latches, so one refused rename would suppress
@@ -2941,9 +2913,6 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       markCastNamesOn = on;
       editor.setCastNames(namesForCast(castMembers));
     },
-    setBibleRows(rows: number): void {
-      bibleSection?.setBibleRows(rows);
-    },
     persistError: () => persistError,
     copiesNeedAttention: () => statusDot.state() === "amber",
     reviewPending: () => projectLeaving || reviewOpenInFlight || reviewDecisionInFlight || reviewTransportInFlight || (reviewPanel?.busy() ?? false) || (reviewPanel?.hasUnsaved() ?? false),
@@ -3216,7 +3185,6 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       referenceRail?.destroy();
       craftPanel?.destroy();
       editorPane.hidden = false;
-      bibleSection?.destroy();
       // Deliberately does NOT flush. The caller drains first, so a teardown can
       // never be the thing that decides whether the user's text was saved: a
       // flush from here would be an unawaited write racing the next mount, and

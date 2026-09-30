@@ -853,7 +853,7 @@ describe("mountProject store path", () => {
     mounted.destroy();
   });
 
-  test("opens a Bible shortcut through the normal document route and removes it on teardown", async () => {
+  test("the main navigator is the only Bible region and opens and refreshes a note", async () => {
     shell();
     const items = [
       ...walk(),
@@ -863,90 +863,43 @@ describe("mountProject store path", () => {
     const changed = items.map((item) => item.id === "note" ? { ...item, title: "Updated world" } : item);
     const h = host({ items, walks: [items, changed], bodies: { note: body("world") } });
     const mounted = await mountProject(deps({ invoke: h.invoke }));
-    const shortcut = document.querySelector<HTMLButtonElement>("[data-bible-id='note']");
-    if (shortcut === null) throw new Error("Bible shortcut was not mounted");
-    shortcut.click();
-    await settle();
-    expect(h.of("doc_load").at(-1)?.args).toEqual({ itemId: "note" });
-    expect(document.querySelector("[data-bible-id='note']")?.getAttribute("aria-current")).toBe("true");
-    await mounted.outline?.rename("note", "Updated world");
-    expect(document.querySelector("[data-bible-id='note']")?.textContent).toBe("Updated world");
-    mounted.destroy();
-    expect(document.getElementById("bible-section")).toBeNull();
+    try {
+      expect(document.querySelectorAll('#nav [data-item-id="bible"]')).toHaveLength(1);
+      expect(document.getElementById("bible-section") === null).toBe(true);
+      expect(document.querySelector("[data-bible-id]") === null).toBe(true);
+      mounted.navigator.selectById("note");
+      mounted.navigator.activate();
+      await settle();
+      expect(h.of("doc_load").at(-1)?.args).toEqual({ itemId: "note" });
+      expect(document.querySelector('[data-item-id="note"]')?.getAttribute("aria-current")).toBe("true");
+      await mounted.outline?.rename("note", "Updated world");
+      expect(mounted.navigator.activeTitle()).toBe("Updated world");
+    } finally {
+      mounted.destroy();
+    }
   });
 
-  test("Bible shortcut reveals a note below a collapsed root only after it opens", async () => {
+  test("Bible folders expand through navigator keys and nested notes open through Enter", async () => {
     shell();
     const items = [
       ...walk(),
       { id: "bible", parent_id: null, type: "bible", title: "Bible", position: "0002", rev: 1, state: null, depth: 0 },
-      { id: "note", parent_id: "bible", type: "note", title: "World", position: "0000", rev: 1, state: null, depth: 1 },
+      { id: "folder", parent_id: "bible", type: "bible-folder", title: "Worldbuilding", position: "0000", rev: 1, state: null, depth: 1 },
+      { id: "note", parent_id: "folder", type: "note", title: "World", position: "0000", rev: 1, state: null, depth: 2 },
     ];
     const h = host({ items, bodies: { note: body("world") } });
     const mounted = await mountProject(deps({ invoke: h.invoke }));
     try {
-      mounted.navigator.selectById("bible");
+      mounted.navigator.selectById("folder");
       mounted.navigator.handleKey("ArrowLeft");
       expect(mounted.navigator.rows().some((row) => row.id === "note")).toBe(false);
-      const shortcut = document.querySelector<HTMLButtonElement>("[data-bible-id='note']");
-      if (shortcut === null) throw new Error("Bible shortcut was not mounted");
-      shortcut.click();
-      await settle();
-      expect(mounted.navigator.activeTitle()).toBe("World");
+      mounted.navigator.handleKey("ArrowRight");
       expect(mounted.navigator.rows().some((row) => row.id === "note")).toBe(true);
-    } finally {
-      mounted.destroy();
-    }
-  });
-
-  test("rapid Bible shortcuts leave selection on the document whose open was accepted", async () => {
-    shell();
-    const items = [
-      ...walk(),
-      { id: "bible", parent_id: null, type: "bible", title: "Bible", position: "0002", rev: 1, state: null, depth: 0 },
-      { id: "one", parent_id: "bible", type: "note", title: "First note", position: "0000", rev: 1, state: null, depth: 1 },
-      { id: "two", parent_id: "bible", type: "note", title: "Second note", position: "0001", rev: 1, state: null, depth: 1 },
-    ];
-    const h = host({ items });
-    let release = (): void => undefined;
-    const pending = new Promise<void>((resolve) => { release = resolve; });
-    const invoke: Host["invoke"] = async (cmd, args) => {
-      if (cmd === "doc_load" && args?.itemId === "one") await pending;
-      return h.invoke(cmd, args);
-    };
-    const mounted = await mountProject(deps({ invoke }));
-    try {
-      document.querySelector<HTMLButtonElement>("[data-bible-id='one']")?.click();
+      mounted.navigator.handleKey("ArrowDown");
+      document.getElementById("nav")?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
       await settle();
-      document.querySelector<HTMLButtonElement>("[data-bible-id='two']")?.click();
-      await settle();
-      expect(mounted.navigator.activeTitle()).toBe("Arrival");
-      release();
-      await settle();
-      expect(mounted.navigator.activeTitle()).toBe("First note");
-      expect(document.querySelector("[data-bible-id='one']")?.getAttribute("aria-current")).toBe("true");
-    } finally {
-      release();
-      mounted.destroy();
-    }
-  });
-
-  test("a Bible shortcut that cannot open leaves the existing outline selection alone", async () => {
-    shell();
-    const items = [
-      ...walk(),
-      { id: "bible", parent_id: null, type: "bible", title: "Bible", position: "0002", rev: 1, state: null, depth: 0 },
-      { id: "note", parent_id: "bible", type: "note", title: "Broken", position: "0000", rev: 1, state: null, depth: 1 },
-    ];
-    const h = host({ items, bodies: { note: "not a document" } });
-    const mounted = await mountProject(deps({ invoke: h.invoke }));
-    try {
-      const shortcut = document.querySelector<HTMLButtonElement>("[data-bible-id='note']");
-      if (shortcut === null) throw new Error("Bible shortcut was not mounted");
-      shortcut.click();
-      await settle();
-      expect(mounted.navigator.activeTitle()).toBe("Arrival");
-      expect(document.querySelector("[data-bible-id='note']")?.getAttribute("aria-current")).toBe("false");
+      expect(mounted.session?.activeDocId()).toBe("note");
+      expect(document.querySelector('[data-item-id="note"]')?.getAttribute("aria-current")).toBe("true");
     } finally {
       mounted.destroy();
     }
