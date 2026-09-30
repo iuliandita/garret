@@ -44,6 +44,7 @@ bundle_version=$(bun -e 'const c = await Bun.file(process.argv[1]).json(); conso
 (cd "$repo/app/ui" && bun run build)
 # Tauri requires frontendDist to exist; appdist serves the real UI separately.
 mkdir -p "$repo/app/shell-tauri/dist"
+cp -R "$repo/app/ui/dist/." "$repo/app/shell-tauri/dist/"
 (cd "$repo/app/shell-tauri/src-tauri" && cargo build --locked --release -j8 --target "$target" --target-dir "$repo/app/shell-tauri/src-tauri/target")
 bin="$repo/app/shell-tauri/src-tauri/target/$target/release/garret"
 [[ -x "$bin" && -f "$repo/app/ui/dist/index.html" ]] || fail "The executable or rebuilt interface is missing."
@@ -77,8 +78,8 @@ bundle="$stage/garret.app"
 mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
 cp "$bin" "$bundle/Contents/MacOS/garret"
 chmod 755 "$bundle/Contents/MacOS/garret"
-# resolve_asset_root reads beside the executable; Resources alone is not read.
-cp -R "$repo/app/ui/dist" "$bundle/Contents/MacOS/dist"
+# Non-code assets must be sealed as resources, not nested executable code.
+cp -R "$repo/app/ui/dist" "$bundle/Contents/Resources/dist"
 cp "$repo/app/shell-tauri/src-tauri/icons/icon.icns" "$bundle/Contents/Resources/icon.icns"
 cp "$here/macos/README.txt" "$stage/README.txt"
 cp "$repo/COPYING" "$repo/THIRD-PARTY-NOTICES.md" "$stage/"
@@ -104,6 +105,7 @@ plutil -lint "$bundle/Contents/Info.plist"
 codesign --force --sign - --timestamp=none "$bundle"
 codesign --verify --strict --verbose=2 "$bundle"
 {
+  printf 'Application version: %s\n' "$bundle_version"
   printf 'Source revision: %s\nTarget: %s\n' "$revision" "$target"
   printf 'Built UTC: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   printf 'Minimum macOS from executable: %s\n' "$minimum"

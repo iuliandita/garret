@@ -1,0 +1,250 @@
+name: Alpha builds
+on:
+  push:
+    tags: ['v0.*']
+  pull_request:
+    branches: [develop]
+    paths:
+      - .github/workflows/release.yml
+      - scripts/package-*
+      - scripts/release.py
+      - scripts/android/**
+      - scripts/linux/**
+      - scripts/windows/**
+      - scripts/macos/**
+      - app/shell-tauri/src-tauri/Cargo.toml
+      - app/shell-tauri/src-tauri/Cargo.lock
+      - app/shell-tauri/src-tauri/tauri*.conf.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: alpha-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_BUILD_JOBS: 8
+  CARGO_TERM_COLOR: always
+  RUST_TOOLCHAIN: '1.98.1'
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13.15'
+      - run: python3 scripts/test-release.py
+      - name: Check source version
+        id: version
+        run: |
+          version=$(python3 scripts/release.py check)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Require an integrated, checked alpha tag
+        if: github.event_name == 'push'
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          python3 scripts/release.py check --tag "$TAG"
+          test "$(git cat-file -t "refs/tags/$TAG")" = tag
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/develop
+          passed=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&status=success" \
+            --jq '[.workflow_runs[] | select(.event == "push" and .head_branch == "develop")] | length')
+          test "$passed" -gt 0 || { echo 'The tagged develop commit needs passing CI first.' >&2; exit 1; }
+
+  desktop:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            runner: ubuntu-24.04
+          - platform: windows
+            runner: windows-2025
+          - platform: macos-arm64
+            runner: macos-15
+          - platform: macos-x86_64
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13.15'
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: '1.4.2'
+      - run: bun install --frozen-lockfile
+      - name: Install pinned Rust
+        run: |
+          rustup toolchain install "$RUST_TOOLCHAIN" --profile minimal
+          rustup default "$RUST_TOOLCHAIN"
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev librsvg2-dev
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: app/shell-tauri/src-tauri
+          key: alpha-${{ matrix.platform }}-1.98.1
+      - name: Package Linux
+        if: runner.os == 'Linux'
+        run: bash scripts/package-linux
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/package-windows-native.ps1
+      - name: Package macOS
+        if: runner.os == 'macOS'
+        run: bash scripts/package-macos
+      - name: Collect versioned downloads
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: python3 scripts/release.py collect "$PLATFORM"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alpha-${{ matrix.platform }}
+          path: app/dist-release/${{ matrix.platform }}/
+          if-no-files-found: error
+          retention-days: 7
+
+  android:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13.15'
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: '1.4.2'
+      - run: bun install --frozen-lockfile
+      - name: Set runner signing directory
+        run: echo "ANDROID_SIGNING_DIR=$RUNNER_TEMP/android-signing" >> "$GITHUB_ENV"
+      - name: Restore retained Android signing identity
+        if: github.event_name == 'push'
+        env:
+          KEY_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          python3 - <<'PYTHON'
+          import base64
+          import os
+          from pathlib import Path
+          key = os.environ['KEY_BASE64']
+          password = os.environ['KEY_PASSWORD']
+          if not key or not password:
+              raise SystemExit('Configure the retained Android key and password secrets before releasing.')
+          folder = Path(os.environ['ANDROID_SIGNING_DIR'])
+          folder.mkdir(mode=0o700)
+          for name, data in [('preview.jks', base64.b64decode(key, validate=True)), ('password', password.encode())]:
+              path = folder / name
+              path.write_bytes(data)
+              path.chmod(0o600)
+          PYTHON
+      - name: Build Android toolchain
+        run: docker build -t garret-android -f scripts/android/Dockerfile scripts/android
+      - name: Build and verify APK
+        env:
+          # Build-only runs use a disposable key, never the public update identity.
+          ANDROID_ALLOW_NEW_KEY: ${{ github.event_name != 'push' && '1' || '0' }}
+        run: bash scripts/package-android
+      - run: python3 scripts/release.py collect android
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alpha-android
+          path: app/dist-release/android/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove runner signing material
+        if: always()
+        run: |
+          if [ -d "$ANDROID_SIGNING_DIR" ]; then
+            rm -rf -- "$ANDROID_SIGNING_DIR"
+          fi
+
+  publish:
+    if: github.event_name == 'push'
+    needs: [prepare, desktop, android]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13.15'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: alpha-*
+          path: app/dist-release/downloads
+          merge-multiple: true
+      - name: Verify downloads and publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          python3 scripts/release.py check --tag "$TAG"
+          git fetch origin "refs/tags/$TAG"
+          test "$(git rev-parse 'FETCH_HEAD^{commit}')" = "$GITHUB_SHA"
+          python3 scripts/release.py verify-downloads
+          cd app/dist-release/downloads
+          sha256sum -c ./*.sha256
+          cat ./*.sha256 > SHA256SUMS.txt
+          cat > release-notes.md <<'NOTES'
+          Alpha testing build. Keep a backup of your work before trying a new version.
+
+          Downloads: Linux and Windows x86_64, Android arm64/x86_64, and macOS Apple Silicon/Intel.
+          Extract the whole desktop package and follow its README. On Android, install the APK;
+          the Android info ZIP contains instructions and build details. The phone app has fewer
+          features than the desktop app and does not sync books automatically.
+
+          See SHA256SUMS.txt for download checksums. Please report problems through GitHub Issues.
+          NOTES
+          # A rerun may complete an interrupted draft, but never replaces a published release.
+          releases=$(gh api "repos/$REPO/releases" --paginate --slurp)
+          existing=$(printf '%s' "$releases" | jq -r --arg tag "$TAG" 'flatten | map(select(.tag_name == $tag)) | if length == 0 then "absent" else .[0].draft end')
+          if [ "$existing" = absent ]; then
+            gh release create "$TAG" --repo "$REPO" --verify-tag --draft --prerelease \
+              --title "garret $VERSION (alpha)" --notes-file release-notes.md
+          elif [ "$existing" != true ]; then
+            echo 'This release is already public; use a new version instead of replacing downloads.' >&2
+            exit 1
+          fi
+          gh release view "$TAG" --repo "$REPO" --json assets | python3 ../../../scripts/release.py verify-remote-assets
+          gh release upload "$TAG" --repo "$REPO" --clobber garret-* SHA256SUMS.txt
+          gh release view "$TAG" --repo "$REPO" --json assets | python3 ../../../scripts/release.py verify-remote-assets --complete
+          gh release edit "$TAG" --repo "$REPO" --draft=false --prerelease --latest=false
