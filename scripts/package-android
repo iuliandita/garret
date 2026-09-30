@@ -34,8 +34,8 @@ container=(docker run --rm --cpus "$cpus" --user "$(id -u):$(id -g)"
   --mount "type=bind,src=$repo,dst=/src"
   --mount "type=bind,src=$cache/cargo,dst=/cargo"
   --mount "type=bind,src=$cache/builder,dst=/home/builder"
-  --env CARGO_HOME=/cargo --env "CARGO_BUILD_JOBS=$cpus"
-  --env "JAVA_TOOL_OPTIONS=-XX:ActiveProcessorCount=$cpus"
+  --env HOME=/home/builder --env CARGO_HOME=/cargo --env "CARGO_BUILD_JOBS=$cpus"
+  --env "JAVA_TOOL_OPTIONS=-XX:ActiveProcessorCount=$cpus -Duser.home=/home/builder"
   --workdir /src/app/shell-tauri)
 # Untracked local notes stay out of the build container.
 if [[ -d "$repo/docs/local" ]]; then
