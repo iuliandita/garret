@@ -1,4 +1,5 @@
 import { mobileMessages } from "./messages";
+import { createIcon } from "../../ui/src/icons";
 import { openingScene, readWritingPosition, writeWritingPosition, type WritingPosition } from "./position";
 import type { MobileDocument, MobileScene, MobileWorkspace } from "./workspace";
 import type { FlushAck } from "../../ui/src/store/flush";
@@ -95,7 +96,9 @@ async function library(errorText?: string, resumeOpen = true) {
   wordmark.setAttribute("aria-hidden", "true");
   const title = element("h1", m.libraryTitle);
   header.append(wordmark);
-  const appearance = element("button", theme === "dark" ? m.light : m.dark);
+  const appearance = element("button");
+  appearance.className = "mobile-appearance";
+  appearance.append(createIcon(theme === "dark" ? "sun" : "moon"));
   appearance.type = "button";
   appearance.setAttribute("aria-label", `${m.appearance}: ${theme === "dark" ? m.light : m.dark}`);
   appearance.addEventListener("click", () => {

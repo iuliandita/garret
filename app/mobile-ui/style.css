@@ -52,7 +52,9 @@ body { margin: 0; }
 .mobile-library { padding: max(24px, env(safe-area-inset-top)) 24px; overflow-y: auto; }
 .mobile-library > * { flex-shrink: 0; width: 100%; max-width: 650px; margin-inline: auto; }
 .mobile-library header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.mobile-wordmark { width: 112px; aspect-ratio: 224 / 95; flex: none; background: url("garret-wordmark-ink.png") left center / contain no-repeat; }
+.mobile-wordmark { width: 144px; aspect-ratio: 224 / 95; flex: none; background: url("garret-wordmark-ink.png") left center / contain no-repeat; }
+.mobile-appearance { display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.mobile-appearance svg { width: 22px; height: 22px; }
 .mobile-library[data-theme="dark"] .mobile-wordmark { background-image: url("garret-wordmark-paper.png"); }
 .mobile-library h1 { font: 30px/1.3 Georgia, serif; margin: 18px auto 4px; }
 .mobile-library h2 { font-size: 20px; }

@@ -8266,10 +8266,10 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 
 /* The identity's wordmark: ink on the light palettes, paper on the dark ones,
    switched by the same two selectors the palette tokens use. The masters are
-   224px wide for 2x displays. */
+   224px wide. */
 #library-wordmark {
   flex: none;
-  width: 112px;
+  width: 144px;
   aspect-ratio: 224 / 95;
   background: url("garret-wordmark-ink.png") left center / contain no-repeat;
 }
