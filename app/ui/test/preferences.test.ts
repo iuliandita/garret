@@ -4,7 +4,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
 import { createPreferences, LOCALES, STARTS, type Locale, type Start } from "../src/preferences";
-import { CATALOGS, t } from "../src/i18n";
+import { CATALOGS, formatNumber, t } from "../src/i18n";
 import type { Theme } from "../src/theme";
 import { DEFAULT_TYPOGRAPHY, type Typography } from "../src/typography";
 import { DAILY_TARGETS, DEFAULT_DAILY_TARGET, type DailyTarget } from "../src/goals";
@@ -609,7 +609,7 @@ describe("preferences: the daily goal", () => {
       input.dispatchEvent(new Event("blur"));
       expect(input.value).toBe("750");
     }
-    expect(r.notices).toEqual(Array(5).fill(t("prefs.goal.invalid")));
+    expect(r.notices).toEqual(Array(5).fill(t("prefs.goal.invalid", { min: formatNumber(1), max: formatNumber(1000000) })));
     input.value = "900";
     input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", isComposing: true, bubbles: true }));
     await settle();
@@ -626,7 +626,7 @@ describe("preferences: the daily goal", () => {
       const r = rig("system", DEFAULT_TYPOGRAPHY, target);
       r.goalInput().value = "0";
       r.goalInput().dispatchEvent(new Event("blur"));
-      expect(r.notices).toEqual([t("prefs.goal.invalid")]);
+      expect(r.notices).toEqual([t("prefs.goal.invalid", { min: formatNumber(1), max: formatNumber(1000000) })]);
       expect(r.goalInput().value).toBe(target === "750" ? "750" : "");
       expect(r.targets).toEqual([]);
       r.control.destroy();

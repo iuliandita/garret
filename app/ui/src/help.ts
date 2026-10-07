@@ -164,6 +164,7 @@ export function createHelpPanel(deps: HelpPanelDeps): HelpPanel {
   for (const task of ["structure", "annotate", "export", "protect"] as const) {
     const details = document.createElement("details");
     const summary = document.createElement("summary");
+    summary.setAttribute("role", "button");
     summary.textContent = t(`help.guide.${task}.title`);
     const text = document.createElement("p");
     text.textContent = t(`help.guide.${task}.body`);

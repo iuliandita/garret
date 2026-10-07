@@ -71,6 +71,7 @@ export function createCreationChooser(deps: {
         const more = document.createElement("details");
         more.id = "creation-more";
         const summary = document.createElement("summary");
+        summary.setAttribute("role", "button");
         summary.textContent = t("menu.more");
         more.append(summary, bibleChoices(target));
         const pages = document.createElement("section");

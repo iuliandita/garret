@@ -22,7 +22,7 @@
 // made because a listbox is a second keyboard interaction model in a page whose
 // panels are all click-and-Escape.
 import { isCompositionKey } from "./composition-key";
-import { t } from "./i18n";
+import { formatNumber, t } from "./i18n";
 import { createPanelShell } from "./panel-shell";
 import { createHelpTip } from "./help-tip";
 import {
@@ -863,6 +863,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   const aids = document.createElement("details");
   aids.id = "prefs-writing-aids";
   const summary = document.createElement("summary");
+  summary.setAttribute("role", "button");
   summary.textContent = t("prefs.writing-aids");
   const aidGroups = document.createElement("div");
   aidGroups.className = "prefs-aid-groups";
@@ -1009,7 +1010,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     const value = customGoal.value;
     if (!isDailyTarget(value) || value === "off") {
       if (value !== "" && rejectedGoal !== value) {
-        deps.onNotice(t("prefs.goal.invalid"));
+        deps.onNotice(t("prefs.goal.invalid", { min: formatNumber(1), max: formatNumber(1000000) }));
         rejectedGoal = value;
       }
       if (restoreDraft) {
@@ -1146,6 +1147,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     close: () => setOpen(false),
     returnFocus: deps.onDismiss,
   });
+  panel.insertBefore(tabs, shell.body);
 
   return {
     open(): void {

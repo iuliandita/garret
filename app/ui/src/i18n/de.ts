@@ -895,7 +895,7 @@ export const DE = {
   "prefs.language.applied": "Die Sprache ändert sich, wenn die Anwendung das nächste Mal geöffnet wird.",
   "prefs.name.goal": "Tagesziel",
   "prefs.goal.custom": "Eigenes tägliches Wortziel",
-  "prefs.goal.invalid": "Gib eine ganze Zahl zwischen 1 und 1000000 ein.",
+  "prefs.goal.invalid": "Geben Sie eine ganze Zahl von {min} bis {max} ein.",
   "prefs.start.label": "Start",
   "prefs.start.home": "Die Bibliothek zeigen",
   "prefs.start.last": "Das zuletzt bearbeitete Buch öffnen",

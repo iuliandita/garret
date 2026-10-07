@@ -191,9 +191,9 @@ describe("catalog wording conventions", () => {
   test("German catalog prose avoids informal address", () => {
     const informalAddress = (value: string): boolean => {
       const prose = value.replace(PLACEHOLDER, "").replace(/`[^`]*`/g, "");
-      return /(?:^|[^\p{L}])(?:du|dich|dir|dein(?:e|en|em|er|es|s)?|schließe|öffne|warte)(?=$|[^\p{L}])/iu.test(prose);
+      return /(?:^|[^\p{L}])(?:du|dich|dir|dein(?:e|en|em|er|es|s)?|schließe|öffne|warte|gib)(?=$|[^\p{L}])/iu.test(prose);
     };
-    for (const address of ["du", "dich", "dir", "dein", "deine", "deinen", "deinem", "deiner", "deines", "Schließe", "Öffne", "warte"]) {
+    for (const address of ["du", "dich", "dir", "dein", "deine", "deinen", "deinem", "deiner", "deines", "Schließe", "Öffne", "warte", "Gib"]) {
       expect(informalAddress(address)).toBe(true);
     }
     expect(informalAddress("Öffnen Sie {dir}. Bitte warten Sie.")).toBe(false);

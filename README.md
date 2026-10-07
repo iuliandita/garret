@@ -114,6 +114,13 @@ Migrated profiles retain a compatibility link at the former `cc.local.app`
 location. Pictures and research originals sit next to each book, so back up a book's
 `.db` file together with those folders, with the app closed.
 
+If garret stops while preparing its application data, keep both folders named in
+the warning. Close every version of garret and back up both folders separately
+before attempting recovery. Do not delete, merge or overwrite either folder.
+Request recovery help and include the warning, removing personal paths before
+posting it publicly. A symbolic link inside the old profile also stops the move;
+garret does not follow it or remove it for you.
+
 ### Keep a safe copy of your book
 
 Keep your working book outside cloud-synced folders. **File > Copies > Create recovery point** makes a

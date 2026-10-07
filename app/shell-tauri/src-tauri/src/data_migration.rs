@@ -174,15 +174,19 @@ fn source_identity(root: &Path) -> Result<Option<(u64, u64)>, String> {
 }
 
 pub(crate) fn refusal(data_home: &Path, detail: &str) -> String {
-    let new = data_home.join(crate::APP_DIR).join("settings.json");
-    let old = data_home.join(LEGACY_DIR).join("settings.json");
-    let locale = bytes(&new)
-        .or_else(|_| bytes(&old))
+    let new = data_home.join(crate::APP_DIR);
+    let old = data_home.join(LEGACY_DIR);
+    let locale = bytes(&new.join("settings.json"))
+        .or_else(|_| bytes(&old.join("settings.json")))
         .ok()
         .and_then(|body| serde_json::from_slice::<crate::projects::Settings>(&body).ok())
         .map(|settings| settings.locale)
         .unwrap_or_default();
-    format!("{}\n{detail}", locale.strings().t("startup.data_migration"))
+    let guidance = locale.strings().f(
+        "startup.data_migration",
+        &[("old", &old.to_string_lossy()), ("new", &new.to_string_lossy())],
+    );
+    format!("{guidance}\n{detail}")
 }
 
 fn prepare_settings(
@@ -1083,6 +1087,8 @@ mod tests {
         fs::write(old.join("settings.json"), br#"{"locale":"de"}"#).unwrap();
         let message = refusal(temp.path(), "detail");
         assert!(message.contains("Bewahren Sie"));
+        assert!(message.contains(&old.to_string_lossy().to_string()));
+        assert!(message.contains(&temp.path().join(crate::APP_DIR).to_string_lossy().to_string()));
         assert!(message.ends_with("detail"));
         assert!(!temp.path().join(crate::APP_DIR).exists());
     }
