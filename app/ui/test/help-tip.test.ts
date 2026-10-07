@@ -16,8 +16,8 @@ describe("help definition placement", () => {
       help.anchor.getBoundingClientRect = () => rect(anchorLeft, anchorLeft + 16);
       panel.append(help.anchor);
       document.body.append(panel);
-      const original = HTMLElement.prototype.getBoundingClientRect;
-      HTMLElement.prototype.getBoundingClientRect = function () {
+      const original = Element.prototype.getBoundingClientRect;
+      Element.prototype.getBoundingClientRect = function (this: Element) {
         return this.classList.contains("tip") ? rect(0, 300) : original.call(this);
       };
       try {
@@ -27,7 +27,7 @@ describe("help definition placement", () => {
         expect(tip.style.maxWidth).toBe("300px");
         expect(tip.hidden).toBe(false);
       } finally {
-        HTMLElement.prototype.getBoundingClientRect = original;
+        Element.prototype.getBoundingClientRect = original;
         help.destroy();
         panel.remove();
       }
@@ -41,8 +41,8 @@ describe("help definition placement", () => {
     help.anchor.getBoundingClientRect = () => new DOMRect(700, 650, 16, 16);
     panel.append(help.anchor);
     document.body.append(panel);
-    const original = HTMLElement.prototype.getBoundingClientRect;
-    HTMLElement.prototype.getBoundingClientRect = function () {
+    const original = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function (this: Element) {
       return this.classList.contains("tip") ? new DOMRect(0, 0, 300, 60) : original.call(this);
     };
     try {
@@ -51,7 +51,7 @@ describe("help definition placement", () => {
       expect(Number.parseFloat(tip.style.top) + 650).toBe(584);
       expect(tip.classList.contains("tip-above")).toBe(true);
     } finally {
-      HTMLElement.prototype.getBoundingClientRect = original;
+      Element.prototype.getBoundingClientRect = original;
       help.destroy();
       panel.remove();
     }
