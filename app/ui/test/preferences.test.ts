@@ -607,7 +607,9 @@ describe("preferences: the daily goal", () => {
       input.value = value;
       input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
       input.dispatchEvent(new Event("blur"));
+      expect(input.value).toBe("750");
     }
+    expect(r.notices).toEqual(Array(5).fill(t("prefs.goal.invalid")));
     input.value = "900";
     input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", isComposing: true, bubbles: true }));
     await settle();
@@ -617,6 +619,18 @@ describe("preferences: the daily goal", () => {
     input.dispatchEvent(new Event("blur"));
     expect(r.targets).toEqual([]);
     r.control.destroy();
+  });
+
+  test("invalid blur reports once and restores the active custom goal or blank preset", () => {
+    for (const target of ["750", "500"] as const) {
+      const r = rig("system", DEFAULT_TYPOGRAPHY, target);
+      r.goalInput().value = "0";
+      r.goalInput().dispatchEvent(new Event("blur"));
+      expect(r.notices).toEqual([t("prefs.goal.invalid")]);
+      expect(r.goalInput().value).toBe(target === "750" ? "750" : "");
+      expect(r.targets).toEqual([]);
+      r.control.destroy();
+    }
   });
 
   test("a custom goal save failure retains the live value and reports the existing notice", async () => {

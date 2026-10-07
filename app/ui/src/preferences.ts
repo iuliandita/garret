@@ -1003,18 +1003,32 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     deps.onDailyTarget(next);
     void record(() => deps.persistDailyTarget(next), t("prefs.what.daily-goal"));
   };
-  const commitCustomGoal = (): void => {
+  let rejectedGoal: string | null = null;
+  const commitCustomGoal = (restoreDraft: boolean): void => {
     const value = customGoal.value;
-    if (!isDailyTarget(value) || value === "off" || value === dailyTarget) return;
+    if (!isDailyTarget(value) || value === "off") {
+      if (value !== "" && rejectedGoal !== value) {
+        deps.onNotice(t("prefs.goal.invalid"));
+        rejectedGoal = value;
+      }
+      if (restoreDraft) {
+        customGoal.value = (DAILY_TARGETS as readonly string[]).includes(dailyTarget) ? "" : dailyTarget;
+        rejectedGoal = null;
+      }
+      return;
+    }
+    rejectedGoal = null;
+    if (value === dailyTarget) return;
     applyDailyTargetChange(value);
   };
+  const onCustomGoalBlur = (): void => commitCustomGoal(true);
   const onCustomGoalKeyDown = (event: KeyboardEvent): void => {
     if (isCompositionKey(event) || event.key !== "Enter") return;
     event.preventDefault();
-    commitCustomGoal();
+    commitCustomGoal(false);
   };
   customGoal.addEventListener("keydown", onCustomGoalKeyDown);
-  customGoal.addEventListener("blur", commitCustomGoal);
+  customGoal.addEventListener("blur", onCustomGoalBlur);
 
   const onPanelClick = (event: Event): void => {
     const target = event.target;
@@ -1169,7 +1183,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
       destroyed = true;
       panel.removeEventListener("click", onPanelClick);
       customGoal.removeEventListener("keydown", onCustomGoalKeyDown);
-      customGoal.removeEventListener("blur", commitCustomGoal);
+      customGoal.removeEventListener("blur", onCustomGoalBlur);
       focusHelp.destroy();
       dictAdd.removeEventListener("click", onDictAddClick);
       dictInput.removeEventListener("keydown", onDictInputKeyDown);
