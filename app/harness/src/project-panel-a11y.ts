@@ -161,7 +161,7 @@ export function evaluateProjectPanelA11y(walk: PanelA11yWalk): GateResult[] {
   ] as const;
   const explanatory = [
     ["project-recovery-note-help", "About Recovery points on this device", "Restoring adds a new book. Nothing is replaced. New recovery point folders include referenced original pictures. Older database-only points do not."],
-    ["project-archive-note-help", "About If you lose this computer", "A new archive is one complete folder. To protect against losing this computer, move the whole folder off this computer yourself: onto a USB stick, another machine, or a sync folder. Older .db archives did not include pictures."],
+    ["project-archive-note-help", "About If you lose this computer", "A new archive is one complete, unencrypted folder. Anyone with access to it can read your book. To protect against losing this computer, move the whole folder off this computer yourself: onto a USB stick, another machine, or a sync folder. Older .db archives did not include pictures."],
     ["project-mirror-note-help", "About A readable copy you can open anywhere", "The mirror keeps your manuscript as ordinary Markdown files, one per scene, within ten seconds of what you have typed. It is a copy to read and edit elsewhere, not a backup: it is on this computer, and this application writes it rather than reading it back."],
   ] as const;
   const headings = [
@@ -181,7 +181,7 @@ export function evaluateProjectPanelA11y(walk: PanelA11yWalk): GateResult[] {
     "project-encrypted-archive-heading",
     "project-mirror-heading", "project-mirror-note-help", "project-mirror-toggle", "mirror-check",
   ];
-  const controls = [["project-new-name", "entry", "New book name"], ["project-create", "button", "Create"], ["project-new-choose", "button", "Choose a folder…"], ["project-move", "button", "Move this book…"], ["project-archive-now", "button", "Make an archive"], ["project-mirror-toggle", "button", "Turn the mirror on"]] as const;
+  const controls = [["project-new-name", "entry", "New book name"], ["project-create", "button", "Create"], ["project-new-choose", "button", "Choose a folder…"], ["project-move", "button", "Move this book…"], ["project-archive-now", "button", "Make unencrypted archive"], ["project-mirror-toggle", "button", "Turn the mirror on"]] as const;
   const uniqueIds = (ids: readonly string[]): boolean => ids.every((id) => unique(walk, id));
   const listOk = scope.valid && uniqueIds(listboxes.map(([id]) => id)) && listboxes.every(([id, name, empty, actionable]) => {
     const container = node(scope, id);
