@@ -1511,6 +1511,7 @@ body {
 #comments-compose:focus-visible,
 #project-new-name:focus-visible,
 #project-name-field:focus-visible,
+#prefs-goal-custom:focus-visible,
 #prefs-dict-word:focus-visible,
 #book-copy-prompt button:focus-visible,
 #status-popover button:focus-visible,
@@ -2739,6 +2740,11 @@ body.nav-hidden #nav-column {
   gap: 6px;
   margin-inline-end: var(--space-2);
   margin-bottom: 6px;
+}
+
+#prefs-goal-custom {
+  width: 8em;
+  min-width: 0;
 }
 
 #prefs-dict-word {

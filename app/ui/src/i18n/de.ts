@@ -894,6 +894,7 @@ export const DE = {
   "prefs.language.de": "Deutsch",
   "prefs.language.applied": "Die Sprache ändert sich, wenn die Anwendung das nächste Mal geöffnet wird.",
   "prefs.name.goal": "Tagesziel",
+  "prefs.goal.custom": "Eigenes tägliches Wortziel",
   "prefs.start.label": "Start",
   "prefs.start.home": "Die Bibliothek zeigen",
   "prefs.start.last": "Das zuletzt bearbeitete Buch öffnen",

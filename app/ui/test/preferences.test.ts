@@ -154,6 +154,11 @@ function rig(
     if (!(el instanceof HTMLInputElement)) throw new Error("no dictionary input mounted");
     return el;
   };
+  const goalInput = (): HTMLInputElement => {
+    const el = container.querySelector("#prefs-goal-custom");
+    if (!(el instanceof HTMLInputElement)) throw new Error("no custom goal input mounted");
+    return el;
+  };
   const dictWords = (): string[] =>
     [...container.querySelectorAll("#prefs-dict-list li")]
       .filter((li) => li.id !== "prefs-dict-empty" && li.id !== "prefs-dict-unavailable")
@@ -191,6 +196,7 @@ function rig(
     markCastNames,
     markCastNamesAnnounced,
     dictInput,
+    goalInput,
     dictWords,
     languageSelect,
     startSelect,
@@ -545,6 +551,95 @@ describe("preferences: the daily goal", () => {
     forged.click();
     await settle();
     expect(r.announced).toEqual([]);
+    expect(r.targets).toEqual([]);
+  });
+
+  test("the custom numeric field follows 2000 and restores only nonpreset goals", () => {
+    for (const target of ["off", "500", "750"] as const) {
+      const r = rig("system", DEFAULT_TYPOGRAPHY, target);
+      const input = r.goalInput();
+      expect(input.type).toBe("number");
+      expect(input.min).toBe("1");
+      expect(input.max).toBe("1000000");
+      expect(input.getAttribute("aria-label")).toBe(t("prefs.goal.custom"));
+      expect(CATALOGS.de["prefs.goal.custom"]).toBe("Eigenes tägliches Wortziel");
+      expect(input.previousElementSibling?.id).toBe("prefs-goal-2000");
+      expect(input.value).toBe(target === "750" ? "750" : "");
+      r.control.destroy();
+    }
+  });
+
+  test("Enter commits a complete custom goal immediately and blur does not save it twice", async () => {
+    const r = rig();
+    r.control.open();
+    const input = r.goalInput();
+    input.value = "750";
+    expect(r.announced).toEqual([]);
+    const enter = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+    input.dispatchEvent(enter);
+    expect(enter.defaultPrevented).toBe(true);
+    expect(r.announced).toEqual(["750"]);
+    input.dispatchEvent(new Event("blur"));
+    await settle();
+    expect(r.targets).toEqual(["750"]);
+    expect(input.value).toBe("750");
+    for (const target of DAILY_TARGETS) expect(r.byId(`prefs-goal-${target}`).getAttribute("aria-pressed")).toBe("false");
+    r.control.destroy();
+  });
+
+  test("blur commits a custom goal and a preset clears the field", async () => {
+    const r = rig();
+    r.goalInput().value = "750";
+    r.goalInput().dispatchEvent(new Event("blur"));
+    await settle();
+    expect(r.targets).toEqual(["750"]);
+    await r.click("prefs-goal-500");
+    expect(r.goalInput().value).toBe("");
+    expect(r.targets).toEqual(["750", "500"]);
+    expect(r.byId("prefs-goal-500").getAttribute("aria-pressed")).toBe("true");
+    r.control.destroy();
+  });
+
+  test("invalid and empty drafts preserve the active goal and composition Enter does not commit", async () => {
+    const r = rig("system", DEFAULT_TYPOGRAPHY, "750");
+    const input = r.goalInput();
+    for (const value of ["", "0", "0750", "750.5", "1e3", "1000001"]) {
+      input.value = value;
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      input.dispatchEvent(new Event("blur"));
+    }
+    input.value = "900";
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", isComposing: true, bubbles: true }));
+    await settle();
+    expect(r.targets).toEqual([]);
+    expect(r.announced).toEqual([]);
+    input.value = "750";
+    input.dispatchEvent(new Event("blur"));
+    expect(r.targets).toEqual([]);
+    r.control.destroy();
+  });
+
+  test("a custom goal save failure retains the live value and reports the existing notice", async () => {
+    const r = rig();
+    r.failWith("read-only file system");
+    r.goalInput().value = "750";
+    r.goalInput().dispatchEvent(new Event("blur"));
+    await settle();
+    expect(r.announced).toEqual(["750"]);
+    expect(r.goalInput().value).toBe("750");
+    expect(r.notices).toHaveLength(1);
+    expect(r.notices[0]).toContain("daily goal");
+    expect(r.notices[0]).toContain("read-only file system");
+    r.control.destroy();
+  });
+
+  test("destroy removes custom goal commit handlers", () => {
+    const r = rig();
+    const input = r.goalInput();
+    r.control.destroy();
+    input.value = "750";
+    input.dispatchEvent(new Event("blur"));
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     expect(r.targets).toEqual([]);
   });
 
@@ -1192,7 +1287,7 @@ test("privacy preferences routes to native settings and states the file boundary
 
 test("ambiguous writing modes describe each group once", () => {
   const r = rig();
-  for (const stem of ["focus", "typewriter", "mark-cast-names"]) {
+  for (const stem of ["typewriter", "mark-cast-names"]) {
     const note = r.container.querySelector(`#prefs-${stem}-note`);
     expect(note?.textContent).toBe(t(`prefs.${stem}.note`));
     const group = r.container.querySelector(`#prefs-${stem}`);
@@ -1204,6 +1299,31 @@ test("ambiguous writing modes describe each group once", () => {
   }
 });
 
+
+test("Focus help replaces its permanent note and works on hover and keyboard focus until destroy", () => {
+  const r = rig();
+  r.control.open();
+  r.panel().querySelector<HTMLDetailsElement>("#prefs-writing-aids")!.open = true;
+  const button = r.byId("prefs-focus-help");
+  const anchor = button.parentElement!;
+  expect(r.panel().querySelector("#prefs-focus-note") === null).toBe(true);
+  expect(button.closest('[aria-hidden="true"]') === null).toBe(true);
+  expect(button.getAttribute("aria-label")).toBe(t("help.about", { label: t("prefs.legend.focus") }));
+  expect(button.getAttribute("aria-describedby")).toBe("prefs-focus-help-text");
+  expect(r.panel().querySelector("#prefs-focus-help-text")?.textContent).toBe(t("prefs.focus.note"));
+  expect(anchor.querySelector(".tip") === null).toBe(true);
+  button.dispatchEvent(new MouseEvent("mouseenter"));
+  expect(anchor.querySelector(".tip-name")?.textContent).toBe(t("prefs.focus.note"));
+  button.dispatchEvent(new MouseEvent("mouseleave"));
+  expect(anchor.querySelector(".tip") === null).toBe(true);
+  button.focus();
+  expect(anchor.querySelector(".tip-name")?.textContent).toBe(t("prefs.focus.note"));
+  r.control.destroy();
+  expect(anchor.querySelector(".tip") === null).toBe(true);
+  button.dispatchEvent(new MouseEvent("mouseenter"));
+  button.dispatchEvent(new Event("focus"));
+  expect(anchor.querySelector(".tip") === null).toBe(true);
+});
 
 describe("recorded preference request ownership", () => {
   function deferredSave() {

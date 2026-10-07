@@ -24,6 +24,7 @@
 import { isCompositionKey } from "./composition-key";
 import { t } from "./i18n";
 import { createPanelShell } from "./panel-shell";
+import { createHelpTip } from "./help-tip";
 import {
   applyWritingModes,
   FOCUS_MODES,
@@ -32,7 +33,7 @@ import {
   type TypewriterMode,
   type WritingModes,
 } from "./writing-modes";
-import { DAILY_TARGETS, type DailyTarget } from "./goals";
+import { DAILY_TARGETS, isDailyTarget, type DailyTarget, type DailyTargetPreset } from "./goals";
 import {
   applyTheme,
   applyThemeFamily,
@@ -309,7 +310,7 @@ const ZOOM_LABELS: Record<Zoom, string> = {
 // The four numbers label themselves. "Off" is the only one that needs a word,
 // and it needs the word rather than a "0" because zero words a day is a target
 // nobody sets - it means "do not count me against anything".
-const GOAL_LABELS: Record<DailyTarget, string> = {
+const GOAL_LABELS: Record<DailyTargetPreset, string> = {
   off: t("prefs.off"),
   "250": "250",
   "500": "500",
@@ -530,13 +531,23 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
 
   // What the writer is trying to do, placed in the Writing section
   // after the three that set the page.
-  const goalGroup = buildGroup<DailyTarget>({
+  const goalGroup = buildGroup<DailyTargetPreset>({
     id: "prefs-goal",
     legend: t("prefs.legend.goal"),
     name: t("prefs.name.goal"),
     values: DAILY_TARGETS,
     labels: GOAL_LABELS,
   });
+  const customGoal = document.createElement("input");
+  customGoal.id = "prefs-goal-custom";
+  customGoal.type = "number";
+  customGoal.inputMode = "numeric";
+  customGoal.min = "1";
+  customGoal.max = "1000000";
+  customGoal.step = "1";
+  customGoal.setAttribute("aria-label", t("prefs.goal.custom"));
+  customGoal.value = (DAILY_TARGETS as readonly string[]).includes(dailyTarget) ? "" : dailyTarget;
+  goalGroup.querySelector(".prefs-choices")!.append(customGoal);
   // WHERE THE WRITER SITS, not how the application looks and not what they are
   // trying to do: a third kind of thing in the one panel there is. Both axes are
   // separate groups rather than one four-button row, because they are
@@ -544,11 +555,21 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   // choice of one.
   const focusGroup = buildGroup<FocusMode>({
     id: "prefs-focus",
-    description: t("prefs.focus.note"),
     legend: t("prefs.legend.focus"),
     values: FOCUS_MODES,
     labels: FOCUS_LABELS,
   });
+  const focusHelp = createHelpTip({
+    id: "prefs-focus-help",
+    label: t("prefs.legend.focus"),
+    definition: t("prefs.focus.note"),
+  });
+  const focusLegend = focusGroup.querySelector<HTMLElement>(".prefs-legend")!;
+  const focusLabel = document.createElement("span");
+  focusLabel.setAttribute("aria-hidden", "true");
+  focusLabel.textContent = t("prefs.legend.focus");
+  focusLegend.removeAttribute("aria-hidden");
+  focusLegend.replaceChildren(focusLabel, focusHelp.anchor);
   // NOT applied to the root by this unit. The underlines belong to the web
   // engine, which the host turns on and off through WebKitWebContext - there is
   // no attribute and no stylesheet rule for the page to write.
@@ -975,6 +996,26 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     void record(() => deps.persistWritingModes(writingModes), t("prefs.what.writing-modes"));
   };
 
+  const applyDailyTargetChange = (next: DailyTarget): void => {
+    dailyTarget = next;
+    customGoal.value = (DAILY_TARGETS as readonly string[]).includes(next) ? "" : next;
+    paint();
+    deps.onDailyTarget(next);
+    void record(() => deps.persistDailyTarget(next), t("prefs.what.daily-goal"));
+  };
+  const commitCustomGoal = (): void => {
+    const value = customGoal.value;
+    if (!isDailyTarget(value) || value === "off" || value === dailyTarget) return;
+    applyDailyTargetChange(value);
+  };
+  const onCustomGoalKeyDown = (event: KeyboardEvent): void => {
+    if (isCompositionKey(event) || event.key !== "Enter") return;
+    event.preventDefault();
+    commitCustomGoal();
+  };
+  customGoal.addEventListener("keydown", onCustomGoalKeyDown);
+  customGoal.addEventListener("blur", commitCustomGoal);
+
   const onPanelClick = (event: Event): void => {
     const target = event.target;
     if (!(target instanceof Element)) return;
@@ -1040,12 +1081,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
 
     if (group === "prefs-goal") {
       if (!(DAILY_TARGETS as readonly string[]).includes(value)) return;
-      dailyTarget = value as DailyTarget;
-      paint();
-      // Before the persist, and not waiting on it: the bar shows what the
-      // writer just chose in this window whether or not the file takes it.
-      deps.onDailyTarget(dailyTarget);
-      void record(() => deps.persistDailyTarget(dailyTarget), t("prefs.what.daily-goal"));
+      applyDailyTargetChange(value as DailyTargetPreset);
       return;
     }
 
@@ -1132,6 +1168,9 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
       if (destroyed) return;
       destroyed = true;
       panel.removeEventListener("click", onPanelClick);
+      customGoal.removeEventListener("keydown", onCustomGoalKeyDown);
+      customGoal.removeEventListener("blur", commitCustomGoal);
+      focusHelp.destroy();
       dictAdd.removeEventListener("click", onDictAddClick);
       dictInput.removeEventListener("keydown", onDictInputKeyDown);
       dictList.removeEventListener("click", onDictListClick);

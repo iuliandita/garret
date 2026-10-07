@@ -910,6 +910,7 @@ export const EN = {
   "prefs.language.de": "Deutsch",
   "prefs.language.applied": "The language changes when the application is next opened.",
   "prefs.name.goal": "Daily goal",
+  "prefs.goal.custom": "Custom daily word goal",
   // What the window opens onto next launch. A <select>, LOCALES'
   // own reason -- each answer is a full sentence, not a short word a row
   // of buttons fits. The label itself stays SHORT (a review capture showed
