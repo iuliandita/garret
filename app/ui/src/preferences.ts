@@ -541,6 +541,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   const customGoal = document.createElement("input");
   customGoal.id = "prefs-goal-custom";
   customGoal.type = "number";
+  customGoal.spellcheck = false;
   customGoal.inputMode = "numeric";
   customGoal.min = "1";
   customGoal.max = "1000000";
