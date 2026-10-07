@@ -641,28 +641,76 @@ mod tests {
     }
 
     #[test]
-    fn a_target_the_application_does_not_offer_is_refused_and_written_nowhere() {
+    fn an_invalid_daily_target_is_refused_and_written_nowhere() {
         let dir = tempdir().unwrap();
-        set_daily_target(dir.path(), "500").expect("a target it does offer");
-        let err = set_daily_target(dir.path(), "750").unwrap_err();
-        assert!(err.contains("750"), "{err}");
-        assert_eq!(
-            crate::projects::read_settings(dir.path()).daily_target,
-            crate::projects::DailyTarget::W500,
-            "a refused target must leave the recorded one alone"
-        );
+        set_daily_target(dir.path(), "500").unwrap();
+        let path = crate::projects::settings_path(dir.path());
+        let before = std::fs::read(&path).unwrap();
+        for bad in [
+            "",
+            "0",
+            "00",
+            "0750",
+            " 750",
+            "750 ",
+            "750\n",
+            "+750",
+            "-750",
+            "7.5",
+            "1e3",
+            "１００",
+            "1000001",
+            "4294967296",
+            "999999999999999999999999999999999999",
+        ] {
+            let err = set_daily_target(dir.path(), bad).unwrap_err();
+            assert!(err.contains(&format!("{bad:?}")), "{err}");
+            assert_eq!(std::fs::read(&path).unwrap(), before, "{bad:?}");
+            assert_eq!(
+                crate::projects::read_settings(dir.path()).daily_target,
+                crate::projects::DailyTarget::W500,
+                "{bad:?}"
+            );
+        }
     }
 
     #[test]
-    fn every_offered_target_round_trips_through_the_file() {
+    fn every_daily_target_round_trips_through_the_file_as_a_string() {
         let dir = tempdir().unwrap();
-        for name in ["off", "250", "500", "1000", "2000"] {
+        crate::projects::update_settings(dir.path(), |settings| {
+            settings.last_project = Some("/x/y.db".into());
+        })
+        .unwrap();
+        use crate::projects::DailyTarget;
+        for (name, expected) in [
+            ("off", DailyTarget::Off),
+            ("250", DailyTarget::W250),
+            ("500", DailyTarget::W500),
+            ("1000", DailyTarget::W1000),
+            ("2000", DailyTarget::W2000),
+            ("750", DailyTarget::Custom(750)),
+            ("1", DailyTarget::Custom(1)),
+            ("999999", DailyTarget::Custom(999_999)),
+            ("1000000", DailyTarget::Custom(1_000_000)),
+        ] {
             set_daily_target(dir.path(), name).expect(name);
+            let reopened = crate::projects::read_settings(dir.path());
+            assert_eq!(reopened.daily_target.as_str(), name);
+            assert_eq!(reopened.daily_target, expected);
+            assert_eq!(reopened.last_project.as_deref(), Some("/x/y.db"));
+            let raw: serde_json::Value = serde_json::from_slice(
+                &std::fs::read(crate::projects::settings_path(dir.path())).unwrap(),
+            )
+            .unwrap();
+            assert_eq!(raw["daily_target"], serde_json::json!(name));
             assert_eq!(
-                crate::projects::read_settings(dir.path())
-                    .daily_target
-                    .as_str(),
-                name
+                serde_json::to_string(&reopened.daily_target).unwrap(),
+                format!("\"{name}\"")
+            );
+            assert_eq!(
+                serde_json::from_value::<crate::projects::DailyTarget>(raw["daily_target"].clone())
+                    .unwrap(),
+                reopened.daily_target
             );
         }
     }

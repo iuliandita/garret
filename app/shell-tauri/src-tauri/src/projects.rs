@@ -1201,41 +1201,34 @@ pub fn in_library(library: &Path, path: &Path) -> bool {
 /// not in the project's own `meta` table beside the day's baseline: "I write 500
 /// words a day" survives starting a new book.
 ///
-/// A CLOSED SET of five, so it parses exactly like the theme and the typography
-/// and the panel stays one control type. The cost is stated plainly: a writer
-/// who wants 750 cannot have it. A free numeric field is the obvious
-/// alternative, and it is a different control in an otherwise homogeneous panel
-/// plus a validation surface (zero, negative, 10^9, "five hundred") that five
-/// buttons do not have. If the five are wrong, the fix is the list.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+/// Stored as `off` or a canonical decimal string from 1 through 1,000,000.
+/// The existing presets retain their variants and wire spellings.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum DailyTarget {
     #[default]
     Off,
-    #[serde(rename = "250")]
     W250,
-    #[serde(rename = "500")]
     W500,
-    #[serde(rename = "1000")]
     W1000,
-    #[serde(rename = "2000")]
     W2000,
+    Custom(u32),
 }
 
 impl DailyTarget {
     /// The spelling the settings file and the page both use.
-    pub fn as_str(self) -> &'static str {
+    pub fn as_str(self) -> std::borrow::Cow<'static, str> {
+        use std::borrow::Cow::{Borrowed, Owned};
         match self {
-            DailyTarget::Off => "off",
-            DailyTarget::W250 => "250",
-            DailyTarget::W500 => "500",
-            DailyTarget::W1000 => "1000",
-            DailyTarget::W2000 => "2000",
+            DailyTarget::Off => Borrowed("off"),
+            DailyTarget::W250 => Borrowed("250"),
+            DailyTarget::W500 => Borrowed("500"),
+            DailyTarget::W1000 => Borrowed("1000"),
+            DailyTarget::W2000 => Borrowed("2000"),
+            DailyTarget::Custom(words) => Owned(words.to_string()),
         }
     }
 
-    /// None for anything else, so the page cannot write a value into the
-    /// preferences file that the next launch will not understand.
+    /// Refuse noncanonical spellings so one preference has one encoding.
     pub fn parse(s: &str) -> Option<DailyTarget> {
         match s {
             "off" => Some(DailyTarget::Off),
@@ -1243,8 +1236,35 @@ impl DailyTarget {
             "500" => Some(DailyTarget::W500),
             "1000" => Some(DailyTarget::W1000),
             "2000" => Some(DailyTarget::W2000),
-            _ => None,
+            _ => {
+                if s.starts_with('0') || !s.bytes().all(|byte| byte.is_ascii_digit()) {
+                    return None;
+                }
+                let words = s.parse::<u32>().ok()?;
+                (1..=1_000_000)
+                    .contains(&words)
+                    .then_some(DailyTarget::Custom(words))
+            }
         }
+    }
+}
+
+impl Serialize for DailyTarget {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str().as_ref())
+    }
+}
+
+impl<'de> Deserialize<'de> for DailyTarget {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        Self::parse(&raw).ok_or_else(|| serde::de::Error::custom("invalid daily target"))
     }
 }
 
@@ -2111,14 +2131,8 @@ where
     Ok(raw.as_str().and_then(Theme::parse).unwrap_or_default())
 }
 
-/// Any JSON value that is not one of the five known strings reads as `off`, for
-/// the reason every field in this file is lenient: one unreadable preference
-/// must cost exactly itself, never `last_project` as well.
-///
-/// A NUMBER is not one of them, deliberately. `{"daily_target": 500}` reads as
-/// `off` rather than as five hundred, because the day the list gains a value the
-/// file has to say which spelling it means -- and a build that silently accepts
-/// both has two encodings of one preference from then on.
+/// A malformed target costs only this preference, never `last_project`.
+/// JSON numbers remain invalid: the settings wire format is always a string.
 fn lenient_daily_target<'de, D>(d: D) -> std::result::Result<DailyTarget, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -3404,6 +3418,50 @@ mod tests {
         assert_eq!(read.recent.len(), 1);
         assert_eq!(read.recent[0].path, "/x/y.db");
         assert_eq!(read.recent[0].opened_at, 42);
+    }
+
+    #[test]
+    fn daily_target_deserializes_leniently_without_losing_the_project() {
+        for value in [
+            serde_json::json!(null),
+            serde_json::json!(750),
+            serde_json::json!(true),
+            serde_json::json!([]),
+            serde_json::json!({"Custom":750}),
+            serde_json::json!(""),
+            serde_json::json!("0"),
+            serde_json::json!("0750"),
+            serde_json::json!(" 750"),
+            serde_json::json!("750 "),
+            serde_json::json!("+750"),
+            serde_json::json!("-750"),
+            serde_json::json!("7.5"),
+            serde_json::json!("1e3"),
+            serde_json::json!("1000001"),
+            serde_json::json!("4294967296"),
+            serde_json::json!("999999999999999999999999999999999999"),
+            serde_json::json!("７５０"),
+        ] {
+            let dir = tempdir().unwrap();
+            fs::create_dir_all(dir.path().join(APP_DIR)).unwrap();
+            fs::write(
+                settings_path(dir.path()),
+                serde_json::json!({
+                    "last_project":"/books/a.db", "theme":"dark", "zoom":"150", "daily_target":value
+                })
+                .to_string(),
+            )
+            .unwrap();
+            let settings = read_settings(dir.path());
+            assert_eq!(settings.daily_target, DailyTarget::Off, "{value}");
+            assert_eq!(
+                settings.last_project.as_deref(),
+                Some("/books/a.db"),
+                "{value}"
+            );
+            assert_eq!(settings.theme, Theme::Dark, "{value}");
+            assert_eq!(settings.zoom, crate::zoom::Zoom::Z150, "{value}");
+        }
     }
 
     #[test]

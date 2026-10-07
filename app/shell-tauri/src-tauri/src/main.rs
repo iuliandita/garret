@@ -2021,7 +2021,7 @@ fn preferences_js(settings: &projects::Settings) -> String {
         js_string(settings.typography.family.as_str()),
         js_string(settings.typography.size.as_str()),
         js_string(settings.typography.measure.as_str()),
-        js_string(settings.daily_target.as_str()),
+        js_string(settings.daily_target.as_str().as_ref()),
         settings.bible_rows,
         js_string(settings.writing_modes.focus.as_str()),
         js_string(settings.writing_modes.typewriter.as_str()),
@@ -9279,10 +9279,15 @@ mod tests {
 
     #[test]
     fn the_target_reaches_the_page_as_a_startup_global() {
-        let mut settings = crate::projects::Settings::default();
-        settings.daily_target = crate::projects::DailyTarget::W1000;
-        let js = preferences_js(&settings);
-        assert!(js.contains("window.__appDailyTarget='1000'"), "{js}");
+        for name in ["off", "250", "500", "1000", "2000", "750", "1", "1000000"] {
+            let mut settings = crate::projects::Settings::default();
+            settings.daily_target = crate::projects::DailyTarget::parse(name).unwrap();
+            let js = preferences_js(&settings);
+            assert!(
+                js.contains(&format!("window.__appDailyTarget='{name}'")),
+                "{js}"
+            );
+        }
     }
 
     #[test]
