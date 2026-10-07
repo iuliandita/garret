@@ -4798,6 +4798,25 @@ fn main() {
 fn report_migration_failure(data_home: &Path, error: &str) {
     let body = data_migration::refusal(data_home, error);
     eprintln!("{body}");
+    #[cfg(target_os = "linux")]
+    {
+        use gtk::prelude::*;
+
+        if let Err(error) = gtk::init() {
+            eprintln!("Could not show the startup error: {error}");
+            return;
+        }
+        let dialog = gtk::MessageDialog::new(
+            None::<&gtk::Window>,
+            gtk::DialogFlags::MODAL,
+            gtk::MessageType::Error,
+            gtk::ButtonsType::Ok,
+            &body,
+        );
+        dialog.set_title("garret");
+        dialog.run();
+        dialog.close();
+    }
     #[cfg(any(windows, target_os = "macos"))]
     let _ = rfd::MessageDialog::new()
         .set_title("garret")
