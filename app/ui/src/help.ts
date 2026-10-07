@@ -165,6 +165,8 @@ export function createHelpPanel(deps: HelpPanelDeps): HelpPanel {
     const details = document.createElement("details");
     const summary = document.createElement("summary");
     summary.setAttribute("role", "button");
+    summary.setAttribute("aria-expanded", "false");
+    details.addEventListener("toggle", () => summary.setAttribute("aria-expanded", String(details.open)));
     summary.textContent = t(`help.guide.${task}.title`);
     const text = document.createElement("p");
     text.textContent = t(`help.guide.${task}.body`);

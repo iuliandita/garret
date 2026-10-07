@@ -864,6 +864,8 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   aids.id = "prefs-writing-aids";
   const summary = document.createElement("summary");
   summary.setAttribute("role", "button");
+  summary.setAttribute("aria-expanded", "false");
+  aids.addEventListener("toggle", () => summary.setAttribute("aria-expanded", String(aids.open)));
   summary.textContent = t("prefs.writing-aids");
   const aidGroups = document.createElement("div");
   aidGroups.className = "prefs-aid-groups";

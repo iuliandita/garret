@@ -72,6 +72,8 @@ export function createCreationChooser(deps: {
         more.id = "creation-more";
         const summary = document.createElement("summary");
         summary.setAttribute("role", "button");
+        summary.setAttribute("aria-expanded", "false");
+        more.addEventListener("toggle", () => summary.setAttribute("aria-expanded", String(more.open)));
         summary.textContent = t("menu.more");
         more.append(summary, bibleChoices(target));
         const pages = document.createElement("section");
