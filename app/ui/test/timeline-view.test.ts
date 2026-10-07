@@ -652,6 +652,50 @@ describe("mountTimeline", () => {
   // ------------------------------------------------------- track rename
 
   describe("track rename", () => {
+    test("rename typing keeps zoom and undo keys native without changing the timeline", async () => {
+      const { mount: m, dirty } = mount(baseBody());
+      try {
+        const rename = () => {
+          container.querySelector<HTMLElement>(".timeline-lane .timeline-lane-header")!
+            .dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+          return container.querySelector<HTMLInputElement>(".timeline-lane-rename")!;
+        };
+        const first = rename();
+        await Promise.resolve();
+        first.value = "Renamed";
+        first.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+        expect(dirty).toHaveLength(1);
+        const input = rename();
+        await Promise.resolve();
+        input.value = "Draft + 0 - =";
+        const before = m.view();
+        for (const chord of [
+          { key: "-" }, { key: "=" }, { key: "+" }, { key: "0" },
+          { key: "z", ctrlKey: true }, { key: "Z", ctrlKey: true, shiftKey: true },
+          { key: "z", metaKey: true }, { key: "Z", metaKey: true, shiftKey: true },
+        ]) {
+          const event = new KeyboardEvent("keydown", { ...chord, bubbles: true, cancelable: true });
+          input.dispatchEvent(event);
+          expect(event.defaultPrevented).toBe(false);
+          expect(m.view()).toEqual(before);
+          expect(document.activeElement?.className).toBe("timeline-lane-rename");
+          expect(input.value).toBe("Draft + 0 - =");
+          expect(dirty).toHaveLength(1);
+        }
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        const root = container.querySelector<HTMLElement>("#timeline-view")!;
+        const zoom = new KeyboardEvent("keydown", { key: "-", bubbles: true, cancelable: true });
+        root.dispatchEvent(zoom);
+        expect(zoom.defaultPrevented).toBe(true);
+        expect(m.view().pxPerUnit).toBeLessThan(before.pxPerUnit);
+        root.dispatchEvent(new KeyboardEvent("keydown", { key: "z", metaKey: true, bubbles: true }));
+        expect(dirty).toHaveLength(2);
+        expect(JSON.parse(dirty[1]!).tracks[0].name).toBe("Ines");
+      } finally {
+        m.destroy();
+      }
+    });
+
     test("double-click on a thread track's header opens an inline field; Enter commits", () => {
       const { mount: m, dirty } = mount(baseBody());
       const header = container.querySelector<HTMLElement>(".timeline-lane .timeline-lane-header")!;

@@ -1391,19 +1391,21 @@ fn import_path(
         .file_name()
         .and_then(|s| s.to_str())
         .unwrap_or("that file");
-    // Size before contents. A refusal that has already read the file has not
-    // refused anything, and this is the only bound on what the parse holds.
-    let size = fs::metadata(path)
-        .map_err(|e| format!("cannot read {}: {e}", path.display()))?
-        .len();
-    if size > MAX_IMPORT_BYTES {
-        return Err(format!(
-            "{shown} is {} MB; the limit is {} MB",
-            size / 1_000_000,
-            MAX_IMPORT_BYTES / 1_000_000
-        ));
-    }
-    let bytes = fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+    let read_error = |reason: &str| {
+        if reason == "too large" {
+            format!(
+                "{shown} exceeds the import size limit; the limit is {} MB",
+                MAX_IMPORT_BYTES / 1_000_000
+            )
+        } else {
+            format!("cannot read {}: {reason}", path.display())
+        }
+    };
+    let source =
+        backup_bundle::open_regular_with_limit(path, MAX_IMPORT_BYTES).map_err(read_error)?;
+    // Keep the checked handle and enforce the bound again if its file grows.
+    let bytes =
+        read_import_bounded(source, MAX_IMPORT_BYTES).map_err(|reason| read_error(&reason))?;
     // The `.docx` extension's own promise, kept: a file named `.docx` that
     // is not a zip at all is refused here rather than falling through to
     // the Markdown branch below and being misread as prose, exactly as the
@@ -1416,13 +1418,16 @@ fn import_path(
         .and_then(|e| e.to_str())
         .is_some_and(|e| e.eq_ignore_ascii_case("docx"));
     if named_docx && !bytes.starts_with(ZIP_SIGNATURE) {
-        return Err(format!("{shown} is not a DOCX: it does not start with a zip header"));
+        return Err(format!(
+            "{shown} is not a DOCX: it does not start with a zip header"
+        ));
     }
     // The stem, for a file that does not name itself. `file_stem` and not a
     // split on '.', so "part 2.md" keeps its space and "a.b.md" keeps "a.b".
     let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or(shown);
     let (imported, losses) = if bytes.starts_with(ZIP_SIGNATURE) {
-        let parsed = docx_import::parse(&bytes, stem).map_err(|e| format!("{}: {e}", path.display()))?;
+        let parsed =
+            docx_import::parse(&bytes, stem).map_err(|e| format!("{}: {e}", path.display()))?;
         (parsed.imported, parsed.losses)
     } else {
         let source = String::from_utf8(bytes)
@@ -1434,8 +1439,13 @@ fn import_path(
         .iter()
         .map(|i| (i.parent, i.item_type, i.title.as_str(), i.body.as_deref()))
         .collect();
-    create_imported_into_dir(data_home, dest_dir, &imported.name, &rows, strings)
-        .map(|summary| ImportOutcome { summary, losses, derived_contents: imported.derived_contents })
+    create_imported_into_dir(data_home, dest_dir, &imported.name, &rows, strings).map(|summary| {
+        ImportOutcome {
+            summary,
+            losses,
+            derived_contents: imported.derived_contents,
+        }
+    })
 }
 
 /// `create_into_dir`'s counterpart for an import: create in `dir` and
@@ -1459,6 +1469,19 @@ fn create_imported_into_dir(
 /// 10.5 MB, so this is roughly six manuscripts — far above anything a writer
 /// arrives with and far below the point where one parse costs the process.
 const MAX_IMPORT_BYTES: u64 = 64 * 1024 * 1024;
+
+fn read_import_bounded(source: impl std::io::Read, limit: u64) -> Result<Vec<u8>, String> {
+    use std::io::Read;
+    let mut bytes = Vec::new();
+    source
+        .take(limit.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .map_err(|e| e.to_string())?;
+    if bytes.len() as u64 > limit {
+        return Err("too large".to_string());
+    }
+    Ok(bytes)
+}
 
 /// The one place the openability restriction is decided. Without it a page bug
 /// could open an arbitrary file as a manuscript.
@@ -8996,6 +9019,53 @@ mod tests {
         assert!(dir.path().join("outside.md").exists());
         let err = import_named(dir.path(), &library, &drop_dir, "../outside.md").unwrap_err();
         assert!(err.contains("import folder"), "{err}");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn manuscript_import_refuses_a_link_outside_the_drop_folder() {
+        let (dir, library, drop_dir) = import_fixture("# Book\n\n## One\n\nprose\n");
+        let outside = dir.path().join("outside.md");
+        let content = "# Outside\n\n## One\n\nPrivate prose.\n";
+        std::fs::write(&outside, content).unwrap();
+        std::os::unix::fs::symlink(&outside, drop_dir.join("linked.md")).unwrap();
+        let error = import_named(dir.path(), &library, &drop_dir, "linked.md").unwrap_err();
+        assert!(error.contains("not a regular file"), "{error}");
+        assert!(crate::projects::list(&library).is_empty());
+        assert_eq!(std::fs::read_to_string(outside).unwrap(), content);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn manuscript_import_refuses_nonregular_sources() {
+        let (dir, library, drop_dir) = import_fixture("# Book\n\n## One\n\nprose\n");
+        std::fs::create_dir(drop_dir.join("directory.md")).unwrap();
+        let fifo = drop_dir.join("pipe.md");
+        rustix::fs::mkfifoat(
+            rustix::fs::CWD,
+            &fifo,
+            rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+        )
+        .unwrap();
+        for filename in ["directory.md", "pipe.md"] {
+            let error = import_named(dir.path(), &library, &drop_dir, filename).unwrap_err();
+            assert!(error.contains("not a regular file"), "{error}");
+        }
+        assert!(crate::projects::list(&library).is_empty());
+    }
+
+    #[test]
+    fn bounded_import_read_refuses_growth_and_stops_at_the_sentinel() {
+        let mut source = std::io::Cursor::new(b"0123456789");
+        assert_eq!(
+            super::read_import_bounded(&mut source, 4).unwrap_err(),
+            "too large"
+        );
+        assert_eq!(source.position(), 5);
+        assert_eq!(
+            super::read_import_bounded(std::io::Cursor::new(b"0123"), 4).unwrap(),
+            b"0123"
+        );
     }
 
     #[test]

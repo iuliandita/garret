@@ -1612,6 +1612,8 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
 
   const onKeyDown = (event: KeyboardEvent): void => {
     if (isCompositionKey(event)) return;
+    const target = event.target;
+    if (target instanceof HTMLElement && (target.closest("input, textarea, select") !== null || target.isContentEditable)) return;
     if (timeline === null) return;
     // ESCAPE CANCELS A DRAG (design section 4, plan item 4), checked before
     // anything else this handler does: the drop never commits and a

@@ -685,6 +685,7 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
       }
       return;
     }
+    if (!container.contains(document.activeElement)) return;
     if (painted !== null) {
       if (panel.handleArrowKey(event)) return;
       if (event.key === "ArrowLeft") {

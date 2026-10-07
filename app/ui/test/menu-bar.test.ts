@@ -1240,6 +1240,32 @@ describe("the keyboard", () => {
       teardown(rig);
     }
   });
+
+  test("arrows in the editor keep their default and focus while a submenu is open", () => {
+    const rig = mount();
+    const editor = document.createElement("textarea");
+    editor.id = "outside-the-open-menu";
+    document.body.append(editor);
+    try {
+      press("e", { altKey: true });
+      editor.focus();
+      for (const key of ["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"]) {
+        const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+        editor.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(false);
+        expect(document.activeElement?.id).toBe(editor.id);
+        expect(rig.panel().hidden).toBe(false);
+      }
+      press("Escape");
+      expect(rig.panel().hidden).toBe(true);
+      expect(document.activeElement?.id).toBe(editor.id);
+      press("f", { altKey: true });
+      expect(document.activeElement?.id).toBe("menu-project-new");
+    } finally {
+      editor.remove();
+      teardown(rig);
+    }
+  });
 });
 
 describe("the Menu button and its list", () => {

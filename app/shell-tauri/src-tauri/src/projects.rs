@@ -9,6 +9,7 @@
 use crate::store::Store;
 use crate::APP_DIR;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::fs;
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
@@ -90,9 +91,10 @@ pub fn without_directory(path: &Path) -> String {
     // `file_name` answers over normalized COMPONENTS, and a `.` is not a
     // component: it reads `/home/writer/.` as `writer` and hands back the
     // operating-system user's own name, which is the exact string this function
-    // exists to remove. Linux-only by scope decision, so `/` is the separator.
+    // exists to remove. Accept both separator spellings on every platform so
+    // a project moved between operating systems cannot retain its old directory.
     let raw = path.to_string_lossy();
-    match raw.rsplit('/').find(|part| !part.is_empty()) {
+    match raw.rsplit(['/', '\\']).find(|part| !part.is_empty()) {
         Some(".") | Some("..") | None => String::new(),
         Some(last) => last.to_string(),
     }
@@ -546,8 +548,8 @@ pub fn startup_error_path(data_home: &Path) -> PathBuf {
 
 /// Lowercase; ASCII alphanumerics and hyphens; runs of other characters
 /// collapse to a single hyphen; leading and trailing hyphens trimmed; capped at
-/// 64 characters. None when nothing survives: a project must be findable by the
-/// name the writer typed, and "" is not a name.
+/// 64 characters. When no ASCII survives, Unicode alphanumeric titles use a
+/// deterministic digest basename. Empty and punctuation-only titles are refused.
 ///
 /// A typed hyphen is treated as a separator too, so "a - b" is one gap rather
 /// than three; the output alphabet is unchanged either way.
@@ -566,11 +568,15 @@ pub fn slugify(name: &str) -> Option<String> {
     // The cap can land mid-gap, so the trim runs again rather than emitting a
     // name ending in a hyphen.
     trim_hyphens(&mut out);
-    if out.is_empty() {
-        None
-    } else {
-        Some(out)
+    if !out.is_empty() {
+        return Some(out);
     }
+    let title = name.trim();
+    if !title.chars().any(char::is_alphanumeric) {
+        return None;
+    }
+    let digest = Sha256::digest(title.as_bytes());
+    Some(format!("book-{:x}", digest)[..37].to_string())
 }
 
 fn trim_hyphens(s: &mut String) {
@@ -2679,6 +2685,73 @@ mod tests {
         // "" is not a name, and a project the writer cannot find by the name
         // they typed is worse than a refused create.
         assert_eq!(slugify("!!!"), None);
+    }
+
+    #[test]
+    fn unicode_only_titles_have_stable_distinct_safe_basenames() {
+        for (title, expected) in [
+            ("שלום", "book-b7ac0398ef74193ab738b21df0912329"),
+            ("العربية", "book-d274159863057eb5c633116c3b54e4f8"),
+            ("中文", "book-72726d8818f693066ceb69afa364218b"),
+        ] {
+            assert_eq!(slugify(title).as_deref(), Some(expected));
+            assert_eq!(slugify(&format!("  {title}  ")).as_deref(), Some(expected));
+        }
+        for title in ["", "   ", "!!!", "。？！", "—"] {
+            assert_eq!(slugify(title), None, "{title:?}");
+        }
+        for (title, expected) in [
+            ("  The Winter Harbour!  ", "the-winter-harbour"),
+            ("a - b", "a-b"),
+            ("Straße", "stra-e"),
+            ("中文 A", "a"),
+        ] {
+            assert_eq!(slugify(title).as_deref(), Some(expected));
+        }
+    }
+
+    #[test]
+    fn unicode_titles_create_and_import_without_replacing_existing_books() {
+        let created_dir = tempdir().unwrap();
+        let imported_dir = tempdir().unwrap();
+        let prose = r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Imported prose."}]}]}"#;
+        let rows = [(None, "scene", "Imported scene", Some(prose))];
+        for title in ["שלום", "العربية", "中文"] {
+            let created = create_in(created_dir.path(), title).unwrap();
+            let imported = create_imported(imported_dir.path(), title, &rows).unwrap();
+            for summary in [&created, &imported] {
+                assert_eq!(summary.name, title);
+                let store = Store::open_readonly(Path::new(&summary.path)).unwrap();
+                assert_eq!(store.get_meta(NAME_KEY).unwrap().as_deref(), Some(title));
+            }
+            let store = Store::open_readonly(Path::new(&imported.path)).unwrap();
+            let scenes: Vec<_> = store
+                .items()
+                .unwrap()
+                .into_iter()
+                .filter(|item| item.item_type == "scene")
+                .collect();
+            assert_eq!(scenes.len(), 1);
+            assert_eq!(scenes[0].title, "Imported scene");
+            let created_before = fs::read(&created.path).unwrap();
+            let imported_before = fs::read(&imported.path).unwrap();
+            assert!(create_in(created_dir.path(), title)
+                .unwrap_err()
+                .contains("already exists"));
+            assert!(create_imported(imported_dir.path(), title, &rows)
+                .unwrap_err()
+                .contains("already exists"));
+            assert_eq!(fs::read(&created.path).unwrap(), created_before);
+            assert_eq!(fs::read(&imported.path).unwrap(), imported_before);
+        }
+        for directory in [created_dir.path(), imported_dir.path()] {
+            let books = fs::read_dir(directory)
+                .unwrap()
+                .map(|entry| entry.unwrap().path())
+                .filter(|path| path.is_file() && path.extension().is_some_and(|ext| ext == "db"))
+                .count();
+            assert_eq!(books, 3);
+        }
     }
 
     #[test]
@@ -4879,6 +4952,61 @@ mod tests {
             without_directory(Path::new("2026-08-21T09-00-00Z.db")),
             "2026-08-21T09-00-00Z.db"
         );
+    }
+
+    #[test]
+    fn recovery_sources_remove_windows_unc_and_mixed_directories() {
+        for value in [
+            r"C:\Users\writer\recovery\point.db",
+            r"\\server\share\writer\recovery\point.db",
+            r"C:\Users/writer\recovery/point.db",
+            r"C:\Users\writer\recovery\point.db\",
+        ] {
+            assert_eq!(without_directory(Path::new(value)), "point.db", "{value}");
+        }
+        for value in [
+            r"C:\Users\writer\.",
+            r"C:\Users\writer\..",
+            r"\\server\share\writer\.\",
+            r"C:\Users/writer\../",
+            r"\\",
+        ] {
+            assert_eq!(without_directory(Path::new(value)), "", "{value}");
+        }
+    }
+
+    #[test]
+    fn opening_for_writing_normalizes_windows_recovery_metadata() {
+        let dir = tempdir().unwrap();
+        let db = dir.path().join("p.db");
+        for recorded in [
+            r"C:\Users\writer\recovery\point.db",
+            r"\\server\share\writer\recovery\point.db",
+            r"C:\Users/writer\recovery/point.db",
+        ] {
+            for existing_only in [false, true] {
+                {
+                    let store = Store::open(&db).unwrap();
+                    store.set_meta(RECOVERED_FROM_KEY, recorded).unwrap();
+                }
+                let store = if existing_only {
+                    open_existing_for_writing(&db).unwrap()
+                } else {
+                    open_for_writing(&db).unwrap()
+                };
+                assert_eq!(
+                    store.get_meta(RECOVERED_FROM_KEY).unwrap().as_deref(),
+                    Some("point.db")
+                );
+                assert!(!forget_recovery_directory(&store));
+                drop(store);
+                let store = Store::open_readonly(&db).unwrap();
+                assert_eq!(
+                    store.get_meta(RECOVERED_FROM_KEY).unwrap().as_deref(),
+                    Some("point.db")
+                );
+            }
+        }
     }
 
     #[test]
