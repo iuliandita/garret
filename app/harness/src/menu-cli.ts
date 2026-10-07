@@ -27,7 +27,7 @@ import { join } from "node:path";
 import { PY_SELECT_APPS, pidListArg } from "./atspi";
 import { captureEnv } from "./env";
 import { evaluateMenuGates, type MenuMetrics } from "./gates";
-import { menuChord, menuRoute } from "./menu-drive";
+import { menuChord, menuDriver, menuRoute } from "./menu-drive";
 import { readManuscript } from "./markdown-read";
 import { buildResult, writeResult } from "./results";
 import { BIN, findWindowId, runShell, survivingShellPids } from "./shell";
@@ -44,22 +44,8 @@ const MENUBAR_ID = "menu-controls";
 const TITLE_IDS = ["menu-file", "menu-edit", "menu-outline", "menu-help"] as const;
 const PANEL_ID = "menu-panel";
 
-/** How many ArrowDowns from the top of each menu to the item wanted. Opening a
- *  menu focuses item 0, so activating index N is N presses.
- *
- *  These are hard-coded, and that is only sound because NO menu item in this
- *  application is ever conditionally hidden, disabled or absent — `menu-remove`
- *  changes its TEXT between Delete and Restore and never its position. Read out
- *  of `menu-bar.ts`, not assumed. THE DAY AN ITEM BECOMES CONDITIONAL, every
- *  index below it shifts and this rig drives the wrong command while reporting
- *  a plausible number. */
-// THE INDICES ARE PARSED, NEVER RESTATED. These were three literals with
-// comments naming the items above them, and they were correct right up until an
-// item was inserted above one of them - which happened the day Outline gained
-// "Go to...". The rig then pressed Return on the item ABOVE the one it named,
-// and the run aborted on its "the selected row was not in the bin" guard, which
-// is that guard working. `menuRoute` reads the order out of `menu-bar.ts`, the
-// one place it is actually decided.
+/** Commands are routed through the current menu pages. Removal labels are
+ *  observed on the Organize page before its leaf action is activated. */
 const FILE_EXPORT = "menu-export";
 const OUTLINE_NEW_SCENE = "menu-new-scene";
 const OUTLINE_REMOVE = "menu-remove";
@@ -266,7 +252,7 @@ function seed(label: string): string {
 
 function homeFor(label: string): string {
   const dir = join(root, `home-${label}`);
-  mkdirSync(join(dir, "cc.local.app"), { recursive: true });
+  mkdirSync(join(dir, "garret"), { recursive: true });
   return dir;
 }
 
@@ -361,13 +347,7 @@ async function boot(options: BootOptions): Promise<number> {
         },
         openMenu,
         activate: async (itemId) => {
-          const route = menuRoute(itemId);
-          await openMenu(route.chord);
-          for (let i = 0; i < route.index; i++) {
-            key("Down");
-            await Bun.sleep(KEY_STEP_MS);
-          }
-          key("Return");
+          await menuDriver(display, wid, xdo).activate(itemId);
           await Bun.sleep(SETTLE_MS);
         },
       };
@@ -580,11 +560,17 @@ async function main(): Promise<void> {
         ctx.clickAt(Math.round(row.x + row.w / 2), Math.round(row.y + row.h / 2));
         await Bun.sleep(MENU_OPEN_MS);
         await ctx.openMenu(menuChord("menu-outline"));
+        const route = menuRoute(OUTLINE_REMOVE);
+        for (const step of route.path.slice(0, -1)) {
+          for (let i = 0; i < step.index; i++) { ctx.key("Down"); await Bun.sleep(KEY_STEP_MS); }
+          ctx.key("Return");
+          await Bun.sleep(MENU_OPEN_MS);
+        }
         const opened = ctx.walk();
         captured.labelLive = opened.find((n) => n.id === "menu-remove")?.name ?? null;
         // Same open menu, so no further walk: step to the item and run it. The
         // step count comes from the menu source, not from a literal.
-        for (let i = 0; i < menuRoute(OUTLINE_REMOVE).index; i++) {
+        for (let i = 0; i < route.path.at(-1)!.index; i++) {
           ctx.key("Down");
           await Bun.sleep(KEY_STEP_MS);
         }
@@ -622,6 +608,12 @@ async function main(): Promise<void> {
         ctx.clickAt(Math.round(row.x + row.w / 2), Math.round(row.y + row.h / 2));
         await Bun.sleep(MENU_OPEN_MS);
         await ctx.openMenu(menuChord("menu-outline"));
+        const route = menuRoute(OUTLINE_REMOVE);
+        for (const step of route.path.slice(0, -1)) {
+          for (let i = 0; i < step.index; i++) { ctx.key("Down"); await Bun.sleep(KEY_STEP_MS); }
+          ctx.key("Return");
+          await Bun.sleep(MENU_OPEN_MS);
+        }
         const opened = ctx.walk();
         captured.labelTrashed = opened.find((n) => n.id === "menu-remove")?.name ?? null;
       },

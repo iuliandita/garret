@@ -13,6 +13,7 @@ import { join } from "node:path";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
+import { t } from "../src/i18n";
 import { createNavigator } from "../src/navigator/index";
 import { REVISION_STATES, STATE_MARKS, stateDescriptionId } from "../src/revision-states";
 
@@ -366,7 +367,7 @@ describe("the synopsis mark", () => {
     nav.setSynopses(new Set(["s-1"]));
     const mark = rowNamed(container, "Sc 1").querySelector(".nav-synopsis");
     expect(mark?.textContent).toBe("\u00a7");
-    expect(mark?.getAttribute("title")).toBe("Has a synopsis");
+    expect((mark as HTMLElement)?.dataset.navHint).toBe("Has a synopsis");
     expect(mark?.getAttribute("aria-hidden")).toBe("true");
     expect(mark?.closest(".nav-title")).toBeNull();
     const plain = rowNamed(container, "Ch A").querySelector(".nav-synopsis");
@@ -448,4 +449,49 @@ describe("a truncated title", () => {
     expect(row.getAttribute("aria-label")).toBeNull();
     nav.destroy();
   });
+});
+
+
+test("delegated indicator tips follow hover and keyboard selection without changing row names", async () => {
+  const container = makeContainer();
+  const nav = createNavigator({ container, source: statedSource(), rowHeight: 24, overscan: 2, mode: "virtual" });
+  nav.setSynopses(new Set(["s-1"]));
+  nav.setAppearances(new Set(["s-1"]));
+  nav.setCounts(new Map([["s-1", 35]]));
+  const row = rowNamed(container, "Sc 1");
+  const tip = (): HTMLElement | null => document.querySelector(".nav-indicator-tip");
+  for (const [selector, text] of [[".nav-synopsis", t("nav.synopsis.described")], [".nav-appearances", t("nav.appearances.described")], [".nav-state", t("nav.state.described", { state: "Draft" })], [".nav-count", t("nav.words.described", { count: "35" })]]) {
+    row.querySelector(selector)?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    expect(tip()?.textContent).toBe(text);
+    expect(row.children.length).toBe(5);
+  }
+  const hovered = tip()!;
+  row.querySelector(".nav-count")?.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: document.body }));
+  hovered.dispatchEvent(new MouseEvent("mouseenter"));
+  await Bun.sleep(250);
+  expect(tip()).toBe(hovered);
+  hovered.dispatchEvent(new MouseEvent("mouseleave"));
+  expect(tip()).toBeNull();
+  container.focus();
+  nav.selectById("s-1");
+  expect(tip()?.textContent).toContain(t("nav.words.described", { count: "35" }));
+  expect(row.getAttribute("aria-describedby")).toContain("nav-word-description");
+  expect(document.getElementById("nav-word-description")?.textContent).toBe(t("nav.words.described", { count: "35" }));
+  container.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+  expect(tip()?.textContent).toBe(t("nav.state.described", { state: "Outline" }));
+  container.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", isComposing: true, bubbles: true }));
+  expect(tip() !== null).toBe(true);
+  container.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+  expect(tip()).toBeNull();
+  row.querySelector(".nav-count")?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+  container.dispatchEvent(new Event("scroll"));
+  expect(tip()).toBeNull();
+  nav.setCounts(new Map());
+  expect((row.querySelector(".nav-count") as HTMLElement).dataset.navHint).toBeUndefined();
+  nav.reload(statedSource());
+  expect(tip()).toBeNull();
+  nav.destroy();
+  container.focus();
+  expect(tip()).toBeNull();
+  container.remove();
 });

@@ -51,8 +51,8 @@ function command(args: string[], display?: string): string {
   return child.stdout.toString().trim();
 }
 try {
-  mkdirSync(join(home, "cc.local.app"), { recursive: true });
-  writeFileSync(join(home, "cc.local.app", "settings.json"), JSON.stringify({ theme: "light", locale: "en" }));
+  mkdirSync(join(home, "garret"), { recursive: true });
+  writeFileSync(join(home, "garret", "settings.json"), JSON.stringify({ theme: "light", locale: "en" }));
   command([BIN, "--seed", "lab/fixtures/out/tiny", project]);
   let observation: unknown;
   const outcome = await runShell({

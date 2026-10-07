@@ -159,6 +159,7 @@ describe("the rail's own shape", () => {
     await opening;
     expect(h.proofReads).toBe(0);
     expect(h.rail.isOpen()).toBe(false);
+    expect(h.dismissed).toBe(0);
   });
 
   test("it is closed on mount and shows nothing", () => {
@@ -191,11 +192,22 @@ describe("the rail's own shape", () => {
     expect(h.dismissed).toBe(1);
   });
 
-  test("Close closes it", async () => {
-    const h = mount();
+  test("Close closes it before handing focus back", async () => {
+    const editor = document.createElement("button");
+    editor.id = "preview-return-focus";
+    document.body.append(editor);
+    let dismissals = 0;
+    const h = mount({ onDismiss: () => {
+      expect(h.rail.isOpen()).toBe(false);
+      dismissals += 1;
+      editor.focus();
+    } });
     await h.rail.open("epub");
+    document.querySelector<HTMLButtonElement>("#preview-close")!.focus();
     press("#preview-close");
     expect(h.rail.isOpen()).toBe(false);
+    expect(dismissals).toBe(1);
+    expect(document.activeElement?.id).toBe(editor.id);
   });
 
   test("book appearance opens through a named button while Close stays available", async () => {
@@ -288,10 +300,10 @@ describe("what it renders", () => {
   });
 
   test("it states what the book is, so a writer can see the preview is of all of it", async () => {
-    const h = mount({}, preview({ items: 40, words: 2000 }));
+    const h = mount({}, preview({ items: 1040, words: 2000 }));
     await h.rail.open("epub");
     expect(document.querySelector("#preview-summary")?.textContent).toBe(
-      EN["preview.epub.summary.other"].replace("{items}", "40").replace("{words}", "2000"),
+      EN["preview.epub.summary.other"].replace("{items}", "1,040").replace("{words}", "2,000"),
     );
   });
 
@@ -302,10 +314,10 @@ describe("what it renders", () => {
     // its children, so a screen reader was told nothing about what the rail was
     // showing. `#word-count` carries its figures in an `aria-label` for the
     // same recorded reason. Painting the sentence is not saying it.
-    const h = mount({}, preview({ items: 40, words: 2000 }));
+    const h = mount({}, preview({ items: 1040, words: 2000 }));
     await h.rail.open("epub");
     expect(summary()?.getAttribute("aria-label")).toBe(
-      EN["preview.epub.summary.other"].replace("{items}", "40").replace("{words}", "2000"),
+      EN["preview.epub.summary.other"].replace("{items}", "1,040").replace("{words}", "2,000"),
     );
     // The same words in the same order, never a second phrasing: the two
     // readers are looking at one sentence.
@@ -315,7 +327,7 @@ describe("what it renders", () => {
   test("a reopen does not leave the last book's figures in the name", async () => {
     // A name left behind would have the rail answer with the PREVIOUS book
     // until the next paint -- `#word-count`'s own teardown rule.
-    const h = mount({}, preview({ items: 40, words: 2000 }));
+    const h = mount({}, preview({ items: 1040, words: 2000 }));
     await h.rail.open("epub");
     expect(summary()?.getAttribute("aria-label")).not.toBeNull();
     h.rail.close();
@@ -487,6 +499,18 @@ describe("a link inside the preview", () => {
     const event = new MouseEvent("click", { bubbles: true, cancelable: true });
     link.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(true);
+    expect(link.getAttribute("href")).toBe("0001.xhtml#h1");
+    expect(link.tabIndex).toBe(-1);
+    expect(link.getAttribute("aria-disabled")).toBe("true");
+  });
+
+  test("proof links keep their href but are disabled outside the tab order", async () => {
+    const h = mount({}, preview(), styleView(), proofView({ pages: ['<div class="proof-leaf"><a href="#chapter">One</a></div>'] }));
+    await h.rail.open("pdf");
+    const link = document.querySelector<HTMLAnchorElement>("#preview-pages a")!;
+    expect(link.getAttribute("href")).toBe("#chapter");
+    expect(link.tabIndex).toBe(-1);
+    expect(link.getAttribute("aria-disabled")).toBe("true");
   });
 });
 
@@ -760,4 +784,102 @@ describe("the proof copy", () => {
     await opening;
     expect(leaves()[0]?.className).toBe("proof-leaf");
   });
+});
+
+
+describe("chapter style acknowledgement ownership", () => {
+  const tick = async (): Promise<void> => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
+  const flag = (name: string): HTMLButtonElement => document.querySelector<HTMLButtonElement>(`#preview-flag-${name}`)!;
+
+  test("one pending style disables controls and the next change uses the acknowledged whole style", async () => {
+    let release!: (style: ChapterStyle) => void;
+    const pending = new Promise<ChapterStyle>((resolve) => { release = resolve; });
+    const written: ChapterStyle[] = [];
+    const h = mount({ writeStyle: async (next) => { written.push(next); return written.length === 1 ? pending : next; } });
+    await h.rail.open("epub");
+    flag("new_page").click();
+    expect(flag("caps_title").disabled).toBe(true);
+    flag("caps_title").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    press('[data-preview-glyph="asterism"]');
+    expect(written).toHaveLength(1);
+    press("#preview-refresh");
+    const landed = { ...written[0]!, glyph: "asterisks" };
+    release(landed); await tick();
+    expect(flag("new_page").getAttribute("aria-pressed")).toBe("true");
+    expect(flag("caps_title").disabled).toBe(false);
+    flag("caps_title").click(); await tick();
+    expect(written[1]).toEqual({ glyph: "asterisks", new_page: true, caps_title: true, drop_cap: false });
+  });
+
+  test("a refused acknowledgement retains the saved state and releases controls for the next change", async () => {
+    let reject!: (error: Error) => void;
+    const pending = new Promise<ChapterStyle>((_, refuse) => { reject = refuse; });
+    const written: ChapterStyle[] = [];
+    const h = mount({ writeStyle: async (next) => { written.push(next); return written.length === 1 ? pending : next; } });
+    await h.rail.open("epub"); flag("new_page").click();
+    reject(new Error("disk full")); await tick();
+    expect(flag("new_page").getAttribute("aria-pressed")).toBe("false");
+    expect(flag("new_page").disabled).toBe(false);
+    expect(h.notices).toHaveLength(1);
+    flag("caps_title").click(); await tick();
+    expect(written[1]?.new_page).toBe(false);
+    expect(written[1]?.caps_title).toBe(true);
+  });
+
+  test("a reopen waits for the previous style write before reading the new format's state", async () => {
+    let release!: (style: ChapterStyle) => void;
+    const pending = new Promise<ChapterStyle>((resolve) => { release = resolve; });
+    let stored = styleView(); let reads = 0;
+    const h = mount({ readStyle: async () => { reads++; return stored; }, writeStyle: async () => {
+      const landed = await pending; stored = { ...stored, style: landed }; return landed;
+    } });
+    await h.rail.open("epub"); flag("new_page").click(); h.rail.close();
+    const opening = h.rail.open("pdf"); await tick();
+    expect(reads).toBe(1);
+    expect(flag("new_page").disabled).toBe(true);
+    flag("caps_title").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    release({ ...stored.style, new_page: true }); await opening;
+    expect(reads).toBe(2);
+    expect(h.reads).toBe(1);
+    expect(h.proofReads).toBe(1);
+    expect(flag("new_page").getAttribute("aria-pressed")).toBe("true");
+    expect(flag("new_page").disabled).toBe(false);
+  });
+
+  test("a closed rail ignores a late style failure and a late drain issues no preview request", async () => {
+    let refuse!: (error: Error) => void;
+    const styleReply = new Promise<ChapterStyle>((_, reject) => { refuse = reject; });
+    let release!: () => void;
+    const drainReply = new Promise<void>((resolve) => { release = resolve; });
+    let draining = false;
+    const h = mount({ writeStyle: () => styleReply, drain: () => draining ? drainReply : Promise.resolve() });
+    await h.rail.open("epub"); flag("new_page").click();
+    draining = true; press("#preview-refresh"); h.rail.close();
+    refuse(new Error("late")); release(); await tick();
+    expect(h.notices).toEqual([]);
+    expect(h.reads).toBe(1);
+  });
+
+  test("a stale format's drain cannot issue a request after reopening in another format", async () => {
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => { release = resolve; });
+    let hold = false;
+    const h = mount({ drain: () => hold ? pending : Promise.resolve() });
+    await h.rail.open("epub"); hold = true; press("#preview-refresh");
+    const opening = h.rail.open("pdf"); await tick(); release(); await opening;
+    expect(h.reads).toBe(1); expect(h.proofReads).toBe(1);
+  });
+});
+
+
+test("an old style-read failure cannot report or render after a newer open", async () => {
+  let refuse!: (error: Error) => void;
+  const pending = new Promise<ChapterStyleView>((_, reject) => { refuse = reject; });
+  let reads = 0;
+  const h = mount({ readStyle: () => ++reads === 1 ? pending : Promise.resolve(styleView()) });
+  const old = h.rail.open("epub");
+  for (let i = 0; i < 10; i++) await Promise.resolve();
+  await h.rail.open("pdf");
+  refuse(new Error("old reply")); await old;
+  expect(h.notices).toEqual([]); expect(h.reads).toBe(0); expect(h.proofReads).toBe(1);
 });

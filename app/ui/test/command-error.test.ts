@@ -52,6 +52,17 @@ test("known host failures read as one plain sentence naming the recovery", () =>
     ["Input/output error (os error 5)", "host-error.io"],
     ["database disk image is malformed", "host-error.corrupt"],
     ["file is not a database", "host-error.corrupt"],
+    ["No such file or directory (os error 2)", "host-error.unavailable"],
+    ["The system cannot find the path specified. (os error 3)", "host-error.unavailable"],
+    ["Permission denied (os error 13)", "host-error.unavailable"],
+    ["Access is denied", "host-error.unavailable"],
+    ["unable to open database file", "host-error.unavailable"],
+    ["SQLITE_CANTOPEN", "host-error.unavailable"],
+    ["database is locked; unable to open database file", "host-error.busy"],
+    ["readonly database; permission denied", "host-error.read-only"],
+    ["file is not a database; permission denied", "host-error.corrupt"],
+    ["database or disk is full; permission denied", "host-error.disk-full"],
+    ["disk I/O error; unable to open database file", "host-error.io"],
     ["refused scene", "host-error.failed"],
     // pictures.rs's four refusals: the reason, never "try again".
     ["that file is 60000000 bytes and the largest picture this book will take is 52428800", "host-error.picture-bytes"],
@@ -75,7 +86,7 @@ test("known host failures read as one plain sentence naming the recovery", () =>
 
 test("a banner can lift exactly the diagnostic out of a sentence built around it", () => {
   const error = new HostCommandError("project_open", { version: 1, code: "operation_failed", operation: "project_open", detail: "database is locked" });
-  const wrapped = t("switch.error.kept", { path: "/books/a.db", error: error.message });
+  const wrapped = t("switch.error.kept", { name: "A", error: error.message });
   const { headline, detail } = splitHostDetail(wrapped);
   expect(detail).toBe("database is locked");
   expect(headline).not.toContain("database is locked");
@@ -85,4 +96,33 @@ test("a banner can lift exactly the diagnostic out of a sentence built around it
   expect(headline).toContain("The book you were in is still open.");
   // Text this module did not write is left whole.
   expect(splitHostDetail("Technical details: typed by a writer")).toEqual({ headline: "Technical details: typed by a writer", detail: null });
+});
+
+
+test("retained archive Details explain recovery while preserving the raw diagnostic", () => {
+  const raw = 'unfinished encrypted archive staging .encrypted-archive-stage-abc; application-private temporary backup files (may contain plaintext); parent directory: /local/backup; retained stage: /local/backup/.encrypted-archive-stage-abc';
+  const error = new HostCommandError("encrypted_archive_create", raw);
+  expect(error.problem).toBe(t("host-error.archive-stage"));
+  expect(error.detail).toBe(raw);
+  const wrapped = t("switch.error.kept", { name: "A", error: error.message });
+  const split = splitHostDetail(wrapped);
+  expect(split.detail).toBe(`${raw}\n\n${t("host-error.archive-stage.steps")}`);
+  expect(split.headline).toContain(t("host-error.archive-stage"));
+  expect(split.headline).not.toContain(raw);
+  expect(split.headline).toContain("The book you were in is still open.");
+  expect(error.message).toContain('archive-stage-clean "<parent-folder>" "<stage-name>"');
+  expect(error.message).not.toContain('archive-stage-clean "/local/backup"');
+  expect(commandFailureMessage(error)).toBe(error.message);
+});
+
+test("adding a path to Details preserves the original failure classification", () => {
+  const full = new HostCommandError("project_open", "disk full");
+  const split = splitHostDetail(commandFailureMessage(full, `${full.detail}\n/books/a.db`));
+  expect(split.headline).toBe(t("host-error.disk-full"));
+  expect(split.detail).toBe("disk full\n/books/a.db");
+  const locked = new HostCommandError("project_open", "application locked");
+  expect(commandFailureMessage(locked, "/books/a.db")).toBe(t("host-error.locked"));
+  const picture = new HostCommandError("project_open", "that picture could not be read: invalid signature");
+  expect(splitHostDetail(commandFailureMessage(picture, `/books/a.db\n${picture.detail}`)).headline)
+    .toBe(t("host-error.picture-unreadable"));
 });

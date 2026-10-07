@@ -342,6 +342,7 @@ const EN_ENTRIES: &[(&str, &str)] = &[
     ("salvage.title.snapshots", "{name} - snapshots"),
     ("salvage.title.synopses", "{name} - synopses"),
     ("salvage.title.wordlist", "{name} - wordlist"),
+    ("startup.data_migration", "garret could not safely prepare its application data. Keep all existing data folders. If a move is pending, close older versions and open garret again. Technical details:"),
     ("startup.detail", "Technical details:"),
     ("startup.help", "The application could not open its window. On Windows, check that the Microsoft Edge WebView2 Evergreen Runtime is installed: https://developer.microsoft.com/microsoft-edge/webview2/ . An installed runtime does not rule out another startup problem. Keep the technical details below when reporting the failure."),
 ];
@@ -475,6 +476,7 @@ const DE_ENTRIES: &[(&str, &str)] = &[
     ("salvage.title.snapshots", "{name} - Schnappschüsse"),
     ("salvage.title.synopses", "{name} - Inhaltsangaben"),
     ("salvage.title.wordlist", "{name} - Wortliste"),
+    ("startup.data_migration", "garret konnte seine Anwendungsdaten nicht sicher vorbereiten. Bewahren Sie alle vorhandenen Datenordner auf. Falls ein Umzug aussteht, schließen Sie ältere Versionen und öffnen Sie garret erneut. Technische Details:"),
     ("startup.detail", "Technische Details:"),
     ("startup.help", "Die Anwendung konnte ihr Fenster nicht öffnen. Prüfen Sie unter Windows, ob die Microsoft Edge WebView2 Evergreen Runtime installiert ist: https://developer.microsoft.com/microsoft-edge/webview2/ . Eine installierte Runtime schließt andere Startprobleme nicht aus. Bewahren Sie die folgenden technischen Details für einen Fehlerbericht auf."),
 ];

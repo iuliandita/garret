@@ -4,6 +4,7 @@
 // wiring so it can be tested without a document — an off-by-one here means a
 // row the keyboard cannot reach, which is an accessibility defect no latency
 // gate would notice.
+import { createNavigatorHints } from "../navigator-hints";
 import { isCompositionKey } from "../composition-key";
 import { t } from "../i18n";
 import { formatCount } from "../outline-counts";
@@ -197,6 +198,7 @@ const ROW_ATTRS = [
  *  its revision state's. */
 export const SYNOPSIS_DESCRIPTION_ID = "nav-synopsis-description";
 export const APPEARANCES_DESCRIPTION_ID = "nav-appearances-description";
+const WORD_DESCRIPTION_ID = "nav-word-description";
 
 /** Deepest indent step style.css draws. Past this the tree is nested further
  *  than a 320px pane can express, so the rows share a margin rather than march
@@ -366,6 +368,9 @@ function mountStateDescriptions(): () => void {
   appearances.id = APPEARANCES_DESCRIPTION_ID;
   appearances.textContent = t("nav.appearances.described");
   holder.append(appearances);
+  const words = document.createElement("span");
+  words.id = WORD_DESCRIPTION_ID;
+  holder.append(words);
   document.body.append(holder);
   return () => holder.remove();
 }
@@ -440,6 +445,7 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
   container.setAttribute("role", "tree");
   container.setAttribute("aria-label", t("nav.label"));
   container.tabIndex = 0;
+  const hints = createNavigatorHints(container);
 
   // aria-setsize and aria-posinset carry the row's OWN sibling group on every
   // row regardless of how many are mounted: assistive technology must be told
@@ -462,6 +468,7 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
       blank.title.textContent = "";
       blank.state.textContent = "";
       blank.count.textContent = "";
+      for (const part of Object.values(blank)) delete part.dataset.navHint;
       return;
     }
     el.id = domIdOf(row.id);
@@ -550,6 +557,11 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
     }
     if (hasSynopsis) described.push(SYNOPSIS_DESCRIPTION_ID);
     if (hasAppearances) described.push(APPEARANCES_DESCRIPTION_ID);
+    if (index === active && counts.has(row.id)) {
+      const words = document.getElementById(WORD_DESCRIPTION_ID);
+      if (words !== null) words.textContent = t("nav.words.described", { count: formatCount(counts.get(row.id)) });
+      described.push(WORD_DESCRIPTION_ID);
+    }
     if (described.length > 0) el.setAttribute("aria-describedby", described.join(" "));
     else el.removeAttribute("aria-describedby");
     // The ITEM id, not the visible index: a visible index is reassigned to a
@@ -573,14 +585,23 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
     // A recycled element may carry the tip the last row's hover measured.
     parts.title.removeAttribute("title");
     parts.synopsis.textContent = hasSynopsis ? "\u00a7" : "";
-    if (hasSynopsis) parts.synopsis.title = t("nav.synopsis.described");
-    else parts.synopsis.removeAttribute("title");
+    parts.synopsis.removeAttribute("title");
     parts.appearances.textContent = hasAppearances ? "\u25c6" : "";
     parts.state.textContent = markFor(row.state);
     // The subtree's total for a container, the document's own for a scene, and
     // NOTHING for an item nothing countable sits under - see outline-counts.ts
     // for why that is not a zero.
     parts.count.textContent = formatCount(counts.get(row.id));
+    const descriptions = [
+      [parts.synopsis, hasSynopsis ? t("nav.synopsis.described") : ""],
+      [parts.appearances, hasAppearances ? t("nav.appearances.described") : ""],
+      [parts.state, isRevisionState(row.state) ? t("nav.state.described", { state: STATE_LABELS[row.state] }) : ""],
+      [parts.count, counts.has(row.id) ? t("nav.words.described", { count: parts.count.textContent }) : ""],
+    ] as const;
+    for (const [part, description] of descriptions) {
+      if (description) part.dataset.navHint = description;
+      else delete part.dataset.navHint;
+    }
   }
 
   let list: VirtualList | null = null;
@@ -638,6 +659,7 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
   }
 
   function repaintMounted(): void {
+    hints.hide();
     // repaint() PER MOUNTED ROW, and NOT `refresh()`, which is the method whose
     // name says otherwise. `refresh` is `render`, and `render` opens with an
     // early return when the mounted RANGE is unchanged - which is exactly the
@@ -670,6 +692,7 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
     else container.removeAttribute("aria-activedescendant");
     if (previous !== active) repaintRow(previous);
     repaintRow(active);
+    hints.refresh();
   }
   setActive(0);
 
@@ -1020,8 +1043,10 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
       // reproject is the single rendering path: a second one here would be the
       // thing that drifts from collapse/expand.
       reproject(keepId ?? "");
+      hints.hide();
     },
     destroy(): void {
+      hints.destroy();
       container.removeEventListener("click", onClick);
       container.removeEventListener("keydown", onKeyDown);
       container.removeEventListener("contextmenu", onContextMenuEvent);

@@ -38,7 +38,7 @@ describe("outline view", () => {
     view.show("table");
     expect(view.element.querySelectorAll(".outline-view-row")).toHaveLength(0);
     expect(view.element.querySelector(".outline-view-empty")?.textContent).toContain("No manuscript items");
-    expect(view.element.querySelector(".outline-view-scope")?.textContent).toContain("Bin and bible excluded");
+    expect(view.element.querySelector(".outline-view-scope")?.textContent).toContain("Bin and Bible excluded");
     view.destroy(); editor.remove();
   });
 

@@ -435,6 +435,46 @@ describe("mountTimeline", () => {
     m.destroy();
   });
 
+  test("an operation lock refuses floating scale commits and undo without losing the undo entry", () => {
+    let allowed = true;
+    const { mount: m, dirty } = mount(baseBody({ tracks: [], events: [] }), { canEdit: () => allowed });
+    try {
+      container.querySelector<HTMLButtonElement>("#timeline-empty button")!.click();
+      (document.getElementById("timeline-track-kind-thread") as HTMLButtonElement).click();
+      expect(dirty.length).toBe(1);
+      const editScale = container.querySelector<HTMLButtonElement>("#timeline-toolbar button")!;
+      editScale.click();
+      const input = document.querySelector<HTMLInputElement>("#timeline-scale-panel input")!;
+      input.value = "hour"; input.dispatchEvent(new Event("input"));
+      const save = document.querySelector<HTMLButtonElement>(".timeline-scale-buttons button")!;
+      allowed = false; save.click();
+      const root = container.querySelector<HTMLElement>("#timeline-view")!;
+      root.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true }));
+      expect(dirty.length).toBe(1);
+      expect(container.querySelector("#timeline-scale-label")?.textContent).toBe("Scale: day");
+      allowed = true;
+      root.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true }));
+      expect(JSON.parse(dirty.at(-1)!).tracks.length).toBe(0);
+    } finally { m.destroy(); }
+  });
+
+  test("replacing a timeline retires the old body's undo and floating forms", () => {
+    const { mount: m, dirty } = mount(baseBody({ tracks: [], events: [] }));
+    try {
+      container.querySelector<HTMLButtonElement>("#timeline-empty button")!.click();
+      (document.getElementById("timeline-track-kind-thread") as HTMLButtonElement).click();
+      container.querySelector<HTMLButtonElement>("#timeline-toolbar button")!.click();
+      const scale = document.getElementById("timeline-scale-panel")!;
+      expect(scale.hidden).toBe(false);
+      m.setBody(baseBody());
+      expect(scale.hidden).toBe(true);
+      const count = dirty.length;
+      container.querySelector<HTMLElement>("#timeline-view")!.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true }));
+      expect(dirty.length).toBe(count);
+      expect(container.querySelectorAll(".tl-event").length).toBe(1);
+    } finally { m.destroy(); }
+  });
+
   test("setBody re-parses and repaints from a fresh body", () => {
     const { mount: m } = mount(baseBody());
     expect(container.querySelectorAll(".tl-event")).toHaveLength(1);

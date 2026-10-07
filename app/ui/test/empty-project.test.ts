@@ -180,48 +180,52 @@ describe("the empty workspace", () => {
   });
 });
 
-describe("a failed switch out of the empty workspace (review fixup)", () => {
-  // project-switch.ts destroys the outgoing mount BEFORE opening the next
-  // book; when the open or the mount then fails, `setCurrent` is never
-  // called and `current` is left pointing at the just-destroyed empty mount.
-  // main.ts's own `onFailure` is written the same way this test's is: check
-  // whether the switch started from the empty boot (`currentPath === ""`,
-  // unchanged since `onSwitched` never ran) and remount if so, rather than
-  // leaving an unhidden footer over a bare #editor with no way back short of
-  // the menu.
-  test("remounts the empty workspace rather than leaving a bare shell", async () => {
-    shell();
-    let current: MountedProject = mountEmpty({ openLibrary: () => undefined });
-    const currentPath = "";
-    const switchProject = createProjectSwitcher<MountedProject>({
-      current: () => current,
-      setCurrent: (next) => {
-        current = next;
-      },
-      currentPath: () => currentPath,
-      openProject: async () => {
-        throw new Error("the host refused to open it");
-      },
-      mount: async () => {
-        throw new Error("unreachable: openProject always throws first");
-      },
-      onFailure: (message) => {
-        if (currentPath === "") {
-          current = mountEmpty({ openLibrary: () => undefined });
-        }
-        current.raiseNotice(message);
-      },
+describe("recovering after a failed book switch", () => {
+  for (const failure of ["open", "mount"] as const) {
+    test(`a rejected ${failure} allows reopening the outgoing book and closing`, async () => {
+      shell();
+      let current: MountedProject = mountEmpty({ openLibrary: () => undefined });
+      let currentPath = "/library/a.db";
+      let reject = true;
+      const outgoing = current;
+      let destroyed = false;
+      const destroy = outgoing.destroy;
+      outgoing.destroy = () => { destroyed = true; destroy(); };
+      outgoing.prepareToLeave = async () => !destroyed;
+      const switchProject = createProjectSwitcher<MountedProject>({
+        current: () => current,
+        setCurrent: (next) => { current = next; },
+        currentPath: () => currentPath,
+        openProject: async (path) => {
+          if (reject && failure === "open") throw new Error("open refused");
+          return { path, name: "A", generation: 2 };
+        },
+        mount: async () => {
+          if (reject && failure === "mount") throw new Error("mount refused");
+          return mountEmpty({ openLibrary: () => undefined });
+        },
+        onSwitched: (opened) => { currentPath = opened.path; },
+        onFailure: (message, closed) => {
+          if (closed) {
+            currentPath = "";
+            current = mountEmpty({ openLibrary: () => undefined });
+          }
+          current.raiseNotice(message);
+        },
+      });
+      expect(await switchProject("/library/b.db")).toBe("failed");
+      expect(currentPath).toBe("");
+      expect(current).not.toBe(outgoing);
+      expect(document.getElementById("empty-open-library")).not.toBeNull();
+      expect(document.getElementById("open-error")).not.toBeNull();
+      expect(await current.prepareToLeave()).toBe(true);
+      current.cancelLeave();
+      reject = false;
+      expect(await switchProject("/library/a.db")).toBe("switched");
+      expect(currentPath).toBe("/library/a.db");
+      expect(await current.prepareToLeave()).toBe(true);
+      current.cancelLeave();
+      current.destroy();
     });
-
-    const outcome = await switchProject("/library/book.db");
-
-    expect(outcome).toBe("failed");
-    // The empty workspace is back: its prompt, its button, and the notice
-    // banner explaining what went wrong.
-    expect(document.getElementById("empty-workspace")).not.toBeNull();
-    expect(document.getElementById("empty-open-library")).not.toBeNull();
-    expect(document.getElementById("nav-header")?.textContent).toBe(t("library.no-book"));
-    expect(document.getElementById("open-error")).not.toBeNull();
-    current.destroy();
-  });
+  }
 });

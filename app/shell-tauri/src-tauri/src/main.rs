@@ -16,6 +16,7 @@ use std::sync::Mutex;
 use tauri::Emitter;
 use tauri::{Manager, State, WebviewUrl, WebviewWindowBuilder};
 
+mod data_migration;
 mod command_error;
 mod core_constants;
 mod book_open;
@@ -3359,6 +3360,87 @@ fn mime_for(path: &Path) -> &'static str {
     }
 }
 
+// This source is compiled into the host; a replaced APP_DIST document cannot
+// authorize its own scripts. The UI build copies index.html without rewriting it.
+const APPDIST_INDEX: &str = include_str!("../../../ui/index.html");
+const APPDIST_DENY_CSP: &str = "default-src 'none'; script-src 'none'; style-src 'none'";
+
+fn appdist_theme_hash() -> String {
+    use sha2::{Digest, Sha256};
+    let head = APPDIST_INDEX.split_once("</head>").expect("interface head").0;
+    let script = head.split_once("<script>").expect("theme boot script").1
+        .split_once("</script>").expect("theme boot script end").0;
+    format!("'sha256-{}'", pictures::base64(&Sha256::digest(script.as_bytes())))
+}
+
+fn appdist_csp(configured: Option<&tauri::utils::config::Csp>) -> Option<tauri::http::HeaderValue> {
+    use tauri::utils::config::{Csp, CspDirectiveSources};
+    let mut directives: std::collections::HashMap<String, CspDirectiveSources> =
+        configured?.clone().into();
+    let fallback = directives.get("default-src")?.clone();
+    let script = directives.entry("script-src".into()).or_insert(fallback);
+    // Never silently turn an unrestricted inline policy into a trusted one.
+    let sources: Vec<String> = script.clone().into();
+    if sources.iter().any(|source| source == "'unsafe-inline'") {
+        return None;
+    }
+    let hash = appdist_theme_hash();
+    script.push(&hash);
+    if let Some(elements) = directives.get_mut("script-src-elem") {
+        let sources: Vec<String> = elements.clone().into();
+        if sources.iter().any(|source| source == "'unsafe-inline'") {
+            return None;
+        }
+        elements.push(&hash);
+    }
+    tauri::http::HeaderValue::from_str(&Csp::from(directives).to_string()).ok()
+}
+
+fn appdist_response(
+    assets: &AssetRoot,
+    path: &str,
+    configured: Option<&tauri::utils::config::Csp>,
+) -> tauri::http::Response<Vec<u8>> {
+    let policy = appdist_csp(configured);
+    let rel = if path == "/" { "index.html" } else { path.strip_prefix('/').unwrap_or(path) };
+    let (status, mime, body) = match assets {
+        AssetRoot::Found(dir) => match appdist_asset_path(dir, rel)
+            .and_then(|full| fs::read(&full).ok().map(|bytes| (full, bytes))) {
+            Some((full, bytes)) => (200, Some(mime_for(&full)), bytes),
+            None => (404, None, Vec::new()),
+        },
+        AssetRoot::Missing(tried) if rel == "index.html" =>
+            (200, Some("text/html"), missing_assets_page(tried).into_bytes()),
+        AssetRoot::Missing(_) => (404, None, Vec::new()),
+    };
+    // A missing or malformed configured policy must never serve an HTML page
+    // without protection. Empty failures also deny all document content.
+    let (status, mime, body) = if mime == Some("text/html") && policy.is_none() {
+        (500, None, Vec::new())
+    } else {
+        (status, mime, body)
+    };
+    let mut response = tauri::http::Response::builder().status(status)
+        .header("Content-Security-Policy", policy.unwrap_or_else(||
+            tauri::http::HeaderValue::from_static(APPDIST_DENY_CSP)));
+    if let Some(mime) = mime {
+        response = response.header("Content-Type", mime);
+    }
+    response.body(body).expect("valid appdist response")
+}
+
+fn appdist_asset_path(root: &Path, relative: &str) -> Option<PathBuf> {
+    let path = Path::new(relative);
+    if relative.is_empty() || relative.contains('\\') || relative.contains(':')
+        || path.components().any(|part| !matches!(part, std::path::Component::Normal(_)))
+    {
+        return None;
+    }
+    let root = root.canonicalize().ok()?;
+    let full = root.join(path).canonicalize().ok()?;
+    (full.starts_with(&root) && full.is_file()).then_some(full)
+}
+
 #[derive(Debug, PartialEq, Eq)]
 enum AssetRoot {
     Found(PathBuf),
@@ -3454,9 +3536,8 @@ fn missing_assets_page(tried: &[PathBuf]) -> String {
     )
 }
 
-/// The application's identifier, used as the data directory name. There is no
-/// product name yet; when there is one, this is the thing to revisit.
-const APP_DIR: &str = "cc.local.app";
+/// Desktop application storage, separate from the stable application identifier.
+const APP_DIR: &str = "garret";
 
 /// Must match CLOSE_EVENT in app/ui/src/lifecycle.ts.
 const CLOSE_EVENT: &str = "app://close-requested";
@@ -3862,6 +3943,13 @@ fn main() {
     // opened only when NO subcommand was given, which is this one condition.
     if let Some(command) = argv.get(1) {
         if cli::is_subcommand(command) {
+            if cli::uses_profile(command) {
+                let home = data_home();
+                if let Err(error) = data_migration::check_cli(&home) {
+                    eprintln!("{}", data_migration::refusal(&home, &error));
+                    process::exit(1);
+                }
+            }
             process::exit(cli::run(&argv[1..]));
         }
     }
@@ -3933,10 +4021,25 @@ fn main() {
             process::exit(0);
         }
         instance_file::Claim::Unavailable(why) => {
-            report_startup_failure(&data_home, &format!("cannot guard this library: {why}"));
+            report_migration_failure(&data_home, &format!("cannot guard this library: {why}"));
             process::exit(1);
         }
     };
+    #[cfg(unix)]
+    let migration = if owned_socket.is_some() {
+        data_migration::prepare(&data_home)
+    } else {
+        data_migration::check_cli(&data_home)
+    };
+    #[cfg(windows)]
+    let migration = data_migration::prepare(&data_home, &owned_file);
+    if let Err(error) = migration {
+        // Reporting must not create a destination that would block a retry.
+        report_migration_failure(&data_home, &error);
+        #[cfg(unix)]
+        if let Some((_, path)) = &owned_socket { instance::release(path); }
+        process::exit(1);
+    }
     let library = projects::library_dir(&data_home);
 
     // MUST be set before the window (and its webview's web process) exists.
@@ -4072,9 +4175,11 @@ fn main() {
     let mode_js = js_string(&mode);
     let run_js = js_string(&run);
     let persist_mode_js = js_string(&persist_mode);
+    let library_diagnostics = std::env::var("APP_LIBRARY_DIAGNOSTICS").as_deref() == Ok("1");
 
     let init = format!(
         "window.__appPrivacyLocked={privacy_locked};\
+         window.__appLibraryDiagnostics={library_diagnostics};\
          window.__appCandidate='tauri';\
          window.__appSeed={seed_js};\
          window.__appMode={mode_js};\
@@ -4121,44 +4226,12 @@ fn main() {
 
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .register_uri_scheme_protocol("appdist", move |_ctx, request| {
-            let uri = request.uri();
-            let path = uri.path();
-            let rel = if path == "/" {
-                "index.html"
-            } else {
-                path.trim_start_matches('/')
-            };
-            let dir = match &assets {
-                AssetRoot::Found(dir) => dir,
-                // The window comes up carrying the diagnosis. Only for the
-                // document itself: answering an asset request with an HTML error
-                // page would be a lie about what was served.
-                AssetRoot::Missing(tried) => {
-                    return if rel == "index.html" {
-                        tauri::http::Response::builder()
-                            .header("Content-Type", "text/html")
-                            .body(missing_assets_page(tried).into_bytes())
-                            .unwrap()
-                    } else {
-                        tauri::http::Response::builder()
-                            .status(404)
-                            .body(Vec::new())
-                            .unwrap()
-                    };
-                }
-            };
-            let full = dir.join(rel);
-            match fs::read(&full) {
-                Ok(bytes) => tauri::http::Response::builder()
-                    .header("Content-Type", mime_for(&full))
-                    .body(bytes)
-                    .unwrap(),
-                Err(_) => tauri::http::Response::builder()
-                    .status(404)
-                    .body(Vec::new())
-                    .unwrap(),
-            }
+        .register_uri_scheme_protocol("appdist", move |ctx, request| {
+            appdist_response(
+                &assets,
+                request.uri().path(),
+                ctx.app_handle().config().app.security.csp.as_ref(),
+            )
         });
     #[cfg(windows)]
     let builder = builder.register_uri_scheme_protocol("proof", |ctx, request| {
@@ -4718,6 +4791,18 @@ fn main() {
 /// Every step is best-effort and NOTHING here panics: this runs on the path
 /// where startup has already failed, and a panic while reporting a failure
 /// replaces a diagnosable problem with an undiagnosable one.
+fn report_migration_failure(data_home: &Path, error: &str) {
+    let body = data_migration::refusal(data_home, error);
+    eprintln!("{body}");
+    #[cfg(any(windows, target_os = "macos"))]
+    let _ = rfd::MessageDialog::new()
+        .set_title("garret")
+        .set_description(body)
+        .set_level(rfd::MessageLevel::Error)
+        .set_buttons(rfd::MessageButtons::Ok)
+        .show();
+}
+
 fn report_startup_failure(data_home: &Path, error: &str) {
     let strings = projects::read_settings(data_home).locale.strings();
     let body = format!("{}\n\n{}\n{error}\n", strings.t("startup.help"), strings.t("startup.detail"));
@@ -7997,7 +8082,7 @@ mod tests {
             default_project_path_from(Some(OsStr::new("/x/data")), Some(OsStr::new("/home/u")));
         assert_eq!(
             got,
-            PathBuf::from("/x/data/cc.local.app/projects/default.db")
+            PathBuf::from("/x/data/garret/projects/default.db")
         );
     }
 
@@ -8006,7 +8091,7 @@ mod tests {
         let got = default_project_path_from(None, Some(OsStr::new("/home/u")));
         assert_eq!(
             got,
-            PathBuf::from("/home/u/.local/share/cc.local.app/projects/default.db")
+            PathBuf::from("/home/u/.local/share/garret/projects/default.db")
         );
     }
 
@@ -8021,7 +8106,7 @@ mod tests {
         );
         assert_eq!(
             got,
-            PathBuf::from("/home/u/.local/share/cc.local.app/projects/default.db")
+            PathBuf::from("/home/u/.local/share/garret/projects/default.db")
         );
     }
 
@@ -8030,7 +8115,7 @@ mod tests {
         let got = default_project_path_from(None, None);
         assert_eq!(
             got,
-            PathBuf::from("./.local/share/cc.local.app/projects/default.db")
+            PathBuf::from("./.local/share/garret/projects/default.db")
         );
     }
 
@@ -8090,7 +8175,7 @@ mod tests {
         assert_eq!(
             got,
             PathBuf::from(r"C:\Users\u\AppData\Roaming")
-                .join("cc.local.app")
+                .join("garret")
                 .join("projects")
                 .join(DEFAULT_PROJECT)
         );
@@ -8104,7 +8189,7 @@ mod tests {
             PathBuf::from(r"C:\Users\u")
                 .join("AppData")
                 .join("Roaming")
-                .join("cc.local.app")
+                .join("garret")
                 .join("projects")
                 .join(DEFAULT_PROJECT)
         );
@@ -8125,7 +8210,7 @@ mod tests {
             PathBuf::from(r"C:\Users\u")
                 .join("AppData")
                 .join("Roaming")
-                .join("cc.local.app")
+                .join("garret")
                 .join("projects")
                 .join(DEFAULT_PROJECT)
         );
@@ -8190,6 +8275,177 @@ mod tests {
     #[test]
     fn page_images_are_served_as_png() {
         assert_eq!(mime_for(Path::new("dist/garret-favicon.png")), "image/png");
+    }
+
+    fn configured_appdist_csp() -> tauri::utils::config::Csp {
+        let config: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
+        serde_json::from_value(config["app"]["security"]["csp"].clone()).unwrap()
+    }
+
+    fn appdist_csp_directives(
+        response: &tauri::http::Response<Vec<u8>>,
+    ) -> std::collections::HashMap<String, tauri::utils::config::CspDirectiveSources> {
+        tauri::utils::config::Csp::Policy(
+            response.headers()["Content-Security-Policy"].to_str().unwrap().to_owned(),
+        ).into()
+    }
+
+    #[test]
+    fn appdist_csp_html_preserves_config_and_adds_only_trusted_theme_hash() {
+        use sha2::{Digest, Sha256};
+        let dir = tempdir().unwrap();
+        let root = built_dist(dir.path().join("dist"));
+        std::fs::write(root.join("index.html"), super::APPDIST_INDEX).unwrap();
+        let configured = configured_appdist_csp();
+        let response = super::appdist_response(&AssetRoot::Found(root), "/", Some(&configured));
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.headers()["Content-Type"], "text/html");
+        assert_eq!(response.body(), super::APPDIST_INDEX.as_bytes());
+        let html = std::str::from_utf8(response.body()).unwrap();
+        let theme = html.split_once("<script>").unwrap().1.split_once("</script>").unwrap().0;
+        let trusted_hash = format!("'sha256-{}'", crate::pictures::base64(&Sha256::digest(theme.as_bytes())));
+        assert_eq!(super::appdist_theme_hash(), trusted_hash);
+        let mut expected: std::collections::HashMap<_, _> = configured.into();
+        expected.get_mut("script-src").unwrap().push(super::appdist_theme_hash());
+        let actual = appdist_csp_directives(&response);
+        assert_eq!(actual, expected);
+        let sources: Vec<String> = actual["script-src"].clone().into();
+        assert_eq!(sources.iter().filter(|source| source.starts_with("'sha256-")).count(), 1);
+        assert!(!sources.iter().any(|source| source == "'unsafe-inline'"));
+        let connect: Vec<String> = actual["connect-src"].clone().into();
+        assert!(connect.iter().any(|source| source == "ipc:"));
+        assert!(connect.iter().any(|source| source == "http://ipc.localhost"));
+    }
+
+    #[test]
+    fn appdist_csp_replaced_html_cannot_authorize_changed_or_injected_scripts() {
+        use sha2::{Digest, Sha256};
+        let dir = tempdir().unwrap();
+        let root = built_dist(dir.path().join("dist"));
+        let assets = AssetRoot::Found(root.clone());
+        let configured = configured_appdist_csp();
+        std::fs::write(root.join("index.html"), super::APPDIST_INDEX).unwrap();
+        let original = super::appdist_response(&assets, "/index.html", Some(&configured));
+        let script = super::APPDIST_INDEX.split_once("<script>").unwrap().1
+            .split_once("</script>").unwrap().0;
+        let altered = script.replace("var t = window.__appTheme;", "window.injected = true;");
+        let injected = "window.additionalScript = true;";
+        let document = super::APPDIST_INDEX.replace(script, &altered)
+            .replace("</head>", &format!("<script>{injected}</script></head>"));
+        std::fs::write(root.join("index.html"), &document).unwrap();
+        let response = super::appdist_response(&assets, "/index.html", Some(&configured));
+        assert_eq!(response.body(), document.as_bytes());
+        assert_eq!(appdist_csp_directives(&response), appdist_csp_directives(&original));
+        let sources: Vec<String> = appdist_csp_directives(&response)["script-src"].clone().into();
+        assert!(sources.contains(&super::appdist_theme_hash()));
+        for unauthorized in [altered.as_str(), injected] {
+            let hash = format!("'sha256-{}'", crate::pictures::base64(&Sha256::digest(unauthorized.as_bytes())));
+            assert!(!sources.contains(&hash));
+        }
+    }
+
+    #[test]
+    fn appdist_csp_diagnosis_and_failures_remain_protected() {
+        let configured = configured_appdist_csp();
+        let missing = AssetRoot::Missing(vec![PathBuf::from("missing<&>")]);
+        let response = super::appdist_response(&missing, "/", Some(&configured));
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.headers()["Content-Type"], "text/html");
+        assert!(String::from_utf8(response.body().clone()).unwrap().contains("missing&lt;&amp;&gt;"));
+        assert!(appdist_csp_directives(&response).contains_key("script-src"));
+        for configured in [
+            None,
+            Some(tauri::utils::config::Csp::Policy("default-src 'self'; script-src 'self'\ninvalid".into())),
+            Some(tauri::utils::config::Csp::Policy("default-src 'self'; script-src 'unsafe-inline'".into())),
+        ] {
+            let response = super::appdist_response(&missing, "/", configured.as_ref());
+            assert_eq!(response.status(), 500);
+            assert!(response.body().is_empty());
+            assert!(!response.headers().contains_key("Content-Type"));
+            assert_eq!(response.headers()["Content-Security-Policy"], super::APPDIST_DENY_CSP);
+        }
+        let response = super::appdist_response(&missing, "/missing.js", None);
+        assert_eq!(response.status(), 404);
+        assert!(response.body().is_empty());
+        assert_eq!(response.headers()["Content-Security-Policy"], super::APPDIST_DENY_CSP);
+    }
+
+    #[test]
+    fn appdist_csp_assets_keep_mime_bytes_and_path_refusals() {
+        let dir = tempdir().unwrap();
+        let root = built_dist(dir.path().join("dist"));
+        std::fs::write(root.join("page.js"), b"window.external = true;").unwrap();
+        std::fs::write(dir.path().join("outside.html"), "outside").unwrap();
+        let assets = AssetRoot::Found(root);
+        let configured = configured_appdist_csp();
+        let response = super::appdist_response(&assets, "/page.js", Some(&configured));
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.headers()["Content-Type"], "text/javascript");
+        assert_eq!(response.body(), b"window.external = true;");
+        for path in ["/absent.js", "/../outside.html", "/C:/outside.html"] {
+            let response = super::appdist_response(&assets, path, Some(&configured));
+            assert_eq!(response.status(), 404);
+            assert!(response.body().is_empty());
+            assert!(!response.headers().contains_key("Content-Type"));
+            assert!(response.headers().contains_key("Content-Security-Policy"));
+        }
+    }
+
+    #[test]
+    fn appdist_asset_paths_accept_index_nested_files_and_root_search_paths() {
+        let dir = tempdir().unwrap();
+        let root = built_dist(dir.path().join("dist"));
+        std::fs::create_dir(root.join("assets")).unwrap();
+        std::fs::write(root.join("assets/page.js"), "page").unwrap();
+        for name in ["index.html", "assets/page.js"] {
+            assert_eq!(
+                super::appdist_asset_path(&root.join("../dist"), name),
+                Some(root.join(name).canonicalize().unwrap())
+            );
+        }
+        assert_eq!(super::appdist_asset_path(&root, "absent.js"), None);
+        assert_eq!(super::appdist_asset_path(&root, "assets"), None);
+    }
+
+    #[test]
+    fn appdist_asset_paths_refuse_traversal_roots_and_platform_prefixes() {
+        let dir = tempdir().unwrap();
+        let root = built_dist(dir.path().join("dist"));
+        std::fs::write(dir.path().join("outside.js"), "outside").unwrap();
+        std::fs::create_dir(root.join("assets")).unwrap();
+        let refused = [
+            "", "../outside.js", "assets/../../outside.js", "/index.html",
+            "//index.html", "C:/index.html", "C:index.html", "index.html:stream",
+            "..\\outside.js", "assets\\..\\index.html", "\\\\server\\share\\index.html",
+        ];
+        #[cfg(unix)]
+        for name in refused.iter().filter(|name| name.contains(':') || name.contains('\\')) {
+            let file = root.join(name);
+            std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+            std::fs::write(file, "platform-sensitive name").unwrap();
+        }
+        for name in refused {
+            assert_eq!(super::appdist_asset_path(&root, name), None, "{name:?}");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn appdist_asset_paths_refuse_symlinks_that_escape_the_root() {
+        use std::os::unix::fs::symlink;
+        let dir = tempdir().unwrap();
+        let root = built_dist(dir.path().join("dist"));
+        let sibling = built_dist(dir.path().join("dist-sibling"));
+        symlink(sibling.join("index.html"), root.join("outside.html")).unwrap();
+        symlink(&sibling, root.join("outside")).unwrap();
+        symlink(root.join("index.html"), root.join("inside.html")).unwrap();
+        assert_eq!(super::appdist_asset_path(&root, "outside.html"), None);
+        assert_eq!(super::appdist_asset_path(&root, "outside/index.html"), None);
+        assert_eq!(
+            super::appdist_asset_path(&root, "inside.html"),
+            Some(root.join("index.html").canonicalize().unwrap())
+        );
     }
 
     #[test]

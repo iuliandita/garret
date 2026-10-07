@@ -1,7 +1,7 @@
 import { describe, expect, test, beforeEach } from "bun:test";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import {
   catalogText,
   menuChord,
@@ -74,27 +74,13 @@ describe("the menu source parses into routes", () => {
     expect(menuRoute("menu-undo", REAL).index).toBe(0);
   });
 
-  test("indices are consecutive within a menu", () => {
-    // One change added Quit at the END, another added Rename project… at
-    // index 2, another added Book design… at index 4, and another added
-    // Export for an editor (Word)… at index 8, immediately after Export
-    // as… -- each shifted every item below it. This list is the ONE place
-    // that order is written down for the rigs, and a shift showing up here
-    // is the guard working: `menu-cli` presses ArrowDown a counted number of
-    // times and would otherwise silently activate a neighbour.
-    //
-    // `menu-export`'s OWN index (6) is UNCHANGED by that later addition: the
-    // new item sits below it, which is the whole point of the placement rule
-    // -- the debounce gate's headroom is `export-cli`'s walk DOWN to
-    // `menu-export`, and nothing above it moved.
-    //
-    // A later change took the two statistics exports out (they are the
-    // Statistics panel's footer now) and drew separators between five
-    // groups. A separator is not an id, so it moved nothing; the two
-    // removals moved every item below Export for an editor up by two.
-    const file = ["menu-project-new", "menu-project-open", "menu-project-rename", "menu-import", "menu-book-design", "menu-covers", "menu-export", "menu-export-as", "menu-export-docx", "menu-epub-preview", "menu-pdf-preview", "menu-identities", "menu-backup-now", "menu-mirror-changes", "menu-library", "menu-preferences", "menu-privacy-lock", "menu-quit"];
-    expect(file.map((id) => menuRoute(id, REAL).index)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
-    expect(menuRoute("menu-export", REAL).index).toBe(6);
+  test("indices follow the current page and count its visible Back row", () => {
+    const file = ["menu-project-new", "menu-project-open", "menu-project-rename", "menu-import", "menu-export", "menu-publishing", "menu-copies", "menu-library", "menu-preferences", "menu-privacy-lock", "menu-quit"];
+    expect(file.map((id) => menuRoute(id, REAL).index)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(menuRoute("menu-export-docx", REAL).path).toEqual([{ index: 5, count: 11 }, { index: 4, count: 8 }]);
+    expect(menuRoute("menu-new-afterword", REAL).path).toEqual([
+      { index: 0, count: 8 }, { index: 4, count: 5 }, { index: 4, count: 5 }, { index: 4, count: 5 },
+    ]);
   });
 
   test("the shipped menu is not parsed as a handful of stray matches", () => {
@@ -192,17 +178,15 @@ describe("the parser refuses a source it cannot trust", () => {
     expect(sent).toEqual(["alt+o", "Up", "Return"]);
   });
 
-  test("the shipped outline views use the shorter wrapped route", async () => {
-    // Creation comes first in the grouped menu. Labels and separators are
-    // not keyboard stops: table and cards remain actions 28 and 29 of 38.
-    expect(menuRoute("menu-review-proposals", REAL).index).toBe(37);
+  test("the driver enters a grouped page before taking the shortest leaf route", async () => {
+    expect(menuRoute("menu-review-proposals", REAL).path).toEqual([{ index: 7, count: 8 }, { index: 4, count: 5 }]);
     const sent: string[] = [];
     const driver = menuDriver(":99", "123", (_display, args) => sent.push(args.at(-1) ?? ""), REAL);
     await driver.activate("menu-view-table");
-    expect(sent).toEqual(["alt+o", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Return"]);
+    expect(sent).toEqual(["alt+o", "Up", "Up", "Return", "Down", "Down", "Return"]);
     sent.length = 0;
     await driver.activate("menu-view-cards");
-    expect(sent).toEqual(["alt+o", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Up", "Return"]);
+    expect(sent).toEqual(["alt+o", "Up", "Up", "Return", "Down", "Down", "Down", "Return"]);
   }, 10_000);
 
   test("a German route is not served from the English catalog cache", () => {
@@ -236,9 +220,9 @@ describe("project-cli's restated row height still matches the stylesheet", () =>
   //
   // Here rather than in a UI test because the constant is the HARNESS's, and it
   // is the harness that goes wrong when the stylesheet moves under it.
-  test("the option padding the rig assumes is the padding the stylesheet sets", async () => {
+  test("the row padding the rig assumes is the padding the stylesheet sets", async () => {
     const css = await Bun.file("app/ui/style.css").text();
-    const at = css.indexOf('#project-list [role="option"] {');
+    const at = css.indexOf('#project-list [role="listitem"] {');
     expect(at).toBeGreaterThan(-1);
     const block = css.slice(at, css.indexOf("}", at));
     const padding = block.match(/padding:\s*(\d+)px\s+(\d+)px/);
@@ -345,4 +329,33 @@ test("the shipped module parses, and the removal item is where the rig expects",
   expect(navContextItemCount("app/ui/src/nav-context-menu.ts")).toBe(8);
   expect(navContextIndex("nav-context-remove", "scene", "app/ui/src/nav-context-menu.ts")).toBe(6);
   expect(navContextIndex("nav-context-remove", "part", "app/ui/src/nav-context-menu.ts")).toBe(4);
+});
+
+
+test("creation routes follow the mounted chooser source, including native More", async () => {
+  const path = fixture(readFileSync(REAL, "utf8"));
+  writeFileSync(join(dirname(path), "creation-chooser.ts"), `
+    for (const type of ["part", "scene", "chapter"]) {}
+    more.id = "creation-more";
+    action("create-bible-timeline", "Timeline", run);
+    action("create-bible-folder", "Folder", run);
+    action("create-bible-entry", "Entry", run);
+    for (const kind of ["afterword", "foreword", "dedication", "acknowledgements"] as const) {}
+  `);
+  const sent: string[] = [];
+  const driver = menuDriver(":99", "123", (_display, args) => sent.push(args.at(-1) ?? ""), path);
+  await driver.activate("menu-new-scene");
+  expect(sent).toEqual(["alt+o", "Return", "Tab", "Return"]);
+  sent.length = 0;
+  await driver.activate("menu-new-afterword");
+  expect(sent).toEqual(["alt+o", "Return", "Tab", "Tab", "Tab", "Return", "Tab", "Tab", "Tab", "Tab", "Return"]);
+}, 10_000);
+
+test("an unsupported creation chooser shape fails before sending any input", async () => {
+  const path = fixture(readFileSync(REAL, "utf8"));
+  writeFileSync(join(dirname(path), "creation-chooser.ts"), "export const changed = true;");
+  const sent: string[] = [];
+  const driver = menuDriver(":99", "123", (_display, args) => sent.push(args.at(-1) ?? ""), path);
+  await expect(driver.activate("menu-new-scene")).rejects.toThrow(/control order changed/);
+  expect(sent).toEqual([]);
 });

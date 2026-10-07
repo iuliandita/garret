@@ -460,17 +460,17 @@ export interface Outline {
    *  with what the writer is looking at: it belongs in one section, always, and
    *  reaching that section through a placement rule would mean the same press
    *  landing in the manuscript whenever the selection happened to be there. */
-  createNote(): Promise<OutlineOutcome>;
+  createNote(anchorId?: string | null): Promise<OutlineOutcome>;
   /** Create a bodyless folder under the selected bible folder, or beside a
    *  selected bible document. Outside the bible, append to its root. */
-  createBibleFolder(): Promise<OutlineOutcome>;
+  createBibleFolder(anchorId?: string | null): Promise<OutlineOutcome>;
   /** Create a timeline in the bible, making the section if the project has
    *  none. `createNote`'s own shape and reason: a timeline belongs in one
    *  section, always, and has nothing to do with what the writer is looking
    *  at. UNNUMBERED, `createMatter`'s reason: `timeline.untitled` is already
    *  the name a writer would give one, and a book with one timeline does not
    *  need it called "Timeline 1". */
-  createTimeline(): Promise<OutlineOutcome>;
+  createTimeline(anchorId?: string | null): Promise<OutlineOutcome>;
   /** Create a dedication, a foreword, an acknowledgements page or an afterword,
    *  making its section if the project has none.
    *
@@ -812,9 +812,9 @@ export function createOutline(deps: OutlineDeps): Outline {
     docType: string;
     docTitle: (items: readonly ProjectItem[]) => string;
     noSection: () => string;
-  }): Promise<OutlineOutcome> {
+  }, anchorId?: string | null): Promise<OutlineOutcome> {
     return serialized(async () => {
-      const selected = deps.selectedId();
+      const selected = anchorId === undefined ? deps.selectedId() : anchorId;
       // ROOT-LEVEL, matching the host's `root_subtree_ids`. A row of one of
       // these types that a writer moved inside a scene is a row, not a section,
       // and filing documents into it would put them in the manuscript.
@@ -844,6 +844,10 @@ export function createOutline(deps: OutlineDeps): Outline {
       const parentId = spec.rootType === BIBLE_TYPE
         ? bibleParentFor(walk, selected, section)
         : section;
+      if (spec.rootType === BIBLE_TYPE && anchorId != null && parentId !== anchorId) {
+        fail(t("creation.destination-changed"));
+        return "failed";
+      }
       let id: string | null = null;
       const outcome = await run(
         "item_create",
@@ -1158,7 +1162,7 @@ export function createOutline(deps: OutlineDeps): Outline {
       return serialized(() => movedWithUndo(id, direction, count));
     },
 
-    createNote(): Promise<OutlineOutcome> {
+    createNote(anchorId?: string | null): Promise<OutlineOutcome> {
       return createInSection({
         rootType: BIBLE_TYPE,
         rootTitle: BIBLE_TITLE,
@@ -1168,20 +1172,20 @@ export function createOutline(deps: OutlineDeps): Outline {
         // changed.
         docTitle: (items) => nextNumberedTitle(items, NOTE_TYPE, numberPattern(NOTE_TYPE)),
         noSection: () => t("outline.failed.no-bible"),
-      });
+      }, anchorId);
     },
 
-    createBibleFolder(): Promise<OutlineOutcome> {
+    createBibleFolder(anchorId?: string | null): Promise<OutlineOutcome> {
       return createInSection({
         rootType: BIBLE_TYPE,
         rootTitle: BIBLE_TITLE,
         docType: BIBLE_FOLDER_TYPE,
         docTitle: (items) => nextNumberedTitle(items, BIBLE_FOLDER_TYPE, numberPattern(BIBLE_FOLDER_TYPE)),
         noSection: () => t("outline.failed.no-bible"),
-      });
+      }, anchorId);
     },
 
-    createTimeline(): Promise<OutlineOutcome> {
+    createTimeline(anchorId?: string | null): Promise<OutlineOutcome> {
       return createInSection({
         rootType: BIBLE_TYPE,
         rootTitle: BIBLE_TITLE,
@@ -1195,7 +1199,7 @@ export function createOutline(deps: OutlineDeps): Outline {
         // for the identical failure would be a second thing to translate for
         // no new information.
         noSection: () => t("outline.failed.no-bible"),
-      });
+      }, anchorId);
     },
 
     createMatter(kind: MatterKind): Promise<OutlineOutcome> {

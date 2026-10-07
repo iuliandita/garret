@@ -7,6 +7,9 @@
 //
 // Nothing here reads `window`: a unit that reads globals is a unit no test can
 // drive. Everything the assembly needs arrives through MountDeps.
+import { createCreationChooser } from "./creation-chooser";
+import { createBibleCreateControl } from "./bible-create-control";
+import { bibleParentFor } from "./bible-rows";
 import { isCompositionKey } from "./composition-key";
 import { formatNumber, plural, t } from "./i18n";
 import { createBanner, type Tone } from "./banner";
@@ -21,8 +24,9 @@ import { createDocumentOpener, isOpenableType } from "./open";
 import { createOutlineView, createOutlineViewTransitions, type OutlineView, type OutlineViewMode, type OutlineViewTransitions } from "./outline-view";
 import { createContinuousChapter, type ContinuousChapter } from "./continuous-chapter";
 import { createSession, type Session } from "./session";
-import { TIMELINE_TYPE } from "./item-types";
+import { BIBLE_TYPE, TIMELINE_TYPE } from "./item-types";
 import { mountTimeline, type TimelineMount } from "./timeline-view";
+import { parseTimeline } from "./timeline-model";
 import {
   createOutline,
   isTrashedIn,
@@ -311,6 +315,7 @@ export interface MenuProjectActions {
   outlineRedo(): void;
   outlineUndoLabel(): string | null;
   outlineRedoLabel(): string | null;
+  openCreation(): void;
   create(itemType: string): void;
   /** A free-form document in the bible, section and all. */
   createNote(): void;
@@ -461,6 +466,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   /** A saved-word pause, resume or reset is settling saves and updating the
    *  host. Scene opening and mirror undo wait it out. */
   let sourceCommandInFlight = false;
+  let historyOperationInFlight = false;
+  let historyReconcileFailed = false;
   let reviewDecisionInFlight = false;
   let reviewOpenInFlight = false;
   let reviewTransportInFlight = false;
@@ -770,10 +777,12 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     const at = editor.wordAtCaret();
     add(word)
       .then((stored) => {
+        if (projectDestroyed) return;
         if (at !== null && at.text === word) editor.redrawSpelling(at.from, at.to);
         announce(t("dict.added", { word: stored }));
       })
       .catch((err: unknown) => {
+        if (projectDestroyed) return;
         raiseNotice(t("prefs.dict.error.add", { word, error: String(err) }));
       });
   }
@@ -828,7 +837,9 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   async function loadCastNames(): Promise<void> {
     if (invoke === undefined) return;
     try {
-      castMembers = (await invoke("cast_list")) as CastMemberRow[];
+      const members = (await invoke("cast_list")) as CastMemberRow[];
+      if (projectDestroyed) return;
+      castMembers = members;
     } catch {
       return;
     }
@@ -1028,6 +1039,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
           container: editorEl,
           body,
           onDirty: (b) => flusher.markDirty(itemId, b),
+          canEdit: () => !historyOperationInFlight && !historyReconcileFailed && !projectDestroyed && !projectLeaving &&
+            !sourceCommandInFlight && !undoInFlight && !reviewDecisionInFlight && !reviewOpenInFlight && !reviewTransportInFlight,
           openScene: (sceneId) => {
             void openDocument?.(sceneId).catch((err: unknown) => {
               raiseNotice(t("project.error.open-document", { error: String(err) }));
@@ -1078,7 +1091,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         );
         updateSceneNotes(itemId, listed);
       } catch (err: unknown) {
-        raiseNotice(t("comments.error.read", { error: String(err) }));
+        if (!projectDestroyed) raiseNotice(t("comments.error.read", { error: String(err) }));
       }
     };
     void loadComments(activeDocId);
@@ -1154,7 +1167,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       onFailure: (message) => raiseNotice(t("project.error.open-document", { error: message })),
     });
     openDocument = async (itemId: string): Promise<void> => {
-      if (undoInFlight || sourceCommandInFlight || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight || projectLeaving) return;
+      if (undoInFlight || sourceCommandInFlight || historyOperationInFlight || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight || projectLeaving) return;
       if (outlineView?.mode() !== "manuscript" && isOpenableType(latestItems.find((item) => item.id === itemId)?.type ?? "")) {
         showManuscript();
       }
@@ -1200,6 +1213,30 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // nothing but the navigator.
   const selectedId = (): string | null =>
     navigator.rows()[navigator.activeIndex()]?.id ?? null;
+  const creationChooser = createCreationChooser({
+    create: (type) => { void outline?.create(type).catch(() => undefined); },
+    matter: (kind) => { void outline?.createMatter(kind).catch(() => undefined); },
+    returnFocus: () => {
+      if (navEl.getClientRects().length > 0) navEl.focus();
+      else if ((outlineView?.mode() ?? "manuscript") !== "manuscript") outlineView?.element.querySelector<HTMLElement>("h1")?.focus();
+      else if (timelineMount !== null) timelineMount.focus();
+      else editor.focus();
+    },
+    bible: () => {
+      const selected = selectedId();
+      const root = latestItems.find((item) => item.parent_id === null && item.type === BIBLE_TYPE);
+      const parent = root === undefined ? undefined : latestItems.find((item) =>
+        item.id === bibleParentFor(latestItems, selected, root.id));
+      const anchor = parent?.id ?? null;
+      return {
+        destination: parent?.title ?? t("outline.bible-title"),
+        entry: () => { void outline?.createNote(anchor).catch(() => undefined); },
+        folder: () => { void outline?.createBibleFolder(anchor).catch(() => undefined); },
+        timeline: () => { void outline?.createTimeline(anchor).catch(() => undefined); },
+      };
+    },
+  });
+  const bibleCreate = createBibleCreateControl(navEl, () => creationChooser.open(true));
   /** What the Outline menu's one context item is currently OFFERING.
    *
    *  Held rather than re-derived when the item runs, so the action taken is the
@@ -1496,10 +1533,18 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // The flusher is what makes the export "as saved" mean "as the writer sees
   // it", so the command exists only where there is one to drain. On the store
   // path there always is - it is built above from the same two conditions.
+  async function drainForPublishing(kind: "export" | "preview"): Promise<void> {
+    const unavailable = (): boolean => projectDestroyed || projectLeaving || (deps.privacyLocked?.() ?? false);
+    if (unavailable()) throw new Error(t("publishing.error.unavailable"));
+    await flusher.drain();
+    if (flusher.failed() || persistError !== null) throw new Error(t(`${kind}.error.unsaved`));
+    if (unavailable()) throw new Error(t("publishing.error.unavailable"));
+  }
+
   let exportBar: ExportBar | null = null;
   if (invoke !== undefined && flusher !== null) {
     exportBar = createExportBar({
-      drain: () => flusher.drain(),
+      drain: () => drainForPublishing("export"),
       // The host writes Markdown and says so; the page does not tell it which
       // format to write, because there is only one command. When a
       // second is added, the format the bar was asked for is what chooses the command.
@@ -1534,11 +1579,17 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
    *  A function declaration rather than a const, so both call sites can reach
    *  it whichever of them the assembly cycle builds first.
    */
-  async function reloadOpenDocument(): Promise<void> {
+  async function reloadOpenDocument(strict = false): Promise<void> {
     if (invoke === undefined || session === null || flusher === null) return;
     continuousChapter?.sourceChanged();
     const itemId = session.activeDocId();
     const doc = (await invoke("doc_load", { itemId })) as { body: string; rev: number };
+    if (projectDestroyed) return;
+    if (session.activeDocId() !== itemId) {
+      if (strict) throw new Error(t("history.error.changed"));
+      return;
+    }
+    if (strict && !Number.isSafeInteger(doc.rev)) throw new Error(t("project.error.unreadable-body", { item: itemId }));
     // A TIMELINE'S BODY IS NEVER READABLE-AS-PROSE, and reaching
     // readableBody with one raised a false "could not be read" for every
     // snapshot restore or mirror accept that touched an open timeline, AND
@@ -1548,6 +1599,10 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     // FIRST, unconditionally, exactly as the prose branch does after its own
     // read succeeds: this is the fix for that half, not an afterthought.
     if (typeOf(itemId) === TIMELINE_TYPE) {
+      if (strict) {
+        const parsed = parseTimeline(doc.body);
+        if ("invalid" in parsed || "newer" in parsed) throw new Error(t("project.error.unreadable-body", { item: itemId }));
+      }
       flusher.register(itemId, doc.rev);
       timelineMount?.setBody(doc.body);
       return;
@@ -1561,6 +1616,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     // keystroke.
     const json = readableBody(doc.body);
     if (json === null) {
+      if (strict) throw new Error(t("project.error.unreadable-body", { item: itemId }));
       raiseNotice(t("project.error.unreadable-body", { item: itemId }));
       return;
     }
@@ -1571,7 +1627,9 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     // underlines vanish until the writer switches scenes and back, and the
     // store has just collapsed the anchors of a restored body, so this is also
     // how the writer is told which notes their restore orphaned.
-    void loadComments(itemId);
+    if (strict) await loadComments(itemId);
+    else void loadComments(itemId);
+    if (projectDestroyed) return;
     // Same fresh EditorState, same empty names list until this runs: a
     // restore or a manuscript-wide replace must not leave the marks off for
     // whatever the writer opens next.
@@ -1838,7 +1896,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       if (projectDestroyed || invoke === undefined || session === null || flusher === null) {
         throw new Error(t("mirror.changes.undo.error.destroyed"));
       }
-      if (undoInFlight || sourceCommandInFlight || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight || projectLeaving) throw new Error(t("mirror.changes.undo.error.busy"));
+      if (undoInFlight || sourceCommandInFlight || historyOperationInFlight || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight || projectLeaving) throw new Error(t("mirror.changes.undo.error.busy"));
       if (inflightOpens > 0) throw new Error(t("mirror.changes.undo.error.opening"));
       undoInFlight = true;
       const activeTarget = session.activeDocId() === handle.itemId;
@@ -1879,7 +1937,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         }
         void refreshCounts();
       } finally {
-        if (!projectDestroyed && proseTarget) editor.setEditable(true);
+        if (!projectDestroyed && !historyOperationInFlight && !historyReconcileFailed && proseTarget) editor.setEditable(true);
         undoInFlight = false;
       }
     },
@@ -1897,7 +1955,28 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     const theFlusher = flusher;
     history = createHistory({
       container: historyEl,
-      drain: () => theFlusher.drain(),
+      drain: async () => {
+        await theFlusher.drain();
+        if (theFlusher.failed() || persistError !== null) throw new Error(t("history.error.unsaved"));
+        if (projectDestroyed || projectLeaving || deps.privacyLocked?.()) throw new Error(t("history.error.busy"));
+      },
+      withOperation: async (operation) => {
+        if (projectDestroyed || projectLeaving || historyOperationInFlight || historyReconcileFailed || reviewReconcileFailed ||
+            sourceCommandInFlight || undoInFlight || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight ||
+            inflightOpens > 0 || reviewPanel?.busy() || deps.privacyLocked?.()) throw new Error(t("history.error.busy"));
+        historyOperationInFlight = true;
+        try {
+          editor.setEditable(false);
+          timelineMount?.setEditable(false);
+          return await operation();
+        } finally {
+          historyOperationInFlight = false;
+          if (!projectDestroyed && !projectLeaving && !historyReconcileFailed && !reviewReconcileFailed) {
+            editor.setEditable(true);
+            timelineMount?.setEditable(true);
+          }
+        }
+      },
       activeDocId: () => theSession.activeDocId(),
       revOf: (itemId) => theFlusher.revOf(itemId),
       versions: async (itemId) =>
@@ -1930,53 +2009,50 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       // by the swap - which is right, because the host already wrote it. But
       // the rev moved, and a scheduler still holding the old one would refuse
       // the writer's very next keystroke as a Conflict.
-      applyRestored: (body, rev) => {
-        const itemId = theSession.activeDocId();
-        referenceRail?.sourceChanged(itemId);
-        craftPanel?.sourceChanged(itemId);
-        continuousChapter?.sourceChanged(itemId);
-        // Same distinction reloadOpenDocument makes, and the same reason:
-        // readableBody always refuses a timeline's body, which raised a
-        // false "could not be read" for a single-document history restore
-        // AND left theFlusher holding the pre-restore rev -- so the
-        // writer's next edit to the very body the host had just restored
-        // was refused as a Conflict.
-        if (typeOf(itemId) === TIMELINE_TYPE) {
-          theFlusher.register(itemId, rev);
-          timelineMount?.setBody(body);
-          return;
+      applyRestored: async (itemId, body, rev) => {
+        if (projectDestroyed) return;
+        try {
+          if (theSession.activeDocId() !== itemId) throw new Error(t("history.error.changed"));
+          if (!Number.isSafeInteger(rev)) throw new Error(t("project.error.unreadable-body", { item: itemId }));
+          if (typeOf(itemId) === TIMELINE_TYPE) {
+            const parsed = parseTimeline(body);
+            if ("invalid" in parsed || "newer" in parsed) throw new Error(t("project.error.unreadable-body", { item: itemId }));
+            timelineMount?.setBody(body);
+            theFlusher.register(itemId, rev);
+          } else {
+            const json = readableBody(body);
+            if (json === null) throw new Error(t("project.error.unreadable-body", { item: itemId }));
+            editor.replaceDoc({ kind: "pmjson", json });
+            theFlusher.register(itemId, rev);
+            await loadComments(itemId);
+            if (projectDestroyed) return;
+            editor.setCastNames(namesForCast(castMembers));
+            wordCount?.refreshSceneNow();
+          }
+          referenceRail?.sourceChanged(itemId);
+          craftPanel?.sourceChanged(itemId);
+          continuousChapter?.sourceChanged(itemId);
+          void refreshCounts();
+        } catch (error) {
+          // The host changed the body; an unreconciled editor must not save over it.
+          historyReconcileFailed = true;
+          throw new Error(t("history.error.reconcile"), { cause: error });
         }
-        // Third swap site, same question. The host has already written the
-        // restored body, so refusing here leaves the store ahead of the page -
-        // which the notice says, and which reopening the scene resolves. A
-        // throw would leave the panel's caller mid-restore with nothing said.
-        const json = readableBody(body);
-        if (json === null) {
-          raiseNotice(t("project.error.unreadable-body", { item: itemId }));
-          return;
-        }
-        editor.replaceDoc({ kind: "pmjson", json });
-        theFlusher.register(itemId, rev);
-        // Third path that swaps the open document, and the third that has to
-        // reload the notes drawn over it: `replaceDoc` leaves the comment
-        // plugin holding nothing. A fourth such path is where this defect
-        // comes back.
-        void loadComments(theSession.activeDocId());
-        // Same reason, same fix: the cast-marks plugin also re-inits empty.
-        editor.setCastNames(namesForCast(castMembers));
-        // The figure belongs to the open document and the swap fired no
-        // onChange, so nothing else repaints it. Same reason markOpen does it
-        // on a switch.
-        wordCount?.refreshSceneNow();
-        void refreshCounts();
       },
       // A snapshot restore can move every document in the book, so every
       // figure on screen is stale: the project total, the navigator's roll-ups,
       // and the body of whatever scene is open.
-      reloadProject: reloadOpenDocument,
+      reloadProject: async () => {
+        try {
+          await reloadOpenDocument(true);
+        } catch (error) {
+          historyReconcileFailed = true;
+          throw new Error(t("history.error.reconcile"), { cause: error });
+        }
+      },
       onDone: announce,
       onNotice: raiseNotice,
-      onDismiss: () => editor.focus(),
+      onDismiss: () => timelineMount !== null ? timelineMount.focus() : editor.focus(),
     });
   }
 
@@ -2109,7 +2185,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // every pending save drained first, nothing lands on the wrong side.
   const sourceWordsCommand = async (command: string, args: Record<string, unknown>): Promise<void> => {
     if (projectDestroyed || flusher === null) throw new Error(t("stats.sources.error.closed"));
-    if (sourceCommandInFlight || undoInFlight || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight || projectLeaving || inflightOpens > 0) {
+    if (sourceCommandInFlight || historyOperationInFlight || undoInFlight || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight || projectLeaving || inflightOpens > 0) {
       throw new Error(t("stats.sources.error.busy"));
     }
     sourceCommandInFlight = true;
@@ -2121,7 +2197,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       await invoke(command, { generation: deps.generation, ...args });
       if (!projectDestroyed) void wordCount?.refreshProject();
     } finally {
-      if (!projectDestroyed) editor.setEditable(true);
+      if (!projectDestroyed && !historyOperationInFlight && !historyReconcileFailed) editor.setEditable(true);
       sourceCommandInFlight = false;
     }
   };
@@ -2227,7 +2303,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
 
   async function openReviewProposals(): Promise<void> {
     if (session === null || reviewPanel === null || projectDestroyed || projectLeaving ||
-        reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight || undoInFlight || sourceCommandInFlight || inflightOpens > 0 ||
+        reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight || undoInFlight || sourceCommandInFlight || historyOperationInFlight || inflightOpens > 0 ||
         deps.privacyLocked?.()) return;
     const itemId = session.activeDocId();
     if (typeOf(itemId) === TIMELINE_TYPE) {
@@ -2246,14 +2322,14 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       raiseNotice(String(error));
     } finally {
       reviewOpenInFlight = false;
-      if (!projectDestroyed && !projectLeaving && !reviewDecisionInFlight && !reviewTransportInFlight && !reviewReconcileFailed && inflightOpens === 0) editor.setEditable(true);
+      if (!projectDestroyed && !projectLeaving && !reviewDecisionInFlight && !reviewTransportInFlight && !reviewReconcileFailed && !historyOperationInFlight && !historyReconcileFailed && inflightOpens === 0) editor.setEditable(true);
     }
   }
 
   async function withReviewTransport<T>(itemId: string, operation: () => Promise<T>): Promise<T> {
     if (projectDestroyed || projectLeaving || deps.privacyLocked?.()) throw new Error(t("review.busy"));
     if (reviewOpenInFlight || reviewDecisionInFlight || reviewTransportInFlight ||
-        undoInFlight || sourceCommandInFlight || inflightOpens > 0) throw new ReviewBusyError(t("review.busy"));
+        undoInFlight || sourceCommandInFlight || historyOperationInFlight || inflightOpens > 0) throw new ReviewBusyError(t("review.busy"));
     reviewTransportInFlight = true;
     const activeTarget = session?.activeDocId() === itemId;
     if (activeTarget) editor.setEditable(false);
@@ -2264,7 +2340,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       return await operation();
     } finally {
       reviewTransportInFlight = false;
-      if (!projectDestroyed && !projectLeaving && !reviewReconcileFailed && activeTarget &&
+      if (!projectDestroyed && !projectLeaving && !reviewReconcileFailed && !historyOperationInFlight && !historyReconcileFailed && activeTarget &&
           session?.activeDocId() === itemId && !reviewDecisionInFlight && !reviewOpenInFlight && inflightOpens === 0) editor.setEditable(true);
     }
   }
@@ -2294,7 +2370,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       return invoke("review_message_add", { generation: deps.generation, groupId, expectedGroupRev, authorId, body });
     },
     decide: async (itemId, groupId, expectedGroupRev, expectedDocRev, ids, decision: ReviewDecision, authorId) => {
-      if (projectLeaving || projectDestroyed || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight || undoInFlight || sourceCommandInFlight || inflightOpens > 0) {
+      if (projectLeaving || projectDestroyed || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight || undoInFlight || sourceCommandInFlight || historyOperationInFlight || inflightOpens > 0) {
         throw new Error(t("review.busy"));
       }
       reviewDecisionInFlight = true;
@@ -2342,7 +2418,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         }
       } finally {
         reviewDecisionInFlight = false;
-        if (!projectDestroyed && !projectLeaving && !reviewTransportInFlight && !reviewReconcileFailed && activeTarget) editor.setEditable(true);
+        if (!projectDestroyed && !projectLeaving && !reviewTransportInFlight && !reviewReconcileFailed && !historyOperationInFlight && !historyReconcileFailed && activeTarget) editor.setEditable(true);
       }
     },
     transport: {
@@ -2650,7 +2726,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   if (invoke !== undefined && flusher !== null) {
     previewRail = createPreviewRail({
       container: epubEl,
-      drain: () => flusher.drain(),
+      drain: () => drainForPublishing("preview"),
       read: async () => (await invoke("epub_preview")) as EpubPreview,
       readProof: async () => (await invoke("pdf_preview")) as PdfPreview,
       readStyle: async () => (await invoke("chapter_style_get")) as ChapterStyleView,
@@ -2915,10 +2991,10 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     },
     persistError: () => persistError,
     copiesNeedAttention: () => statusDot.state() === "amber",
-    reviewPending: () => projectLeaving || reviewOpenInFlight || reviewDecisionInFlight || reviewTransportInFlight || (reviewPanel?.busy() ?? false) || (reviewPanel?.hasUnsaved() ?? false),
+    reviewPending: () => historyOperationInFlight || projectLeaving || reviewOpenInFlight || reviewDecisionInFlight || reviewTransportInFlight || (reviewPanel?.busy() ?? false) || (reviewPanel?.hasUnsaved() ?? false),
     reviewPrivacyChanged: () => reviewPanel?.invalidateTransport(),
     async prepareToLeave(): Promise<boolean> {
-      if (projectDestroyed || projectLeaving || reviewOpenInFlight || reviewDecisionInFlight || reviewTransportInFlight || undoInFlight || sourceCommandInFlight || inflightOpens > 0 || reviewPanel?.busy() || deps.privacyLocked?.()) return false;
+      if (projectDestroyed || projectLeaving || reviewOpenInFlight || reviewDecisionInFlight || reviewTransportInFlight || undoInFlight || sourceCommandInFlight || historyOperationInFlight || inflightOpens > 0 || reviewPanel?.busy() || deps.privacyLocked?.()) return false;
       projectLeaving = true;
       editor.setEditable(false);
       try {
@@ -2937,7 +3013,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     cancelLeave(): void {
       projectLeaving = false;
       reviewPanel?.setLeaving(false);
-      if (!projectDestroyed && !reviewDecisionInFlight && !reviewOpenInFlight && !reviewTransportInFlight && !undoInFlight && !sourceCommandInFlight && inflightOpens === 0 && !reviewReconcileFailed) editor.setEditable(true);
+      if (!projectDestroyed && !reviewDecisionInFlight && !reviewOpenInFlight && !reviewTransportInFlight && !undoInFlight && !sourceCommandInFlight && !historyOperationInFlight && !historyReconcileFailed && inflightOpens === 0 && !reviewReconcileFailed) editor.setEditable(true);
     },
     // Each one delegates to the unit that already owns the action, rather than
     // reimplementing it. The menu is a second SURFACE, not a second
@@ -3112,6 +3188,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       showOutlineCards: () => { void outlineViewTransitions?.show("cards"); },
       showReadThrough: () => { void outlineViewTransitions?.show("reading"); },
       outlineViewMode: () => continuousChapter?.isOpen() ? "continuous" : outlineView?.mode() ?? "manuscript",
+      openCreation: () => creationChooser.open(),
       create: (itemType) => {
         // No title and no parent: both are properties of the walk, and the
         // outline unit reads the walk inside its own serialized body. A title
@@ -3262,6 +3339,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       // Latches and unregisters its document-level outside-click listener, which
       // would otherwise outlive every element this mount owns and accumulate one
       // live closure per project switch.
+      creationChooser.destroy();
+      bibleCreate.destroy();
       renamePanel?.destroy();
       // Latches too: a project_word_count issued before this and answered after
       // it would otherwise paint a dead project's total into the element the

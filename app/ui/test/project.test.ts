@@ -701,6 +701,40 @@ describe("captured review integration", () => {
       expect(mounted.reviewPending()).toBe(false);
     } finally { release(); mounted.destroy(); }
   });
+  for (const command of ["review_state", "review_decide", "review_return_preview"] as const) {
+    test(`History cannot steal ownership from pending ${command}`, async () => {
+      shell(); const r = reviewHost(); const calls: Call[] = [];
+      let release = (): void => undefined;
+      const reply = new Promise<void>((resolve) => { release = resolve; });
+      let entered = (): void => undefined;
+      const entry = new Promise<void>((resolve) => { entered = resolve; });
+      const invoke: Host["invoke"] = async (cmd, args) => {
+        calls.push({ cmd, args });
+        if (cmd === command) { entered(); await reply; if (cmd === "review_return_preview") return null; }
+        if (cmd === "doc_versions") return [{ id: 3, created_at: 0, words: 1, snapshot_label: null, snapshot_id: null }];
+        return r.invoke(cmd, args);
+      };
+      const mounted = await mountProject(deps({ invoke }));
+      try {
+        if (command === "review_return_preview") {
+          await openTransport(mounted);
+          document.querySelector<HTMLButtonElement>("#review-transport button:nth-of-type(2)")!.click();
+        } else {
+          mounted.menuActions.openReviewProposals(); await settle();
+          if (command === "review_decide") await selectDecision();
+        }
+        await entry;
+        mounted.menuActions.openHistory(); await settle(); await settle();
+        document.querySelector<HTMLButtonElement>(".history-restore")!.click(); await settle();
+        expect(calls.filter((call) => call.cmd === "doc_restore")).toHaveLength(0);
+        const before = mounted.editor.serialize(); mounted.editor.typeChar("x");
+        expect(mounted.editor.serialize()).toBe(before);
+        expect(await mounted.prepareToLeave()).toBe(false); mounted.cancelLeave();
+        mounted.editor.typeChar("y"); expect(mounted.editor.serialize()).toBe(before);
+        release(); await settle(); await settle();
+      } finally { release(); mounted.destroy(); }
+    });
+  }
 });
 
 afterEach(() => {
@@ -4147,4 +4181,375 @@ describe("saved-word statistics commands", () => {
     expect(second.of("project_source_words_collecting")[0]!.args).toEqual({ generation: 2, collecting: false });
     b.destroy();
   });
+});
+
+describe("History persistence and operation ownership", () => {
+  const versions = [{ id: 3, created_at: 0, words: 1, snapshot_label: null, snapshot_id: null }];
+  const snapshots = [{ id: 5, label: "act one", created_at: 0, documents: 2 }];
+  function deferred() {
+    let release = (): void => undefined;
+    const promise = new Promise<void>((resolve) => { release = resolve; });
+    return { promise, release };
+  }
+  function gate() { return { entered: deferred(), reply: deferred() }; }
+  function storedHost(opts: HostOpts = {}) {
+    const fallback = host({ versions, snapshots, ...opts });
+    const calls: Call[] = [];
+    const docs = new Map((opts.items ?? walk()).filter((item) => item.type === "scene" || item.type === "timeline")
+      .map((item) => [item.id, { body: opts.bodies?.[item.id] ?? body(item.id), rev: 7 }]));
+    const holds = new Map<string, ReturnType<typeof gate>>();
+    const failures = new Set<string>();
+    const invoke: Host["invoke"] = async (cmd, args) => {
+      calls.push({ cmd, args });
+      const hold = holds.get(cmd);
+      if (hold) { hold.entered.release(); await hold.reply.promise; }
+      if (failures.has(cmd)) throw new Error("disk full");
+      if (cmd === "doc_load") return { ...docs.get(String(args?.itemId))! };
+      if (cmd === "doc_flush") return (args?.entries as FlushEntry[]).map((entry) => {
+        const doc = docs.get(entry.item_id)!;
+        if (entry.base_rev !== doc.rev) throw new Error("Conflict");
+        doc.body = entry.body;
+        return { item_id: entry.item_id, rev: ++doc.rev };
+      });
+      if (cmd === "doc_restore") {
+        const doc = docs.get(String(args?.itemId))!;
+        if (args?.baseRev !== doc.rev) throw new Error("Conflict");
+        doc.body = opts.restoreBody ?? body("restored");
+        doc.rev++;
+        return { ...doc };
+      }
+      if (cmd === "snapshot_restore") {
+        for (const [itemId, doc] of docs) {
+          doc.body = opts.items?.find((item) => item.id === itemId)?.type === "timeline" ? opts.restoreBody! : body("snapshot restored");
+          doc.rev++;
+        }
+        return { documents: docs.size, covered: docs.size };
+      }
+      if (cmd === "snapshot_create") return { id: 6, label: args?.label, created_at: 0, documents: docs.size };
+      if (cmd === "doc_version_body") return body("old words");
+      return fallback.invoke(cmd, args);
+    };
+    const of = (cmd: string) => calls.filter((call) => call.cmd === cmd);
+    return { invoke, calls, docs, holds, failures, of };
+  }
+  async function openHistory(mounted: MountedProject): Promise<void> {
+    mounted.menuActions.openHistory(); await settle(); await settle();
+  }
+  function press(action: "restore" | "snapshot" | "take" | "compare"): void {
+    if (action === "take") {
+      (document.getElementById("snapshot-name") as HTMLInputElement).value = "checkpoint";
+      document.getElementById("snapshot-take")!.click();
+    } else if (action === "snapshot") {
+      const button = document.querySelector<HTMLButtonElement>(".snapshot-row")!;
+      button.click(); button.click();
+    } else document.querySelector<HTMLButtonElement>(action === "restore" ? ".history-restore" : ".history-compare")!.click();
+  }
+  async function assertOwned(mounted: MountedProject): Promise<void> {
+    const before = mounted.editor.serialize();
+    mounted.editor.typeChar("x");
+    expect(mounted.editor.serialize()).toBe(before);
+    mounted.navigator.selectById("scene-1"); mounted.navigator.activate(); await micro();
+    expect(mounted.session!.activeDocId()).toBe("scene-0");
+    expect(await mounted.prepareToLeave()).toBe(false);
+    mounted.cancelLeave();
+    mounted.editor.typeChar("y");
+    expect(mounted.editor.serialize()).toBe(before);
+  }
+
+  for (const action of ["restore", "snapshot", "take", "compare"] as const) {
+    test(`${action} refuses a failed real save and retains the writer's body`, async () => {
+      shell(); const h = storedHost(); const mounted = await mountProject(deps({ invoke: h.invoke }));
+      try {
+        await openHistory(mounted);
+        mounted.editor.typeChar("x"); const edited = mounted.editor.serialize();
+        const loaded = h.of("doc_load").length;
+        h.failures.add("doc_flush"); press(action); await settle(); await settle();
+        expect(mounted.flusher!.failed()).toBe(true);
+        expect(mounted.flusher!.dirtyCount()).toBe(1);
+        expect(mounted.editor.serialize()).toBe(edited);
+        expect(h.of("doc_restore")).toHaveLength(0);
+        expect(h.of("snapshot_restore")).toHaveLength(0);
+        expect(h.of("snapshot_create")).toHaveLength(0);
+        expect(h.of("doc_version_body")).toHaveLength(0);
+        expect(h.of("doc_load")).toHaveLength(loaded);
+        expect(document.getElementById("open-error")?.dataset.tone).toBe("problem");
+      } finally { mounted.destroy(); }
+    });
+  }
+
+  test("the persistence latch refuses History even when the scheduler has not failed", async () => {
+    shell(); const h = storedHost(); const mounted = await mountProject(deps({ invoke: h.invoke }));
+    try {
+      await openHistory(mounted); mounted.raiseFailure("disk full"); press("restore"); await settle();
+      expect(mounted.flusher!.failed()).toBe(false);
+      expect(h.of("doc_restore")).toHaveLength(0);
+      expect(document.getElementById("open-error")?.dataset.tone).toBe("problem");
+    } finally { mounted.destroy(); }
+  });
+
+  test("a restore owns drain, host response and the next saved revision", async () => {
+    shell(); const h = storedHost(); const mounted = await mountProject(deps({ invoke: h.invoke }));
+    const flush = gate(); const restore = gate();
+    try {
+      await openHistory(mounted); mounted.editor.typeChar("a");
+      h.holds.set("doc_flush", flush); h.holds.set("doc_restore", restore);
+      press("restore"); await flush.entered.promise; await assertOwned(mounted);
+      expect(h.of("doc_restore")).toHaveLength(0);
+      flush.reply.release(); await restore.entered.promise; await assertOwned(mounted);
+      press("restore"); mounted.menuActions.openReviewProposals(); await micro();
+      expect(h.of("doc_restore")).toHaveLength(1);
+      expect(h.of("review_state")).toHaveLength(0);
+      expect(h.of("doc_restore")[0]!.args).toEqual({ itemId: "scene-0", versionId: 3, baseRev: 8 });
+      restore.reply.release(); await settle(); await settle();
+      expect(mounted.editor.serialize()).toBe(body("restored"));
+      expect(mounted.flusher!.revOf("scene-0")).toBe(9);
+      expect(h.docs.get("scene-1")!.body).toBe(body("scene-1"));
+      mounted.editor.typeChar("b"); await mounted.session!.flushPending();
+      const entry = (h.of("doc_flush").at(-1)!.args!.entries as FlushEntry[])[0]!;
+      expect(entry.item_id).toBe("scene-0"); expect(entry.base_rev).toBe(9);
+      expect(h.docs.get("scene-0")!.body).toBe(mounted.editor.serialize());
+    } finally { flush.reply.release(); restore.reply.release(); mounted.destroy(); }
+  });
+
+  test("a version list cannot restore a different document after navigation", async () => {
+    shell(); const h = storedHost(); const mounted = await mountProject(deps({ invoke: h.invoke }));
+    try {
+      await openHistory(mounted);
+      mounted.navigator.selectById("scene-1"); mounted.navigator.activate(); await settle();
+      expect(mounted.session!.activeDocId()).toBe("scene-1");
+      const before = mounted.editor.serialize(); press("restore"); await settle();
+      expect(h.of("doc_restore")).toHaveLength(0);
+      expect(mounted.editor.serialize()).toBe(before);
+      expect(document.getElementById("open-error")?.dataset.tone).toBe("problem");
+    } finally { mounted.destroy(); }
+  });
+
+  test("a snapshot restore remains owned until its changed body reloads", async () => {
+    shell(); const h = storedHost(); const mounted = await mountProject(deps({ invoke: h.invoke }));
+    const restore = gate(); const load = gate();
+    try {
+      await openHistory(mounted); h.holds.set("snapshot_restore", restore); h.holds.set("doc_load", load);
+      press("snapshot"); await restore.entered.promise; await assertOwned(mounted);
+      restore.reply.release(); await load.entered.promise; await assertOwned(mounted);
+      expect(h.docs.get("scene-0")!.body).toBe(body("snapshot restored"));
+      load.reply.release(); await settle(); await settle();
+      expect(mounted.editor.serialize()).toBe(body("snapshot restored"));
+      mounted.editor.typeChar("z"); await mounted.session!.flushPending();
+      expect((h.of("doc_flush").at(-1)!.args!.entries as FlushEntry[])[0]!.base_rev).toBe(8);
+      expect(h.docs.get("scene-0")!.body).toBe(mounted.editor.serialize());
+    } finally { restore.reply.release(); load.reply.release(); mounted.destroy(); }
+  });
+
+  for (const phase of ["doc_flush", "doc_restore", "doc_load"] as const) {
+    test(`destroy during History ${phase} ignores later reconciliation`, async () => {
+      shell(); const h = storedHost(); const mounted = await mountProject(deps({ invoke: h.invoke }));
+      const hold = gate();
+      try {
+        await openHistory(mounted);
+        if (phase === "doc_flush") mounted.editor.typeChar("x");
+        h.holds.set(phase, hold); press(phase === "doc_load" ? "snapshot" : "restore");
+        await hold.entered.promise; mounted.destroy();
+        const before = mounted.editor.serialize(); hold.reply.release(); await settle(); await settle();
+        expect(mounted.editor.serialize()).toBe(before);
+        expect(bannerIds()).toHaveLength(0);
+        if (phase === "doc_flush") expect(h.of("doc_restore")).toHaveLength(0);
+      } finally { hold.reply.release(); mounted.destroy(); }
+    });
+  }
+
+  for (const action of ["restore", "snapshot"] as const) {
+    test(`${action} keeps stale prose locked when a written result cannot be reconciled`, async () => {
+      shell(); const h = storedHost({ restoreBody: "invalid" });
+      const mounted = await mountProject(deps({ invoke: h.invoke }));
+      try {
+        await openHistory(mounted);
+        if (action === "snapshot") h.failures.add("doc_load");
+        const before = mounted.editor.serialize(); press(action); await settle(); await settle();
+        mounted.cancelLeave(); mounted.editor.typeChar("x");
+        expect(mounted.editor.serialize()).toBe(before);
+        expect(mounted.flusher!.dirtyCount()).toBe(0);
+        expect(document.getElementById("open-error")?.dataset.tone).toBe("problem");
+        expect(document.getElementById("open-error")?.textContent).toContain("Restart garret before editing this book");
+      } finally { mounted.destroy(); }
+    });
+  }
+
+  test("a source command and History exclude each other before draining", async () => {
+    shell(); const h = storedHost(); const mounted = await mountProject(deps({ invoke: h.invoke }));
+    const source = gate(); const restore = gate();
+    try {
+      mounted.menuActions.openStatistics(); await settle(); await settle();
+      const collect = document.getElementById("stats-sources-collect") as HTMLButtonElement;
+      h.holds.set("project_source_words_collecting", source); collect.click(); await source.entered.promise;
+      await openHistory(mounted); press("restore"); await settle();
+      expect(h.of("doc_restore")).toHaveLength(0);
+      const before = mounted.editor.serialize(); mounted.editor.typeChar("x"); expect(mounted.editor.serialize()).toBe(before);
+      source.reply.release(); await settle(); await settle();
+      h.holds.set("doc_restore", restore); press("restore"); await restore.entered.promise;
+      collect.click(); await settle();
+      expect(h.of("project_source_words_collecting")).toHaveLength(1);
+      mounted.editor.typeChar("y"); expect(mounted.editor.serialize()).toBe(before);
+    } finally { source.reply.release(); restore.reply.release(); await settle(); mounted.destroy(); }
+  });
+  for (const action of ["restore", "snapshot"] as const) {
+    test(`${action} keeps the editor owned until restored comment positions arrive`, async () => {
+      shell(); const h = storedHost(); const mounted = await mountProject(deps({ invoke: h.invoke }));
+      const comments = gate();
+      try {
+        await openHistory(mounted); h.holds.set("comment_list", comments);
+        press(action); await comments.entered.promise; await assertOwned(mounted);
+        expect(mounted.editor.serialize()).toBe(body(action === "restore" ? "restored" : "snapshot restored"));
+        comments.reply.release(); await settle(); await settle();
+        mounted.editor.typeChar("z"); await mounted.session!.flushPending();
+        expect(h.docs.get("scene-0")!.body).toBe(mounted.editor.serialize());
+      } finally { comments.reply.release(); mounted.destroy(); }
+    });
+  }
+
+  for (const action of ["restore", "snapshot"] as const) {
+    test(`${action} blocks real timeline edits and saves the next edit against its restored revision`, async () => {
+      const timeline = (names: string[]) => JSON.stringify({ kind: "timeline", version: 1,
+        scale: { unit: "day", zero: "", calendar: null, eras: [] },
+        tracks: names.map((name, n) => ({ id: `t${n}`, name, kind: "thread", colour: 1 })), branches: [], events: [] });
+      const items = [...walk(), { id: "timeline-0", parent_id: null, type: "timeline", title: "Timeline", position: "0002", rev: 1, state: null, depth: 0 }];
+      shell(); const h = storedHost({ items, bodies: { "timeline-0": timeline(["original"]) }, restoreBody: timeline(["restored", "second"]) });
+      const mounted = await mountProject(deps({ invoke: h.invoke })); const hold = gate();
+      try {
+        mounted.navigator.selectById("timeline-0"); mounted.navigator.activate(); await settle();
+        expect(mounted.session!.activeDocId()).toBe("timeline-0");
+        await openHistory(mounted); h.holds.set(action === "restore" ? "doc_restore" : "snapshot_restore", hold);
+        const addTrack = [...document.querySelectorAll<HTMLButtonElement>("#timeline-toolbar button")].find((b) => b.textContent?.includes("Track"))!;
+        // An already-open floating menu must not commit after the restore starts.
+        addTrack.click(); const thread = document.getElementById("timeline-track-kind-thread") as HTMLButtonElement;
+        press(action); await hold.entered.promise; thread.click();
+        expect(addTrack.disabled).toBe(true);
+        expect(document.querySelectorAll(".timeline-lane").length).toBe(1);
+        expect(mounted.flusher!.dirtyCount()).toBe(0);
+        expect(await mounted.prepareToLeave()).toBe(false); mounted.cancelLeave();
+        thread.click(); expect(mounted.flusher!.dirtyCount()).toBe(0);
+        hold.reply.release(); await settle(); await settle();
+        expect(document.querySelectorAll(".timeline-lane").length).toBe(2);
+        expect(mounted.flusher!.revOf("timeline-0")).toBe(8);
+        addTrack.click(); (document.getElementById("timeline-track-kind-thread") as HTMLButtonElement).click();
+        await mounted.session!.flushPending();
+        const entry = (h.of("doc_flush").at(-1)!.args!.entries as FlushEntry[])[0]!;
+        expect(entry.item_id).toBe("timeline-0"); expect(entry.base_rev).toBe(8);
+        expect(JSON.parse(entry.body).tracks.length).toBe(3);
+        expect(h.docs.get("timeline-0")!.body).toBe(entry.body);
+      } finally { hold.reply.release(); mounted.destroy(); }
+    });
+  }
+
+});
+
+
+describe("publishing requires acknowledged prose", () => {
+  const epub = { documents: [], css: "", cover_data_uri: null, items: 1, words: 1 };
+  const pdf = { pages: [], css: "", leaves: 1, truncated: false, font: "Crimson Text", font_resolved: true,
+    gutter_minimum_um: null, inner_um: 19050, items: 1, words: 1 };
+  const design = { font: "Crimson Text", page: { width_um: 152400, height_um: 228600, name: "trade" },
+    margins: { inner_um: 19050, outer_um: 15875, top_um: 15875, bottom_um: 19050 } };
+  function publishingHost() {
+    const fallback = host(); const calls: Call[] = [];
+    let saved = body("saved words"); let refuseFlush = false;
+    let flushGate: Promise<void> | null = null;
+    let entered = (): void => undefined;
+    const entry = new Promise<void>((resolve) => { entered = resolve; });
+    const invoke: Host["invoke"] = async (cmd, args) => {
+      calls.push({ cmd, args });
+      if (cmd === "doc_load") return { body: saved, rev: 7 };
+      if (cmd === "doc_flush") {
+        entered(); await flushGate;
+        if (refuseFlush) throw new Error("disk full");
+        return (args?.entries as FlushEntry[]).map((item) => { saved = item.body; return { item_id: item.item_id, rev: item.base_rev + 1 }; });
+      }
+      if (cmd === "project_export" || cmd === "project_export_as") return { path: "/exports/test", underlined: 0, format: args?.format ?? "markdown" };
+      if (cmd === "epub_preview") return epub;
+      if (cmd === "pdf_preview") return pdf;
+      if (cmd === "chapter_style_get") return { style: { glyph: null, new_page: false, caps_title: false, drop_cap: false }, glyphs: [] };
+      if (cmd === "book_design_get") return { design, fonts: [design.font], page_sizes: [design.page], presets: [] };
+      return fallback.invoke(cmd, args);
+    };
+    return { invoke, calls, entry, saved: () => saved, fail: () => { refuseFlush = true; }, hold: (gate: Promise<void>) => { flushGate = gate; } };
+  }
+  const outputs = new Set(["project_export", "project_export_as", "epub_preview", "pdf_preview"]);
+  const routes = ["markdown", "markdown-as", "docx", "epub-save", "pdf-save", "epub-preview", "pdf-preview"] as const;
+  type Route = typeof routes[number];
+  async function prepare(mounted: MountedProject, route: Route): Promise<void> {
+    if (route === "epub-save") mounted.menuActions.openEpubPreview();
+    if (route === "pdf-save") mounted.menuActions.openPdfPreview();
+    await settle(); await settle();
+  }
+  function publish(mounted: MountedProject, route: Route): void {
+    if (route === "markdown") mounted.menuActions.exportProject();
+    else if (route === "markdown-as") mounted.menuActions.exportAs();
+    else if (route === "docx") mounted.menuActions.exportDocx();
+    else if (route === "epub-preview") mounted.menuActions.openEpubPreview();
+    else if (route === "pdf-preview") mounted.menuActions.openPdfPreview();
+    else document.getElementById("preview-save-as")!.click();
+  }
+  for (const route of routes) {
+    test(`${route} refuses a failed real save while the saved manuscript remains readable`, async () => {
+      shell(); const h = publishingHost(); const mounted = await mountProject(deps({ invoke: h.invoke }));
+      try {
+        await prepare(mounted, route); const previousOutputs = h.calls.filter((call) => outputs.has(call.cmd)).length;
+        const stored = h.saved(); mounted.editor.typeChar("x"); const draft = mounted.editor.serialize(); h.fail();
+        publish(mounted, route); await settle(); await settle();
+        expect(mounted.flusher!.failed()).toBe(true); expect(mounted.flusher!.dirtyCount()).toBe(1);
+        expect(mounted.editor.serialize()).toBe(draft); expect(h.saved()).toBe(stored);
+        expect(await h.invoke("doc_load", { itemId: "scene-0" })).toEqual({ body: stored, rev: 7 });
+        expect(h.calls.filter((call) => outputs.has(call.cmd))).toHaveLength(previousOutputs);
+        expect(document.getElementById("open-error")?.dataset.tone).toBe("problem");
+        expect(mounted.persistError()).toBe("disk full");
+      } finally { mounted.destroy(); }
+    });
+  }
+  for (const route of ["markdown", "epub-preview", "pdf-preview"] as const) {
+    test(`${route} refuses the persistence latch even when the scheduler has not failed`, async () => {
+      shell(); const h = publishingHost(); const mounted = await mountProject(deps({ invoke: h.invoke }));
+      try {
+        mounted.raiseFailure("disk full"); publish(mounted, route); await settle(); await settle();
+        expect(mounted.flusher!.failed()).toBe(false);
+        expect(h.calls.filter((call) => outputs.has(call.cmd))).toHaveLength(0);
+        expect(document.getElementById("open-error")?.dataset.tone).toBe("problem");
+      } finally { mounted.destroy(); }
+    });
+  }
+  for (const route of ["markdown", "epub-preview", "pdf-preview"] as const) {
+    for (const change of ["destroy", "leave", "privacy"] as const) {
+      test(`${route} refuses ${change} during a real pending save`, async () => {
+        shell(); const h = publishingHost(); let locked = false;
+        const mounted = await mountProject(deps({ invoke: h.invoke, privacyLocked: () => locked }));
+        await prepare(mounted, route);
+        let release!: () => void; const reply = new Promise<void>((resolve) => { release = resolve; }); h.hold(reply);
+        try {
+          mounted.editor.typeChar("x"); publish(mounted, route); await h.entry;
+          if (change === "destroy") mounted.destroy();
+          else if (change === "leave") expect(await mounted.prepareToLeave()).toBe(true);
+          else locked = true;
+          release(); await settle(); await settle();
+          expect(h.calls.filter((call) => outputs.has(call.cmd))).toHaveLength(0);
+        } finally { release(); mounted.destroy(); }
+      });
+    }
+  }
+});
+
+
+test("a cast read completing after destruction never reaches the retired editor", async () => {
+  shell(); const h = host();
+  let release!: (members: unknown[]) => void;
+  const reply = new Promise<unknown[]>((resolve) => { release = resolve; });
+  let entered = (): void => undefined;
+  const entry = new Promise<void>((resolve) => { entered = resolve; });
+  const invoke: Host["invoke"] = async (cmd, args) => {
+    if (cmd === "cast_list") { entered(); return reply; }
+    return h.invoke(cmd, args);
+  };
+  const mounted = await mountProject(deps({ invoke })); await entry;
+  const apply = jest.spyOn(mounted.editor, "setCastNames");
+  try {
+    mounted.destroy(); release([]); await settle(); await settle();
+    expect(apply).not.toHaveBeenCalled();
+  } finally { release([]); apply.mockRestore(); mounted.destroy(); }
 });

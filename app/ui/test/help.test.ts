@@ -568,3 +568,16 @@ test("Help includes offline guidance for structuring, annotating, exporting and 
     expect(container.querySelector("#help-guide a")).toBeNull();
   } finally { panel.destroy(); container.remove(); }
 });
+
+
+test("Help dismissal restores caller focus", () => {
+  const container = document.createElement("div");
+  const target = document.createElement("button");
+  document.body.append(container, target);
+  const panel = createHelpPanel({ container, onDismiss: () => target.focus() });
+  try {
+    panel.open();
+    document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(target);
+  } finally { panel.destroy(); container.remove(); target.remove(); }
+});

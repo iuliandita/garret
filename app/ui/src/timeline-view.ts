@@ -108,6 +108,8 @@ export interface TimelineMountDeps {
    *  `newer` or `invalid` document (the whole-document leniency rule, design
    *  section 3). */
   onDirty(body: string): void;
+  /** Checked before mutations, including commits from floating forms. */
+  canEdit?(): boolean;
   openScene(itemId: string): void;
   cast(): readonly CastMemberRow[];
   items(): readonly QuickOpenItem[];
@@ -120,6 +122,7 @@ export interface TimelineMountDeps {
 
 export interface TimelineMount {
   destroy(): void;
+  setEditable(editable: boolean): void;
   focus(): void;
   setBody(body: string): void;
   /** The current pan/zoom state, exposed for `shot-cli` captures that need a
@@ -133,6 +136,7 @@ function trackColourVar(colour: number): string {
 }
 
 export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
+  let editable = true;
   const { container } = deps;
   container.classList.add("timeline-open");
 
@@ -345,7 +349,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
   const scalePanel = createTimelineScalePanel({
     container: document.body,
     onSave(scale) {
-      if (timeline === null) return;
+      if (timeline === null || !editable || deps.canEdit?.() === false) return;
       // Eras minted here, at APPLY time, rather than by the panel: the panel
       // is pure UI and never reads the document's id space
       // (`mintId`'s own convention -- ids are minted from the WHOLE document,
@@ -395,7 +399,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
   }
 
   function doEntry(steps: TimelineStep[]): void {
-    if (timeline === null) return;
+    if (timeline === null || !editable || deps.canEdit?.() === false) return;
     let t2 = timeline;
     const inverses: TimelineStep[] = [];
     for (const step of steps) {
@@ -411,7 +415,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
   }
 
   function undo(): void {
-    if (timeline === null) return;
+    if (timeline === null || !editable || deps.canEdit?.() === false) return;
     const steps = undoStack.pop();
     if (steps === undefined) return;
     let t2 = timeline;
@@ -428,7 +432,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
   }
 
   function redo(): void {
-    if (timeline === null) return;
+    if (timeline === null || !editable || deps.canEdit?.() === false) return;
     const steps = redoStack.pop();
     if (steps === undefined) return;
     let t2 = timeline;
@@ -1764,6 +1768,21 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
       container.classList.remove("timeline-open");
       root.remove();
     },
+    setEditable(value) {
+      editable = value;
+      for (const button of toolbar.querySelectorAll<HTMLButtonElement>("button")) button.disabled = !value;
+      emptyAddTrack.disabled = !value;
+      lanes.inert = !value;
+      if (!value) {
+        endDrag(false);
+        card.close();
+        scalePanel.close();
+        closeBranchForm();
+        trackKindMenu.close();
+        castMemberMenu.close();
+        trackContextMenu.close();
+      }
+    },
     focus() {
       const firstEvent = lanes.querySelector<HTMLButtonElement>(".tl-event");
       if (firstEvent !== null) firstEvent.focus();
@@ -1779,7 +1798,13 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
         deps.onNotice(t("timeline.invalid"));
         return;
       }
+      endDrag(false);
+      card.close();
+      scalePanel.close();
+      closeBranchForm();
       timeline = next;
+      undoStack = [];
+      redoStack = [];
       view = fitView(timeline.events, widthPx(), EVENT_MAX_WIDTH_PX);
       render();
     },

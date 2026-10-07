@@ -51,7 +51,7 @@ import {
   type ProseSize,
   type Typography,
 } from "./typography";
-import { ZOOMS, isZoom, type Zoom } from "./zoom";
+import { ZOOMS, isZoom, createZoomPersistence, type Zoom, type ZoomPersistence } from "./zoom";
 
 /** The two languages this build ships a catalog for. A `<select>`, not a row
  *  of buttons like every group above it: the row-of-buttons choice is
@@ -130,6 +130,8 @@ export interface PreferencesDeps {
    *  is WebKit's, set through the webview, and there is no attribute for this
    *  page to write. */
   persistZoom: (zoom: Zoom) => Promise<void>;
+  /** Shared with keyboard shortcuts when mounted as application chrome. */
+  zoomPersistence?: ZoomPersistence;
   /** Recorded ONLY - unlike theme, typography or zoom, nothing here is
    *  applied to the live page: every unit renders its strings at mount, and
    *  reaching into all of them to rebuild every label would be a second,
@@ -190,6 +192,12 @@ export interface Preferences {
    *  AWAY from a book back to nothing open would use it too, though nothing
    *  today drives that path -- a switch only ever lands on another book. */
   setDictionary(words: readonly string[] | null): void;
+  /** Clear outgoing words and disable the group before a book switch. */
+  invalidateDictionary(): void;
+  /** Wait for outgoing dictionary writes before the host changes books. */
+  drainDictionary(): Promise<void>;
+  /** Read only for the current dictionary owner; failures leave it unavailable. */
+  refreshDictionary(read: () => Promise<readonly string[]>): Promise<void>;
   /** Persist one word into the OPEN project's dictionary and paint it.
    *  Resolves to the word as stored; rejects with the host's refusal. */
   addWord(word: string): Promise<string>;
@@ -342,8 +350,8 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   let dailyTarget = deps.initialDailyTarget;
   let writingModes = deps.initialWritingModes;
   let zoom = deps.initialZoom;
-  let locale = deps.initialLocale;
-  let start = deps.initialStart;
+  const locale = deps.initialLocale;
+  const start = deps.initialStart;
   let spelling = deps.initialSpelling;
   // On/off, the same shape spelling's own toggle takes -- the host command
   // is a plain bool, and this string is only ever converted at that one
@@ -368,7 +376,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   // Nothing here traps focus, and aria-modal="true" would tell a screen reader
   // the rest of the page is inert when it is not. Same as the project panel.
   panel.setAttribute("aria-modal", "false");
-  panel.setAttribute("aria-label", "preferences");
+  panel.setAttribute("aria-label", t("prefs.title"));
   panel.hidden = true;
 
   let destroyed = false;
@@ -415,8 +423,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
       note.className = "prefs-choice-note";
       note.textContent = spec.description;
       group.append(note);
-      choices.setAttribute("aria-describedby", note.id);
-      for (const button of choices.children) button.setAttribute("aria-describedby", note.id);
+      group.setAttribute("aria-describedby", note.id);
     }
     return group;
   }
@@ -585,6 +592,10 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   // failed add or remove here means nothing changed at all, not merely that it
   // will not survive relaunch.
   const dictWords: string[] = deps.initialDictionary === null ? [] : [...deps.initialDictionary];
+  let dictGeneration = 0;
+  let dictReady = deps.initialDictionary !== null;
+  let dictLoading = false;
+  const pendingDictWrites = new Set<Promise<unknown>>();
 
   const dictGroup = document.createElement("div");
   dictGroup.id = "prefs-dict";
@@ -616,9 +627,10 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   const dictInput = document.createElement("input");
   dictInput.id = "prefs-dict-word";
   dictInput.type = "text";
-  // No visible label exists to point at, the same reason the rename field's
-  // does not.
-  dictInput.setAttribute("aria-label", t("prefs.dict.word.label"));
+  const dictLabel = document.createElement("label");
+  dictLabel.htmlFor = dictInput.id;
+  dictLabel.textContent = t("prefs.dict.word.label");
+  dictGroup.append(dictLabel);
   const dictAdd = document.createElement("button");
   dictAdd.id = "prefs-dict-add";
   dictAdd.type = "button";
@@ -630,13 +642,27 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   dictList.id = "prefs-dict-list";
   dictGroup.append(dictList);
 
-  function paintDict(): void {
+  function paintDict(fallbackIndex?: number): void {
+    const focused = document.activeElement;
+    const focusedWord = focused instanceof HTMLElement && dictList.contains(focused)
+      ? focused.dataset.dictRemove : undefined;
+    dictInput.disabled = !dictReady;
+    dictAdd.disabled = !dictReady;
     dictList.replaceChildren();
+    if (!dictReady) {
+      const unavailable = document.createElement("li");
+      unavailable.id = "prefs-dict-unavailable";
+      unavailable.setAttribute("role", "status");
+      unavailable.textContent = t(dictLoading ? "prefs.dict.loading" : "prefs.dict.unavailable");
+      dictList.append(unavailable);
+      return;
+    }
     if (dictWords.length === 0) {
       const empty = document.createElement("li");
       empty.id = "prefs-dict-empty";
       empty.textContent = t("prefs.dict.empty");
       dictList.append(empty);
+      if (fallbackIndex !== undefined) dictInput.focus();
       return;
     }
     for (const word of dictWords) {
@@ -654,8 +680,51 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
       row.append(label, remove);
       dictList.append(row);
     }
+    const removes = [...dictList.querySelectorAll<HTMLButtonElement>("[data-dict-remove]")];
+    const retained = removes.find((button) => button.dataset.dictRemove === focusedWord);
+    if (retained !== undefined) retained.focus();
+    else if (fallbackIndex !== undefined) removes[Math.min(fallbackIndex, removes.length - 1)]?.focus();
   }
   paintDict();
+
+  function invalidateDictionary(): void {
+    dictGeneration += 1;
+    dictReady = false;
+    dictLoading = true;
+    dictWords.length = 0;
+    dictInput.value = "";
+    dictGroup.hidden = false;
+    paintDict();
+  }
+
+  async function drainDictionary(): Promise<void> {
+    await Promise.allSettled(pendingDictWrites);
+  }
+
+  function trackDictionaryWrite<T>(pending: Promise<T>): Promise<T> {
+    pendingDictWrites.add(pending);
+    void pending.then(
+      () => { pendingDictWrites.delete(pending); },
+      () => { pendingDictWrites.delete(pending); },
+    );
+    return pending;
+  }
+
+  async function refreshDictionary(read: () => Promise<readonly string[]>): Promise<void> {
+    if (destroyed) return;
+    invalidateDictionary();
+    const generation = dictGeneration;
+    try {
+      const words = await read();
+      if (destroyed || generation !== dictGeneration) return;
+      dictWords.push(...[...words].sort((a, b) => a.localeCompare(b)));
+      dictReady = true;
+    } catch {
+      if (destroyed || generation !== dictGeneration) return;
+    }
+    dictLoading = false;
+    paintDict();
+  }
 
   function insertSorted(word: string): void {
     const at = dictWords.findIndex((existing) => existing.localeCompare(word) > 0);
@@ -667,8 +736,10 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
    *  panel's own field and the editor's routes; it throws what the host
    *  threw, and each caller says so in its own surface. */
   async function addWord(requested: string): Promise<string> {
-    const stored = await deps.persistDictAdd(requested);
-    if (destroyed) return stored;
+    if (destroyed || !dictReady) throw new Error(t("prefs.dict.unavailable"));
+    const generation = dictGeneration;
+    const stored = await trackDictionaryWrite(deps.persistDictAdd(requested));
+    if (destroyed || generation !== dictGeneration) return stored;
     insertSorted(stored);
     paintDict();
     return stored;
@@ -676,27 +747,33 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
 
   async function addDictWord(): Promise<void> {
     const requested = dictInput.value.trim();
-    if (requested === "") return;
+    if (requested === "" || !dictReady || destroyed) return;
+    const generation = dictGeneration;
     try {
       await addWord(requested);
+      if (destroyed || generation !== dictGeneration) return;
       dictInput.value = "";
     } catch (error: unknown) {
       // A resolution landing after teardown would report through a dead
       // project's callbacks, the same defect the outline slice shipped once.
-      if (destroyed) return;
+      if (destroyed || generation !== dictGeneration) return;
       deps.onNotice(t("prefs.dict.error.add", { word: requested, error: messageOf(error) }));
     }
     dictInput.focus();
   }
 
-  async function removeDictWord(word: string): Promise<void> {
+  async function removeDictWord(word: string, button: HTMLElement): Promise<void> {
+    if (destroyed || !dictReady) return;
+    const generation = dictGeneration;
     try {
-      await deps.persistDictRemove(word);
+      await trackDictionaryWrite(deps.persistDictRemove(word));
+      if (destroyed || generation !== dictGeneration) return;
+      const ownsFocus = document.activeElement === button;
       const at = dictWords.indexOf(word);
       if (at !== -1) dictWords.splice(at, 1);
-      paintDict();
+      paintDict(ownsFocus ? Math.max(0, at) : undefined);
     } catch (error: unknown) {
-      if (destroyed) return;
+      if (destroyed || generation !== dictGeneration) return;
       deps.onNotice(t("prefs.dict.error.remove", { word, error: messageOf(error) }));
     }
   }
@@ -717,43 +794,63 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     if (!(button instanceof HTMLElement)) return;
     const word = button.dataset.dictRemove;
     if (word === undefined) return;
-    void removeDictWord(word);
+    void removeDictWord(word, button);
   };
   dictAdd.addEventListener("click", onDictAddClick);
   dictInput.addEventListener("keydown", onDictInputKeyDown);
   dictList.addEventListener("click", onDictListClick);
 
-  // TWO HEADED SECTIONS: what the writing looks and behaves like, then
-  // the application around it. Twelve equal rows read as one list with no
-  // way in; two headings say where to look. Headings, not wrappers: the
-  // groups stay direct children of the body's grid, so both sections share
-  // the one longest-label column instead of each sizing its own.
-  // The goal sits in Writing, high: it is what a writer comes here to set,
-  // and below the fold it was out of reach of a default window (goals-cli).
-  const section = (key: string): HTMLHeadingElement => {
-    const heading = document.createElement("h3");
-    heading.className = "prefs-section";
-    heading.textContent = t(key);
-    return heading;
-  };
-  panel.append(
-    section("prefs.section.writing"),
-    familyGroup,
-    sizeGroup,
-    measureGroup,
-    goalGroup,
-    focusGroup,
-    typewriterGroup,
-    spellingGroup,
-    markCastNamesGroup,
-    dictGroup,
-    section("prefs.section.app"),
-    paletteGroup,
-    themeGroup,
-    languageGroup,
-    startGroup,
-    zoomGroup,
-  );
+  const tabs = document.createElement("div");
+  tabs.id = "prefs-tabs";
+  tabs.className = "segmented";
+  tabs.setAttribute("role", "tablist");
+  tabs.setAttribute("aria-label", t("prefs.tabs.label"));
+  const categories = ["writing", "appearance", "application"] as const;
+  const tabButtons: HTMLButtonElement[] = [];
+  const pages: HTMLElement[] = [];
+  function selectCategory(index: number, focus = false): void {
+    tabButtons.forEach((button, at) => {
+      button.setAttribute("aria-selected", String(at === index));
+      button.tabIndex = at === index ? 0 : -1;
+      pages[at].hidden = at !== index;
+    });
+    if (focus) tabButtons[index].focus();
+  }
+  for (const [index, category] of categories.entries()) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.id = `prefs-tab-${category}`;
+    button.textContent = t(`prefs.tab.${category}`);
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-controls", `prefs-page-${category}`);
+    button.addEventListener("click", () => selectCategory(index));
+    button.addEventListener("keydown", (event) => {
+      if (isCompositionKey(event)) return;
+      const next = event.key === "Home" ? 0 : event.key === "End" ? 2
+        : event.key === "ArrowRight" ? (index + 1) % 3 : event.key === "ArrowLeft" ? (index + 2) % 3 : null;
+      if (next !== null) { event.preventDefault(); selectCategory(next, true); }
+    });
+    const page = document.createElement("div");
+    page.id = `prefs-page-${category}`;
+    page.setAttribute("role", "tabpanel");
+    page.setAttribute("aria-labelledby", button.id);
+    tabButtons.push(button);
+    pages.push(page);
+    tabs.append(button);
+  }
+  const aids = document.createElement("details");
+  aids.id = "prefs-writing-aids";
+  const summary = document.createElement("summary");
+  summary.textContent = t("prefs.writing-aids");
+  const aidGroups = document.createElement("div");
+  aidGroups.className = "prefs-aid-groups";
+  aidGroups.append(focusGroup, typewriterGroup, spellingGroup, markCastNamesGroup, dictGroup);
+  aids.append(summary, aidGroups);
+  pages[0].append(familyGroup, sizeGroup, measureGroup, goalGroup, aids);
+  pages[1].append(paletteGroup, themeGroup, zoomGroup);
+  pages[2].append(languageGroup, startGroup);
+  selectCategory(0);
+  panel.append(tabs, ...pages);
   if (deps.openPrivacy) {
     const privacy = document.createElement("div");
     privacy.id = "prefs-privacy";
@@ -769,7 +866,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     const note = document.createElement("p");
     note.textContent = t("privacy.boundary");
     privacy.append(button, note);
-    panel.append(privacy);
+    pages[2].append(privacy);
   }
   container.append(panel);
 
@@ -816,60 +913,53 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     }
   };
 
-  /** The one preference in this panel with no visible effect of its own: the
-   *  select just shows what was chosen, so success is reported through
-   *  `onDone` rather than through anything painted on screen. On a refusal
-   *  the select is put back to what is actually recorded, for the same
-   *  reason zoom's own failure path repaints rather than leaves the writer
-   *  looking at a choice the file never took. */
-  const onLanguageChange = (): void => {
-    const value = languageSelect.value;
-    if (!isLocale(value)) return;
-    const previous = locale;
-    locale = value;
-    void (async () => {
-      try {
-        await deps.persistLocale(locale);
-        // A resolution landing after teardown would announce through a dead
-        // project's callbacks, the defect the outline slice shipped once and
-        // every other async path in this panel already guards against.
-        if (destroyed) return;
-        deps.onDone(t("prefs.language.applied"));
-      } catch (error: unknown) {
-        if (destroyed) return;
-        locale = previous;
-        languageSelect.value = previous;
-        deps.onNotice(
-          t("prefs.error.save", { what: t("prefs.what.language"), error: messageOf(error) }),
-        );
-      }
-    })();
+  // Each select records only next-launch state. Keep writes ordered and
+  // restore the last confirmed choice only when the latest request fails.
+  const recordedSelect = <T extends Locale | Start>(
+    select: HTMLSelectElement,
+    initial: T,
+    valid: (value: string) => value is T,
+    persist: (value: T) => Promise<void>,
+    what: string,
+    onDone?: () => void,
+  ): (() => void) => {
+    let confirmed = initial;
+    let generation = 0;
+    let pending = Promise.resolve();
+    return () => {
+      const value = select.value;
+      if (!valid(value)) return;
+      const request = ++generation;
+      pending = pending.then(async () => {
+        try {
+          await persist(value);
+          confirmed = value;
+          if (!destroyed && request === generation) onDone?.();
+        } catch (error: unknown) {
+          if (destroyed) return;
+          if (request === generation) select.value = confirmed;
+          deps.onNotice(t("prefs.error.save", { what, error: messageOf(error) }));
+        }
+      });
+    };
   };
+  const onLanguageChange = recordedSelect(
+    languageSelect, locale, isLocale, deps.persistLocale, t("prefs.what.language"),
+    () => deps.onDone(t("prefs.language.applied")),
+  );
   languageSelect.addEventListener("change", onLanguageChange);
-
-  /** Rolled back on a refusal, the language select's own shape and for the
-   *  same reason: a <select> shows what was chosen, with no `aria-pressed`
-   *  reading of its own the way a button carries one, so a write the file
-   *  never took must not go on looking chosen on screen. */
-  const onStartChange = (): void => {
-    const value = startSelect.value;
-    if (!isStart(value)) return;
-    const previous = start;
-    start = value;
-    void (async () => {
-      try {
-        await deps.persistStart(start);
-      } catch (error: unknown) {
-        if (destroyed) return;
-        start = previous;
-        startSelect.value = previous;
-        deps.onNotice(
-          t("prefs.error.save", { what: t("prefs.what.start"), error: messageOf(error) }),
-        );
-      }
-    })();
-  };
+  const onStartChange = recordedSelect(
+    startSelect, start, isStart, deps.persistStart, t("prefs.what.start"),
+  );
   startSelect.addEventListener("change", onStartChange);
+
+  const zoomPersistence = deps.zoomPersistence ?? createZoomPersistence(
+    zoom, deps.persistZoom, (next) => {
+      if (destroyed) return;
+      zoom = next;
+      paint();
+    },
+  );
 
   /** The one place either axis of writing mode is applied, painted, reported
    *  and persisted -- called from the panel's click branch and from
@@ -961,26 +1051,17 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
 
     if (group === "prefs-zoom") {
       if (!isZoom(value)) return;
-      // Not the shared `record()` path: every other group there is applied
-      // by THIS unit and never rolled back on a failed save (see `record`'s
-      // own comment) -- the writer has it in this window regardless. Zoom is
-      // the one group applied by the HOST, not by this unit, so a refusal
-      // here means the screen never actually changed, and the panel showing
-      // the requested word instead of the true one would make the next Ctrl
-      // chord step from a word the webview is not at.
-      const previous = zoom;
-      zoom = value;
-      paint();
-      void (async () => {
-        try {
-          await deps.persistZoom(zoom);
-        } catch (error: unknown) {
-          if (destroyed) return;
-          zoom = previous;
-          paint();
-          deps.onNotice(t("prefs.error.save", { what: t("prefs.what.zoom"), error: messageOf(error) }));
-        }
-      })();
+      void zoomPersistence.request(value).then(() => {
+        // Host page zoom reflows the scrollport after the original click.
+        requestAnimationFrame(() => {
+          if (!destroyed && !panel.hidden && document.activeElement === button) {
+            button.scrollIntoView({ block: "nearest", inline: "nearest" });
+          }
+        });
+      }).catch((error: unknown) => {
+        if (destroyed) return;
+        deps.onNotice(t("prefs.error.save", { what: t("prefs.what.zoom"), error: messageOf(error) }));
+      });
       return;
     }
 
@@ -1027,11 +1108,18 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
       panel.focus();
     },
     setDictionary(words: readonly string[] | null): void {
+      dictGeneration += 1;
+      dictReady = words !== null;
+      dictLoading = false;
+      dictInput.value = "";
       dictGroup.hidden = words === null;
       dictWords.length = 0;
       if (words !== null) dictWords.push(...[...words].sort((a, b) => a.localeCompare(b)));
       paintDict();
     },
+    invalidateDictionary,
+    drainDictionary,
+    refreshDictionary,
     addWord,
     setZoom(next: Zoom): void {
       zoom = next;

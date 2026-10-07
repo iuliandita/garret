@@ -14,7 +14,7 @@ describe("classic sample books", () => {
     try {
       for (const fixture of CLASSIC_FIXTURES) {
         writeClassicVault(work, fixture);
-        const vault = JSON.parse(readFileSync(join(work, "cc.local.app", "identities.json"), "utf8"));
+        const vault = JSON.parse(readFileSync(join(work, "garret", "identities.json"), "utf8"));
         expect(vault.identities[0].id).toBe(`classic-${fixture}`);
         expect(vault.identities[0].rev).toBe(2);
         expect(vault.identities.slice(1).every((identity: { rev: number }) => identity.rev === 1)).toBe(true);
@@ -62,7 +62,7 @@ describe("classic sample books", () => {
           if (author === undefined) throw new Error(`Missing author for ${fixture}`);
           expect(pin.public.name).toBe(author.public.name);
           expect(pin.private).toBeUndefined();
-          const vault = JSON.parse(readFileSync(join(work, "cc.local.app", "identities.json"), "utf8"));
+          const vault = JSON.parse(readFileSync(join(work, "garret", "identities.json"), "utf8"));
           expect(vault.identities).toHaveLength(3);
         } finally { db.close(); }
         const validation = Bun.spawnSync([BIN, "validate", path, "--json"], { stdout: "pipe", stderr: "pipe" });

@@ -28,7 +28,7 @@ The app itself keeps writing locally: no account or manuscript uploads.
 Installing WebView2 may require a download.
 
 If startup fails, look for:
-    %APPDATA%\cc.local.app\startup-error.txt
+    %APPDATA%\garret\startup-error.txt
 Send that file back if it exists. Review diagnostic files for personal paths
 before sharing them. Do not send your manuscript unless you intend to.
 
@@ -78,7 +78,10 @@ New books default to Documents\Books until you choose another folder, which
 the app remembers. Existing books stay where they were created. If the
 Documents folder cannot be resolved, the fallback is Books under your home.
 Settings and recovery use this location in Explorer:
-    %APPDATA%\cc.local.app\
+    %APPDATA%\garret\
+The first launch copies and verifies the previous application data here.
+Close older versions first. The previous folder is retained for recovery and
+application ownership; do not delete it or run older builds after the move.
 Older books may also remain there. Project-associated pictures
 and covers can live in adjacent .pictures folders. Imported research originals
 live in an adjacent .research folder. A .db alone is not a complete asset

@@ -168,7 +168,7 @@ const work = mkdtempSync(join(tmpdir(), "mirror-acts-"));
 const project = join(work, "project.db");
 const dataHome = join(work, "data");
 const mirrorRoot = join(work, "mirror");
-mkdirSync(join(dataHome, "cc.local.app"), { recursive: true });
+mkdirSync(join(dataHome, "garret"), { recursive: true });
 mkdirSync(mirrorRoot, { recursive: true });
 
 /** `recovery::target_slug` for `<stem>.db` is the stem, which is what
@@ -361,7 +361,7 @@ function readStore(): Store {
  *  has none. Read from disk, never from the page: the claim is that the
  *  writer's next launch mirrors without being asked. */
 function settingsMirrored(): string[] {
-  const path = join(dataHome, "cc.local.app", "settings.json");
+  const path = join(dataHome, "garret", "settings.json");
   if (!existsSync(path)) return [];
   const parsed = JSON.parse(readFileSync(path, "utf8")) as { mirrored_book_ids?: unknown };
   return Array.isArray(parsed.mirrored_book_ids) ? (parsed.mirrored_book_ids as string[]) : [];
@@ -381,7 +381,7 @@ function abort(message: string): never {
 // THE PROJECT IS NOT MIRRORED AT BOOT, and that is the act: `mirror-cli` seeds
 // `mirrored` here and says in as many words that it is not driving the button.
 writeFileSync(
-  join(dataHome, "cc.local.app", "settings.json"),
+  join(dataHome, "garret", "settings.json"),
   JSON.stringify({ theme: scheme }),
 );
 

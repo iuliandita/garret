@@ -65,7 +65,7 @@
   --fg: #1c1b19;
   /* Secondary text: the word count, find snippets, an unreadable project's
      error. Readable, but not competing with the manuscript. */
-  --muted: #6f6a61;
+  --muted: #6a655c;
   /* The navigator column, one step off the paper so the two panes read as
      different surfaces without a heavy rule between them. */
   --nav-bg: #f4f1ea;
@@ -252,7 +252,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
 :root[data-family="neutral"] {
   --bg: #fcfcfc;
   --fg: #1a1a1a;
-  --muted: #66666a;
+  --muted: #646468;
   --nav-bg: #f3f3f4;
   --chrome-bg: #ededee;
   --border: #d8d8da;
@@ -308,7 +308,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
 :root[data-family="atmospheric"] {
   --bg: #f7f9f5;
   --fg: #1b201c;
-  --muted: #636c5e;
+  --muted: #5f685a;
   --nav-bg: #eef2ea;
   --chrome-bg: #e7ede1;
   --border: #d1dbc7;
@@ -363,7 +363,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   :root:not([data-theme="light"]) {
     --bg: #17171a;
     --fg: #e6e3dd;
-    --muted: #9b968c;
+    --muted: #a09b91;
     --nav-bg: #1c1c20;
     --chrome-bg: #212127;
     --border: #33333a;
@@ -421,7 +421,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   :root[data-family="neutral"]:not([data-theme="light"]) {
     --bg: #151517;
     --fg: #e3e3e4;
-    --muted: #96969b;
+    --muted: #99999e;
     --nav-bg: #1a1a1c;
     --chrome-bg: #202023;
     --border: #313135;
@@ -475,7 +475,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   :root[data-family="atmospheric"]:not([data-theme="light"]) {
     --bg: #101519;
     --fg: #dee6e2;
-    --muted: #899a95;
+    --muted: #8b9c97;
     --nav-bg: #141a1f;
     --chrome-bg: #182026;
     --border: #2a343b;
@@ -531,7 +531,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
 :root[data-theme="dark"] {
   --bg: #17171a;
   --fg: #e6e3dd;
-  --muted: #9b968c;
+  --muted: #a09b91;
   --nav-bg: #1c1c20;
   --chrome-bg: #212127;
   --border: #33333a;
@@ -591,7 +591,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
 :root[data-family="neutral"][data-theme="dark"] {
   --bg: #151517;
   --fg: #e3e3e4;
-  --muted: #96969b;
+  --muted: #99999e;
   --nav-bg: #1a1a1c;
   --chrome-bg: #202023;
   --border: #313135;
@@ -645,7 +645,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
 :root[data-family="atmospheric"][data-theme="dark"] {
   --bg: #101519;
   --fg: #dee6e2;
-  --muted: #899a95;
+  --muted: #8b9c97;
   --nav-bg: #141a1f;
   --chrome-bg: #182026;
   --border: #2a343b;
@@ -1061,7 +1061,16 @@ body {
   border: 1px solid var(--panel-edge);
   border-radius: var(--radius-panel);
   box-shadow: var(--shadow-panel);
-  pointer-events: none;
+  pointer-events: auto;
+}
+
+.tip::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 0;
+  width: 100%;
+  height: 7px;
 }
 
 .tip[hidden] {
@@ -1088,6 +1097,11 @@ body {
   bottom: calc(100% + 6px);
   left: auto;
   right: 0;
+}
+
+#footer .tip::before {
+  top: auto;
+  bottom: -7px;
 }
 
 /* The two right-most header controls' tips would paint past the window's right edge. */
@@ -1123,7 +1137,7 @@ body {
 #preview-rail button:hover,
 #reference-rail button:hover,
 #outline-view button:hover,
-#library button:hover,
+#library button:hover:not(:disabled),
 #analytics-workspace button:hover,
 #covers-panel button:hover,
 #identity-panel button:hover,
@@ -1167,7 +1181,7 @@ body {
 #preview-rail button:active,
 #reference-rail button:active,
 #outline-view button:active,
-#library button:active,
+#library button:active:not(:disabled),
 #analytics-workspace button:active,
 #covers-panel button:active,
 #identity-panel button:active,
@@ -1428,14 +1442,13 @@ body {
   max-width: 300px;
 }
 
-.help-tip-anchor .tip-name {
-  font-weight: 400;
+.help-tip-anchor .tip.tip-above::before {
+  top: auto;
+  bottom: -7px;
 }
 
-/* Opened leftward when the right edge would clip it (help-tip.ts). */
-.help-tip-anchor .tip.tip-flip {
-  left: auto;
-  right: 0;
+.help-tip-anchor .tip-name {
+  font-weight: 400;
 }
 
 /* Actions, the primary rightmost: document order puts it last. */
@@ -1470,6 +1483,13 @@ body {
 #reference-rail button:focus-visible,
 #outline-view button:focus-visible,
 #library button:focus-visible,
+#library input:focus-visible,
+#library select:focus-visible,
+#library textarea:focus-visible,
+#project-list:focus-visible,
+#project-imports:focus-visible,
+#project-recovery-points:focus-visible,
+#project-archives:focus-visible,
 #analytics-workspace button:focus-visible,
 #covers-panel button:focus-visible,
 #identity-panel button:focus-visible,
@@ -1706,7 +1726,7 @@ body.nav-hidden #nav-column {
 
 /* Same 16px-of-block treatment #format-bubble button svg uses, so the icon
    sits inside the shared 24px button without touching #project-bar's 39px. */
-#outline-toggle svg {
+#outline-toggle svg, #home-button svg {
   display: block;
   width: 16px;
   height: 16px;
@@ -2095,17 +2115,21 @@ body.nav-hidden #nav-column {
   overflow-y: auto;
 }
 
+#project-panel .panel-body { scroll-padding-block: var(--space-3); }
+#project-panel .disclosure,
+#project-encrypted-archive-heading { scroll-margin-block: var(--space-3); }
+
 #project-panel[hidden] {
   display: none;
 }
 
-#project-list [role="option"] {
+#project-list [role="listitem"] {
   padding: 5px 8px;
   border-radius: var(--radius-control);
   cursor: default;
 }
 
-#project-list [role="option"]:hover {
+#project-list [role="listitem"]:hover {
   background: var(--accent-soft);
 }
 
@@ -2122,7 +2146,7 @@ body.nav-hidden #nav-column {
 
 /* A missing book's row: the sentence, then Forget at the row's end. The row
    stays inert like an errored one; only the button acts. */
-#project-list [role="option"]:has(.switcher-forget) {
+#project-list [role="listitem"]:has(.switcher-forget) {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2239,6 +2263,13 @@ body.nav-hidden #nav-column {
   margin-bottom: 8px;
 }
 
+#project-new-heading {
+  margin: 12px 0 6px;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
 /* Quiet by weight, and the rule is the control hierarchy's rather than this
    file's: Create is the panel's one primary action and choosing a folder is a
    qualification of it, not a rival to it. */
@@ -2253,13 +2284,13 @@ body.nav-hidden #nav-column {
 /* Deliberately the same treatment as a project row: both are lists of things a
    click acts on, and giving them different affordances would say they behave
    differently when they do not. */
-#project-imports [role="option"] {
+#project-imports [role="listitem"] {
   padding: 5px 8px;
   border-radius: var(--radius-control);
   cursor: default;
 }
 
-#project-imports [role="option"]:hover {
+#project-imports [role="listitem"]:hover {
   background: var(--accent-soft);
 }
 
@@ -2289,13 +2320,13 @@ body.nav-hidden #nav-column {
   margin-top: 6px;
 }
 
-#project-recovery-points [role="option"] {
+#project-recovery-points [role="listitem"] {
   padding: 5px 8px;
   border-radius: var(--radius-control);
   cursor: default;
 }
 
-#project-recovery-points [role="option"]:hover {
+#project-recovery-points [role="listitem"]:hover {
   background: var(--accent-soft);
 }
 
@@ -2367,13 +2398,13 @@ body.nav-hidden #nav-column {
   margin-top: 6px;
 }
 
-#project-archives [role="option"] {
+#project-archives [role="listitem"] {
   padding: 5px 8px;
   border-radius: var(--radius-control);
   cursor: default;
 }
 
-#project-archives [role="option"]:hover {
+#project-archives [role="listitem"]:hover {
   background: var(--accent-soft);
 }
 
@@ -2590,6 +2621,7 @@ body.nav-hidden #nav-column {
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: subgrid;
+  column-gap: 12px;
 }
 
 #prefs-panel .prefs-choices {
@@ -2694,9 +2726,16 @@ body.nav-hidden #nav-column {
   color: var(--muted);
 }
 
+#prefs-dict > label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--text-sm);
+}
+
 #prefs-dict-row {
   display: flex;
   gap: 6px;
+  margin-inline-end: var(--space-2);
   margin-bottom: 6px;
 }
 
@@ -3429,18 +3468,10 @@ body.nav-hidden #nav-column {
   margin-top: 6px;
 }
 
-/* A grid, not a flex row: the three figures line up down the column, which is
-   the whole reason a writer scans this list. `auto` on the delta rather than a
-   fixed width, because "no change" and "−1,204" differ by a factor of two and a
-   fixed column sized for one truncates the other.
-
-   TWO LINES SINCE THE INSPECTOR: at 328px of pane the two buttons and
-   the figures left the time one letter wide, and a snapshot's name ran down
-   the panel a character per line. The time takes the first line; the figures
-   and the two actions share the second, the actions at its right edge. */
+/* Keep translated actions on their own row so they cannot overlap counts. */
 .history-row {
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 2px 10px;
   align-items: baseline;
   padding: 5px 6px;
@@ -3501,7 +3532,10 @@ body.nav-hidden #nav-column {
   font-size: var(--text-xs);
   color: var(--muted);
   margin-bottom: 2px;
+  scroll-margin-block: 4px;
 }
+
+.history-compare { scroll-margin-block: 4px; }
 
 #history-diff-summary {
   font-size: var(--text-xs);
@@ -3525,7 +3559,8 @@ body.nav-hidden #nav-column {
   overflow-y: auto;
   font-size: var(--text-sm);
   line-height: var(--leading-ui);
-  color: var(--muted);
+  color: var(--fg);
+  white-space: pre-wrap;
   /* The two sides are runs of prose, not a table: a break anywhere is fine and
      a long word must not widen the panel past the pane it hangs off. */
   overflow-wrap: break-word;
@@ -3590,7 +3625,7 @@ body.nav-hidden #nav-column {
 /* An armed row is asking a question, and it must not look like the row beside
    it that is not. Colour alone would carry it for most readers and for no
    colour-blind one, so the weight moves too. */
-.snapshot-row[data-armed] {
+#history-panel .snapshot-row[data-armed] {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--bg);
@@ -3605,7 +3640,7 @@ body.nav-hidden #nav-column {
 #snapshot-name {
   width: 240px;
   max-width: 100%;
-  margin-right: 6px;
+  margin: 0 6px 6px 0;
 }
 
 /* Two rows in one 520px panel: query + Search, then replacement + Replace +
@@ -3633,7 +3668,7 @@ body.nav-hidden #nav-column {
   /* Its own row, and the space above separates the two operations: searching
      the manuscript and rewriting one scene of it are different acts and must not
      read as one four-control strip. */
-  margin-top: 8px;
+  margin-top: 0;
 }
 
 #find-status {
@@ -3878,6 +3913,11 @@ body.nav-hidden #nav-column {
   font-weight: 400;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
+}
+
+#nav .nav-count:not(:empty) {
+  min-inline-size: 5ch;
+  text-align: right;
 }
 
 #nav .nav-appearances {
@@ -5293,6 +5333,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 /* The dropdown opens to the LEFT of the list, beside the open row: `top` is
    written inline from the title's offsetTop. Positioned against the list,
    which is the positioned ancestor, so nothing below the header moves. */
+#library-menu-panel,
 #menu-panel {
   position: absolute;
   right: calc(100% + 4px);
@@ -5311,12 +5352,18 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   box-shadow: var(--shadow-panel);
 }
 
+#library-menu-panel[hidden],
 #menu-panel[hidden] {
   display: none;
 }
 
+#menu-panel {
+  min-width: min(240px, calc(100vw - 188px));
+  max-width: calc(100vw - 188px);
+}
+
 #app-menu-list:has(#menu-outline[aria-expanded="true"]) #menu-panel {
-  min-width: 360px;
+  min-width: min(360px, calc(100vw - 188px));
 }
 
 /* THE SAME DROPDOWN, ANCHORED DIFFERENTLY. The application menu hangs off
@@ -5410,6 +5457,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
    toolbar's three create buttons had to drop: "New part" fits here and does not
    fit across the navigator column. Left-aligned text, the shortcut pushed to the
    right by the gap between them. */
+#library-menu-panel button,
 #menu-panel button,
 #timeline-track-kind-menu button,
 #timeline-cast-member-menu button,
@@ -5428,6 +5476,8 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   border-radius: var(--radius-control);
 }
 
+#library-menu-panel button:hover,
+#library-menu-panel button:focus,
 #menu-panel button:hover,
 #menu-panel button:focus,
 #nav-context-menu button:hover,
@@ -5448,11 +5498,14 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   font-variant-numeric: tabular-nums;
 }
 
-/* One line per item: the dropdown widens instead. "Export manuscript
-   (Markdown)" beside its Ctrl+E wrapped to two lines at the 240px floor
-   in an early capture, and a two-line row reads as two items. */
-#menu-panel .menu-item-label,
+/* Long translations and action names wrap within the room beside the title list. */
+#menu-panel .menu-item-label {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 #menu-panel .menu-item-shortcut {
+  flex-shrink: 0;
   white-space: nowrap;
 }
 
@@ -7942,13 +7995,13 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   font-weight: 500;
 }
 
+#preview-options-toggle { display: inline-flex; align-items: center; gap: var(--space-2); }
 #preview-options-toggle::before {
-  content: "▸ ";
+  content: ""; width: 6px; height: 6px;
+  border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
 }
-
-#preview-options-toggle[aria-expanded="true"]::before {
-  content: "▾ ";
-}
+#preview-options-toggle[aria-expanded="true"]::before { transform: rotate(45deg); }
 
 #preview-options[hidden] {
   display: none;
@@ -8161,6 +8214,9 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 #library-summary-result { font-family: var(--prose-family, serif); font-size: var(--text-xl); color: var(--fg) !important; }
 #library-summary-coverage { font-size: var(--text-xs); }
 
+#library-menu-anchor { position: relative; }
+#library-menu-panel { top: calc(100% + 4px); right: 0; min-width: min(180px, 80vw); max-width: 80vw; max-height: 60vh; }
+
 .library-strip {
   display: flex;
   flex-wrap: wrap;
@@ -8224,12 +8280,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   margin: 4px 0 0;
 }
 
-/* Quiet and small, deliberately: this line names two figures a writer never
-   asked for. `home-cli` reads it by id regardless of how it looks. */
-/* `#library-timing` is an instrument, not a line on the screen: home-cli
-   reads the host's own `took_ms` out of it through AT-SPI, and a writer has
-   no use for "Overview 2 ms". Clipped the way #nav-state-descriptions is,
-   never display:none, so it stays a node in the accessibility tree. */
+/* Native measurement probes explicitly enable this visually clipped instrument. */
 .library-timing {
   position: absolute;
   width: 1px;
@@ -8283,6 +8334,8 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   margin: 2px 0 16px;
   max-width: 60em;
 }
+
+#library-heading-bio:empty { display: none; }
 
 /* ------------------------------------------------------------- the desk
 
@@ -8338,7 +8391,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   border: 1px solid var(--accent);
 }
 
-#library button#library-continue:hover {
+#library button#library-continue:hover:not(:disabled) {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
 }
@@ -8371,7 +8424,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   height: 180px;
 }
 
-.shelf-tile:hover .cover {
+.shelf-tile:hover:not(:disabled) .cover {
   box-shadow: 0 4px 14px rgb(0 0 0 / 30%);
 }
 
@@ -8449,7 +8502,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 
 .cover-generated .cover-byline {
   font-size: var(--text-xs);
-  color: var(--muted);
+  color: var(--fg);
 }
 
 /* THE NEW BOOK TILE: a dashed EMPTY COVER with a plus, the same
@@ -8471,7 +8524,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 #library-new-book-name {
   box-sizing: border-box;
   padding: 12px;
-  font: var(--text-md) var(--prose-family, serif);
+  font: var(--text-md)/var(--leading-ui) system-ui, sans-serif;
   text-align: center;
 }
 
@@ -8512,7 +8565,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   cursor: pointer;
 }
 
-#library button#library-new-book-tile:hover {
+#library button#library-new-book-tile:hover:not(:disabled) {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
 }
@@ -8616,7 +8669,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
     animation-delay: calc(var(--i, 0) * 30ms);
   }
 
-  .shelf-tile:hover {
+  .shelf-tile:hover:not(:disabled) {
     transform: translateY(-2px);
     transition: transform 120ms ease-out;
   }
@@ -8759,6 +8812,8 @@ body[data-inspector-open="true"] #scene-notes {
 }
 
 #library-new-book-area { margin: 0 0 24px; }
+#library-existing-books { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 24px; }
+#library-existing-books button { min-height: 32px; }
 #library #library-new-book-tile { width: auto; }
 #library #library-new-book-name { border-style: solid; background: var(--control-bg); }
 #prefs-panel .prefs-choice-note {
@@ -8801,3 +8856,184 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 #help-guide summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #help-guide p { margin: 6px 0 12px; max-width: 70ch; font-size: var(--text-sm); line-height: var(--leading-ui); }
 @media (max-width: 600px) { #help-columns { column-count: 1; } }
+
+#project-list .switcher-open, #project-imports .switcher-import, #project-recovery-points .switcher-restore {
+  display: block; width: 100%; text-align: start; padding: 0; min-height: 24px; background: transparent;
+}
+#project-panel #project-move { margin-inline-start: -12px; }
+
+#project-panel button:disabled,
+#preview-rail button:disabled,
+#library button:disabled,
+#library button#library-new-book-tile:disabled,
+#library input:disabled,
+#library select:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+#library .shelf-tile:disabled { animation: none; }
+
+#library-busy-status {
+  margin: 8px 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+#library-busy-status:empty { margin: 0; }
+
+@media (max-height: 650px) {
+  #library:has(#library-desk:not([hidden])) {
+    padding: 16px 24px 24px;
+    gap: 6px;
+  }
+
+  #library:has(#library-desk:not([hidden])) #library-wordmark { width: 112px; }
+  #library:has(#library-desk:not([hidden])) .library-strip { margin-bottom: 0; }
+  #library:has(#library-desk:not([hidden])) #library-heading-bio:empty { display: none; }
+  #library:has(#library-desk:not([hidden])) #library-new-book-area,
+  #library:has(#library-desk:not([hidden])) #library-existing-books { margin-bottom: 0; }
+  #library:has(#library-desk:not([hidden])) #library-desk {
+    gap: 16px;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+  }
+  #library:has(#library-desk:not([hidden])) #library-desk .desk-cover {
+    width: 112px;
+    height: 168px;
+  }
+}
+
+.field-with-label {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 100%;
+  vertical-align: bottom;
+  margin: 0 6px 6px 0;
+}
+.field-with-label > label,
+#find-panel label[for="find-query"],
+#find-panel label[for="find-replace"] {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-ui);
+}
+#history-panel .field-with-label { width: 240px; }
+#history-panel .field-with-label > #snapshot-name { width: 100%; margin: 0; }
+#project-panel .field-with-label { display: flex; width: 204px; }
+#project-panel .field-with-label > input { width: 100%; min-width: 0; }
+#find-panel label[for="find-query"],
+#find-panel label[for="find-replace"] { display: block; margin: 8px 0 4px; }
+#library #library-new-book-tile .field-with-label { width: min(320px, 100%); margin: 0; }
+#library #library-new-book-name { width: 100%; color: var(--fg); }
+#library #library-new-book-name::placeholder { color: var(--muted); }
+#library div#library-new-book-tile { align-items: flex-end; }
+#library div#library-new-book-tile > button { margin-bottom: 7px; }
+#snapshot-confirmation {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+#library:not(.library-is-empty) button#library-new-book-tile {
+  background: transparent;
+  border-color: var(--control-border);
+  color: var(--fg);
+}
+#library:not(.library-is-empty) button#library-new-book-tile:hover:not(:disabled) {
+  background: var(--control-tone-hover);
+  border-color: var(--control-border);
+}
+#library-heading-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; }
+#library-heading-row #library-busy-status { flex: 1 1 140px; margin: 0; }
+#library-heading-row #library-busy-status:empty { display: none; }
+
+
+/* Preferences categories keep the existing shared legend track. */
+#prefs-panel #prefs-tabs { grid-column: 1 / -1; margin-bottom: var(--space-3); }
+#prefs-panel #prefs-tabs button { flex: 1; margin: 0; }
+#prefs-panel #prefs-tabs button[aria-selected="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+#prefs-panel [role="tabpanel"] {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  min-width: 0;
+}
+#prefs-panel #prefs-writing-aids { grid-column: 1 / -1; min-width: 0; }
+#prefs-panel .prefs-aid-groups {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 12px;
+  min-width: 0;
+}
+@media (max-width: 600px) {
+  #prefs-panel .prefs-aid-groups { grid-template-columns: minmax(0, 1fr); }
+}
+#prefs-panel [role="tabpanel"][hidden],
+#prefs-panel #prefs-writing-aids:not([open]) > :not(summary) { display: none; }
+#prefs-panel #prefs-writing-aids > summary { grid-column: 1 / -1; margin-bottom: var(--space-3); cursor: pointer; }
+
+
+/* Contextual creation keeps the existing chrome height. */
+#nav-header #book-create, #project-bar #home-button, #bible-create {
+  font: inherit;
+  font-size: var(--text-sm);
+  line-height: 18px;
+  min-height: 0;
+  height: 24px;
+  padding: 2px 7px;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+}
+#book-create, #bible-create { width: 24px; flex: 0 0 24px; }
+#nav-header > .tip-anchor { flex: 0 0 auto; }
+#book-create:hover, #bible-create:hover, #home-button:hover { background: var(--control-tone); }
+#book-create:focus-visible, #bible-create:focus-visible, #home-button:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.bible-create-anchor { position: fixed; z-index: 2; height: 24px; }
+.bible-create-anchor[hidden] { display: none; }
+#nav [data-type="bible"][aria-level="1"] { padding-right: 36px; }
+#creation-chooser {
+  position: fixed;
+  z-index: 10;
+  top: min(15vh, 90px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(320px, calc(100vw - 32px));
+  max-height: calc(100vh - min(15vh, 90px) - 16px);
+  color: var(--fg);
+  background: var(--nav-bg);
+  border: 1px solid var(--panel-edge);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-panel);
+}
+#creation-chooser[hidden] { display: none; }
+#creation-chooser .panel-body { display: grid; gap: var(--space-2); }
+#creation-chooser section { display: grid; gap: var(--space-2); }
+#creation-chooser h3 { margin: var(--space-3) 0 0; font-size: var(--text-sm); }
+#creation-chooser .creation-destination { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+#creation-chooser button:not(.panel-close) {
+  font: inherit; color: var(--fg); background: var(--control-tone);
+  border: 1px solid transparent; border-radius: var(--radius-control);
+  padding: var(--space-2) var(--space-3); text-align: left;
+}
+#creation-chooser summary { cursor: pointer; padding: var(--space-2) 0; }
+#creation-chooser button:focus-visible, #creation-chooser summary:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.nav-indicator-tip {
+  position: fixed; z-index: 8; max-width: min(28rem, calc(100vw - 8px));
+  padding: var(--space-2) var(--space-3);
+  color: var(--fg); background: var(--nav-bg);
+  border: 1px solid var(--panel-edge); border-radius: var(--radius-control);
+  box-shadow: var(--shadow-panel); font-size: var(--text-sm); line-height: 1.5;
+}

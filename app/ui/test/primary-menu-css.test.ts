@@ -5,14 +5,13 @@ import { join } from "node:path";
 const css = await Bun.file(join(import.meta.dir, "..", "style.css")).text();
 const stripped = css.replace(/\/\*[\s\S]*?\*\//g, "");
 
-// A block that starts its own selector list: `html,\nbody {` shares a line box
-// with html and is not the grid, and a bare `\nbody {` would find it first.
 function block(selector: string): string | null {
-  const at = stripped.indexOf(`\n\n${selector} {`);
-  if (at < 0) return null;
-  const open = stripped.indexOf("{", at);
-  const close = stripped.indexOf("}", open);
-  return stripped.slice(open + 1, close);
+  const wanted = selector.split(",").map((value) => value.trim());
+  for (const match of stripped.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selectors = match[1]!.split(",").map((value) => value.trim());
+    if (wanted.every((value) => selectors.includes(value))) return match[2]!;
+  }
+  return null;
 }
 
 describe("the primary menu's stylesheet", () => {

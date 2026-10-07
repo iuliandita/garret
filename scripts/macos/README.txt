@@ -71,7 +71,12 @@ under your home directory.
 This preview currently uses the non-Windows data layout for settings and
 recovery, not the usual Mac Application Support folder:
 
-    ~/.local/share/cc.local.app/
+    ~/.local/share/garret/
+
+The first launch moves the previous application-data folder here and keeps
+a compatibility link. Close older versions first. Keep that link when backing
+up or managing the application data. Older encrypted-archive CLI commands
+may refuse the compatibility link; use the current build.
 
 An absolute XDG_DATA_HOME override changes the data base directory. Older
 books may also remain under that data directory. Manuscript .db files can

@@ -120,7 +120,10 @@ function readWalk(dbPath: string): WalkRow[] {
 function withImportedWalk<T>(source: string, use: (walk: WalkRow[], name: string) => T): T {
   const library = mkdtempSync(join(tmpdir(), "sample-build-lib-"));
   try {
+    const dataHome = join(library, "application-data");
+    mkdirSync(dataHome);
     const proc = Bun.spawnSync([BIN, "import", source, library, "--json"], {
+      env: { ...process.env, XDG_DATA_HOME: dataHome, LOCALAPPDATA: dataHome },
       stdout: "pipe",
       stderr: "pipe",
     });

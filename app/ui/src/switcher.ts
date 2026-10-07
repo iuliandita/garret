@@ -11,6 +11,7 @@ import { formatWhen, type RecoveryPoint } from "./recovery-indicator";
 import type { Archive, ArchiveReport } from "./archive-indicator";
 import type { MirrorReport } from "./mirror-indicator";
 import { createIcon } from "./icons";
+import { createTooltip } from "./tooltip";
 import { createHelpTip, type HelpTip } from "./help-tip";
 
 /** What the host says about the readable mirror.
@@ -182,6 +183,7 @@ export interface SwitcherDeps {
    *  panel the Outline menu's `menu-cast` does; this is that route, not a
    *  second implementation. */
   openCast(): void;
+  openCreation?: () => void;
   /** Never the save banner: a project-surface failure is not a failed save. */
   onNotice(message: string): void;
   /** The unit's own successes: an archive written, the mirror toggled, a
@@ -215,7 +217,7 @@ export function folderName(path: string, file: boolean): string {
  *  with the relevant control focused is what makes them genuinely different
  *  things to have asked for. Real OS file dialogs will arrive and will make
  *  the distinction structural rather than a caret position. */
-export type SwitcherFocus = "list" | "create" | "import" | "copies";
+export type SwitcherFocus = "list" | "create" | "import" | "copies" | "backups" | "restore";
 
 export interface Switcher {
   /** Repaint the current project's name after a switch. */
@@ -271,6 +273,8 @@ export function lossesNotice(losses: ImportLosses, derivedContents?: string | nu
 
 export function createSwitcher(deps: SwitcherDeps): Switcher {
   const { container } = deps;
+  let bookOpen = deps.currentPath() !== "";
+  const hasBook = (): boolean => bookOpen && deps.currentPath() !== "";
 
   container.setAttribute("role", "banner");
   container.replaceChildren();
@@ -305,19 +309,27 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   cast.title = t("nav.cast.label");
   cast.append(createIcon("users"));
 
+  const add = document.createElement("button");
+  add.id = "book-create";
+  add.type = "button";
+  add.textContent = t("creation.plus");
+  add.setAttribute("aria-label", t("creation.open"));
+  const addTip = createTooltip({ control: add, name: t("creation.open"), hint: null });
+  const onAdd = (): void => { if (hasBook()) deps.openCreation?.(); };
+  add.addEventListener("click", onAdd);
   const panel = document.createElement("div");
   panel.id = "project-panel";
   panel.setAttribute("role", "dialog");
   // Nothing here traps focus, and aria-modal="true" would tell a screen reader
   // the rest of the page is inert when it is not.
   panel.setAttribute("aria-modal", "false");
-  panel.setAttribute("aria-label", "projects");
+  panel.setAttribute("aria-label", t("switcher.title"));
   panel.hidden = true;
 
   const listbox = document.createElement("div");
   listbox.id = "project-list";
-  listbox.setAttribute("role", "listbox");
-  listbox.setAttribute("aria-label", "projects");
+  listbox.setAttribute("role", "list");
+  listbox.setAttribute("aria-label", t("switcher.title"));
   // Programmatically focusable, not a tab stop. The File menu's "Open project…"
   // opens the panel and lands here; without a tabIndex a div ignores .focus()
   // silently and the menu item would appear to do nothing to a keyboard user
@@ -325,11 +337,21 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   // reaches the rows themselves.
   listbox.tabIndex = -1;
 
+  const newHeading = document.createElement("div");
+  newHeading.id = "project-new-heading";
+  newHeading.textContent = t("switcher.new.heading");
+
   const input = document.createElement("input");
   input.id = "project-new-name";
   input.type = "text";
   input.setAttribute("aria-label", t("switcher.name.label"));
-  input.placeholder = t("switcher.name.label");
+
+  const newNameField = document.createElement("div");
+  newNameField.className = "field-with-label";
+  const nameLabel = document.createElement("label");
+  nameLabel.htmlFor = input.id;
+  nameLabel.textContent = t("switcher.name.label");
+  newNameField.append(nameLabel, input);
 
   const create = document.createElement("button");
   create.id = "project-create";
@@ -387,7 +409,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
 
   const importList = document.createElement("div");
   importList.id = "project-imports";
-  importList.setAttribute("role", "listbox");
+  importList.setAttribute("role", "list");
   importList.setAttribute("aria-label", t("switcher.import.list.label"));
   // Same reason as the project list above.
   importList.tabIndex = -1;
@@ -411,7 +433,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
 
   const recoveryList = document.createElement("div");
   recoveryList.id = "project-recovery-points";
-  recoveryList.setAttribute("role", "listbox");
+  recoveryList.setAttribute("role", "list");
   recoveryList.setAttribute("aria-label", t("switcher.recovery.list.label"));
   // Same reason as the project list above.
   recoveryList.tabIndex = -1;
@@ -546,7 +568,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
 
   const archiveList = document.createElement("div");
   archiveList.id = "project-archives";
-  archiveList.setAttribute("role", "listbox");
+  archiveList.setAttribute("role", "list");
   archiveList.setAttribute("aria-label", t("switcher.archive.list.label"));
   // Same reason as the project list above.
   archiveList.tabIndex = -1;
@@ -586,7 +608,14 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   }
   const encryptedHeading = document.createElement("div");
   encryptedHeading.id = "project-encrypted-archive-heading";
+  encryptedHeading.tabIndex = -1;
   encryptedHeading.textContent = t("switcher.archive.encrypted.heading");
+  for (const heading of [newHeading, importHeading, recoveryHeading, archiveHeading, encryptedHeading, mirrorHeading]) {
+    heading.setAttribute("role", "heading");
+    heading.setAttribute("aria-level", "3");
+    // Keep the help button out of the heading's accessible name.
+    heading.setAttribute("aria-label", heading.textContent ?? "");
+  }
   explain(recoveryHeading, recoveryNote);
   explain(archiveHeading, archiveNote);
   explain(encryptedHeading, encryptedNote);
@@ -601,7 +630,11 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   const copies = document.createElement("div");
   copies.id = "project-copies";
   copies.hidden = true;
+  const bookRequired = document.createElement("div");
+  bookRequired.id = "project-book-required";
+  bookRequired.textContent = t("switcher.book-required");
   copies.append(
+    bookRequired,
     recoveryHeading,
     recoveryList,
     legacyRecovery,
@@ -635,13 +668,19 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     toggle.setAttribute("aria-expanded", String(open));
   }
   const onImportToggle = (): void => expand(importToggle, importBody, importBody.hidden);
-  const onCopiesToggle = (): void => expand(copiesToggle, copies, copies.hidden);
+  const onCopiesToggle = (): void => {
+    if (destroyed || panel.hidden) return;
+    const opening = copies.hidden;
+    expand(copiesToggle, copies, opening);
+    if (opening) copiesToggle.scrollIntoView({ block: "start", inline: "nearest" });
+  };
 
   panel.append(
     listbox,
     here,
     move,
-    input,
+    newHeading,
+    newNameField,
     newWhere,
     chooseWhere,
     create,
@@ -654,7 +693,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   // A SECOND container, and the only element outside the bar this unit owns.
   // The panel stays anchored inside #project-bar, because that is what every
   // absolutely-positioned panel here is positioned against.
-  deps.nameContainer.append(name, nameField, cast);
+  deps.nameContainer.append(name, nameField, addTip.anchor, cast);
 
   // A list request that resolves after the panel closed (or after a newer one
   // was issued) must not repaint: the reader would see rows appear under a
@@ -682,7 +721,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       // project lives outside the library (APP_PROJECT), which is exactly the
       // configuration every screenshot capture runs in - so the panel has been
       // photographed showing a blank gap where its list should be.
-      renderMessage(t("switcher.empty"));
+      renderMessage(t(current === "" ? "switcher.empty" : "switcher.empty.open"));
       return;
     }
     const healthyNameCounts = new Map<string, number>();
@@ -694,7 +733,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const frag = document.createDocumentFragment();
     for (const project of projects) {
       const row = document.createElement("div");
-      row.setAttribute("role", "option");
+      row.setAttribute("role", "listitem");
       row.dataset.projectPath = project.path;
       if (project.path === current) row.setAttribute("aria-current", "true");
       if (project.missing) {
@@ -704,7 +743,6 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
         // has nothing to do. The SQLite message for a missing file is not
         // a sentence about a moved book, so it is not shown here.
         errors.set(project.path, t("switcher.row.missing.notice", { path: project.path }));
-        row.setAttribute("aria-disabled", "true");
         const text = document.createElement("span");
         text.textContent = t("switcher.row.missing", { name: project.name, path: project.path });
         const forget = document.createElement("button");
@@ -735,6 +773,14 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
         } else {
           row.textContent = project.name;
         }
+      }
+      if (!project.missing && !project.error) {
+        const open = document.createElement("button");
+        open.type = "button";
+        open.className = "switcher-open";
+        if (row.hasAttribute("aria-label")) open.setAttribute("aria-label", row.getAttribute("aria-label")!);
+        open.append(...Array.from(row.childNodes));
+        row.append(open);
       }
       frag.appendChild(row);
     }
@@ -770,7 +816,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     here.textContent = t("switcher.here", { folder: folderName(path, true) });
     here.title = path;
     here.hidden = path === "";
-    void renderNewDir();
+    const newDirRead = renderNewDir();
     try {
       const projects = await deps.listProjects();
       if (mine !== generation) return;
@@ -779,6 +825,8 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       if (mine !== generation) return;
       renderMessage(t("switcher.error.list"));
       deps.onNotice(messageOf(error));
+    } finally {
+      await newDirRead;
     }
   }
 
@@ -801,9 +849,13 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const frag = document.createDocumentFragment();
     for (const file of files) {
       const row = document.createElement("div");
-      row.setAttribute("role", "option");
+      row.setAttribute("role", "listitem");
       row.dataset.importFile = file;
-      row.textContent = file;
+      const action = document.createElement("button");
+      action.type = "button";
+      action.className = "switcher-import";
+      action.textContent = file;
+      row.append(action);
       frag.appendChild(row);
     }
     importList.replaceChildren(frag);
@@ -847,7 +899,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const frag = document.createDocumentFragment();
     for (const point of points) {
       const row = document.createElement("div");
-      row.setAttribute("role", "option");
+      row.setAttribute("role", "listitem");
       row.dataset.pointId = point.id;
       row.dataset.legacyPoint = point.bundle ? "false" : "true";
       row.dataset.partialPoint = point.database_verified && !point.verified ? "true" : "false";
@@ -855,22 +907,28 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       // rather than the raw id: the id is a UTC stamp with its colons replaced,
       // which is a file name and not something to ask a writer to read.
       row.textContent = t(row.dataset.partialPoint === "true" ? "switcher.recovery.row.partial" : point.bundle ? "switcher.recovery.row" : "switcher.recovery.row.legacy", { when: formatWhen(point.mtime_ms, now) });
+      const restore = document.createElement("button");
+      restore.type = "button";
+      restore.className = "switcher-restore";
+      restore.textContent = row.textContent;
+      row.replaceChildren(restore);
       frag.appendChild(row);
     }
     recoveryList.replaceChildren(frag);
   }
 
   async function reloadRecovery(): Promise<void> {
+    if (!hasBook()) return;
     // Reads `generation` WITHOUT bumping it, exactly as `reloadImports` does
     // and for the same reason: it rides `reload()`'s bump so all three are
     // cancelled together.
     const mine = generation;
     try {
       const points = await deps.listRecoveryPoints();
-      if (mine !== generation) return;
-      renderRecoveryPoints(points);
+      if (mine !== generation || !hasBook()) return;
+      if (hasBook()) renderRecoveryPoints(points);
     } catch (error) {
-      if (mine !== generation) return;
+      if (mine !== generation || !hasBook()) return;
       // NOT renderRecoveryPoints([]), which paints "no recovery point has been
       // taken yet" over a directory that merely could not be read -- the
       // recorded `reloadImports` defect, and worse here: it would tell a writer
@@ -922,17 +980,19 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   }
 
   async function reloadLegacyProtection(): Promise<void> {
+    if (!hasBook()) { clearLegacyProtection(); return; }
     const mine = ++legacyGeneration;
     try {
       const items = await (deps.legacyProtection?.() ?? Promise.resolve([]));
-      if (mine !== legacyGeneration) return;
+      if (mine !== legacyGeneration || !hasBook()) return;
+      if (!hasBook()) return;
       renderLegacyProtection(items);
       if (items.length > 0 && !legacyNotified) {
         legacyNotified = true;
         deps.onNotice(t("switcher.legacy.notice"));
       }
     } catch (error) {
-      if (mine !== legacyGeneration) return;
+      if (mine !== legacyGeneration || !hasBook()) return;
       clearLegacyProtection();
       deps.onNotice(messageOf(error));
     }
@@ -944,6 +1004,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   let restoring = false;
 
   const onRecoveryClick = (event: Event): void => {
+    if (!hasBook()) return;
     const target = event.target;
     if (!(target instanceof Element)) return;
     const row = target.closest("[data-point-id]");
@@ -997,7 +1058,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const frag = document.createDocumentFragment();
     for (const archive of list) {
       const row = document.createElement("div");
-      row.setAttribute("role", "option");
+      row.setAttribute("role", "listitem");
       // The FILE NAME is the identifier here, unlike the recovery list's id,
       // because it is also what the writer is about to look for in a directory
       // listing. Nothing sends it back to a command.
@@ -1012,17 +1073,19 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   }
 
   async function reloadArchives(): Promise<void> {
+    if (!hasBook()) return;
     // Reads `generation` WITHOUT bumping it, exactly as `reloadImports` and
     // `reloadRecovery` do: it rides `reload()`'s bump so every listing in this
     // panel is cancelled together.
     const mine = generation;
     try {
       const [list, report] = await Promise.all([deps.listArchives(), deps.archiveStatus()]);
-      if (mine !== generation) return;
-      archiveWhere.textContent = t("switcher.archive.where", { dir: report.dir });
+      if (mine !== generation || !hasBook()) return;
+      if (!hasBook()) return;
+      archiveWhere.textContent = report.dir ? t("switcher.archive.where", { dir: report.dir }) : "";
       renderArchives(list);
     } catch (error) {
-      if (mine !== generation) return;
+      if (mine !== generation || !hasBook()) return;
       // NOT renderArchives([]), which paints "no archive has been made yet"
       // over a directory that merely could not be read -- and this is the list
       // a writer consults when they are about to lose the machine.
@@ -1053,8 +1116,8 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     mirrorCancel.disabled = false;
     mirrorActionBusy = false;
     mirrorToggle.textContent = t("switcher.mirror.enable");
-    mirrorToggle.disabled = false;
-    if (returnFocus) mirrorToggle.focus();
+    mirrorToggle.disabled = !hasBook();
+    if (returnFocus && hasBook()) mirrorToggle.focus();
   }
 
   function showMirrorPreview(preview: MirrorPreview): void {
@@ -1099,7 +1162,8 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   }
 
   function renderMirror(report: MirrorReport): void {
-    mirrorWhere.textContent = t("switcher.mirror.where", { dir: report.dir });
+    if (!hasBook()) return;
+    mirrorWhere.textContent = report.dir ? t("switcher.mirror.where", { dir: report.dir }) : "";
     mirrorToggle.textContent = report.enabled
       ? t("switcher.mirror.disable")
       : t("switcher.mirror.enable");
@@ -1126,15 +1190,16 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   }
 
   async function reloadMirror(): Promise<void> {
+    if (!hasBook()) return;
     // Reads `generation` WITHOUT bumping it, exactly as the three listings
     // above do, so every part of this panel is cancelled together.
     const mine = generation;
     try {
       const report = await deps.mirrorStatus();
-      if (mine !== generation) return;
+      if (mine !== generation || !hasBook()) return;
       renderMirror(report);
     } catch (error) {
-      if (mine !== generation) return;
+      if (mine !== generation || !hasBook()) return;
       // NOT renderMirror({enabled:false,...}), which paints "the mirror is off
       // for this project" over a directory that merely could not be read -- and
       // a writer told the mirror is off may go and turn it on, which rewrites
@@ -1152,7 +1217,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   // whole manuscript, and a second click landing mid-pass would have two passes
   // writing the same files.
   const onMirrorToggle = (): void => {
-    if (mirrorActionBusy) return;
+    if (!hasBook() || mirrorActionBusy) return;
     mirrorActionBusy = true;
     const turningOn = mirrorToggle.textContent === t("switcher.mirror.enable");
     mirrorPreviewing = turningOn;
@@ -1191,7 +1256,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
           mirrorPreviewing = false;
           mirrorActionBusy = false;
           if (turningOn) mirrorToggle.textContent = t("switcher.mirror.enable");
-          mirrorToggle.disabled = false;
+          mirrorToggle.disabled = !hasBook();
           mirrorCheck.textContent = t("switcher.mirror.check");
         }
       }
@@ -1200,6 +1265,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   };
 
   const onMirrorConfirm = (): void => {
+    if (!hasBook()) return;
     const preview = pendingMirrorPreview;
     if (preview?.token === null || preview?.token === undefined) return;
     const opened = generation;
@@ -1225,7 +1291,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   const onMirrorCancel = (): void => closeMirrorPreview(true);
 
   const onMirrorCheck = (): void => {
-    if (mirrorActionBusy || mirrorCheck.disabled) return;
+    if (!hasBook() || mirrorActionBusy || mirrorCheck.disabled) return;
     const checkedPath = deps.currentPath();
     mirrorActionBusy = true;
     mirrorToggle.disabled = true;
@@ -1248,7 +1314,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
         if (deps.currentPath() === checkedPath) deps.onNotice(t("mirror.notice.check-failed"));
       } finally {
         mirrorActionBusy = false;
-        mirrorToggle.disabled = false;
+        mirrorToggle.disabled = !hasBook();
         mirrorCheck.textContent = t("switcher.mirror.check");
       }
       await reloadMirror();
@@ -1272,7 +1338,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   };
 
   const onArchiveNow = (): void => {
-    if (archiving) return;
+    if (!hasBook() || archiving) return;
     const mine = generation;
     const path = deps.currentPath();
     const opened = deps.currentGeneration?.();
@@ -1342,7 +1408,10 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
         }
       } finally {
         encryptedBusy = false;
-        if (!destroyed) for (const button of [backupChoose, archiveKey, archiveEncrypted, archiveVerify, archiveRestore]) button.disabled = false;
+        if (!destroyed) {
+          for (const button of [backupChoose, archiveKey, archiveEncrypted, archiveVerify, archiveRestore]) button.disabled = false;
+          paintBookAvailability();
+        }
       }
     })();
   };
@@ -1364,10 +1433,13 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const key = await deps.generateArchiveKey?.();
     return key ? t("switcher.archive.key.done", { recipient: key.recipient }) : null;
   });
-  const onArchiveEncrypted = (): void => encryptedAction(async () => {
-    const archive = await deps.makeEncryptedArchive?.();
-    return archive ? t("switcher.archive.encrypted.done", { file: archive.file, recipient: archive.recipient }) : null;
-  });
+  const onArchiveEncrypted = (): void => {
+    if (!hasBook()) return;
+    encryptedAction(async () => {
+      const archive = await deps.makeEncryptedArchive?.();
+      return archive ? t("switcher.archive.encrypted.done", { file: archive.file, recipient: archive.recipient }) : null;
+    });
+  };
   const onArchiveVerify = (): void => encryptedAction(async () => {
     const archive = await deps.verifyEncryptedArchive?.();
     return archive ? t("switcher.archive.encrypted.verified", { file: archive.file }) : null;
@@ -1568,19 +1640,24 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     }
     if (creating) return;
     creating = true;
+    const mine = generation;
+    const path = deps.currentPath();
+    const opened = deps.currentGeneration?.();
+    const current = async (): Promise<boolean> => !panel.hidden &&
+      await archiveActionCurrent(mine, path, opened) && !panel.hidden;
     void (async (): Promise<void> => {
       try {
-        await deps.createProject(wanted);
+        const made = await deps.createProject(wanted);
+        if (!await current()) return;
+        if (input.value.trim() === wanted) input.value = "";
+        deps.onDone(t("switcher.done.created", { name: made.name }));
+        // Naming a new manuscript does not finish the one already open.
+        await reload();
       } catch (error) {
-        deps.onNotice(messageOf(error));
-        return;
+        if (await current()) deps.onNotice(messageOf(error));
       } finally {
         creating = false;
       }
-      input.value = "";
-      // Creating does NOT switch: a person naming a new manuscript has not said
-      // they are done with the one they are in.
-      await reload();
     })();
   };
 
@@ -1598,29 +1675,31 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     }
     if (creating) return;
     creating = true;
+    const mine = generation;
+    const path = deps.currentPath();
+    const opened = deps.currentGeneration?.();
+    const current = async (): Promise<boolean> => !panel.hidden &&
+      await archiveActionCurrent(mine, path, opened) && !panel.hidden;
     void (async (): Promise<void> => {
-      let made: ProjectSummary | null;
       try {
-        made = await deps.createProjectIn(wanted);
+        const made = await deps.createProjectIn(wanted);
+        // Cancellation keeps the typed name and does not announce a result.
+        if (made === null || !await current()) return;
+        if (input.value.trim() === wanted) input.value = "";
+        deps.onDone(t("switcher.done.created", { name: made.name }));
+        await reload();
       } catch (error) {
-        deps.onNotice(messageOf(error));
-        return;
+        if (await current()) deps.onNotice(messageOf(error));
       } finally {
         creating = false;
       }
-      // CANCELLED. The writer did exactly what they intended, so there is no
-      // notice and the typed name is left where it was: they were choosing a
-      // folder, not abandoning the book.
-      if (made === null) return;
-      input.value = "";
-      await reload();
     })();
   };
 
   /** One move at a time; a second click while the dialog stands is nothing. */
   let moving = false;
   const onMove = (): void => {
-    if (moving) return;
+    if (!hasBook() || moving) return;
     moving = true;
     void (async (): Promise<void> => {
       let moved: ProjectSummary | null;
@@ -1680,6 +1759,27 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   // sees a field still waiting for them, which is the only one of the three
   // that neither writes nor discards anything on its own.
 
+  function paintBookAvailability(): void {
+    const open = hasBook();
+    name.hidden = !open;
+    cast.hidden = !open;
+    addTip.anchor.hidden = !open || deps.openCreation === undefined;
+    bookRequired.hidden = open;
+    for (const node of [here, move, recoveryHeading, recoveryList, archiveHeading, archiveWhere, archiveNow, archiveList, mirrorHeading, mirrorWhere, mirrorState, mirrorToggle, mirrorCheck]) node.hidden = !open;
+    if (!open) {
+      clearLegacyProtection();
+      archiveWhere.textContent = "";
+      mirrorWhere.textContent = "";
+    }
+    archiveEncrypted.hidden = !open || deps.makeEncryptedArchive === undefined;
+    archiveEncrypted.disabled = !open || encryptedBusy;
+    move.disabled = !open;
+    archiveNow.disabled = !open || archiving;
+    mirrorToggle.disabled = !open || mirrorActionBusy;
+    if (!open) mirrorCheck.disabled = true;
+  }
+  paintBookAvailability();
+
   return {
     refresh(next: string): void {
       if (pendingMirrorPreview !== null || mirrorPreviewing) closeMirrorPreview(false);
@@ -1689,8 +1789,8 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     },
     setBookOpen(open: boolean): void {
       if (!open) closeMirrorPreview(false);
-      name.hidden = !open;
-      cast.hidden = !open;
+      bookOpen = open;
+      paintBookAvailability();
       // Reset to the not-editing state either way: `open` false must not
       // leave a rename field showing over nothing, and `open` true is a
       // fresh mount that was never mid-rename to begin with.
@@ -1708,23 +1808,42 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       // Each open starts from the rule, not from how the last one was left:
       // closed unless asked for, or unless a copy needs attention.
       expand(importToggle, importBody, focus === "import");
-      expand(copiesToggle, copies, focus === "copies" || (deps.copiesNeedAttention?.() ?? false));
+      expand(copiesToggle, copies, focus === "copies" || focus === "backups" || focus === "restore" || (deps.copiesNeedAttention?.() ?? false));
       // ORDER IS LOAD-BEARING. `reloadImports` reads `generation` WITHOUT
       // bumping it - it rides the bump `reload()` makes synchronously before its
       // first await, so the two are cancelled together by the next open or by
       // destroy. Swap these two lines and the import listing carries the
       // PREVIOUS generation, so an open that arrives while an older listing is
       // in flight no longer cancels it. Pinned by a test.
-      void reload();
-      void reloadImports();
-      void reloadRecovery();
-      void reloadArchives();
-      void reloadBackupDestination();
-      void reloadMirror();
-      void reloadLegacyProtection();
+      const projectsLoaded = reload();
+      const loaded = Promise.all([
+        projectsLoaded,
+        reloadImports(),
+        reloadRecovery(),
+        reloadArchives(),
+        reloadBackupDestination(),
+        reloadMirror(),
+        reloadLegacyProtection(),
+      ]);
       if (focus === "create") {
         input.focus();
         input.select();
+        return;
+      }
+      if (focus === "backups" || focus === "restore") {
+        const action = (focus === "restore" ? [archiveRestore] : [archiveEncrypted, archiveKey, archiveVerify, archiveRestore])
+          .find((button) => !button.hidden && !button.disabled);
+        const target = action ?? encryptedHeading;
+        target.focus({ preventScroll: true });
+        const mine = generation;
+        const path = deps.currentPath();
+        const opened = deps.currentGeneration?.();
+        const stillFocused = (): boolean => !panel.hidden && !copies.hidden && document.activeElement === target;
+        // Earlier lists can grow after opening and move this section down.
+        void loaded.then(async () => {
+          if (!stillFocused() || !await archiveActionCurrent(mine, path, opened) || !stillFocused()) return;
+          encryptedHeading.scrollIntoView({ block: "start", inline: "nearest" });
+        });
         return;
       }
       // The status dot's "Set up the readable folder": the section it named.
@@ -1732,12 +1851,17 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
         mirrorToggle.focus();
         return;
       }
-      // The LIST and the IMPORT LIST are repainted asynchronously by the two
-      // reloads above, so there is no row to focus yet and focusing one later
-      // would move the caret under a writer who had already started typing.
-      // Focus the container instead: it is what a screen reader announces, and
-      // arrow keys reach the rows from there.
+      // Start at the container while its rows load. Only advance if the
+      // writer has left focus there, so a late listing cannot take it back.
       (focus === "import" ? importList : listbox).focus();
+      if (focus !== "import") {
+        const mine = generation;
+        void projectsLoaded.then(() => {
+          if (destroyed || panel.hidden || mine !== generation || document.activeElement !== listbox) return;
+          const current = listbox.querySelector<HTMLButtonElement>('[aria-current="true"] .switcher-open');
+          (current ?? listbox.querySelector<HTMLButtonElement>(".switcher-open, .switcher-forget"))?.focus();
+        });
+      }
     },
     destroy(): void {
       if (destroyed) return;
@@ -1776,6 +1900,9 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       name.remove();
       nameField.remove();
       cast.remove();
+      add.removeEventListener("click", onAdd);
+      addTip.destroy();
+      addTip.anchor.remove();
       // THE ONE THAT MATTERS: it is on the document, so it outlives these
       // elements and would accumulate one live closure per project switch.
       shell.destroy();

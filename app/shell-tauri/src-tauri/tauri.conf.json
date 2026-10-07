@@ -9,7 +9,7 @@
   "app": {
     "withGlobalTauri": true,
     "security": {
-      "csp": "default-src 'self' appdist:; connect-src 'self' appdist: ipc: http://ipc.localhost; script-src 'self' appdist:; style-src 'self' appdist: 'unsafe-inline'; img-src 'self' appdist: data:"
+      "csp": "default-src 'self' appdist:; connect-src 'self' appdist: ipc: http://ipc.localhost; script-src 'self' appdist:; style-src 'self' appdist: 'unsafe-inline'; img-src 'self' appdist: data:; base-uri 'none'; form-action 'none'"
     }
   },
   "bundle": {

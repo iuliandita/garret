@@ -169,7 +169,7 @@ pub fn forget_recovery_directory(store: &Store) -> bool {
     store.set_meta(RECOVERED_FROM_KEY, &named).is_ok()
 }
 
-/// `<data_home>/cc.local.app/projects`
+/// `<data_home>/garret/projects`
 pub fn library_dir(data_home: &Path) -> PathBuf {
     data_home.join(APP_DIR).join("projects")
 }
@@ -211,7 +211,7 @@ pub fn resolve_new_book_dir(
         })
 }
 
-/// `<data_home>/cc.local.app/exports`, beside `projects/`.
+/// `<data_home>/garret/exports`, beside `projects/`.
 pub fn exports_dir(data_home: &Path) -> PathBuf {
     data_home.join(APP_DIR).join("exports")
 }
@@ -221,7 +221,7 @@ pub fn imports_dir(data_home: &Path) -> PathBuf {
     data_home.join(APP_DIR).join("imports")
 }
 
-/// `<data_home>/cc.local.app/spell`, beside `projects/`. Pointed to by
+/// `<data_home>/garret/spell`, beside `projects/`. Pointed to by
 /// `ENCHANT_CONFIG_DIR` so the open project's dictionary reaches enchant
 /// without ever touching the machine-global `~/.config/enchant/` -- see
 /// commands/spell.rs. APPLICATION-OWNED SCRATCH, not the storage of record:
@@ -231,7 +231,7 @@ pub fn spell_dir(data_home: &Path) -> PathBuf {
     data_home.join(APP_DIR).join("spell")
 }
 
-/// `<data_home>/cc.local.app/recovery/<slug>`, beside `projects/`.
+/// `<data_home>/garret/recovery/<slug>`, beside `projects/`.
 ///
 /// PER PROJECT, not one shared directory: the retention rule thins a book's own
 /// recovery points against each other, and a shared directory would let a
@@ -245,7 +245,7 @@ pub fn recovery_dir(data_home: &Path, slug: &str) -> PathBuf {
     data_home.join(APP_DIR).join("recovery").join(slug)
 }
 
-/// `<data_home>/cc.local.app/recovery/<slug>/archives`, for the file a writer
+/// `<data_home>/garret/recovery/<slug>/archives`, for the file a writer
 /// moves off this computer themselves.
 ///
 /// INSIDE the recovery area and NOT the recovery directory itself, and both
@@ -270,7 +270,7 @@ pub fn archives_dir(data_home: &Path, slug: &str) -> PathBuf {
     recovery_dir(data_home, slug).join("archives")
 }
 
-/// `<data_home>/cc.local.app/mirror/<slug>`, or wherever `APP_MIRROR_DIR`
+/// `<data_home>/garret/mirror/<slug>`, or wherever `APP_MIRROR_DIR`
 /// points, for the readable manuscript the writer opens in another editor.
 ///
 /// **The only directory in this file the writer is invited to look inside**,
@@ -526,12 +526,12 @@ fn export_ordinal(file_name: &str, slug: &str) -> Option<u64> {
     }
 }
 
-/// `<data_home>/cc.local.app/settings.json`
+/// `<data_home>/garret/settings.json`
 pub fn settings_path(data_home: &Path) -> PathBuf {
     data_home.join(APP_DIR).join("settings.json")
 }
 
-/// `<data_home>/cc.local.app/startup-error.txt`, beside `settings.json`.
+/// `<data_home>/garret/startup-error.txt`, beside `settings.json`.
 ///
 /// It exists because a Windows GUI-subsystem executable HAS NO STDERR: nothing
 /// is attached to it, so a panic on a failed startup prints into a void and the
@@ -1533,7 +1533,7 @@ fn default_mark_cast_names() -> bool {
 ///
 /// Read here and in nothing else: `contract_home` and `expand_home` take the
 /// home as a parameter, so they test without touching the environment.
-fn home_dir() -> Option<PathBuf> {
+pub(crate) fn home_dir() -> Option<PathBuf> {
     let raw = std::env::var_os("HOME")?;
     let path = PathBuf::from(raw);
     let text = path.to_str()?;
@@ -2350,7 +2350,7 @@ where
         .unwrap_or_default())
 }
 
-/// `<data_home>/cc.local.app/settings.json`. A missing or unparseable file reads
+/// `<data_home>/garret/settings.json`. A missing or unparseable file reads
 /// as default: this is a preferences file, losing it costs the user one click,
 /// and refusing to launch over it would be worse.
 ///
@@ -3229,7 +3229,7 @@ mod tests {
 
         // Also refused when the target exists, so the answer cannot depend on
         // whether the file happens to be there yet.
-        fs::write(dir.path().join("cc.local.app").join("escape.db"), b"x").unwrap();
+        fs::write(dir.path().join("garret").join("escape.db"), b"x").unwrap();
         assert!(!in_library(&lib, &escape), "{}", escape.display());
     }
 
@@ -3442,7 +3442,7 @@ mod tests {
 
     #[test]
     fn an_absolute_remembered_folder_wins_over_every_default() {
-        let library = PathBuf::from("/home/writer/.local/share/cc.local.app/projects");
+        let library = PathBuf::from("/home/writer/.local/share/garret/projects");
         let custom = "/home/writer/Manuscripts";
         assert_eq!(
             resolve_new_book_dir(
@@ -3462,7 +3462,7 @@ mod tests {
         // hidden library included -- a profile from before this slice can hold
         // it as a "remembered" folder, and that is the legacy default, not a
         // choice.
-        let library = PathBuf::from("/home/writer/.local/share/cc.local.app/projects");
+        let library = PathBuf::from("/home/writer/.local/share/garret/projects");
         let documents = PathBuf::from("/home/writer/Documents");
         assert_eq!(
             resolve_new_book_dir(
@@ -3478,7 +3478,7 @@ mod tests {
 
     #[test]
     fn with_documents_available_the_default_is_documents_books() {
-        let library = PathBuf::from("/home/writer/.local/share/cc.local.app/projects");
+        let library = PathBuf::from("/home/writer/.local/share/garret/projects");
         let documents = PathBuf::from("/home/writer/Dokumente");
         assert_eq!(
             resolve_new_book_dir(None, &library, Some(documents.clone()), None).unwrap(),
@@ -3489,7 +3489,7 @@ mod tests {
 
     #[test]
     fn with_no_documents_folder_the_default_falls_back_to_home_books() {
-        let library = PathBuf::from("/home/writer/.local/share/cc.local.app/projects");
+        let library = PathBuf::from("/home/writer/.local/share/garret/projects");
         let home = PathBuf::from("/home/writer");
         assert_eq!(
             resolve_new_book_dir(None, &library, None, Some(home.clone())).unwrap(),
@@ -3499,7 +3499,7 @@ mod tests {
 
     #[test]
     fn with_neither_documents_nor_home_the_resolver_refuses() {
-        let library = PathBuf::from("/home/writer/.local/share/cc.local.app/projects");
+        let library = PathBuf::from("/home/writer/.local/share/garret/projects");
         let error = resolve_new_book_dir(None, &library, None, None).unwrap_err();
         assert!(!error.is_empty());
     }
@@ -3510,7 +3510,7 @@ mod tests {
         // (106's own discipline); a relative survivor from a hand-edited or
         // damaged settings file must not be handed to the writer as a folder
         // to create a book in.
-        let library = PathBuf::from("/home/writer/.local/share/cc.local.app/projects");
+        let library = PathBuf::from("/home/writer/.local/share/garret/projects");
         let documents = PathBuf::from("/home/writer/Documents");
         assert_eq!(
             resolve_new_book_dir(
@@ -4261,7 +4261,7 @@ mod tests {
     #[test]
     fn exports_dir_sits_beside_the_library() {
         let d = Path::new("/data");
-        assert_eq!(exports_dir(d), PathBuf::from("/data/cc.local.app/exports"));
+        assert_eq!(exports_dir(d), PathBuf::from("/data/garret/exports"));
         assert_eq!(exports_dir(d).parent(), library_dir(d).parent());
     }
 
@@ -4745,7 +4745,7 @@ mod tests {
         // A path that genuinely carries a home directory, so the assertion can
         // fail: this is the exact shape the row held before the fix.
         let leaky = Path::new(
-            "/home/writer/.local/share/cc.local.app/recovery/my-book/2026-08-21T09-00-00Z.db",
+            "/home/writer/.local/share/garret/recovery/my-book/2026-08-21T09-00-00Z.db",
         );
         assert!(
             leaky.to_string_lossy().contains("/home/writer"),
@@ -4826,7 +4826,7 @@ mod tests {
         let db = dir.path().join("p.db");
         let store = Store::open(&db).unwrap();
         let leaky =
-            "/home/writer/.local/share/cc.local.app/recovery/my-book/2026-08-21T09-00-00Z.db";
+            "/home/writer/.local/share/garret/recovery/my-book/2026-08-21T09-00-00Z.db";
         store.set_meta(RECOVERED_FROM_KEY, leaky).unwrap();
 
         assert!(forget_recovery_directory(&store), "nothing was rewritten");
@@ -4849,7 +4849,7 @@ mod tests {
             store
                 .set_meta(
                     RECOVERED_FROM_KEY,
-                    "/home/writer/.local/share/cc.local.app/recovery/my-book/2026-08-21T09-00-00Z.db",
+                    "/home/writer/.local/share/garret/recovery/my-book/2026-08-21T09-00-00Z.db",
                 )
                 .unwrap();
         }
@@ -5131,7 +5131,7 @@ mod tests {
         let home = Path::new("/home/w/.local/share");
         assert_eq!(
             recovery_dir(home, "my-book"),
-            home.join("cc.local.app").join("recovery").join("my-book")
+            home.join("garret").join("recovery").join("my-book")
         );
         // Per project, not one shared directory: retention is per book and a
         // shared directory would thin one manuscript's points against
@@ -5144,7 +5144,7 @@ mod tests {
         let home = Path::new("/home/w/.local/share");
         assert_eq!(
             mirror_dir(home, None, "my-book"),
-            Path::new("/home/w/.local/share/cc.local.app/mirror/my-book")
+            Path::new("/home/w/.local/share/garret/mirror/my-book")
         );
         // BESIDE the recovery area, never inside it: `recovery/` is an
         // application-owned area the writer is not invited into, and a mirror

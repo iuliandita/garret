@@ -164,18 +164,60 @@ impl Stage {
 
 fn stage_lock(parent: &Path) -> Result<File, String> {
     let path = parent.join(STAGE_LOCK);
-    if fs::symlink_metadata(&path).is_ok_and(|m| m.file_type().is_symlink()) {
-        return Err("encrypted archive lock is unsafe".into());
-    }
+    let before = match fs::symlink_metadata(&path) {
+        Ok(meta) if meta.is_file() && !meta.file_type().is_symlink() => Some(meta),
+        Ok(_) => return Err("encrypted archive lock is unsafe".into()),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => None,
+        Err(_) => return Err("encrypted archive lock unavailable".into()),
+    };
     let mut options = OpenOptions::new();
     options.write(true).create(true);
-    #[cfg(target_os = "linux")]
+    #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
-        options.custom_flags(0o400000);
+        options.mode(0o600).custom_flags(
+            (rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::NONBLOCK).bits() as i32,
+        );
     }
-    let file = options.open(path).map_err(|_| "encrypted archive lock unavailable")?;
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        // Do not follow reparse points or permit deletion while holding this inode.
+        options.custom_flags(0x0020_0000).share_mode(0x0000_0003);
+    }
+    let file = options.open(&path).map_err(|_| "encrypted archive lock unavailable")?;
+    let opened = file.metadata().map_err(|_| "encrypted archive lock unavailable")?;
+    let after = fs::symlink_metadata(&path).map_err(|_| "encrypted archive lock changed")?;
+    if !opened.is_file() || !after.is_file() || after.file_type().is_symlink() {
+        return Err("encrypted archive lock is unsafe".into());
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let same = |meta: &fs::Metadata| meta.dev() == opened.dev() && meta.ino() == opened.ino();
+        if !same(&after) || before.as_ref().is_some_and(|meta| !same(meta)) {
+            return Err("encrypted archive lock changed".into());
+        }
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        if opened.file_attributes() & 0x0000_0400 != 0
+            || after.file_attributes() & 0x0000_0400 != 0
+            || before.as_ref().is_some_and(|meta| meta.file_attributes() & 0x0000_0400 != 0)
+        {
+            return Err("encrypted archive lock is unsafe".into());
+        }
+    }
     file.try_lock().map_err(|_| "another encrypted archive job is active")?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let current = fs::symlink_metadata(&path).map_err(|_| "encrypted archive lock changed")?;
+        if current.dev() != opened.dev() || current.ino() != opened.ino() {
+            return Err("encrypted archive lock changed".into());
+        }
+    }
     Ok(file)
 }
 
@@ -223,10 +265,17 @@ fn private_stage_root(data_home: &Path) -> Result<PathBuf, String> {
     Ok(root)
 }
 
-fn stage(parent: &Path) -> Result<Stage, String> {
+#[derive(Clone, Copy)]
+enum StageScope { Private, Destination }
+
+fn stage(parent: &Path, scope: StageScope) -> Result<Stage, String> {
     let lock = stage_lock(parent)?;
     if let Some(name) = list_stages(parent)?.first() {
-        return Err(format!("unfinished encrypted archive staging {name}; inspect or clean it before another attempt"));
+        let scope = match scope {
+            StageScope::Private => "application-private temporary backup files (may contain plaintext)",
+            StageScope::Destination => "destination temporary encrypted files",
+        };
+        return Err(format!("unfinished encrypted archive staging {name}; {scope}; parent directory: {}; retained stage: {}; inspect and preserve these files before deliberately discarding them", parent.display(), parent.join(name).display()));
     }
     let temp = Builder::new().prefix(STAGE_PREFIX).tempdir_in(parent)
         .map_err(|e| format!("archive staging unavailable: {e}"))?;
@@ -241,7 +290,7 @@ fn stage(parent: &Path) -> Result<Stage, String> {
 /// The mobile host supplies its own app-private parent, never a provider URI.
 pub(crate) fn private_stage(parent: &Path) -> Result<Stage, String> {
     checked_stage_directory(parent, true)?;
-    stage(parent)
+    stage(parent, StageScope::Private)
 }
 
 fn append(builder: &mut tar::Builder<impl Write>, path: &Path, name: &str, max: u64) -> Result<(), String> {
@@ -485,6 +534,32 @@ pub(crate) fn write_verified_cipher(bundle: &Path, cipher: &Path, key: &Identity
 }
 
 #[cfg(not(target_os = "android"))]
+fn publish_cipher_noclobber(
+    source: &Path,
+    destination: &Path,
+    hard_link: impl FnOnce(&Path, &Path) -> io::Result<()>,
+) -> io::Result<()> {
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        use rustix::fs::{renameat_with, RenameFlags, CWD};
+        use rustix::io::Errno;
+        match renameat_with(CWD, source, CWD, destination, RenameFlags::NOREPLACE) {
+            Ok(()) => return Ok(()),
+            Err(Errno::NOSYS | Errno::INVAL | Errno::OPNOTSUPP) => (),
+            Err(error) => return Err(error.into()),
+        }
+    }
+    #[cfg(windows)]
+    {
+        let _ = hard_link;
+        return tempfile::TempPath::try_from_path(source)?.persist_noclobber(destination)
+            .map_err(|error| error.error);
+    }
+    #[cfg(not(windows))]
+    hard_link(source, destination)
+}
+
+#[cfg(not(target_os = "android"))]
 fn publish_bundle(bundle: &Path, dest: &Path, key: &Identity, temp: &Stage, owned_snapshot: bool) -> Result<ArchiveInfo, String> {
     if fs::symlink_metadata(dest).is_ok() { return Err("encrypted archive destination already exists".into()); }
     let parent = dest.parent().ok_or("encrypted archive destination has no parent")?;
@@ -496,7 +571,7 @@ fn publish_bundle(bundle: &Path, dest: &Path, key: &Identity, temp: &Stage, owne
     }
     let bytes = fs::metadata(&cipher).map_err(|_| "encrypted archive size unreadable")?.len();
     // Only independently verified ciphertext enters the destination filesystem.
-    let destination_stage = stage(parent)?;
+    let destination_stage = stage(parent, StageScope::Destination)?;
     let result = (|| {
         let staged_cipher = destination_stage.path().join("cipher.age");
         let mut input = safe_file(&cipher, u64::MAX)?;
@@ -511,7 +586,8 @@ fn publish_bundle(bundle: &Path, dest: &Path, key: &Identity, temp: &Stage, owne
             .map_err(|_| "private ciphertext copy verification staging unavailable")?;
         extract_verified_bundle(&staged_cipher, key, check.path())?;
         check.close().map_err(|_| "verified plaintext cleanup failed")?;
-        fs::hard_link(&staged_cipher, dest).map_err(|e| format!("encrypted archive publish failed: {e}"))?;
+        publish_cipher_noclobber(&staged_cipher, dest, |source, destination| fs::hard_link(source, destination))
+            .map_err(|e| format!("encrypted archive publish failed: {e}"))?;
         if let Err(error) = backup_bundle::sync_directory(parent) {
             if fs::remove_file(dest).is_err() {
                 return Err(format!("encrypted archive publication not durable: {error}; new destination could not be removed"));
@@ -542,7 +618,7 @@ fn finish_stage<T>(temp: Stage, result: Result<T, String>) -> Result<T, String> 
 #[cfg(not(target_os = "android"))]
 pub fn create_from_bundle(bundle: &Path, dest: &Path, key: &Identity, data_home: &Path) -> Result<ArchiveInfo, String> {
     dest.parent().ok_or("encrypted archive destination has no parent")?;
-    let temp = stage(&private_stage_root(data_home)?)?;
+    let temp = stage(&private_stage_root(data_home)?, StageScope::Private)?;
     let result = publish_bundle(bundle, dest, key, &temp, false);
     finish_stage(temp, result)
 }
@@ -550,7 +626,7 @@ pub fn create_from_bundle(bundle: &Path, dest: &Path, key: &Identity, data_home:
 #[cfg(not(target_os = "android"))]
 pub fn create_from_project(source: &Path, dest: &Path, key: &Identity, data_home: &Path) -> Result<ArchiveInfo, String> {
     dest.parent().ok_or("encrypted archive destination has no parent")?;
-    let temp = stage(&private_stage_root(data_home)?)?;
+    let temp = stage(&private_stage_root(data_home)?, StageScope::Private)?;
     let result = (|| {
         let reader = Store::open_readonly(source).map_err(|e| format!("project unreadable: {e}"))?;
         let bundle = temp.path().join("snapshot.point");
@@ -563,7 +639,7 @@ pub fn create_from_project(source: &Path, dest: &Path, key: &Identity, data_home
 
 #[cfg(not(target_os = "android"))]
 pub fn verify(cipher: &Path, key: &Identity, data_home: &Path) -> Result<(), String> {
-    let temp = stage(&private_stage_root(data_home)?)?;
+    let temp = stage(&private_stage_root(data_home)?, StageScope::Private)?;
     let result = extract_verified_bundle(cipher, key, temp.path()).map(|_| ());
     finish_stage(temp, result)
 }
@@ -572,7 +648,7 @@ pub fn verify(cipher: &Path, key: &Identity, data_home: &Path) -> Result<(), Str
 pub fn restore(cipher: &Path, key: &Identity, library: &Path, stem: &str, now_ms: i64, data_home: &Path)
     -> Result<projects::ProjectSummary, String>
 {
-    let temp = stage(&private_stage_root(data_home)?)?;
+    let temp = stage(&private_stage_root(data_home)?, StageScope::Private)?;
     let result = extract_verified_bundle(cipher, key, temp.path())
         .and_then(|bundle| projects::restore_point_into(&bundle, library, stem, now_ms));
     let cleaned = temp.close();
@@ -640,11 +716,71 @@ mod tests {
         assert_eq!(counted.get(), HEADER_LIMIT);
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn staging_lock_refuses_special_files_and_keeps_its_inode() {
+        use std::os::unix::fs::{symlink, MetadataExt};
+        use rustix::fs::{mkfifoat, Mode, CWD};
+        let root = tempfile::tempdir().unwrap();
+        let lock_path = root.path().join(STAGE_LOCK);
+        mkfifoat(CWD, &lock_path, Mode::RUSR | Mode::WUSR).unwrap();
+        assert!(stage_lock(root.path()).unwrap_err().contains("unsafe"));
+        fs::remove_file(&lock_path).unwrap();
+        let socket = std::os::unix::net::UnixListener::bind(&lock_path).unwrap();
+        assert!(stage_lock(root.path()).unwrap_err().contains("unsafe"));
+        drop(socket);
+        fs::remove_file(&lock_path).unwrap();
+        let target = root.path().join("untouched");
+        fs::write(&target, b"keep").unwrap();
+        symlink(&target, &lock_path).unwrap();
+        assert!(stage_lock(root.path()).unwrap_err().contains("unsafe"));
+        assert_eq!(fs::read(&target).unwrap(), b"keep");
+        fs::remove_file(&lock_path).unwrap();
+        let held = stage_lock(root.path()).unwrap();
+        let inode = held.metadata().unwrap().ino();
+        assert!(stage_lock(root.path()).unwrap_err().contains("another encrypted archive job"));
+        drop(held);
+        let again = stage_lock(root.path()).unwrap();
+        assert_eq!(again.metadata().unwrap().ino(), inode);
+        drop(again);
+        assert_eq!(fs::metadata(&lock_path).unwrap().ino(), inode);
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn verified_cipher_publication_needs_no_hardlinks_and_preserves_collisions() {
+        let root = tempfile::tempdir().unwrap();
+        let db = project(root.path());
+        let bundle = root.path().join("source.point");
+        let reader = Store::open_readonly(&db).unwrap();
+        backup_bundle::write(&db, &reader, &bundle).unwrap();
+        let key = Identity::generate();
+        let source = root.path().join("staged.age");
+        write_verified_cipher(&bundle, &source, &key).unwrap();
+        let bytes = fs::read(&source).unwrap();
+        let destination = root.path().join("backup.age");
+        let unsupported_links = |_: &Path, _: &Path| -> io::Result<()> {
+            panic!("exclusive rename must publish even when hardlinks are unsupported")
+        };
+        publish_cipher_noclobber(&source, &destination, unsupported_links).unwrap();
+        backup_bundle::sync_directory(root.path()).unwrap();
+        assert!(!source.exists());
+        assert_eq!(fs::read(&destination).unwrap(), bytes);
+        verify(&destination, &key, root.path()).unwrap();
+        fs::write(&source, b"replacement ciphertext").unwrap();
+        let error = publish_cipher_noclobber(&source, &destination, unsupported_links).unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::AlreadyExists);
+        assert_eq!(fs::read(&destination).unwrap(), bytes);
+        assert_eq!(fs::read(&source).unwrap(), b"replacement ciphertext");
+    }
+
     #[test]
     fn cleanup_only_accepts_an_owned_marked_stage() {
         let root = tempfile::tempdir().unwrap();
-        let temp = stage(root.path()).unwrap();
-        assert!(stage(root.path()).err().unwrap().contains("another encrypted archive job"));
+        let temp = stage(root.path(), StageScope::Destination).unwrap();
+        assert!(stage(root.path(), StageScope::Destination).err().unwrap().contains("another encrypted archive job"));
+        let active_name = temp.path().file_name().unwrap().to_str().unwrap();
+        assert!(cleanup_stage(root.path(), active_name).unwrap_err().contains("another encrypted archive job"));
         let name = temp.path().file_name().unwrap().to_str().unwrap().to_string();
         let retained = temp.keep();
         assert_eq!(list_stages(root.path()).unwrap(), vec![name.clone()]);
@@ -654,8 +790,19 @@ mod tests {
         assert!(cleanup_stage(root.path(), "../unrelated").is_err());
         assert!(cleanup_stage(root.path(), "unrelated").is_err());
         fs::write(retained.join("cipher.age"), b"partial").unwrap();
+        let error = stage(root.path(), StageScope::Destination).err().unwrap();
+        assert!(error.starts_with("unfinished encrypted archive staging"));
+        assert!(error.contains("destination temporary encrypted files"));
+        assert!(error.contains(&format!("parent directory: {}", root.path().display())));
+        assert!(error.contains(&format!("retained stage: {}", retained.display())));
+        assert_eq!(fs::read(retained.join("cipher.age")).unwrap(), b"partial");
+        fs::write(retained.join(STAGE_MARKER), b"unrecognized").unwrap();
+        assert!(cleanup_stage(root.path(), &name).unwrap_err().contains("marker missing or unrecognized"));
+        assert_eq!(fs::read(retained.join("cipher.age")).unwrap(), b"partial");
+        fs::write(retained.join(STAGE_MARKER), STAGE_MARKER_CONTENT).unwrap();
         cleanup_stage(root.path(), &name).unwrap();
         assert!(!retained.exists());
+        stage(root.path(), StageScope::Destination).unwrap().close().unwrap();
         assert_eq!(fs::read(unrelated.join("keep")).unwrap(), b"keep");
     }
 
@@ -668,8 +815,8 @@ mod tests {
         let second = private_stage_root(b.path()).unwrap();
         assert_ne!(first, second);
         assert!(first.starts_with(a.path().join(crate::APP_DIR)));
-        let held = stage(&first).unwrap();
-        let independent = stage(&second).unwrap();
+        let held = stage(&first, StageScope::Private).unwrap();
+        let independent = stage(&second, StageScope::Private).unwrap();
         assert_ne!(held.path(), independent.path());
         #[cfg(unix)] {
             use std::os::unix::fs::{MetadataExt, PermissionsExt};
@@ -739,11 +886,28 @@ mod tests {
         let key = Identity::generate();
         let cipher = destination.path().join("backup.age");
         let private = private_stage_root(home.path()).unwrap();
-        let held = stage(&private).unwrap();
+        let held = stage(&private, StageScope::Private).unwrap();
         assert!(create_from_project(&db, &cipher, &key, home.path()).unwrap_err().contains("another encrypted archive job"));
         assert!(create_from_bundle(&point, &cipher, &key, home.path()).unwrap_err().contains("another encrypted archive job"));
         assert_eq!(fs::read_dir(destination.path()).unwrap().count(), 0);
-        held.close().unwrap();
+        let retained = held.keep();
+        fs::write(retained.join("snapshot.db"), b"preserve plaintext").unwrap();
+        let alternate = tempfile::tempdir().unwrap();
+        let alternate_cipher = alternate.path().join("backup.age");
+        let error = create_from_bundle(&point, &alternate_cipher, &key, home.path()).unwrap_err();
+        assert!(error.contains("application-private temporary backup files (may contain plaintext)"));
+        assert!(error.contains(&format!("parent directory: {}", private.display())));
+        assert!(error.contains(&format!("retained stage: {}", retained.display())));
+        assert_eq!(fs::read(retained.join("snapshot.db")).unwrap(), b"preserve plaintext");
+        assert!(!alternate_cipher.exists());
+        cleanup_stage(&private, retained.file_name().unwrap().to_str().unwrap()).unwrap();
+        let destination_stage = stage(destination.path(), StageScope::Destination).unwrap().keep();
+        fs::write(destination_stage.join("cipher.age"), b"preserve ciphertext").unwrap();
+        assert!(create_from_bundle(&point, &cipher, &key, home.path()).unwrap_err().contains("destination temporary encrypted files"));
+        create_from_bundle(&point, &alternate_cipher, &key, home.path()).unwrap();
+        verify(&alternate_cipher, &key, home.path()).unwrap();
+        assert_eq!(fs::read(destination_stage.join("cipher.age")).unwrap(), b"preserve ciphertext");
+        cleanup_stage(destination.path(), destination_stage.file_name().unwrap().to_str().unwrap()).unwrap();
         create_from_bundle(&point, &cipher, &key, home.path()).unwrap();
         verify(&cipher, &key, home.path()).unwrap();
         assert!(point.exists());

@@ -51,16 +51,30 @@ export function createHelpTip(spec: { label: string; definition: string; id?: st
   tooltip.anchor.classList.add("help-tip-anchor");
   tooltip.anchor.append(description);
 
-  // A mark near a panel's right edge (the Statistics panel's second column)
-  // would have its tip cut off by the scrolling body. Bound AFTER the
-  // tooltip's own listeners, so the tip is attached when this measures it;
-  // then it opens leftward from the mark instead.
+  // Clamp to every edge of the clipping ancestors; flipping can put a
+  // definition outside the other edge of a narrow inspector.
   const place = (): void => {
     const tip = tooltip.tip;
-    tip.classList.remove("tip-flip");
     if (tip.parentNode === null) return;
-    const edge = Math.min(clipRight(tooltip.anchor), window.innerWidth);
-    if (tip.getBoundingClientRect().right > edge) tip.classList.add("tip-flip");
+    const bounds = clipBounds(tooltip.anchor);
+    tip.style.maxHeight = `${Math.max(0, bounds.bottom - bounds.top - 8)}px`;
+    tip.style.overflowY = "";
+    tip.style.maxWidth = `${Math.max(0, Math.min(300, bounds.right - bounds.left - 8))}px`;
+    tip.style.left = "0px";
+    const anchor = tooltip.anchor.getBoundingClientRect();
+    const scrolls = tip.scrollHeight > tip.clientHeight;
+    if (scrolls) tip.style.overflowY = "auto";
+    const gap = scrolls ? 0 : 6;
+    const size = tip.getBoundingClientRect();
+    const width = size.width;
+    const left = Math.max(bounds.left + 4, Math.min(anchor.left, bounds.right - width - 4));
+    tip.style.left = `${left - anchor.left}px`;
+    const below = anchor.bottom + gap;
+    const top = below + size.height <= bounds.bottom - 4
+      ? below
+      : Math.max(bounds.top + 4, anchor.top - size.height - gap);
+    tip.style.top = `${top - anchor.top}px`;
+    tip.classList.toggle("tip-above", top < anchor.top);
   };
   button.addEventListener("mouseenter", place);
   button.addEventListener("focus", place);
@@ -75,11 +89,21 @@ export function createHelpTip(spec: { label: string; definition: string; id?: st
   };
 }
 
-/** The right edge of the nearest ancestor that clips its overflow. */
-function clipRight(from: HTMLElement): number {
+/** The space visible through all scrolling/clipping ancestors. */
+function clipBounds(from: HTMLElement): { left: number; right: number; top: number; bottom: number } {
+  let left = 0;
+  let right = window.innerWidth;
+  let top = 0;
+  let bottom = window.innerHeight;
   for (let node = from.parentElement; node !== null; node = node.parentElement) {
     const style = getComputedStyle(node);
-    if (style.overflowX !== "visible" || style.overflowY !== "visible") return node.getBoundingClientRect().right;
+    if ([style.overflowX, style.overflowY].some((value) => ["auto", "scroll", "hidden", "clip"].includes(value))) {
+      const rect = node.getBoundingClientRect();
+      left = Math.max(left, rect.left);
+      right = Math.min(right, rect.right);
+      top = Math.max(top, rect.top);
+      bottom = Math.min(bottom, rect.bottom);
+    }
   }
-  return window.innerWidth;
+  return { left, right, top, bottom };
 }

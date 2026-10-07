@@ -219,6 +219,7 @@ export function mountEmpty(deps: EmptyProjectDeps): MountedProject {
     // without this module naming it a second time.
     outlineUndoLabel: () => null,
     outlineRedoLabel: () => null,
+    openCreation: refuse,
     create: () => refuse(),
     createNote: refuse,
     createBibleFolder: refuse,

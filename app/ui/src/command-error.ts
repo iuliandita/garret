@@ -34,11 +34,13 @@ const CLASSES: ReadonlyArray<readonly [string, RegExp]> = [
   ["host-error.picture-format", /is not a png or a jpeg/],
   ["host-error.picture-pixels", /the largest this book will read is/],
   ["host-error.picture-unreadable", /^that picture could not be read/],
+  ["host-error.archive-stage", /^unfinished encrypted archive staging /],
   ["host-error.corrupt", /database disk image is malformed|file is not a database|sqlite_corrupt|sqlite_notadb/],
   ["host-error.disk-full", /database or disk is full|no space left on device|\(os error 28\)|disk quota exceeded|\(os error 122\)|^disk full|sqlite_full/],
   ["host-error.read-only", /readonly database|read-only file system|\(os error 30\)|sqlite_readonly/],
   ["host-error.busy", /database is locked|database table is locked|database is busy|sqlite_busy|sqlite_locked/],
   ["host-error.io", /disk i\/o error|input\/output error|\(os error 5\)|sqlite_ioerr/],
+  ["host-error.unavailable", /no such file or directory|permission denied|access (?:is )?denied|\(os error (?:2|3|13)\)|unable to open database file|cannot open database|sqlite_cantopen/],
 ];
 
 /** The one plain sentence for a host failure: what went wrong and what to do.
@@ -73,9 +75,11 @@ function remember(detail: string): void {
   if (recentDetails.length > RECENT_LIMIT) recentDetails.shift();
 }
 
-export function commandFailureMessage(value: unknown): string {
+export function commandFailureMessage(value: unknown, detailOverride?: string): string {
   const primary = failureProblem(value);
-  const detail = failureDetail(value);
+  const raw = detailOverride ?? failureDetail(value);
+  const detail = /^unfinished encrypted archive staging /i.test(raw)
+    ? `${raw}\n\n${t("host-error.archive-stage.steps")}` : raw;
   if (detail === "" || isApplicationLocked(value)) return primary;
   remember(detail);
   return t("host-error.with-detail", { primary, detail });

@@ -88,11 +88,11 @@ try {
   const project = join(work, "project.db");
   const data = join(work, "data");
   const mirror = join(work, "mirror");
-  mkdirSync(join(data, "cc.local.app"), { recursive: true });
+  mkdirSync(join(data, "garret"), { recursive: true });
   mkdirSync(mirror);
   const seeded = Bun.spawnSync([BIN, "--seed", "lab/fixtures/out/tiny", project], { stdout: "inherit", stderr: "inherit" });
   if (seeded.exitCode !== 0) throw new Error("seed failed");
-  writeFileSync(join(data, "cc.local.app", "settings.json"), JSON.stringify({ theme, language: "en", mirrored_book_ids: [readBookId(project)] }));
+  writeFileSync(join(data, "garret", "settings.json"), JSON.stringify({ theme, language: "en", mirrored_book_ids: [readBookId(project)] }));
   const env = { APP_RUN: "interactive", APP_PROJECT: project, APP_MIRROR_DIR: mirror, XDG_DATA_HOME: data, GDK_BACKEND: "x11" };
   const first = await runShell({
     mode: "virtual", soakMs: 0, staged: "app/ui/dist", env, probeA11y: false,

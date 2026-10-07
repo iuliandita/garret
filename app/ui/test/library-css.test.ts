@@ -168,7 +168,7 @@ describe("the library screen's stylesheet facts", () => {
     expect(restMatch).not.toBeNull();
     expect(restMatch![1]).toContain("box-shadow");
     expect(restMatch![1]).not.toContain("box-shadow: none");
-    const hover = declarations(".shelf-tile:hover .cover");
+    const hover = declarations(".shelf-tile:hover:not(:disabled) .cover");
     expect(hover["box-shadow"]).toBeDefined();
   });
 
@@ -181,4 +181,11 @@ describe("the library screen's stylesheet facts", () => {
       "garret-wordmark-paper.png",
     );
   });
+});
+
+
+test("armed snapshots beat the shared button rule and Books scroll targets keep an inset", () => {
+  expect(declarations("#history-panel .snapshot-row[data-armed]").background).toBe("var(--accent)");
+  expect(declarations("#project-panel .panel-body")["scroll-padding-block"]).toBe("var(--space-3)");
+  expect(declarations("#project-encrypted-archive-heading")["scroll-margin-block"]).toBe("var(--space-3)");
 });

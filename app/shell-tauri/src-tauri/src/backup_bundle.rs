@@ -178,22 +178,29 @@ pub(crate) fn open_regular_with_limit(path: &Path, limit: u64) -> Result<File, &
     }
     let mut options = OpenOptions::new();
     options.read(true);
-    #[cfg(target_os = "linux")]
+    #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
-        // O_NOFOLLOW; OpenOptions keeps this safe without a raw syscall.
-        options.custom_flags(0o400000);
+        // NONBLOCK prevents a swapped FIFO from blocking before metadata validation.
+        options.custom_flags((rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::NONBLOCK).bits() as i32);
     }
     #[cfg(windows)]
     {
         use std::os::windows::fs::OpenOptionsExt;
         // FILE_FLAG_OPEN_REPARSE_POINT, so the metadata check sees the link.
-        options.custom_flags(0x0020_0000);
+        options.custom_flags(0x0020_0000).share_mode(0x0000_0003);
     }
     let file = options.open(path).map_err(|_| "missing or unreadable")?;
     let meta = file.metadata().map_err(|_| "metadata unreadable")?;
     if !meta.is_file() {
         return Err("not a regular file");
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        if before.file_attributes() & 0x0000_0400 != 0 || meta.file_attributes() & 0x0000_0400 != 0 {
+            return Err("not a regular file");
+        }
     }
     if meta.len() > limit {
         return Err("too large");
@@ -847,6 +854,28 @@ pub fn copy_assets_with_gaps(bundle: &Path, dest_db: &Path) -> Result<Vec<String
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn regular_reader_refuses_special_files_and_symlinks() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("source");
+        rustix::fs::mkfifoat(rustix::fs::CWD, &path, rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR).unwrap();
+        assert_eq!(open_regular_with_limit(&path, 100).unwrap_err(), "not a regular file");
+        fs::remove_file(&path).unwrap();
+        let socket = std::os::unix::net::UnixListener::bind(&path).unwrap();
+        assert_eq!(open_regular_with_limit(&path, 100).unwrap_err(), "not a regular file");
+        drop(socket);
+        fs::remove_file(&path).unwrap();
+        let regular = root.path().join("regular");
+        fs::write(&regular, b"readable").unwrap();
+        std::os::unix::fs::symlink(&regular, &path).unwrap();
+        assert_eq!(open_regular_with_limit(&path, 100).unwrap_err(), "not a regular file");
+        let mut file = open_regular_with_limit(&regular, 100).unwrap();
+        let mut content = String::new();
+        file.read_to_string(&mut content).unwrap();
+        assert_eq!(content, "readable");
+    }
 
     fn project() -> (tempfile::TempDir, PathBuf, String) {
         let root = tempfile::tempdir().unwrap();

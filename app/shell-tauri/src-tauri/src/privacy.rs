@@ -202,6 +202,10 @@ fn read_record(path: &Path) -> Result<Record, ()> {
     }
     Ok(record)
 }
+pub(crate) fn validate_migration_record(path: &Path) -> Result<(), String> {
+    read_record(path).map(|_| ()).map_err(|_| "privacy record cannot be moved safely until it is repaired".into())
+}
+
 impl State {
     fn status(&self) -> Status {
         Status {
@@ -228,7 +232,7 @@ impl State {
 }
 impl Privacy {
     pub fn load(data_home: &Path) -> Self {
-        let path = data_home.join("cc.local.app/privacy.json");
+        let path = data_home.join(crate::APP_DIR).join("privacy.json");
         let loaded = read_record(&path);
         let recovery = loaded.is_err();
         let record = loaded.unwrap_or_default();
@@ -490,7 +494,7 @@ mod tests {
             Privacy::load(dir.path()).status().state,
             LockState::Disabled
         );
-        let path = dir.path().join("cc.local.app/privacy.json");
+        let path = dir.path().join("garret/privacy.json");
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         for data in [b"broken".to_vec(), vec![b' '; 4097], br#"{"version":2,"credential":null,"policy":{"idle_min":15,"session_lock":true,"sleep":true,"neutral_title":false}}"#.to_vec()] {
             fs::write(&path, data).unwrap();
@@ -694,7 +698,7 @@ mod tests {
             Error::Recovery
         );
         let other = tempfile::tempdir().unwrap();
-        fs::write(other.path().join("cc.local.app"), "blocked").unwrap();
+        fs::write(other.path().join("garret"), "blocked").unwrap();
         let other_service = Privacy::load(other.path());
         assert!(other_service.locked());
     }

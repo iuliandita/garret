@@ -5,7 +5,7 @@
 //
 // TWO HALVES, DELIBERATELY NOT KEPT IN SYNC.
 //
-// THE VAULT is library-level, at `<data_home>/cc.local.app/identities.json`, a
+// THE VAULT is library-level, at `<data_home>/garret/identities.json`, a
 // sibling of `settings.json`. Reusable across projects means it cannot live
 // inside one of them. It is NOT in `settings.json`, and the reason is the one
 // `read_settings` states about itself: every field there must deserialize

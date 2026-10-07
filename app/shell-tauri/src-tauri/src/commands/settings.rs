@@ -693,9 +693,9 @@ mod tests {
     #[test]
     fn setting_a_zoom_records_it_without_disturbing_the_open_project() {
         let dir = tempdir().unwrap();
-        std::fs::create_dir_all(dir.path().join("cc.local.app")).unwrap();
+        std::fs::create_dir_all(dir.path().join("garret")).unwrap();
         std::fs::write(
-            dir.path().join("cc.local.app/settings.json"),
+            dir.path().join("garret/settings.json"),
             br#"{"last_project":"/x/y.db"}"#,
         )
         .unwrap();
@@ -711,7 +711,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let err = set_zoom(dir.path(), "110").unwrap_err();
         assert!(err.contains("110"), "{err}");
-        assert!(!dir.path().join("cc.local.app/settings.json").exists());
+        assert!(!dir.path().join("garret/settings.json").exists());
     }
 
     #[test]

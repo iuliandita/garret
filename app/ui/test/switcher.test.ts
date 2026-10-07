@@ -15,7 +15,7 @@ import {
 import type { MirrorPreview, MirrorReport } from "../src/switcher";
 import type { RecoveryPoint } from "../src/recovery-indicator";
 import type { Archive, ArchiveReport } from "../src/archive-indicator";
-import { DE, createMessages } from "../src/i18n";
+import { DE, createMessages, t } from "../src/i18n";
 
 /** Every loss kind at 0 -- what a Markdown import always reports, and the
  *  fixture value every test not itself about the loss notice uses. */
@@ -378,7 +378,7 @@ const click = (target: HTMLElement): void => {
 };
 
 /** The panel has exactly one route in now: the File menu, through open(). */
-async function open(rig: Rig, focus: "list" | "create" | "import" | "copies" = "list"): Promise<void> {
+async function open(rig: Rig, focus: "list" | "create" | "import" | "copies" | "backups" | "restore" = "list"): Promise<void> {
   rig.switcher.open(focus);
   await settle();
 }
@@ -427,7 +427,23 @@ describe("switcher structure", () => {
     const panel = el(rig.container, "project-panel");
     expect(panel.getAttribute("role")).toBe("dialog");
     expect(panel.getAttribute("aria-modal")).toBe("false");
-    expect(panel.getAttribute("aria-label")).toBe("projects");
+    expect(panel.getAttribute("aria-label")).toBe(t("switcher.title"));
+    expect(el(rig.container, "project-list").getAttribute("aria-label")).toBe(t("switcher.title"));
+    teardown(rig);
+  });
+
+  test("new book creation has a heading after Move and before the name field", () => {
+    const rig = mount();
+    const heading = el(rig.container, "project-new-heading");
+    expect(heading.getAttribute("role")).toBe("heading");
+    expect(heading.getAttribute("aria-level")).toBe("3");
+    expect(heading.textContent).toBe(t("switcher.new.heading"));
+    expect(heading.getAttribute("aria-label")).toBe(t("switcher.new.heading"));
+    expect(heading.previousElementSibling?.id).toBe("project-move");
+    const field = el(rig.container, "project-new-name") as HTMLInputElement;
+    field.value = "Dracula";
+    expect(heading.nextElementSibling?.contains(field)).toBe(true);
+    expect(field.labels?.[0]?.textContent).toBe(t("switcher.name.label"));
     teardown(rig);
   });
 
@@ -499,12 +515,13 @@ describe("switcher opening", () => {
     teardown(rig);
   });
 
-  test("open(list) and open(import) focus their listbox", async () => {
+  test("open(list) advances to the current book and open(import) focuses its list", async () => {
     const rig = mount();
     await open(rig, "list");
-    expect(document.activeElement).toBe(el(rig.container, "project-list"));
+    expect(document.activeElement?.className).toBe("switcher-open");
+    expect((document.activeElement?.parentElement as HTMLElement)?.dataset.projectPath).toBe("/p/one.mss");
     await open(rig, "import");
-    expect(document.activeElement).toBe(el(rig.container, "project-imports"));
+    expect(document.activeElement?.id).toBe("project-imports");
     teardown(rig);
   });
 
@@ -516,7 +533,7 @@ describe("switcher opening", () => {
     const rig = mount({ listProjects: () => pending });
     rig.switcher.open("list");
     const listbox = el(rig.container, "project-list");
-    expect(listbox.getAttribute("role")).toBe("listbox");
+    expect(listbox.getAttribute("role")).toBe("list");
     expect(listbox.childElementCount).toBe(1);
     expect(listbox.textContent).toContain("Loading");
     release(PROJECTS);
@@ -565,6 +582,36 @@ describe("switcher opening", () => {
   });
 });
 
+describe("Books initial focus", () => {
+  test("the current book owns focus when the project listing arrives", async () => {
+    const rig = mount();
+    try {
+      await open(rig);
+      expect((document.activeElement?.parentElement as HTMLElement)?.dataset.projectPath).toBe("/p/one.mss");
+    } finally { teardown(rig); }
+  });
+
+  test("without a current listed book the first available row owns focus", async () => {
+    const rig = mount({ currentPath: () => "/outside/book.db" });
+    try {
+      await open(rig);
+      expect((document.activeElement?.parentElement as HTMLElement)?.dataset.projectPath).toBe("/p/one.mss");
+    } finally { teardown(rig); }
+  });
+
+  test("a delayed listing cannot take focus from the name field", async () => {
+    let release!: (projects: ProjectSummary[]) => void;
+    const rig = mount({ listProjects: () => new Promise((resolve) => { release = resolve; }) });
+    try {
+      rig.switcher.open("list");
+      el(rig.container, "project-new-name").focus();
+      release(PROJECTS);
+      await settle();
+      expect(document.activeElement?.id).toBe("project-new-name");
+    } finally { teardown(rig); }
+  });
+});
+
 describe("switcher activation", () => {
   test("clicking an option switches to that row's path and closes the panel", async () => {
     // Dispatched, not by calling a handler directly: a test that invokes the
@@ -605,7 +652,8 @@ describe("switcher activation", () => {
     const rig = mount();
     await open(rig);
     const gone = optionFor(rig.container, "/moved/gone.mss");
-    expect(gone.getAttribute("aria-disabled")).toBe("true");
+    expect(gone.getAttribute("role")).toBe("listitem");
+    expect(gone.hasAttribute("aria-disabled")).toBe(false);
     expect(gone.textContent).toContain("gone - not found at /moved/gone.mss");
     const button = gone.querySelector<HTMLButtonElement>("[data-forget-path]");
     expect(button?.dataset.forgetPath).toBe("/moved/gone.mss");
@@ -908,6 +956,118 @@ describe("switcher creation", () => {
   });
 });
 
+describe("Books creation feedback", () => {
+  for (const route of ["project-create", "project-new-choose"] as const) {
+    test(`${route} announces the returned name without switching`, async () => {
+      const result = { path: "/new/book.db", name: "Returned name", modified_at: 9 };
+      const rig = mount({ createProject: async () => result, createProjectIn: async () => result });
+      try {
+        await open(rig, "create");
+        (el(rig.container, "project-new-name") as HTMLInputElement).value = "Requested name";
+        click(el(rig.container, route));
+        await settle();
+        expect(rig.calls.dones).toEqual([t("switcher.done.created", { name: result.name })]);
+        expect(rig.calls.switched).toEqual([]);
+      } finally { teardown(rig); }
+    });
+
+    test(`${route} preserves a newer draft while reporting completed creation`, async () => {
+      let release!: (project: ProjectSummary) => void;
+      const pending = new Promise<ProjectSummary>((resolve) => { release = resolve; });
+      const rig = mount({ createProject: () => pending, createProjectIn: () => pending });
+      try {
+        await open(rig, "create");
+        const input = el(rig.container, "project-new-name") as HTMLInputElement;
+        input.value = "Requested name";
+        click(el(rig.container, route));
+        input.value = "Next book";
+        release({ path: "/new/book.db", name: "Returned name", modified_at: 9 });
+        await settle();
+        expect(input.value).toBe("Next book");
+        expect(rig.calls.dones).toEqual([t("switcher.done.created", { name: "Returned name" })]);
+      } finally { teardown(rig); }
+    });
+
+    test(`${route} stays serialized through its pending privacy check`, async () => {
+      let release!: (allowed: boolean) => void;
+      const pending = new Promise<boolean>((resolve) => { release = resolve; });
+      const result = { path: "/new/book.db", name: "Returned name", modified_at: 9 };
+      const rig = mount({ createProject: async () => result, createProjectIn: async () => result, canReportArchive: () => pending });
+      try {
+        await open(rig, "create");
+        const input = el(rig.container, "project-new-name") as HTMLInputElement;
+        input.value = "Requested name";
+        click(el(rig.container, route));
+        await settle();
+        input.value = "Next book";
+        click(el(rig.container, route));
+        expect(rig.calls.created.length + rig.calls.createdIn.length).toBe(1);
+        release(true);
+        await settle();
+        expect(input.value).toBe("Next book");
+        expect(rig.calls.dones).toHaveLength(1);
+      } finally { teardown(rig); }
+    });
+
+    test(`${route} rechecks context after a pending privacy check`, async () => {
+      let release!: (allowed: boolean) => void;
+      const pending = new Promise<boolean>((resolve) => { release = resolve; });
+      const result = { path: "/new/book.db", name: "Returned name", modified_at: 9 };
+      const rig = mount({ createProject: async () => result, createProjectIn: async () => result, canReportArchive: () => pending });
+      try {
+        await open(rig, "create");
+        const input = el(rig.container, "project-new-name") as HTMLInputElement;
+        input.value = "Requested name";
+        click(el(rig.container, route));
+        await settle();
+        await open(rig, "create");
+        input.value = "Next book";
+        release(true);
+        await settle();
+        expect(input.value).toBe("Next book");
+        expect(rig.calls.dones).toEqual([]);
+      } finally { teardown(rig); }
+    });
+
+    for (const departure of ["close", "reopen", "project", "generation", "privacy", "destroy"] as const) {
+      test(`${route} cannot announce or clear a draft after ${departure}`, async () => {
+        let release!: (project: ProjectSummary) => void;
+        const pending = new Promise<ProjectSummary>((resolve) => { release = resolve; });
+        let path = "/p/one.mss";
+        let generation = 1;
+        let reportAllowed = true;
+        const rig = mount({ createProject: () => pending, createProjectIn: () => pending,
+          currentPath: () => path, currentGeneration: () => generation, canReportArchive: async () => reportAllowed });
+        try {
+          await open(rig, "create");
+          const input = el(rig.container, "project-new-name") as HTMLInputElement;
+          input.value = "Requested name";
+          click(el(rig.container, route));
+          if (departure === "close") el(rig.container, "project-panel").dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+          if (departure === "reopen") await open(rig, "create");
+          if (departure === "project") path = "/p/two.mss";
+          if (departure === "generation") generation++;
+          if (departure === "privacy") reportAllowed = false;
+          if (departure === "destroy") rig.switcher.destroy();
+          input.value = "New draft";
+          const listings = rig.calls.list;
+          release({ path: "/new/book.db", name: "Returned name", modified_at: 9 });
+          await settle();
+          expect(rig.calls.dones).toEqual([]);
+          expect(input.value).toBe("New draft");
+          expect(rig.calls.list).toBe(listings);
+        } finally { teardown(rig); }
+      });
+    }
+  }
+
+  test("the ordinary empty state remains when no book is open", async () => {
+    const rig = mount({ currentPath: () => "", listProjects: async () => [] });
+    try { await open(rig); expect(el(rig.container, "project-list").textContent).toBe(t("switcher.empty")); }
+    finally { teardown(rig); }
+  });
+});
+
 describe("switcher teardown", () => {
   test("destroy empties the container and a detached row does nothing", async () => {
     const rig = mount();
@@ -1181,7 +1341,7 @@ describe("an empty library says so", () => {
       await open(rig);
       const list = el(rig.container, "project-list") as HTMLElement;
       expect(list.children.length).toBe(1);
-      expect(list.textContent ?? "").toMatch(/No books in the library yet/);
+      expect(list.textContent ?? "").toBe(t("switcher.empty.open"));
       // Not an option: there is nothing to activate, and a row carrying
       // role=option would be a listbox entry a keyboard user can land on and
       // press Return against for no effect.
@@ -1220,7 +1380,7 @@ describe("an empty library says so", () => {
     try {
       await open(rig);
       const list = el(rig.container, "project-list") as HTMLElement;
-      expect(list.querySelectorAll("[role='option']").length).toBeGreaterThan(0);
+      expect(list.querySelectorAll("[role='listitem']").length).toBeGreaterThan(0);
       expect(list.textContent ?? "").not.toMatch(/No projects in the library yet/);
     } finally {
       teardown(rig);
@@ -1239,8 +1399,9 @@ describe("the two listings are cancelled together", () => {
     // with different results to observe, and the panel reloads both lists from
     // the same call.
     const src = await Bun.file("app/ui/src/switcher.ts").text();
-    const first = src.indexOf("void reload();");
-    const second = src.indexOf("void reloadImports();");
+    const openBody = src.slice(src.indexOf("    open(focus): void {"));
+    const first = openBody.indexOf("const projectsLoaded = reload();");
+    const second = openBody.indexOf("        reloadImports(),");
     expect(first).toBeGreaterThan(-1);
     expect(second).toBeGreaterThan(-1);
     expect(first).toBeLessThan(second);
@@ -1540,7 +1701,7 @@ describe("the copy that leaves this computer", () => {
     expect(help.parentElement?.querySelector(".tip")).toBeNull();
     help.dispatchEvent(new Event("focus"));
     expect(help.parentElement?.querySelector(".tip")).not.toBeNull();
-    help.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    help.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     expect(help.parentElement?.querySelector(".tip")).toBeNull();
     teardown(rig);
   });
@@ -2323,6 +2484,210 @@ describe("progressive disclosure in the project panel", () => {
     teardown(rig);
   });
 
+  test("section headings have level-three semantics and names without help text", async () => {
+    const rig = mount();
+    await open(rig, "copies");
+    for (const [id, label] of [
+      ["project-import-heading", "Import"],
+      ["project-recovery-heading", "Recovery points on this device"],
+      ["project-archive-heading", "If you lose this computer"],
+      ["project-encrypted-archive-heading", "Encrypted backups"],
+      ["project-mirror-heading", "A readable copy you can open anywhere"],
+    ]) {
+      const heading = el(rig.container, id!);
+      expect(heading.getAttribute("role")).toBe("heading");
+      expect(heading.getAttribute("aria-level")).toBe("3");
+      expect(heading.getAttribute("aria-label")).toBe(label);
+    }
+    expect(el(rig.container, "project-recovery-heading").querySelector("button")?.getAttribute("aria-describedby"))
+      .toBe("project-recovery-note");
+    teardown(rig);
+  });
+
+  test("expanding backups scrolls the focused disclosure without moving focus", async () => {
+    const rig = mount();
+    await open(rig, "create");
+    const toggle = el(rig.container, "project-copies-toggle");
+    toggle.focus();
+    const requests: (ScrollIntoViewOptions | boolean | undefined)[] = [];
+    toggle.scrollIntoView = (options) => {
+      expect(toggle.closest("[hidden]")).toBeNull();
+      expect(toggle.getAttribute("aria-expanded")).toBe("true");
+      expect(document.activeElement?.id).toBe("project-copies-toggle");
+      requests.push(options);
+    };
+    click(toggle);
+    expect(requests).toEqual([{ block: "start", inline: "nearest" }]);
+    expect(document.activeElement?.id).toBe("project-copies-toggle");
+    click(toggle);
+    expect(el(rig.container, "project-copies").hidden).toBe(true);
+    expect(requests).toHaveLength(1);
+    click(el(rig.container, "project-panel").querySelector<HTMLButtonElement>(".panel-close")!);
+    expect(el(rig.container, "project-panel").hidden).toBe(true);
+    click(toggle);
+    expect(el(rig.container, "project-copies").hidden).toBe(true);
+    expect(requests).toHaveLength(1);
+    await open(rig, "copies");
+    expect(document.activeElement?.id).toBe("project-mirror-toggle");
+    expect(requests).toHaveLength(1);
+    teardown(rig);
+  });
+
+  test("the backups route reveals and scrolls encrypted backups, focusing an available action", async () => {
+    const cases: [RigOptions, string][] = [
+      [{ makeEncryptedArchive: async () => null, generateArchiveKey: async () => null }, "project-archive-encrypted"],
+      [{ generateArchiveKey: async () => null }, "project-archive-key"],
+      [{ verifyEncryptedArchive: async () => null }, "project-archive-encrypted-verify"],
+      [{ restoreEncryptedArchive: async () => null }, "project-archive-encrypted-restore"],
+      [{}, "project-encrypted-archive-heading"],
+    ];
+    for (const [options, focusId] of cases) {
+      const rig = mount(options);
+      const heading = el(rig.container, "project-encrypted-archive-heading");
+      const requests: (ScrollIntoViewOptions | boolean | undefined)[] = [];
+      heading.scrollIntoView = (request) => {
+        expect(heading.closest("[hidden]")).toBeNull();
+        expect(document.activeElement?.id).toBe(focusId);
+        requests.push(request);
+      };
+      await open(rig, "backups");
+      expect(el(rig.container, "project-copies").hidden).toBe(false);
+      expect(el(rig.container, "project-copies-toggle").getAttribute("aria-expanded")).toBe("true");
+      expect(document.activeElement?.id).toBe(focusId);
+      expect(requests).toEqual([{ block: "start", inline: "nearest" }]);
+      if (focusId === heading.id) expect(heading.tabIndex).toBe(-1);
+      await open(rig, "copies");
+      expect(document.activeElement?.id).toBe("project-mirror-toggle");
+      expect(requests).toHaveLength(1);
+      teardown(rig);
+    }
+  });
+
+  test("the restore route focuses restore even when other encrypted actions are available", async () => {
+    for (const availability of ["available", "missing", "disabled"] as const) {
+      const rig = mount({
+        makeEncryptedArchive: async () => null,
+        generateArchiveKey: async () => null,
+        verifyEncryptedArchive: async () => null,
+        restoreEncryptedArchive: availability === "missing" ? undefined : async () => null,
+      });
+      const restore = el(rig.container, "project-archive-encrypted-restore") as HTMLButtonElement;
+      if (availability === "disabled") restore.disabled = true;
+      const heading = el(rig.container, "project-encrypted-archive-heading");
+      const focusId = availability === "available" ? restore.id : heading.id;
+      let requests = 0;
+      heading.scrollIntoView = () => {
+        expect(heading.closest("[hidden]")).toBeNull();
+        expect(document.activeElement?.id).toBe(focusId);
+        requests++;
+      };
+      await open(rig, "restore");
+      expect(el(rig.container, "project-copies").hidden).toBe(false);
+      expect(document.activeElement?.id).toBe(focusId);
+      expect(requests).toBe(1);
+      await open(rig, "copies");
+      expect(document.activeElement?.id).toBe("project-mirror-toggle");
+      expect(requests).toBe(1);
+      teardown(rig);
+    }
+  });
+
+  test("pending restore alignment respects navigation, focus, project identity and privacy", async () => {
+    for (const leave of ["close", "collapse", "route", "focus", "project", "generation", "privacy", "destroy"] as const) {
+      let release: (points: RecoveryPoint[]) => void = () => {};
+      const pending = new Promise<RecoveryPoint[]>((resolve) => { release = resolve; });
+      let path = "/current-book.db";
+      let generation = 1;
+      let allowed = true;
+      const rig = mount({
+        listRecoveryPoints: () => pending, restoreEncryptedArchive: async () => null,
+        currentPath: () => path, currentGeneration: () => generation, canReportArchive: async () => allowed,
+      });
+      let requests = 0;
+      el(rig.container, "project-encrypted-archive-heading").scrollIntoView = () => { requests++; };
+      await open(rig, "restore");
+      expect(document.activeElement?.id).toBe("project-archive-encrypted-restore");
+      expect(requests).toBe(0);
+      if (leave === "close") click(el(rig.container, "project-panel").querySelector<HTMLButtonElement>(".panel-close")!);
+      if (leave === "collapse") click(el(rig.container, "project-copies-toggle"));
+      if (leave === "route") await open(rig, "copies");
+      if (leave === "focus") el(rig.container, "project-new-name").focus();
+      if (leave === "project") path = "/other-book.db";
+      if (leave === "generation") generation++;
+      if (leave === "privacy") allowed = false;
+      if (leave === "destroy") rig.switcher.destroy();
+      release(POINTS);
+      await settle();
+      expect(requests).toBe(0);
+      teardown(rig);
+    }
+  });
+
+  test("restore alignment rechecks focus and generation after the asynchronous privacy read", async () => {
+    for (const leave of ["focus", "generation"] as const) {
+      let release: (allowed: boolean) => void = () => {};
+      const pending = new Promise<boolean>((resolve) => { release = resolve; });
+      let generation = 1;
+      const rig = mount({ restoreEncryptedArchive: async () => null,
+        currentGeneration: () => generation, canReportArchive: () => pending });
+      let requests = 0;
+      el(rig.container, "project-encrypted-archive-heading").scrollIntoView = () => { requests++; };
+      await open(rig, "restore");
+      expect(requests).toBe(0);
+      if (leave === "focus") el(rig.container, "project-new-name").focus();
+      if (leave === "generation") generation++;
+      release(true);
+      await settle();
+      expect(requests).toBe(0);
+      teardown(rig);
+    }
+  });
+
+  test("the backups route waits for earlier content before aligning its section", async () => {
+    let release: (points: RecoveryPoint[]) => void = () => {};
+    const pending = new Promise<RecoveryPoint[]>((resolve) => { release = resolve; });
+    let releaseDir: (dir: string) => void = () => {};
+    const pendingDir = new Promise<string>((resolve) => { releaseDir = resolve; });
+    const rig = mount({ listRecoveryPoints: () => pending, newDir: () => pendingDir, makeEncryptedArchive: async () => null });
+    const heading = el(rig.container, "project-encrypted-archive-heading");
+    const requests: (ScrollIntoViewOptions | boolean | undefined)[] = [];
+    heading.scrollIntoView = (request) => {
+      expect(el(rig.container, "project-recovery-points").querySelectorAll("[data-point-id]")).toHaveLength(POINTS.length);
+      expect(document.activeElement?.id).toBe("project-archive-encrypted");
+      requests.push(request);
+    };
+    await open(rig, "backups");
+    expect(document.activeElement?.id).toBe("project-archive-encrypted");
+    expect(requests).toHaveLength(0);
+    release(POINTS);
+    await settle();
+    expect(requests).toHaveLength(0);
+    releaseDir(NEW_DIR);
+    await settle();
+    expect(requests).toEqual([{ block: "start", inline: "nearest" }]);
+    teardown(rig);
+  });
+
+  test("a pending backups alignment cannot scroll after navigation or a focus change", async () => {
+    for (const leave of ["close", "collapse", "route", "focus", "destroy"]) {
+      let release: (points: RecoveryPoint[]) => void = () => {};
+      const pending = new Promise<RecoveryPoint[]>((resolve) => { release = resolve; });
+      const rig = mount({ listRecoveryPoints: () => pending, makeEncryptedArchive: async () => null });
+      let requests = 0;
+      el(rig.container, "project-encrypted-archive-heading").scrollIntoView = () => { requests++; };
+      await open(rig, "backups");
+      if (leave === "close") click(el(rig.container, "project-panel").querySelector<HTMLButtonElement>(".panel-close")!);
+      if (leave === "collapse") click(el(rig.container, "project-copies-toggle"));
+      if (leave === "route") await open(rig, "copies");
+      if (leave === "focus") el(rig.container, "project-new-name").focus();
+      if (leave === "destroy") rig.switcher.destroy();
+      release(POINTS);
+      await settle();
+      expect(requests).toBe(0);
+      teardown(rig);
+    }
+  });
+
   test("they open by themselves when a copy needs attention, and on the copies route", async () => {
     let attention = true;
     const rig = mount({ copiesNeedAttention: () => attention });
@@ -2349,5 +2714,77 @@ describe("progressive disclosure in the project panel", () => {
     expect(el(waiting.container, "project-import-body").hidden).toBe(false);
     expect(el(waiting.container, "project-import-toggle").getAttribute("aria-expanded")).toBe("true");
     teardown(waiting);
+  });
+});
+
+
+test("action-bearing Books rows expose native keyboard controls inside list items", async () => {
+  const rig = mount({ listImports: async () => ["draft.md"], listRecoveryPoints: async () => [POINTS[0]!] });
+  await open(rig);
+  for (const id of ["project-list", "project-imports", "project-recovery-points", "project-archives"]) {
+    expect(el(rig.container, id).getAttribute("role")).toBe("list");
+  }
+  const openButton = el(rig.container, "project-list").querySelector<HTMLButtonElement>(".switcher-open")!;
+  expect(openButton.parentElement?.getAttribute("role")).toBe("listitem");
+  openButton.focus();
+  expect(document.activeElement === openButton).toBe(true);
+  const imported = el(rig.container, "project-imports").querySelector<HTMLButtonElement>(".switcher-import")!;
+  expect(imported.parentElement?.getAttribute("role")).toBe("listitem");
+  const restored = el(rig.container, "project-recovery-points").querySelector<HTMLButtonElement>(".switcher-restore")!;
+  expect(restored.parentElement?.getAttribute("role")).toBe("listitem");
+  teardown(rig);
+});
+
+
+describe("Books without an open book", () => {
+  test("Restore keeps recovery tools available without book-only dead ends", async () => {
+    const actions: string[] = [];
+    const rig = mount({ currentPath: () => "",
+      generateArchiveKey: async () => { actions.push("key"); return null; },
+      makeEncryptedArchive: async () => { actions.push("make"); return null; },
+      verifyEncryptedArchive: async () => { actions.push("verify"); return null; },
+      restoreEncryptedArchive: async () => { actions.push("restore"); return null; },
+      chooseEncryptedBackupDestination: async () => { actions.push("destination"); return null; },
+    });
+    try {
+      rig.switcher.open("restore"); await settle();
+      for (const id of ["project-move", "project-recovery-heading", "project-recovery-points", "project-archive-heading", "project-archive-now", "project-archive-where", "project-mirror-heading", "project-mirror-toggle", "project-mirror-where", "project-archive-encrypted"]) {
+        expect(el(rig.container, id).hidden).toBe(true);
+      }
+      expect(el(rig.container, "project-book-required").hidden).toBe(false);
+      expect(el(rig.container, "project-book-required").textContent).toBe(t("switcher.book-required"));
+      expect(el(rig.container, "project-archive-where").textContent).toBe("");
+      expect(el(rig.container, "project-mirror-where").textContent).toBe("");
+      for (const id of ["project-archive-key", "project-archive-encrypted-verify", "project-archive-encrypted-restore", "project-backup-destination-choose"]) {
+        const button = (el(rig.container, id) as HTMLButtonElement);
+        expect(button.hidden).toBe(false); expect(button.disabled).toBe(false);
+        click(button); await settle();
+      }
+      expect(actions).toEqual(["key", "verify", "restore", "destination"]);
+      for (const id of ["project-move", "project-archive-now", "project-mirror-toggle", "project-archive-encrypted"]) {
+        el(rig.container, id).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      }
+      await settle();
+      expect(actions).not.toContain("make"); expect(rig.calls.moved).toBe(0);
+      expect(rig.calls.archived).toBe(0); expect(rig.calls.mirrorPreviews).toBe(0);
+      expect(rig.calls.listedPoints).toBe(0); expect(rig.calls.listedArchives).toBe(0);
+      expect((el(rig.container, "project-new-name") as HTMLInputElement).placeholder).toBe("");
+    } finally { teardown(rig); }
+  });
+
+  test("closing and opening a book updates its maintenance prerequisites", async () => {
+    let path = "/p/one.mss";
+    const rig = mount({ currentPath: () => path, makeEncryptedArchive: async () => null });
+    try {
+      await open(rig);
+      path = ""; rig.switcher.setBookOpen(false);
+      expect(el(rig.container, "project-archive-now").hidden).toBe(true);
+      expect((el(rig.container, "project-archive-encrypted") as HTMLButtonElement).disabled).toBe(true);
+      path = "/p/two.mss"; rig.switcher.setBookOpen(true);
+      rig.switcher.open("backups"); await settle();
+      expect(el(rig.container, "project-archive-now").hidden).toBe(false);
+      expect((el(rig.container, "project-archive-encrypted") as HTMLButtonElement).disabled).toBe(false);
+      expect(el(rig.container, "project-book-required").hidden).toBe(true);
+    } finally { teardown(rig); }
   });
 });

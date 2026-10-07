@@ -1204,6 +1204,11 @@ impl std::fmt::Display for Refusal {
 ///
 /// Returns the process exit code rather than calling `process::exit`, so every
 /// branch of it is reachable from a test.
+pub(crate) fn uses_profile(command: &str) -> bool {
+    matches!(command, "export" | "salvage" | "import" | "preflight" | "mirror-preview"
+        | "archive-encrypt" | "archive-verify" | "archive-restore")
+}
+
 pub fn run(argv: &[String]) -> i32 {
     match dispatch(argv) {
         Ok(code) => code,
@@ -1555,6 +1560,18 @@ mod tests {
     use super::*;
     use crate::store::{FlushEntry, Store};
     use tempfile::tempdir;
+
+    #[test]
+    fn only_profile_commands_require_application_data_preparation() {
+        for command in ["export", "salvage", "import", "preflight", "mirror-preview",
+            "archive-encrypt", "archive-verify", "archive-restore"] {
+            assert!(uses_profile(command), "{command}");
+        }
+        for command in ["inspect", "validate", "search", "history", "knowledge", "analytics",
+            "design-export", "design-preview", "design-apply", "archive-keygen", "--seed"] {
+            assert!(!uses_profile(command), "{command}");
+        }
+    }
 
     fn import(data_home: &Path, source: &Path, library: &Path) -> Result<ImportResult, String> {
         super::import(data_home, source, library, &crate::strings::Strings::english())

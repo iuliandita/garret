@@ -11,6 +11,7 @@
 // generation check is the backstop; this ordering is the argument that the
 // backstop never has to fire.
 import { t } from "./i18n";
+import { commandFailureMessage, failureDetail } from "./command-error";
 import type { FlushScheduler } from "./store/flush";
 import type { Session } from "./session";
 
@@ -61,15 +62,15 @@ export interface ProjectSwitchDeps<P extends SwitchableProject> {
    *  longest for the writers with the most to lose. Optional because a caller
    *  that shows nothing is no worse off than before this existed. */
   onBusy?(busy: boolean): void;
-  onFailure(message: string): void;
+  onFailure(message: string, closed: boolean): void;
 }
 
 export function createProjectSwitcher<P extends SwitchableProject>(
   deps: ProjectSwitchDeps<P>,
-): (path: string) => Promise<ProjectSwitchOutcome> {
+): (path: string, name?: string) => Promise<ProjectSwitchOutcome> {
   let switching = false;
 
-  return async function switchProject(path: string): Promise<ProjectSwitchOutcome> {
+  return async function switchProject(path: string, name?: string): Promise<ProjectSwitchOutcome> {
     if (path === deps.currentPath()) return "same";
     // Dropped, not queued, for the same reason session.switchTo drops: the head
     // of a queue is stale by the time it runs, and a project switch is far more
@@ -114,10 +115,12 @@ export function createProjectSwitcher<P extends SwitchableProject>(
       // The message turns on whether the teardown actually happened. A rejecting
       // flushPending throws before it, and telling the writer their project was
       // closed when it is still on screen would be worse than saying nothing.
+      const error = commandFailureMessage(err, `${failureDetail(err)}\n${path}`);
       deps.onFailure(
         closed
-          ? t("switch.error.closed", { path, error: String(err) })
-          : t("switch.error.kept", { path, error: String(err) }),
+          ? t(name ? "switch.error.closed" : "switch.error.closed-unnamed", { name: name ?? "", error })
+          : t(name ? "switch.error.kept" : "switch.error.kept-unnamed", { name: name ?? "", error }),
+        closed,
       );
       return "failed";
     } finally {

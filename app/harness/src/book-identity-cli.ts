@@ -46,7 +46,7 @@ const renderers = [];
 try {
   for (const choice of ["cancel", "same", "separate"] as const) {
     const data = join(work, choice, "data");
-    const library = join(data, "cc.local.app", "projects");
+    const library = join(data, "garret", "projects");
     mkdirSync(library, { recursive: true });
     const original = join(library, "original.db");
     const copy = join(library, "copy.db");
@@ -56,7 +56,7 @@ try {
     const id = readBookId(original);
     const before = manuscript(original);
     if (manuscript(copy) !== before) throw new Error("copy fixture differs before the choice");
-    const settingsPath = join(data, "cc.local.app", "settings.json");
+    const settingsPath = join(data, "garret", "settings.json");
     writeFileSync(settingsPath, JSON.stringify({
       theme, locale: theme === "dark" ? "de" : "en", start: "last",
       last_project: copy, book_locations: [{ book_id: id, path: original }],

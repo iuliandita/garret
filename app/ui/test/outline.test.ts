@@ -1600,6 +1600,20 @@ describe("nested bible placement", () => {
     expect(r.created).toHaveLength(1);
   });
 
+  test.each(["createNote", "createBibleFolder", "createTimeline"] as const)("%s uses the chooser destination after selection changes", async (method) => {
+    const r = await seeded({ walks: [nested()], selected: "scene" });
+    expect(await r.outline[method]("folder")).toBe("applied");
+    expect(argsOf(r, "item_create")?.["parentId"]).toBe("folder");
+  });
+
+  test.each(["createNote", "createBibleFolder", "createTimeline"] as const)("%s refuses a destination that disappeared instead of filing elsewhere", async (method) => {
+    const r = await seeded({ walks: [nested().filter((row) => row.id !== "folder")], selected: "bible" });
+    expect(await r.outline[method]("folder")).toBe("failed");
+    expect(r.calls.filter((call) => call.cmd === "item_create")).toHaveLength(0);
+    expect(r.failures).toHaveLength(1);
+    expect(r.failures[0]).toContain("destination changed");
+  });
+
   test("creates the bible root before the first folder", async () => {
     const r = await seeded({ walks: [empty(), nested(), nested()], selected: "scene" });
     expect(await r.outline.createBibleFolder()).toBe("applied");
