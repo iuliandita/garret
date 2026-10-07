@@ -8965,6 +8965,7 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
   top: 0;
   z-index: 1;
   background: var(--bg);
+  box-shadow: 0 calc(-1 * var(--space-2)) 0 var(--bg);
   margin-top: calc(-1 * var(--space-1));
   margin-bottom: 0;
   padding: var(--space-1) 0 var(--space-3);
