@@ -8962,10 +8962,12 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 #prefs-panel #prefs-tabs {
   grid-column: 1 / -1;
   position: sticky;
-  top: var(--space-1);
+  top: 0;
   z-index: 1;
   background: var(--bg);
-  margin-bottom: var(--space-3);
+  margin-top: calc(-1 * var(--space-1));
+  margin-bottom: 0;
+  padding: var(--space-1) 0 var(--space-3);
 }
 #prefs-panel #prefs-tabs button { flex: 1; margin: 0; }
 #prefs-panel #prefs-tabs button[aria-selected="true"] {
