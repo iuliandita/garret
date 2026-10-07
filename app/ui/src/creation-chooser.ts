@@ -41,14 +41,15 @@ export function createCreationChooser(deps: {
     });
     return button;
   };
-  const bibleChoices = (target: BibleCreation): HTMLElement => {
+  const bibleChoices = (target: BibleCreation, showHeading = true): HTMLElement => {
     const group = document.createElement("section");
     const heading = document.createElement("h3");
     heading.textContent = t("creation.bible");
     const destination = document.createElement("p");
     destination.className = "creation-destination";
     destination.textContent = t("creation.destination", { name: target.destination });
-    group.append(heading, destination,
+    if (showHeading) group.append(heading);
+    group.append(destination,
       action("create-bible-entry", t("creation.entry"), target.entry),
       action("create-bible-folder", t("creation.folder"), target.folder),
       action("create-bible-timeline", t("creation.timeline"), target.timeline));
@@ -63,7 +64,7 @@ export function createCreationChooser(deps: {
       shell.closeButton.setAttribute("aria-label", t("panel.close", { title }));
       shell.body.replaceChildren();
       if (bible) {
-        shell.body.append(bibleChoices(target));
+        shell.body.append(bibleChoices(target, false));
       } else {
         for (const type of ["scene", "chapter", "part"]) {
           shell.body.append(action(`create-${type}`, t(`menu.new-${type}`), () => deps.create(type)));

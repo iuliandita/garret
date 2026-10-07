@@ -1405,7 +1405,7 @@ body {
 }
 
 /* the help mark after a figure's label, whose tooltip is the figure's
-   definition. A 14px glyph in an 18px square, muted until the pointer or
+   definition. A 14px glyph in a 24px square, muted until the pointer or
    focus reaches it; no surface at rest or on hover, so a column of them reads
    as punctuation rather than as a row of buttons. (1,1,0) beats the (1,0,1)
    panel lists; the hover line restates the surface the shared hover paints. */
@@ -1413,9 +1413,10 @@ body {
 #app .help-tip:hover {
   display: inline-grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
-  min-height: 0;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
   margin: 0 0 0 var(--space-1);
   padding: 0;
   color: var(--muted);
@@ -2224,8 +2225,12 @@ body.nav-hidden #nav-column {
   color: var(--muted);
 }
 
-#project-panel button.disclosure::before {
+#project-panel button.disclosure::before,
+#creation-more > summary::before,
+#prefs-writing-aids > summary::before,
+#help-guide summary::before {
   content: "";
+  flex: 0 0 6px;
   width: 6px;
   height: 6px;
   border-right: 1.5px solid currentColor;
@@ -2234,7 +2239,10 @@ body.nav-hidden #nav-column {
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
-#project-panel button.disclosure[aria-expanded="true"]::before {
+#project-panel button.disclosure[aria-expanded="true"]::before,
+#creation-more[open] > summary::before,
+#prefs-writing-aids[open] > summary::before,
+#help-guide details[open] > summary::before {
   transform: rotate(45deg);
 }
 
@@ -2251,7 +2259,10 @@ body.nav-hidden #nav-column {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #project-panel button.disclosure::before {
+  #project-panel button.disclosure::before,
+  #creation-more > summary::before,
+  #prefs-writing-aids > summary::before,
+  #help-guide summary::before {
     transition: none;
   }
 }
@@ -2741,6 +2752,22 @@ body.nav-hidden #nav-column {
   margin-inline-end: var(--space-2);
   margin-bottom: 6px;
 }
+
+#prefs-panel .prefs-goal-custom-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  flex-basis: 100%;
+  font-size: var(--text-sm);
+}
+#prefs-goal-custom-error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--fg);
+}
+#prefs-goal-custom-error[hidden] { display: none; }
 
 #prefs-goal-custom {
   width: 8em;
@@ -8864,10 +8891,20 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 #help-guide h3, #help-panel .panel-body > h3 { margin: 0 0 8px; font-size: var(--text-md); font-weight: 500; }
 #help-guide { margin-bottom: 20px; }
 #help-guide details { margin: 0 0 8px; }
-#help-guide summary { cursor: pointer; }
+#creation-more > summary, #prefs-writing-aids > summary, #help-guide summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 24px;
+  list-style: none;
+  cursor: pointer;
+}
+#creation-more > summary::-webkit-details-marker,
+#prefs-writing-aids > summary::-webkit-details-marker,
+#help-guide summary::-webkit-details-marker { display: none; }
 #help-guide summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #help-guide p { margin: 6px 0 12px; max-width: 70ch; font-size: var(--text-sm); line-height: var(--leading-ui); }
-@media (max-width: 600px) { #help-columns { column-count: 1; } }
+@media (max-width: 700px) { #help-columns { column-count: 1; } }
 
 #project-list .switcher-open, #project-imports .switcher-import, #project-recovery-points .switcher-restore {
   display: block; width: 100%; text-align: start; padding: 0; min-height: 24px; background: transparent;

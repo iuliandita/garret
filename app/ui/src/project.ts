@@ -1248,6 +1248,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   const sectionMovePrompt = createSectionMovePrompt(document.body);
   {
     const unit = createOutline({
+      generation: deps.generation,
+      canMutate: () => !projectDestroyed && !projectLeaving && !historyOperationInFlight && !deps.privacyLocked?.(),
       invoke,
       confirmSectionMove: (title, change) => sectionMovePrompt.open(title, change),
       // The walk loadStoreSource already read. Calling refresh() here instead
@@ -1662,19 +1664,37 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       // snapshot of every document in the same transaction, which is the
       // inverse, and the report names it so the writer can find it.
       replaceEverywhere: async (query, replacement) => {
-        await flusher.drain();
-        const report = (await invoke("project_replace", { query, replacement })) as {
-          replaced: number;
-          spanning: number;
-          documents: number;
-          snapshot: { label: string };
-        };
-        if (report.documents > 0) { referenceRail?.invalidateAll(); craftPanel?.invalidateAll(); continuousChapter?.sourceChanged(); }
-        // Every figure on screen is stale and so is the open document: the host
-        // bumped its revision, and a scheduler still holding the old one would
-        // refuse the writer's very next keystroke.
-        await reloadOpenDocument();
-        return report;
+        if (projectDestroyed || projectLeaving || outline?.busy() || historyOperationInFlight || historyReconcileFailed || reviewReconcileFailed ||
+            sourceCommandInFlight || undoInFlight || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight ||
+            inflightOpens > 0 || reviewPanel?.busy() || deps.privacyLocked?.()) throw new Error(t("history.error.busy"));
+        historyOperationInFlight = true;
+        editor.setEditable(false);
+        timelineMount?.setEditable(false);
+        try {
+          await flusher.drain();
+          if (flusher.failed() || persistError !== null) throw new Error(t("find.error.unsaved"));
+          if (projectDestroyed || projectLeaving || deps.privacyLocked?.()) throw new Error(t("history.error.busy"));
+          const report = (await invoke("project_replace", { query, replacement })) as {
+            replaced: number;
+            spanning: number;
+            documents: number;
+            snapshot: { label: string };
+          };
+          if (report.documents > 0) { referenceRail?.invalidateAll(); craftPanel?.invalidateAll(); continuousChapter?.sourceChanged(); }
+          try {
+            await reloadOpenDocument(true);
+          } catch (error) {
+            historyReconcileFailed = true;
+            throw new Error(t("history.error.reconcile"), { cause: error });
+          }
+          return report;
+        } finally {
+          historyOperationInFlight = false;
+          if (!projectDestroyed && !projectLeaving && !historyReconcileFailed && !reviewReconcileFailed) {
+            editor.setEditable(true);
+            timelineMount?.setEditable(true);
+          }
+        }
       },
       drain: () => flusher.drain(),
       find: async (query, limit) =>
@@ -1961,7 +1981,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         if (projectDestroyed || projectLeaving || deps.privacyLocked?.()) throw new Error(t("history.error.busy"));
       },
       withOperation: async (operation) => {
-        if (projectDestroyed || projectLeaving || historyOperationInFlight || historyReconcileFailed || reviewReconcileFailed ||
+        if (projectDestroyed || projectLeaving || outline?.busy() || historyOperationInFlight || historyReconcileFailed || reviewReconcileFailed ||
             sourceCommandInFlight || undoInFlight || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight ||
             inflightOpens > 0 || reviewPanel?.busy() || deps.privacyLocked?.()) throw new Error(t("history.error.busy"));
         historyOperationInFlight = true;
@@ -2994,7 +3014,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     reviewPending: () => historyOperationInFlight || projectLeaving || reviewOpenInFlight || reviewDecisionInFlight || reviewTransportInFlight || (reviewPanel?.busy() ?? false) || (reviewPanel?.hasUnsaved() ?? false),
     reviewPrivacyChanged: () => reviewPanel?.invalidateTransport(),
     async prepareToLeave(): Promise<boolean> {
-      if (projectDestroyed || projectLeaving || reviewOpenInFlight || reviewDecisionInFlight || reviewTransportInFlight || undoInFlight || sourceCommandInFlight || historyOperationInFlight || inflightOpens > 0 || reviewPanel?.busy() || deps.privacyLocked?.()) return false;
+      if (projectDestroyed || projectLeaving || outline?.busy() || reviewOpenInFlight || reviewDecisionInFlight || reviewTransportInFlight || undoInFlight || sourceCommandInFlight || historyOperationInFlight || inflightOpens > 0 || reviewPanel?.busy() || deps.privacyLocked?.()) return false;
       projectLeaving = true;
       editor.setEditable(false);
       try {

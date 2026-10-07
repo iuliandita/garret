@@ -563,7 +563,12 @@ describe("preferences: the daily goal", () => {
       expect(input.max).toBe("1000000");
       expect(input.getAttribute("aria-label")).toBe(t("prefs.goal.custom"));
       expect(CATALOGS.de["prefs.goal.custom"]).toBe("Eigenes tägliches Wortziel");
-      expect(input.previousElementSibling?.id).toBe("prefs-goal-2000");
+      const label = input.closest("label");
+      expect(label?.htmlFor).toBe(input.id);
+      expect(label?.textContent).toBe(t("prefs.goal.custom"));
+      expect(label?.previousElementSibling?.id).toBe("prefs-goal-2000");
+      expect(input.getAttribute("aria-describedby")).toBe("prefs-goal-custom-error");
+      expect(input.getAttribute("aria-invalid")).toBe("false");
       expect(input.value).toBe(target === "750" ? "750" : "");
       r.control.destroy();
     }
@@ -606,10 +611,17 @@ describe("preferences: the daily goal", () => {
     for (const value of ["", "0", "0750", "750.5", "1e3", "1000001"]) {
       input.value = value;
       input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      expect(input.getAttribute("aria-invalid")).toBe(String(value !== ""));
+      const error = r.panel().querySelector<HTMLElement>("#prefs-goal-custom-error")!;
+      expect(error.hidden).toBe(value === "");
+      expect(error.getAttribute("role")).toBe("alert");
+      expect(error.textContent).toBe(t("prefs.goal.invalid", { min: formatNumber(1), max: formatNumber(1000000) }));
       input.dispatchEvent(new Event("blur"));
+      expect(input.getAttribute("aria-invalid")).toBe("false");
+      expect(error.hidden).toBe(true);
       expect(input.value).toBe("750");
     }
-    expect(r.notices).toEqual(Array(5).fill(t("prefs.goal.invalid", { min: formatNumber(1), max: formatNumber(1000000) })));
+    expect(r.notices).toEqual([]);
     input.value = "900";
     input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", isComposing: true, bubbles: true }));
     await settle();
@@ -621,16 +633,33 @@ describe("preferences: the daily goal", () => {
     r.control.destroy();
   });
 
-  test("invalid blur reports once and restores the active custom goal or blank preset", () => {
+  test("invalid blur restores the active custom goal or blank preset without a global notice", () => {
     for (const target of ["750", "500"] as const) {
       const r = rig("system", DEFAULT_TYPOGRAPHY, target);
       r.goalInput().value = "0";
       r.goalInput().dispatchEvent(new Event("blur"));
-      expect(r.notices).toEqual([t("prefs.goal.invalid", { min: formatNumber(1), max: formatNumber(1000000) })]);
+      expect(r.notices).toEqual([]);
       expect(r.goalInput().value).toBe(target === "750" ? "750" : "");
       expect(r.targets).toEqual([]);
       r.control.destroy();
     }
+  });
+
+  test("bad native input is invalid even when empty and editing a valid value clears feedback", () => {
+    const r = rig();
+    const input = r.goalInput();
+    Object.defineProperty(input, "validity", { configurable: true, value: { badInput: true } });
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    expect(r.panel().querySelector<HTMLElement>("#prefs-goal-custom-error")!.hidden).toBe(false);
+    expect(r.targets).toEqual([]);
+    Object.defineProperty(input, "validity", { value: { badInput: false } });
+    input.value = "900";
+    input.dispatchEvent(new Event("input"));
+    expect(input.getAttribute("aria-invalid")).toBe("false");
+    expect(r.panel().querySelector<HTMLElement>("#prefs-goal-custom-error")!.hidden).toBe(true);
+    expect(r.notices).toEqual([]);
+    r.control.destroy();
   });
 
   test("a custom goal save failure retains the live value and reports the existing notice", async () => {

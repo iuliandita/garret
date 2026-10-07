@@ -401,6 +401,8 @@ function itemsExcludingRoots(
 }
 
 export interface OutlineDeps {
+  generation: number;
+  canMutate?: () => boolean;
   invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
   /** Hands the freshly read walk to the navigator. */
   reload: (items: ProjectItem[]) => void;
@@ -534,6 +536,7 @@ export interface Outline {
    *  before its own step ran, so this never re-issues the original command -
    *  the row was never deleted, only moved, and redo just moves it back. */
   redo(): Promise<OutlineOutcome>;
+  busy(): boolean;
   canUndo(): boolean;
   canRedo(): boolean;
   /** What `undo()` would name in its banner, or null with nothing to undo.
@@ -602,6 +605,8 @@ export function createOutline(deps: OutlineDeps): Outline {
   // life of the window. `onFailure` is the same story with a banner, prepended
   // to a body the teardown has already swept.
   let destroyed = false;
+  let queued = 0;
+  const canMutate = (): boolean => !destroyed && (deps.canMutate?.() ?? true);
   const reload = (items: ProjectItem[]): void => {
     if (destroyed) return;
     deps.reload(items);
@@ -621,9 +626,12 @@ export function createOutline(deps: OutlineDeps): Outline {
   const undoStack = createUndoStack();
 
   let pending: Promise<unknown> = Promise.resolve();
-  function serialized<T>(op: () => Promise<T>): Promise<T> {
+  function serialized(op: () => Promise<OutlineOutcome>): Promise<OutlineOutcome> {
+    if (!canMutate()) return Promise.resolve("inert");
+    queued++;
     // Both arms: a rejected predecessor must not cancel the queue behind it.
-    const next = pending.then(op, op);
+    const enter = (): Promise<OutlineOutcome> => canMutate() ? op() : Promise.resolve("inert");
+    const next = pending.then(enter, enter).finally(() => { queued--; });
     // Deliberately not `next` itself. Nothing awaits `pending` for a value, and
     // a rejection parked here would be delivered to whatever queued next
     // instead of to the caller that asked for it.
@@ -635,7 +643,9 @@ export function createOutline(deps: OutlineDeps): Outline {
   }
 
   async function refresh(): Promise<void> {
+    if (!canMutate()) return;
     const next = (await deps.invoke("project_items")) as ProjectItem[];
+    if (!canMutate()) return;
     // A copy, symmetrically with items(). Nothing aliases today because
     // storeSourceFrom copies what it is handed, but one unit passing its own
     // array out while the other passes a copy is an asymmetry one refactor from
@@ -681,8 +691,9 @@ export function createOutline(deps: OutlineDeps): Outline {
      *  command here answers something the walk already tells us. */
     capture?: (value: unknown) => void,
   ): Promise<OutlineOutcome> {
+    if (!canMutate()) return "inert";
     try {
-      const value = await deps.invoke(command, args);
+      const value = await deps.invoke(command, { ...args, generation: deps.generation });
       capture?.(value);
     } catch (err: unknown) {
       fail(t("outline.failed.command", { attempt: attemptCopy(command), command, error: String(err) }));
@@ -858,7 +869,7 @@ export function createOutline(deps: OutlineDeps): Outline {
         },
       );
       if (outcome === "applied" && id !== null) {
-        deps.onCreated(id);
+        if (canMutate()) deps.onCreated(id);
         // THE DOCUMENT ONLY, never the section. A reserved root a press
         // MADE is never binned - an empty section is harmless, and a reserved
         // type inside the bin is a shape no reader expects. "Undoing 'New
@@ -1091,7 +1102,7 @@ export function createOutline(deps: OutlineDeps): Outline {
         // Only on success: a failed create has no row to select, and moving the
         // selection anyway would leave the writer pointing at whatever happened
         // to be there.
-        if (outcome === "applied" && created !== null) deps.onCreated(created);
+        if (outcome === "applied" && created !== null && canMutate()) deps.onCreated(created);
         if (outcome === "applied") {
           pushCreateUndo();
           if (!adoptionSafe) done(t("outline.adoption-kept-order"));
@@ -1402,6 +1413,7 @@ export function createOutline(deps: OutlineDeps): Outline {
       });
     },
 
+    busy: () => queued > 0,
     canUndo: () => undoStack.canUndo(),
     canRedo: () => undoStack.canRedo(),
     undoLabel: () => undoStack.undoLabel(),
@@ -1411,9 +1423,8 @@ export function createOutline(deps: OutlineDeps): Outline {
     // is what every base_rev is read from.
     items: () => walk.slice(),
 
-    // A latch, not a cancellation: the queue keeps draining and every operation
-    // still resolves with an honest outcome to whoever awaited it. What stops
-    // is the unit's reach into the page.
+    // Queued calls settle inert. Already dispatched requests keep their result
+    // without reaching the retired page or starting another mutation.
     destroy(): void {
       destroyed = true;
     },

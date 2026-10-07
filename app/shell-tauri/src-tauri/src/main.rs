@@ -80,17 +80,27 @@ mod words;
 mod warning_history;
 mod zoom;
 
+fn write_measurement_sink(
+    payload: &serde_json::Value,
+    destination: Option<&std::ffi::OsStr>,
+) -> Result<(), String> {
+    let path = destination
+        .filter(|path| !path.is_empty())
+        .ok_or_else(|| "measurement output is unavailable in this launch".to_string())?;
+    let body = serde_json::to_vec(payload).map_err(|error| error.to_string())?;
+    fs::write(path, body).map_err(|error| format!("cannot write measurement output: {error}"))
+}
+
 #[command_boundary::command]
-fn sink(payload: serde_json::Value) {
-    let path = std::env::var("APP_SINK").unwrap_or_else(|_| "sink.json".into());
-    let _ = fs::write(&path, serde_json::to_string(&payload).unwrap_or_default());
-    // Stay alive so the harness can snapshot the AT-SPI tree while the window
-    // is up; the harness kills us once it has the snapshot. Self-exit is a
-    // safety net if it never does.
+fn sink(payload: serde_json::Value) -> Result<(), String> {
+    let destination = std::env::var_os("APP_SINK");
+    write_measurement_sink(&payload, destination.as_deref())?;
+    // Keep the measured window available for the harness's accessibility snapshot.
     std::thread::spawn(|| {
         std::thread::sleep(std::time::Duration::from_secs(120));
         process::exit(0);
     });
+    Ok(())
 }
 
 struct OpenProject {
@@ -886,9 +896,21 @@ fn create_into_after(
     Ok(created)
 }
 
+fn with_outline_generation<T>(
+    project: &mut OpenProject,
+    generation: u64,
+    mutate: impl FnOnce(&mut OpenProject) -> std::result::Result<T, String>,
+) -> std::result::Result<T, String> {
+    if !accepts_generation(project.generation, generation) {
+        return Err("the open book changed before the outline could be updated".to_string());
+    }
+    mutate(project)
+}
+
 #[command_boundary::command]
 fn item_create(
     state: State<'_, StoreState>,
+    generation: u64,
     parent_id: Option<String>,
     item_type: String,
     title: String,
@@ -898,27 +920,32 @@ fn item_create(
     after_id: Option<String>,
 ) -> std::result::Result<store::ItemCreated, String> {
     let mut guard = locked(&state);
-    create_into_after(
-        open_project_mut(&mut guard)?,
-        parent_id.as_deref(),
-        &item_type,
-        &title,
-        after_id.as_deref(),
-    )
+    with_outline_generation(open_project_mut(&mut guard)?, generation, |project| {
+        create_into_after(
+            project,
+            parent_id.as_deref(),
+            &item_type,
+            &title,
+            after_id.as_deref(),
+        )
+    })
 }
 
 #[command_boundary::command]
 fn item_rename(
     state: State<'_, StoreState>,
+    generation: u64,
     id: String,
     title: String,
     base_rev: i64,
 ) -> std::result::Result<i64, String> {
-    let guard = locked(&state);
-    open_project(&guard)?
-        .store
-        .item_rename(&id, &title, base_rev)
-        .map_err(|e| e.to_string())
+    let mut guard = locked(&state);
+    with_outline_generation(open_project_mut(&mut guard)?, generation, |project| {
+        project
+            .store
+            .item_rename(&id, &title, base_rev)
+            .map_err(|e| e.to_string())
+    })
 }
 
 /// Set or clear the selected item's revision state.
@@ -931,33 +958,39 @@ fn item_rename(
 #[command_boundary::command]
 fn item_set_state(
     store: State<'_, StoreState>,
+    generation: u64,
     id: String,
     state: Option<String>,
     base_rev: i64,
 ) -> std::result::Result<i64, String> {
-    let guard = locked(&store);
-    open_project(&guard)?
-        .store
-        .item_set_state(&id, state.as_deref(), base_rev)
-        .map_err(|e| e.to_string())
+    let mut guard = locked(&store);
+    with_outline_generation(open_project_mut(&mut guard)?, generation, |project| {
+        project
+            .store
+            .item_set_state(&id, state.as_deref(), base_rev)
+            .map_err(|e| e.to_string())
+    })
 }
 
 #[command_boundary::command]
 fn item_move(
     state: State<'_, StoreState>,
+    generation: u64,
     id: String,
     new_parent_id: Option<String>,
     after_id: Option<String>,
     base_rev: i64,
 ) -> std::result::Result<store::ItemMoved, String> {
     let mut guard = locked(&state);
-    move_within(
-        open_project_mut(&mut guard)?,
-        &id,
-        new_parent_id.as_deref(),
-        after_id.as_deref(),
-        base_rev,
-    )
+    with_outline_generation(open_project_mut(&mut guard)?, generation, |project| {
+        move_within(
+            project,
+            &id,
+            new_parent_id.as_deref(),
+            after_id.as_deref(),
+            base_rev,
+        )
+    })
 }
 
 /// A move against one open project, with the cached bin contents brought back
@@ -7746,6 +7779,55 @@ mod tests {
     ) -> PathBuf {
         crate::projects::library_dir(&windows_data_home_from(appdata, userprofile))
             .join(DEFAULT_PROJECT)
+    }
+
+    #[test]
+    fn measurement_sink_requires_an_explicit_writable_destination() {
+        let payload = serde_json::json!({"sample": 1});
+        assert!(super::write_measurement_sink(&payload, None).is_err());
+        assert!(super::write_measurement_sink(&payload, Some(std::ffi::OsStr::new(""))).is_err());
+        let root = tempdir().unwrap();
+        let output = root.path().join("measurement.json");
+        super::write_measurement_sink(&payload, Some(output.as_os_str())).unwrap();
+        assert_eq!(
+            serde_json::from_slice::<serde_json::Value>(&std::fs::read(output).unwrap()).unwrap(),
+            payload
+        );
+        assert!(super::write_measurement_sink(&payload, Some(root.path().as_os_str())).is_err());
+    }
+
+    #[test]
+    fn outline_generation_refuses_a_copied_book_with_the_same_item_ids() {
+        let root = tempdir().unwrap();
+        let original = root.path().join("original.db");
+        let copy = root.path().join("copy.db");
+        let store = seeded_project(&original);
+        let row = store.items().unwrap().remove(0);
+        store.checkpoint().unwrap();
+        std::fs::copy(&original, &copy).unwrap();
+        let mut project = opened(&copy);
+        project.generation = 2;
+        assert_eq!(project.store.items().unwrap()[0].id, row.id);
+        for generation in [1, 3] {
+            assert!(
+                super::with_outline_generation(&mut project, generation, |project| {
+                    project
+                        .store
+                        .item_rename(&row.id, "Wrong book", row.rev)
+                        .map_err(|e| e.to_string())
+                })
+                .is_err()
+            );
+        }
+        let unchanged = project.store.items().unwrap().remove(0);
+        assert_eq!((unchanged.title, unchanged.rev), (row.title, row.rev));
+        assert!(super::with_outline_generation(&mut project, 2, |project| {
+            project
+                .store
+                .item_rename(&row.id, "Current book", row.rev)
+                .map_err(|e| e.to_string())
+        })
+        .is_ok());
     }
 
     #[test]

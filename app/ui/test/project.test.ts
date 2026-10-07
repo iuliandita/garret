@@ -1216,7 +1216,7 @@ describe("mountProject outline editing", () => {
     await settle();
 
     expect(h.of("item_move")).toHaveLength(1);
-    expect(h.of("item_move")[0]?.args).toEqual({
+    expect(h.of("item_move")[0]?.args).toEqual({ generation: 1,
       id: "scene-0",
       newParentId: "chapter-0",
       afterId: "scene-1",
@@ -1252,7 +1252,7 @@ describe("mountProject outline editing", () => {
     expect(h.of("item_move")).toHaveLength(2);
     // The row's ORIGINAL parent and sibling, read live from the walk the
     // move's own re-read left behind - not the rev the move itself sent.
-    expect(h.of("item_move")[1]?.args).toEqual({
+    expect(h.of("item_move")[1]?.args).toEqual({ generation: 1,
       id: "scene-0",
       newParentId: "chapter-0",
       afterId: null,
@@ -1292,7 +1292,7 @@ describe("mountProject outline editing", () => {
     // OVERTURNED after a scene swallowed a part: the
     // hierarchy is still arbitrary and nothing is forbidden, but where a new
     // item LANDS is now type-aware. See `placement.ts` and the write-back.
-    expect(h.of("item_create")[0]?.args).toEqual({
+    expect(h.of("item_create")[0]?.args).toEqual({ generation: 1,
       parentId: "chapter-0",
       afterId: "scene-0",
       itemType: "scene",
@@ -1455,7 +1455,7 @@ describe("mountProject outline editing", () => {
     field.value = "Departure, renamed";
     field.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     await settle();
-    expect(h.of("item_rename")[0]?.args).toEqual({ id: "scene-1", title: "Departure, renamed", baseRev: 1 });
+    expect(h.of("item_rename")[0]?.args).toEqual({ generation: 1, id: "scene-1", title: "Departure, renamed", baseRev: 1 });
     expect(name?.textContent).toBe("Departure, renamed");
 
     mounted.destroy();
@@ -1852,7 +1852,7 @@ describe("mountProject revision state", () => {
     await settle();
 
     expect(h.of("item_set_state").map((c) => c.args)).toEqual([
-      { id: "scene-0", state: "draft", baseRev: 1 },
+      { generation: 1, id: "scene-0", state: "draft", baseRev: 1 },
     ]);
     mounted.destroy();
   });
@@ -4552,4 +4552,95 @@ test("a cast read completing after destruction never reaches the retired editor"
     mounted.destroy(); release([]); await settle(); await settle();
     expect(apply).not.toHaveBeenCalled();
   } finally { release([]); apply.mockRestore(); mounted.destroy(); }
+});
+
+
+describe("whole-book replacement save boundary", () => {
+  function replaceBook(mounted: MountedProject): void {
+    mounted.menuActions.openFind();
+    const query = document.getElementById("find-query") as HTMLInputElement;
+    query.value = "alpha";
+    const replacement = document.getElementById("find-replace") as HTMLInputElement;
+    replacement.value = "beta";
+    const button = document.getElementById("find-replace-book") as HTMLButtonElement;
+    button.click(); button.click();
+  }
+
+  test("a failed save leaves the unsaved draft intact and never replaces the stored book", async () => {
+    shell(); const h = host({ reject: ["doc_flush"] });
+    const mounted = await mountProject(deps({ invoke: h.invoke }));
+    try {
+      mounted.editor.typeChar("x"); const draft = mounted.editor.serialize();
+      replaceBook(mounted); await settle(); await settle();
+      expect(mounted.flusher!.failed()).toBe(true);
+      expect(mounted.flusher!.dirtyCount()).toBe(1);
+      expect(h.of("project_replace")).toHaveLength(0);
+      expect(mounted.editor.serialize()).toBe(draft);
+      expect(document.getElementById("open-error")?.textContent).toContain("Nothing was replaced");
+    } finally { mounted.destroy(); }
+  });
+
+  for (const reconcileFails of [false, true]) {
+    test(`replacement holds editing and departure until reconciliation (${reconcileFails ? "failure" : "success"})`, async () => {
+      shell(); const h = host(); let entered!: () => void; let release!: () => void;
+      const started = new Promise<void>((resolve) => { entered = resolve; });
+      const hold = new Promise<void>((resolve) => { release = resolve; });
+      let replaced = false;
+      const invoke: Host["invoke"] = async (cmd, args) => {
+        if (cmd === "project_replace") {
+          entered(); await hold; replaced = true;
+          return { replaced: 1, spanning: 0, documents: 1, snapshot: { label: "Before replacement" } };
+        }
+        if (cmd === "doc_load" && replaced) {
+          if (reconcileFails) throw new Error("reload refused");
+          return { body: body("beta"), rev: 8 };
+        }
+        return h.invoke(cmd, args);
+      };
+      const mounted = await mountProject(deps({ invoke }));
+      try {
+        replaceBook(mounted); await started;
+        const before = mounted.editor.serialize(); mounted.editor.typeChar("x");
+        expect(mounted.editor.serialize()).toBe(before);
+        expect(await mounted.prepareToLeave()).toBe(false);
+        release(); await settle(); await settle();
+        if (reconcileFails) {
+          mounted.cancelLeave(); mounted.editor.typeChar("x");
+          expect(mounted.editor.serialize()).toBe(before);
+          expect(document.getElementById("open-error")?.textContent).toContain("Restart garret");
+        } else {
+          expect(mounted.editor.serialize()).toBe(body("beta"));
+          expect(mounted.flusher!.revOf("scene-0")).toBe(8);
+          mounted.editor.typeChar("x");
+          expect(mounted.editor.serialize()).not.toBe(body("beta"));
+        }
+      } finally { release(); mounted.destroy(); }
+    });
+  }
+});
+
+
+test("outline work excludes departure and accepted departure excludes new outline work", async () => {
+  shell(); const h = host(); let entered!: () => void; let release!: () => void;
+  const started = new Promise<void>((resolve) => { entered = resolve; });
+  const hold = new Promise<void>((resolve) => { release = resolve; });
+  let creations = 0;
+  const invoke: Host["invoke"] = async (cmd, args) => {
+    if (cmd === "item_create") { creations++; entered(); await hold; }
+    return h.invoke(cmd, args);
+  };
+  const mounted = await mountProject(deps({ invoke }));
+  try {
+    const creating = mounted.outline!.create("scene");
+    await started;
+    expect(await mounted.prepareToLeave()).toBe(false);
+    release(); await creating; await settle();
+    expect(await mounted.prepareToLeave()).toBe(true);
+    expect(await mounted.outline!.create("scene")).toBe("inert");
+    expect(creations).toBe(1);
+    mounted.cancelLeave();
+    expect(await mounted.outline!.create("scene")).toBe("applied");
+    expect(creations).toBe(2);
+    expect(h.of("item_create").every((call) => call.args?.generation === 1)).toBe(true);
+  } finally { release(); mounted.destroy(); }
 });

@@ -1086,7 +1086,9 @@ mod tests {
         let old = profile(temp.path());
         fs::write(old.join("settings.json"), br#"{"locale":"de"}"#).unwrap();
         let message = refusal(temp.path(), "detail");
-        assert!(message.contains("Bewahren Sie"));
+        assert!(message.contains("Ihre vorhandenen Daten wurden erhalten"));
+        assert!(message.contains("github.com/iuliandita/garret/issues"));
+        assert!(message.contains("Technische Details (Englisch)"));
         assert!(message.contains(&old.to_string_lossy().to_string()));
         assert!(message.contains(&temp.path().join(crate::APP_DIR).to_string_lossy().to_string()));
         assert!(message.ends_with("detail"));

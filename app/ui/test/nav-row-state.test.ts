@@ -495,3 +495,18 @@ test("delegated indicator tips follow hover and keyboard selection without chang
   expect(tip()).toBeNull();
   container.remove();
 });
+
+
+test("keyboard indicator descriptions sit beside the row without covering the next row", () => {
+  const container = makeContainer();
+  const nav = createNavigator({ container, source: statedSource(), rowHeight: 24, overscan: 2, mode: "virtual" });
+  nav.setCounts(new Map([["s-1", 35]]));
+  const row = rowNamed(container, "Sc 1");
+  row.getBoundingClientRect = () => ({ left: 4, right: 240, top: 60, bottom: 84, width: 236, height: 24, x: 4, y: 60, toJSON: () => ({}) });
+  try {
+    container.focus(); nav.selectById("s-1");
+    const tip = document.querySelector<HTMLElement>(".nav-indicator-tip")!;
+    expect(Number.parseFloat(tip.style.left)).toBe(248);
+    expect(Number.parseFloat(tip.style.top)).toBe(60);
+  } finally { nav.destroy(); container.remove(); }
+});

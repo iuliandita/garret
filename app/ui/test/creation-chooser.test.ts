@@ -38,6 +38,7 @@ test("manuscript actions lead; More contains Bible and book pages", () => {
     expect(more.open).toBe(false);
     more.open = true;
     expect(more.querySelectorAll("section")).toHaveLength(2);
+    expect(more.querySelector("h3")?.textContent).toBe(t("creation.bible"));
     expect(more.querySelector("#create-bible-entry")).not.toBeNull();
     expect(more.querySelector("#create-dedication")).not.toBeNull();
     r.click("create-chapter");
@@ -52,6 +53,7 @@ test("Bible destination and action stay captured while the selected folder chang
     r.chooser.open(true);
     expect(r.panel().querySelector(".panel-close")?.getAttribute("aria-label")).toBe(t("panel.close", { title: t("creation.bible") }));
     expect(r.panel().querySelector(".creation-destination")?.textContent).toBe(t("creation.destination", { name: "Folder A" }));
+    expect(r.panel().querySelector("h3") === null).toBe(true);
     r.select("Folder B");
     r.click("create-bible-entry");
     expect(r.actions).toEqual(["Folder A"]);

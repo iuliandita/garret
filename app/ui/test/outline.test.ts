@@ -83,6 +83,7 @@ function rig(opts: {
    *  something else - a teardown, say. */
   gate?: Promise<unknown>;
   confirmSectionMove?: OutlineDeps["confirmSectionMove"];
+  canMutate?: OutlineDeps["canMutate"];
 } = {}): Rig {
   const rejects = typeof opts.rejectOn === "string" ? [opts.rejectOn] : opts.rejectOn ?? [];
   const log: string[] = [];
@@ -134,6 +135,7 @@ function rig(opts: {
   };
 
   const outline = createOutline({
+    generation: 17,
     invoke,
     reload: (items) => {
       log.push("reload");
@@ -144,6 +146,7 @@ function rig(opts: {
     onFailure: (message) => failures.push(message),
     onDone: (message) => done.push(message),
     confirmSectionMove: opts.confirmSectionMove,
+    canMutate: opts.canMutate,
     initialItems: opts.initialItems ?? [],
   });
 
@@ -174,7 +177,7 @@ describe("createOutline: create", () => {
     // `c1` IS the holder, and there is no ancestor between the two to follow.
     const r = await seeded({ selected: "c1" });
     expect(await r.outline.create("scene")).toBe("applied");
-    expect(argsOf(r, "item_create")).toEqual({
+    expect(argsOf(r, "item_create")).toEqual({ generation: 17,
       parentId: "c1",
       afterId: null,
       itemType: "scene",
@@ -188,7 +191,7 @@ describe("createOutline: create", () => {
     // rather than at the end of the group.
     const r = await seeded({ selected: "s1" });
     await r.outline.create("scene");
-    expect(argsOf(r, "item_create")).toEqual({
+    expect(argsOf(r, "item_create")).toEqual({ generation: 17,
       parentId: "c1",
       afterId: "s1",
       itemType: "scene",
@@ -199,7 +202,7 @@ describe("createOutline: create", () => {
   test("with nothing selected sends an explicit null parent", async () => {
     const r = await seeded({ selected: null });
     await r.outline.create("part");
-    expect(argsOf(r, "item_create")).toEqual({
+    expect(argsOf(r, "item_create")).toEqual({ generation: 17,
       parentId: null,
       afterId: null,
       itemType: "part",
@@ -281,7 +284,7 @@ describe("createOutline: a chapter with nowhere to live", () => {
     const made = creates(r);
     expect(made.length).toBe(2);
     // The part first, at the root, after the scene the writer was on.
-    expect(made[0]?.args).toEqual({
+    expect(made[0]?.args).toEqual({ generation: 17,
       parentId: null,
       afterId: "s1",
       itemType: "part",
@@ -291,7 +294,7 @@ describe("createOutline: a chapter with nowhere to live", () => {
     // which is what makes this an assertion about the wiring rather than about
     // the plan: a build that created both at the root would pass a test that
     // only counted the calls.
-    expect(made[1]?.args).toEqual({
+    expect(made[1]?.args).toEqual({ generation: 17,
       parentId: "made-1",
       afterId: null,
       itemType: "chapter",
@@ -333,7 +336,7 @@ describe("createOutline: a chapter with nowhere to live", () => {
     const r = await seeded({ walks: [newBook()], selected: "s1" });
     await r.outline.create("scene");
     expect(creates(r).length).toBe(1);
-    expect(creates(r)[0]?.args).toEqual({
+    expect(creates(r)[0]?.args).toEqual({ generation: 17,
       parentId: null,
       afterId: "s1",
       itemType: "scene",
@@ -366,7 +369,7 @@ describe("createOutline: rename", () => {
   test("sends the rev the last walk reported", async () => {
     const r = await seeded();
     expect(await r.outline.rename("c1", "New")).toBe("applied");
-    expect(argsOf(r, "item_rename")).toEqual({ id: "c1", title: "New", baseRev: 7 });
+    expect(argsOf(r, "item_rename")).toEqual({ generation: 17, id: "c1", title: "New", baseRev: 7 });
   });
 
   test("an unchanged title is inert and reaches no IPC", async () => {
@@ -410,8 +413,8 @@ describe("createOutline: rename", () => {
     await r.outline.rename("c1", "Newer");
     const renames = r.calls.filter((c) => c.cmd === "item_rename");
     expect(renames).toHaveLength(2);
-    expect(renames[0]?.args).toEqual({ id: "c1", title: "New", baseRev: 7 });
-    expect(renames[1]?.args).toEqual({ id: "c1", title: "Newer", baseRev: 42 });
+    expect(renames[0]?.args).toEqual({ generation: 17, id: "c1", title: "New", baseRev: 7 });
+    expect(renames[1]?.args).toEqual({ generation: 17, id: "c1", title: "Newer", baseRev: 42 });
   });
 });
 
@@ -419,7 +422,7 @@ describe("createOutline: setState", () => {
   test("sends the state and the rev the last walk reported", async () => {
     const r = await seeded();
     expect(await r.outline.setState("c1", "revising")).toBe("applied");
-    expect(argsOf(r, "item_set_state")).toEqual({ id: "c1", state: "revising", baseRev: 7 });
+    expect(argsOf(r, "item_set_state")).toEqual({ generation: 17, id: "c1", state: "revising", baseRev: 7 });
   });
 
   test("clearing sends null, and the key is PRESENT", async () => {
@@ -433,7 +436,7 @@ describe("createOutline: setState", () => {
     expect(await r.outline.setState("c1", null)).toBe("applied");
     const args = argsOf(r, "item_set_state") ?? {};
     expect("state" in args).toBe(true);
-    expect(args).toEqual({ id: "c1", state: null, baseRev: 7 });
+    expect(args).toEqual({ generation: 17, id: "c1", state: null, baseRev: 7 });
   });
 
   test("the state a row already stands in is inert and reaches no IPC", async () => {
@@ -459,7 +462,7 @@ describe("createOutline: setState", () => {
     // outline has. p1 is a PART.
     const r = await seeded();
     expect(await r.outline.setState("p1", "outline")).toBe("applied");
-    expect(argsOf(r, "item_set_state")).toEqual({ id: "p1", state: "outline", baseRev: 1 });
+    expect(argsOf(r, "item_set_state")).toEqual({ generation: 17, id: "p1", state: "outline", baseRev: 1 });
   });
 
   test("an id absent from the walk fails without inventing a rev", async () => {
@@ -489,8 +492,8 @@ describe("createOutline: setState", () => {
     await r.outline.setState("c1", "done");
     const sets = r.calls.filter((c) => c.cmd === "item_set_state");
     expect(sets).toHaveLength(2);
-    expect(sets[0]?.args).toEqual({ id: "c1", state: "draft", baseRev: 7 });
-    expect(sets[1]?.args).toEqual({ id: "c1", state: "done", baseRev: 42 });
+    expect(sets[0]?.args).toEqual({ generation: 17, id: "c1", state: "draft", baseRev: 7 });
+    expect(sets[1]?.args).toEqual({ generation: 17, id: "c1", state: "done", baseRev: 42 });
   });
 
   test("it is serialized against a move already in flight", async () => {
@@ -512,7 +515,7 @@ describe("createOutline: move", () => {
     // `newParentId` and `afterId` are both Option args - see the create case.
     const r = await seeded();
     expect(await r.outline.move("s2", "up")).toBe("applied");
-    expect(argsOf(r, "item_move")).toEqual({
+    expect(argsOf(r, "item_move")).toEqual({ generation: 17,
       id: "s2",
       newParentId: "c1",
       afterId: null,
@@ -523,7 +526,7 @@ describe("createOutline: move", () => {
   test("a non-null afterId is carried through", async () => {
     const r = await seeded();
     await r.outline.move("s1", "down");
-    expect(argsOf(r, "item_move")).toEqual({
+    expect(argsOf(r, "item_move")).toEqual({ generation: 17,
       id: "s1",
       newParentId: "c1",
       afterId: "s2",
@@ -604,12 +607,12 @@ describe("createOutline: overlapping operations", () => {
 
     const moves = r.calls.filter((c) => c.cmd === "item_move");
     expect(moves).toHaveLength(2);
-    expect(moves[0]?.args).toEqual({
+    expect(moves[0]?.args).toEqual({ generation: 17,
       id: "s1", newParentId: "c1", afterId: "s2", baseRev: 1,
     });
     // The refreshed rev AND the refreshed sibling order. Either one stale is a
     // Conflict from the real store.
-    expect(moves[1]?.args).toEqual({
+    expect(moves[1]?.args).toEqual({ generation: 17,
       id: "s1", newParentId: "c1", afterId: "s3", baseRev: 2,
     });
     expect(r.failures).toEqual([]);
@@ -632,7 +635,7 @@ describe("createOutline: overlapping operations", () => {
     const renamed = r.outline.rename("c1", "New");
     expect(await created).toBe("applied");
     expect(await renamed).toBe("applied");
-    expect(argsOf(r, "item_rename")).toEqual({ id: "c1", title: "New", baseRev: 42 });
+    expect(argsOf(r, "item_rename")).toEqual({ generation: 17, id: "c1", title: "New", baseRev: 42 });
     expect(r.failures).toEqual([]);
   });
 
@@ -675,6 +678,7 @@ describe("createOutline: failure", () => {
     const boom = new Error("the navigator refused the walk");
     let thrown = 0;
     const outline = createOutline({
+      generation: 17,
       invoke: async (cmd) => (cmd === "project_items" ? after : {}),
       reload: () => {
         thrown++;
@@ -722,7 +726,7 @@ describe("createOutline: construction", () => {
     expect(await r.outline.rename("c1", "New")).toBe("applied");
     // Exactly the mutation's own two calls: no read happened before them.
     expect(r.log).toEqual(["item_rename", "project_items", "reload"]);
-    expect(argsOf(r, "item_rename")).toEqual({ id: "c1", title: "New", baseRev: 7 });
+    expect(argsOf(r, "item_rename")).toEqual({ generation: 17, id: "c1", title: "New", baseRev: 7 });
   });
 
   test("does NOT reload at construction", () => {
@@ -748,7 +752,7 @@ describe("createOutline: construction", () => {
     passed.push(item("junk", null, 0));
     expect(r.outline.items().map((i) => i.id)).toEqual(["p1", "c1", "s1", "s2", "p2"]);
     await r.outline.rename("c1", "New");
-    expect(argsOf(r, "item_rename")).toEqual({ id: "c1", title: "New", baseRev: 7 });
+    expect(argsOf(r, "item_rename")).toEqual({ generation: 17, id: "c1", title: "New", baseRev: 7 });
   });
 
 });
@@ -772,6 +776,8 @@ describe("createOutline: destroy", () => {
     const { gate, open } = gated();
     const r = rig({ initialItems: walk(), gate });
     const inFlight = r.outline.move("s2", "up");
+    await Promise.resolve();
+    expect(r.calls[0]?.cmd).toBe("item_move");
     r.outline.destroy();
     open();
     expect(await inFlight).toBe("applied");
@@ -785,6 +791,8 @@ describe("createOutline: destroy", () => {
     const { gate, open } = gated();
     const r = rig({ initialItems: walk(), gate, rejectOn: ["item_move", "project_items"] });
     const inFlight = r.outline.move("s2", "up");
+    await Promise.resolve();
+    expect(r.calls[0]?.cmd).toBe("item_move");
     r.outline.destroy();
     open();
     expect(await inFlight).toBe("failed");
@@ -797,9 +805,44 @@ describe("createOutline: destroy", () => {
     // different path out of the unit than the one above.
     const r = rig({ initialItems: walk() });
     r.outline.destroy();
-    expect(await r.outline.move("ghost", "down")).toBe("failed");
-    expect(await r.outline.rename("ghost", "New")).toBe("failed");
+    expect(await r.outline.move("ghost", "down")).toBe("inert");
+    expect(await r.outline.rename("ghost", "New")).toBe("inert");
     expect(r.failures).toEqual([]);
+  });
+
+  test("boundary guards queued work and late creation after destroy", async () => {
+    const { gate, open } = gated();
+    const r = rig({ initialItems: walk(), selected: "c1", gate });
+    const creating = r.outline.create("scene");
+    const renaming = r.outline.rename("c1", "Late");
+    expect(r.outline.busy()).toBe(true);
+    await Promise.resolve();
+    expect(r.calls[0]?.args?.["generation"]).toBe(17);
+    r.outline.destroy();
+    open();
+    expect(await creating).toBe("applied");
+    expect(await renaming).toBe("inert");
+    expect(r.calls.map((call) => call.cmd)).toEqual(["item_create"]);
+    expect(r.created).toEqual([]);
+    expect(r.reloads).toEqual([]);
+    expect(r.outline.busy()).toBe(false);
+  });
+
+  test("boundary rechecks permission after confirmation before dispatch", async () => {
+    const { gate, open } = gated();
+    let allowed = true;
+    const rows = [item("front", null, 0, 1, "Front", FRONT_MATTER_TYPE), ...walk()];
+    const r = rig({ initialItems: rows, canMutate: () => allowed,
+      confirmSectionMove: async () => { await gate; return true; } });
+    const moving = r.outline.move("p1", "indent");
+    await Promise.resolve();
+    expect(r.outline.busy()).toBe(true);
+    allowed = false;
+    open();
+    expect(await moving).toBe("inert");
+    expect(await r.outline.rename("c1", "Late")).toBe("inert");
+    expect(r.calls).toEqual([]);
+    expect(r.outline.busy()).toBe(false);
   });
 
   test("destroy is idempotent", () => {
@@ -827,7 +870,7 @@ describe("createOutline: items", () => {
     expect(r.outline.items().map((i) => i.id)).toEqual(["p1", "c1", "s1", "s2", "p2"]);
     // And the rev lookup still works, which is what a corrupted walk would break.
     await r.outline.rename("c1", "New");
-    expect(argsOf(r, "item_rename")).toEqual({ id: "c1", title: "New", baseRev: 7 });
+    expect(argsOf(r, "item_rename")).toEqual({ generation: 17, id: "c1", title: "New", baseRev: 7 });
   });
 });
 
@@ -861,12 +904,12 @@ describe("createOutline: remove", () => {
       "item_create", "project_items", "reload",
       "item_move", "project_items", "reload",
     ]);
-    expect(argsOf(r, "item_create")).toEqual({
+    expect(argsOf(r, "item_create")).toEqual({ generation: 17,
       parentId: null,
       itemType: "trash",
       title: "Trash",
     });
-    expect(argsOf(r, "item_move")).toEqual({
+    expect(argsOf(r, "item_move")).toEqual({ generation: 17,
       id: "s1",
       newParentId: BIN,
       afterId: null,
@@ -966,7 +1009,7 @@ describe("createOutline: remove", () => {
     expect(await r.outline.remove("s2")).toBe("applied");
 
     expect(r.calls.filter((c) => c.cmd === "item_create")).toHaveLength(0);
-    expect(argsOf(r, "item_move")).toEqual({
+    expect(argsOf(r, "item_move")).toEqual({ generation: 17,
       id: "s2",
       newParentId: BIN,
       afterId: "s1",
@@ -1086,7 +1129,7 @@ describe("createOutline: restore", () => {
     // ONE item_move, not two: nothing here re-sinks the bin, because the bin
     // never moved in the first place.
     expect(r.log).toEqual(["item_move", "project_items", "reload"]);
-    expect(argsOf(r, "item_move")).toEqual({
+    expect(argsOf(r, "item_move")).toEqual({ generation: 17,
       id: "s1",
       newParentId: null,
       afterId: "p2",
@@ -1316,8 +1359,8 @@ describe("createOutline: the book's first part adopts the loose chapters", () =>
     // `afterId` chains so the adopted chapters keep their relative order; a
     // build that sent null for both would reverse the book.
     expect(moves(r).map((m) => m.args)).toEqual([
-      { id: "ch1", newParentId: "made-1", afterId: null, baseRev: 3 },
-      { id: "ch2", newParentId: "made-1", afterId: "ch1", baseRev: 5 },
+      { generation: 17, id: "ch1", newParentId: "made-1", afterId: null, baseRev: 3 },
+      { generation: 17, id: "ch2", newParentId: "made-1", afterId: "ch1", baseRev: 5 },
     ]);
   });
 
@@ -1396,7 +1439,7 @@ describe("createOutline: the book's first part adopts the loose chapters", () =>
     const r = await seeded({ walks: [loose(), without], selected: "ch2" });
     expect(await r.outline.create("part")).toBe("applied");
     expect(moves(r).map((m) => m.args)).toEqual([
-      { id: "ch2", newParentId: "made-1", afterId: null, baseRev: 5 },
+      { generation: 17, id: "ch2", newParentId: "made-1", afterId: null, baseRev: 5 },
     ]);
     expect(r.failures).toEqual([]);
   });
@@ -1468,6 +1511,7 @@ describe("createOutline: the book's first part adopts the loose chapters", () =>
       return {};
     };
     const outline = createOutline({
+      generation: 17,
       invoke,
       reload: () => undefined,
       selectedId: () => "ch2",
@@ -1487,7 +1531,7 @@ describe("createOutline: the book's first part adopts the loose chapters", () =>
     // ONLY ch1 comes back - ch2 was never adopted, so undo has nothing of
     // its to reverse. Then the part itself is binned.
     expect(undoMoves.map((m) => m.args?.["id"])).toEqual(["ch1", "made-1"]);
-    expect(undoMoves[0]?.args).toEqual({ id: "ch1", newParentId: null, afterId: null, baseRev: 4 });
+    expect(undoMoves[0]?.args).toEqual({ generation: 17, id: "ch1", newParentId: null, afterId: null, baseRev: 4 });
     expect(undoMoves[1]?.args).toMatchObject({ id: "made-1", newParentId: BIN });
     expect(failures).toHaveLength(1);
   });
@@ -1975,7 +2019,7 @@ describe("createOutline: undo", () => {
       // s1 was the FIRST child before the move, so the inverse carries afterId
       // null - not the fixture's own pre-move rev, but the one the CURRENT
       // (post-move) walk reports for s1.
-      expect(movesOf(r)[1]?.args).toEqual({ id: "s1", newParentId: "c1", afterId: null, baseRev: 2 });
+      expect(movesOf(r)[1]?.args).toEqual({ generation: 17, id: "s1", newParentId: "c1", afterId: null, baseRev: 2 });
       expect(r.done).toEqual(["Undone: moving s1."]);
     });
 
@@ -2000,14 +2044,14 @@ describe("createOutline: undo", () => {
       expect(await r.outline.moveBy("s1", "down", 2)).toBe("applied");
       // Each step planned against the walk the step before it re-read.
       expect(movesOf(r).map((c) => c.args)).toEqual([
-        { id: "s1", newParentId: "c1", afterId: "s2", baseRev: 1 },
-        { id: "s1", newParentId: "c1", afterId: "s3", baseRev: 2 },
+        { generation: 17, id: "s1", newParentId: "c1", afterId: "s2", baseRev: 1 },
+        { generation: 17, id: "s1", newParentId: "c1", afterId: "s3", baseRev: 2 },
       ]);
       expect(r.outline.undoLabel()).toBe("moving s1");
 
       expect(await r.outline.undo()).toBe("applied");
       // One undo, one move, straight back to the first child's place.
-      expect(movesOf(r)[2]?.args).toEqual({ id: "s1", newParentId: "c1", afterId: null, baseRev: 3 });
+      expect(movesOf(r)[2]?.args).toEqual({ generation: 17, id: "s1", newParentId: "c1", afterId: null, baseRev: 3 });
       expect(r.outline.canUndo()).toBe(false);
     });
 
@@ -2031,7 +2075,7 @@ describe("createOutline: undo", () => {
       expect(await r.outline.redo()).toBe("applied");
       // The reverse computed live, right before undo's own move ran: s1 sat
       // after s2 in the walk undo was about to overwrite.
-      expect(movesOf(r)[2]?.args).toEqual({ id: "s1", newParentId: "c1", afterId: "s2", baseRev: 1 });
+      expect(movesOf(r)[2]?.args).toEqual({ generation: 17, id: "s1", newParentId: "c1", afterId: "s2", baseRev: 1 });
       expect(r.done).toEqual(["Undone: moving s1.", "Redone: moving s1."]);
     });
 
@@ -2124,7 +2168,7 @@ describe("createOutline: undo", () => {
       expect(r.outline.undoLabel()).toBe("renaming New");
 
       expect(await r.outline.undo()).toBe("applied");
-      expect(renamesOf(r)[1]?.args).toEqual({ id: "c1", title: "c1", baseRev: 8 });
+      expect(renamesOf(r)[1]?.args).toEqual({ generation: 17, id: "c1", title: "c1", baseRev: 8 });
       expect(r.outline.canRedo()).toBe(true);
 
       await r.outline.rename("c1", "Other");
@@ -2139,7 +2183,7 @@ describe("createOutline: undo", () => {
 
       await r.outline.setState("s1", "drafting");
       expect(await r.outline.undo()).toBe("applied");
-      expect(statesOf(r)[1]?.args).toEqual({ id: "s1", state: null, baseRev: 2 });
+      expect(statesOf(r)[1]?.args).toEqual({ generation: 17, id: "s1", state: null, baseRev: 2 });
     });
   });
 
@@ -2153,7 +2197,7 @@ describe("createOutline: undo", () => {
       expect(r.outline.undoLabel()).toBe("deleting s1");
 
       expect(await r.outline.undo()).toBe("applied");
-      expect(movesOf(r)[1]?.args).toEqual({ id: "s1", newParentId: "c1", afterId: null, baseRev: 1 });
+      expect(movesOf(r)[1]?.args).toEqual({ generation: 17, id: "s1", newParentId: "c1", afterId: null, baseRev: 1 });
     });
   });
 
@@ -2170,7 +2214,7 @@ describe("createOutline: undo", () => {
       expect(await r.outline.undo()).toBe("applied");
       const moves = movesOf(r).slice(1); // skip restore's own move
       expect(moves).toHaveLength(1);
-      expect(moves[0]?.args).toEqual({ id: "s1", newParentId: BIN, afterId: null, baseRev: 2 });
+      expect(moves[0]?.args).toEqual({ generation: 17, id: "s1", newParentId: BIN, afterId: null, baseRev: 2 });
     });
   });
 
@@ -2269,8 +2313,8 @@ describe("createOutline: undo", () => {
       expect(createsOf(r)).toHaveLength(1);
       const moves = movesOf(r).slice(2); // skip the create's own two adoption moves
       expect(moves.map((m) => m.args?.["id"])).toEqual(["ch1", "ch2", "made-1"]);
-      expect(moves[0]?.args).toEqual({ id: "ch1", newParentId: null, afterId: null, baseRev: 4 });
-      expect(moves[1]?.args).toEqual({ id: "ch2", newParentId: null, afterId: "ch1", baseRev: 6 });
+      expect(moves[0]?.args).toEqual({ generation: 17, id: "ch1", newParentId: null, afterId: null, baseRev: 4 });
+      expect(moves[1]?.args).toEqual({ generation: 17, id: "ch2", newParentId: null, afterId: "ch1", baseRev: 6 });
       expect(moves[2]?.args).toMatchObject({ id: "made-1", newParentId: BIN });
     });
 
@@ -2362,9 +2406,9 @@ describe("createOutline: undo", () => {
 
       const moves = movesOf(r).slice(5); // skip the create's and undo's five moves
       expect(moves.map((m) => m.args?.["id"])).toEqual(["made-1", "ch2", "ch1"]);
-      expect(moves[0]?.args).toEqual({ id: "made-1", newParentId: null, afterId: "ch2", baseRev: 2 });
-      expect(moves[1]?.args).toEqual({ id: "ch2", newParentId: "made-1", afterId: null, baseRev: 7 });
-      expect(moves[2]?.args).toEqual({ id: "ch1", newParentId: "made-1", afterId: null, baseRev: 5 });
+      expect(moves[0]?.args).toEqual({ generation: 17, id: "made-1", newParentId: null, afterId: "ch2", baseRev: 2 });
+      expect(moves[1]?.args).toEqual({ generation: 17, id: "ch2", newParentId: "made-1", afterId: null, baseRev: 7 });
+      expect(moves[2]?.args).toEqual({ generation: 17, id: "ch1", newParentId: "made-1", afterId: null, baseRev: 5 });
     });
 
     test("undo of a bible document names no move against the bible's own id", async () => {

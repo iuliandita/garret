@@ -988,6 +988,7 @@ export const EN = {
   "find.spanning.verb.one": "was",
   "find.spanning.verb.other": "were",
   "find.replacing": "Replacing throughout the manuscript\u2026",
+  "find.error.unsaved": "Your latest changes could not be saved. Nothing was replaced.",
   "find.error.replace-book": "Could not replace throughout the manuscript: {error}",
 
   // ---- quick-open.ts ------------------------------------------------------
@@ -1201,7 +1202,7 @@ export const EN = {
   "switcher.copies": "Backups and archives",
   "switcher.import.show": "Show the import folder",
   "switcher.move": "Move this book\u2026",
-  "switcher.move.hint": "Move the file and its pictures folder to another folder. The name stays.",
+  "switcher.move.hint": "Move the database and its pictures and research folders together. The name stays.",
   "switcher.loading": "Loading books…",
   "switcher.empty.open": "The open book is not listed in this library. Name another below to create it.",
   "switcher.done.created": "{name} created. Open it from the list.",

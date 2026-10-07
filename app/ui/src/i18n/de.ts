@@ -963,6 +963,7 @@ export const DE = {
   "find.spanning.verb.one": "blieb",
   "find.spanning.verb.other": "blieben",
   "find.replacing": "Wird im ganzen Manuskript ersetzt…",
+  "find.error.unsaved": "Ihre letzten Änderungen konnten nicht gespeichert werden. Es wurde nichts ersetzt.",
   "find.error.replace-book": "Im ganzen Manuskript konnte nicht ersetzt werden: {error}",
 
   // ---- quick-open.ts ------------------------------------------------------
@@ -1106,7 +1107,7 @@ export const DE = {
   "switcher.copies": "Sicherungen und Archive",
   "switcher.import.show": "Importordner anzeigen",
   "switcher.move": "Dieses Buch verschieben…",
-  "switcher.move.hint": "Die Datei und ihren Bilderordner in einen anderen Ordner verschieben. Der Name bleibt.",
+  "switcher.move.hint": "Die Datenbank mit ihren Bilder- und Rechercheordnern zusammen verschieben. Der Name bleibt.",
   "switcher.loading": "Bücher werden geladen…",
   "switcher.empty.open": "Das offene Buch ist nicht in dieser Bibliothek aufgeführt. Benennen Sie unten ein weiteres Buch, um es zu erstellen.",
   "switcher.done.created": "{name} wurde erstellt. Öffnen Sie es über die Liste.",

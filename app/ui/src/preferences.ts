@@ -548,7 +548,22 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   customGoal.step = "1";
   customGoal.setAttribute("aria-label", t("prefs.goal.custom"));
   customGoal.value = (DAILY_TARGETS as readonly string[]).includes(dailyTarget) ? "" : dailyTarget;
-  goalGroup.querySelector(".prefs-choices")!.append(customGoal);
+  const customGoalLabel = document.createElement("label");
+  customGoalLabel.className = "prefs-goal-custom-label";
+  customGoalLabel.htmlFor = customGoal.id;
+  customGoalLabel.append(t("prefs.goal.custom"), customGoal);
+  const customGoalError = document.createElement("p");
+  customGoalError.id = "prefs-goal-custom-error";
+  customGoalError.hidden = true;
+  customGoalError.setAttribute("role", "alert");
+  customGoalError.textContent = t("prefs.goal.invalid", { min: formatNumber(1), max: formatNumber(1000000) });
+  customGoal.setAttribute("aria-describedby", customGoalError.id);
+  const showGoalError = (invalid: boolean): void => {
+    customGoalError.hidden = !invalid;
+    customGoal.setAttribute("aria-invalid", String(invalid));
+  };
+  showGoalError(false);
+  goalGroup.querySelector(".prefs-choices")!.append(customGoalLabel, customGoalError);
   // WHERE THE WRITER SITS, not how the application looks and not what they are
   // trying to do: a third kind of thing in the one panel there is. Both axes are
   // separate groups rather than one four-button row, because they are
@@ -1002,28 +1017,30 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
 
   const applyDailyTargetChange = (next: DailyTarget): void => {
     dailyTarget = next;
+    showGoalError(false);
     customGoal.value = (DAILY_TARGETS as readonly string[]).includes(next) ? "" : next;
     paint();
     deps.onDailyTarget(next);
     void record(() => deps.persistDailyTarget(next), t("prefs.what.daily-goal"));
   };
-  let rejectedGoal: string | null = null;
   const commitCustomGoal = (restoreDraft: boolean): void => {
     const value = customGoal.value;
-    if (!isDailyTarget(value) || value === "off") {
-      if (value !== "" && rejectedGoal !== value) {
-        deps.onNotice(t("prefs.goal.invalid", { min: formatNumber(1), max: formatNumber(1000000) }));
-        rejectedGoal = value;
-      }
+    if (customGoal.validity.badInput || !isDailyTarget(value) || value === "off") {
+      showGoalError(customGoal.validity.badInput || value !== "");
       if (restoreDraft) {
         customGoal.value = (DAILY_TARGETS as readonly string[]).includes(dailyTarget) ? "" : dailyTarget;
-        rejectedGoal = null;
+        showGoalError(false);
       }
       return;
     }
-    rejectedGoal = null;
+    showGoalError(false);
     if (value === dailyTarget) return;
     applyDailyTargetChange(value);
+  };
+  const onCustomGoalInput = (): void => {
+    if (!customGoal.validity.badInput && (customGoal.value === "" || isDailyTarget(customGoal.value))) {
+      showGoalError(false);
+    }
   };
   const onCustomGoalBlur = (): void => commitCustomGoal(true);
   const onCustomGoalKeyDown = (event: KeyboardEvent): void => {
@@ -1031,6 +1048,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     event.preventDefault();
     commitCustomGoal(false);
   };
+  customGoal.addEventListener("input", onCustomGoalInput);
   customGoal.addEventListener("keydown", onCustomGoalKeyDown);
   customGoal.addEventListener("blur", onCustomGoalBlur);
 
@@ -1187,6 +1205,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
       if (destroyed) return;
       destroyed = true;
       panel.removeEventListener("click", onPanelClick);
+      customGoal.removeEventListener("input", onCustomGoalInput);
       customGoal.removeEventListener("keydown", onCustomGoalKeyDown);
       customGoal.removeEventListener("blur", onCustomGoalBlur);
       focusHelp.destroy();

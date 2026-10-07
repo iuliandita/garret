@@ -1117,6 +1117,7 @@ async function main(): Promise<void> {
       try {
         if (plan.kind === "create") {
           const ack = (await invoke("item_create", {
+            generation: window.__appGeneration ?? 1,
             parentId: plan.parentId,
             itemType: "scene",
             title: `Added scene ${plan.seq}`,
@@ -1128,6 +1129,7 @@ async function main(): Promise<void> {
           }
         } else if (plan.kind === "rename") {
           const rev = (await invoke("item_rename", {
+            generation: window.__appGeneration ?? 1,
             id: plan.id,
             title: plan.title,
             baseRev: plan.baseRev,
@@ -1135,6 +1137,7 @@ async function main(): Promise<void> {
           planner.applyRename(plan.id, rev);
         } else {
           const moved = (await invoke("item_move", {
+            generation: window.__appGeneration ?? 1,
             id: plan.id,
             newParentId: plan.newParentId,
             afterId: null,

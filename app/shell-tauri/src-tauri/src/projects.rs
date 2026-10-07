@@ -832,7 +832,7 @@ pub fn move_book_files(from: &Path, to: &Path) -> Result<(), String> {
 fn move_error(from: &Path, to: &Path, e: &std::io::Error) -> String {
     if e.kind() == std::io::ErrorKind::CrossesDevices {
         return format!(
-            "{}: that folder is on another drive. This application moves a book only within one drive; copy the file and its pictures folder yourself and open it from its new place",
+            "{}: that folder is on another drive. This application moves a book only within one drive; close the book, copy its database file and adjacent pictures and research folders, then open it from its new place",
             to.display()
         );
     }
@@ -2001,10 +2001,10 @@ pub fn remember_open(data_home: &Path, explicit: bool, path: &Path, now_ms: u64)
     if explicit {
         return;
     }
-    let mut settings = read_settings(data_home);
-    settings.last_project = Some(path.to_string_lossy().into_owned());
-    record_recent(&mut settings, path, now_ms);
-    if let Err(e) = write_settings(data_home, &settings) {
+    if let Err(e) = update_settings(data_home, |settings| {
+        settings.last_project = Some(path.to_string_lossy().into_owned());
+        record_recent(settings, path, now_ms);
+    }) {
         eprintln!("cannot record the last project: {e}");
     }
 }
@@ -4303,6 +4303,63 @@ mod tests {
         let read = read_settings(dir.path());
         assert_eq!(read.last_project, None);
         assert!(read.recent.is_empty());
+    }
+
+    #[test]
+    fn remember_open_waits_for_a_settings_update_and_preserves_both_changes() {
+        let dir = tempdir().unwrap();
+        let home = dir.path();
+        let (started_tx, started_rx) = std::sync::mpsc::channel();
+        let (done_tx, done_rx) = std::sync::mpsc::channel();
+        let mut completed_while_locked = false;
+
+        std::thread::scope(|scope| {
+            update_settings(home, |settings| {
+                scope.spawn(move || {
+                    started_tx.send(()).unwrap();
+                    remember_open(home, false, Path::new("/lib/a.db"), 7);
+                    done_tx.send(()).unwrap();
+                });
+                started_rx.recv().unwrap();
+                // The ordinary update owns the lock until this callback returns.
+                completed_while_locked = done_rx
+                    .recv_timeout(std::time::Duration::from_millis(100))
+                    .is_ok();
+                settings.theme = Theme::Dark;
+                settings.window = WindowSize {
+                    width: 1200,
+                    height: 800,
+                };
+            })
+            .unwrap();
+        });
+
+        assert!(!completed_while_locked, "the open bypassed the settings lock");
+        let read = read_settings_checked(home).unwrap();
+        assert_eq!(read.last_project.as_deref(), Some("/lib/a.db"));
+        assert_eq!(read.recent.len(), 1);
+        assert_eq!(read.recent[0].path, "/lib/a.db");
+        assert_eq!(read.recent[0].opened_at, 7);
+        assert_eq!(read.theme, Theme::Dark);
+        assert_eq!(
+            read.window,
+            WindowSize {
+                width: 1200,
+                height: 800,
+            }
+        );
+    }
+
+    #[test]
+    fn remember_open_preserves_damaged_settings() {
+        let dir = tempdir().unwrap();
+        let path = settings_path(dir.path());
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, b"{").unwrap();
+
+        remember_open(dir.path(), false, Path::new("/lib/a.db"), 7);
+
+        assert_eq!(fs::read(path).unwrap(), b"{");
     }
 
     #[test]

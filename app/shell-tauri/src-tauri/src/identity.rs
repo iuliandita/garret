@@ -265,17 +265,20 @@ pub fn write_vault(data_home: &Path, vault: &Vault) -> Result<(), String> {
         .ok_or_else(|| format!("{}: no parent directory", path.display()))?;
     std::fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
     let body = serde_json::to_vec(vault).map_err(|e| format!("cannot serialize the vault: {e}"))?;
-    let tmp = path.with_extension("json.tmp");
+    let mut tmp = tempfile::Builder::new()
+        .prefix(".identities-")
+        .tempfile_in(dir)
+        .map_err(|e| format!("cannot prepare the identity vault: {e}"))?;
     {
         use std::io::Write as _;
-        let mut f = std::fs::File::create(&tmp)
-            .map_err(|e| format!("cannot write {}: {e}", tmp.display()))?;
-        f.write_all(&body)
-            .map_err(|e| format!("cannot write {}: {e}", tmp.display()))?;
-        f.sync_all()
-            .map_err(|e| format!("cannot sync {}: {e}", tmp.display()))?;
+        tmp.write_all(&body)
+            .map_err(|e| format!("cannot write the identity vault: {e}"))?;
+        tmp.as_file()
+            .sync_all()
+            .map_err(|e| format!("cannot sync the identity vault: {e}"))?;
     }
-    std::fs::rename(&tmp, &path).map_err(|e| format!("cannot replace {}: {e}", path.display()))?;
+    tmp.persist(&path)
+        .map_err(|e| format!("cannot replace {}: {e}", path.display()))?;
     if let Ok(d) = std::fs::File::open(dir) {
         let _ = d.sync_all();
     }
@@ -1113,6 +1116,24 @@ mod tests {
         vault.identities[0].private.legal_name = "Margaret Hollis".into();
         write_vault(dir.path(), &vault).unwrap();
         assert_eq!(read_vault(dir.path()).unwrap(), vault);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn vault_writes_are_private_and_leave_existing_temporary_links_untouched() {
+        use std::os::unix::fs::{symlink, PermissionsExt};
+        let dir = tempdir().unwrap();
+        let path = vault_path(dir.path());
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        let other = dir.path().join("other-file");
+        std::fs::write(&other, b"keep these bytes").unwrap();
+        symlink(&other, path.with_extension("json.tmp")).unwrap();
+        write_vault(dir.path(), &Vault::default()).unwrap();
+        assert_eq!(std::fs::read(&other).unwrap(), b"keep these bytes");
+        assert_eq!(std::fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o600);
+        write_vault(dir.path(), &Vault::default()).unwrap();
+        assert_eq!(std::fs::read(&other).unwrap(), b"keep these bytes");
+        assert_eq!(read_vault(dir.path()).unwrap(), Vault::default());
     }
 
     #[test]

@@ -20,7 +20,7 @@ export function createNavigatorHints(container: HTMLElement) {
       listening = false;
     }
   };
-  function show(anchor: HTMLElement, text: string): void {
+  function show(anchor: HTMLElement, text: string, keyboard = false): void {
     if (!text) { hide(); return; }
     cancelHide();
     tip.textContent = text;
@@ -32,8 +32,21 @@ export function createNavigatorHints(container: HTMLElement) {
     }
     const box = anchor.getBoundingClientRect();
     const size = tip.getBoundingClientRect();
-    const left = Math.max(4, Math.min(box.left, window.innerWidth - size.width - 4));
-    const top = Math.max(4, Math.min(box.bottom + 4, window.innerHeight - size.height - 4));
+    let x = box.left;
+    let y = box.bottom + 4;
+    if (keyboard) {
+      if (box.right + 8 + size.width <= window.innerWidth - 4) {
+        x = box.right + 8;
+        y = box.top;
+      } else if (box.left - size.width - 8 >= 4) {
+        x = box.left - size.width - 8;
+        y = box.top;
+      } else {
+        y = box.top - size.height - 4;
+      }
+    }
+    const left = Math.max(4, Math.min(x, window.innerWidth - size.width - 4));
+    const top = Math.max(4, Math.min(y, window.innerHeight - size.height - 4));
     tip.style.left = `${left}px`;
     tip.style.top = `${top}px`;
   }
@@ -43,7 +56,7 @@ export function createNavigatorHints(container: HTMLElement) {
     if (!row) { hide(); return; }
     const text = [...row.querySelectorAll<HTMLElement>("[data-nav-hint]")]
       .map((mark) => mark.dataset.navHint).filter(Boolean).join("; ");
-    show(row, text);
+    show(row, text, true);
   };
   const scheduleHide = (): void => {
     cancelHide();
