@@ -4678,7 +4678,7 @@ fn main() {
                     }
                 });
             }
-            WebviewWindowBuilder::new(
+            let window = WebviewWindowBuilder::new(
                 app,
                 "main",
                 WebviewUrl::CustomProtocol(
@@ -4693,8 +4693,12 @@ fn main() {
                 f64::from(recorded_window.fit(None).width),
                 f64::from(recorded_window.fit(None).height),
             )
-            .initialization_script(init.as_str())
-            .build()?;
+            .initialization_script(init.as_str());
+            // Tauri's identifier-based default would recreate the legacy profile
+            // after migration, blocking the next launch on a fresh installation.
+            #[cfg(target_os = "linux")]
+            let window = window.data_directory(app.state::<DataHome>().0.join(APP_DIR));
+            window.build()?;
 
             #[cfg(target_os = "linux")]
             privacy_native::install(app.handle())?;
