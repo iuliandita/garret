@@ -55,6 +55,7 @@ export const DE = {
   "creation.open": "Zum Buch hinzufügen",
   "creation.bible.open": "Zur Bibel hinzufügen",
   "chrome.home": "Startseite",
+  "chrome.home.label": "Startseite: Bibliothek",
   "chrome.home.hint": "Zur Bibliothek zurückkehren.",
   "nav.words.described": "{count} Wörter",
   "nav.state.described": "Überarbeitungsstatus: {state}",
@@ -1874,9 +1875,9 @@ export const DE = {
 
   "switcher.archive.heading": "Falls Sie diesen Rechner verlieren",
   "switcher.archive.note":
-    "Ein neues Archiv ist ein vollständiger Ordner. Um sich davor zu schützen, diesen Rechner zu verlieren, bringen Sie den ganzen Ordner selbst von diesem Rechner weg: auf einen USB-Stick, einen anderen Rechner oder in einen Sync-Ordner. Ältere .db-Archive enthielten keine Bilder.",
+    "Ein neues Archiv ist ein vollständiger, unverschlüsselter Ordner. Wer Zugriff darauf hat, kann Ihr Buch lesen. Um sich davor zu schützen, diesen Rechner zu verlieren, bringen Sie den ganzen Ordner selbst von diesem Rechner weg: auf einen USB-Stick, einen anderen Rechner oder in einen Sync-Ordner. Ältere .db-Archive enthielten keine Bilder.",
   "switcher.archive.where": "Archive werden nach {dir} geschrieben",
-  "switcher.archive.action": "Archiv erstellen",
+  "switcher.archive.action": "Unverschlüsseltes Archiv erstellen",
   "switcher.archive.working": "Archiv wird geschrieben…",
   "switcher.archive.list.label": "Archive",
   "switcher.archive.row": "{file} · von {when}",

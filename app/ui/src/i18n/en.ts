@@ -59,6 +59,7 @@ export const EN = {
   "creation.open": "Add to book",
   "creation.bible.open": "Add to Bible",
   "chrome.home": "Home",
+  "chrome.home.label": "Home: Library",
   "chrome.home.hint": "Return to the Library.",
   "nav.words.described": "{count} words",
   "nav.state.described": "Revision status: {state}",
@@ -2207,9 +2208,9 @@ export const EN = {
   // the writer has to have read, and not in the past tense: the application has
   // done its half and cannot do the other half.
   "switcher.archive.note":
-    "A new archive is one complete folder. To protect against losing this computer, move the whole folder off this computer yourself: onto a USB stick, another machine, or a sync folder. Older .db archives did not include pictures.",
+    "A new archive is one complete, unencrypted folder. Anyone with access to it can read your book. To protect against losing this computer, move the whole folder off this computer yourself: onto a USB stick, another machine, or a sync folder. Older .db archives did not include pictures.",
   "switcher.archive.where": "Archives are written to {dir}",
-  "switcher.archive.action": "Make an archive",
+  "switcher.archive.action": "Make unencrypted archive",
   "switcher.archive.working": "Writing an archive…",
   "switcher.archive.list.label": "archives",
   "switcher.archive.row": "{file} · from {when}",

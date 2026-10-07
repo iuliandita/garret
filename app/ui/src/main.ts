@@ -748,7 +748,7 @@ async function main(): Promise<void> {
       const home = document.createElement("button");
       home.id = "home-button";
       home.type = "button";
-      home.setAttribute("aria-label", t("chrome.home"));
+      home.setAttribute("aria-label", t("chrome.home.label"));
       home.append(createIcon("house"));
       home.addEventListener("click", () => library.open());
       const homeTip = createTooltip({ control: home, name: t("chrome.home"), hint: t("chrome.home.hint") });

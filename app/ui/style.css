@@ -2600,6 +2600,7 @@ body.nav-hidden #nav-column {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   column-gap: 12px;
+  scroll-padding-top: calc(var(--control-h) + var(--space-3) + var(--space-1));
 }
 
 #prefs-panel [role="group"] {
@@ -2722,7 +2723,8 @@ body.nav-hidden #nav-column {
 
 #prefs-dict-note {
   margin: 0 0 6px;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
+  line-height: var(--leading-ui);
   color: var(--muted);
 }
 
@@ -3613,6 +3615,10 @@ body.nav-hidden #nav-column {
   background: var(--accent-soft);
   border-color: var(--accent);
   font-weight: 600;
+}
+
+#snapshot-list {
+  margin-top: var(--space-2);
 }
 
 .snapshot-row {
@@ -8953,7 +8959,14 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 
 
 /* Preferences categories keep the existing shared legend track. */
-#prefs-panel #prefs-tabs { grid-column: 1 / -1; margin-bottom: var(--space-3); }
+#prefs-panel #prefs-tabs {
+  grid-column: 1 / -1;
+  position: sticky;
+  top: var(--space-1);
+  z-index: 1;
+  background: var(--bg);
+  margin-bottom: var(--space-3);
+}
 #prefs-panel #prefs-tabs button { flex: 1; margin: 0; }
 #prefs-panel #prefs-tabs button[aria-selected="true"] {
   background: var(--accent-soft);
