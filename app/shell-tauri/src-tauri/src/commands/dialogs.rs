@@ -713,6 +713,7 @@ pub(crate) async fn project_move(
                             let retry = move_registration_retry(&data_home.0, &from, &retained, &book_id, explicit.0.is_none());
                             format!("could not open the book after its move: {e}. {back}. The book was reopened at {}, but its saved location could not be updated: {registry}. {retry}", retained.display())
                         })?;
+                    crate::book_registration::clear_registered(&data_home.0, &book_id);
                     return Err(format!("could not open the book after its move: {e}. {back}. The book was reopened at {}", retained.display()));
                 }
             }
@@ -723,6 +724,7 @@ pub(crate) async fn project_move(
             let retry = move_registration_retry(&data_home.0, &from, &to, &book_id, explicit.0.is_none());
             format!("the book moved to {}, but its saved location could not be updated: {error}. {retry}", to.display())
         })?;
+    crate::book_registration::clear_registered(&data_home.0, &book_id);
     drop(guard);
     Ok(Some(projects::summarize(&to)))
 }

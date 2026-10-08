@@ -113,25 +113,45 @@ pub fn remember_move_failure(
     if retained_id != book_id {
         return Err("the moved book changed; its location cannot be registered".into());
     }
+    let home = profile(home);
+    let mut pending = PENDING.lock().unwrap_or_else(|error| error.into_inner());
+    let original = pending
+        .values()
+        .find_map(|entry| {
+            if entry.home != home || entry.book_id != book_id {
+                return None;
+            }
+            match &entry.registration {
+                Registration::Move { from, .. } => Some(from.clone()),
+                Registration::Book => None,
+            }
+        })
+        .unwrap_or_else(|| from.to_path_buf());
+    pending.retain(|_, entry| entry.home != home || entry.book_id != book_id);
     let token = uuid::Uuid::now_v7().to_string();
     let name = projects::summarize(&path).name;
+    pending.insert(
+        token,
+        Pending {
+            home,
+            path,
+            book_id: retained_id,
+            name,
+            registration: Registration::Move {
+                from: original,
+                follow_last,
+            },
+        },
+    );
+    Ok(())
+}
+
+pub fn clear_registered(home: &Path, book_id: &str) {
+    let home = profile(home);
     PENDING
         .lock()
         .unwrap_or_else(|error| error.into_inner())
-        .insert(
-            token,
-            Pending {
-                home: profile(home),
-                path,
-                book_id: retained_id,
-                name,
-                registration: Registration::Move {
-                    from: from.to_path_buf(),
-                    follow_last,
-                },
-            },
-        );
-    Ok(())
+        .retain(|_, entry| entry.home != home || entry.book_id != book_id);
 }
 
 pub fn list(home: &Path) -> Vec<PendingSummary> {
@@ -303,6 +323,14 @@ mod tests {
         assert_eq!(rows[0].path, to.to_string_lossy());
         assert!(retry(home.path(), &rows[0].token).is_err());
         assert_eq!(list(home.path()).len(), 1);
+        let next_destination = tempfile::tempdir().unwrap();
+        let next = projects::move_target(&to, next_destination.path()).unwrap();
+        projects::move_book_files(&to, &next).unwrap();
+        remember_move_failure(home.path(), &to, &next, &book_id, true).unwrap();
+        let to = next;
+        let rows = list(home.path());
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].path, to.to_string_lossy());
         std::fs::remove_dir(&blocked).unwrap();
         projects::update_settings_checked(home.path(), |settings| {
             settings.last_project = Some("/later/book.db".into());
@@ -323,6 +351,25 @@ mod tests {
         assert!(list(home.path()).is_empty());
         assert_eq!(std::fs::read(&to).unwrap(), bytes);
         assert!(!from.exists());
+    }
+
+    #[test]
+    fn a_successfully_registered_move_retires_an_older_pending_request() {
+        let home = tempfile::tempdir().unwrap();
+        let source = tempfile::tempdir().unwrap();
+        let made = failed(home.path(), source.path());
+        let id = Store::open_readonly(Path::new(&made.path))
+            .unwrap()
+            .book_id()
+            .unwrap()
+            .unwrap();
+        let other_home = tempfile::tempdir().unwrap();
+        clear_registered(other_home.path(), &id);
+        assert_eq!(list(home.path()).len(), 1);
+        clear_registered(home.path(), "another-book");
+        assert_eq!(list(home.path()).len(), 1);
+        clear_registered(home.path(), &id);
+        assert!(list(home.path()).is_empty());
     }
 
     #[test]
