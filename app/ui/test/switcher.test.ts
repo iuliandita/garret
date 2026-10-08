@@ -732,9 +732,13 @@ describe("switcher activation", () => {
 
   test("a recovered move error repaints the retained location without opening another book", async () => {
     let path = "/p/one.mss";
+    let pending = false;
+    const tokens: string[] = [];
     const rig = mount({
       currentPath: () => path,
-      moveProject: async () => { path = "/elsewhere/one.mss"; throw new Error("location preference failed"); },
+      moveProject: async () => { path = "/elsewhere/one.mss"; pending = true; throw new Error("location preference failed"); },
+      listPendingRegistrations: async () => pending ? [{ token: "move-token", path, name: "One" }] : [],
+      retryRegistration: async (token) => { tokens.push(token); pending = false; return { path, name: "One", modified_at: 0 }; },
     });
     await open(rig);
     const before = rig.calls.list;
@@ -743,6 +747,13 @@ describe("switcher activation", () => {
     expect(rig.container.querySelector<HTMLElement>("#project-here")?.title).toBe(path);
     expect(rig.calls.list).toBe(before + 1);
     expect(rig.calls.notices).toEqual(["location preference failed"]);
+    const registration = el(rig.container, "project-pending-registrations");
+    expect(registration.hidden).toBe(false);
+    click(registration.querySelector("button")!);
+    await settle();
+    expect(tokens).toEqual(["move-token"]);
+    expect(registration.hidden).toBe(true);
+    expect(rig.container.querySelector<HTMLElement>("#project-here")?.title).toBe(path);
     expect(rig.calls.switched).toEqual([]);
     teardown(rig);
   });
