@@ -117,12 +117,12 @@ pub fn retry(home: &Path, token: &str) -> Result<projects::ProjectSummary, Strin
         .get(token)
         .filter(|entry| entry.home == profile(home))
         .ok_or(
-            "this library registration request is unavailable; locate the saved book to open it",
+            "this library registration request is unavailable; keep the saved book file",
         )?;
     let (path, id) = identity(&entry.path)?;
     if path != entry.path || id != entry.book_id {
         return Err(
-            "the saved book changed; locate it again before adding it to the library".into(),
+            "the saved book changed; keep the file and check its identity before adding it to the library".into(),
         );
     }
     let recorded = path.to_string_lossy().into_owned();
