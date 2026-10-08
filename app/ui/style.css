@@ -5185,6 +5185,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 }
 
 #editor .ProseMirror {
+  white-space: pre-wrap;
   max-width: var(--prose-measure, 39em);
   margin: 0 auto;
   /* flex: 1 0 auto, not min-height: 100%: #editor is now a flex

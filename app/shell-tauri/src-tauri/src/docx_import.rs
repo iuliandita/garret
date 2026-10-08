@@ -446,13 +446,14 @@ fn resolve_heading(style_id: Option<&str>, own_outline: Option<u32>, styles: &St
 
 // ------------------------------------------------------------- run content
 
-/// One run of text carrying the marks in force where it was read, or a hard
-/// break -- the same shape `import::Run` gives Markdown, plus underline,
-/// which is DOCX's own third mark (decision 5).
+/// Text and manual line breaks share the editor's supported text-node shape.
+/// A break carries its run's marks just like the surrounding text.
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum RunOut {
-    Text { text: String, strong: bool, em: bool, underline: bool },
-    Break,
+struct RunOut {
+    text: String,
+    strong: bool,
+    em: bool,
+    underline: bool,
 }
 
 /// A run's marks, from its own `w:rPr` (`w:b`, `w:i`, `w:u`), each read
@@ -524,11 +525,16 @@ fn walk_para_content(nodes: &[Node], out: &mut Vec<RunOut>, losses: &mut Losses)
                         "t" => {
                             let text: String = cc.iter().filter_map(text_of).collect();
                             if !text.is_empty() {
-                                out.push(RunOut::Text { text, strong, em, underline });
+                                out.push(RunOut { text, strong, em, underline });
                             }
                         }
-                        "br" => out.push(RunOut::Break),
-                        "tab" => out.push(RunOut::Text {
+                        "br" => out.push(RunOut {
+                            text: "\n".to_string(),
+                            strong,
+                            em,
+                            underline,
+                        }),
+                        "tab" => out.push(RunOut {
                             text: " ".to_string(),
                             strong,
                             em,
@@ -558,25 +564,15 @@ fn walk_para_content(nodes: &[Node], out: &mut Vec<RunOut>, losses: &mut Losses)
     }
 }
 
-/// Adjacent runs with identical marks, merged into one text node -- Word
-/// splits runs at every spell-check boundary, and the mirror's
-/// byte-comparable bodies (decision 10) want one node per styled span.
-/// `RunOut::Break` never merges with anything either side of it.
+/// Adjacent runs with identical marks, including manual breaks, merge into
+/// one text node, matching the editor's canonical representation.
 fn merge_runs(runs: Vec<RunOut>) -> Vec<RunOut> {
     let mut out: Vec<RunOut> = Vec::new();
     for r in runs {
-        if let RunOut::Text { text, strong, em, underline } = &r {
-            if let Some(RunOut::Text {
-                text: pt,
-                strong: ps,
-                em: pe,
-                underline: pu,
-            }) = out.last_mut()
-            {
-                if *ps == *strong && *pe == *em && *pu == *underline {
-                    pt.push_str(text);
-                    continue;
-                }
+        if let Some(previous) = out.last_mut() {
+            if previous.strong == r.strong && previous.em == r.em && previous.underline == r.underline {
+                previous.text.push_str(&r.text);
+                continue;
             }
         }
         out.push(r);
@@ -584,59 +580,41 @@ fn merge_runs(runs: Vec<RunOut>) -> Vec<RunOut> {
     out
 }
 
-/// A run list as one ProseMirror paragraph node, in the FIXED mark order
-/// `strong`, `em`, `underline` (decision 5), or None when it carries no
-/// real content -- whitespace-only text and no break -- the same emptiness
-/// rule `docx.rs::block_docx` states for the write direction.
+/// A run list as one ProseMirror paragraph node, in the fixed mark order
+/// `strong`, `em`, `underline`. Manual breaks count as content even when
+/// the paragraph contains no other text.
 fn build_pm_paragraph(merged: &[RunOut]) -> Option<serde_json::Value> {
     let mut content = Vec::new();
     let mut has_content = false;
-    for r in merged {
-        match r {
-            RunOut::Text { text, strong, em, underline } => {
-                if text.is_empty() {
-                    continue;
-                }
-                if !text.trim().is_empty() {
-                    has_content = true;
-                }
-                let mut marks = Vec::new();
-                if *strong {
-                    marks.push(json!({"type": "strong"}));
-                }
-                if *em {
-                    marks.push(json!({"type": "em"}));
-                }
-                if *underline {
-                    marks.push(json!({"type": "underline"}));
-                }
-                let mut node = json!({"type": "text", "text": text});
-                if !marks.is_empty() {
-                    node["marks"] = json!(marks);
-                }
-                content.push(node);
-            }
-            RunOut::Break => {
-                has_content = true;
-                content.push(json!({"type": "hard_break"}));
-            }
+    for RunOut { text, strong, em, underline } in merged {
+        if text.is_empty() {
+            continue;
         }
+        if !text.trim().is_empty() || text.contains('\n') {
+            has_content = true;
+        }
+        let mut marks = Vec::new();
+        if *strong {
+            marks.push(json!({"type": "strong"}));
+        }
+        if *em {
+            marks.push(json!({"type": "em"}));
+        }
+        if *underline {
+            marks.push(json!({"type": "underline"}));
+        }
+        let mut node = json!({"type": "text", "text": text});
+        if !marks.is_empty() {
+            node["marks"] = json!(marks);
+        }
+        content.push(node);
     }
     (has_content && !content.is_empty()).then(|| json!({"type": "paragraph", "content": content}))
 }
 
-/// Plain concatenated text of a run list, marks and breaks both dropped to
-/// a single space -- a heading's title, which the store holds as a bare
-/// string exactly as `import::title_text` reads one back for Markdown.
+/// Headings are plain strings, with manual breaks represented as spaces.
 fn plain_text(runs: &[RunOut]) -> String {
-    let mut out = String::new();
-    for r in runs {
-        match r {
-            RunOut::Text { text, .. } => out.push_str(text),
-            RunOut::Break => out.push(' '),
-        }
-    }
-    out
+    runs.iter().map(|r| r.text.replace('\n', " ")).collect()
 }
 
 // -------------------------------------------------------------- paragraphs
@@ -1133,6 +1111,43 @@ mod tests {
         assert_eq!(content[0]["text"], "loud");
     }
 
+    #[test]
+    fn manual_breaks_are_supported_marked_text_and_survive_docx_export() {
+        let bytes = package(&doc(r#"
+            <w:p><w:pPr><w:outlineLvl w:val="1"/></w:pPr><w:r><w:t>Scene</w:t></w:r></w:p>
+            <w:p><w:r><w:br/><w:t>plain</w:t></w:r>
+              <w:r><w:rPr><w:b/><w:i/><w:u/></w:rPr><w:br/><w:br/><w:t>styled</w:t><w:br/></w:r>
+              <w:r><w:t>tail</w:t><w:br/></w:r></w:p>
+            <w:p><w:r><w:rPr><w:u/></w:rPr><w:br/><w:br/></w:r></w:p>
+        "#), None);
+        let imported = parse(&bytes, "stem").unwrap();
+        assert_eq!(imported.losses, Losses::default());
+        let body = imported.imported.items[0].body.as_ref().unwrap();
+        let expected = json!({"type":"doc","content":[
+            {"type":"paragraph","content":[
+                {"type":"text","text":"\nplain"},
+                {"type":"text","text":"\n\nstyled\n","marks":[
+                    {"type":"strong"},{"type":"em"},{"type":"underline"}
+                ]},
+                {"type":"text","text":"tail\n"}
+            ]},
+            {"type":"paragraph","content":[
+                {"type":"text","text":"\n\n","marks":[{"type":"underline"}]}
+            ]}
+        ]});
+        assert_eq!(serde_json::from_str::<serde_json::Value>(body).unwrap(), expected);
+
+        let chapters = [("scene".to_string(), "Scene".to_string(), 0)];
+        let book = crate::export::Book {
+            name: "Book", contents_title: "Contents", front: &[], chapters: &chapters, back: &[],
+        };
+        let bodies = StdHashMap::from([("scene".to_string(), body.clone())]);
+        let exported = crate::docx::render(&book, &bodies, "en");
+        let reimported = parse(&exported.bytes, "stem").unwrap();
+        assert_eq!(reimported.losses, Losses::default());
+        assert_eq!(reimported.imported.items[0].body.as_ref().unwrap(), body);
+    }
+
     /// A TABLE IS COUNTED AND ITS TEXT IS ABSENT -- not flattened into
     /// prose nobody wrote.
     #[test]
@@ -1455,7 +1470,7 @@ mod tests {
             !md_json.to_string().contains("underline"),
             "{md_json}"
         );
-        assert!(docx_json.to_string().contains("hard_break"), "{docx_json}");
+        assert_eq!(docx_json["content"][0]["content"][2]["text"], " line one\nline two ");
     }
 
     /// A `Title`-STYLED SECTION'S OWN PARAGRAPHS ARE EMITTED, not silently
