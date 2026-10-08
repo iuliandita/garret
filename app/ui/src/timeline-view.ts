@@ -1338,10 +1338,26 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
           focusTrackAction(tr.id);
         }
       });
-      input.addEventListener("blur", () => {
+      input.addEventListener("blur", (event) => {
         if (finished) return;
         finished = true;
+        const destination = event.relatedTarget;
+        const laneButton = destination instanceof HTMLButtonElement && lanes.contains(destination) ? destination : null;
+        const actionTrackId = laneButton?.matches(".timeline-lane-action")
+          ? laneButton.closest<HTMLElement>(".timeline-lane")?.dataset.trackId : undefined;
+        const eventAddress = laneButton?.matches(".tl-event, .tl-dot") ? rovingAddress(laneButton) : null;
         commitRename(input, tr.id);
+        if (actionTrackId === undefined && eventAddress === null) return;
+        // Native focus completes after blur; its destination was removed by render.
+        queueMicrotask(() => {
+          if (destroyed || (document.activeElement !== destination && document.activeElement !== document.body)) return;
+          if (actionTrackId !== undefined) focusTrackAction(actionTrackId);
+          else if (eventAddress !== null) {
+            const next = matchingRovingItem(eventAddress, rovingItemsInGroup(eventAddress.branchId));
+            if (next !== undefined) focusRovingItem(next.el);
+            else lanes.focus();
+          }
+        });
       });
       header.append(input);
       queueMicrotask(() => {

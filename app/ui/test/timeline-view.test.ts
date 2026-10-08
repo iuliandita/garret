@@ -926,6 +926,31 @@ describe("mountTimeline", () => {
       }
     });
 
+    test.each([
+      '.timeline-lane[data-track-id="t2"] .timeline-lane-action',
+      '.tl-event[data-event-id="v1"]',
+    ])("committing a rename by blur keeps %s focused after repaint", async (selector) => {
+      const { mount: m, dirty } = mount(baseBody({ tracks: [
+        { id: "t1", name: "Ines", kind: "thread", colour: 1 },
+        { id: "t2", name: "Mira", kind: "thread", colour: 2 },
+      ] }));
+      try {
+        container.querySelector<HTMLButtonElement>('.timeline-lane[data-track-id="t1"] .timeline-lane-action')!.click();
+        document.getElementById("timeline-track-rename")!.click();
+        await Promise.resolve();
+        const input = container.querySelector<HTMLInputElement>(".timeline-lane-rename")!;
+        input.value = "Harbour";
+        const next = container.querySelector<HTMLButtonElement>(selector)!;
+        next.focus();
+        await Promise.resolve();
+        expect(next.isConnected).toBe(false);
+        expect(document.activeElement === container.querySelector(selector)).toBe(true);
+        expect(dirty).toHaveLength(1);
+      } finally {
+        m.destroy();
+      }
+    });
+
     // Mutation target 8: a track rename with an empty name is accepted.
     test("an empty name is refused and the field keeps the old one", () => {
       const { mount: m, dirty } = mount(baseBody());
