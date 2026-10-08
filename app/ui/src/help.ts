@@ -168,9 +168,12 @@ export function createHelpPanel(deps: HelpPanelDeps): HelpPanel {
     summary.setAttribute("aria-expanded", "false");
     details.addEventListener("toggle", () => summary.setAttribute("aria-expanded", String(details.open)));
     summary.textContent = t(`help.guide.${task}.title`);
-    const text = document.createElement("p");
-    text.textContent = t(`help.guide.${task}.body`);
-    details.append(summary, text);
+    details.append(summary);
+    for (const paragraph of t(`help.guide.${task}.body`).split("\n\n")) {
+      const text = document.createElement("p");
+      text.textContent = paragraph;
+      details.append(text);
+    }
     guide.append(details);
   }
   const shortcutsTitle = document.createElement("h3");

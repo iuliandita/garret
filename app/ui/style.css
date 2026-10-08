@@ -2773,6 +2773,10 @@ body.nav-hidden #nav-column {
   width: 8em;
   min-width: 0;
 }
+#prefs-goal-custom[aria-invalid="true"] {
+  border-color: var(--amber);
+  outline: 1px solid var(--amber);
+}
 
 #prefs-dict-word {
   flex: 1 1 auto;
@@ -5591,11 +5595,13 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
      hides the shortcut they came looking for. The window is 1200px wide and
      this was 380, so the room to use was horizontal. No height here, so the
      box grows down and the panel above it scrolls. */
-  column-count: 2;
-  column-gap: 28px;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
+  column-gap: 16px;
 }
 
 .help-group {
+  grid-column: span 2;
   /* A group title stranded at the foot of a column, with its rows at the head
      of the next one, reads as a heading for the wrong list. */
   break-after: avoid;
@@ -5607,8 +5613,10 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 }
 
 .help-section {
-  display: inline-block;
-  width: 100%;
+  display: grid;
+  grid-column: span 2;
+  grid-template-columns: subgrid;
+  min-width: 0;
   break-inside: avoid;
 }
 
@@ -5619,7 +5627,8 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 .help-rows {
   break-inside: avoid;
   display: grid;
-  grid-template-columns: max-content 1fr;
+  grid-column: span 2;
+  grid-template-columns: subgrid;
   gap: 2px 16px;
   margin: 0;
   font-size: var(--text-sm);
@@ -5632,7 +5641,9 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 }
 
 .help-rows dd {
+  min-width: 0;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 /* Quick open. Positioned against #project-bar exactly like #find-panel, so it
@@ -8904,7 +8915,10 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 #help-guide summary::-webkit-details-marker { display: none; }
 #help-guide summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #help-guide p { margin: 6px 0 12px; max-width: 70ch; font-size: var(--text-sm); line-height: var(--leading-ui); }
-@media (max-width: 700px) { #help-columns { column-count: 1; } }
+@media (max-width: 700px) {
+  #help-columns { grid-template-columns: minmax(0, 45%) minmax(0, 1fr); }
+  .help-rows dt { white-space: normal; overflow-wrap: anywhere; }
+}
 
 #project-list .switcher-open, #project-imports .switcher-import, #project-recovery-points .switcher-restore {
   display: block; width: 100%; text-align: start; padding: 0; min-height: 24px; background: transparent;

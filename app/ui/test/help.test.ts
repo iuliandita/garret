@@ -382,7 +382,9 @@ describe("the panel shows every group, in columns that grow down", () => {
   };
 
   test("the columns are on #help-columns, which has no height; the panel scrolls", () => {
-    expect(block("#help-columns")).toMatch(/column-count:\s*2/);
+    expect(block("#help-columns")).toMatch(/display:\s*grid/);
+    expect(block(".help-section")).toMatch(/grid-template-columns:\s*subgrid/);
+    expect(block(".help-rows")).toMatch(/grid-template-columns:\s*subgrid/);
     expect(block("#help-columns")).not.toMatch(/max-height|\bheight:/);
     expect(block("#help-panel")).not.toContain("column-count");
     // The shell's body is what scrolls, and this one never sideways.
@@ -563,7 +565,8 @@ test("Help includes offline guidance for structuring, annotating, exporting and 
     expect(topics.length).toBe(4);
     for (const [index, task] of ["structure", "annotate", "export", "protect"].entries()) {
       expect(topics[index]?.querySelector("summary")?.textContent).toBe(t(`help.guide.${task}.title`));
-      expect(topics[index]?.querySelector("p")?.textContent).toBe(t(`help.guide.${task}.body`));
+      expect([...topics[index]!.querySelectorAll("p")].map((paragraph) => paragraph.textContent).join("\n\n")).toBe(t(`help.guide.${task}.body`));
+      if (task === "protect") expect(topics[index]!.querySelectorAll("p").length).toBe(4);
     }
     expect(container.querySelector("#help-guide a")).toBeNull();
   } finally { panel.destroy(); container.remove(); }

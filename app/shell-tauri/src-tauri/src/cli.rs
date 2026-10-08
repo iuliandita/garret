@@ -1148,10 +1148,10 @@ fn parse(args: &[String]) -> Result<Options, String> {
 /// The source project's slug for a point, taken from the directory the point
 /// sits in.
 ///
-/// A recovery directory IS `<data_home>/cc.local.app/recovery/<slug>`, so the
-/// parent's name is the original project's file stem by construction rather
-/// than by convention. A point somewhere else falls back to its own stem, which
-/// is the only other thing on hand and still produces a name a person can read.
+/// Legacy recovery folders use the source file stem. Current folders under
+/// `garret/recovery/by-id` use the book identity instead, so this is only a
+/// filename hint; the restored book keeps its title from the stored metadata.
+/// A point without a parent name falls back to its own file stem.
 fn source_slug_of(point: &Path) -> String {
     point
         .parent()

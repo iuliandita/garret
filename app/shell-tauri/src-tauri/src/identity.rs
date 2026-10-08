@@ -224,6 +224,16 @@ impl std::fmt::Display for VaultError {
     }
 }
 
+const VAULT_LIMIT: u64 = 16 * 1024 * 1024;
+
+fn read_vault_body(source: impl std::io::Read, limit: u64) -> Result<Vec<u8>, String> {
+    use std::io::Read;
+    let mut body = Vec::new();
+    source.take(limit.saturating_add(1)).read_to_end(&mut body).map_err(|e| e.to_string())?;
+    if body.len() as u64 > limit { return Err("identity vault is too large".into()); }
+    Ok(body)
+}
+
 /// The vault, or a loud failure.
 ///
 /// A MISSING FILE IS AN EMPTY VAULT AND IS NORMAL -- it is the state of every
@@ -235,20 +245,23 @@ impl std::fmt::Display for VaultError {
 /// look" and "there is nothing there" must never be one word.
 pub fn read_vault(data_home: &Path) -> Result<Vault, VaultError> {
     let path = vault_path(data_home);
-    match std::fs::read_to_string(&path) {
-        Ok(body) => {
-            let vault: Vault = serde_json::from_str(&body)
-                .map_err(|e| VaultError::Unreadable(format!("{}: {e}", path.display())))?;
-            for identity in &vault.identities {
-                normalize_aliases(identity.aliases.clone()).map_err(|error| {
-                    VaultError::Unreadable(format!("{}: identity {:?}: {error}", path.display(), identity.id))
-                })?;
-            }
-            Ok(vault)
-        }
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(Vault::default()),
-        Err(e) => Err(VaultError::Unreadable(format!("{}: {e}", path.display()))),
+    match std::fs::symlink_metadata(&path) {
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vault::default()),
+        Err(e) => return Err(VaultError::Unreadable(format!("{}: {e}", path.display()))),
+        Ok(_) => {}
     }
+    let unreadable = |error| VaultError::Unreadable(format!("{}: {error}", path.display()));
+    let file = crate::backup_bundle::open_regular_with_limit(&path, VAULT_LIMIT)
+        .map_err(|e| unreadable(e.to_string()))?;
+    let body = read_vault_body(file, VAULT_LIMIT).map_err(unreadable)?;
+    let vault: Vault = serde_json::from_slice(&body)
+        .map_err(|e| VaultError::Unreadable(format!("{}: {e}", path.display())))?;
+    for identity in &vault.identities {
+        normalize_aliases(identity.aliases.clone()).map_err(|error| {
+            VaultError::Unreadable(format!("{}: identity {:?}: {error}", path.display(), identity.id))
+        })?;
+    }
+    Ok(vault)
 }
 
 /// Write the vault whole, through a temp file in the same directory and a
@@ -265,6 +278,7 @@ pub fn write_vault(data_home: &Path, vault: &Vault) -> Result<(), String> {
         .ok_or_else(|| format!("{}: no parent directory", path.display()))?;
     std::fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
     let body = serde_json::to_vec(vault).map_err(|e| format!("cannot serialize the vault: {e}"))?;
+    if body.len() as u64 > VAULT_LIMIT { return Err("identity vault is too large".into()); }
     let mut tmp = tempfile::Builder::new()
         .prefix(".identities-")
         .tempfile_in(dir)
@@ -1093,6 +1107,43 @@ mod tests {
             }
             other => panic!("an unparseable vault must fail loud, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn vault_reads_stop_after_the_limit_and_one_sentinel_byte() {
+        let mut source = std::io::Cursor::new(vec![b' '; 64]);
+        assert!(read_vault_body(&mut source, 32).unwrap_err().contains("too large"));
+        assert_eq!(source.position(), 33);
+        assert_eq!(read_vault_body(b"{}".as_slice(), 2).unwrap(), b"{}");
+    }
+
+    #[test]
+    fn oversized_and_nonregular_vaults_fail_loud() {
+        let dir = tempdir().unwrap();
+        let path = vault_path(dir.path());
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::File::create(&path).unwrap().set_len(VAULT_LIMIT + 1).unwrap();
+        assert!(matches!(read_vault(dir.path()), Err(VaultError::Unreadable(detail)) if detail.contains("too large")));
+        std::fs::remove_file(&path).unwrap();
+        std::fs::create_dir(&path).unwrap();
+        assert!(matches!(read_vault(dir.path()), Err(VaultError::Unreadable(detail)) if detail.contains("not a regular file")));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn vault_reads_refuse_links_even_to_valid_or_missing_vaults() {
+        use std::os::unix::fs::symlink;
+        let dir = tempdir().unwrap();
+        let path = vault_path(dir.path());
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        let other = dir.path().join("other.json");
+        let bytes = serde_json::to_vec(&Vault::default()).unwrap();
+        std::fs::write(&other, &bytes).unwrap();
+        symlink(&other, &path).unwrap();
+        assert!(matches!(read_vault(dir.path()), Err(VaultError::Unreadable(_))));
+        assert_eq!(std::fs::read(&other).unwrap(), bytes);
+        std::fs::remove_file(&other).unwrap();
+        assert!(matches!(read_vault(dir.path()), Err(VaultError::Unreadable(_))));
     }
 
     #[test]
