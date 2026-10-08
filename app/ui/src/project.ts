@@ -1006,19 +1006,17 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   {
     flusher.register(activeDocId, activeDocRev);
     session = createSession({
-      // WRAPPED, not the raw editor: `replaceDoc` is the prose arm's
-      // own apply step, and the moment it runs is the moment any timeline
-      // that was open stops being the pane's content -- so this is where its
-      // mount is torn down and the ProseMirror DOM (hidden while a timeline
-      // was open) comes back. `serialize` is untouched; it is never called
-      // while a timeline is open (see noteChange's own reason below).
+      // Keep the outgoing timeline visible until replaceDoc accepts the
+      // prose schema. It can throw before updating the editor, and session
+      // restores the outgoing id on failure. replaceDoc fires no onChange.
+      // `serialize` is never called while a timeline is open (see below).
       editor: {
         serialize: () => editor.serialize(),
         replaceDoc: (input) => {
+          editor.replaceDoc(input);
           timelineMount?.destroy();
           timelineMount = null;
           editor.setHidden(false);
-          editor.replaceDoc(input);
         },
       },
       flusher,

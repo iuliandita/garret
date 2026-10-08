@@ -3790,6 +3790,72 @@ describe("mountProject: a timeline opens in the editor pane", () => {
     mounted.destroy();
   });
 
+  for (const unsupported of ["node", "mark"] as const) {
+    test(`an unsupported scene ${unsupported} keeps the timeline visible and a later scene saves under its own id`, async () => {
+      shell();
+      const future = JSON.stringify({
+        type: "doc",
+        content: unsupported === "node"
+          ? [{ type: "future-block" }]
+          : [{ type: "paragraph", content: [{ type: "text", text: "Future prose", marks: [{ type: "future-mark" }] }] }],
+      });
+      const h = host({
+        items: withTimeline(),
+        bodies: {
+          "scene-0": body("Arrival happened at dusk."),
+          "scene-1": future,
+          "timeline-0": TIMELINE_BODY,
+        },
+      });
+      const mounted = await mountProject(deps({ invoke: h.invoke }));
+      try {
+        await settle();
+        mounted.navigator.selectById("timeline-0");
+        mounted.navigator.activate();
+        await settle();
+        const timeline = document.getElementById("timeline-view");
+        expect(timeline !== null).toBe(true);
+        const outgoing = mounted.editor.serialize();
+
+        mounted.navigator.selectById("scene-1");
+        mounted.navigator.activate();
+        await settle();
+        expect(mounted.session!.activeDocId()).toBe("timeline-0");
+        expect(document.getElementById("timeline-view") === timeline).toBe(true);
+        expect(document.querySelector<HTMLElement>("#editor .ProseMirror")!.hidden).toBe(true);
+        expect(mounted.editor.serialize()).toBe(outgoing);
+        expect(labelOf("open-error")?.length).toBeGreaterThan(0);
+        expect(h.flushed()).toHaveLength(0);
+
+        // The outgoing timeline still accepts and saves an actual edit.
+        const addTrack = [...document.querySelectorAll<HTMLButtonElement>("#timeline-toolbar button")].find(
+          (button) => button.textContent === "+ Track",
+        )!;
+        addTrack.click();
+        (document.getElementById("timeline-track-kind-thread") as HTMLButtonElement).click();
+        await mounted.session!.flushPending();
+        expect(h.flushed().at(-1)?.item_id).toBe("timeline-0");
+        expect(JSON.parse(h.flushed().at(-1)!.body).tracks).toHaveLength(2);
+
+        mounted.navigator.selectById("scene-0");
+        mounted.navigator.activate();
+        await settle();
+        expect(mounted.session!.activeDocId()).toBe("scene-0");
+        expect(document.getElementById("timeline-view") !== null).toBe(false);
+        expect(document.querySelector<HTMLElement>("#editor .ProseMirror")!.hidden).toBe(false);
+        // Opening the valid scene must not itself fire an onChange save.
+        expect(h.flushed()).toHaveLength(1);
+        mounted.editor.typeChar("X");
+        await mounted.session!.flushPending();
+        expect(h.flushed().map((entry) => entry.item_id)).toEqual(["timeline-0", "scene-0"]);
+        expect(h.flushed().at(-1)?.body).toBe(mounted.editor.serialize());
+        expect(h.flushed().at(-1)?.body).toContain("X");
+      } finally {
+        mounted.destroy();
+      }
+    });
+  }
+
   test("leaving a timeline removes its controls and listeners before the next book mounts", async () => {
     shell();
     const first = host({ items: withTimeline(), bodies: { "timeline-0": TIMELINE_BODY } });
