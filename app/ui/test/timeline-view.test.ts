@@ -909,6 +909,7 @@ describe("mountTimeline", () => {
       expect(button.tabIndex).toBe(0);
       expect(button.getAttribute("aria-label")).toBe("Ines");
       expect(button.getAttribute("aria-haspopup")).toBe("menu");
+      expect(button.getAttribute("aria-expanded")).toBe("false");
       expect(header.getAttribute("role")).toBeNull();
       expect(header.hasAttribute("tabindex")).toBe(false);
       m.destroy();
@@ -924,6 +925,7 @@ describe("mountTimeline", () => {
       expect(menu.style.left).toBe("20px");
       expect(menu.style.top).toBe("94px");
       expect(document.activeElement?.id).toBe("timeline-track-rename");
+      expect(header.querySelector("button")?.getAttribute("aria-expanded")).toBe("true");
       expect(dirty).toEqual([]);
       m.destroy();
     });
@@ -972,6 +974,7 @@ describe("mountTimeline", () => {
       expect(event.defaultPrevented).toBe(true);
       expect(document.getElementById("timeline-track-context-menu")!.hidden).toBe(true);
       expect(document.activeElement === button).toBe(true);
+      expect(button.getAttribute("aria-expanded")).toBe("false");
       m.destroy();
     });
 

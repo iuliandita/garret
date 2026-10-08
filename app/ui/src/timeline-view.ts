@@ -1237,7 +1237,10 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
   let trackContextOpener: HTMLButtonElement | null = null;
   const trackContextMenu = createMenuPanel({
     id: "timeline-track-context-menu",
-    onClose: () => { trackContextOpener = null; },
+    onClose: () => {
+      trackContextOpener?.setAttribute("aria-expanded", "false");
+      trackContextOpener = null;
+    },
   });
   document.body.append(trackContextMenu.element);
   trackContextMenu.element.style.position = "fixed";
@@ -1292,8 +1295,10 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
             },
             { id: "timeline-track-delete", label: () => t("timeline.track.delete"), run: () => deleteTrack(tr.id) },
           ];
+    trackContextOpener?.setAttribute("aria-expanded", "false");
     trackContextOpener = header.querySelector<HTMLButtonElement>(".timeline-lane-action");
     trackContextMenu.paint(items, tr.name);
+    trackContextOpener?.setAttribute("aria-expanded", "true");
     document.body.append(trackContextMenu.element);
     placeMenuAt(trackContextMenu.element, x, y);
     trackContextMenu.focusItem(0);
@@ -1347,6 +1352,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
     button.textContent = header.textContent;
     button.setAttribute("aria-label", trackDisplayName(tr).text);
     button.setAttribute("aria-haspopup", "menu");
+    button.setAttribute("aria-expanded", "false");
     header.replaceChildren(button);
     button.addEventListener("click", () => {
       const r = header.getBoundingClientRect();
