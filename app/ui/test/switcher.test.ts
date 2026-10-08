@@ -7,6 +7,7 @@ import {
   createSwitcher,
   folderName,
   lossesNotice,
+  registrationNotice,
   type ImportLosses,
   type ImportOutcome,
   type LegacyProtection,
@@ -2890,4 +2891,17 @@ test("an imported unregistered manuscript preserves its omission disclosure", as
     expect(rig.calls.dones).toEqual([lossesNotice(losses)!]);
     expect(rig.calls.switched).toEqual([]);
   } finally { teardown(rig); }
+});
+
+
+test("a scanned Library book reports an unsaved folder preference without a retry promise", () => {
+  const project: ProjectSummary = { path: "/library/book.db", name: "Book", modified_at: 1,
+    registration_warning: { kind: "destination_preference", token: null, error: "settings blocked" } };
+  expect(registrationNotice(project)).toBe(t("registration.preference", { path: project.path }));
+});
+
+test("a saved book with unverifiable identity gives location guidance without a retry promise", () => {
+  const project: ProjectSummary = { path: "/saved/book.db", name: "Book", modified_at: 1,
+    registration_warning: { kind: "registration_unavailable", token: null, error: "identity changed" } };
+  expect(registrationNotice(project)).toBe(t("registration.unavailable", { path: project.path }));
 });

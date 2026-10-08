@@ -50,7 +50,7 @@ export interface ProjectSummary {
   /** The file is not there at all -- a book the writer moved or deleted in
    *  their file manager. The one kind of row that offers Forget. */
   missing?: boolean;
-  registration_warning?: { token: string; error: string } | null;
+  registration_warning?: { token: string | null; kind?: "registration_pending" | "destination_preference" | "registration_unavailable"; error: string } | null;
 }
 
 export interface PendingRegistration {
@@ -60,7 +60,11 @@ export interface PendingRegistration {
 }
 
 export function registrationNotice(project: ProjectSummary): string | null {
-  return project.registration_warning ? `${t("registration.warning", { path: project.path })} ${t("registration.session")}` : null;
+  const warning = project.registration_warning;
+  if (!warning) return null;
+  if (warning.kind === "destination_preference") return t("registration.preference", { path: project.path });
+  if (warning.kind === "registration_unavailable" || !warning.token) return t("registration.unavailable", { path: project.path });
+  return `${t("registration.warning", { path: project.path })} ${t("registration.session")}`;
 }
 
 /** What the host answers for the drop folder: the RESOLVED directory and the

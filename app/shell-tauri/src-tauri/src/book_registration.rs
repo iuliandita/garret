@@ -6,8 +6,17 @@ use std::sync::{LazyLock, Mutex};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Warning {
-    pub token: String,
+    pub token: Option<String>,
+    pub kind: WarningKind,
     pub error: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WarningKind {
+    RegistrationPending,
+    DestinationPreference,
+    RegistrationUnavailable,
 }
 
 #[derive(Clone, Serialize)]
@@ -52,18 +61,19 @@ pub fn remember(
     mut summary: projects::ProjectSummary,
 ) -> projects::ProjectSummary {
     let path = PathBuf::from(&summary.path);
+    let outside = !projects::in_library(&projects::library_dir(home), &path);
     let owned = identity(&path);
     let result = projects::update_settings(home, |settings| {
-        if !projects::in_library(&projects::library_dir(home), &path)
-            && !settings.books.contains(&summary.path)
-        {
+        if outside && !settings.books.contains(&summary.path) {
             settings.books.push(summary.path.clone());
         }
         settings.new_book_dir = Some(dir.to_string_lossy().into_owned());
     });
     if let Err(error) = result {
-        let token = uuid::Uuid::now_v7().to_string();
-        if let Ok((path, book_id)) = owned {
+        let (token, kind) = if !outside {
+            (None, WarningKind::DestinationPreference)
+        } else if let Ok((path, book_id)) = owned {
+            let token = uuid::Uuid::now_v7().to_string();
             PENDING
                 .lock()
                 .unwrap_or_else(|error| error.into_inner())
@@ -76,8 +86,11 @@ pub fn remember(
                         name: summary.name.clone(),
                     },
                 );
-        }
-        summary.registration_warning = Some(Warning { token, error });
+            (Some(token), WarningKind::RegistrationPending)
+        } else {
+            (None, WarningKind::RegistrationUnavailable)
+        };
+        summary.registration_warning = Some(Warning { token, kind, error });
     }
     summary
 }
@@ -146,7 +159,13 @@ mod tests {
         let home = tempfile::tempdir().unwrap();
         let books = tempfile::tempdir().unwrap();
         let made = failed(home.path(), books.path());
-        let token = &made.registration_warning.as_ref().unwrap().token;
+        let token = made
+            .registration_warning
+            .as_ref()
+            .unwrap()
+            .token
+            .as_deref()
+            .unwrap();
         assert!(Path::new(&made.path).is_file());
         let pictures = Path::new(&made.path).with_extension("pictures");
         let research = Path::new(&made.path).with_extension("research");
@@ -197,7 +216,13 @@ mod tests {
         let home = tempfile::tempdir().unwrap();
         let books = tempfile::tempdir().unwrap();
         let made = failed(home.path(), books.path());
-        let token = &made.registration_warning.as_ref().unwrap().token;
+        let token = made
+            .registration_warning
+            .as_ref()
+            .unwrap()
+            .token
+            .as_deref()
+            .unwrap();
         let store = Store::open_existing(Path::new(&made.path)).unwrap();
         let old = store.book_id().unwrap().unwrap();
         store.fork_recovered_book_identity(&old).unwrap();
@@ -215,7 +240,13 @@ mod tests {
         let home = tempfile::tempdir().unwrap();
         let books = tempfile::tempdir().unwrap();
         let made = failed(home.path(), books.path());
-        let token = &made.registration_warning.as_ref().unwrap().token;
+        let token = made
+            .registration_warning
+            .as_ref()
+            .unwrap()
+            .token
+            .as_deref()
+            .unwrap();
         let moved = books.path().join("moved.db");
         std::fs::rename(&made.path, &moved).unwrap();
         std::os::unix::fs::symlink(&moved, &made.path).unwrap();
@@ -226,5 +257,43 @@ mod tests {
             .contains("regular file"));
         assert_eq!(list(home.path()).len(), 1);
         assert!(moved.is_file());
+    }
+
+    #[test]
+    fn a_scanned_library_book_reports_only_the_unsaved_folder_preference() {
+        let home = tempfile::tempdir().unwrap();
+        let library = projects::library_dir(home.path());
+        let made = failed(home.path(), &library);
+        let warning = made.registration_warning.as_ref().unwrap();
+        assert_eq!(warning.kind, WarningKind::DestinationPreference);
+        assert!(warning.token.is_none());
+        assert!(list(home.path()).is_empty());
+        assert!(projects::known(home.path()).contains(&PathBuf::from(&made.path)));
+        assert!(Path::new(&made.path).is_file());
+    }
+
+    #[test]
+    fn an_unverifiable_identity_does_not_offer_a_nonexistent_retry() {
+        let home = tempfile::tempdir().unwrap();
+        let books = tempfile::tempdir().unwrap();
+        let made = projects::create_in(
+            books.path(),
+            "Saved book",
+            &crate::strings::Strings::english(),
+        )
+        .unwrap();
+        let store = Store::open_existing(Path::new(&made.path)).unwrap();
+        store.set_meta("book_id", "changed-after-creation").unwrap();
+        drop(store);
+        let bytes = std::fs::read(&made.path).unwrap();
+        let settings = projects::settings_path(home.path());
+        std::fs::create_dir_all(settings.parent().unwrap()).unwrap();
+        std::fs::create_dir(settings.with_extension("json.tmp")).unwrap();
+        let made = remember(home.path(), books.path(), made);
+        let warning = made.registration_warning.as_ref().unwrap();
+        assert_eq!(warning.kind, WarningKind::RegistrationUnavailable);
+        assert!(warning.token.is_none());
+        assert!(list(home.path()).is_empty());
+        assert_eq!(std::fs::read(&made.path).unwrap(), bytes);
     }
 }
