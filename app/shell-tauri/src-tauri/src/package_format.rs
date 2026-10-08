@@ -161,7 +161,25 @@ fn read32(bytes: &[u8], at: usize) -> Option<u32> {
 /// upstream to have covered it.
 pub(crate) const MAX_ENTRY_BYTES: usize = 64 * 1024 * 1024;
 
+/// Read trusted, application-generated previews without an import-wide budget.
+/// Foreign packages must use `read_zip_bounded`.
 pub fn read_zip(archive: &[u8]) -> Result<Vec<(String, Vec<u8>)>, String> {
+    read_zip_with_limits(archive, None)
+}
+
+/// Bound retained entries and their combined expansion before copying/inflating.
+pub(crate) fn read_zip_bounded(
+    archive: &[u8],
+    max_entries: usize,
+    max_expanded_bytes: usize,
+) -> Result<Vec<(String, Vec<u8>)>, String> {
+    read_zip_with_limits(archive, Some((max_entries, max_expanded_bytes)))
+}
+
+fn read_zip_with_limits(
+    archive: &[u8],
+    limits: Option<(usize, usize)>,
+) -> Result<Vec<(String, Vec<u8>)>, String> {
     const EOCD: usize = 22;
     if archive.len() < EOCD {
         return Err("the archive is too short to hold a directory".to_string());
@@ -171,8 +189,14 @@ pub fn read_zip(archive: &[u8]) -> Result<Vec<(String, Vec<u8>)>, String> {
         return Err("the archive has no end-of-directory record".to_string());
     }
     let count = read16(archive, eocd + 10).ok_or("unreadable directory")? as usize;
+    if let Some((max_entries, _)) = limits {
+        if count > max_entries {
+            return Err(format!("the archive declares {count} entries, over the {max_entries}-entry limit"));
+        }
+    }
     let mut at = read32(archive, eocd + 16).ok_or("unreadable directory")? as usize;
     let mut out = Vec::with_capacity(count);
+    let mut expanded = 0usize;
     for _ in 0..count {
         if read32(archive, at) != Some(0x0201_4b50) {
             return Err("the archive's directory is not where it says it is".to_string());
@@ -190,6 +214,15 @@ pub fn read_zip(archive: &[u8]) -> Result<Vec<(String, Vec<u8>)>, String> {
             .and_then(|b| std::str::from_utf8(b).ok())
             .ok_or("an entry name is not text")?
             .to_string();
+        if let Some((_, max_expanded_bytes)) = limits {
+            if size > MAX_ENTRY_BYTES {
+                return Err(format!("{name}: declares {size} bytes uncompressed, over the {MAX_ENTRY_BYTES}-byte limit"));
+            }
+            expanded = expanded.checked_add(size).ok_or("the archive's expanded size overflows")?;
+            if expanded > max_expanded_bytes {
+                return Err(format!("the archive exceeds the {max_expanded_bytes}-byte expanded-byte limit"));
+            }
+        }
         if read32(archive, local) != Some(0x0403_4b50) {
             return Err(format!("{name}: no local header where the directory says"));
         }
@@ -266,4 +299,92 @@ pub fn iso8601_utc(seconds: i64) -> String {
         (rest / 60) % 60,
         rest % 60
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn archive(methods: &[u16]) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        let mut directory = Vec::new();
+        for (index, method) in methods.iter().enumerate() {
+            let name = format!("unused/{index}");
+            let raw = b"text";
+            let packed = if *method == 8 { miniz_oxide::deflate::compress_to_vec(raw, 6) } else { raw.to_vec() };
+            let offset = bytes.len() as u32;
+            push32(&mut bytes, 0x0403_4b50);
+            for value in [VERSION, 0, *method, DOS_TIME, DOS_DATE] { push16(&mut bytes, value); }
+            push32(&mut bytes, crc32(raw));
+            push32(&mut bytes, packed.len() as u32);
+            push32(&mut bytes, raw.len() as u32);
+            push16(&mut bytes, name.len() as u16);
+            push16(&mut bytes, 0);
+            bytes.extend_from_slice(name.as_bytes());
+            bytes.extend_from_slice(&packed);
+            push32(&mut directory, 0x0201_4b50);
+            for value in [VERSION, VERSION, 0, *method, DOS_TIME, DOS_DATE] { push16(&mut directory, value); }
+            push32(&mut directory, crc32(raw));
+            push32(&mut directory, packed.len() as u32);
+            push32(&mut directory, raw.len() as u32);
+            push16(&mut directory, name.len() as u16);
+            directory.extend_from_slice(&[0; 12]);
+            push32(&mut directory, offset);
+            directory.extend_from_slice(name.as_bytes());
+        }
+        let offset = bytes.len() as u32;
+        let size = directory.len() as u32;
+        bytes.extend_from_slice(&directory);
+        push32(&mut bytes, 0x0605_4b50);
+        for value in [0, 0, methods.len() as u16, methods.len() as u16] { push16(&mut bytes, value); }
+        push32(&mut bytes, size);
+        push32(&mut bytes, offset);
+        push16(&mut bytes, 0);
+        bytes
+    }
+
+    #[test]
+    fn bounded_reader_counts_stored_and_deflated_bytes_together() {
+        for methods in [[0, 0], [8, 8], [0, 8], [8, 0]] {
+            let bytes = archive(&methods);
+            let read = read_zip_bounded(&bytes, 2, 8).unwrap();
+            assert_eq!(read.iter().map(|(_, value)| value.len()).sum::<usize>(), 8);
+            let error = read_zip_bounded(&bytes, 2, 7).unwrap_err();
+            assert!(error.contains("expanded-byte limit"), "{methods:?}: {error}");
+        }
+    }
+
+    #[test]
+    fn bounded_reader_limits_entries_without_restricting_generated_previews() {
+        let entries: Vec<Entry> = (0..129).map(|n| Entry::text(&format!("part-{n}"), "")).collect();
+        let bytes = zip(&entries);
+        assert_eq!(read_zip(&bytes).unwrap().len(), 129);
+        let error = read_zip_bounded(&bytes, 128, 0).unwrap_err();
+        assert!(error.contains("129 entries") && error.contains("128-entry limit"), "{error}");
+        assert_eq!(read_zip_bounded(&zip(&entries[..128]), 128, 0).unwrap().len(), 128);
+    }
+
+    #[test]
+    fn bounded_reader_refuses_an_oversized_stored_declaration_before_copying() {
+        let mut bytes = archive(&[0]);
+        let end = bytes.len() - 22;
+        let directory = read32(&bytes, end + 16).unwrap() as usize;
+        bytes[directory + 24..directory + 28].copy_from_slice(&(MAX_ENTRY_BYTES as u32 + 1).to_le_bytes());
+        let error = read_zip_bounded(&bytes, 128, 128 * 1024 * 1024).unwrap_err();
+        assert!(error.contains(&format!("over the {MAX_ENTRY_BYTES}-byte limit")), "{error}");
+    }
+
+    #[test]
+    fn bounded_reader_checks_the_total_before_accessing_the_next_payload() {
+        for method in [0, 8] {
+            let mut bytes = archive(&[0, method]);
+            let end = bytes.len() - 22;
+            let first = read32(&bytes, end + 16).unwrap() as usize;
+            let second = first + 46 + read16(&bytes, first + 28).unwrap() as usize;
+            let local = read32(&bytes, second + 42).unwrap() as usize;
+            bytes[local + 26..local + 28].copy_from_slice(&u16::MAX.to_le_bytes());
+            let error = read_zip_bounded(&bytes, 2, 7).unwrap_err();
+            assert!(error.contains("expanded-byte limit"), "{method}: {error}");
+        }
+    }
 }

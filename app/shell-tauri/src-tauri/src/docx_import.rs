@@ -134,7 +134,7 @@ fn decode_entities(s: &str) -> String {
     while i < bytes.len() {
         if bytes[i] == b'&' {
             let window_end = (i + MAX_ENTITY_LOOKAHEAD).min(bytes.len());
-            if let Some(rel_semi) = s[i..window_end].find(';') {
+            if let Some(rel_semi) = bytes[i..window_end].iter().position(|byte| *byte == b';') {
                 let entity = &s[i + 1..i + rel_semi];
                 let replaced = match entity {
                     "amp" => Some('&'),
@@ -949,11 +949,15 @@ fn build_items(sections: Vec<DocxSection>, stem: &str) -> (String, Vec<import::I
 
 // -------------------------------------------------------------------- parse
 
+// Match the review import's package budget; generated previews use their own reader.
+const MAX_PACKAGE_ENTRIES: usize = 128;
+const MAX_PACKAGE_EXPANDED_BYTES: usize = 128 * 1024 * 1024;
+
 /// Parse a DOCX package into a project, plus what it could not carry.
 /// `stem` is the file's own name without its extension, used exactly as
 /// `import::parse`'s is: when the document does not name itself.
 pub fn parse(bytes: &[u8], stem: &str) -> Result<DocxImported, String> {
-    let entries = crate::epub::read_zip(bytes)?;
+    let entries = crate::package_format::read_zip_bounded(bytes, MAX_PACKAGE_ENTRIES, MAX_PACKAGE_EXPANDED_BYTES)?;
     let document = entries
         .iter()
         .find(|(name, _)| name == "word/document.xml")
@@ -1298,6 +1302,26 @@ mod tests {
         let body: serde_json::Value = serde_json::from_str(out.imported.items[0].body.as_deref().unwrap()).unwrap();
         let text = body["content"][0]["content"][0]["text"].as_str().unwrap();
         assert_eq!(text, "Tom & Jerry <shout> \"go\" 'now' \u{2014} end");
+    }
+
+    #[test]
+    fn entity_lookahead_preserves_multibyte_text_and_attributes() {
+        for suffix in ["é", "中", "😀"] {
+            let text = format!("&amp;123456{suffix}");
+            let bytes = package(&doc(&format!("<w:p><w:r><w:t>{text}</w:t></w:r></w:p>")), None);
+            let out = parse(&bytes, "stem").unwrap();
+            let body: serde_json::Value = serde_json::from_str(out.imported.items[0].body.as_deref().unwrap()).unwrap();
+            assert_eq!(body["content"][0]["content"][0]["text"], format!("&123456{suffix}"));
+            assert_eq!(parse_attrs(&format!("value=\"{text}\"")), vec![("value".into(), format!("&123456{suffix}"))]);
+        }
+    }
+
+    #[test]
+    fn unused_package_parts_still_count_toward_the_import_entry_limit() {
+        let mut entries = vec![crate::epub::Entry::text("word/document.xml", &doc("<w:p><w:r><w:t>prose</w:t></w:r></w:p>"))];
+        entries.extend((0..128).map(|n| crate::epub::Entry::text(&format!("unused/{n}"), "")));
+        let error = parse(&crate::epub::zip(&entries), "stem").unwrap_err();
+        assert!(error.contains("128-entry limit"), "{error}");
     }
 
     /// A `Title`-styled paragraph names the book outright, even when a
