@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   createProjectSwitcher,
+  performProjectMove,
   type ProjectSwitchDeps,
   type ProjectSwitchOutcome,
   type ProjectOpenDecision,
@@ -364,4 +365,79 @@ test("a failed named book keeps its path behind Details", async () => {
   expect(message.headline).not.toContain(path);
   expect(message.detail).toContain(path);
   expect(message.detail).toContain("the store stopped answering");
+});
+
+describe("move location recovery", () => {
+  test("a move error reconciles the actual retained book and preserves the original error", async () => {
+    const failure = new Error("saved location could not be updated");
+    let path = "/old/book.db";
+    const retained = { path: "/new/book.db" };
+    let reads = 0;
+    await expect(performProjectMove({
+      move: async () => { throw failure; },
+      current: async () => { reads++; return retained; },
+      isCurrent: () => true,
+      accept: (project) => { path = project.path; },
+    })).rejects.toBe(failure);
+    expect(reads).toBe(1);
+    expect(path).toBe(retained.path);
+  });
+});
+
+
+describe("move location recovery boundaries", () => {
+  test("success and cancellation do not read the host again", async () => {
+    for (const moved of [{ path: "/new/book.db" }, null]) {
+      const accepted: { path: string }[] = [];
+      let reads = 0;
+      expect(await performProjectMove({
+        move: async () => moved,
+        current: async () => { reads++; return null; },
+        isCurrent: () => true,
+        accept: (project) => { accepted.push(project); },
+      })).toBe(moved);
+      expect(reads).toBe(0);
+      expect(accepted).toEqual(moved === null ? [] : [moved]);
+    }
+  });
+
+  test("a closed host or failed recovery read preserves the original failure", async () => {
+    const failure = new Error("move failed");
+    for (const current of [async () => null, async () => { throw new Error("read failed"); }]) {
+      let accepted = false;
+      await expect(performProjectMove({
+        move: async () => { throw failure; }, current,
+        isCurrent: () => true,
+        accept: () => { accepted = true; },
+      })).rejects.toBe(failure);
+      expect(accepted).toBe(false);
+    }
+  });
+
+  test("a departed book is not queried or updated", async () => {
+    const failure = new Error("move failed");
+    let reads = 0;
+    let accepted = false;
+    await expect(performProjectMove({
+      move: async () => { throw failure; },
+      current: async () => { reads++; return { path: "/new/book.db" }; },
+      isCurrent: () => false,
+      accept: () => { accepted = true; },
+    })).rejects.toBe(failure);
+    expect(reads).toBe(0);
+    expect(accepted).toBe(false);
+  });
+
+  test("a switch during recovery cannot overwrite the next book's location", async () => {
+    const failure = new Error("move failed");
+    let active = true;
+    let path = "/next/book.db";
+    await expect(performProjectMove({
+      move: async () => { throw failure; },
+      current: async () => { active = false; return { path: "/new/book.db" }; },
+      isCurrent: () => active,
+      accept: (project) => { path = project.path; },
+    })).rejects.toBe(failure);
+    expect(path).toBe("/next/book.db");
+  });
 });

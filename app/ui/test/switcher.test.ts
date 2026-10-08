@@ -730,6 +730,23 @@ describe("switcher activation", () => {
     teardown(rig);
   });
 
+  test("a recovered move error repaints the retained location without opening another book", async () => {
+    let path = "/p/one.mss";
+    const rig = mount({
+      currentPath: () => path,
+      moveProject: async () => { path = "/elsewhere/one.mss"; throw new Error("location preference failed"); },
+    });
+    await open(rig);
+    const before = rig.calls.list;
+    click(rig.container.querySelector("#project-move") as HTMLElement);
+    await settle();
+    expect(rig.container.querySelector<HTMLElement>("#project-here")?.title).toBe(path);
+    expect(rig.calls.list).toBe(before + 1);
+    expect(rig.calls.notices).toEqual(["location preference failed"]);
+    expect(rig.calls.switched).toEqual([]);
+    teardown(rig);
+  });
+
   test("a cancelled move re-lists nothing and says nothing", async () => {
     const rig = mount();
     await open(rig);

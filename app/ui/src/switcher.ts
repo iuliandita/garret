@@ -183,8 +183,8 @@ export interface SwitcherDeps {
   switchTo(path: string): Promise<void>;
   /** Move the OPEN book's file into a folder the writer picks in the host's
    *  own dialog. `null` is the writer cancelling. The caller keeps its own
-   *  copy of the current path up to date from the answer; this unit repaints
-   *  from `currentPath()` afterwards. */
+   *  copy of the current path up to date from the answer or retained host
+   *  after failure; this unit repaints from `currentPath()` afterwards. */
   moveProject(): Promise<ProjectSummary | null>;
   currentPath(): string;
   currentName(): string;
@@ -1833,10 +1833,12 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     if (!hasBook() || moving) return;
     moving = true;
     void (async (): Promise<void> => {
+      const path = deps.currentPath();
       let moved: ProjectSummary | null;
       try {
         moved = await deps.moveProject();
       } catch (error) {
+        if (deps.currentPath() !== path) await reload();
         deps.onNotice(messageOf(error));
         return;
       } finally {

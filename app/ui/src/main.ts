@@ -22,7 +22,7 @@ import { mountProject, type MountedProject } from "./project";
 import { mountEmpty } from "./empty-project";
 import { createBookCopyPrompt, type BookCopyConflict } from "./book-copy-prompt";
 import { createLibraryBookActions } from "./library-book-actions";
-import { createProjectSwitcher } from "./project-switch";
+import { createProjectSwitcher, performProjectMove } from "./project-switch";
 import { createSwitcher, importResultNotice, type Switcher, type ProjectSummary } from "./switcher";
 import {
   createLibrary,
@@ -492,9 +492,14 @@ async function main(): Promise<void> {
         // of the path follows it, because the switcher's `aria-current`, its
         // "this book is at" line and every `same` check read that copy.
         moveProject: async () => {
-          const moved = (await invoke("project_move")) as ProjectSummary | null;
-          if (moved !== null) currentPath = moved.path;
-          return moved;
+          const project = current;
+          const generation = currentGeneration;
+          return performProjectMove<ProjectSummary>({
+            move: async () => (await invoke("project_move")) as ProjectSummary | null,
+            current: async () => (await invoke("project_current")) as ProjectSummary | null,
+            isCurrent: () => current === project && currentGeneration === generation,
+            accept: (summary) => { currentPath = summary.path; },
+          });
         },
         currentPath: () => currentPath,
         currentName: () => currentName,

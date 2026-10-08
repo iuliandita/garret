@@ -133,3 +133,29 @@ export function createProjectSwitcher<P extends SwitchableProject>(
     }
   };
 }
+
+export interface ProjectMoveDeps<P> {
+  move(): Promise<P | null>;
+  current(): Promise<P | null>;
+  isCurrent(): boolean;
+  accept(project: P): void;
+}
+
+export async function performProjectMove<P>(deps: ProjectMoveDeps<P>): Promise<P | null> {
+  try {
+    const moved = await deps.move();
+    if (moved !== null && deps.isCurrent()) deps.accept(moved);
+    return moved;
+  } catch (error) {
+    if (deps.isCurrent()) {
+      try {
+        // Moving files can succeed before recording their new location fails.
+        const retained = await deps.current();
+        if (retained !== null && deps.isCurrent()) deps.accept(retained);
+      } catch {
+        // Keep the move failure; a failed read supplies no replacement location.
+      }
+    }
+    throw error;
+  }
+}
