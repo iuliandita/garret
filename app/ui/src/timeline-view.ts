@@ -102,6 +102,7 @@ const MIN_GAP_PX = EVENT_MIN_WIDTH_PX + EVENT_GAP_PX + EVENT_ROUNDING_PX;
 const POINTER_STILL_DEBOUNCE_MS = 300;
 
 export interface TimelineMountDeps {
+  diagnostics?: boolean;
   /** `#editor`. */
   container: HTMLElement;
   body: string;
@@ -193,14 +194,12 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
   addBranchBtn.textContent = t("timeline.toolbar.add-branch");
   toolbar.append(addBranchBtn);
 
-  // THE MEASURING INSTRUMENT (the `#library-timing` pattern, restated in
-  // section 4). Clipped off-screen, never `display: none`, so it stays a
-  // node in the accessibility tree for `timeline-cli` to read by name.
+  // Expose the offscreen instrument to the measurement rig only.
   const status = document.createElement("p");
   status.id = "timeline-status";
   status.className = "timeline-status";
   status.setAttribute("role", "status");
-  toolbar.append(status);
+  if (deps.diagnostics === true) toolbar.append(status);
 
   // ERAS DRAW AS A SECOND BAND ROW, ABOVE THE TICKS (design section 4, plan
   // item 2) -- its OWN element, a sibling of `#timeline-scale` rather than
@@ -1102,6 +1101,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
   }
 
   function paintStatus(): void {
+    if (deps.diagnostics !== true) return;
     const p95 = zoomSamples.length === 0 ? 0 : percentiles(zoomSamples).p95;
     const visibleCount = lanes.querySelectorAll(".tl-event").length;
     // PX PER UNIT, TO 4 DECIMALS: `timeline_drag_moves`

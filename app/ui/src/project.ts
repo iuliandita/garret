@@ -153,6 +153,7 @@ export type Invoke = (cmd: string, args?: Record<string, unknown>) => Promise<un
 
 export interface MountDeps {
   mode: "virtual" | "naive";
+  diagnostics?: boolean;
   seed: string;
   persistMode: "write" | "verify";
   projectPath: string;
@@ -1037,6 +1038,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         editor.setHidden(true);
         timelineMount = mountTimeline({
           container: editorEl,
+          diagnostics: deps.diagnostics === true,
           body,
           onDirty: (b) => flusher.markDirty(itemId, b),
           canEdit: () => !historyOperationInFlight && !historyReconcileFailed && !projectDestroyed && !projectLeaving &&

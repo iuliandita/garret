@@ -64,6 +64,7 @@ declare global {
   interface Window {
     __appPrivacyLocked?: boolean;
     __appLibraryDiagnostics?: boolean;
+    __appTimelineDiagnostics?: boolean;
     __appCandidate?: string;
     __appSeed?: string;
     __appMode?: string;
@@ -211,6 +212,7 @@ async function main(): Promise<void> {
   const mountAt = async (generation: number): Promise<MountedProject> =>
     mountProject({
       mode,
+      diagnostics: window.__appTimelineDiagnostics === true,
       seed: window.__appSeed ?? "unknown",
       persistMode,
       projectPath,

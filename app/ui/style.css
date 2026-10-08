@@ -8489,6 +8489,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
    specificity rather than losing to it silently. */
 #library .shelf-tile {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 4px;
   background: transparent;
@@ -8522,6 +8523,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 
 .shelf-error {
   color: var(--danger);
+  overflow-wrap: anywhere;
 }
 
 .shelf-by[hidden] {

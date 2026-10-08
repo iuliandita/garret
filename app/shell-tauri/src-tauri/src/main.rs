@@ -4221,10 +4221,12 @@ fn main() {
     let run_js = js_string(&run);
     let persist_mode_js = js_string(&persist_mode);
     let library_diagnostics = std::env::var("APP_LIBRARY_DIAGNOSTICS").as_deref() == Ok("1");
+    let timeline_diagnostics = std::env::var("APP_TIMELINE_DIAGNOSTICS").as_deref() == Ok("1");
 
     let init = format!(
         "window.__appPrivacyLocked={privacy_locked};\
          window.__appLibraryDiagnostics={library_diagnostics};\
+         window.__appTimelineDiagnostics={timeline_diagnostics};\
          window.__appCandidate='tauri';\
          window.__appSeed={seed_js};\
          window.__appMode={mode_js};\

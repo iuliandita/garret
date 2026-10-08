@@ -387,8 +387,14 @@ describe("mountTimeline", () => {
     m.destroy();
   });
 
-  test("the status node reports zoom p95 and a visible count", () => {
+  test("normal writing does not expose diagnostic status", () => {
     const { mount: m } = mount(baseBody());
+    expect(container.querySelector("#timeline-status")).toBeNull();
+    m.destroy();
+  });
+
+  test("explicit diagnostics reports zoom p95 and a visible count", () => {
+    const { mount: m } = mount(baseBody(), { diagnostics: true });
     const status = container.querySelector<HTMLElement>("#timeline-status")!;
     expect(status.textContent).toMatch(/zoom p95 \d+ ms, visible \d+/);
     expect(status.getAttribute("aria-label")).toBe(status.textContent);
