@@ -806,6 +806,7 @@ describe("Library keyboard ownership", () => {
     await flush();
     const forget = document.querySelector<HTMLButtonElement>("#library-shelf .shelf-forget")!;
     expect(forget.closest(".shelf-tile")?.tagName).toBe("DIV");
+    expect(forget.closest(".shelf-tile")?.querySelector(".shelf-error")?.textContent).toBe("This book could not be found. Check that its drive or folder is available.");
     expect(forget.parentElement?.closest("button, [disabled]") === null).toBe(true);
     forget.focus();
     expect(document.activeElement === forget).toBe(true);
@@ -816,12 +817,22 @@ describe("Library keyboard ownership", () => {
 
   test("an existing unreadable book stays visible without Forget", async () => {
     const r = rig();
-    r.answer = overview([book({ error: "Book could not be read" })]);
+    const diagnostic = "SQLite: unable to open database file at /lib/a.db";
+    r.answer = overview([book({ error: diagnostic })]);
     r.library.open();
     await flush();
     const tile = document.querySelector<HTMLElement>("#library-shelf .shelf-tile")!;
     expect(tile.tagName).toBe("DIV");
-    expect(tile.textContent).toContain("Book could not be read");
+    expect(tile.querySelector(".shelf-error")?.textContent).toBe("This book could not be read. Check access to its file, or restore a backup as a separate book.");
+    const details = tile.querySelector("details")!;
+    expect(details.open).toBe(false);
+    const summary = details.querySelector("summary")!;
+    expect(summary.textContent).toBe("Details");
+    expect(summary.getAttribute("tabindex")).toBe("0");
+    summary.focus();
+    expect(document.activeElement === summary).toBe(true);
+    expect(details.querySelector("code")?.textContent).toBe(diagnostic);
+    expect(tile.querySelector(".shelf-error")?.textContent).not.toContain(diagnostic);
     expect(tile.querySelector("[data-forget-path]")).toBeNull();
     expect(r.forgotten).toEqual([]);
   });

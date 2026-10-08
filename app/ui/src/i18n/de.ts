@@ -2067,7 +2067,7 @@ export const DE = {
   "loading.opening": "Das Buch wird geöffnet…",
   "banner.dismiss": "diese Meldung schließen",
   "banner.details": "Details",
-  "project.error.persist": "Nicht gesichert: {message} Das Bearbeiten ist angehalten, und Ihre letzten Änderungen gibt es nur in diesem Fenster.",
+  "project.error.persist": "Nicht gesichert: {message} Das automatische Speichern wurde angehalten. Ihre letzten Änderungen gibt es nur in diesem Fenster.",
   "project.error.open-document": "Dieses Dokument konnte nicht geöffnet werden: {error}",
   "project.error.unreadable-body":
     "{item} wurde von einem anderen Build der Anwendung geschrieben und konnte nicht geöffnet werden. Ihre Arbeit steckt weiterhin in der Datei.",
@@ -2174,6 +2174,8 @@ export const DE = {
   "library.when.days.one": "vor {count} Tag",
   "library.when.days.other": "vor {count} Tagen",
   "library.error.overview": "Die Bibliothek konnte nicht gelesen werden: {error}",
+  "library.book.missing": "Dieses Buch wurde nicht gefunden. Prüfen Sie, ob sein Laufwerk oder Ordner verfügbar ist.",
+  "library.book.unreadable": "Dieses Buch konnte nicht gelesen werden. Prüfen Sie den Zugriff auf seine Datei, oder stellen Sie eine Sicherung als separates Buch wieder her.",
   "library.error.words": "Die Wortanzahl dieses Buches konnte nicht gelesen werden.",
   "library.error.create": "{name} konnte nicht erstellt werden: {error}",
   "library.error.pin": "Das Pseudonym konnte dem neuen Buch nicht zugewiesen werden: {error}",

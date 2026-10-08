@@ -2476,7 +2476,7 @@ export const EN = {
   "loading.opening": "Opening the book…",
   "banner.dismiss": "dismiss this message",
   "banner.details": "Details",
-  "project.error.persist": "Not saved: {message} Editing is paused, and your latest changes are only in this window.",
+  "project.error.persist": "Not saved: {message} Automatic saving has stopped. Your latest changes are only in this window.",
   "project.error.open-document": "Could not open that document: {error}",
   // A body written by a NEWER build of the application: it carries a mark or a
   // node this schema has no type for. Named rather than described in
@@ -2589,6 +2589,8 @@ export const EN = {
   "library.when.days.one": "{count} day ago",
   "library.when.days.other": "{count} days ago",
   "library.error.overview": "The library could not be read: {error}",
+  "library.book.missing": "This book could not be found. Check that its drive or folder is available.",
+  "library.book.unreadable": "This book could not be read. Check access to its file, or restore a backup as a separate book.",
   "library.error.words": "That book's word count could not be read.",
   "library.error.create": "Could not create {name}: {error}",
   "library.error.pin": "Could not pin that pen name to the new book: {error}",

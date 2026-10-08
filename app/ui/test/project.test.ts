@@ -2359,9 +2359,8 @@ describe("banner tone", () => {
   });
 
   test("a FAILURE carries no dismiss control at all", async () => {
-    // A failure means editing is paused. A writer who waves it away has hidden
-    // the one thing telling them their work is not being saved, and nothing
-    // else in the page says so.
+    // Automatic saving has stopped. Dismissing this would hide the one
+    // warning that the writer's work is not being saved.
     //
     // WRITTEN SO RE-ADDING ONE FAILS. Not `querySelector(".app-banner-dismiss")
     // is null` alone: that passes the moment someone adds a dismiss control
@@ -2478,8 +2477,7 @@ describe("banner tone", () => {
     jest.advanceTimersByTime(60_000);
 
     expect(document.getElementById("open-error")).toBeNull();
-    // The failure has no timer and must still be there: it means editing is
-    // paused, and it is the one message that does not take itself away.
+    // Automatic saving has stopped, so this warning has no timer.
     expect(document.getElementById("persist-error")?.dataset.tone).toBe("failure");
 
     jest.useRealTimers();
@@ -3791,6 +3789,74 @@ describe("mountProject: a timeline opens in the editor pane", () => {
 
     mounted.destroy();
   });
+
+  for (const operation of ["undo", "redo", "replace one", "replace all"] as const) {
+    test(`prose ${operation} preserves the hidden scene and timeline through flush and reopen`, async () => {
+      shell();
+      const timelineBody = JSON.stringify({
+        ...JSON.parse(TIMELINE_BODY),
+        events: [{ id: "event-1", title: "Arrival", at: 3, until: null, tracks: ["t1"],
+          branch: null, scene: "scene-0", cast: [], note: "Keep the event and its scene link." }],
+      });
+      const saved: Record<string, string> = { "scene-0": body("Arrival happened at dusk."), "timeline-0": timelineBody };
+      const h = host({ items: withTimeline(), bodies: saved });
+      const invoke: Host["invoke"] = async (cmd, args) => {
+        const answer = await h.invoke(cmd, args);
+        if (cmd === "doc_flush") {
+          for (const entry of (args?.entries ?? []) as FlushEntry[]) saved[entry.item_id] = entry.body;
+        }
+        return answer;
+      };
+      let mounted = await mountProject(deps({ invoke }));
+      await settle();
+      const original = mounted.editor.serialize();
+      mounted.editor.typeChar("X");
+      const edited = mounted.editor.serialize();
+      expect(edited).not.toBe(original);
+      mounted.menuActions.undo();
+      expect(mounted.editor.serialize()).toBe(original);
+      mounted.menuActions.redo();
+      expect(mounted.editor.serialize()).toBe(edited);
+      // A retained redo stack must be live too: otherwise a broken Redo
+      // handler would pass simply because there was nothing left to redo.
+      if (operation === "redo") mounted.menuActions.undo();
+      const outgoing = mounted.editor.serialize();
+      expect(outgoing).toBe(operation === "redo" ? original : edited);
+      await mounted.session!.flushPending();
+
+      // Leave a real selected occurrence and history in the retained view.
+      expect(mounted.editor.revealMatch("Arrival")).toBe(true);
+      mounted.menuActions.openReplace();
+      (document.getElementById("find-query") as HTMLInputElement).value = "Arrival";
+      (document.getElementById("find-replace") as HTMLInputElement).value = "Departure";
+      document.querySelector<HTMLElement>('[data-item-id="timeline-0"]')!.click();
+      await settle();
+      expect(mounted.session!.activeDocId()).toBe("timeline-0");
+      if (operation === "undo") mounted.menuActions.undo();
+      else if (operation === "redo") mounted.menuActions.redo();
+      else {
+        mounted.menuActions.openReplace();
+        document.getElementById(operation === "replace one" ? "find-replace-one" : "find-replace-all")!.click();
+      }
+      await mounted.session!.flushPending();
+      expect(mounted.editor.serialize()).toBe(outgoing);
+      expect(saved["scene-0"]).toBe(outgoing);
+      expect(saved["timeline-0"]).toBe(timelineBody);
+      mounted.destroy();
+      tearDownShell();
+      shell();
+      mounted = await mountProject(deps({ invoke }));
+      await settle();
+      expect(mounted.editor.serialize()).toBe(outgoing);
+      document.querySelector<HTMLElement>('[data-item-id="timeline-0"]')!.click();
+      await settle();
+      expect(mounted.session!.activeDocId()).toBe("timeline-0");
+      expect(document.querySelectorAll(".timeline-lane")).toHaveLength(1);
+      await mounted.session!.flushPending();
+      expect(saved).toEqual({ "scene-0": outgoing, "timeline-0": timelineBody });
+      mounted.destroy();
+    });
+  }
 
   test("a mutation on the timeline flushes under the timeline's own id, not the scene's", async () => {
     shell();

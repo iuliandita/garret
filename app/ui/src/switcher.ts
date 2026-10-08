@@ -1696,8 +1696,10 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
    *  commit: a cancelled rename changed nothing, and a header left blank would
    *  read as a title that had been erased. */
   function endRename(): void {
-    nameField.hidden = true;
+    const returnFocus = document.activeElement === nameField;
     name.hidden = false;
+    if (returnFocus) name.focus();
+    nameField.hidden = true;
   }
 
   const onRename = (): void => {

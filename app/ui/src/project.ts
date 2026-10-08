@@ -883,7 +883,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     if (persistError !== null) return;
     persistError = message;
     // The host's sentence names its own recovery; the diagnostic goes behind
-    // Details rather than into the one line that says editing is paused.
+    // Details rather than into the one line that says automatic saving stopped.
     if (error instanceof HostCommandError) {
       banner("persist-error", t("project.error.persist", { message: error.problem }), "failure", error.detail);
     } else {
@@ -1659,8 +1659,10 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       // it lands in the undo history that is already there and the flush
       // scheduler persists it by the same path as typing. The scope is the open
       // scene and nothing wider -- see replace.ts.
-      replaceMatch: (query, replacement) => editor.replaceMatch(query, replacement),
-      replaceAll: (query, replacement) => editor.replaceAll(query, replacement),
+      replaceMatch: (query, replacement) => timelineMount === null && editor.replaceMatch(query, replacement),
+      replaceAll: (query, replacement) => timelineMount === null
+        ? editor.replaceAll(query, replacement)
+        : { replaced: 0, spanning: 0 },
       // THE WHOLE MANUSCRIPT, in the host, behind a second confirming press.
       // This was refused earlier because it had no inverse; the host takes a named
       // snapshot of every document in the same transaction, which is the
@@ -3219,8 +3221,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       navForward: () => goHistory("forward"),
       canNavBack: () => navHistory.canGoBack(openableIds()),
       canNavForward: () => navHistory.canGoForward(openableIds()),
-      undo: () => { if (!continuousChapter?.crossBoundarySelection()) editor.undo(); },
-      redo: () => { if (!continuousChapter?.crossBoundarySelection()) editor.redo(); },
+      undo: () => { if (timelineMount === null && !continuousChapter?.crossBoundarySelection()) editor.undo(); },
+      redo: () => { if (timelineMount === null && !continuousChapter?.crossBoundarySelection()) editor.redo(); },
       // The outline's structural stack, distinct from the editor's prose undo above.
       // Swallowed like every other outline call from a synchronous menu
       // handler: the unit banners its own failures.

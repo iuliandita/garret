@@ -979,8 +979,16 @@ export function createLibrary(deps: LibraryDeps): Library {
         meta.removeAttribute("data-path");
         const errorLine = document.createElement("span");
         errorLine.className = "shelf-error";
-        errorLine.textContent = book.error ?? book.path;
-        tile.append(errorLine);
+        errorLine.textContent = t(book.missing ? "library.book.missing" : "library.book.unreadable");
+        const details = document.createElement("details");
+        details.className = "app-banner-details";
+        const summary = document.createElement("summary");
+        summary.tabIndex = 0;
+        summary.textContent = t("banner.details");
+        const diagnostic = document.createElement("code");
+        diagnostic.textContent = book.error ?? book.path;
+        details.append(summary, diagnostic);
+        tile.append(errorLine, details);
         if (book.missing) {
           const forget = document.createElement("button");
           forget.type = "button";

@@ -2315,6 +2315,7 @@ describe("the book's name in the sidebar", () => {
     expect(rig.calls.renamed).toEqual(["Typed"]);
     expect(header(rig).textContent).toContain("Stored");
     expect(field.hidden).toBe(true);
+    expect(document.activeElement?.id).toBe("project-name-label");
     teardown(rig);
   });
 
@@ -2329,6 +2330,26 @@ describe("the book's name in the sidebar", () => {
     // The PREVIOUS label, not an empty one: a cancelled rename changed nothing
     // and a header that went blank would read as a title that had been erased.
     expect(header(rig).textContent).toContain("The Harbour");
+    expect(document.activeElement?.id).toBe("project-name-label");
+    teardown(rig);
+  });
+
+  test("a rename finishing after focus moved preserves the new focus", async () => {
+    let finish!: (value: ProjectSummary) => void;
+    const rig = mount({ renameProject: () => new Promise((resolve) => { finish = resolve; }) });
+    rig.switcher.beginRename();
+    const field = document.getElementById("project-name-field") as HTMLInputElement;
+    field.value = "New title";
+    field.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    const other = document.createElement("button");
+    other.id = "rename-focus-moved";
+    document.body.append(other);
+    other.focus();
+    finish({ path: "/p/x", name: "New title", modified_at: 0 });
+    await settle();
+    expect(field.hidden).toBe(true);
+    expect(document.activeElement?.id).toBe("rename-focus-moved");
+    other.remove();
     teardown(rig);
   });
 
