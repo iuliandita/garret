@@ -35,6 +35,10 @@
 export const EN = {
   "creation.destination-changed": "The destination changed. Open the chooser again before adding an item.",
   "creation.plus": "+",
+  "prefs.sidebar-word-counts": "Sidebar word counts",
+  "prefs.sidebar-word-counts.scene": "Scenes",
+  "prefs.sidebar-word-counts.chapter": "Chapters",
+  "prefs.sidebar-word-counts.part": "Parts (acts)",
   "prefs.tab.writing": "Writing",
   "prefs.tab.appearance": "Appearance",
   "prefs.tab.application": "Application",

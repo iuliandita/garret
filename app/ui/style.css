@@ -3947,18 +3947,15 @@ body.nav-hidden #nav-column {
   transform: rotate(45deg);
 }
 
-/* HOW LONG IS THIS CHAPTER. Quieter than the title, not smaller than it: the design
-   calls for secondary text "dimmed, not smaller", so the count reads at
-   the row's own size and leans on --muted alone to recede. Never shrinks
-   below that - a truncated number is a wrong number, so the title gives way
-   first.
+/* Smaller, normal-weight counts remain readable against every palette.
+   A count never shrinks; the title gives way first.
 
    `font-variant-numeric: tabular-nums` so a column of figures lines up on its
    digits; proportional numerals make a list of counts look ragged even when
    they are right-aligned. */
 #nav .nav-count {
   flex: 0 0 auto;
-  font-size: inherit;
+  font-size: 12px;
   /* 400 on every row: a count set in a chapter's or the open row's
      weight competed with the title it measures. */
   font-weight: 400;
@@ -9138,4 +9135,18 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
   color: var(--fg); background: var(--nav-bg);
   border: 1px solid var(--panel-edge); border-radius: var(--radius-control);
   box-shadow: var(--shadow-panel); font-size: var(--text-sm); line-height: 1.5;
+}
+
+#prefs-sidebar-word-counts {
+  grid-column: 1 / -1;
+  min-inline-size: 0;
+  margin: 12px 0 0;
+  padding: 8px 0;
+  border: 0;
+}
+#prefs-sidebar-word-counts label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-end: 12px;
 }

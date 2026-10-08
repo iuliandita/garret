@@ -1690,6 +1690,36 @@ pub fn record_book_location(settings: &mut Settings, book_id: &str, path: &Path)
     });
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SidebarWordCounts {
+    #[serde(default = "default_sidebar_scene", deserialize_with = "lenient_sidebar_scene")]
+    pub scene: bool,
+    #[serde(default, deserialize_with = "lenient_sidebar_container")]
+    pub chapter: bool,
+    #[serde(default, deserialize_with = "lenient_sidebar_container")]
+    pub part: bool,
+}
+
+impl Default for SidebarWordCounts {
+    fn default() -> Self {
+        Self { scene: true, chapter: false, part: false }
+    }
+}
+
+fn default_sidebar_scene() -> bool { true }
+
+fn lenient_sidebar_scene<'de, D: serde::Deserializer<'de>>(d: D) -> Result<bool, D::Error> {
+    Ok(serde_json::Value::deserialize(d)?.as_bool().unwrap_or(true))
+}
+
+fn lenient_sidebar_container<'de, D: serde::Deserializer<'de>>(d: D) -> Result<bool, D::Error> {
+    Ok(serde_json::Value::deserialize(d)?.as_bool().unwrap_or(false))
+}
+
+fn lenient_sidebar_word_counts<'de, D: serde::Deserializer<'de>>(d: D) -> Result<SidebarWordCounts, D::Error> {
+    Ok(serde_json::from_value(serde_json::Value::deserialize(d)?).unwrap_or_default())
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
     pub last_project: Option<String>,
@@ -1706,6 +1736,8 @@ pub struct Settings {
     /// about the machine, beside `window` for the same reason. LENIENT.
     #[serde(default, deserialize_with = "crate::zoom::lenient_zoom")]
     pub zoom: crate::zoom::Zoom,
+    #[serde(default, deserialize_with = "lenient_sidebar_word_counts")]
+    pub sidebar_word_counts: SidebarWordCounts,
     /// LENIENT on purpose - see `lenient_daily_target`.
     #[serde(default, deserialize_with = "lenient_daily_target")]
     pub daily_target: DailyTarget,
@@ -1830,6 +1862,7 @@ impl Default for Settings {
             typography: Typography::default(),
             window: WindowSize::default(),
             zoom: crate::zoom::Zoom::default(),
+            sidebar_word_counts: SidebarWordCounts::default(),
             daily_target: DailyTarget::default(),
             bible_rows: default_bible_rows(),
             writing_modes: WritingModes::default(),
@@ -3515,6 +3548,7 @@ mod tests {
                     height: 700,
                 },
                 zoom: crate::zoom::Zoom::Z150,
+                sidebar_word_counts: SidebarWordCounts::default(),
                 daily_target: DailyTarget::W1000,
                 bible_rows: 9,
                 writing_modes: WritingModes {
@@ -3926,6 +3960,7 @@ mod tests {
             typography: Typography::default(),
             window: WindowSize::default(),
             zoom: crate::zoom::Zoom::default(),
+            sidebar_word_counts: SidebarWordCounts::default(),
             daily_target: DailyTarget::default(),
             bible_rows: default_bible_rows(),
             writing_modes: WritingModes::default(),

@@ -7,6 +7,21 @@ use crate::{projects, DataHome, PendingWindow, StoreState};
 use std::path::Path;
 use tauri::{Manager, State};
 
+#[command_boundary::command]
+pub(crate) fn settings_set_sidebar_word_counts(
+    data_home: State<'_, DataHome>,
+    scene: bool,
+    chapter: bool,
+    part: bool,
+) -> std::result::Result<(), String> {
+    set_sidebar_word_counts(&data_home.0, projects::SidebarWordCounts { scene, chapter, part })
+}
+
+fn set_sidebar_word_counts(data_home: &Path, counts: projects::SidebarWordCounts) -> std::result::Result<(), String> {
+    projects::update_settings(data_home, |settings| settings.sidebar_word_counts = counts)
+}
+
+
 /// Record which palette the writer chose. `system`, `light` or `dark`; anything
 /// else is an error rather than a default.
 ///
@@ -805,5 +820,31 @@ mod tests {
         set_home_identity(dir.path(), Some("i1".into())).unwrap();
         set_home_identity(dir.path(), None).unwrap();
         assert_eq!(crate::projects::read_settings(dir.path()).home_identity, None);
+    }
+}
+
+#[cfg(test)]
+mod sidebar_word_counts_tests {
+    use super::*;
+
+    #[test]
+    fn sidebar_word_counts_roundtrip_and_legacy_defaults() {
+        let dir = tempfile::tempdir().unwrap();
+        projects::update_settings(dir.path(), |s| s.last_project = Some("book.db".into())).unwrap();
+        assert_eq!(projects::read_settings(dir.path()).sidebar_word_counts, projects::SidebarWordCounts::default());
+        for mask in 0..8 {
+            let counts = projects::SidebarWordCounts {
+                scene: mask & 1 != 0, chapter: mask & 2 != 0, part: mask & 4 != 0,
+            };
+            set_sidebar_word_counts(dir.path(), counts).unwrap();
+            let saved = projects::read_settings(dir.path());
+            assert_eq!(saved.sidebar_word_counts, counts);
+            assert_eq!(saved.last_project.as_deref(), Some("book.db"));
+        }
+        for json in [r#"{"last_project":null}"#, r#"{"last_project":null,"sidebar_word_counts":null}"#,
+            r#"{"last_project":null,"sidebar_word_counts":{"scene":"bad","chapter":null}}"#] {
+            let settings: projects::Settings = serde_json::from_str(json).unwrap();
+            assert_eq!(settings.sidebar_word_counts, projects::SidebarWordCounts::default());
+        }
     }
 }

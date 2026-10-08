@@ -54,6 +54,7 @@ function inertNavigator(): ManuscriptNavigator {
     activeIndex: () => -1,
     activeTitle: () => "",
     setCounts: () => undefined,
+    setSidebarWordCounts: () => undefined,
     setSynopses: () => undefined,
     setAppearances: () => undefined,
     rows: (): readonly VisibleRow[] => [],
@@ -249,6 +250,7 @@ export function mountEmpty(deps: EmptyProjectDeps): MountedProject {
     // regardless of what is open (main.ts's `onDailyTarget`); there is
     // nothing here to repaint.
     setDailyTarget: (_target: DailyTarget) => undefined,
+    setSidebarWordCounts: () => undefined,
     setMarkCastNames: () => undefined,
     persistError: () => null,
     reviewPending: () => false,

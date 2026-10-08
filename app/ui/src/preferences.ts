@@ -52,6 +52,7 @@ import {
   type ProseSize,
   type Typography,
 } from "./typography";
+import { sidebarWordCountsFrom, type SidebarWordCounts } from "./sidebar-word-counts";
 import { ZOOMS, isZoom, createZoomPersistence, type Zoom, type ZoomPersistence } from "./zoom";
 
 /** The two languages this build ships a catalog for. A `<select>`, not a row
@@ -94,6 +95,9 @@ export interface PreferencesDeps {
   initialDailyTarget: DailyTarget;
   initialWritingModes: WritingModes;
   initialZoom: Zoom;
+  initialSidebarWordCounts?: SidebarWordCounts;
+  persistSidebarWordCounts?: (counts: SidebarWordCounts) => Promise<void>;
+  onSidebarWordCounts?: (counts: SidebarWordCounts) => void;
   /** What the host injected as `window.__appLocale`, already narrowed. There
    *  is no live re-render: every unit in the page renders its strings once,
    *  at mount, so a choice made here takes effect the next time the
@@ -887,7 +891,34 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   aidGroups.append(focusGroup, typewriterGroup, spellingGroup, markCastNamesGroup, dictGroup);
   aids.append(summary, aidGroups);
   pages[0].append(familyGroup, sizeGroup, measureGroup, goalGroup, aids);
-  pages[1].append(paletteGroup, themeGroup, zoomGroup);
+  const sidebarGroup = document.createElement("fieldset");
+  sidebarGroup.id = "prefs-sidebar-word-counts";
+  const sidebarLegend = document.createElement("legend");
+  sidebarLegend.textContent = t("prefs.sidebar-word-counts");
+  sidebarGroup.append(sidebarLegend);
+  let sidebarCounts = sidebarWordCountsFrom(deps.initialSidebarWordCounts);
+  let sidebarWrites = Promise.resolve();
+  for (const kind of ["scene", "chapter", "part"] as const) {
+    const label = document.createElement("label");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = `prefs-sidebar-word-counts-${kind}`;
+    checkbox.checked = sidebarCounts[kind];
+    checkbox.addEventListener("change", () => {
+      if (destroyed) return;
+      sidebarCounts = { ...sidebarCounts, [kind]: checkbox.checked };
+      const next = { ...sidebarCounts };
+      deps.onSidebarWordCounts?.(next);
+      // Serialize snapshots so a slower earlier write cannot replace a later choice.
+      sidebarWrites = sidebarWrites.then(() => record(
+        () => deps.persistSidebarWordCounts?.(next) ?? Promise.resolve(),
+        t("prefs.sidebar-word-counts"),
+      ));
+    });
+    label.append(checkbox, t(`prefs.sidebar-word-counts.${kind}`));
+    sidebarGroup.append(label);
+  }
+  pages[1].append(paletteGroup, themeGroup, zoomGroup, sidebarGroup);
   pages[2].append(languageGroup, startGroup);
   selectCategory(0);
   panel.append(tabs, ...pages);

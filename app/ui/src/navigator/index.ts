@@ -7,6 +7,7 @@
 import { createNavigatorHints } from "../navigator-hints";
 import { isCompositionKey } from "../composition-key";
 import { t } from "../i18n";
+import { DEFAULT_SIDEBAR_WORD_COUNTS, type SidebarWordCounts } from "../sidebar-word-counts";
 import { formatCount } from "../outline-counts";
 import {
   isRevisionState,
@@ -92,6 +93,7 @@ export interface TreeSource extends FixtureSource {
 }
 
 export interface NavigatorOptions {
+  sidebarWordCounts?: SidebarWordCounts;
   container: HTMLElement;
   source: TreeSource;
   rowHeight: number;
@@ -142,6 +144,7 @@ export interface ManuscriptNavigator {
    *  wrong here - they would rebuild the range and, in the virtual list, reset
    *  the scroll the writer had. */
   setCounts(next: ReadonlyMap<string, number>): void;
+  setSidebarWordCounts(next: SidebarWordCounts): void;
   /** Hand over the set of items that carry a synopsis and repaint the mounted
    *  rows, the way `setCounts` does and for the same reason: a mark on a row,
    *  not a change of shape. */
@@ -403,6 +406,7 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
    *  over, which is after the first flush ack - so a manuscript opens with
    *  titles and gains its figures a moment later rather than waiting on them. */
   let counts: ReadonlyMap<string, number> = new Map();
+  let sidebarWordCounts = opts.sidebarWordCounts ?? DEFAULT_SIDEBAR_WORD_COUNTS;
   let synopses: ReadonlySet<string> = new Set();
   let appearances: ReadonlySet<string> = new Set();
   let visible: VisibleRow[] = project(nodes, collapsed);
@@ -557,7 +561,9 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
     }
     if (hasSynopsis) described.push(SYNOPSIS_DESCRIPTION_ID);
     if (hasAppearances) described.push(APPEARANCES_DESCRIPTION_ID);
-    if (index === active && counts.has(row.id)) {
+    const showCount = (row.itemType === "scene" || row.itemType === "chapter" || row.itemType === "part")
+      && sidebarWordCounts[row.itemType] && counts.has(row.id);
+    if (index === active && showCount) {
       const words = document.getElementById(WORD_DESCRIPTION_ID);
       if (words !== null) words.textContent = t("nav.words.described", { count: formatCount(counts.get(row.id)) });
       described.push(WORD_DESCRIPTION_ID);
@@ -591,12 +597,12 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
     // The subtree's total for a container, the document's own for a scene, and
     // NOTHING for an item nothing countable sits under - see outline-counts.ts
     // for why that is not a zero.
-    parts.count.textContent = formatCount(counts.get(row.id));
+    parts.count.textContent = showCount ? formatCount(counts.get(row.id)) : "";
     const descriptions = [
       [parts.synopsis, hasSynopsis ? t("nav.synopsis.described") : ""],
       [parts.appearances, hasAppearances ? t("nav.appearances.described") : ""],
       [parts.state, isRevisionState(row.state) ? t("nav.state.described", { state: STATE_LABELS[row.state] }) : ""],
-      [parts.count, counts.has(row.id) ? t("nav.words.described", { count: parts.count.textContent }) : ""],
+      [parts.count, showCount ? t("nav.words.described", { count: parts.count.textContent }) : ""],
     ] as const;
     for (const [part, description] of descriptions) {
       if (description) part.dataset.navHint = description;
@@ -970,6 +976,10 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
   return {
     activeIndex: () => active,
     activeTitle: () => visible[active]?.title ?? "",
+    setSidebarWordCounts(next) {
+      sidebarWordCounts = { ...next };
+      repaintMounted();
+    },
     setCounts,
     setSynopses,
     setAppearances,

@@ -31,6 +31,10 @@
 export const DE = {
   "creation.destination-changed": "Das Ziel hat sich geändert. Öffnen Sie die Auswahl erneut, bevor Sie einen Eintrag hinzufügen.",
   "creation.plus": "+",
+  "prefs.sidebar-word-counts": "Wortzahlen in der Seitenleiste",
+  "prefs.sidebar-word-counts.scene": "Szenen",
+  "prefs.sidebar-word-counts.chapter": "Kapitel",
+  "prefs.sidebar-word-counts.part": "Teile (Akte)",
   "prefs.tab.writing": "Schreiben",
   "prefs.tab.appearance": "Darstellung",
   "prefs.tab.application": "Anwendung",

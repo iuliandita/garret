@@ -5,6 +5,7 @@ if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
 import { createPreferences, LOCALES, STARTS, type Locale, type Start } from "../src/preferences";
 import { CATALOGS, formatNumber, t } from "../src/i18n";
+import type { SidebarWordCounts } from "../src/sidebar-word-counts";
 import type { Theme } from "../src/theme";
 import { DEFAULT_TYPOGRAPHY, type Typography } from "../src/typography";
 import { DAILY_TARGETS, DEFAULT_DAILY_TARGET, type DailyTarget } from "../src/goals";
@@ -33,6 +34,7 @@ function rig(
     start?: (value: Start) => Promise<void>;
     zoom?: (value: Zoom) => Promise<void>;
     zoomPersistence?: ZoomPersistence;
+    sidebar?: (value: SidebarWordCounts) => Promise<void>;
   },
 ) {
   const container = document.createElement("div");
@@ -53,6 +55,7 @@ function rig(
   const zooms: Zoom[] = [];
   const locales: Locale[] = [];
   const starts: Start[] = [];
+  const sidebarCounts: SidebarWordCounts[] = [];
   const markCastNames: boolean[] = [];
   const markCastNamesAnnounced: boolean[] = [];
   let reject: string | null = null;
@@ -92,6 +95,11 @@ function rig(
     initialDailyTarget,
     initialWritingModes,
     initialZoom,
+    onSidebarWordCounts: (counts) => sidebarCounts.push(counts),
+    persistSidebarWordCounts: async (counts) => {
+      if (recordedPersist?.sidebar) return recordedPersist.sidebar(counts);
+      if (reject !== null) throw new Error(reject);
+    },
     zoomPersistence: recordedPersist?.zoomPersistence,
     persistZoom: async (zoom) => {
       if (recordedPersist?.zoom) return recordedPersist.zoom(zoom);
@@ -195,6 +203,7 @@ function rig(
     starts,
     markCastNames,
     markCastNamesAnnounced,
+    sidebarCounts,
     dictInput,
     goalInput,
     dictWords,
@@ -254,7 +263,7 @@ describe("the preferences panel", () => {
       expect(pages[index].getAttribute("aria-labelledby")).toBe(tab.id);
     }
     expect([...pages[0].children].map((child) => child.id)).toEqual(["prefs-family", "prefs-size", "prefs-measure", "prefs-goal", "prefs-writing-aids"]);
-    expect([...pages[1].children].map((child) => child.id)).toEqual(["prefs-palette", "prefs-theme", "prefs-zoom"]);
+    expect([...pages[1].children].map((child) => child.id)).toEqual(["prefs-palette", "prefs-theme", "prefs-zoom", "prefs-sidebar-word-counts"]);
     expect([...pages[2].children].map((child) => child.id)).toEqual(["prefs-language-group", "prefs-start-group"]);
     expect(r.panel().querySelector<HTMLDetailsElement>("#prefs-writing-aids")?.open).toBe(false);
     r.control.destroy();
@@ -1473,4 +1482,44 @@ test("the dictionary word field has a concise visible associated label", () => {
   const label = document.querySelector<HTMLLabelElement>('label[for="prefs-dict-word"]');
   expect(label?.textContent).toBe("Add a word");
   expect(label?.htmlFor).toBe(r.dictInput().id);
+});
+
+test("sidebar count checkboxes apply independently and serialize rapid saves", async () => {
+  const writes: SidebarWordCounts[] = [];
+  let finish: (() => void) | undefined;
+  const r = rig("system", undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, [], {
+    sidebar: async (counts) => {
+      writes.push(counts);
+      if (writes.length === 1) await new Promise<void>(resolve => { finish = resolve; });
+    },
+  });
+  const scene = r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-scene")!;
+  const chapter = r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-chapter")!;
+  const part = r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-part")!;
+  expect([scene.checked, chapter.checked, part.checked]).toEqual([true, false, false]);
+  scene.click(); chapter.click(); part.click();
+  expect(r.sidebarCounts).toEqual([
+    { scene: false, chapter: false, part: false },
+    { scene: false, chapter: true, part: false },
+    { scene: false, chapter: true, part: true },
+  ]);
+  await settle();
+  expect(writes).toHaveLength(1);
+  finish!();
+  await settle();
+  expect(writes).toEqual(r.sidebarCounts);
+  r.failWith("disk unavailable");
+  r.control.destroy();
+});
+
+test("failed sidebar count saves report the failure and keep this window's choice", async () => {
+  const r = rig();
+  r.failWith("disk unavailable");
+  const chapter = r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-chapter")!;
+  chapter.click();
+  await settle();
+  expect(chapter.checked).toBe(true);
+  expect(r.sidebarCounts).toEqual([{ scene: true, chapter: true, part: false }]);
+  expect(r.notices.at(-1)).toContain("disk unavailable");
+  r.control.destroy();
 });

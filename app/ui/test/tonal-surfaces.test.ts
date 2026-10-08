@@ -55,9 +55,9 @@ describe("the navigator's rows", () => {
     expect(row).toMatch(/line-height:\s*24px/);
   });
 
-  test("the count is dimmed, not smaller", () => {
+  test("the count is smaller and readable", () => {
     const count = block("#nav .nav-count");
-    expect(count).toMatch(/font-size:\s*inherit/);
+    expect(count).toMatch(/font-size:\s*12px/);
     expect(count).toMatch(/color:\s*var\(--muted\)/);
   });
 

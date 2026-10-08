@@ -2061,6 +2061,7 @@ fn preferences_js(settings: &projects::Settings) -> String {
          window.__appLocale={};\
          window.__appTimeTracking={};\
          window.__appZoom={};\
+         window.__appSidebarWordCounts={};\
          window.__appMarkCastNames={};\
          window.__appStart={};",
         js_string(settings.theme.as_str()),
@@ -2076,6 +2077,7 @@ fn preferences_js(settings: &projects::Settings) -> String {
         js_string(settings.locale.as_str()),
         js_string(settings.time_tracking.as_str()),
         js_string(settings.zoom.as_str()),
+        serde_json::to_string(&settings.sidebar_word_counts).expect("sidebar counts serialize"),
         settings.mark_cast_names,
         js_string(settings.start.as_str()),
     )
@@ -4432,6 +4434,7 @@ fn main() {
             commands::spell::__wire_settings_set_spelling,
             commands::settings::__wire_settings_set_time_tracking,
             commands::settings::__wire_settings_set_zoom,
+            commands::settings::__wire_settings_set_sidebar_word_counts,
             __wire_writing_time_note,
             __wire_writing_time_today,
             commands::settings::__wire_settings_set_theme_family,
@@ -7715,6 +7718,7 @@ mod tests {
                 typewriter: crate::projects::TypewriterMode::On,
             },
             zoom: crate::zoom::Zoom::Z150,
+            sidebar_word_counts: crate::projects::SidebarWordCounts { scene: false, chapter: true, part: true },
             spelling: crate::projects::Spelling::Off,
             time_tracking: crate::projects::TimeTracking::On,
             theme_family: crate::projects::ThemeFamily::Atmospheric,
@@ -7726,6 +7730,7 @@ mod tests {
         };
         let js = preferences_js(&settings);
         assert!(js.contains("window.__appZoom='150'"), "{js}");
+        assert!(js.contains("window.__appSidebarWordCounts={\"scene\":false,\"chapter\":true,\"part\":true}"), "{js}");
         assert!(js.contains("window.__appBibleRows=13"), "{js}");
         assert!(js.contains("window.__appStart='blank'"), "{js}");
         assert!(js.contains("window.__appTheme='dark'"), "{js}");

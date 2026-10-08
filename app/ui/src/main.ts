@@ -49,6 +49,7 @@ import { themeFamilyFrom, themeFrom, type Theme } from "./theme";
 import { typographyFrom, type Typography } from "./typography";
 import { showProjectLoading } from "./loading";
 import { writingModesFrom } from "./writing-modes";
+import { sidebarWordCountsFrom } from "./sidebar-word-counts";
 import { createZoomPersistence, installZoomKeys, zoomFrom, type Zoom } from "./zoom";
 import type { Archive, ArchiveReport } from "./archive-indicator";
 import type { ImportOutcome, ImportReport, MirrorCheck, MirrorPreview, MirrorReport } from "./switcher";
@@ -87,6 +88,7 @@ declare global {
      *  from settings.json. A bare boolean, unlike every other
      *  injected preference: there is no spelling of it to validate. */
     __appMarkCastNames?: boolean;
+    __appSidebarWordCounts?: unknown;
     __appProject?: string;
     /** A copied book the host deferred until the page can ask whether it is
      *  the same book or a separate one. */
@@ -204,6 +206,7 @@ async function main(): Promise<void> {
   // reason: a project mounted after the writer flips this must start on the
   // new value. Absent reads as on -- the host's own default.
   let markCastNames = window.__appMarkCastNames !== false;
+  let sidebarWordCounts = sidebarWordCountsFrom(window.__appSidebarWordCounts);
   let privacyStatus: PrivacyStatus = { enabled: false, locked: true, recovery: false, shortcut: "ctrl_alt_l" };
   // The preferences panel's dictionary route, set once the panel exists
   // (below, beside the menu bar): the mount hands it to every project.
@@ -218,6 +221,7 @@ async function main(): Promise<void> {
       projectPath,
       invoke,
       markCastNames: () => markCastNames,
+      sidebarWordCounts: () => sidebarWordCounts,
       privacyLocked: () => privacyStatus.locked || privacyStatus.recovery,
       openProjectPanel: () => switcherHandle?.open("copies"),
       // Through the panel, not straight to the host: the panel holds the
@@ -682,6 +686,14 @@ async function main(): Promise<void> {
           // The host both records this AND applies it to the live webview: the
           // underlines belong to WebKitWebContext, which the page cannot reach.
           await invoke("settings_set_spelling", { spelling });
+        },
+        initialSidebarWordCounts: sidebarWordCounts,
+        persistSidebarWordCounts: async (counts) => {
+          await invoke("settings_set_sidebar_word_counts", { ...counts });
+        },
+        onSidebarWordCounts: (counts) => {
+          sidebarWordCounts = counts;
+          current.setSidebarWordCounts(counts);
         },
         initialMarkCastNames: markCastNames,
         persistMarkCastNames: async (on) => {

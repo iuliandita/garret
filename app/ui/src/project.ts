@@ -53,6 +53,7 @@ import { createSessionWords, type SessionWords } from "./statistics";
 import { createStatisticsPanel, type StatisticsPanel } from "./statistics-panel";
 import { createAnalyticsWorkspace, type AnalyticsWorkspace } from "./analytics-workspace";
 import type { TodayFigures, SourceWordSummary } from "./statistics";
+import type { SidebarWordCounts } from "./sidebar-word-counts";
 import { countWords } from "./words";
 import { createWritingTime, type TimeTracking } from "./writing-time";
 import {
@@ -181,6 +182,7 @@ export interface MountDeps {
    *  `MountedProject.setMarkCastNames` instead, `current`'s own route in
    *  main.ts. */
   markCastNames?: () => boolean;
+  sidebarWordCounts?: () => SidebarWordCounts;
   /** Add one word to the open book's dictionary and answer it as stored
    *  Owned by the preferences panel, which paints the list, so the
    *  panel and the host agree the moment the menu item runs. Absent in every
@@ -229,6 +231,7 @@ export interface MountedProject {
   /** The writer flipped "Mark cast names in the text". Takes effect on
    *  the open scene at once -- see `preferences.ts`'s own `onMarkCastNames`. */
   setMarkCastNames(on: boolean): void;
+  setSidebarWordCounts(counts: SidebarWordCounts): void;
   /** Whether a copy failed, went stale or is paused: the status dot's amber.
    *  The project panel opens Backups and archives by itself on it. */
   copiesNeedAttention?(): boolean;
@@ -608,6 +611,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     sceneHeadingEl.textContent = text;
   };
   const navigator = createNavigator({
+    sidebarWordCounts: deps.sidebarWordCounts?.(),
     container: navEl,
     source,
     rowHeight: ROW_HEIGHT,
@@ -3037,6 +3041,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       // the next project rather than an error.
       wordCount?.setDailyTarget(target);
     },
+    setSidebarWordCounts(counts) { navigator.setSidebarWordCounts(counts); },
     setMarkCastNames(on: boolean): void {
       markCastNamesOn = on;
       editor.setCastNames(namesForCast(castMembers));
