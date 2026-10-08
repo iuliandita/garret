@@ -410,6 +410,17 @@ describe("mountTimeline", () => {
     m.destroy();
   });
 
+  test("deleting the last event returns focus to the programmatically focusable lanes", () => {
+    const { mount: m } = mount(baseBody());
+    container.querySelector<HTMLButtonElement>(".tl-event")!.focus();
+    const root = container.querySelector<HTMLElement>("#timeline-view")!;
+    for (let i = 0; i < 2; i++) root.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete", bubbles: true }));
+    expect(container.querySelectorAll(".tl-event, .tl-dot")).toHaveLength(0);
+    expect(container.querySelector<HTMLElement>("#timeline-lanes")!.tabIndex).toBe(-1);
+    expect(document.activeElement?.id).toBe("timeline-lanes");
+    m.destroy();
+  });
+
   // Mutation target 5: Delete must not delete on the first press.
   test("a single Delete press never removes the event", () => {
     const { mount: m, dirty } = mount(baseBody());
