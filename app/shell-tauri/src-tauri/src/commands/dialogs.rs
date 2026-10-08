@@ -709,16 +709,37 @@ pub(crate) async fn project_move(
                     let retained = recovered.path.clone();
                     *guard = Some(recovered);
                     projects::record_move_checked(&data_home.0, &from, &retained, explicit.0.is_none())
-                        .map_err(|registry| format!("could not open the book after its move: {e}. {back}. The book was reopened at {}, but its saved location could not be updated: {registry}", retained.display()))?;
+                        .map_err(|registry| {
+                            let retry = move_registration_retry(&data_home.0, &from, &retained, &book_id, explicit.0.is_none());
+                            format!("could not open the book after its move: {e}. {back}. The book was reopened at {}, but its saved location could not be updated: {registry}. {retry}", retained.display())
+                        })?;
                     return Err(format!("could not open the book after its move: {e}. {back}. The book was reopened at {}", retained.display()));
                 }
             }
         }
     }
     projects::record_move_checked(&data_home.0, &from, &to, explicit.0.is_none())
-        .map_err(|error| format!("the book moved to {}, but its saved location could not be updated: {error}. Reopen it from its new location", to.display()))?;
+        .map_err(|error| {
+            let retry = move_registration_retry(&data_home.0, &from, &to, &book_id, explicit.0.is_none());
+            format!("the book moved to {}, but its saved location could not be updated: {error}. {retry}", to.display())
+        })?;
     drop(guard);
     Ok(Some(projects::summarize(&to)))
+}
+
+fn move_registration_retry(
+    home: &Path,
+    from: &Path,
+    to: &Path,
+    book_id: &str,
+    follow_last: bool,
+) -> String {
+    match crate::book_registration::remember_move_failure(home, from, to, book_id, follow_last) {
+        Ok(()) => "Keep the book open and retry adding its new location to Library in Books".into(),
+        Err(error) => format!(
+            "Reopen the book from its new location; a registration retry is unavailable: {error}"
+        ),
+    }
 }
 
 fn reopen_after_move_error(

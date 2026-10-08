@@ -26,11 +26,17 @@ pub struct PendingSummary {
     pub name: String,
 }
 
+enum Registration {
+    Book,
+    Move { from: PathBuf, follow_last: bool },
+}
+
 struct Pending {
     home: PathBuf,
     path: PathBuf,
     book_id: String,
     name: String,
+    registration: Registration,
 }
 
 // Session-only capabilities. Page-supplied paths never authorize registration.
@@ -84,6 +90,7 @@ pub fn remember(
                         path,
                         book_id,
                         name: summary.name.clone(),
+                        registration: Registration::Book,
                     },
                 );
             (Some(token), WarningKind::RegistrationPending)
@@ -93,6 +100,38 @@ pub fn remember(
         summary.registration_warning = Some(Warning { token, kind, error });
     }
     summary
+}
+
+pub fn remember_move_failure(
+    home: &Path,
+    from: &Path,
+    to: &Path,
+    book_id: &str,
+    follow_last: bool,
+) -> Result<(), String> {
+    let (path, retained_id) = identity(to)?;
+    if retained_id != book_id {
+        return Err("the moved book changed; its location cannot be registered".into());
+    }
+    let token = uuid::Uuid::now_v7().to_string();
+    let name = projects::summarize(&path).name;
+    PENDING
+        .lock()
+        .unwrap_or_else(|error| error.into_inner())
+        .insert(
+            token,
+            Pending {
+                home: profile(home),
+                path,
+                book_id: retained_id,
+                name,
+                registration: Registration::Move {
+                    from: from.to_path_buf(),
+                    follow_last,
+                },
+            },
+        );
+    Ok(())
 }
 
 pub fn list(home: &Path) -> Vec<PendingSummary> {
@@ -127,12 +166,29 @@ pub fn retry(home: &Path, token: &str) -> Result<projects::ProjectSummary, Strin
     }
     let recorded = path.to_string_lossy().into_owned();
     // Fresh checked settings, preserving later preferences and normal book-open protection checks.
-    projects::update_settings_checked(home, |settings| {
-        if !settings.books.contains(&recorded) {
-            settings.books.push(recorded.clone());
+    match &entry.registration {
+        Registration::Book => projects::update_settings_checked(home, |settings| {
+            if !settings.books.contains(&recorded) {
+                settings.books.push(recorded.clone());
+            }
+            Ok(())
+        })?,
+        Registration::Move { from, follow_last } => {
+            let old = from.to_string_lossy();
+            let outside = !projects::in_library(&projects::library_dir(home), &path);
+            projects::update_settings_checked(home, |settings| {
+                settings.books.retain(|book| book != old.as_ref());
+                if outside && !settings.books.contains(&recorded) {
+                    settings.books.push(recorded.clone());
+                }
+                projects::record_book_location(settings, &id, &path);
+                if *follow_last && settings.last_project.as_deref() == Some(old.as_ref()) {
+                    settings.last_project = Some(recorded.clone());
+                }
+                Ok(())
+            })?;
         }
-        Ok(())
-    })?;
+    }
     let summary = projects::summarize(&path);
     pending.remove(token);
     Ok(summary)
@@ -209,6 +265,96 @@ mod tests {
                 b"retained bytes"
             );
         }
+    }
+
+    #[test]
+    fn moved_book_retry_repairs_registration_and_preserves_later_preferences() {
+        let home = tempfile::tempdir().unwrap();
+        let source = tempfile::tempdir().unwrap();
+        let destination = tempfile::tempdir().unwrap();
+        let made = projects::create_in(
+            source.path(),
+            "Moved book",
+            &crate::strings::Strings::english(),
+        )
+        .unwrap();
+        let from = PathBuf::from(&made.path);
+        let book_id = Store::open_readonly(&from)
+            .unwrap()
+            .book_id()
+            .unwrap()
+            .unwrap();
+        projects::update_settings_checked(home.path(), |settings| {
+            settings.books.push(made.path.clone());
+            settings.last_project = Some(made.path.clone());
+            projects::record_book_location(settings, &book_id, &from);
+            Ok(())
+        })
+        .unwrap();
+        let to = projects::move_target(&from, destination.path()).unwrap();
+        projects::move_book_files(&from, &to).unwrap();
+        let bytes = std::fs::read(&to).unwrap();
+        let blocked = projects::settings_path(home.path()).with_extension("json.tmp");
+        std::fs::create_dir(&blocked).unwrap();
+        assert!(projects::record_move_checked(home.path(), &from, &to, true).is_err());
+        remember_move_failure(home.path(), &from, &to, &book_id, true).unwrap();
+        let rows = list(home.path());
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].path, to.to_string_lossy());
+        assert!(retry(home.path(), &rows[0].token).is_err());
+        assert_eq!(list(home.path()).len(), 1);
+        std::fs::remove_dir(&blocked).unwrap();
+        projects::update_settings_checked(home.path(), |settings| {
+            settings.last_project = Some("/later/book.db".into());
+            settings.mark_cast_names = false;
+            Ok(())
+        })
+        .unwrap();
+        retry(home.path(), &rows[0].token).unwrap();
+        let settings = projects::read_settings_checked(home.path()).unwrap();
+        assert!(!settings.books.contains(&made.path));
+        assert!(settings.books.contains(&to.to_string_lossy().into_owned()));
+        assert_eq!(
+            projects::canonical_book_path(&settings, &book_id),
+            Some(to.as_path())
+        );
+        assert_eq!(settings.last_project.as_deref(), Some("/later/book.db"));
+        assert!(!settings.mark_cast_names);
+        assert!(list(home.path()).is_empty());
+        assert_eq!(std::fs::read(&to).unwrap(), bytes);
+        assert!(!from.exists());
+    }
+
+    #[test]
+    fn moved_book_retry_refuses_replacement_identity() {
+        let home = tempfile::tempdir().unwrap();
+        let source = tempfile::tempdir().unwrap();
+        let destination = tempfile::tempdir().unwrap();
+        let made = projects::create_in(
+            source.path(),
+            "Moved book",
+            &crate::strings::Strings::english(),
+        )
+        .unwrap();
+        let from = PathBuf::from(&made.path);
+        let book_id = Store::open_readonly(&from)
+            .unwrap()
+            .book_id()
+            .unwrap()
+            .unwrap();
+        let to = projects::move_target(&from, destination.path()).unwrap();
+        projects::move_book_files(&from, &to).unwrap();
+        remember_move_failure(home.path(), &from, &to, &book_id, true).unwrap();
+        let token = list(home.path())[0].token.clone();
+        let store = Store::open_existing(&to).unwrap();
+        store.fork_recovered_book_identity(&book_id).unwrap();
+        drop(store);
+        assert!(retry(home.path(), &token).unwrap_err().contains("changed"));
+        assert_eq!(list(home.path()).len(), 1);
+        assert!(projects::read_settings_checked(home.path())
+            .unwrap()
+            .books
+            .is_empty());
     }
 
     #[test]
