@@ -739,6 +739,7 @@ export const EN = {
   "planning.pass-counts": "{name} ({open} open / {done} done)",
   "host-error.archive-stage": "An earlier backup was interrupted. Its temporary files have been kept. Open Details for recovery steps.",
   "host-error.unavailable": "This file could not be opened. Check that it is still in its folder and that you can read it, then try again.",
+  "host-error.settings-permission": "Preferences could not be saved. Check that you can write to the application settings folder, then try again.",
   "host-error.archive-stage.steps": "Close garret before checking these files. Keep a local copy of the retained folder and inspect it before discarding anything. Application-private temporary files may contain unencrypted writing; keep them out of cloud folders.\n\nList retained folders with garret archive-stage-list \"<parent-folder>\". Only after checking and preserving the selected folder, use garret archive-stage-clean \"<parent-folder>\" \"<stage-name>\" to discard it. Replace the placeholders with the parent directory and folder name shown above.\n\nFor temporary encrypted files in a backup folder, you can choose a different backup folder while keeping the retained files. Changing the filename in the same folder does not help. Changing the backup folder does not bypass unfinished application-private files.",
   "host-error.failed": "That could not be finished. Please try again.",
   "host-error.busy": "Another program is using this book's file. Close that program, then try again.",

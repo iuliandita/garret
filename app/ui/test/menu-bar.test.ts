@@ -6,6 +6,7 @@ import type { MatterKind } from "../src/outline";
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
 import { createMenuBar, type MenuBar, type ProjectsFocus } from "../src/menu-bar";
+import { createClosePrompt } from "../src/close-prompt";
 
 interface Calls {
   projects: ProjectsFocus[];
@@ -1949,3 +1950,56 @@ describe("short menu pages", () => {
     } finally { teardown(rig); }
   });
 });
+
+for (const chord of [
+  { key: "f", altKey: true },
+  { key: "l", ctrlKey: true, shiftKey: true },
+  { key: "f", ctrlKey: true },
+]) {
+  test(`close warning contains ${JSON.stringify(chord)} before document shortcuts`, async () => {
+    const rig = mount();
+    const prompt = createClosePrompt({ container: document.body });
+    let findOpened = false;
+    const onFind = (event: KeyboardEvent): void => {
+      if (event.ctrlKey && !event.altKey && event.key === "f") findOpened = true;
+    };
+    document.addEventListener("keydown", onFind);
+    try {
+      const choice = prompt.openPreferences();
+      const stay = document.querySelector<HTMLButtonElement>("#close-prompt-panel button")!;
+      stay.dispatchEvent(new KeyboardEvent("keydown", { ...chord, bubbles: true, cancelable: true }));
+      expect(rig.panel().hidden).toBe(true);
+      expect(rig.calls.library).toBe(0);
+      expect(findOpened).toBe(false);
+      expect(document.activeElement === stay).toBe(true);
+      stay.click();
+      expect(await choice).toBe("stay");
+    } finally {
+      document.removeEventListener("keydown", onFind);
+      prompt.destroy();
+      teardown(rig);
+    }
+  });
+}
+
+for (const shortcut of ["ctrl_alt_l", "ctrl_alt_p", "off"] as const) {
+  test(`close warning retains only the configured privacy shortcut ${shortcut}`, async () => {
+    const privacy = { enabled: true, calls: 0, shortcut };
+    const rig = mount(privacy);
+    const prompt = createClosePrompt({ container: document.body, privacyShortcut: () => privacy.shortcut });
+    try {
+      const choice = prompt.open(1);
+      const stay = document.querySelector<HTMLButtonElement>("#close-prompt-panel button")!;
+      for (const key of ["l", "p"]) {
+        stay.dispatchEvent(new KeyboardEvent("keydown", { key, ctrlKey: true, altKey: true, bubbles: true, cancelable: true }));
+      }
+      expect(privacy.calls).toBe(shortcut === "off" ? 0 : 1);
+      expect(document.activeElement === stay).toBe(true);
+      stay.click();
+      await choice;
+    } finally {
+      prompt.destroy();
+      teardown(rig);
+    }
+  });
+}

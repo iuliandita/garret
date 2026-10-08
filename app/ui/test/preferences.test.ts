@@ -6,6 +6,7 @@ if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 import { createPreferences, LOCALES, STARTS, type Locale, type Start } from "../src/preferences";
 import { CATALOGS, formatNumber, t } from "../src/i18n";
 import { wireLifecycle, CLOSE_EVENT, type LifecycleDeps } from "../src/lifecycle";
+import { createClosePrompt } from "../src/close-prompt";
 import type { SidebarWordCounts } from "../src/sidebar-word-counts";
 import type { Theme } from "../src/theme";
 import { DEFAULT_TYPOGRAPHY, type Typography } from "../src/typography";
@@ -1661,4 +1662,52 @@ async function countCloseHarness(preferences: ReturnType<typeof createPreference
     ...overrides,
   });
   return { commands, request: () => events.get(CLOSE_EVENT)!({ payload: 9 }) };
+}
+
+for (const answer of ["Return", "Escape"]) {
+  test(`canceling failed count close with ${answer} restores the enabled preference focus owner`, async () => {
+    const r = rig();
+    const prompt = createClosePrompt({ container: document.body });
+    try {
+      r.control.open();
+      const chapter = r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-chapter")!;
+      // Choose the Appearance tab by its controlled page rather than a label.
+      const page = chapter.closest<HTMLElement>("[role=tabpanel]")!;
+      r.container.querySelector<HTMLButtonElement>(`[aria-controls="${page.id}"]`)!.click();
+      r.failWith("Permission denied (os error 13)");
+      chapter.click();
+      await settle();
+      chapter.focus();
+      expect(document.activeElement === chapter).toBe(true);
+      const events = new Map<string, () => void | Promise<void>>();
+      const commands: string[] = [];
+      const captureCloseFocus = () => prompt.captureFocus();
+      await wireLifecycle({
+        session: { flushPending: async () => {}, failed: () => false, dirtyCount: () => 0 },
+        preferences: r.control,
+        promptPreferencesClose: () => prompt.openPreferences(),
+        invoke: async (command: string) => { commands.push(command); },
+        listen: async (event: string, cb: () => void | Promise<void>) => { events.set(event, cb); },
+        addWindowListener: () => {}, addDocumentListener: () => {}, isHidden: () => false,
+        captureCloseFocus,
+      });
+      const closing = events.get(CLOSE_EVENT)!();
+      await settle();
+      const stay = document.querySelector<HTMLButtonElement>("#close-prompt-panel button")!;
+      expect(document.activeElement === stay).toBe(true);
+      const key = new KeyboardEvent("keydown", { key: answer === "Return" ? "Enter" : answer, bubbles: true, cancelable: true });
+      stay.dispatchEvent(key);
+      // happy-dom does not perform the browser's default Return button activation.
+      if (answer === "Return" && !key.defaultPrevented) stay.click();
+      await closing;
+      expect(commands).toEqual(["holding_close", "release_close"]);
+      expect(chapter.matches(":disabled")).toBe(false);
+      expect(document.activeElement === chapter).toBe(true);
+      expect(r.container.querySelector<HTMLElement>("#prefs-panel")!.hidden).toBe(false);
+    } finally {
+      prompt.destroy();
+      r.control.destroy();
+      r.container.remove();
+    }
+  });
 }

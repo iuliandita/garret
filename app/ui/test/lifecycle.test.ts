@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { wireLifecycle, type LifecycleDeps } from "../src/lifecycle";
+import { wireLifecycle, CLOSE_EVENT, type LifecycleDeps } from "../src/lifecycle";
 
 class Harness {
   flushes = 0;
@@ -452,3 +452,32 @@ test("a lock during the preference discard prompt refuses close and releases cou
   expect(h.invoked).toEqual(["holding_close", "privacy_close_failed"]);
   expect(canceled).toBe(1);
 });
+
+
+test("close captures focus before preparing controls and restores after both barriers cancel", async () => {
+  const h = harness();
+  const order: string[] = [];
+  h.deps.captureCloseFocus = () => { order.push("capture"); return () => { order.push("restore"); }; };
+  h.deps.preferences = { prepareClose: async () => { order.push("prepare-counts"); return true; }, cancelClose: () => { order.push("cancel-counts"); } };
+  h.deps.drafts = { pending: () => true, prepareClose: async () => { order.push("prepare-review"); return true; }, cancelClose: () => { order.push("cancel-review"); } };
+  h.isFailed = true;
+  h.dirty = 1;
+  h.deps.promptUnsavedClose = async () => "stay";
+  await wireLifecycle(h.deps);
+  await h.hostListeners.get(CLOSE_EVENT)!();
+  expect(order).toEqual(["capture", "prepare-counts", "prepare-review", "cancel-review", "cancel-counts", "restore"]);
+});
+
+for (const refusal of ["locked", "unreadable"] as const) {
+  test(`canceled close never restores page focus when privacy is ${refusal}`, async () => {
+    const h = harness();
+    let restored = 0;
+    h.deps.captureCloseFocus = () => () => { restored++; };
+    h.deps.preferences = { prepareClose: async () => false, cancelClose: () => {} };
+    h.deps.privacyLocked = async () => { if (refusal === "unreadable") throw new Error("status unavailable"); return true; };
+    await wireLifecycle(h.deps);
+    await h.hostListeners.get(CLOSE_EVENT)!();
+    expect(restored).toBe(0);
+    expect(h.invoked).toEqual(["holding_close", "privacy_close_failed"]);
+  });
+}

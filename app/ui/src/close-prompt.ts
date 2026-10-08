@@ -12,12 +12,16 @@
 // reader announces the two differently.
 import { isCompositionKey } from "./composition-key";
 import { formatNumber, plural, t } from "./i18n";
+import type { PrivacyShortcut } from "./privacy";
 
 export interface ClosePromptDeps {
   /** Appended directly to this element. document.body, in production - the
    *  prompt belongs to no panel, no project, and must outlive a project
    *  switch, which nothing else in the chrome does. */
   container: HTMLElement;
+  privacyShortcut?: () => PrivacyShortcut;
+  canRestoreFocus?: () => boolean;
+  focusFallbacks?: () => Iterable<HTMLElement>;
 }
 
 export type ClosePromptChoice = "stay" | "close";
@@ -29,6 +33,9 @@ export interface ClosePrompt {
   open(dirtyCount: number): Promise<ClosePromptChoice>;
   /** Ask separately about sidebar count choices that could not be saved. */
   openPreferences(): Promise<ClosePromptChoice>;
+  /** Capture before close preparation disables the writer's current control.
+   *  Run the returned callback only after a canceled close releases controls. */
+  captureFocus(): () => void;
   destroy(): void;
 }
 
@@ -76,10 +83,36 @@ export function createClosePrompt(deps: ClosePromptDeps): ClosePrompt {
   actions.append(stayButton, discardButton);
   deps.container.append(panel);
 
+  const isolated = new Map<HTMLElement, boolean>();
+  function isolateBackground(): void {
+    for (const child of deps.container.children) {
+      if (!(child instanceof HTMLElement) || child === panel || ["SCRIPT", "STYLE"].includes(child.tagName)) continue;
+      if (!isolated.has(child)) isolated.set(child, child.inert);
+      child.inert = true;
+    }
+  }
+  const observer = new MutationObserver(() => { if (!panel.hidden) isolateBackground(); });
+  function releaseBackground(): void {
+    observer.disconnect();
+    for (const [element, inert] of isolated) element.inert = inert;
+    isolated.clear();
+  }
+  const canFocus = (element: HTMLElement | null): element is HTMLElement => {
+    if (element === null || element === document.body || element === document.documentElement ||
+        !element.isConnected || element.closest("[hidden], [inert], [aria-hidden=true]") || element.matches(":disabled") ||
+        !element.matches("[contenteditable=true], button, input, select, textarea, a[href], [tabindex]")) return false;
+    for (let ancestor: HTMLElement | null = element; ancestor !== null; ancestor = ancestor.parentElement) {
+      const style = getComputedStyle(ancestor);
+      if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse") return false;
+    }
+    return true;
+  };
+
   let resolveChoice: ((choice: ClosePromptChoice) => void) | null = null;
 
   function finish(choice: ClosePromptChoice): void {
     panel.hidden = true;
+    releaseBackground();
     const resolve = resolveChoice;
     resolveChoice = null;
     resolve?.(choice);
@@ -89,7 +122,15 @@ export function createClosePrompt(deps: ClosePromptDeps): ClosePrompt {
   discardButton.addEventListener("click", () => finish("close"));
 
   const onKeyDown = (event: Event): void => {
-    if (!(event instanceof KeyboardEvent) || isCompositionKey(event)) return;
+    if (!(event instanceof KeyboardEvent)) return;
+    const shortcut = deps.privacyShortcut?.() ?? "ctrl_alt_l";
+    const privacyChord = shortcut !== "off" && !isCompositionKey(event) && !event.repeat &&
+      event.ctrlKey && event.altKey && !event.shiftKey && !event.metaKey &&
+      event.key.toLowerCase() === (shortcut === "ctrl_alt_p" ? "p" : "l");
+    // Only the configured lock remains global while the writer decides.
+    if (privacyChord) return;
+    event.stopPropagation();
+    if (isCompositionKey(event)) return;
     if (event.key === "Escape") {
       // The reflex for "get this off my screen", and here that must be the
       // answer that keeps the manuscript.
@@ -97,7 +138,7 @@ export function createClosePrompt(deps: ClosePromptDeps): ClosePrompt {
       finish("stay");
       return;
     }
-    if (event.key !== "Tab") return;
+    if (event.key !== "Tab" && !(event.key === "Unidentified" && event.code === "Tab")) return;
     // A hand-rolled trap over two buttons: nothing about the rest of the page
     // may be reachable while the manuscript's fate is undecided, and this is
     // the one panel in the application that has to mean that literally.
@@ -116,6 +157,8 @@ export function createClosePrompt(deps: ClosePromptDeps): ClosePrompt {
 
   function show(): Promise<ClosePromptChoice> {
     panel.hidden = false;
+    isolateBackground();
+    observer.observe(deps.container, { childList: true });
     stayButton.focus();
     return new Promise((resolve) => {
       resolveChoice = resolve;
@@ -124,6 +167,14 @@ export function createClosePrompt(deps: ClosePromptDeps): ClosePrompt {
 
   let destroyed = false;
   return {
+    captureFocus(): () => void {
+      const owner = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      return () => {
+        if (deps.canRestoreFocus?.() === false) return;
+        const target = canFocus(owner) ? owner : [...(deps.focusFallbacks?.() ?? [])].find(canFocus);
+        target?.focus();
+      };
+    },
     open(dirtyCount: number): Promise<ClosePromptChoice> {
       heading.textContent = t("close-prompt.heading");
       stayButton.textContent = t("close-prompt.stay");
@@ -143,6 +194,7 @@ export function createClosePrompt(deps: ClosePromptDeps): ClosePrompt {
     destroy(): void {
       if (destroyed) return;
       destroyed = true;
+      finish("stay");
       panel.removeEventListener("keydown", onKeyDown);
       panel.remove();
     },

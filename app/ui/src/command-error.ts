@@ -45,12 +45,16 @@ const CLASSES: ReadonlyArray<readonly [string, RegExp]> = [
 
 /** The one plain sentence for a host failure: what went wrong and what to do.
  *  Never the raw diagnostic; that is `failureDetail`'s. */
-export function failureProblem(value: unknown): string {
+export function failureProblem(value: unknown, operation?: string): string {
   if (value instanceof HostCommandError) return value.problem;
   const failure = failureOf(value);
   if (failure?.code === "application_locked" || value === "application locked") return t("host-error.locked");
   const detail = (failure?.detail ?? diagnostic(value)).toLowerCase();
   const known = CLASSES.find(([, pattern]) => pattern.test(detail));
+  if ((known?.[0] === "host-error.unavailable" || known?.[0] === "host-error.io") && (failure?.operation ?? operation)?.startsWith("settings_set_") &&
+      /permission denied|access (?:is )?denied|\(os error 13\)/.test(detail)) {
+    return t("host-error.settings-permission");
+  }
   return t(known?.[0] ?? "host-error.failed");
 }
 
@@ -75,8 +79,8 @@ function remember(detail: string): void {
   if (recentDetails.length > RECENT_LIMIT) recentDetails.shift();
 }
 
-export function commandFailureMessage(value: unknown, detailOverride?: string): string {
-  const primary = failureProblem(value);
+export function commandFailureMessage(value: unknown, detailOverride?: string, operation?: string): string {
+  const primary = failureProblem(value, operation);
   const raw = detailOverride ?? failureDetail(value);
   const detail = /^unfinished encrypted archive staging /i.test(raw)
     ? `${raw}\n\n${t("host-error.archive-stage.steps")}` : raw;
@@ -111,12 +115,12 @@ export class HostCommandError extends Error {
   readonly problem: string;
   override toString(): string { return this.message; }
   constructor(command: string, value: unknown) {
-    super(commandFailureMessage(value));
+    super(commandFailureMessage(value, undefined, command));
     const failure = failureOf(value);
     this.code = failure?.code ?? (value === "application locked" ? "application_locked" : null);
     this.operation = failure?.operation ?? command;
     this.detail = failureDetail(value);
-    this.problem = failureProblem(value);
+    this.problem = failureProblem(value, command);
   }
 }
 

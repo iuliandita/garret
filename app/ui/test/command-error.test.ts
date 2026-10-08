@@ -126,3 +126,44 @@ test("adding a path to Details preserves the original failure classification", (
   expect(splitHostDetail(commandFailureMessage(picture, `/books/a.db\n${picture.detail}`)).headline)
     .toBe(t("host-error.picture-unreadable"));
 });
+
+for (const locale of ["en", "de"]) {
+  test(`settings write permission guidance uses ${locale} and preserves Details`, () => {
+    const detail = "cannot replace /settings/settings.json: Permission denied (os error 13)";
+    const script = `globalThis.__appLocale = ${JSON.stringify(locale)};
+      const { HostCommandError, splitHostDetail } = await import(${JSON.stringify(new URL("../src/command-error.ts", import.meta.url).pathname)});
+      const error = new HostCommandError("settings_set_sidebar_word_counts", { version: 1, code: "operation_failed", operation: "settings_set_sidebar_word_counts", detail: ${JSON.stringify(detail)} });
+      console.log(JSON.stringify(splitHostDetail(error.message)));`;
+    const result = Bun.spawnSync([process.execPath, "-e", script]);
+    expect(result.exitCode).toBe(0);
+    const actual = JSON.parse(result.stdout.toString());
+    expect(actual.detail).toBe(detail);
+    expect(actual.headline).toBe(locale === "en"
+      ? "Preferences could not be saved. Check that you can write to the application settings folder, then try again."
+      : "Die Einstellungen konnten nicht gespeichert werden. Prüfen Sie, ob Sie in den Einstellungsordner der Anwendung schreiben können, und versuchen Sie es dann erneut.");
+  });
+}
+
+
+test("permission guidance is scoped to settings writes and keeps stronger failure diagnoses", () => {
+  const details = [
+    "cannot write /settings/settings.json.tmp: Permission denied (os error 13)",
+    "cannot replace /settings/settings.json: Access is denied. (os error 5)",
+  ];
+  for (const detail of details) {
+    const operation = "settings_set_sidebar_word_counts";
+    const failure = { version: 1, code: "operation_failed", operation, detail };
+    expect(new HostCommandError(operation, failure).problem).toBe(t("host-error.settings-permission"));
+    expect(new HostCommandError(operation, detail).problem).toBe(t("host-error.settings-permission"));
+    expect(new HostCommandError("project_open", { ...failure, operation: "project_open" }).problem)
+      .toBe(t(detail.includes("os error 5") ? "host-error.io" : "host-error.unavailable"));
+  }
+  for (const [detail, key] of [
+    ["No space left on device (os error 28)", "host-error.disk-full"],
+    ["Read-only file system (os error 30)", "host-error.read-only"],
+    ["Input/output error (os error 5)", "host-error.io"],
+    ["No such file or directory (os error 2)", "host-error.unavailable"],
+  ]) {
+    expect(new HostCommandError("settings_set_theme", detail).problem).toBe(t(key));
+  }
+});

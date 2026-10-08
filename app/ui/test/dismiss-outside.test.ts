@@ -1,5 +1,8 @@
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { describe, expect, test, afterEach } from "bun:test";
 import { closeOnOutsideClick } from "../src/dismiss-outside";
+
+if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
 interface Rig {
   panel: HTMLElement;
@@ -174,3 +177,25 @@ describe("every panel that lost its toggle is wired to this", () => {
     expect(UNITS.map((u) => `app/ui/src/${u}.ts`)).not.toContain(self);
   });
 });
+
+
+for (const inherited of [false, true]) {
+  test(`an inert ${inherited ? "ancestor" : "panel"} keeps outside clicks inactive until released`, () => {
+    const r = rig();
+    const wrapper = document.createElement("div");
+    r.panel.before(wrapper);
+    wrapper.append(r.panel);
+    try {
+      const isolated = inherited ? wrapper : r.panel;
+      isolated.inert = true;
+      r.outside.click();
+      expect(r.closes).toBe(0);
+      expect(r.open).toBe(true);
+      isolated.inert = false;
+      r.outside.click();
+      expect(r.closes).toBe(1);
+    } finally {
+      wrapper.replaceWith(r.panel);
+    }
+  });
+}

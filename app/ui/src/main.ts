@@ -935,7 +935,14 @@ async function main(): Promise<void> {
     }
 
     {
-      const closePrompt = createClosePrompt({ container: document.body });
+      const closePrompt = createClosePrompt({
+        container: document.body,
+        privacyShortcut: () => privacyStatus.shortcut,
+        canRestoreFocus: () => !privacyStatus.locked && !privacyStatus.recovery,
+        focusFallbacks: () => document.querySelectorAll<HTMLElement>(
+          "#library, #editor .ProseMirror, #empty-open-library, #app-menu",
+        ),
+      });
       const lifecycleReady = await wireLifecycle({
         // An accessor, not the mounted session: a project switch replaces it,
         // and a lifecycle handler holding the original would drain the store of
@@ -958,6 +965,7 @@ async function main(): Promise<void> {
           const status = await invoke("privacy_status") as PrivacyStatus;
           return status.locked || status.recovery;
         },
+        captureCloseFocus: () => closePrompt.captureFocus(),
         preferences: preferenceClose,
         promptPreferencesClose: () => closePrompt.openPreferences(),
         drafts: {

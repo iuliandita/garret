@@ -20,6 +20,8 @@ export interface LifecycleDeps {
     dirtyCount(): number;
   };
   privacyLocked?: () => Promise<boolean>;
+  /** Capture before preparation disables controls; restore after cancellation. */
+  captureCloseFocus?: () => (() => void);
   drafts?: {
     pending(): boolean;
     /** True grants this close attempt a hold; false or throw grants none. */
@@ -81,6 +83,7 @@ export async function wireLifecycle(deps: LifecycleDeps): Promise<boolean> {
   }).catch((err: unknown) => { installed = false; deps.onError?.(String(err)); });
 
   const closeListener = deps.listen?.(CLOSE_EVENT, async (event) => {
+    const restoreFocus = deps.captureCloseFocus?.();
     const attempt = event?.payload;
     let confirmed = false;
     let prepared = false;
@@ -179,6 +182,7 @@ export async function wireLifecycle(deps: LifecycleDeps): Promise<boolean> {
     } finally {
       if (!confirmed && prepared) deps.drafts?.cancelClose();
       if (!confirmed && preferencesPrepared) deps.preferences?.cancelClose();
+      if (!confirmed && restoreFocus && !(await deps.privacyLocked?.().catch(() => true) ?? false)) restoreFocus();
     }
   }).catch((err: unknown) => {
     installed = false;
