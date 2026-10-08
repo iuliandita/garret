@@ -354,40 +354,32 @@ pub fn list_imports(dir: &Path) -> Vec<String> {
 ///
 /// Deliberately NOT `create` plus a fill: `create` writes a starter scene, and a
 /// manuscript that arrived with three hundred scenes must not also carry an
-/// empty one nobody wrote. The two share the name/slug/collision rules and
-/// nothing else.
+/// empty one nobody wrote. Storage publication is shared; manuscript
+/// initialization remains separate.
 pub fn create_imported(
     library: &Path,
     name: &str,
     rows: &[crate::store::ImportRow<'_>],
     strings: &crate::strings::Strings,
 ) -> Result<ProjectSummary, String> {
-    let slug = slugify(name)
-        .ok_or_else(|| format!("\"{name}\" has no characters that can name a file"))?;
-    fs::create_dir_all(library).map_err(|e| format!("cannot create {}: {e}", library.display()))?;
-    let path = library.join(format!("{slug}.db"));
-    if path.exists() {
-        return Err(format!(
-            "a project named \"{name}\" already exists at {}",
-            path.display()
-        ));
-    }
-    let store = Store::open(&path).map_err(|e| format!("{}: {e}", path.display()))?;
-    let filled = (|| -> Result<(), String> {
-        store
-            .set_meta(NAME_KEY, name)
-            .map_err(|e| format!("{}: cannot record the project name: {e}", path.display()))?;
+    create_imported_with(library, name, rows, strings, |_| {})
+}
+
+fn create_imported_with(
+    library: &Path,
+    name: &str,
+    rows: &[crate::store::ImportRow<'_>],
+    strings: &crate::strings::Strings,
+    before_create: impl FnOnce(&Path),
+) -> Result<ProjectSummary, String> {
+    create_book_with(library, name, before_create, |store, path| {
         store.import_tree(rows).map(|_| ()).map_err(|e| {
             format!(
                 "{}: cannot write the imported manuscript: {e}",
                 path.display()
             )
         })?;
-        // Only when the manuscript brought no scene of its own. A Markdown file
-        // whose headings are all `#` and `##` is a legitimate thing to export
-        // and re-import - an outline before any prose - and it produces parts
-        // and chapters and nothing openable. Without this the project imports
-        // without error and then cannot be mounted at all.
+        // An outline still needs one scene to open; imported scenes gain none.
         store
             .ensure_starter_structure(strings)
             .map(|_| ())
@@ -397,19 +389,7 @@ pub fn create_imported(
                     path.display()
                 )
             })
-    })();
-    drop(store);
-    if let Err(e) = filled {
-        // A half-written project file must not survive as something the
-        // switcher will list and the writer will open expecting their book.
-        // Best effort: if the remove fails the error below is still the one
-        // worth reporting.
-        let _ = fs::remove_file(&path);
-        let _ = fs::remove_file(path.with_extension("db-wal"));
-        let _ = fs::remove_file(path.with_extension("db-shm"));
-        return Err(e);
-    }
-    Ok(summarize(&path))
+    })
 }
 
 /// The first free `<slug>.md`, `<slug>-2.md`, `<slug>-3.md`, ... in `dir`.
@@ -1039,8 +1019,8 @@ pub fn create(library: &Path, name: &str) -> Result<ProjectSummary, String> {
     create_in(library, name, &crate::strings::Strings::english())
 }
 
-/// Slugify, refuse an existing file, open (which creates schema v1), record the
-/// typed name, ensure a starter scene -- into a folder the writer chose. Does NOT make it the current
+/// Build a named book with a starter scene and publish it exclusively into the
+/// folder the writer chose. Does NOT make it the current
 /// project: creation and opening are separate acts, so a failed open cannot
 /// lose a just-created manuscript.
 pub fn create_in(
@@ -1048,31 +1028,129 @@ pub fn create_in(
     name: &str,
     strings: &crate::strings::Strings,
 ) -> Result<ProjectSummary, String> {
+    create_in_with(dir, name, strings, |_| {})
+}
+
+fn create_in_with(
+    dir: &Path,
+    name: &str,
+    strings: &crate::strings::Strings,
+    before_create: impl FnOnce(&Path),
+) -> Result<ProjectSummary, String> {
+    create_book_with(dir, name, before_create, |store, path| {
+        store
+            .ensure_starter_structure(strings)
+            .map(|_| ())
+            .map_err(|e| {
+                format!(
+                    "{}: cannot create the starter chapter and scene: {e}",
+                    path.display()
+                )
+            })
+    })
+}
+
+/// Build only in an owned directory, then publish a closed, complete database.
+/// A competing destination is never opened, adopted, or removed on failure.
+fn create_book_with(
+    dir: &Path,
+    name: &str,
+    before_create: impl FnOnce(&Path),
+    fill: impl FnOnce(&Store, &Path) -> Result<(), String>,
+) -> Result<ProjectSummary, String> {
+    create_book_with_cleanup(dir, name, before_create, fill, tempfile::TempDir::close)
+}
+
+fn create_book_with_cleanup(
+    dir: &Path,
+    name: &str,
+    before_create: impl FnOnce(&Path),
+    fill: impl FnOnce(&Store, &Path) -> Result<(), String>,
+    cleanup: impl FnOnce(tempfile::TempDir) -> std::io::Result<()>,
+) -> Result<ProjectSummary, String> {
     let slug = slugify(name)
         .ok_or_else(|| format!("\"{name}\" has no characters that can name a file"))?;
     fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
     let path = dir.join(format!("{slug}.db"));
-    // Store::open would happily adopt an existing file, so without this a
-    // second project by the same name silently opens the first one's
-    // manuscript and the writer types into the wrong book.
     if path.exists() {
         return Err(format!(
             "a project named \"{name}\" already exists at {}",
             path.display()
         ));
     }
-    let store = Store::open(&path).map_err(|e| format!("{}: {e}", path.display()))?;
-    store
-        .set_meta(NAME_KEY, name)
-        .map_err(|e| format!("{}: cannot record the project name: {e}", path.display()))?;
-    store.ensure_starter_structure(strings).map_err(|e| {
-        format!(
-            "{}: cannot create the starter chapter and scene: {e}",
-            path.display()
-        )
-    })?;
-    drop(store);
-    Ok(summarize(&path))
+    before_create(&path);
+    let mut builder = tempfile::Builder::new();
+    builder.prefix(".garret-create-");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        builder.permissions(fs::Permissions::from_mode(0o700));
+    }
+    let stage = builder
+        .tempdir_in(dir)
+        .map_err(|e| format!("{}: cannot prepare a new book: {e}", path.display()))?;
+    let retained_stage = stage.path().to_path_buf();
+    let result = (|| {
+        let staged = stage.path().join("project.db");
+        let store = Store::open(&staged).map_err(|e| format!("{}: {e}", path.display()))?;
+        store
+            .set_meta(NAME_KEY, name)
+            .map_err(|e| format!("{}: cannot record the project name: {e}", path.display()))?;
+        fill(&store, &path)?;
+        store
+            .checkpoint()
+            .map_err(|e| format!("{}: cannot finish the new book: {e}", path.display()))?;
+        drop(store);
+        match fs::metadata(staged.with_extension("db-wal")) {
+            Ok(metadata) if metadata.len() > 0 => {
+                return Err(format!(
+                    "{}: the new book's log could not be folded into its database",
+                    path.display()
+                ))
+            }
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => {
+                return Err(format!(
+                    "{}: cannot check the new book's log: {error}",
+                    path.display()
+                ))
+            }
+        }
+        fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&staged)
+            .and_then(|file| file.sync_all())
+            .map_err(|e| format!("{}: cannot sync the new book: {e}", path.display()))?;
+        refuse_destination_logs(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+        rename_without_replace(&staged, &path).map_err(|e| {
+            format!(
+                "{}: cannot publish the new book without replacing an existing file: {e}",
+                path.display()
+            )
+        })?;
+        if let Ok(parent) = fs::File::open(dir) {
+            let _ = parent.sync_all();
+        }
+        Ok(summarize(&path))
+    })();
+    match (result, cleanup(stage)) {
+        (result, Ok(())) => result,
+        (Err(error), Err(cleanup)) => Err(format!(
+            "{error}. Temporary book files remain at {}: {cleanup}",
+            retained_stage.display()
+        )),
+        (Ok(made), Err(cleanup)) => {
+            // Publication succeeded; callers must still register the saved book.
+            eprintln!(
+                "the book was created at {}, but its temporary folder remains at {}: {cleanup}",
+                path.display(),
+                retained_stage.display()
+            );
+            Ok(made)
+        }
+    }
 }
 
 /// Copy a recovery point into the library as a NEW project.
@@ -2693,6 +2771,211 @@ mod tests {
         super::create_in(dir, name, &english())
     }
 
+    fn competing_creation_book(path: &Path) -> (Store, Vec<(PathBuf, Vec<u8>)>) {
+        let other = Store::open(path).unwrap();
+        other.set_meta(NAME_KEY, "Competing manuscript").unwrap();
+        other.ensure_starter_structure(&english()).unwrap();
+        other.checkpoint().unwrap();
+        other
+            .set_meta(
+                "competition_marker",
+                "Distinct uncheckpointed manuscript state",
+            )
+            .unwrap();
+        let files = [
+            path.to_path_buf(),
+            path.with_extension("db-wal"),
+            path.with_extension("db-shm"),
+        ]
+        .into_iter()
+        .map(|path| {
+            let bytes = fs::read(&path).unwrap();
+            (path, bytes)
+        })
+        .collect();
+        (other, files)
+    }
+
+    #[test]
+    fn exclusive_creation_preserves_a_book_arriving_after_preflight() {
+        for (imported, with_sidecars) in
+            [(false, true), (true, true), (false, false), (true, false)]
+        {
+            let dir = tempdir().unwrap();
+            let mut competing = None;
+            let mut before = Vec::new();
+            let arrive = |path: &Path| {
+                let (store, files) = competing_creation_book(path);
+                if with_sidecars {
+                    competing = Some(store);
+                    before = files;
+                } else {
+                    store.checkpoint().unwrap();
+                    drop(store);
+                    before = vec![(path.to_path_buf(), fs::read(path).unwrap())];
+                }
+            };
+            let result = if imported {
+                super::create_imported_with(
+                    dir.path(),
+                    "Book",
+                    &[(None, "scene", "Imported scene", Some("Imported prose"))],
+                    &english(),
+                    arrive,
+                )
+            } else {
+                super::create_in_with(dir.path(), "Book", &english(), arrive)
+            };
+            assert!(
+                result.is_err(),
+                "a competing valid book must refuse creation instead of being adopted"
+            );
+            for (path, bytes) in before {
+                assert_eq!(
+                    fs::read(path).unwrap(),
+                    bytes,
+                    "creation touched a competing database or sidecar"
+                );
+            }
+            let competing = competing
+                .unwrap_or_else(|| Store::open_readonly(&dir.path().join("book.db")).unwrap());
+            assert_eq!(
+                competing.get_meta(NAME_KEY).unwrap().as_deref(),
+                Some("Competing manuscript")
+            );
+        }
+    }
+
+    #[test]
+    fn exclusive_creation_failed_import_never_cleans_a_competing_book() {
+        let dir = tempdir().unwrap();
+        let mut competing = None;
+        let mut before = Vec::new();
+        let rows = [
+            (None, "chapter", "First", None),
+            (Some(1usize), "scene", "Invalid parent", None),
+        ];
+        let result = super::create_imported_with(dir.path(), "Book", &rows, &english(), |path| {
+            let (store, files) = competing_creation_book(path);
+            competing = Some(store);
+            before = files;
+        });
+        assert!(result.is_err());
+        for (path, bytes) in before {
+            assert_eq!(
+                fs::read(&path).unwrap(),
+                bytes,
+                "failed import removed or changed the competing book at {}",
+                path.display()
+            );
+        }
+        assert_eq!(
+            competing.unwrap().get_meta(NAME_KEY).unwrap().as_deref(),
+            Some("Competing manuscript")
+        );
+    }
+
+    #[test]
+    fn exclusive_creation_cleans_only_owned_staging_after_fill_failure() {
+        let dir = tempdir().unwrap();
+        let result = super::create_book_with(
+            dir.path(),
+            "Book",
+            |_| {},
+            |store, path| {
+                assert!(!path.exists(), "the incomplete book must not be published");
+                let stage = fs::read_dir(dir.path())
+                    .unwrap()
+                    .next()
+                    .unwrap()
+                    .unwrap()
+                    .path();
+                assert!(stage
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .starts_with(".garret-create-"));
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    assert_eq!(
+                        fs::metadata(&stage).unwrap().permissions().mode() & 0o777,
+                        0o700
+                    );
+                }
+                assert!(stage.join("project.db").is_file());
+                store
+                    .set_meta("partial_import", "owned temporary data")
+                    .unwrap();
+                Err("injected filling failure".into())
+            },
+        );
+        assert!(result.unwrap_err().contains("injected filling failure"));
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn exclusive_creation_cleanup_failure_does_not_hide_a_published_book() {
+        let dir = tempdir().unwrap();
+        let mut retained = None;
+        let made = super::create_book_with_cleanup(
+            dir.path(),
+            "Book",
+            |_| {},
+            |store, _| {
+                store
+                    .ensure_starter_structure(&english())
+                    .map(|_| ())
+                    .map_err(|error| error.to_string())
+            },
+            |stage| {
+                retained = Some(stage.keep());
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::PermissionDenied,
+                    "injected staging cleanup failure",
+                ))
+            },
+        )
+        .expect("a cleanup failure must not hide a saved book from registration");
+        assert_eq!(Path::new(&made.path), dir.path().join("book.db"));
+        let store = Store::open_readonly(Path::new(&made.path)).unwrap();
+        assert_eq!(store.get_meta(NAME_KEY).unwrap().as_deref(), Some("Book"));
+        assert_eq!(store.items().unwrap().len(), 2);
+        let retained = retained.unwrap();
+        assert!(retained.is_dir());
+        assert!(!retained.join("project.db").exists());
+    }
+
+    #[test]
+    fn exclusive_creation_preserves_orphan_destination_sidecars() {
+        for extension in ["db-wal", "db-shm"] {
+            for imported in [false, true] {
+                let dir = tempdir().unwrap();
+                let arrive = |path: &Path| {
+                    fs::write(path.with_extension(extension), b"unrelated orphan").unwrap()
+                };
+                let result = if imported {
+                    super::create_imported_with(
+                        dir.path(),
+                        "Book",
+                        &[(None, "scene", "Imported", Some("Prose"))],
+                        &english(),
+                        arrive,
+                    )
+                } else {
+                    super::create_in_with(dir.path(), "Book", &english(), arrive)
+                };
+                assert!(result.unwrap_err().contains("database sidecar"));
+                assert!(!dir.path().join("book.db").exists());
+                assert_eq!(
+                    fs::read(dir.path().join(format!("book.{extension}"))).unwrap(),
+                    b"unrelated orphan"
+                );
+                assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+            }
+        }
+    }
+
     #[test]
     fn a_failed_import_leaves_no_project_and_preserves_its_neighbor() {
         let dir = tempdir().unwrap();
@@ -2727,6 +3010,14 @@ mod tests {
             assert!(!dir.path().join(name).exists(), "failed import left {name}");
         }
         assert_eq!(fs::read(neighbor_path).unwrap(), before);
+        assert!(
+            fs::read_dir(dir.path()).unwrap().all(|entry| !entry
+                .unwrap()
+                .file_name()
+                .to_string_lossy()
+                .starts_with(".garret-create-")),
+            "failed import left its owned staging directory"
+        );
         let store = Store::open_readonly(neighbor_path).unwrap();
         let scene = &store.items().unwrap()[0];
         assert_eq!(scene.title, "Keep this scene");
