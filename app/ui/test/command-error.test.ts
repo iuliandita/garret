@@ -190,6 +190,9 @@ test("completed move guidance distinguishes unavailable retry and actual open fa
   const noRetry = new HostCommandError("project_move", moved + "Reopen the book from its new location; a registration retry is unavailable: identity could not be read");
   expect(noRetry.problem).toBe("Your book moved and is still open, but its new location could not be remembered. Keep a separate backup and open Details for the saved location and recovery information.");
   expect(noRetry.problem).not.toContain("Add to Library");
+  const retrySuffix = "Keep the book open and retry adding its new location to Library in Books";
+  expect(new HostCommandError("project_move", moved + retrySuffix).problem).toBe(t("host-error.move-registration"));
+  expect(new HostCommandError("project_move", moved + retrySuffix + "\n").problem).toBe(t("host-error.move-registration-unavailable"));
   const openFailure = new HostCommandError("project_move", "could not open the book after its move: Permission denied (os error 13)");
   expect(openFailure.problem).toBe(t("host-error.unavailable"));
   expect(new HostCommandError("project_open", moved).problem).toBe(t("host-error.unavailable"));

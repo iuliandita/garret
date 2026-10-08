@@ -52,7 +52,7 @@ export function failureProblem(value: unknown, operation?: string): string {
   const detail = (failure?.detail ?? diagnostic(value)).toLowerCase();
   if ((failure?.operation ?? operation) === "project_move"
       && /^the book moved to [\s\S]+, but its saved location could not be updated:/.test(detail)) {
-    return t(detail.endsWith("keep the book open and retry adding its new location to library in books")
+    return t(/keep the book open and retry adding its new location to library in books(?![\s\S])/.test(detail)
       ? "host-error.move-registration" : "host-error.move-registration-unavailable");
   }
   const known = CLASSES.find(([, pattern]) => pattern.test(detail));
