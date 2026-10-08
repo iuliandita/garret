@@ -323,16 +323,13 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   nameField.hidden = true;
   nameField.setAttribute("aria-label", t("switcher.rename.label"));
 
-  // THE CAST BUTTON, AT THE HEADER'S RIGHT END. Fits the pattern of
-  // the application menu's own button: an icon, an aria-label out of the
-  // catalog, and `title` carrying the same word to a sighted writer who has
-  // not clicked it yet.
+  // The Cast icon shares the creation control's focus-and-hover description.
   const cast = document.createElement("button");
   cast.id = "nav-cast";
   cast.type = "button";
   cast.setAttribute("aria-label", t("nav.cast.label"));
-  cast.title = t("nav.cast.label");
   cast.append(createIcon("users"));
+  const castTip = createTooltip({ control: cast, name: t("nav.cast.label"), hint: null });
 
   const add = document.createElement("button");
   add.id = "book-create";
@@ -722,7 +719,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   // A SECOND container, and the only element outside the bar this unit owns.
   // The panel stays anchored inside #project-bar, because that is what every
   // absolutely-positioned panel here is positioned against.
-  deps.nameContainer.append(name, nameField, addTip.anchor, cast);
+  deps.nameContainer.append(name, nameField, addTip.anchor, castTip.anchor);
 
   // A list request that resolves after the panel closed (or after a newer one
   // was issued) must not repaint: the reader would see rows appear under a
@@ -1896,6 +1893,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const open = hasBook();
     name.hidden = !open;
     cast.hidden = !open;
+    castTip.anchor.hidden = !open;
     addTip.anchor.hidden = !open || deps.openCreation === undefined;
     bookRequired.hidden = open;
     for (const node of [here, move, recoveryHeading, recoveryList, archiveHeading, archiveWhere, archiveNow, archiveList, mirrorHeading, mirrorWhere, mirrorState, mirrorToggle, mirrorCheck]) node.hidden = !open;
@@ -2034,6 +2032,8 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       name.remove();
       nameField.remove();
       cast.remove();
+      castTip.destroy();
+      castTip.anchor.remove();
       add.removeEventListener("click", onAdd);
       addTip.destroy();
       addTip.anchor.remove();

@@ -813,6 +813,18 @@ describe("Library keyboard ownership", () => {
     await flush();
     expect(r.forgotten).toEqual(["/missing.db"]);
   });
+
+  test("an existing unreadable book stays visible without Forget", async () => {
+    const r = rig();
+    r.answer = overview([book({ error: "Book could not be read" })]);
+    r.library.open();
+    await flush();
+    const tile = document.querySelector<HTMLElement>("#library-shelf .shelf-tile")!;
+    expect(tile.tagName).toBe("DIV");
+    expect(tile.textContent).toContain("Book could not be read");
+    expect(tile.querySelector("[data-forget-path]")).toBeNull();
+    expect(r.forgotten).toEqual([]);
+  });
 });
 
 

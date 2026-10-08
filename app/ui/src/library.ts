@@ -980,13 +980,16 @@ export function createLibrary(deps: LibraryDeps): Library {
         const errorLine = document.createElement("span");
         errorLine.className = "shelf-error";
         errorLine.textContent = book.error ?? book.path;
-        const forget = document.createElement("button");
-        forget.type = "button";
-        forget.className = "shelf-forget";
-        forget.dataset.forgetPath = book.path;
-        forget.textContent = t("switcher.forget");
-        tile.append(errorLine, forget);
-        forget.setAttribute("aria-label", t("switcher.forget.label", { name: book.name }));
+        tile.append(errorLine);
+        if (book.missing) {
+          const forget = document.createElement("button");
+          forget.type = "button";
+          forget.className = "shelf-forget";
+          forget.dataset.forgetPath = book.path;
+          forget.textContent = t("switcher.forget");
+          forget.setAttribute("aria-label", t("switcher.forget.label", { name: book.name }));
+          tile.append(forget);
+        }
       } else {
         tile.setAttribute("aria-label", shelfLabel(book, lastOpenedText(book, nowMs)));
         tile.addEventListener("click", () => void openBook(book.path, tile, book.name));

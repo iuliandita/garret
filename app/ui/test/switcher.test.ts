@@ -2394,6 +2394,22 @@ describe("the cast button in the header", () => {
     teardown(rig);
   });
 
+  test("its visible description follows keyboard focus and pointer hover", () => {
+    const rig = mount();
+    const button = cast();
+    button.focus();
+    const tip = button.parentElement?.querySelector<HTMLElement>(".tip");
+    expect(tip?.textContent).toBe("Cast");
+    expect(tip?.hidden).toBe(false);
+    button.blur();
+    expect(button.parentElement?.querySelector(".tip")).toBeNull();
+    button.dispatchEvent(new MouseEvent("mouseenter"));
+    expect(button.parentElement?.querySelector(".tip")?.textContent).toBe("Cast");
+    teardown(rig);
+    expect(tip?.isConnected).toBe(false);
+    expect(button.parentElement?.isConnected).not.toBe(true);
+  });
+
   test("a project switch leaves exactly one cast button in the header", () => {
     // The recorded shape `name.remove()` documents: an element this unit owns
     // OUTSIDE its own container is not cleared by whoever owns that container,
