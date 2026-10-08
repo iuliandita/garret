@@ -135,8 +135,9 @@
      event card's armed-Delete red -- theme.test.ts checks the two differ
      in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
+  /* Ink keeps amber event labels readable in light palettes. */
   --track-1: var(--accent);
-  --track-2: var(--amber);
+  --track-2: color-mix(in oklab, var(--amber) 80%, var(--fg));
   --track-3: color-mix(in oklab, var(--danger) 55%, var(--amber));
   --track-4: var(--accent-strong);
   --track-5: color-mix(in oklab, var(--accent) 55%, var(--fg));
@@ -282,7 +283,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
      in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
-  --track-2: var(--amber);
+  --track-2: color-mix(in oklab, var(--amber) 80%, var(--fg));
   --track-3: color-mix(in oklab, var(--danger) 55%, var(--amber));
   --track-4: var(--accent-strong);
   --track-5: color-mix(in oklab, var(--accent) 55%, var(--fg));
@@ -338,7 +339,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
      in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
-  --track-2: var(--amber);
+  --track-2: color-mix(in oklab, var(--amber) 80%, var(--fg));
   --track-3: color-mix(in oklab, var(--danger) 55%, var(--amber));
   --track-4: var(--accent-strong);
   --track-5: color-mix(in oklab, var(--accent) 55%, var(--fg));
@@ -394,7 +395,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
      in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
-  --track-2: var(--amber);
+  --track-2: color-mix(in oklab, var(--amber) 80%, var(--fg));
   --track-3: color-mix(in oklab, var(--danger) 55%, var(--amber));
   --track-4: var(--accent-strong);
   --track-5: color-mix(in oklab, var(--accent) 55%, var(--fg));
@@ -451,7 +452,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
      in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
-  --track-2: var(--amber);
+  --track-2: color-mix(in oklab, var(--amber) 80%, var(--fg));
   --track-3: color-mix(in oklab, var(--danger) 55%, var(--amber));
   --track-4: var(--accent-strong);
   --track-5: color-mix(in oklab, var(--accent) 55%, var(--fg));
@@ -505,7 +506,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
      in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
-  --track-2: var(--amber);
+  --track-2: color-mix(in oklab, var(--amber) 80%, var(--fg));
   --track-3: color-mix(in oklab, var(--danger) 55%, var(--amber));
   --track-4: var(--accent-strong);
   --track-5: color-mix(in oklab, var(--accent) 55%, var(--fg));
@@ -562,7 +563,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
      in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
-  --track-2: var(--amber);
+  --track-2: color-mix(in oklab, var(--amber) 80%, var(--fg));
   --track-3: color-mix(in oklab, var(--danger) 55%, var(--amber));
   --track-4: var(--accent-strong);
   --track-5: color-mix(in oklab, var(--accent) 55%, var(--fg));
@@ -621,7 +622,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
      in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
-  --track-2: var(--amber);
+  --track-2: color-mix(in oklab, var(--amber) 80%, var(--fg));
   --track-3: color-mix(in oklab, var(--danger) 55%, var(--amber));
   --track-4: var(--accent-strong);
   --track-5: color-mix(in oklab, var(--accent) 55%, var(--fg));
@@ -675,7 +676,7 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
      in every block). Era tints (--era-1..6) are their own, six blocks
      below. */
   --track-1: var(--accent);
-  --track-2: var(--amber);
+  --track-2: color-mix(in oklab, var(--amber) 80%, var(--fg));
   --track-3: color-mix(in oklab, var(--danger) 55%, var(--amber));
   --track-4: var(--accent-strong);
   --track-5: color-mix(in oklab, var(--accent) 55%, var(--fg));

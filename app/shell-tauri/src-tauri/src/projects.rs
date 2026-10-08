@@ -618,6 +618,14 @@ pub(crate) fn modified_at(path: &Path) -> i64 {
         .unwrap_or(0)
 }
 
+pub(crate) fn book_is_missing(path: &Path) -> std::io::Result<bool> {
+    match fs::metadata(path) {
+        Ok(_) => Ok(false),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(true),
+        Err(error) => Err(error),
+    }
+}
+
 pub(crate) fn summarize(path: &Path) -> ProjectSummary {
     let stem = path
         .file_stem()
@@ -641,7 +649,8 @@ pub(crate) fn summarize(path: &Path) -> ProjectSummary {
         name,
         modified_at: modified_at(path),
         error,
-        missing: !path.exists(),
+        // Lookup errors do not establish absence; the read error stays visible.
+        missing: book_is_missing(path).unwrap_or(false),
         registration_warning: None,
     }
 }
@@ -731,7 +740,9 @@ pub fn known(data_home: &Path) -> Vec<PathBuf> {
 /// list (the scan finds it), so it is refused as "not remembered", which is
 /// the truth. Touches no file: what goes is a line in `settings.json`.
 pub fn forget_book(data_home: &Path, path: &str) -> Result<(), String> {
-    if Path::new(path).exists() {
+    if !book_is_missing(Path::new(path))
+        .map_err(|error| format!("{path}: could not check whether this book is missing: {error}"))?
+    {
         return Err(format!("{path}: this book is still there, so it cannot be forgotten"));
     }
     if !read_settings(data_home).books.iter().any(|b| b == path) {
@@ -3083,6 +3094,60 @@ mod tests {
         assert!(!by_name("Here").missing);
         assert!(by_name("gone").missing);
         assert!(by_name("gone").error.is_some());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_book_behind_a_permission_error_is_retained_in_both_library_views() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let home = tempdir().unwrap();
+        let elsewhere = tempdir().unwrap();
+        let present = book_at(elsewhere.path(), "Still Here");
+        let key = present.to_string_lossy().into_owned();
+        update_settings(home.path(), |settings| settings.books.push(key.clone())).unwrap();
+        let settings_before = fs::read(settings_path(home.path())).unwrap();
+        let book_before = fs::read(&present).unwrap();
+        let permissions = fs::metadata(elsewhere.path()).unwrap().permissions();
+        fs::set_permissions(elsewhere.path(), fs::Permissions::from_mode(0)).unwrap();
+        let lookup = fs::metadata(&present);
+        let listed = list_known(home.path());
+        let shelf = crate::commands::library::overview(home.path());
+        let forgotten = forget_book(home.path(), &key);
+        fs::set_permissions(elsewhere.path(), permissions).unwrap();
+
+        assert_eq!(lookup.unwrap_err().kind(), std::io::ErrorKind::PermissionDenied);
+        assert_eq!(listed.len(), 1);
+        assert!(!listed[0].missing, "lookup failure is not confirmed absence");
+        assert!(listed[0].error.is_some());
+        assert_eq!(shelf.books.len(), 1);
+        assert!(!shelf.books[0].missing, "the shelf must preserve the same boundary");
+        assert!(shelf.books[0].error.is_some());
+        assert!(forgotten.is_err(), "an unknown file state must refuse Forget");
+        assert_eq!(fs::read(settings_path(home.path())).unwrap(), settings_before);
+        assert_eq!(fs::read(&present).unwrap(), book_before);
+        assert_eq!(read_settings(home.path()).books, [key]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_book_behind_an_invalid_parent_is_retained_after_lookup_failure() {
+        let home = tempdir().unwrap();
+        let parent = home.path().join("former-folder");
+        fs::write(&parent, "folder replaced by a file").unwrap();
+        let path = parent.join("remembered.db");
+        let key = path.to_string_lossy().into_owned();
+        update_settings(home.path(), |settings| settings.books.push(key.clone())).unwrap();
+        let before = fs::read(settings_path(home.path())).unwrap();
+        assert_ne!(fs::metadata(&path).unwrap_err().kind(), std::io::ErrorKind::NotFound);
+
+        assert!(!summarize(&path).missing);
+        let shelf = crate::commands::library::overview(home.path());
+        assert_eq!(shelf.books.len(), 1);
+        assert!(!shelf.books[0].missing);
+        assert!(forget_book(home.path(), &key).is_err());
+        assert_eq!(fs::read(settings_path(home.path())).unwrap(), before);
+        assert_eq!(read_settings(home.path()).books, [key]);
     }
 
     #[test]
