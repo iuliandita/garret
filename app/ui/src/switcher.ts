@@ -288,6 +288,14 @@ export function lossesNotice(losses: ImportLosses, derivedContents?: string | nu
   return notices.length === 0 ? null : notices.join(". ");
 }
 
+/** Registration problems and import omissions share one durable notice. */
+export function importResultNotice(outcome: ImportOutcome): { message: string; problem: boolean } | null {
+  const warning = registrationNotice(outcome.summary);
+  const omissions = lossesNotice(outcome.losses, outcome.derived_contents);
+  const message = [warning, omissions].filter((part) => part !== null).join(" ");
+  return message === "" ? null : { message, problem: warning !== null };
+}
+
 export function createSwitcher(deps: SwitcherDeps): Switcher {
   const { container } = deps;
   let bookOpen = deps.currentPath() !== "";
@@ -877,7 +885,9 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
         pendingList.append(row);
       }
     } catch (error) {
-      if (!destroyed && mine === generation) deps.onNotice(messageOf(error));
+      if (!destroyed && mine === generation && await outcomeCurrent(path, opened) && mine === generation) {
+        deps.onNotice(messageOf(error));
+      }
     }
   }
 
@@ -1135,8 +1145,12 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       // one they have open is the application making that choice for them.
       if (!await outcomeCurrent(path, opened)) return;
       const warning = registrationNotice(restored);
-      if (warning) deps.onNotice(warning);
-      if (!warning || partial || row.dataset.legacyPoint === "true") deps.onDone(t(partial ? "switcher.recovery.done.partial" : row.dataset.legacyPoint === "true" ? "switcher.recovery.done.legacy" : "switcher.recovery.done", { name: restored.name }));
+      const disclosure = t(partial ? "switcher.recovery.done.partial" : row.dataset.legacyPoint === "true" ? "switcher.recovery.done.legacy" : "switcher.recovery.done", { name: restored.name });
+      if (warning) {
+        deps.onNotice(partial || row.dataset.legacyPoint === "true" ? `${warning} ${disclosure}` : warning);
+      } else {
+        deps.onDone(disclosure);
+      }
       if (!panel.hidden && mine === generation) await reload();
     })();
   };
@@ -1584,25 +1598,18 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const path = deps.currentPath();
     const opened = deps.currentGeneration?.();
     void (async (): Promise<void> => {
-      let notice: string | null;
       try {
         const outcome = await deps.importProject(file);
         if (!await outcomeCurrent(path, opened)) return;
-        notice = lossesNotice(outcome.losses, outcome.derived_contents);
-        const warning = registrationNotice(outcome.summary);
-        if (warning) deps.onNotice(warning);
+        const notice = importResultNotice(outcome);
+        if (notice?.problem) deps.onNotice(notice.message);
+        else if (notice) deps.onDone(notice.message);
       } catch (error) {
         if (await outcomeCurrent(path, opened)) deps.onNotice(messageOf(error));
         return;
       } finally {
         importing = false;
       }
-      // A LOSS IS GOOD NEWS'S CHANNEL, NOT A FAILURE'S. Nothing about the
-      // import failed -- the writer's manuscript landed, with the notice
-      // naming exactly what this build could not carry from it, the same
-      // channel `export-bar.ts`'s own caveat-only-when-there-is-one sentence
-      // uses for the underline count.
-      if (notice !== null) deps.onDone(notice);
       // Importing does NOT switch, for the reason creating does not: bringing a
       // manuscript in is not saying you are done with the one you are in. The
       // new project appears in the list above, to be opened deliberately.

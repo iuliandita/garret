@@ -23,7 +23,7 @@ import { mountEmpty } from "./empty-project";
 import { createBookCopyPrompt, type BookCopyConflict } from "./book-copy-prompt";
 import { createLibraryBookActions } from "./library-book-actions";
 import { createProjectSwitcher } from "./project-switch";
-import { createSwitcher, lossesNotice, type Switcher, type ProjectSummary } from "./switcher";
+import { createSwitcher, importResultNotice, type Switcher, type ProjectSummary } from "./switcher";
 import {
   createLibrary,
   type Library,
@@ -51,7 +51,7 @@ import { showProjectLoading } from "./loading";
 import { writingModesFrom } from "./writing-modes";
 import { createZoomPersistence, installZoomKeys, zoomFrom, type Zoom } from "./zoom";
 import type { Archive, ArchiveReport } from "./archive-indicator";
-import { registrationNotice, type ImportOutcome, type ImportReport, type MirrorCheck, type MirrorPreview, type MirrorReport } from "./switcher";
+import type { ImportOutcome, ImportReport, MirrorCheck, MirrorPreview, MirrorReport } from "./switcher";
 import {
   readRecoveryReport,
   startupRecoverySentence,
@@ -830,11 +830,9 @@ async function main(): Promise<void> {
               // what they chose; reporting it back would be reporting their own
               // decision to them as an event.
               if (created === null || created === undefined || !await canReport()) return;
-              const outcome = created as ImportOutcome;
-              const warning = registrationNotice(outcome.summary);
-              if (warning) current.raiseNotice(warning);
-              const notice = lossesNotice(outcome.losses, outcome.derived_contents);
-              if (notice !== null) current.announce(notice);
+              const notice = importResultNotice(created as ImportOutcome);
+              if (notice?.problem) current.raiseNotice(notice.message);
+              else if (notice) current.announce(notice.message);
               switcher.open("list");
             })
             .catch(async (err: unknown) => {

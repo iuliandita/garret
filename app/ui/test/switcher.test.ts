@@ -8,6 +8,7 @@ import {
   folderName,
   lossesNotice,
   registrationNotice,
+  importResultNotice,
   type ImportLosses,
   type ImportOutcome,
   type LegacyProtection,
@@ -2887,8 +2888,8 @@ test("an imported unregistered manuscript preserves its omission disclosure", as
     await open(rig, "import");
     click(rig.container.querySelector<HTMLElement>('[data-import-file="book.docx"]')!);
     await settle();
-    expect(rig.calls.notices).toEqual([`${t("registration.warning", { path: saved.path })} ${t("registration.session")}`]);
-    expect(rig.calls.dones).toEqual([lossesNotice(losses)!]);
+    expect(rig.calls.notices).toEqual([`${registrationNotice(saved)} ${lossesNotice(losses)}`]);
+    expect(rig.calls.dones).toEqual([]);
     expect(rig.calls.switched).toEqual([]);
   } finally { teardown(rig); }
 });
@@ -2954,6 +2955,61 @@ for (const leave of ["stay", "close", "focus", "workspace", "privacy"] as const)
       const focusedBook = active?.closest<HTMLElement>("[data-project-path]")?.dataset.projectPath;
       expect(focusedBook === book.path).toBe(leave === "stay");
       if (leave === "focus") expect(active?.id).toBe("project-new-name");
+    } finally { teardown(rig); }
+  });
+}
+
+
+test("the native and Books import notice keeps registration and every omission together", () => {
+  const outcome: ImportOutcome = {
+    summary: { path: "/saved/import.db", name: "Imported", modified_at: 1, registration_warning: { token: "token", error: "blocked" } },
+    losses: { ...ZERO_LOSSES, tables: 2, comments: 3, revisions: 1 },
+    derived_contents: "Contents",
+  };
+  expect(importResultNotice(outcome)).toEqual({ problem: true,
+    message: `${registrationNotice(outcome.summary)} ${lossesNotice(outcome.losses, outcome.derived_contents)}` });
+});
+
+for (const kind of ["partial", "legacy"] as const) {
+  test(`an unregistered ${kind} recovery keeps the warning and disclosure in one problem notice`, async () => {
+    const point: RecoveryPoint = kind === "partial"
+      ? { ...POINTS[0]!, verified: false, database_verified: true, bundle: true }
+      : { ...POINTS[0]!, bundle: false };
+    const saved: ProjectSummary = { path: "/saved/recovery.db", name: "Recovered", modified_at: 1,
+      registration_warning: { token: "token", error: "blocked" } };
+    const rig = mount({ listRecoveryPoints: async () => [point], restorePoint: async () => saved });
+    try {
+      await open(rig, "restore");
+      const row = rig.container.querySelector<HTMLElement>("[data-point-id]")!;
+      click(row); await settle();
+      if (kind === "partial") {
+        rig.calls.notices.length = 0;
+        click(row.querySelector<HTMLElement>("[data-restore-with-gaps]")!); await settle();
+      }
+      expect(rig.calls.notices).toEqual([`${registrationNotice(saved)} ${t(kind === "partial" ? "switcher.recovery.done.partial" : "switcher.recovery.done.legacy", { name: saved.name })}`]);
+      expect(rig.calls.dones).toEqual([]);
+      expect(rig.calls.switched).toEqual([]);
+    } finally { teardown(rig); }
+  });
+}
+
+for (const departure of ["same", "privacy", "workspace", "reopen"] as const) {
+  test(`pending registration list errors respect ${departure} context`, async () => {
+    let reject!: (error: Error) => void;
+    const pending = new Promise<PendingRegistration[]>((_resolve, fail) => { reject = fail; });
+    let allowed = true;
+    let generation = 1;
+    let reads = 0;
+    const rig = mount({ listPendingRegistrations: () => ++reads === 1 ? pending : Promise.resolve([]),
+      canReportArchive: async () => allowed, currentGeneration: () => generation });
+    try {
+      await open(rig);
+      if (departure === "privacy") allowed = false;
+      if (departure === "workspace") generation++;
+      if (departure === "reopen") await open(rig);
+      reject(new Error("private saved-book list unavailable"));
+      await settle();
+      expect(rig.calls.notices).toEqual(departure === "same" ? ["private saved-book list unavailable"] : []);
     } finally { teardown(rig); }
   });
 }
