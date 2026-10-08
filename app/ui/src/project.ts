@@ -3312,6 +3312,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     },
     destroy(): void {
       projectDestroyed = true;
+      timelineMount?.destroy();
+      timelineMount = null;
       uninstallInspector();
       reviewPanel?.destroy();
       outlineViewTransitions?.cancel();

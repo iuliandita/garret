@@ -3790,6 +3790,47 @@ describe("mountProject: a timeline opens in the editor pane", () => {
     mounted.destroy();
   });
 
+  test("leaving a timeline removes its controls and listeners before the next book mounts", async () => {
+    shell();
+    const first = host({ items: withTimeline(), bodies: { "timeline-0": TIMELINE_BODY } });
+    const a = await mountProject(deps({ invoke: first.invoke }));
+    await settle();
+    const added = jest.spyOn(document, "addEventListener");
+    const removed = jest.spyOn(document, "removeEventListener");
+    let b: MountedProject | null = null;
+    try {
+      a.navigator.selectById("timeline-0");
+      a.navigator.activate();
+      await settle();
+      expect(document.querySelectorAll("#timeline-view").length).toBe(1);
+      const timelineKeys = added.mock.calls.filter(([type]) => type === "keydown");
+      expect(timelineKeys.length).toBeGreaterThanOrEqual(2);
+      expect(await a.prepareToLeave()).toBe(true);
+      await a.session!.flushPending();
+      a.destroy();
+      expect(document.querySelectorAll("#timeline-view, #timeline-branch-form, #timeline-track-kind-menu").length).toBe(0);
+      expect(document.getElementById("editor")!.classList.contains("timeline-open")).toBe(false);
+      for (const [type, listener, options] of timelineKeys) {
+        expect(removed.mock.calls.some(([removedType, removedListener, removedOptions]) =>
+          removedType === type && removedListener === listener && removedOptions === options)).toBe(true);
+      }
+      const second = host({ bodies: { "scene-0": body("The second book.") } });
+      b = await mountProject(deps({ invoke: second.invoke, generation: 2 }));
+      await settle();
+      expect(document.querySelectorAll("#editor .ProseMirror").length).toBe(1);
+      expect(document.querySelector<HTMLElement>("#editor .ProseMirror")!.hidden).toBe(false);
+      b.editor!.typeChar("x");
+      await b.session!.flushPending();
+      expect(second.flushed().at(-1)?.body).toContain("x");
+      expect(first.flushed()).toHaveLength(0);
+    } finally {
+      a.destroy();
+      b?.destroy();
+      added.mockRestore();
+      removed.mockRestore();
+    }
+  });
+
   for (const operation of ["undo", "redo", "replace one", "replace all"] as const) {
     test(`prose ${operation} preserves the hidden scene and timeline through flush and reopen`, async () => {
       shell();
