@@ -881,6 +881,51 @@ describe("mountTimeline", () => {
       m.destroy();
     });
 
+    test.each(["Enter", "Escape"])("%s from a focused rename returns to the recreated track button", async (key) => {
+      const { mount: m, dirty } = mount(baseBody({ tracks: [
+        { id: "t1", name: "Ines", kind: "thread", colour: 1 },
+        { id: "t2", name: "Mira", kind: "thread", colour: 2 },
+      ] }));
+      const selector = '.timeline-lane[data-track-id="t2"] .timeline-lane-action';
+      try {
+        container.querySelector<HTMLButtonElement>(selector)!.click();
+        document.getElementById("timeline-track-rename")!.click();
+        await Promise.resolve();
+        const input = container.querySelector<HTMLInputElement>(".timeline-lane-rename")!;
+        expect(document.activeElement === input).toBe(true);
+        input.value = "Harbour";
+        const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+        input.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(true);
+        expect(container.querySelector(".timeline-lane-rename") === null).toBe(true);
+        const button = container.querySelector<HTMLButtonElement>(selector)!;
+        expect(document.activeElement === button).toBe(true);
+        expect(button.getAttribute("aria-label")).toBe(key === "Enter" ? "Harbour" : "Mira");
+        expect(dirty).toHaveLength(key === "Enter" ? 1 : 0);
+      } finally {
+        m.destroy();
+      }
+    });
+
+    test("committing a rename by blur preserves focus on the next control", async () => {
+      const { mount: m, dirty } = mount(baseBody());
+      try {
+        container.querySelector<HTMLButtonElement>(".timeline-lane-action")!.click();
+        document.getElementById("timeline-track-rename")!.click();
+        await Promise.resolve();
+        const input = container.querySelector<HTMLInputElement>(".timeline-lane-rename")!;
+        input.value = "Harbour";
+        const next = container.querySelector<HTMLButtonElement>("#timeline-toolbar button")!;
+        next.focus();
+        expect(document.activeElement === next).toBe(true);
+        expect(container.querySelector(".timeline-lane-rename") === null).toBe(true);
+        expect(dirty).toHaveLength(1);
+        expect(JSON.parse(dirty[0]!).tracks[0].name).toBe("Harbour");
+      } finally {
+        m.destroy();
+      }
+    });
+
     // Mutation target 8: a track rename with an empty name is accepted.
     test("an empty name is refused and the field keeps the old one", () => {
       const { mount: m, dirty } = mount(baseBody());

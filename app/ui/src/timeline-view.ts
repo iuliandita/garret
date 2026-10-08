@@ -1304,6 +1304,12 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
     trackContextMenu.focusItem(0);
   }
 
+  function focusTrackAction(trackId: string): void {
+    const lane = [...lanes.querySelectorAll<HTMLElement>(".timeline-lane")]
+      .find((candidate) => candidate.dataset.trackId === trackId && candidate.dataset.branchId === "");
+    (lane?.querySelector<HTMLButtonElement>(".timeline-lane-action") ?? lanes).focus();
+  }
+
   function bindLaneHeader(lane: HTMLElement, tr: TimelineTrack): void {
     const header = lane.querySelector<HTMLElement>(".timeline-lane-header");
     if (header === null) return;
@@ -1315,27 +1321,26 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
       input.value = tr.name;
       input.className = "timeline-lane-rename";
       input.setAttribute("aria-label", t("timeline.track.rename"));
-      // SET BEFORE THE RE-RENDER, NOT AFTER (review, MINOR): an engine that
-      // fires `blur` when its focused element is removed from the document
-      // (Firefox does this; WebKitGTK is unverified here) would otherwise
-      // run `commitRename` a second time on the very text Escape just
-      // discarded -- `render()` below removes this input from the document
-      // the instant it runs.
-      let cancelled = false;
+      // Finish before rendering removes the focused input and can fire blur.
+      let finished = false;
       input.addEventListener("keydown", (e) => {
         if (isCompositionKey(e)) return;
         if (e.key === "Enter") {
           e.preventDefault();
+          finished = true;
           commitRename(input, tr.id);
+          focusTrackAction(tr.id);
         } else if (e.key === "Escape") {
           e.preventDefault();
-          cancelled = true;
+          finished = true;
           renamingTrackId = null;
           render();
+          focusTrackAction(tr.id);
         }
       });
       input.addEventListener("blur", () => {
-        if (cancelled) return;
+        if (finished) return;
+        finished = true;
         commitRename(input, tr.id);
       });
       header.append(input);
