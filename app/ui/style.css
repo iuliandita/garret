@@ -2125,6 +2125,14 @@ body.nav-hidden #nav-column {
   display: none;
 }
 
+#project-pending-registrations .switcher-pending-registration {
+  margin-block: var(--space-3);
+  padding: var(--space-3);
+  border-inline-start: 3px solid var(--amber);
+  overflow-wrap: anywhere;
+}
+#project-pending-registrations p { margin-block: 0 var(--space-2); }
+
 #project-list [role="listitem"] {
   padding: 5px 8px;
   border-radius: var(--radius-control);
@@ -2775,7 +2783,7 @@ body.nav-hidden #nav-column {
 }
 #prefs-goal-custom[aria-invalid="true"] {
   border-color: var(--amber);
-  outline: 1px solid var(--amber);
+  box-shadow: inset 0 0 0 1px var(--amber);
 }
 
 #prefs-dict-word {

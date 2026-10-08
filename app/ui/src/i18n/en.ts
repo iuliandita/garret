@@ -50,6 +50,8 @@ export const EN = {
   "menu.publishing": "Publishing…",
   "menu.copies": "Copies…",
   "menu.book-pages": "Book pages",
+  "registration.preference": "Saved at {path} and available in the Library, but the folder for future books could not be remembered.",
+  "registration.unavailable": "A file was saved at {path}, but its book identity could not be checked. Keep this file; it cannot be added to the Library here.",
   "registration.warning": "Saved at {path}, but not added to the Library.",
   "registration.session": "Add this book before closing garret. This retry is available only until garret closes; the saved book stays on disk.",
   "registration.retry": "Add to Library",

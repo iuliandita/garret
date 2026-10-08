@@ -46,6 +46,8 @@ export const DE = {
   "menu.publishing": "Veröffentlichen…",
   "menu.copies": "Sicherungskopien…",
   "menu.book-pages": "Buchseiten",
+  "registration.preference": "Unter {path} gespeichert und in der Bibliothek verfügbar. Der Ordner für zukünftige Bücher konnte jedoch nicht gespeichert werden.",
+  "registration.unavailable": "Eine Datei wurde unter {path} gespeichert, aber ihre Buchidentität konnte nicht geprüft werden. Bewahren Sie diese Datei auf; sie kann hier nicht zur Bibliothek hinzugefügt werden.",
   "registration.warning": "Unter {path} gespeichert, aber nicht zur Bibliothek hinzugefügt.",
   "registration.session": "Fügen Sie dieses Buch hinzu, bevor Sie garret schließen. Dieser erneute Versuch ist nur bis zum Schließen von garret verfügbar; das gespeicherte Buch bleibt auf dem Datenträger.",
   "registration.retry": "Zur Bibliothek hinzufügen",
