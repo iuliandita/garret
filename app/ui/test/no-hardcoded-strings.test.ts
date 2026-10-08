@@ -203,6 +203,7 @@ const ALLOWED = new Map<string, string>([
     "navigator/visible.ts: the tail of an invariant throw",
   ],
   ["input, textarea, [role='dialog']", "project.ts: a CSS selector list"],
+  ["input, textarea, select", "timeline-view.ts: editable control selector list"],
   ["button, input, select, textarea", "library.ts: a CSS selector list for disabling controls"],
   ["button, input, select, textarea, [tabindex]", "library.ts: a CSS selector list for focusable controls"],
   ["${Math.max(0, bounds.bottom - bounds.top - 8)}px", "help-tip.ts: a CSS maximum height"],

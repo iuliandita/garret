@@ -8832,22 +8832,12 @@ mod tests {
 
     #[test]
     fn a_rename_accepts_a_title_no_filename_could_carry() {
-        // NOT `projects::create_in`'s rule, and this is the reason. `slugify`
-        // answers None for Hebrew and Arabic titles (which is why the mirror
-        // has a segment rule of its own), and a rename
-        // CREATES NO FILE -- so sharing that rule would refuse a legitimate book
-        // title for an operation that has no filename to protect.
+        // A rename creates no file, so punctuation-only titles remain valid
+        // even though creating a book requires a usable filename basename.
         let dir = tempdir().expect("a temp dir");
         let store = crate::store::Store::open(&dir.path().join("default.db")).expect("a store");
-        assert_eq!(
-            crate::projects::slugify("\u{5e1}\u{5e4}\u{5e8}"),
-            None,
-            "the premise of this test"
-        );
-        assert_eq!(
-            rename_open(&store, "\u{5e1}\u{5e4}\u{5e8}"),
-            Ok("\u{5e1}\u{5e4}\u{5e8}".to_string())
-        );
+        assert_eq!(crate::projects::slugify("?!"), None, "the premise of this test");
+        assert_eq!(rename_open(&store, "?!"), Ok("?!".to_string()));
     }
 
     #[test]
