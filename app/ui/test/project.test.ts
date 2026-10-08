@@ -3005,6 +3005,80 @@ describe("comments reach the editor and the flush", () => {
     mounted.destroy();
   });
 
+  for (const [acceptedId, reloadFails] of [["scene-0", false], ["scene-0", true], ["scene-1", false]] as const) {
+    test(`mirror acceptance holds editing through commit and affected reload (${acceptedId}, ${reloadFails})`, async () => {
+      shell();
+      const h = host({ mirrorRows: [{ id: acceptedId, path: "a.md", was_path: null, state: "prose", title: "Arrival", file_title: null, store_body: body("book"), file_body: body("file"), error: null, can_accept: true, store_underlined: 0 }] });
+      let entered!: () => void; let release!: () => void;
+      let loading!: () => void; let releaseLoad!: () => void;
+      const started = new Promise<void>((resolve) => { entered = resolve; });
+      const hold = new Promise<void>((resolve) => { release = resolve; });
+      const loadStarted = new Promise<void>((resolve) => { loading = resolve; });
+      const loadHold = new Promise<void>((resolve) => { releaseLoad = resolve; });
+      let committed = false;
+      let reloads = 0;
+      const invoke: Host["invoke"] = async (cmd, args) => {
+        if (cmd === "mirror_accept") { entered(); await hold; committed = true; }
+        if (cmd === "doc_load" && committed) {
+          reloads++; loading(); await loadHold;
+          if (reloadFails) throw new Error("reload refused");
+          return { body: body("accepted"), rev: 9 };
+        }
+        return h.invoke(cmd, args);
+      };
+      const mounted = await mountProject(deps({ invoke }));
+      try {
+        await settle(); mounted.menuActions.openMirrorChanges(); await settle(); await settle();
+        mounted.editor.typeChar("x");
+        const draft = mounted.editor.serialize();
+        document.querySelector<HTMLButtonElement>(".mirror-change-accept")?.click();
+        await started;
+        mounted.editor.typeChar("y");
+        expect(mounted.editor.serialize()).toBe(draft);
+        expect(h.flushed().some((entry) => entry.body === draft)).toBe(true);
+        expect(await mounted.prepareToLeave()).toBe(false);
+        document.querySelector<HTMLElement>("[data-item-id='scene-1']")?.click();
+        expect(h.of("doc_load").filter((call) => call.args?.itemId === "scene-1")).toHaveLength(0);
+        release();
+        if (acceptedId === "scene-0") {
+          await loadStarted;
+          mounted.editor.typeChar("z");
+          expect(mounted.editor.serialize()).toBe(draft);
+          expect(await mounted.prepareToLeave()).toBe(false);
+        }
+        releaseLoad(); await settle(); await settle(); await settle();
+        expect(reloads).toBe(acceptedId === "scene-0" ? 1 : 0);
+        if (reloadFails) {
+          mounted.cancelLeave(); mounted.editor.typeChar("z");
+          expect(mounted.editor.serialize()).toBe(draft);
+          expect(document.getElementById("open-error")?.textContent).toContain("Restart garret");
+        } else {
+          const expected = acceptedId === "scene-0" ? body("accepted") : draft;
+          expect(mounted.editor.serialize()).toBe(expected);
+          expect(mounted.flusher!.revOf("scene-0")).toBe(acceptedId === "scene-0" ? 9 : 8);
+          mounted.editor.typeChar("z");
+          expect(mounted.editor.serialize()).not.toBe(expected);
+        }
+      } finally { release(); releaseLoad(); await settle(); mounted.destroy(); }
+    });
+  }
+
+  test("mirror acceptance refuses a failed save without replacing the draft", async () => {
+    shell();
+    const h = host({ reject: ["doc_flush"], mirrorRows: [{ id: "scene-0", path: "a.md", was_path: null, state: "prose", title: "Arrival", file_title: null, store_body: body("book"), file_body: body("file"), error: null, can_accept: true, store_underlined: 0 }] });
+    const mounted = await mountProject(deps({ invoke: h.invoke }));
+    try {
+      await settle(); mounted.menuActions.openMirrorChanges(); await settle(); await settle();
+      mounted.editor.typeChar("x"); const draft = mounted.editor.serialize();
+      document.querySelector<HTMLButtonElement>(".mirror-change-accept")?.click();
+      await settle(); await settle();
+      expect(h.of("mirror_accept")).toHaveLength(0);
+      expect(mounted.flusher!.failed()).toBe(true);
+      expect(mounted.editor.serialize()).toBe(draft);
+      expect(document.getElementById("open-error")?.textContent).toContain("could not be saved");
+    } finally { mounted.destroy(); }
+  });
+
   test("mirror undo locks the active editor before drain and blocks a new opener", async () => {
     shell();
     let releaseFlush = (): void => undefined;

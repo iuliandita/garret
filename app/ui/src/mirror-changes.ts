@@ -104,6 +104,8 @@ export interface MirrorChangesDeps {
    *  makes the CONFLICT test wrong -- the document revision the host compares
    *  has not moved yet. */
   drain(): Promise<void>;
+  /** Hold editing and conflicting document actions through reconciliation. */
+  withOperation?(operation: () => Promise<void>): Promise<void>;
   /** The host's `mirror_accept`. IDS AND NOTHING ELSE: no body, no path, no
    *  revision crosses this boundary, so nothing the page holds can decide what
    *  is written -- only which of the rows the host derived is taken. */
@@ -415,38 +417,36 @@ export function createMirrorChanges(deps: MirrorChangesDeps): MirrorChanges {
     if (destroyed || ids.length === 0 || actionPending) return;
     const labels = new Map(currentRows.map((row) => [row.id, rowLabel(row)]));
     actionPending = true;
-    let outcome: MirrorAcceptOutcome;
+    let committed = false;
     try {
-      outcome = await deps.accept(ids);
+      const operation = async (): Promise<void> => {
+        await deps.drain();
+        if (destroyed) return;
+        const outcome = await deps.accept(ids);
+        committed = true;
+        if (destroyed) return;
+        // Reconcile before reading the change set again: the host has moved
+        // document revisions and any open content must agree with them.
+        try {
+          await deps.onAccepted(outcome);
+        } catch (err) {
+          if (!destroyed) deps.onNotice(t("mirror.changes.accept.reconcile.error", { error: String(err) }));
+        }
+        if (destroyed) return;
+        undoHandles = outcome.report.documents.map((doc) => ({
+          itemId: doc.item_id,
+          versionId: doc.version_id,
+          snapshotId: outcome.report.snapshot.id,
+          acceptedRev: doc.rev,
+          title: labels.get(doc.item_id) ?? doc.item_id,
+        }));
+        renderUndos();
+        await refresh();
+      };
+      if (deps.withOperation) await deps.withOperation(operation);
+      else await operation();
     } catch (err) {
-      if (destroyed) return;
-      // NOT raiseFailure and not an empty list: a refused accept is not a
-      // failed save, and a panel that emptied itself would say the changes are
-      // gone when they are exactly where they were.
-      deps.onNotice(t("mirror.changes.accept.error", { error: String(err) }));
-      actionPending = false;
-      return;
-    }
-    if (destroyed) return;
-    // BEFORE THE RE-READ. The open scene's body and revision are stale the
-    // instant the host commits, and a scheduler still holding the old revision
-    // would refuse the writer's very next keystroke as a Conflict.
-    try {
-      await deps.onAccepted(outcome);
-    } catch (err) {
-      if (!destroyed) deps.onNotice(t("mirror.changes.accept.reconcile.error", { error: String(err) }));
-    }
-    if (destroyed) return;
-    undoHandles = outcome.report.documents.map((doc) => ({
-      itemId: doc.item_id,
-      versionId: doc.version_id,
-      snapshotId: outcome.report.snapshot.id,
-      acceptedRev: doc.rev,
-      title: labels.get(doc.item_id) ?? doc.item_id,
-    }));
-    renderUndos();
-    try {
-      await refresh();
+      if (!destroyed) deps.onNotice(t(committed ? "mirror.changes.accept.reconcile.error" : "mirror.changes.accept.error", { error: String(err) }));
     } finally {
       actionPending = false;
     }

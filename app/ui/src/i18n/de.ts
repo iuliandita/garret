@@ -2018,6 +2018,7 @@ export const DE = {
   "mirror.changes.accept.all.one": "Die Wörter aus 1 Datei übernehmen",
   "mirror.changes.accept.all.other": "Die Wörter aus {count} Dateien übernehmen",
   "mirror.changes.accept.error": "Die Wörter konnten nicht übernommen werden: {error}",
+  "mirror.changes.accept.error.unsaved": "Ihre letzten Änderungen konnten nicht gespeichert werden. Die Wörter wurden nicht übernommen.",
   "mirror.changes.accept.reconcile.error": "Die Wörter wurden übernommen, aber die geöffnete Szene konnte nicht aktualisiert werden: {error}",
   "mirror.changes.undo": "Übernahme dieser Wörter rückgängig machen",
   "mirror.changes.undo.name": "Die Übernahme der Wörter in {title} rückgängig machen",

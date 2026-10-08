@@ -2416,6 +2416,7 @@ export const EN = {
   "mirror.changes.accept.all.one": "Take the words from 1 file",
   "mirror.changes.accept.all.other": "Take the words from {count} files",
   "mirror.changes.accept.error": "Could not take the words in: {error}",
+  "mirror.changes.accept.error.unsaved": "Your latest changes could not be saved. The words were not taken in.",
   "mirror.changes.accept.reconcile.error": "The words were taken in, but the open scene could not be refreshed: {error}",
   "mirror.changes.undo": "Undo taking these words",
   "mirror.changes.undo.name": "Undo taking the words into {title}",

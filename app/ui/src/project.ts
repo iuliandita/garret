@@ -1874,7 +1874,28 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   mirrorChanges = createMirrorChanges({
     container: mirrorChangesEl,
     changes: async () => (await invoke("mirror_changes")) as MirrorChangeRow[],
-    drain: () => flusher.drain(),
+    drain: async () => {
+      await flusher.drain();
+      if (flusher.failed() || persistError !== null) throw new Error(t("mirror.changes.accept.error.unsaved"));
+      if (projectDestroyed || projectLeaving || deps.privacyLocked?.()) throw new Error(t("history.error.busy"));
+    },
+    withOperation: async (operation) => {
+      if (projectDestroyed || projectLeaving || outline?.busy() || historyOperationInFlight || historyReconcileFailed || reviewReconcileFailed ||
+          sourceCommandInFlight || undoInFlight || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight ||
+          inflightOpens > 0 || reviewPanel?.busy() || deps.privacyLocked?.()) throw new Error(t("history.error.busy"));
+      historyOperationInFlight = true;
+      editor.setEditable(false);
+      timelineMount?.setEditable(false);
+      try {
+        return await operation();
+      } finally {
+        historyOperationInFlight = false;
+        if (!projectDestroyed && !projectLeaving && !historyReconcileFailed && !reviewReconcileFailed) {
+          editor.setEditable(true);
+          timelineMount?.setEditable(true);
+        }
+      }
+    },
     // IDS AND NOTHING ELSE cross this boundary. No body, no path and no
     // revision is sent, so nothing the page holds can decide what is written --
     // only which of the rows the host itself derived is taken. The host rebuilds
@@ -1895,7 +1916,14 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     // which of their notes the acceptance orphaned.
     onAccepted: async (outcome) => {
       for (const changed of outcome.report.documents) { referenceRail?.sourceChanged(changed.item_id); craftPanel?.sourceChanged(changed.item_id); continuousChapter?.sourceChanged(changed.item_id); }
-      await reloadOpenDocument();
+      if (outcome.report.documents.some((changed) => changed.item_id === session?.activeDocId())) {
+        try {
+          await reloadOpenDocument(true);
+        } catch (error) {
+          historyReconcileFailed = true;
+          throw new Error(t("history.error.reconcile"), { cause: error });
+        }
+      }
       announce(
         plural("mirror.changes.accepted", outcome.report.documents.length, {
           count: formatNumber(outcome.report.documents.length),
