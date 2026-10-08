@@ -2905,3 +2905,55 @@ test("a saved book with unverifiable identity gives location guidance without a 
     registration_warning: { kind: "registration_unavailable", token: null, error: "identity changed" } };
   expect(registrationNotice(project)).toBe(t("registration.unavailable", { path: project.path }));
 });
+
+
+test("a focused registration retry keeps focus while pending and after failure", async () => {
+  let reject!: (error: Error) => void;
+  const attempt = new Promise<ProjectSummary>((_resolve, failed) => { reject = failed; });
+  let retries = 0;
+  const rig = mount({ listPendingRegistrations: async () => [{ token: "token", path: "/saved/book.db", name: "Saved" }],
+    retryRegistration: async () => { retries++; return attempt; } });
+  try {
+    await open(rig);
+    const button = el(rig.container, "project-pending-registrations").querySelector<HTMLButtonElement>("button")!;
+    button.id = "focused-registration-retry";
+    button.focus(); click(button); click(button);
+    expect(button.getAttribute("aria-disabled")).toBe("true");
+    expect(document.activeElement?.id).toBe(button.id);
+    expect(retries).toBe(1);
+    reject(new Error("still blocked"));
+    await settle();
+    expect(document.activeElement?.id).toBe(button.id);
+    expect(button.hasAttribute("aria-disabled")).toBe(false);
+  } finally { teardown(rig); }
+});
+
+for (const leave of ["stay", "close", "focus", "workspace", "privacy"] as const) {
+  test(`successful registration focus respects ${leave}`, async () => {
+    let release!: (project: ProjectSummary) => void;
+    const attempt = new Promise<ProjectSummary>((resolve) => { release = resolve; });
+    let registered = false;
+    let generation = 1;
+    let allowed = true;
+    const book = { path: "/saved/book.db", name: "Saved", modified_at: 1 };
+    const rig = mount({ listProjects: async () => registered ? [book] : [],
+      listPendingRegistrations: async () => registered ? [] : [{ token: "token", path: book.path, name: book.name }],
+      retryRegistration: () => attempt, currentGeneration: () => generation, canReportArchive: async () => allowed });
+    try {
+      await open(rig);
+      const button = el(rig.container, "project-pending-registrations").querySelector<HTMLButtonElement>("button")!;
+      button.id = "focused-registration-retry";
+      button.focus(); click(button);
+      if (leave === "close") el(rig.container, "project-panel").dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+      if (leave === "focus") el(rig.container, "project-new-name").focus();
+      if (leave === "workspace") generation++;
+      if (leave === "privacy") allowed = false;
+      registered = true; release(book);
+      await settle(); await settle();
+      const active = document.activeElement;
+      const focusedBook = active?.closest<HTMLElement>("[data-project-path]")?.dataset.projectPath;
+      expect(focusedBook === book.path).toBe(leave === "stay");
+      if (leave === "focus") expect(active?.id).toBe("project-new-name");
+    } finally { teardown(rig); }
+  });
+}

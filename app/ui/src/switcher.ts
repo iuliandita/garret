@@ -892,19 +892,32 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const path = deps.currentPath();
     const opened = deps.currentGeneration?.();
     registering = true;
-    button.disabled = true;
+    // The latch prevents a second attempt while the focused control stays in the tab order.
+    button.setAttribute("aria-disabled", "true");
     void (async (): Promise<void> => {
       try {
         const project = await deps.retryRegistration!(token);
         if (await outcomeCurrent(path, opened)) {
           deps.onDone(t("registration.done", { name: project.name }));
-          if (!panel.hidden && mine === generation) await reload();
+          if (!panel.hidden && mine === generation) {
+            const returnFocus = document.activeElement === button;
+            const loading = reload();
+            const refreshed = generation;
+            await loading;
+            const canFocus = (): boolean => returnFocus && !panel.hidden && refreshed === generation &&
+              (document.activeElement === button || document.activeElement === document.body);
+            if (canFocus() && await outcomeCurrent(path, opened) && canFocus()) {
+              const row = Array.from(listbox.querySelectorAll<HTMLElement>("[data-project-path]"))
+                .find((row) => row.dataset.projectPath === project.path);
+              (row?.querySelector<HTMLButtonElement>(".switcher-open") ?? listbox).focus();
+            }
+          }
         }
       } catch (error) {
         if (await outcomeCurrent(path, opened)) deps.onNotice(messageOf(error));
       } finally {
         registering = false;
-        button.disabled = false;
+        button.removeAttribute("aria-disabled");
       }
     })();
   };
