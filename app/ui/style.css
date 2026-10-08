@@ -5219,8 +5219,8 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   padding-top: 24px;
 }
 
-#scene-heading:not(:empty) + #timeline-view {
-  padding-top: 24px;
+#editor.timeline-open > #scene-heading:not(:empty) {
+  margin-bottom: 24px;
 }
 
 /* THE OPEN SCENE'S TITLE, READ-ONLY, at the top of the prose column.
