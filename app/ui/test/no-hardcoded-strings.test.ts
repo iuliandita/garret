@@ -171,6 +171,8 @@ function isKeyNameComparison(text: string, before: string): boolean {
  * list, is what needs fixing.
  */
 const ALLOWED = new Map<string, string>([
+  ['${t("registration.warning", { path: project.path })} ${t("registration.session")}', "switcher.ts: composed catalog messages with no literal prose"],
+  ["${warning} ${disclosure}", "switcher.ts: composed translated registration and recovery notices"],
   ["(max-width: 900px)", "chrome-toggles.ts: responsive media query, not displayed text"],
   ["application locked", "command-error.ts: legacy host lock rejection recognized during bootstrap, not a displayed label"],
   [
@@ -311,6 +313,7 @@ describe("no user-facing literal outside the catalog", () => {
       "button, input, select, textarea are unavailable while opening",
       "${left - anchor.left}px from the edge",
       "Keep this tooltip inside the window",
+      "${warning} Registration failed",
     ]) {
       expect(isUserFacing({ file: "x.ts", line: 1, text, before: "" })).toBe(true);
     }
