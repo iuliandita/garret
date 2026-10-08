@@ -1488,7 +1488,7 @@ describe("restoring from a recovery point", () => {
     teardown(rig);
   });
 
-  test("a picture-incomplete point needs a labeled second action", async () => {
+  test("an asset-incomplete point needs a labeled second action", async () => {
     let allowed: boolean | undefined;
     const partial: RecoveryPoint = { ...POINTS[0]!, verified: false, database_verified: true, bundle: true };
     const rig = mount({
@@ -1503,14 +1503,14 @@ describe("restoring from a recovery point", () => {
     click(row);
     await settle();
     expect(rig.calls.restored).toEqual([]);
-    expect(rig.calls.notices.some((message) => message.includes("pictures"))).toBe(true);
+    expect(rig.calls.notices.some((message) => message.includes("pictures") && message.includes("research"))).toBe(true);
     const confirm = row.querySelector("[data-restore-with-gaps]");
     expect(confirm).not.toBeNull();
     click(confirm as HTMLElement);
     await settle();
     expect(rig.calls.restored).toEqual([partial.id]);
     expect(allowed).toBe(true);
-    expect(rig.calls.dones.some((message) => message.includes("missing"))).toBe(true);
+    expect(rig.calls.dones.some((message) => message.includes("missing") && message.includes("research"))).toBe(true);
     teardown(rig);
   });
 

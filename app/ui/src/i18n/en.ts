@@ -2163,21 +2163,21 @@ export const EN = {
   // "on this device" is load-bearing here too: these points sit beside the
   // project they came from and are lost with the computer.
   "switcher.recovery.heading": "Recovery points on this device",
-  // Name the image gap on older database-only points while describing the
+  // Name the asset gap on older database-only points while describing the
   // complete folder required for new points.
   "switcher.recovery.note":
-    "Restoring adds a new book. Nothing is replaced. New recovery point folders include referenced original pictures. Older database-only points do not.",
+    "Restoring adds a new book. Nothing is replaced. New recovery point folders include referenced original pictures and research files. Older database-only points do not.",
   "switcher.recovery.list.label": "recovery points",
   "switcher.recovery.row": "From {when}",
-  "switcher.recovery.row.partial": "From {when} (manuscript available; some pictures incomplete)",
+  "switcher.recovery.row.partial": "From {when} (manuscript available; some originals incomplete)",
   "switcher.recovery.row.legacy": "From {when} (older database-only point)",
-  "switcher.recovery.partial.warning": "This point has a sound manuscript, but some original pictures could not be verified. Restoring it leaves those picture references in the book. Check the missing originals afterward.",
-  "switcher.recovery.partial.confirm": "Restore manuscript with picture gaps",
+  "switcher.recovery.partial.warning": "This point has a sound manuscript, but some original pictures or research files could not be verified. Restoring it leaves their references in the book. Check the missing originals afterward.",
+  "switcher.recovery.partial.confirm": "Restore with missing originals",
   "switcher.recovery.empty": "No recovery point has been taken on this device yet.",
   "switcher.recovery.error": "The recovery points could not be read.",
   "switcher.recovery.done": "Restored as a new book: {name}",
-  "switcher.recovery.done.partial": "Restored as a new book: {name}. Some original pictures are missing or unverified; their references remain in the book.",
-  "switcher.recovery.done.legacy": "Restored as a new book: {name}. This older point did not include original pictures or covers.",
+  "switcher.recovery.done.partial": "Restored as a new book: {name}. Some picture or research originals may be missing or unverified; their references remain in the book.",
+  "switcher.recovery.done.legacy": "Restored as a new book: {name}. This older point did not include original pictures, covers, or research files.",
   "switcher.legacy.notice": "Older recovery or readable folders could not be linked to this book. Open the book panel to inspect their locations.",
   "switcher.legacy.recovery.heading": "Older recovery folder to inspect",
   "switcher.legacy.recovery.note": "This preserved folder may belong to an older copy. Copy a .db file from it before opening that copy as a separate book for inspection.",
