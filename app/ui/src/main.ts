@@ -305,6 +305,7 @@ async function main(): Promise<void> {
     // empty boot starts on the empty string instead, which is what a real
     // switch's own name updates land on top of just the same.
     let currentName = projectPath === "" ? "" : "project";
+    let preferenceClose: Pick<Preferences, "prepareClose" | "cancelClose"> | undefined;
 
     const prepareArchive = async (purpose: "archive" | "mirror" = "archive"): Promise<number> => {
       const project = current;
@@ -738,6 +739,7 @@ async function main(): Promise<void> {
         onDismiss: restoreWorkspaceFocus,
       });
       refreshDictionary();
+      preferenceClose = preferences;
       addWordToDictionary = (word) => preferences.addWord(word);
 
       // Ctrl+= / Ctrl+- / Ctrl+0 from anywhere in the page. The panel is told
@@ -956,6 +958,8 @@ async function main(): Promise<void> {
           const status = await invoke("privacy_status") as PrivacyStatus;
           return status.locked || status.recovery;
         },
+        preferences: preferenceClose,
+        promptPreferencesClose: () => closePrompt.openPreferences(),
         drafts: {
           pending: () => current.reviewPending(),
           prepareClose: () => current.prepareToLeave(),

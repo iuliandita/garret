@@ -215,6 +215,10 @@ export interface Preferences {
    *  does. The panel and the button are two views of one value; this is the
    *  entry point that keeps this module the only owner of it. */
   setFocus(mode: FocusMode): void;
+  /** Freeze count choices and wait for their final queued snapshot. */
+  prepareClose(): Promise<boolean>;
+  /** Restore count controls when application close does not proceed. */
+  cancelClose(): void;
   destroy(): void;
 }
 
@@ -898,6 +902,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   sidebarGroup.append(sidebarLegend);
   let sidebarCounts = sidebarWordCountsFrom(deps.initialSidebarWordCounts);
   let sidebarWrites = Promise.resolve();
+  let sidebarSaved = true;
   for (const kind of ["scene", "chapter", "part"] as const) {
     const label = document.createElement("label");
     const checkbox = document.createElement("input");
@@ -906,14 +911,25 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     checkbox.checked = sidebarCounts[kind];
     checkbox.addEventListener("change", () => {
       if (destroyed) return;
+      if (sidebarGroup.disabled) {
+        checkbox.checked = sidebarCounts[kind];
+        return;
+      }
       sidebarCounts = { ...sidebarCounts, [kind]: checkbox.checked };
       const next = { ...sidebarCounts };
       deps.onSidebarWordCounts?.(next);
       // Serialize snapshots so a slower earlier write cannot replace a later choice.
-      sidebarWrites = sidebarWrites.then(() => record(
-        () => deps.persistSidebarWordCounts?.(next) ?? Promise.resolve(),
-        t("prefs.sidebar-word-counts"),
-      ));
+      sidebarWrites = sidebarWrites.then(async () => {
+        try {
+          await deps.persistSidebarWordCounts?.(next);
+          sidebarSaved = true;
+        } catch (error: unknown) {
+          sidebarSaved = false;
+          if (!destroyed) deps.onNotice(t("prefs.error.save", {
+            what: t("prefs.sidebar-word-counts"), error: messageOf(error),
+          }));
+        }
+      });
     });
     label.append(checkbox, t(`prefs.sidebar-word-counts.${kind}`));
     sidebarGroup.append(label);
@@ -1231,6 +1247,14 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     },
     setFocus(mode: FocusMode): void {
       applyWritingModesChange({ ...writingModes, focus: mode });
+    },
+    async prepareClose(): Promise<boolean> {
+      sidebarGroup.disabled = true;
+      await sidebarWrites;
+      return sidebarSaved;
+    },
+    cancelClose(): void {
+      sidebarGroup.disabled = false;
     },
     destroy(): void {
       if (destroyed) return;

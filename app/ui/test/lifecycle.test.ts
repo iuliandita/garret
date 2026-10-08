@@ -392,3 +392,63 @@ test("locking during the discard prompt keeps unsaved work concealed and held", 
   await h.hostListeners.get("app://close-requested")!({ payload: 2 });
   expect(h.invoked).toEqual(["holding_close", "privacy_close_failed"]);
 });
+
+
+for (const locked of [false, true]) {
+  test(`count preparation failure respects privacy lock ${locked}`, async () => {
+    const h = harness();
+    let canceled = 0;
+    let prompts = 0;
+    h.deps.privacyLocked = async () => locked;
+    h.deps.preferences = { prepareClose: async () => false, cancelClose: () => { canceled++; } };
+    h.deps.promptPreferencesClose = async () => { prompts++; return "stay"; };
+    await wireLifecycle(h.deps);
+    await h.hostListeners.get("app://close-requested")!();
+    expect(h.invoked).toEqual(["holding_close", locked ? "privacy_close_failed" : "release_close"]);
+    expect(prompts).toBe(locked ? 0 : 1);
+    expect(canceled).toBe(1);
+  });
+}
+
+test("locked close waits for count preparation before manuscript drain and confirmation", async () => {
+  const h = harness();
+  let finish = () => {};
+  h.deps.privacyLocked = async () => true;
+  h.deps.preferences = {
+    prepareClose: () => new Promise<boolean>((resolve) => { finish = () => resolve(true); }),
+    cancelClose: () => { throw new Error("confirmed close must retain preference hold"); },
+  };
+  await wireLifecycle(h.deps);
+  const closing = h.hostListeners.get("app://close-requested")!();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(h.invoked).toEqual(["holding_close"]);
+  expect(h.flushes).toBe(0);
+  finish();
+  await closing;
+  expect(h.invoked).toEqual(["holding_close", "confirm_close"]);
+  expect(h.flushes).toBe(1);
+});
+
+test("keeping a review draft restores prepared count controls", async () => {
+  const h = harness();
+  let canceled = 0;
+  h.deps.preferences = { prepareClose: async () => true, cancelClose: () => { canceled++; } };
+  h.deps.drafts = { pending: () => true, prepareClose: async () => false, cancelClose: () => {} };
+  await wireLifecycle(h.deps);
+  await h.hostListeners.get("app://close-requested")!();
+  expect(h.invoked).toEqual(["holding_close", "holding_close", "release_close"]);
+  expect(canceled).toBe(1);
+});
+
+test("a lock during the preference discard prompt refuses close and releases count controls", async () => {
+  const h = harness();
+  let locked = false;
+  let canceled = 0;
+  h.deps.privacyLocked = async () => locked;
+  h.deps.preferences = { prepareClose: async () => false, cancelClose: () => { canceled++; } };
+  h.deps.promptPreferencesClose = async () => { locked = true; return "close"; };
+  await wireLifecycle(h.deps);
+  await h.hostListeners.get("app://close-requested")!();
+  expect(h.invoked).toEqual(["holding_close", "privacy_close_failed"]);
+  expect(canceled).toBe(1);
+});

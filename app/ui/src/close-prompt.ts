@@ -27,6 +27,8 @@ export interface ClosePrompt {
    *  the writer answers. "stay" on Escape or the safe button; "close" only on
    *  the button that says what it costs. Never rejects. */
   open(dirtyCount: number): Promise<ClosePromptChoice>;
+  /** Ask separately about sidebar count choices that could not be saved. */
+  openPreferences(): Promise<ClosePromptChoice>;
   destroy(): void;
 }
 
@@ -112,17 +114,31 @@ export function createClosePrompt(deps: ClosePromptDeps): ClosePrompt {
   };
   panel.addEventListener("keydown", onKeyDown);
 
+  function show(): Promise<ClosePromptChoice> {
+    panel.hidden = false;
+    stayButton.focus();
+    return new Promise((resolve) => {
+      resolveChoice = resolve;
+    });
+  }
+
   let destroyed = false;
   return {
     open(dirtyCount: number): Promise<ClosePromptChoice> {
+      heading.textContent = t("close-prompt.heading");
+      stayButton.textContent = t("close-prompt.stay");
+      discardButton.textContent = t("close-prompt.discard");
       body.textContent = plural("close-prompt.body", dirtyCount, {
         count: formatNumber(dirtyCount),
       });
-      panel.hidden = false;
-      stayButton.focus();
-      return new Promise((resolve) => {
-        resolveChoice = resolve;
-      });
+      return show();
+    },
+    openPreferences(): Promise<ClosePromptChoice> {
+      heading.textContent = t("close-prompt.preferences.heading");
+      body.textContent = t("close-prompt.preferences.body");
+      stayButton.textContent = t("close-prompt.preferences.stay");
+      discardButton.textContent = t("close-prompt.preferences.discard");
+      return show();
     },
     destroy(): void {
       if (destroyed) return;

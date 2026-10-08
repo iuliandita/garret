@@ -5,6 +5,7 @@ if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
 import { createPreferences, LOCALES, STARTS, type Locale, type Start } from "../src/preferences";
 import { CATALOGS, formatNumber, t } from "../src/i18n";
+import { wireLifecycle, CLOSE_EVENT, type LifecycleDeps } from "../src/lifecycle";
 import type { SidebarWordCounts } from "../src/sidebar-word-counts";
 import type { Theme } from "../src/theme";
 import { DEFAULT_TYPOGRAPHY, type Typography } from "../src/typography";
@@ -1523,3 +1524,141 @@ test("failed sidebar count saves report the failure and keep this window's choic
   expect(r.notices.at(-1)).toContain("disk unavailable");
   r.control.destroy();
 });
+
+
+test("application close waits for the final queued sidebar count snapshot", async () => {
+  const writes: SidebarWordCounts[] = [];
+  const first = deferredCountWrite();
+  const last = deferredCountWrite();
+  let saved: SidebarWordCounts | undefined;
+  const r = rig("system", undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, [], {
+    sidebar: async (counts) => {
+      writes.push(counts);
+      if (writes.length === 1) await first.promise;
+      if (writes.length === 3) await last.promise;
+      saved = counts;
+    },
+  });
+  const events = new Map<string, (event?: { payload: number }) => void | Promise<void>>();
+  const acknowledgements: unknown[] = [];
+  await wireLifecycle({
+    session: { flushPending: async () => {}, failed: () => false, dirtyCount: () => 0 },
+    ...{ preferences: r.control },
+    listen: async (event, cb) => { events.set(event, cb); },
+    invoke: async (command, args) => {
+      acknowledgements.push([command, args]);
+      if (command === "confirm_close") expect(saved).toEqual({ scene: false, chapter: true, part: true });
+    },
+    addWindowListener: () => {}, addDocumentListener: () => {}, isHidden: () => false,
+  });
+  for (const kind of ["scene", "chapter", "part"]) {
+    r.container.querySelector<HTMLInputElement>(`#prefs-sidebar-word-counts-${kind}`)!.click();
+  }
+  await settle();
+  expect(writes).toHaveLength(1);
+  const closing = events.get(CLOSE_EVENT)!({ payload: 8 });
+  await settle();
+  expect(acknowledgements).toEqual([["holding_close", { attempt: 8 }]]);
+  const group = r.container.querySelector<HTMLFieldSetElement>("#prefs-sidebar-word-counts")!;
+  expect(group.disabled).toBe(true);
+  const scene = r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-scene")!;
+  scene.checked = true;
+  scene.dispatchEvent(new Event("change"));
+  expect(scene.checked).toBe(false);
+  expect(r.sidebarCounts).toHaveLength(3);
+  first.resolve();
+  await settle();
+  expect(writes).toEqual(r.sidebarCounts);
+  expect(acknowledgements).toEqual([["holding_close", { attempt: 8 }]]);
+  last.resolve();
+  await closing;
+  expect(acknowledgements).toEqual([["holding_close", { attempt: 8 }], ["confirm_close", { attempt: 8 }]]);
+  r.control.destroy();
+});
+
+function deferredCountWrite() {
+  let resolve = () => {};
+  const promise = new Promise<void>((done) => { resolve = done; });
+  return { promise, resolve };
+}
+
+
+test("failed count choices can keep the window open or be discarded without bypassing manuscript safety", async () => {
+  const r = rig();
+  r.failWith("disk unavailable");
+  const chapter = r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-chapter")!;
+  chapter.click();
+  await settle();
+  let preferenceChoice: "stay" | "close" = "stay";
+  let manuscriptChoice: "stay" | "close" = "stay";
+  let manuscriptPrompts = 0;
+  let flushes = 0;
+  const close = await countCloseHarness(r.control, {
+    session: { flushPending: async () => { flushes++; }, failed: () => true, dirtyCount: () => 2 },
+    promptPreferencesClose: async () => preferenceChoice,
+    promptUnsavedClose: async (count) => { expect(count).toBe(2); manuscriptPrompts++; return manuscriptChoice; },
+  });
+  const group = r.container.querySelector<HTMLFieldSetElement>("#prefs-sidebar-word-counts")!;
+  await close.request();
+  expect(close.commands).toEqual(["holding_close", "release_close"]);
+  expect(group.disabled).toBe(false);
+  expect(flushes).toBe(0);
+  expect(r.notices.at(-1)).toContain("disk unavailable");
+  // A canceled close restores a live control, rather than only its appearance.
+  chapter.click();
+  await settle();
+  expect(chapter.checked).toBe(false);
+  expect(r.sidebarCounts).toHaveLength(2);
+  preferenceChoice = "close";
+  close.commands.length = 0;
+  await close.request();
+  expect(close.commands).toEqual(["holding_close", "holding_close", "release_close"]);
+  expect(manuscriptPrompts).toBe(1);
+  expect(group.disabled).toBe(false);
+  manuscriptChoice = "close";
+  close.commands.length = 0;
+  await close.request();
+  expect(close.commands).toEqual(["holding_close", "holding_close", "confirm_close"]);
+  expect(manuscriptPrompts).toBe(2);
+  expect(group.disabled).toBe(true);
+  r.control.destroy();
+});
+
+test("a successful final count snapshot recovers from an earlier queued save failure", async () => {
+  const first = deferredCountWrite();
+  const writes: SidebarWordCounts[] = [];
+  const r = rig("system", undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, [], {
+    sidebar: async (counts) => {
+      writes.push(counts);
+      if (writes.length === 1) { await first.promise; throw new Error("earlier refused"); }
+    },
+  });
+  r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-scene")!.click();
+  r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-chapter")!.click();
+  const close = await countCloseHarness(r.control, {
+    promptPreferencesClose: async () => { throw new Error("final snapshot saved: no discard prompt needed"); },
+  });
+  const closing = close.request();
+  await settle();
+  expect(close.commands).toEqual(["holding_close"]);
+  first.resolve();
+  await closing;
+  expect(writes).toEqual(r.sidebarCounts);
+  expect(close.commands).toEqual(["holding_close", "confirm_close"]);
+  expect(r.notices.at(-1)).toContain("earlier refused");
+  r.control.destroy();
+});
+
+async function countCloseHarness(preferences: ReturnType<typeof createPreferences>, overrides: Partial<LifecycleDeps> = {}) {
+  const events = new Map<string, (event?: { payload: number }) => void | Promise<void>>();
+  const commands: string[] = [];
+  await wireLifecycle({
+    session: { flushPending: async () => {}, failed: () => false, dirtyCount: () => 0 },
+    preferences,
+    listen: async (event, cb) => { events.set(event, cb); },
+    invoke: async (command) => { commands.push(command); },
+    addWindowListener: () => {}, addDocumentListener: () => {}, isHidden: () => false,
+    ...overrides,
+  });
+  return { commands, request: () => events.get(CLOSE_EVENT)!({ payload: 9 }) };
+}

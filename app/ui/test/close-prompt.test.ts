@@ -195,3 +195,33 @@ describe("createClosePrompt", () => {
     container.remove();
   });
 });
+
+
+test("count failure uses a separate safe prompt and restores manuscript wording afterward", async () => {
+  const { container, panel } = mount();
+  try {
+    const el = panelEl(container);
+    let choice = panel.openPreferences();
+    expect(el.querySelector("#close-prompt-heading")?.textContent).toBe("Unsaved preferences");
+    expect(el.querySelector("#close-prompt-body")?.textContent).toContain("sidebar word count choices could not be saved");
+    const buttons = el.querySelectorAll<HTMLButtonElement>("button");
+    expect(buttons[0]?.textContent).toBe("Keep open");
+    expect(document.activeElement?.textContent).toBe("Keep open");
+    expect(buttons[1]?.textContent).toBe("Close without saving these choices");
+    press(el, "Escape");
+    expect(await choice).toBe("stay");
+    choice = panel.openPreferences();
+    buttons[1]!.click();
+    expect(await choice).toBe("close");
+    choice = panel.open(2);
+    expect(el.querySelector("#close-prompt-heading")?.textContent).toBe("Unsaved work");
+    expect(el.querySelector("#close-prompt-body")?.textContent).toContain("2 documents");
+    expect(buttons[0]?.textContent).toBe("Keep editing");
+    expect(buttons[1]?.textContent).toBe("Close and discard the unsaved work");
+    buttons[0]!.click();
+    expect(await choice).toBe("stay");
+  } finally {
+    panel.destroy();
+    container.remove();
+  }
+});

@@ -2616,6 +2616,10 @@ export const EN = {
   "startup.failed.advice": "Your work is not lost: the book file itself is untouched. Close this window and open a different book. To look at this one without opening it, run the application from a terminal: `garret validate <project.db>`, or `salvage <project.db> <out-dir>` to write out what can be recovered.",
 
   // ---- close-prompt.ts: the blocking prompt at close with a failed autosave
+  "close-prompt.preferences.heading": "Unsaved preferences",
+  "close-prompt.preferences.body": "Your sidebar word count choices could not be saved. Closing now will lose these choices.",
+  "close-prompt.preferences.stay": "Keep open",
+  "close-prompt.preferences.discard": "Close without saving these choices",
   "close-prompt.heading": "Unsaved work",
   "close-prompt.body.one": "{count} document has not been saved. Closing now will discard it.",
   "close-prompt.body.other": "{count} documents have not been saved. Closing now will discard them.",

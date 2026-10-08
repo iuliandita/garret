@@ -2201,6 +2201,10 @@ export const DE = {
   "startup.failed.advice": "Ihre Arbeit ist nicht verloren: Die Buchdatei selbst ist unangetastet. Schließen Sie dieses Fenster und öffnen Sie ein anderes Buch. Um dieses hier anzusehen, ohne es zu öffnen, rufen Sie die Anwendung in einem Terminal auf: `garret validate <project.db>`, oder `salvage <project.db> <out-dir>`, um herauszuschreiben, was sich retten lässt.",
 
   // ---- close-prompt.ts: the blocking prompt at close with a failed autosave
+  "close-prompt.preferences.heading": "Ungesicherte Einstellungen",
+  "close-prompt.preferences.body": "Die Auswahl der Wortzahlen in der Seitenleiste konnte nicht gespeichert werden. Beim Schließen geht diese Auswahl verloren.",
+  "close-prompt.preferences.stay": "Geöffnet lassen",
+  "close-prompt.preferences.discard": "Ohne Speichern dieser Auswahl schließen",
   "close-prompt.heading": "Ungesicherte Arbeit",
   "close-prompt.body.one": "{count} Dokument wurde nicht gesichert. Jetzt zu schließen verwirft es.",
   "close-prompt.body.other": "{count} Dokumente wurden nicht gesichert. Jetzt zu schließen verwirft sie.",
