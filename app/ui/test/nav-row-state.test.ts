@@ -525,6 +525,7 @@ test("sidebar counts independently follow item type through recycled rows", () =
   expect(count("Ch A")).toBe("35");
   const scene = rowNamed(container, "Sc 1");
   expect(scene.getAttribute("aria-describedby") ?? "").not.toContain("nav-word-description");
+  expect(document.getElementById("nav-word-description")?.textContent).toBe("");
   expect((scene.querySelector(".nav-count") as HTMLElement).dataset.navHint).toBeUndefined();
   nav.setSidebarWordCounts({ scene: false, chapter: false, part: true });
   expect(count("Part One")).toBe("35");
@@ -539,6 +540,7 @@ test("sidebar counts independently follow item type through recycled rows", () =
   expect(count("Sc 1")).toBe("0");
   nav.setSidebarWordCounts({ scene: false, chapter: false, part: false });
   expect([...container.querySelectorAll(".nav-count")].every(el => el.textContent === "")).toBe(true);
+  expect(document.getElementById("nav-word-description")?.textContent).toBe("");
   const source = statedSource();
   nav.reload({ ...source, typeAt: (i) => i === 2 ? "note" : source.typeAt(i) });
   nav.setSidebarWordCounts({ scene: true, chapter: true, part: true });

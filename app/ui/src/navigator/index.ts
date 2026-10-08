@@ -563,10 +563,11 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
     if (hasAppearances) described.push(APPEARANCES_DESCRIPTION_ID);
     const showCount = (row.itemType === "scene" || row.itemType === "chapter" || row.itemType === "part")
       && sidebarWordCounts[row.itemType] && counts.has(row.id);
-    if (index === active && showCount) {
+    if (index === active) {
       const words = document.getElementById(WORD_DESCRIPTION_ID);
-      if (words !== null) words.textContent = t("nav.words.described", { count: formatCount(counts.get(row.id)) });
-      described.push(WORD_DESCRIPTION_ID);
+      if (words !== null) words.textContent = showCount
+        ? t("nav.words.described", { count: formatCount(counts.get(row.id)) }) : "";
+      if (showCount) described.push(WORD_DESCRIPTION_ID);
     }
     if (described.length > 0) el.setAttribute("aria-describedby", described.join(" "));
     else el.removeAttribute("aria-describedby");
@@ -666,6 +667,8 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
 
   function repaintMounted(): void {
     hints.hide();
+    const words = document.getElementById(WORD_DESCRIPTION_ID);
+    if (words !== null) words.textContent = "";
     // repaint() PER MOUNTED ROW, and NOT `refresh()`, which is the method whose
     // name says otherwise. `refresh` is `render`, and `render` opens with an
     // early return when the mounted RANGE is unchanged - which is exactly the
