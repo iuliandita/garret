@@ -25,6 +25,12 @@ describe("the strips are exact", () => {
     expect(block("#footer")).toMatch(/(?:^|;)\s*height\s*:\s*34px/);
   });
 
+  test("Books reserves the current banner height for its top and available height", () => {
+    const panel = block("#project-panel");
+    expect(panel).toMatch(/(?:^|;)\s*top\s*:\s*max\(100%,\s*var\(--banner-h,\s*0px\)\)/);
+    expect(panel).toMatch(/(?:^|;)\s*max-height\s*:\s*calc\(100vh\s*-\s*max\(39px,\s*var\(--banner-h,\s*0px\)\)\)/);
+  });
+
   test("the page is three rows and the middle one cannot grow", () => {
     expect(block("body")).toMatch(/grid-template-rows\s*:\s*auto\s+minmax\(0,\s*1fr\)\s+auto/);
   });

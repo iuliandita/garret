@@ -258,11 +258,11 @@ describe("mountTimeline", () => {
       { id: "v2", title: "B", at: 101, until: null, tracks: ["t1"], branch: null, scene: null, cast: [], note: "" },
     ] }));
     // Fit clamps at MAX_PX_PER_UNIT = 64, so the two sit 64px apart: over
-    // collapse's 24px gap (two boxes, not a dot), under a label's width.
+    // collapse's minimum footprint (two boxes, not a dot), under a label's width.
     expect(m.view().pxPerUnit).toBe(64);
     const first = container.querySelector<HTMLElement>('[data-event-id="v1"]')!;
     const second = container.querySelector<HTMLElement>('[data-event-id="v2"]')!;
-    expect(first.style.maxWidth).toBe("60px");
+    expect(first.style.maxWidth).toBe("58px");
     expect(second.style.maxWidth).toBe("220px");
     m.destroy();
   });
@@ -333,6 +333,34 @@ describe("mountTimeline", () => {
       expect(left).toBeLessThanOrEqual(eventsLayerWidth);
     }
     m.destroy();
+  });
+
+  test.each(["mount", "setBody"])("%s Fit measures mounted lanes and reserves the complete rightmost button", (route) => {
+    const original = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function (): DOMRect {
+      if (this === container) return rect(1200, 800);
+      if (this.isConnected && this.classList.contains("timeline-lane-header")) return rect(140, 44);
+      if (this.isConnected && this.classList.contains("timeline-lane-events")) return rect(1060, 44, 140);
+      return original.call(this);
+    };
+    try {
+      const body = baseBody({ events: [
+        { id: "v1", title: "Start", at: 0, until: null, tracks: ["t1"], branch: null, scene: null, cast: [], note: "" },
+        { id: "v2", title: "Rightmost event with a long label", at: 1000, until: null, tracks: ["t1"], branch: null, scene: null, cast: [], note: "" },
+      ] });
+      const { mount: m, dirty } = mount(route === "mount" ? body : baseBody({ tracks: [], events: [] }));
+      if (route === "setBody") m.setBody(body);
+      expect(m.view().widthPx).toBe(1060);
+      const last = container.querySelector<HTMLElement>('[data-event-id="v2"]')!;
+      expect(Number.parseFloat(last.style.left) + Number.parseFloat(last.style.maxWidth)).toBeLessThanOrEqual(1060);
+      const initialScale = m.view().pxPerUnit;
+      [...container.querySelectorAll("button")].find(b => b.textContent === "Fit")!.click();
+      expect(m.view().pxPerUnit).toBe(initialScale);
+      expect(dirty).toEqual([]);
+      m.destroy();
+    } finally {
+      Element.prototype.getBoundingClientRect = original;
+    }
   });
 
   // RIG-FOUND (review): the scale strip positioned ticks from the pane's
@@ -630,6 +658,10 @@ describe("mountTimeline", () => {
       expect((document.activeElement as HTMLElement).dataset.branchId).toBe("b1");
       expect((document.activeElement as HTMLElement).dataset.trackId).toBe("t1");
       expect((document.activeElement as HTMLElement).dataset.eventId).toBe("meeting");
+      const first = button("meeting", "t1", "b1");
+      const second = button("next", "t1", "b1");
+      expect(Math.floor(Number.parseFloat(second.style.left))
+        - Math.ceil(Number.parseFloat(first.style.left) + Number.parseFloat(first.style.maxWidth))).toBeGreaterThanOrEqual(4);
       m.destroy();
     });
   });
@@ -1153,7 +1185,7 @@ describe("mountTimeline", () => {
           { id: "v1", title: "A", at: 100, until: null, tracks: ["t1"], branch: null, scene: null, cast: [], note: "" },
           { id: "v2", title: "B", at: 101, until: null, tracks: ["t1"], branch: null, scene: null, cast: [], note: "" },
           // FAR AWAY, on the same lane: forces Fit's own pxPerUnit down so
-          // far that v1 and v2 (one unit apart) land well under the 24px
+          // far that v1 and v2 (one unit apart) land well under the minimum
           // collapse gap -- fitting to v1/v2 alone would instead SPREAD
           // them (a tiny span fills the whole pane), which is what made
           // this fixture's first draft never produce a dot at all.
@@ -1161,6 +1193,27 @@ describe("mountTimeline", () => {
         ],
       });
     }
+
+    test("points closer than a complete button footprint remain collapsed", () => {
+      const { mount: m, dirty } = mount(crowdedBody());
+      const root = container.querySelector<HTMLElement>("#timeline-view")!;
+      // Keep the crowded pair under the pointer while zooming into the old
+      // 24px threshold, but below the 28px button plus its gap and rounding.
+      for (let i = 0; i < 64 && m.view().pxPerUnit < 28; i++) {
+        const pointerPx = (100 - m.view().originUnit) * m.view().pxPerUnit;
+        const wheel = new WheelEvent("wheel", { deltaY: -1, bubbles: true, cancelable: true });
+        // happy-dom's WheelEvent omits inherited mouse/modifier fields.
+        Object.defineProperties(wheel, { ctrlKey: { value: true }, clientX: { value: pointerPx } });
+        root.dispatchEvent(wheel);
+      }
+      expect(m.view().pxPerUnit).toBeGreaterThan(24);
+      expect(m.view().pxPerUnit).toBeLessThan(34);
+      const dot = container.querySelector<HTMLButtonElement>(".tl-dot")!;
+      expect(dot !== null).toBe(true);
+      expect(dot.dataset.eventIds?.split(",")).toEqual(["v1", "v2"]);
+      expect(dirty).toEqual([]);
+      m.destroy();
+    });
 
     test("two events under the gap collapse into one dot with a tooltip anchor", () => {
       const { mount: m } = mount(crowdedBody());
@@ -1197,6 +1250,12 @@ describe("mountTimeline", () => {
       // no-op, and not zoomed around the viewport centre (mutation target 6).
       expect(m.view().pxPerUnit).toBeGreaterThan(before);
       expect(container.querySelectorAll(".tl-event").length + container.querySelectorAll(".tl-dot").length).toBeGreaterThan(0);
+      const first = container.querySelector<HTMLElement>('[data-event-id="v1"]')!;
+      const second = container.querySelector<HTMLElement>('[data-event-id="v2"]')!;
+      expect(first !== null && second !== null).toBe(true);
+      // Native boxes can round their left down and their right up.
+      expect(Math.floor(Number.parseFloat(second.style.left))
+        - Math.ceil(Number.parseFloat(first.style.left) + Number.parseFloat(first.style.maxWidth))).toBeGreaterThanOrEqual(4);
       m.destroy();
     });
 

@@ -2104,7 +2104,8 @@ body.nav-hidden #nav-column {
  rather than set the line. */
 #project-panel {
   position: absolute;
-  top: 100%;
+  /* The fixed banner may be taller than the strip that anchors Books. */
+  top: max(100%, var(--banner-h, 0px));
   left: 12px;
   z-index: 10;
   min-width: 320px;
@@ -2113,7 +2114,7 @@ body.nav-hidden #nav-column {
      archives opened on the encrypted-archive row. */
   width: 520px;
   max-width: calc(100vw - 24px);
-  max-height: calc(100vh - 39px);
+  max-height: calc(100vh - max(39px, var(--banner-h, 0px)));
   overflow-y: auto;
 }
 

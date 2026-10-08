@@ -70,7 +70,6 @@ import { isContextMenuChord } from "./nav-context-menu";
 import type { CastMemberRow } from "./cast-panel";
 import type { QuickOpenItem } from "./quick-open";
 
-const MIN_GAP_PX = 24;
 const CULL_MARGIN_SCREENS = 1;
 const ZOOM_FACTOR = 1.15;
 const MAX_ZOOM_SAMPLES = 200;
@@ -87,10 +86,12 @@ const CALENDAR_TICK_GAP_PX = 130;
 const PAN_THRESHOLD_PX = 4;
 /** A point event's box is clipped to the room before the next item on its
  *  lane, less this gap, and never below EVENT_MIN_WIDTH_PX (an ellipsis
- *  still shows). collapse() only groups under MIN_GAP_PX; between that gap
- *  and a label's width the first capture painted boxes over each other. */
+ *  still shows). Clustering and separation use the same minimum footprint. */
 const EVENT_GAP_PX = 4;
 const EVENT_MIN_WIDTH_PX = 28;
+// Native pixel bounds can round a left edge down and a right edge up.
+const EVENT_ROUNDING_PX = 2;
+const MIN_GAP_PX = EVENT_MIN_WIDTH_PX + EVENT_GAP_PX + EVENT_ROUNDING_PX;
 /** How long the pointer has to sit still, inside the lanes, before this
  *  counts as the "stillness" chromeFade.onPointerStill() arms on (design
  *  section 4). Debounced HERE rather than calling onActivity per event: a
@@ -895,7 +896,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
         const btn = eventButton(item.event, item.leftPx, isMeeting, laneIndex, trackId, branchId);
         const next = items[i + 1];
         if (next !== undefined && item.event.until === null) {
-          const room = next.leftPx - item.leftPx - EVENT_GAP_PX;
+          const room = next.leftPx - item.leftPx - EVENT_GAP_PX - EVENT_ROUNDING_PX;
           const clippedPx = Math.max(EVENT_MIN_WIDTH_PX, Math.min(EVENT_MAX_WIDTH_PX, room));
           btn.style.maxWidth = `${clippedPx}px`;
         }
@@ -1754,6 +1755,8 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
   root.addEventListener("keydown", onKeyDown);
 
   if (timeline !== null) {
+    // Mount the lanes before measuring their available event width.
+    render();
     view = fitView(timeline.events, widthPx(), EVENT_MAX_WIDTH_PX);
     render();
   }
@@ -1826,6 +1829,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
       timeline = next;
       undoStack = [];
       redoStack = [];
+      render();
       view = fitView(timeline.events, widthPx(), EVENT_MAX_WIDTH_PX);
       render();
     },
