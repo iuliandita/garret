@@ -517,10 +517,11 @@ pub(crate) async fn encrypted_archive_restore(
     let key = crate::encrypted_archive::key_from_path(&key_path)?;
     let library = new_book_dir(&data_home.0)?;
     let stage_home = data_home.0.clone();
+    let destination = library.clone();
     let result = tauri::async_runtime::spawn_blocking(move ||
         crate::encrypted_archive::restore(&cipher, &key, &library, "recovered", crate::store::now_ms(), &stage_home))
         .await.map_err(|_| "encrypted archive restore task failed")??;
-    Ok(Some(result))
+    Ok(Some(crate::book_registration::remember(&data_home.0, &destination, result)))
 }
 
 /// Ask the writer which FOLDER a new book should live in.

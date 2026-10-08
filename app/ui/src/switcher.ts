@@ -50,6 +50,17 @@ export interface ProjectSummary {
   /** The file is not there at all -- a book the writer moved or deleted in
    *  their file manager. The one kind of row that offers Forget. */
   missing?: boolean;
+  registration_warning?: { token: string; error: string } | null;
+}
+
+export interface PendingRegistration {
+  token: string;
+  path: string;
+  name: string;
+}
+
+export function registrationNotice(project: ProjectSummary): string | null {
+  return project.registration_warning ? `${t("registration.warning", { path: project.path })} ${t("registration.session")}` : null;
 }
 
 /** What the host answers for the drop folder: the RESOLVED directory and the
@@ -105,6 +116,8 @@ export interface SwitcherDeps {
   /** The header strip element, already in index.html. */
   container: HTMLElement;
   listProjects(): Promise<ProjectSummary[]>;
+  listPendingRegistrations?(): Promise<PendingRegistration[]>;
+  retryRegistration?(token: string): Promise<ProjectSummary>;
   createProject(name: string): Promise<ProjectSummary>;
   /** Create a book in a folder the WRITER picks, through the operating system.
    *
@@ -675,8 +688,12 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     if (opening) copiesToggle.scrollIntoView({ block: "start", inline: "nearest" });
   };
 
+  const pendingList = document.createElement("div");
+  pendingList.id = "project-pending-registrations";
+  pendingList.hidden = true;
   panel.append(
     listbox,
+    pendingList,
     here,
     move,
     newHeading,
@@ -817,6 +834,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     here.title = path;
     here.hidden = path === "";
     const newDirRead = renderNewDir();
+    void reloadPending();
     try {
       const projects = await deps.listProjects();
       if (mine !== generation) return;
@@ -829,6 +847,63 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       await newDirRead;
     }
   }
+
+  async function reloadPending(): Promise<void> {
+    const mine = generation;
+    const path = deps.currentPath();
+    const opened = deps.currentGeneration?.();
+    try {
+      const entries = await deps.listPendingRegistrations?.() ?? [];
+      if (entries.length > 0 && !await outcomeCurrent(path, opened)) return;
+      if (destroyed || mine !== generation) return;
+      pendingList.hidden = entries.length === 0;
+      pendingList.replaceChildren();
+      for (const entry of entries) {
+        const row = document.createElement("div");
+        row.className = "switcher-pending-registration";
+        const description = document.createElement("p");
+        description.textContent = t("registration.warning", { path: entry.path });
+        const limit = document.createElement("p");
+        limit.textContent = t("registration.session");
+        const retry = document.createElement("button");
+        retry.type = "button";
+        retry.textContent = t("registration.retry");
+        retry.dataset.registrationToken = entry.token;
+        row.append(description, limit, retry);
+        pendingList.append(row);
+      }
+    } catch (error) {
+      if (!destroyed && mine === generation) deps.onNotice(messageOf(error));
+    }
+  }
+
+  let registering = false;
+  const onRegistrationRetry = (event: Event): void => {
+    const target = event.target;
+    if (!(target instanceof Element) || registering) return;
+    const button = target.closest<HTMLButtonElement>("[data-registration-token]");
+    const token = button?.dataset.registrationToken;
+    if (!token || !deps.retryRegistration) return;
+    const mine = generation;
+    const path = deps.currentPath();
+    const opened = deps.currentGeneration?.();
+    registering = true;
+    button.disabled = true;
+    void (async (): Promise<void> => {
+      try {
+        const project = await deps.retryRegistration!(token);
+        if (await outcomeCurrent(path, opened)) {
+          deps.onDone(t("registration.done", { name: project.name }));
+          if (!panel.hidden && mine === generation) await reload();
+        }
+      } catch (error) {
+        if (await outcomeCurrent(path, opened)) deps.onNotice(messageOf(error));
+      } finally {
+        registering = false;
+        button.disabled = false;
+      }
+    })();
+  };
 
   function renderImportMessage(text: string): void {
     const row = document.createElement("div");
@@ -1024,12 +1099,15 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       return;
     }
     restoring = true;
+    const mine = generation;
+    const path = deps.currentPath();
+    const opened = deps.currentGeneration?.();
     void (async (): Promise<void> => {
       let restored: ProjectSummary;
       try {
         restored = await deps.restorePoint(id, partial);
       } catch (error) {
-        deps.onNotice(messageOf(error));
+        if (await outcomeCurrent(path, opened)) deps.onNotice(messageOf(error));
         return;
       } finally {
         restoring = false;
@@ -1038,8 +1116,11 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       // the argument is the design's own: the writer is deciding between two
       // real states of their book by looking at both, and moving them off the
       // one they have open is the application making that choice for them.
-      deps.onDone(t(partial ? "switcher.recovery.done.partial" : row.dataset.legacyPoint === "true" ? "switcher.recovery.done.legacy" : "switcher.recovery.done", { name: restored.name }));
-      await reload();
+      if (!await outcomeCurrent(path, opened)) return;
+      const warning = registrationNotice(restored);
+      if (warning) deps.onNotice(warning);
+      if (!warning || partial || row.dataset.legacyPoint === "true") deps.onDone(t(partial ? "switcher.recovery.done.partial" : row.dataset.legacyPoint === "true" ? "switcher.recovery.done.legacy" : "switcher.recovery.done", { name: restored.name }));
+      if (!panel.hidden && mine === generation) await reload();
     })();
   };
 
@@ -1326,6 +1407,14 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   // writer is trying to get their book off.
   let archiving = false;
 
+  const outcomeCurrent = async (path: string, opened: number | undefined): Promise<boolean> => {
+    const current = (): boolean => !destroyed && deps.currentPath() === path && deps.currentGeneration?.() === opened;
+    if (!current()) return false;
+    try {
+      return (await deps.canReportArchive?.() ?? true) && current();
+    } catch { return false; }
+  };
+
   const archiveActionCurrent = async (mine: number, path: string, opened: number | undefined): Promise<boolean> => {
     const current = (): boolean => !destroyed && mine === generation &&
       deps.currentPath() === path && deps.currentGeneration?.() === opened;
@@ -1388,7 +1477,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       }
     }
   }
-  const encryptedAction = (action: () => Promise<string | null>, refreshShelf = false): void => {
+  const encryptedAction = (action: () => Promise<string | null>, refreshShelf = false, warning: () => boolean = () => false): void => {
     if (encryptedBusy) return;
     const mine = generation;
     const path = deps.currentPath();
@@ -1398,9 +1487,10 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     void (async (): Promise<void> => {
       try {
         const done = await action();
-        if (done !== null && await archiveActionCurrent(mine, path, opened)) {
-          deps.onDone(done);
-          if (refreshShelf) await reload();
+        if (done !== null && await (refreshShelf ? outcomeCurrent(path, opened) : archiveActionCurrent(mine, path, opened))) {
+          if (warning()) deps.onNotice(done);
+          else deps.onDone(done);
+          if (refreshShelf && !panel.hidden && mine === generation) await reload();
         }
       } catch (error) {
         if (await archiveActionCurrent(mine, path, opened)) {
@@ -1444,10 +1534,16 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const archive = await deps.verifyEncryptedArchive?.();
     return archive ? t("switcher.archive.encrypted.verified", { file: archive.file }) : null;
   });
-  const onArchiveRestore = (): void => encryptedAction(async () => {
-    const project = await deps.restoreEncryptedArchive?.();
-    return project ? t("switcher.archive.encrypted.restored", { name: project.name }) : null;
-  }, true);
+  const onArchiveRestore = (): void => {
+    let warning = false;
+    encryptedAction(async () => {
+      const project = await deps.restoreEncryptedArchive?.();
+      if (!project) return null;
+      const notice = registrationNotice(project);
+      warning = notice !== null;
+      return notice ?? t("switcher.archive.encrypted.restored", { name: project.name });
+    }, true, () => warning);
+  };
 
   function setOpen(open: boolean): void {
     panel.hidden = !open;
@@ -1467,13 +1563,19 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const file = row.dataset.importFile;
     if (file === undefined || importing) return;
     importing = true;
+    const mine = generation;
+    const path = deps.currentPath();
+    const opened = deps.currentGeneration?.();
     void (async (): Promise<void> => {
       let notice: string | null;
       try {
         const outcome = await deps.importProject(file);
+        if (!await outcomeCurrent(path, opened)) return;
         notice = lossesNotice(outcome.losses, outcome.derived_contents);
+        const warning = registrationNotice(outcome.summary);
+        if (warning) deps.onNotice(warning);
       } catch (error) {
-        deps.onNotice(messageOf(error));
+        if (await outcomeCurrent(path, opened)) deps.onNotice(messageOf(error));
         return;
       } finally {
         importing = false;
@@ -1487,8 +1589,10 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       // Importing does NOT switch, for the reason creating does not: bringing a
       // manuscript in is not saying you are done with the one you are in. The
       // new project appears in the list above, to be opened deliberately.
-      await reload();
-      await reloadImports();
+      if (!panel.hidden && mine === generation) {
+        await reload();
+        await reloadImports();
+      }
     })();
   };
 
@@ -1643,14 +1747,16 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const mine = generation;
     const path = deps.currentPath();
     const opened = deps.currentGeneration?.();
-    const current = async (): Promise<boolean> => !panel.hidden &&
-      await archiveActionCurrent(mine, path, opened) && !panel.hidden;
+    const current = (): Promise<boolean> => outcomeCurrent(path, opened);
     void (async (): Promise<void> => {
       try {
         const made = await deps.createProject(wanted);
         if (!await current()) return;
+        const warning = registrationNotice(made);
+        if (warning) deps.onNotice(warning);
+        else deps.onDone(t("switcher.done.created", { name: made.name }));
+        if (panel.hidden || mine !== generation) return;
         if (input.value.trim() === wanted) input.value = "";
-        deps.onDone(t("switcher.done.created", { name: made.name }));
         // Naming a new manuscript does not finish the one already open.
         await reload();
       } catch (error) {
@@ -1678,15 +1784,17 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const mine = generation;
     const path = deps.currentPath();
     const opened = deps.currentGeneration?.();
-    const current = async (): Promise<boolean> => !panel.hidden &&
-      await archiveActionCurrent(mine, path, opened) && !panel.hidden;
+    const current = (): Promise<boolean> => outcomeCurrent(path, opened);
     void (async (): Promise<void> => {
       try {
         const made = await deps.createProjectIn(wanted);
         // Cancellation keeps the typed name and does not announce a result.
         if (made === null || !await current()) return;
+        const warning = registrationNotice(made);
+        if (warning) deps.onNotice(warning);
+        else deps.onDone(t("switcher.done.created", { name: made.name }));
+        if (panel.hidden || mine !== generation) return;
         if (input.value.trim() === wanted) input.value = "";
-        deps.onDone(t("switcher.done.created", { name: made.name }));
         await reload();
       } catch (error) {
         if (await current()) deps.onNotice(messageOf(error));
@@ -1728,6 +1836,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   });
 
   listbox.addEventListener("click", onListClick);
+  pendingList.addEventListener("click", onRegistrationRetry);
   importList.addEventListener("click", onImportClick);
   recoveryList.addEventListener("click", onRecoveryClick);
   archiveNow.addEventListener("click", onArchiveNow);
@@ -1873,6 +1982,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       legacyGeneration++;
 
       listbox.removeEventListener("click", onListClick);
+      pendingList.removeEventListener("click", onRegistrationRetry);
       importList.removeEventListener("click", onImportClick);
       recoveryList.removeEventListener("click", onRecoveryClick);
       archiveNow.removeEventListener("click", onArchiveNow);

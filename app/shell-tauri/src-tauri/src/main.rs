@@ -20,6 +20,7 @@ mod data_migration;
 mod command_error;
 mod core_constants;
 mod book_open;
+mod book_registration;
 mod backup_bundle;
 mod cli;
 mod close_state;
@@ -1069,6 +1070,7 @@ fn summary_of(project: &OpenProject) -> projects::ProjectSummary {
             .unwrap_or(0),
         error: None,
         missing: false,
+        registration_warning: None,
     }
 }
 
@@ -1134,8 +1136,8 @@ fn new_book_dir_with(
 ///
 /// The recording is best effort and its failure does NOT fail the create: the
 /// manuscript exists on disk and telling the writer their book was not made
-/// would be a lie. What they lose is the book being listed, which the next
-/// create in the same folder repairs.
+/// would be a lie. A partial result retains the saved path and offers a
+/// session-scoped Library registration retry.
 pub(crate) fn create_into_dir(
     data_home: &Path,
     dir: &Path,
@@ -1143,28 +1145,17 @@ pub(crate) fn create_into_dir(
     strings: &strings::Strings,
 ) -> std::result::Result<projects::ProjectSummary, String> {
     let made = projects::create_in(dir, name, strings)?;
-    remember_created_in(data_home, dir, &made.path);
-    Ok(made)
+    Ok(book_registration::remember(data_home, dir, made))
 }
 
-/// `create_into_dir`'s registration, on its own: an outside-the-library path
-/// is added to `Settings.books` (once), and `dir` becomes the remembered
-/// `new_book_dir`. Shared with `create_imported_into_dir` so an import
-/// or a restore that lands outside the hidden library is exactly as openable
-/// afterwards as a book created there through a folder dialog.
-///
-/// Best effort, `create_into_dir`'s own reason: the manuscript already exists
-/// on disk, and telling the writer their book was not made would be a lie.
-fn remember_created_in(data_home: &Path, dir: &Path, made_path: &str) {
-    let path = PathBuf::from(made_path);
-    let library = projects::library_dir(data_home);
-    let outside = !projects::in_library(&library, &path);
-    let _ = projects::update_settings(data_home, |s| {
-        if outside && !s.books.iter().any(|b| b == made_path) {
-            s.books.push(made_path.to_string());
-        }
-        s.new_book_dir = Some(dir.to_string_lossy().into_owned());
-    });
+#[command_boundary::command]
+fn project_pending_registrations(data_home: State<'_, DataHome>) -> Vec<book_registration::PendingSummary> {
+    book_registration::list(&data_home.0)
+}
+
+#[command_boundary::command]
+fn project_retry_registration(data_home: State<'_, DataHome>, token: String) -> Result<projects::ProjectSummary, String> {
+    book_registration::retry(&data_home.0, &token)
 }
 
 #[command_boundary::command]
@@ -1461,8 +1452,7 @@ fn create_imported_into_dir(
     strings: &strings::Strings,
 ) -> std::result::Result<projects::ProjectSummary, String> {
     let made = projects::create_imported(dir, name, rows, strings)?;
-    remember_created_in(data_home, dir, &made.path);
-    Ok(made)
+    Ok(book_registration::remember(data_home, dir, made))
 }
 
 /// Refused by size before the file is read. The `stress` fixture exports to
@@ -2948,8 +2938,7 @@ fn project_restore_point(
     } else {
         projects::restore_point_into(&point, &dest, &slug, store::now_ms())?
     };
-    remember_created_in(&data_home.0, &dest, &restored.path);
-    Ok(restored)
+    Ok(book_registration::remember(&data_home.0, &dest, restored))
 }
 
 /// The writer asked for a recovery point now.
@@ -4414,6 +4403,8 @@ fn main() {
             __wire_project_forget,
             __wire_project_new_dir,
             __wire_project_create,
+            __wire_project_pending_registrations,
+            __wire_project_retry_registration,
             __wire_project_open,
             __wire_project_open_check,
             __wire_project_current,
@@ -7929,6 +7920,28 @@ mod tests {
             &crate::projects::known(home.path()),
             &PathBuf::from(&made.path),
         ));
+    }
+
+    #[test]
+    fn created_and_imported_books_report_registration_failure_without_losing_manuscripts() {
+        let home = tempdir().unwrap();
+        let dest = tempdir().unwrap();
+        let settings = crate::projects::settings_path(home.path());
+        std::fs::create_dir_all(settings.parent().unwrap()).unwrap();
+        std::fs::create_dir(settings.with_extension("json.tmp")).unwrap();
+        let made = create_into_dir(home.path(), dest.path(), "Retained creation").unwrap();
+        assert!(made.registration_warning.is_some());
+        let source = home.path().join("source.md");
+        std::fs::write(&source, "# Imported manuscript\n\nRetained import prose.\n").unwrap();
+        let imported = import_path(home.path(), dest.path(), &source).unwrap();
+        assert!(imported.summary.registration_warning.is_some());
+        for summary in [&made, &imported.summary] {
+            let store = crate::store::Store::open_readonly(Path::new(&summary.path)).unwrap();
+            assert!(store.book_id().unwrap().is_some());
+            assert!(!store.items().unwrap().is_empty());
+        }
+        assert_eq!(crate::book_registration::list(home.path()).len(), 2);
+        assert!(crate::projects::read_settings(home.path()).books.is_empty());
     }
 
     #[test]

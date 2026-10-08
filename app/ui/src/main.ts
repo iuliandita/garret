@@ -51,7 +51,7 @@ import { showProjectLoading } from "./loading";
 import { writingModesFrom } from "./writing-modes";
 import { createZoomPersistence, installZoomKeys, zoomFrom, type Zoom } from "./zoom";
 import type { Archive, ArchiveReport } from "./archive-indicator";
-import type { ImportOutcome, ImportReport, MirrorCheck, MirrorPreview, MirrorReport } from "./switcher";
+import { registrationNotice, type ImportOutcome, type ImportReport, type MirrorCheck, type MirrorPreview, type MirrorReport } from "./switcher";
 import {
   readRecoveryReport,
   startupRecoverySentence,
@@ -431,6 +431,8 @@ async function main(): Promise<void> {
         nameContainer: navHeader,
         openCreation: () => current.menuActions.openCreation(),
         listProjects: async () => (await invoke("project_list")) as ProjectSummary[],
+        listPendingRegistrations: async () => (await invoke("project_pending_registrations")) as import("./switcher").PendingRegistration[],
+        retryRegistration: async (token) => (await invoke("project_retry_registration", { token })) as ProjectSummary,
         createProject: async (name) =>
           (await invoke("project_create", { name })) as ProjectSummary,
         // `null` is the writer cancelling the folder dialog, which the host
@@ -530,6 +532,12 @@ async function main(): Promise<void> {
         invoke,
         switchProject,
         refresh: () => switcher.refresh(currentName),
+        onPendingRegistration: () => switcher.open("list"),
+        currentWorkspace: () => current,
+        canReportCreated: async () => {
+          privacyStatus = await invoke("privacy_status") as PrivacyStatus;
+          return !privacyStatus.locked && !privacyStatus.recovery;
+        },
         onNotice: (message) => current.raiseNotice(message),
       });
       const library = createLibrary({
@@ -807,18 +815,30 @@ async function main(): Promise<void> {
         // drop-folder route gives. Import deliberately does not switch to it -
         // a writer mid-scene must not be moved to another book.
         importProject: () => {
+          const workspace = current;
+          const generation = currentGeneration;
+          const canReport = async (): Promise<boolean> => {
+            if (workspace !== current || generation !== currentGeneration) return false;
+            try {
+              privacyStatus = await invoke("privacy_status") as PrivacyStatus;
+              return !privacyStatus.locked && !privacyStatus.recovery && workspace === current && generation === currentGeneration;
+            } catch { return false; }
+          };
           void invoke("project_import_pick")
-            .then((created) => {
+            .then(async (created) => {
               // null is the writer cancelling. Nothing happened because that is
               // what they chose; reporting it back would be reporting their own
               // decision to them as an event.
-              if (created === null || created === undefined) return;
-              const notice = lossesNotice((created as ImportOutcome).losses, (created as ImportOutcome).derived_contents);
+              if (created === null || created === undefined || !await canReport()) return;
+              const outcome = created as ImportOutcome;
+              const warning = registrationNotice(outcome.summary);
+              if (warning) current.raiseNotice(warning);
+              const notice = lossesNotice(outcome.losses, outcome.derived_contents);
               if (notice !== null) current.announce(notice);
               switcher.open("list");
             })
-            .catch((err: unknown) => {
-              current.raiseNotice(t("project.error.import", { error: String(err) }));
+            .catch(async (err: unknown) => {
+              if (await canReport()) current.raiseNotice(t("project.error.import", { error: String(err) }));
             });
         },
         openFind: () => current.menuActions.openFind(),

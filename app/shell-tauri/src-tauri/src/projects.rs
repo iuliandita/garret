@@ -600,6 +600,8 @@ pub struct ProjectSummary {
     /// offers to FORGET a missing book and must not offer that for a present
     /// one that merely failed to open.
     pub missing: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub registration_warning: Option<crate::book_registration::Warning>,
 }
 
 /// 0 rather than an error: an unreadable mtime costs the list its ordering, not
@@ -640,6 +642,7 @@ pub(crate) fn summarize(path: &Path) -> ProjectSummary {
         modified_at: modified_at(path),
         error,
         missing: !path.exists(),
+        registration_warning: None,
     }
 }
 

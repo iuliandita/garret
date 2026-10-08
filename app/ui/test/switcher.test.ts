@@ -6,10 +6,12 @@ if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 import {
   createSwitcher,
   folderName,
+  lossesNotice,
   type ImportLosses,
   type ImportOutcome,
   type LegacyProtection,
   type ProjectSummary,
+  type PendingRegistration,
   type Switcher,
 } from "../src/switcher";
 import type { MirrorPreview, MirrorReport } from "../src/switcher";
@@ -140,6 +142,8 @@ interface Rig {
 
 interface RigOptions {
   listProjects?: () => Promise<ProjectSummary[]>;
+  listPendingRegistrations?: () => Promise<PendingRegistration[]>;
+  retryRegistration?: (token: string) => Promise<ProjectSummary>;
   createProject?: (name: string) => Promise<ProjectSummary>;
   createProjectIn?: (name: string) => Promise<ProjectSummary | null>;
   newDir?: () => Promise<string>;
@@ -221,6 +225,8 @@ function mount(options: RigOptions = {}): Rig {
       calls.list++;
       return options.listProjects?.() ?? Promise.resolve(PROJECTS);
     },
+    listPendingRegistrations: options.listPendingRegistrations,
+    retryRegistration: options.retryRegistration,
     createProject: (name) => {
       calls.created.push(name);
       return (
@@ -1025,12 +1031,12 @@ describe("Books creation feedback", () => {
         release(true);
         await settle();
         expect(input.value).toBe("Next book");
-        expect(rig.calls.dones).toEqual([]);
+        expect(rig.calls.dones).toEqual([t("switcher.done.created", { name: result.name })]);
       } finally { teardown(rig); }
     });
 
     for (const departure of ["close", "reopen", "project", "generation", "privacy", "destroy"] as const) {
-      test(`${route} cannot announce or clear a draft after ${departure}`, async () => {
+      test(`${route} reports same-workspace outcomes after ${departure} without clearing stale drafts`, async () => {
         let release!: (project: ProjectSummary) => void;
         const pending = new Promise<ProjectSummary>((resolve) => { release = resolve; });
         let path = "/p/one.mss";
@@ -1053,7 +1059,8 @@ describe("Books creation feedback", () => {
           const listings = rig.calls.list;
           release({ path: "/new/book.db", name: "Returned name", modified_at: 9 });
           await settle();
-          expect(rig.calls.dones).toEqual([]);
+          expect(rig.calls.dones).toEqual(departure === "close" || departure === "reopen"
+            ? [t("switcher.done.created", { name: "Returned name" })] : []);
           expect(input.value).toBe("New draft");
           expect(rig.calls.list).toBe(listings);
         } finally { teardown(rig); }
@@ -2787,4 +2794,100 @@ describe("Books without an open book", () => {
       expect(el(rig.container, "project-book-required").hidden).toBe(true);
     } finally { teardown(rig); }
   });
+});
+
+
+describe("saved books awaiting Library registration", () => {
+  const saved: ProjectSummary = { path: "/saved/draft.db", name: "Saved draft", modified_at: 5,
+    registration_warning: { token: "host-token", error: "settings blocked" } };
+
+  for (const route of ["project-create", "project-new-choose"] as const) {
+    test(`${route} reports a saved unregistered book after the panel closes`, async () => {
+      let release!: (project: ProjectSummary) => void;
+      const pending = new Promise<ProjectSummary>((resolve) => { release = resolve; });
+      const rig = mount({ createProject: () => pending, createProjectIn: () => pending });
+      try {
+        await open(rig, "create");
+        const input = el(rig.container, "project-new-name") as HTMLInputElement;
+        input.value = "Saved draft";
+        click(el(rig.container, route));
+        el(rig.container, "project-panel").dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+        const listings = rig.calls.list;
+        release(saved);
+        await settle();
+        expect(rig.calls.notices).toEqual([`${t("registration.warning", { path: saved.path })} ${t("registration.session")}`]);
+        expect(rig.calls.dones).toEqual([]);
+        expect(input.value).toBe("Saved draft");
+        expect(rig.calls.list).toBe(listings);
+      } finally { teardown(rig); }
+    });
+  }
+
+  test("pending rows remain actionable with no book open and retry uses only a token", async () => {
+    let entries: PendingRegistration[] = [{ token: "host-token", path: saved.path, name: saved.name }];
+    const tokens: string[] = [];
+    const rig = mount({ currentPath: () => "", listProjects: async () => [], listPendingRegistrations: async () => entries,
+      retryRegistration: async (token) => { tokens.push(token); entries = []; return { ...saved, registration_warning: null }; } });
+    try {
+      rig.switcher.setBookOpen(false);
+      await open(rig);
+      const pending = el(rig.container, "project-pending-registrations");
+      expect(pending.hidden).toBe(false);
+      click(pending.querySelector("button")!);
+      await settle();
+      expect(tokens).toEqual(["host-token"]);
+      expect(rig.calls.dones).toEqual([t("registration.done", { name: saved.name })]);
+      expect(pending.hidden).toBe(true);
+    } finally { teardown(rig); }
+  });
+
+  test("retry failure leaves the saved-book row available", async () => {
+    const rig = mount({ listPendingRegistrations: async () => [{ token: "host-token", path: saved.path, name: saved.name }],
+      retryRegistration: async () => { throw new Error("settings still blocked"); } });
+    try {
+      await open(rig);
+      const pending = el(rig.container, "project-pending-registrations");
+      const button = pending.querySelector<HTMLButtonElement>("button")!;
+      click(button);
+      await settle();
+      expect(rig.calls.notices).toEqual(["settings still blocked"]);
+      expect(pending.hidden).toBe(false);
+      expect(button.disabled).toBe(false);
+    } finally { teardown(rig); }
+  });
+});
+
+
+for (const blocked of ["privacy", "workspace"] as const) {
+  test(`an encrypted restore registration warning stays private after ${blocked} changes`, async () => {
+    let release!: (project: ProjectSummary) => void;
+    const pending = new Promise<ProjectSummary>((resolve) => { release = resolve; });
+    let allowed = true;
+    let generation = 1;
+    const rig = mount({ restoreEncryptedArchive: () => pending, canReportArchive: async () => allowed, currentGeneration: () => generation });
+    try {
+      await open(rig, "restore");
+      click(el(rig.container, "project-archive-encrypted-restore"));
+      if (blocked === "privacy") allowed = false;
+      else generation++;
+      release({ path: "/saved/restore.db", name: "Saved restore", modified_at: 5, registration_warning: { token: "secret-token", error: "blocked" } });
+      await settle();
+      expect(rig.calls.notices).toEqual([]);
+      expect(rig.calls.dones).toEqual([]);
+    } finally { teardown(rig); }
+  });
+}
+
+test("an imported unregistered manuscript preserves its omission disclosure", async () => {
+  const saved = { path: "/saved/import.db", name: "Imported", modified_at: 1, registration_warning: { token: "token", error: "blocked" } };
+  const losses = { ...ZERO_LOSSES, pictures: 2, revisions: 1 };
+  const rig = mount({ listImports: async () => ["book.docx"], importProject: async () => ({ summary: saved, losses }) });
+  try {
+    await open(rig, "import");
+    click(rig.container.querySelector<HTMLElement>('[data-import-file="book.docx"]')!);
+    await settle();
+    expect(rig.calls.notices).toEqual([`${t("registration.warning", { path: saved.path })} ${t("registration.session")}`]);
+    expect(rig.calls.dones).toEqual([lossesNotice(losses)!]);
+    expect(rig.calls.switched).toEqual([]);
+  } finally { teardown(rig); }
 });

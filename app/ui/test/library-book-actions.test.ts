@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { createLibraryBookActions } from "../src/library-book-actions";
 import type { ProjectSwitchOutcome } from "../src/project-switch";
 
-function rig(outcome: ProjectSwitchOutcome = "switched", pinFails = false) {
+function rig(outcome: ProjectSwitchOutcome = "switched", pinFails = false, pending = false) {
   const calls: Array<{ command: string; args?: Record<string, unknown> }> = [];
   const notices: string[] = [];
   const switched: string[] = [];
@@ -10,7 +10,7 @@ function rig(outcome: ProjectSwitchOutcome = "switched", pinFails = false) {
   const actions = createLibraryBookActions({
     invoke: async (command, args) => {
       calls.push({ command, args });
-      if (command === "project_create") return { path: "/books/new.db", name: "New" };
+      if (command === "project_create") return { path: "/books/new.db", name: "New", registration_warning: pending ? { token: "host-only-token", error: "settings blocked" } : null };
       if (command === "identity_pin_preview") return { token: "book-specific-preview" };
       if (command === "identity_pin") {
         if (args?.token !== "book-specific-preview") throw new Error("missing preview token");
@@ -62,4 +62,33 @@ test("Library open forwards the known title without another host read", async ()
   await r.actions.openBook("/books/other.db", "Pride and Prejudice");
   expect(r.names).toEqual(["Pride and Prejudice"]);
   expect(r.calls).toEqual([]);
+});
+
+
+test("a saved unregistered book is not automatically opened or attributed", async () => {
+  const r = rig("switched", false, true);
+  expect(await r.actions.createBook("New", "identity-1")).toBe("unopened");
+  expect(r.switched).toEqual([]);
+  expect(r.calls.map((call) => call.command)).toEqual(["project_create"]);
+  expect(r.notices.length).toBe(1);
+});
+
+
+test("a partial Library create waits for privacy and rechecks its workspace", async () => {
+  let release!: (allowed: boolean) => void;
+  const privacy = new Promise<boolean>((resolve) => { release = resolve; });
+  let workspace = 1;
+  const notices: string[] = [];
+  const actions = createLibraryBookActions({
+    invoke: async () => ({ path: "/saved/book.db", name: "Saved", registration_warning: { token: "token", error: "blocked" } }),
+    switchProject: async () => { throw new Error("must not open"); },
+    refresh: () => {}, onNotice: (notice) => notices.push(notice),
+    currentWorkspace: () => workspace, canReportCreated: () => privacy,
+  });
+  const creating = actions.createBook("Saved", null);
+  await Promise.resolve();
+  workspace++;
+  release(true);
+  expect(await creating).toBe("unopened");
+  expect(notices).toEqual([]);
 });
