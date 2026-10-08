@@ -500,9 +500,9 @@ fn text_of(node: &Node) -> Option<&str> {
 /// `w:endnoteReference`/`w:instrText` inside a run, `w:hyperlink`/
 /// `w:fldSimple`/`w:commentRangeStart` beside one. `w:pPr` is skipped
 /// outright: it is metadata the caller has already read, never content.
-/// `w:del` is skipped WHOLE, not walked through: it is text Word tracked as
-/// deleted, and a rejected edit coming back on import would hand the writer
-/// words they struck out. `mc:AlternateContent`'s `mc:Fallback` child is
+/// `w:del` and `w:moveFrom` are skipped WHOLE: deleted text stays absent,
+/// and moved text is kept only at its `w:moveTo` destination.
+/// `mc:AlternateContent`'s `mc:Fallback` child is
 /// skipped the same way its `mc:Choice` sibling already carries the real
 /// content (a drawing, most often) that the fallback restates for an older
 /// reader -- walking both would count one picture, hyperlink or field
@@ -556,7 +556,7 @@ fn walk_para_content(nodes: &[Node], out: &mut Vec<RunOut>, losses: &mut Losses)
                 walk_para_content(children, out, losses);
             }
             "ins" => walk_para_content(children, out, losses),
-            "del" => {}
+            "del" | "moveFrom" => {}
             "Fallback" => {}
             "commentRangeStart" => losses.comments += 1,
             _ => walk_para_content(children, out, losses),
@@ -680,7 +680,8 @@ fn parse_p(children: &[Node], styles: &StyleMap, losses: &mut Losses) -> ParaCla
 }
 
 /// The document body's paragraphs, in order. `w:tbl` at body level is
-/// skipped WHOLE and counted once (decision 6); every other wrapper --
+/// skipped WHOLE and counted once (decision 6); `w:moveFrom` is skipped so
+/// moved paragraphs are kept only at their destination. Every other wrapper --
 /// `w:body` itself, `w:sdt`, `w:sectPr`'s siblings -- is walked through, on
 /// decision 2's rule.
 fn walk_body(nodes: &[Node], styles: &StyleMap, losses: &mut Losses, out: &mut Vec<ParaClass>) {
@@ -692,13 +693,14 @@ fn walk_body(nodes: &[Node], styles: &StyleMap, losses: &mut Losses, out: &mut V
             "p" => out.push(parse_p(children, styles, losses)),
             "tbl" => losses.tables += 1,
             "sectPr" => {}
+            "moveFrom" => {}
             _ => walk_body(children, styles, losses, out),
         }
     }
 }
 
 /// Count review markup independently of the prose walk. That walk skips
-/// deleted text and tables, but their revision markers still need disclosure.
+/// deleted text, move sources and tables, but their revision markers still need disclosure.
 /// AlternateContent fallback repeats its choice and must not count twice.
 fn count_revisions(nodes: &[Node]) -> u64 {
     nodes.iter().map(|node| match node {
@@ -1004,6 +1006,33 @@ mod tests {
         assert!(body.contains("Before new after"), "{body}");
         assert!(!body.contains("old"), "{body}");
         assert!(!body.contains("table edit"), "{body}");
+    }
+
+    #[test]
+    fn tracked_moves_import_the_destination_once_and_report_revision_loss() {
+        for (moved_content, paragraphs) in [
+            (r#"<w:p><w:r><w:t>Before </w:t></w:r>
+                <w:moveFrom w:id="1"><w:r><w:t>moved text</w:t></w:r></w:moveFrom>
+                <w:r><w:t>after </w:t></w:r>
+                <w:moveTo w:id="2"><w:r><w:t>moved text</w:t></w:r></w:moveTo></w:p>"#,
+             json!([{"type":"paragraph","content":[
+                {"type":"text","text":"Before after moved text"}
+             ]}])),
+            (r#"<w:moveFrom w:id="1"><w:p><w:r><w:t>moved text</w:t></w:r></w:p></w:moveFrom>
+                <w:p><w:r><w:t>Before after</w:t></w:r></w:p>
+                <w:moveTo w:id="2"><w:p><w:r><w:t>moved text</w:t></w:r></w:p></w:moveTo>"#,
+             json!([
+                {"type":"paragraph","content":[{"type":"text","text":"Before after"}]},
+                {"type":"paragraph","content":[{"type":"text","text":"moved text"}]}
+             ])),
+        ] {
+            let bytes = package(&doc(moved_content), None);
+            let out = parse(&bytes, "stem").unwrap();
+            assert_eq!(out.losses.revisions, 2);
+            assert_eq!(out.imported.items.len(), 1);
+            let body: serde_json::Value = serde_json::from_str(out.imported.items[0].body.as_deref().unwrap()).unwrap();
+            assert_eq!(body, json!({"type":"doc","content": paragraphs}));
+        }
     }
 
     #[test]
