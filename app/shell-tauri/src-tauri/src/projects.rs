@@ -785,6 +785,7 @@ pub fn move_target(from: &Path, dir: &Path) -> Result<PathBuf, String> {
             to.display()
         ));
     }
+    refuse_destination_logs(&to).map_err(|error| format!("{}: {error}", to.display()))?;
     let pictures = crate::pictures::dir_for(&to);
     if pictures.exists() {
         return Err(format!(
@@ -808,43 +809,164 @@ pub fn physical_same_file(a: &Path, b: &Path) -> Result<bool, String> {
     same_file::is_same_file(a, b).map_err(|e| format!("{} and {}: {e}", a.display(), b.display()))
 }
 
-/// Move the book's file and, when there is one, its pictures folder, from
-/// `from` to `to`. ONE FILESYSTEM ONLY: a rename, never a copy. The store must
-/// be closed and its log folded in (`Store::checkpoint`) before this is called;
-/// a `-wal` file with anything in it is refused here rather than moved, because
-/// a book whose log stayed behind is a book missing its last minutes.
-///
-/// Rolled back on the second rename failing: the file goes back where it was,
-/// so the caller never sees a book half in each folder.
-pub fn move_book_files(from: &Path, to: &Path) -> Result<(), String> {
+/// A failed move retains every component and records whether the whole book
+/// is still together. A caller must not reopen a database with missing assets.
+#[derive(Debug)]
+pub(crate) struct MoveBookError {
+    message: String,
+    pub(crate) reopen_at: Option<PathBuf>,
+}
+
+impl std::fmt::Display for MoveBookError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+fn refuse_destination_logs(to: &Path) -> std::io::Result<()> {
+    for path in [to.with_extension("db-wal"), to.with_extension("db-shm")] {
+        match fs::symlink_metadata(&path) {
+            Ok(_) => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::AlreadyExists,
+                    format!(
+                        "{}: there is already a database sidecar at this location",
+                        path.display()
+                    ),
+                ))
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error),
+        }
+    }
+    Ok(())
+}
+
+/// Exclusive publication also protects rollback from a new file at the old
+/// path. Unsupported filesystems fail closed; there is no copying fallback.
+#[cfg(any(target_os = "linux", target_os = "android", target_vendor = "apple"))]
+pub(crate) fn rename_without_replace(from: &Path, to: &Path) -> std::io::Result<()> {
+    rustix::fs::renameat_with(
+        rustix::fs::CWD,
+        from,
+        rustix::fs::CWD,
+        to,
+        rustix::fs::RenameFlags::NOREPLACE,
+    )
+    .map_err(Into::into)
+}
+
+#[cfg(windows)]
+pub(crate) fn rename_without_replace(from: &Path, to: &Path) -> std::io::Result<()> {
+    use std::os::windows::ffi::OsStrExt;
+    if [from, to]
+        .iter()
+        .any(|path| path.as_os_str().encode_wide().any(|unit| unit == 0))
+    {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "a move path contains a null character",
+        ));
+    }
+    // MoveFileExW with neither REPLACE_EXISTING nor COPY_ALLOWED.
+    renamore::rename_exclusive(from, to)
+}
+
+#[cfg(not(any(
+    target_os = "linux",
+    target_os = "android",
+    target_vendor = "apple",
+    windows
+)))]
+pub(crate) fn rename_without_replace(_from: &Path, _to: &Path) -> std::io::Result<()> {
+    Err(std::io::Error::new(
+        std::io::ErrorKind::Unsupported,
+        "exclusive moves are unavailable on this platform",
+    ))
+}
+
+/// Move a closed, checkpointed book within one filesystem. A nonempty WAL
+/// refuses the move. Every forward and rollback rename refuses replacement.
+/// If rollback is blocked, report all retained locations and leave the book
+/// closed until its components can be reunited without overwriting anything.
+pub(crate) fn move_book_files(from: &Path, to: &Path) -> Result<(), MoveBookError> {
+    move_book_files_with(from, to, rename_without_replace)
+}
+
+pub(crate) fn move_book_files_with(
+    from: &Path,
+    to: &Path,
+    mut rename: impl FnMut(&Path, &Path) -> std::io::Result<()>,
+) -> Result<(), MoveBookError> {
     let wal = from.with_extension("db-wal");
     if wal.metadata().map(|m| m.len() > 0).unwrap_or(false) {
-        return Err(format!(
-            "{}: the book is still being written; try again in a moment",
-            from.display()
-        ));
+        return Err(MoveBookError {
+            message: format!(
+                "{}: the book is still being written; try again in a moment",
+                from.display()
+            ),
+            reopen_at: Some(from.to_path_buf()),
+        });
     }
     let _ = fs::remove_file(&wal);
     let _ = fs::remove_file(from.with_extension("db-shm"));
-    fs::rename(from, to).map_err(|e| move_error(from, to, &e))?;
-    let pictures_from = crate::pictures::dir_for(from);
-    let mut moved_pictures = false;
-    if pictures_from.is_dir() {
-        let pictures_to = crate::pictures::dir_for(to);
-        if let Err(e) = fs::rename(&pictures_from, &pictures_to) {
-            let _ = fs::rename(to, from);
-            return Err(move_error(&pictures_from, &pictures_to, &e));
+    let mut parts = vec![("database", from.to_path_buf(), to.to_path_buf(), false)];
+    for (label, source, destination) in [
+        (
+            "pictures folder",
+            crate::pictures::dir_for(from),
+            crate::pictures::dir_for(to),
+        ),
+        (
+            "research folder",
+            crate::research::dir_for(from),
+            crate::research::dir_for(to),
+        ),
+    ] {
+        if source.is_dir() {
+            parts.push((label, source, destination, false));
         }
-        moved_pictures = true;
     }
-    let research_from = crate::research::dir_for(from);
-    if research_from.is_dir() {
-        let research_to = crate::research::dir_for(to);
-        if let Err(e) = fs::rename(&research_from, &research_to) {
-            if moved_pictures { let _ = fs::rename(crate::pictures::dir_for(to), &pictures_from); }
-            let _ = fs::rename(to, from);
-            return Err(move_error(&research_from, &research_to, &e));
+    for index in 0..parts.len() {
+        let (_, source, destination, _) = &parts[index];
+        let result = if index == 0 {
+            refuse_destination_logs(destination).and_then(|()| rename(source, destination))
+        } else {
+            rename(source, destination)
+        };
+        if let Err(error) = result {
+            let mut message = move_error(source, destination, &error);
+            for (label, source, destination, moved) in parts[..index].iter_mut().rev() {
+                let result = if *label == "database" {
+                    refuse_destination_logs(source).and_then(|()| rename(destination, source))
+                } else {
+                    rename(destination, source)
+                };
+                if let Err(back) = result {
+                    message.push_str(&format!(
+                        ". Rollback failed: {}",
+                        move_error(destination, source, &back)
+                    ));
+                } else {
+                    *moved = false;
+                }
+            }
+            let together = parts.iter().all(|(_, _, _, moved)| !moved);
+            for (label, source, destination, moved) in &parts {
+                let retained = if *moved { destination } else { source };
+                message.push_str(&format!(". The {label} is at {}", retained.display()));
+            }
+            if !together {
+                message.push_str(
+                    ". The book's files are in different folders; the book has been left closed",
+                );
+            }
+            return Err(MoveBookError {
+                message,
+                reopen_at: together.then(|| from.to_path_buf()),
+            });
         }
+        parts[index].3 = true;
     }
     Ok(())
 }
@@ -2875,6 +2997,247 @@ mod tests {
     }
 
     #[test]
+    fn a_move_collision_after_preflight_preserves_both_books_and_sidecars() {
+        let a = tempdir().unwrap();
+        let b = tempdir().unwrap();
+        let book = book_at(a.path(), "Harbour");
+        let before = fs::read(&book).unwrap();
+        for dir in [
+            crate::pictures::dir_for(&book),
+            crate::research::dir_for(&book),
+        ] {
+            fs::create_dir(&dir).unwrap();
+            fs::write(dir.join("original"), b"source original").unwrap();
+        }
+        let to = move_target(&book, b.path()).unwrap();
+        let other = Store::open(&to).unwrap();
+        other.set_meta(NAME_KEY, "Another manuscript").unwrap();
+        other.checkpoint().unwrap();
+        drop(other);
+        let collision = fs::read(&to).unwrap();
+        for extension in ["db-wal", "db-shm"] {
+            fs::write(to.with_extension(extension), b"other book sidecar").unwrap();
+        }
+        let result = move_book_files(&book, &to);
+        assert!(
+            result.is_err(),
+            "a destination created after preflight must refuse publication"
+        );
+        assert_eq!(fs::read(&book).unwrap(), before);
+        assert_eq!(fs::read(&to).unwrap(), collision);
+        for extension in ["db-wal", "db-shm"] {
+            assert_eq!(
+                fs::read(to.with_extension(extension)).unwrap(),
+                b"other book sidecar"
+            );
+        }
+        for dir in [
+            crate::pictures::dir_for(&book),
+            crate::research::dir_for(&book),
+        ] {
+            assert_eq!(fs::read(dir.join("original")).unwrap(), b"source original");
+        }
+    }
+
+    #[test]
+    fn move_collision_with_a_database_alone_refuses_the_exclusive_rename() {
+        let a = tempdir().unwrap();
+        let b = tempdir().unwrap();
+        let book = book_at(a.path(), "Harbour");
+        let before = fs::read(&book).unwrap();
+        let to = move_target(&book, b.path()).unwrap();
+        let other = Store::open(&to).unwrap();
+        other.set_meta(NAME_KEY, "Another manuscript").unwrap();
+        other.checkpoint().unwrap();
+        drop(other);
+        let collision = fs::read(&to).unwrap();
+        assert!(!to.with_extension("db-wal").exists());
+        assert!(!to.with_extension("db-shm").exists());
+        assert!(move_book_files(&book, &to).is_err());
+        assert_eq!(fs::read(&book).unwrap(), before);
+        assert_eq!(fs::read(&to).unwrap(), collision);
+    }
+
+    #[test]
+    fn move_collision_with_orphan_destination_logs_preserves_the_orphans() {
+        for extension in ["db-wal", "db-shm"] {
+            let a = tempdir().unwrap();
+            let b = tempdir().unwrap();
+            let book = book_at(a.path(), "Harbour");
+            let before = fs::read(&book).unwrap();
+            let to = move_target(&book, b.path()).unwrap();
+            let sidecar = to.with_extension(extension);
+            fs::write(&sidecar, b"unrelated orphan").unwrap();
+            assert!(move_target(&book, b.path()).is_err());
+            let error = move_book_files(&book, &to).unwrap_err();
+            assert!(error.to_string().contains("database sidecar"), "{error}");
+            assert_eq!(fs::read(&book).unwrap(), before);
+            assert!(!to.exists());
+            assert_eq!(fs::read(&sidecar).unwrap(), b"unrelated orphan");
+        }
+    }
+
+    #[test]
+    fn move_collisions_with_empty_asset_directories_preserve_both_sides() {
+        for collision_is_pictures in [true, false] {
+            let a = tempdir().unwrap();
+            let b = tempdir().unwrap();
+            let book = book_at(a.path(), "Harbour");
+            let before = fs::read(&book).unwrap();
+            let pictures = crate::pictures::dir_for(&book);
+            let research = crate::research::dir_for(&book);
+            for dir in [&pictures, &research] {
+                fs::create_dir(dir).unwrap();
+                fs::write(dir.join("original"), b"retained original").unwrap();
+            }
+            let to = move_target(&book, b.path()).unwrap();
+            let collision = if collision_is_pictures {
+                crate::pictures::dir_for(&to)
+            } else {
+                crate::research::dir_for(&to)
+            };
+            fs::create_dir(&collision).unwrap();
+            let result = move_book_files(&book, &to);
+            assert!(
+                result.is_err(),
+                "even an empty destination directory must not be replaced"
+            );
+            assert_eq!(fs::read(&book).unwrap(), before);
+            assert!(!to.exists());
+            for dir in [&pictures, &research] {
+                assert_eq!(
+                    fs::read(dir.join("original")).unwrap(),
+                    b"retained original"
+                );
+            }
+            assert_eq!(fs::read_dir(&collision).unwrap().count(), 0);
+        }
+    }
+
+    #[test]
+    fn move_rollback_never_replaces_a_new_database_at_the_source() {
+        for with_sidecars in [false, true] {
+            let a = tempdir().unwrap();
+            let b = tempdir().unwrap();
+            let book = book_at(a.path(), "Harbour");
+            let before = fs::read(&book).unwrap();
+            let pictures = crate::pictures::dir_for(&book);
+            let research = crate::research::dir_for(&book);
+            for dir in [&pictures, &research] {
+                fs::create_dir(dir).unwrap();
+                fs::write(dir.join("original"), b"retained original").unwrap();
+            }
+            let to = move_target(&book, b.path()).unwrap();
+            let pictures_to = crate::pictures::dir_for(&to);
+            let mut collision_bytes = None;
+            let error = move_book_files_with(&book, &to, |source, destination| {
+                if source == pictures && destination == pictures_to {
+                    let other = Store::open(&book).unwrap();
+                    other.set_meta(NAME_KEY, "Another manuscript").unwrap();
+                    other.checkpoint().unwrap();
+                    drop(other);
+                    collision_bytes = Some(fs::read(&book).unwrap());
+                    fs::create_dir(&pictures_to).unwrap();
+                    if with_sidecars {
+                        fs::write(book.with_extension("db-wal"), b"other WAL").unwrap();
+                        fs::write(book.with_extension("db-shm"), b"other SHM").unwrap();
+                    }
+                }
+                rename_without_replace(source, destination)
+            })
+            .unwrap_err();
+            assert!(
+                error.reopen_at.is_none(),
+                "a split book must not be reopened"
+            );
+            assert!(error.to_string().contains("Rollback failed"), "{error}");
+            assert!(
+                error
+                    .to_string()
+                    .contains(&format!("The database is at {}", to.display())),
+                "{error}"
+            );
+            assert!(
+                error
+                    .to_string()
+                    .contains(&format!("The pictures folder is at {}", pictures.display())),
+                "{error}"
+            );
+            assert_eq!(fs::read(&to).unwrap(), before);
+            assert_eq!(fs::read(&book).unwrap(), collision_bytes.unwrap());
+            if with_sidecars {
+                assert_eq!(
+                    fs::read(book.with_extension("db-wal")).unwrap(),
+                    b"other WAL"
+                );
+                assert_eq!(
+                    fs::read(book.with_extension("db-shm")).unwrap(),
+                    b"other SHM"
+                );
+            }
+            for dir in [&pictures, &research] {
+                assert_eq!(
+                    fs::read(dir.join("original")).unwrap(),
+                    b"retained original"
+                );
+            }
+            assert_eq!(fs::read_dir(&pictures_to).unwrap().count(), 0);
+        }
+    }
+
+    #[test]
+    fn move_rollback_reports_pictures_retained_away_from_the_database() {
+        let a = tempdir().unwrap();
+        let b = tempdir().unwrap();
+        let book = book_at(a.path(), "Harbour");
+        let before = fs::read(&book).unwrap();
+        let pictures = crate::pictures::dir_for(&book);
+        let research = crate::research::dir_for(&book);
+        for dir in [&pictures, &research] {
+            fs::create_dir(dir).unwrap();
+            fs::write(dir.join("original"), b"retained original").unwrap();
+        }
+        let to = move_target(&book, b.path()).unwrap();
+        let pictures_to = crate::pictures::dir_for(&to);
+        let research_to = crate::research::dir_for(&to);
+        let error = move_book_files_with(&book, &to, |source, destination| {
+            if source == research && destination == research_to {
+                fs::create_dir(&pictures).unwrap();
+                fs::create_dir(&research_to).unwrap();
+            }
+            rename_without_replace(source, destination)
+        })
+        .unwrap_err();
+        assert!(error.reopen_at.is_none());
+        assert!(error.to_string().contains("Rollback failed"), "{error}");
+        assert!(
+            error
+                .to_string()
+                .contains(&format!("The database is at {}", book.display())),
+            "{error}"
+        );
+        assert!(
+            error.to_string().contains(&format!(
+                "The pictures folder is at {}",
+                pictures_to.display()
+            )),
+            "{error}"
+        );
+        assert_eq!(fs::read(&book).unwrap(), before);
+        assert!(!to.exists());
+        assert_eq!(
+            fs::read(pictures_to.join("original")).unwrap(),
+            b"retained original"
+        );
+        assert_eq!(
+            fs::read(research.join("original")).unwrap(),
+            b"retained original"
+        );
+        assert_eq!(fs::read_dir(&pictures).unwrap().count(), 0);
+        assert_eq!(fs::read_dir(&research_to).unwrap().count(), 0);
+    }
+
+    #[test]
     fn moving_carries_the_pictures_folder_and_leaves_nothing_behind() {
         let a = tempdir().unwrap();
         let b = tempdir().unwrap();
@@ -2882,12 +3245,20 @@ mod tests {
         let pictures = crate::pictures::dir_for(&book);
         fs::create_dir(&pictures).unwrap();
         fs::write(pictures.join("face.jpg"), b"jpeg").unwrap();
+        let research = crate::research::dir_for(&book);
+        fs::create_dir(&research).unwrap();
+        fs::write(research.join("source.pdf"), b"retained research").unwrap();
         let to = move_target(&book, b.path()).unwrap();
 
         move_book_files(&book, &to).unwrap();
 
         assert!(!book.exists());
         assert!(!pictures.exists());
+        assert!(!research.exists());
+        assert_eq!(
+            fs::read(crate::research::dir_for(&to).join("source.pdf")).unwrap(),
+            b"retained research"
+        );
         assert!(to.is_file());
         assert_eq!(
             fs::read(crate::pictures::dir_for(&to).join("face.jpg")).unwrap(),
@@ -2896,7 +3267,6 @@ mod tests {
         // And the moved file is still a project.
         assert!(Store::open(&to).unwrap().items().unwrap().len() > 0);
     }
-
     #[test]
     fn a_move_without_pictures_moves_the_one_file() {
         let a = tempdir().unwrap();
@@ -2917,7 +3287,7 @@ mod tests {
         fs::write(book.with_extension("db-wal"), b"frames").unwrap();
         let to = move_target(&book, b.path()).unwrap();
         let err = move_book_files(&book, &to).unwrap_err();
-        assert!(err.contains("still being written"), "{err}");
+        assert!(err.to_string().contains("still being written"), "{err}");
         assert!(book.exists());
         assert!(!to.exists());
     }
@@ -2935,7 +3305,7 @@ mod tests {
         fs::write(crate::pictures::dir_for(&to), b"in the way").unwrap();
 
         let err = move_book_files(&book, &to).unwrap_err();
-        assert!(err.contains("pictures"), "{err}");
+        assert!(err.to_string().contains("pictures"), "{err}");
         assert!(book.is_file(), "the file must be back where it was");
         assert!(!to.exists());
         assert!(pictures.is_dir());

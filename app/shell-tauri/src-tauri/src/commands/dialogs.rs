@@ -591,9 +591,9 @@ pub(crate) async fn project_create_pick(
 /// store mutex the whole way, so no command sees the book half-moved: a flush
 /// that arrives meanwhile waits on the lock and lands in the reopened store,
 /// which is the same book at the same revisions -- the generation is kept for
-/// exactly that reason. A move that cannot be completed puts the file back and
-/// reopens it where it was; every branch below either leaves the book open
-/// somewhere or says plainly that it could not.
+/// exactly that reason. Failed moves attempt an exclusive rollback. A blocked
+/// rollback reports every retained component and leaves a split book closed;
+/// only the original book may be reopened.
 ///
 /// `Ok(None)` is the writer cancelling, an answer rather than a failure.
 #[command_boundary::command]
@@ -618,8 +618,13 @@ pub(crate) async fn project_move(
     };
     let to = projects::move_target(&from, &dir)?;
 
-    let _mirror = passing.0.lock().map_err(|_| "the readable folder is busy")?;
-    let _recovery = crate::recovery::PASSING.lock().map_err(|_| "recovery is busy")?;
+    let _mirror = passing
+        .0
+        .lock()
+        .map_err(|_| "the readable folder is busy")?;
+    let _recovery = crate::recovery::PASSING
+        .lock()
+        .map_err(|_| "recovery is busy")?;
     if explicit.0.is_none() {
         projects::read_settings_checked(&data_home.0)?;
     }
@@ -637,6 +642,7 @@ pub(crate) async fn project_move(
     let OpenProject {
         store,
         name,
+        book_id,
         generation,
         registry_home,
         analytics,
@@ -647,28 +653,64 @@ pub(crate) async fn project_move(
     drop(store);
 
     if let Err(e) = projects::move_book_files(&from, &to) {
-        *guard = Some(reopen(&from, &name, generation, registry_home.as_deref(), analytics.clone(), tracking_on)?);
-        return Err(e);
+        *guard = Some(reopen_after_move_error(
+            &e,
+            &name,
+            generation,
+            registry_home.as_deref(),
+            analytics.clone(),
+            tracking_on,
+            &book_id,
+        )?);
+        return Err(e.to_string());
     }
-    match reopen(&to, &name, generation, registry_home.as_deref(), analytics.clone(), tracking_on) {
+    match reopen(
+        &to,
+        &name,
+        generation,
+        registry_home.as_deref(),
+        analytics.clone(),
+        tracking_on,
+        &book_id,
+    ) {
         Ok(reopened) => *guard = Some(reopened),
         Err(e) => {
-            // Moved, but not openable there: put it back. If even that fails
-            // the writer is told where their book is, which is `to`.
+            // Try an exclusive move back. A failed rollback reports all
+            // retained components and permits reopening only a complete book.
             match projects::move_book_files(&to, &from) {
                 Ok(()) => {
-                    *guard = Some(reopen(&from, &name, generation, registry_home.as_deref(), analytics, tracking_on)?);
+                    *guard = Some(reopen(
+                        &from,
+                        &name,
+                        generation,
+                        registry_home.as_deref(),
+                        analytics,
+                        tracking_on,
+                        &book_id,
+                    )?);
                     return Err(format!(
                         "{}: could not be opened after the move, so it was moved back: {e}",
                         to.display()
                     ));
                 }
                 Err(back) => {
-                    return Err(format!(
-                        "{}: could not be opened after the move ({e}) and could not be moved back ({back}). The book is at {}",
-                        to.display(),
-                        to.display()
-                    ))
+                    let recovered = reopen_after_move_error(
+                        &back,
+                        &name,
+                        generation,
+                        registry_home.as_deref(),
+                        analytics,
+                        tracking_on,
+                        &book_id,
+                    )
+                    .map_err(|recovery| {
+                        format!("could not open the book after its move: {e}. {recovery}")
+                    })?;
+                    let retained = recovered.path.clone();
+                    *guard = Some(recovered);
+                    projects::record_move_checked(&data_home.0, &from, &retained, explicit.0.is_none())
+                        .map_err(|registry| format!("could not open the book after its move: {e}. {back}. The book was reopened at {}, but its saved location could not be updated: {registry}", retained.display()))?;
+                    return Err(format!("could not open the book after its move: {e}. {back}. The book was reopened at {}", retained.display()));
                 }
             }
         }
@@ -679,10 +721,60 @@ pub(crate) async fn project_move(
     Ok(Some(projects::summarize(&to)))
 }
 
+fn reopen_after_move_error(
+    error: &projects::MoveBookError,
+    name: &str,
+    generation: u64,
+    registry_home: Option<&Path>,
+    analytics: Option<crate::store::analytics::Runtime>,
+    tracking_on: bool,
+    book_id: &str,
+) -> Result<OpenProject, String> {
+    let path = error
+        .reopen_at
+        .as_deref()
+        .ok_or_else(|| error.to_string())?;
+    reopen(
+        path,
+        name,
+        generation,
+        registry_home,
+        analytics,
+        tracking_on,
+        book_id,
+    )
+    .map_err(|recovery| format!("{error}. The book could not be reopened: {recovery}"))
+}
+
 /// The open state `project_open` builds, rebuilt for a book that changed path
 /// and nothing else: same name, same generation.
-fn reopen(path: &Path, name: &str, generation: u64, registry_home: Option<&Path>, analytics: Option<crate::store::analytics::Runtime>, tracking_on: bool) -> std::result::Result<OpenProject, String> {
-    let store = projects::open_existing_for_writing(path).map_err(|e| format!("{}: {e}", path.display()))?;
+fn reopen(
+    path: &Path,
+    name: &str,
+    generation: u64,
+    registry_home: Option<&Path>,
+    analytics: Option<crate::store::analytics::Runtime>,
+    tracking_on: bool,
+    book_id: &str,
+) -> std::result::Result<OpenProject, String> {
+    // Reject a replacement file before any writable open or migration.
+    let existing =
+        store::Store::open_readonly(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    if crate::project_book_id(&existing)? != book_id {
+        return Err(format!(
+            "{}: a different book is now at this location",
+            path.display()
+        ));
+    }
+    drop(existing);
+    let store = projects::open_existing_for_writing(path)
+        .map_err(|e| format!("{}: {e}", path.display()))?;
+    if crate::project_book_id(&store)? != book_id {
+        return Err(format!(
+            "{}: a different book is now at this location",
+            path.display()
+        ));
+    }
     let words = store
         .word_index()
         .map_err(|e| format!("{}: cannot count the project: {e}", path.display()))?;
@@ -1153,6 +1245,73 @@ mod tests {
             store, path, name: "Book".into(), generation,
             analytics: None, tracking_on: false,
         }
+    }
+
+    #[test]
+    fn move_recovery_reopens_only_the_original_book_and_keeps_its_generation() {
+        let temp = tempfile::tempdir().unwrap();
+        let project = picture_project(temp.path().join("original.db"), 31);
+        let path = project.path.clone();
+        let id = project.book_id.clone();
+        project.store.checkpoint().unwrap();
+        drop(project);
+        let missing_destination = temp.path().join("absent").join("original.db");
+        let failure = crate::projects::move_book_files(&path, &missing_destination).unwrap_err();
+        let reopened =
+            super::reopen_after_move_error(&failure, "Book", 31, None, None, false, &id).unwrap();
+        assert_eq!(reopened.path, path);
+        assert_eq!(reopened.generation, 31);
+        assert_eq!(reopened.book_id, id);
+        drop(reopened);
+        let replacement = picture_project(temp.path().join("replacement.db"), 41);
+        replacement.store.checkpoint().unwrap();
+        let replacement_path = replacement.path.clone();
+        drop(replacement);
+        std::fs::remove_file(&path).unwrap();
+        std::fs::rename(replacement_path, &path).unwrap();
+        let before = std::fs::read(&path).unwrap();
+        let error = super::reopen_after_move_error(&failure, "Book", 31, None, None, false, &id)
+            .err()
+            .unwrap();
+        assert!(error.contains("a different book"), "{error}");
+        assert_eq!(std::fs::read(&path).unwrap(), before);
+    }
+
+    #[test]
+    fn move_recovery_leaves_a_split_book_closed() {
+        let a = tempfile::tempdir().unwrap();
+        let b = tempfile::tempdir().unwrap();
+        let project = picture_project(a.path().join("original.db"), 31);
+        let path = project.path.clone();
+        let id = project.book_id.clone();
+        project.store.checkpoint().unwrap();
+        drop(project);
+        let pictures = crate::pictures::dir_for(&path);
+        std::fs::create_dir(&pictures).unwrap();
+        std::fs::write(pictures.join("original"), b"retained picture").unwrap();
+        let to = crate::projects::move_target(&path, b.path()).unwrap();
+        let failure = crate::projects::move_book_files_with(&path, &to, |source, destination| {
+            if source == pictures {
+                let replacement = picture_project(path.clone(), 41);
+                replacement.store.checkpoint().unwrap();
+                drop(replacement);
+                std::fs::create_dir(crate::pictures::dir_for(&to)).unwrap();
+                return Err(std::io::Error::from(std::io::ErrorKind::AlreadyExists));
+            }
+            crate::projects::rename_without_replace(source, destination)
+        })
+        .unwrap_err();
+        let before = std::fs::read(&path).unwrap();
+        let error = super::reopen_after_move_error(&failure, "Book", 31, None, None, false, &id)
+            .err()
+            .unwrap();
+        assert!(error.contains("left closed"), "{error}");
+        assert_eq!(std::fs::read(&path).unwrap(), before);
+        assert_eq!(
+            std::fs::read(pictures.join("original")).unwrap(),
+            b"retained picture"
+        );
+        assert!(to.is_file());
     }
 
     #[test]
