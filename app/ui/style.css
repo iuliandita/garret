@@ -4712,6 +4712,26 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   border-right: 1px solid var(--border-soft);
 }
 
+.timeline-lane-action {
+  flex: 1;
+  align-self: stretch;
+  min-width: 0;
+  margin: 0 -8px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.timeline-lane-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 .timeline-lane-events {
   position: relative;
   flex: 1 0 auto;

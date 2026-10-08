@@ -1234,7 +1234,11 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
     else render();
   }
 
-  const trackContextMenu = createMenuPanel({ id: "timeline-track-context-menu" });
+  let trackContextOpener: HTMLButtonElement | null = null;
+  const trackContextMenu = createMenuPanel({
+    id: "timeline-track-context-menu",
+    onClose: () => { trackContextOpener = null; },
+  });
   document.body.append(trackContextMenu.element);
   trackContextMenu.element.style.position = "fixed";
   const unsubscribeTrackContextOutside = closeOnOutsideClick(
@@ -1249,8 +1253,9 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
     if (menu === undefined) return;
     if (event.key === "Escape") {
       event.preventDefault();
+      const opener = menu === trackContextMenu ? trackContextOpener : null;
       menu.close();
-      (lanes.hidden ? emptyAddTrack : lanes).focus();
+      (opener?.isConnected ? opener : lanes.hidden ? emptyAddTrack : lanes).focus();
       return;
     }
     if (menu.element.contains(document.activeElement)) menu.handleArrowKey(event);
@@ -1287,6 +1292,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
             },
             { id: "timeline-track-delete", label: () => t("timeline.track.delete"), run: () => deleteTrack(tr.id) },
           ];
+    trackContextOpener = header.querySelector<HTMLButtonElement>(".timeline-lane-action");
     trackContextMenu.paint(items, tr.name);
     document.body.append(trackContextMenu.element);
     placeMenuAt(trackContextMenu.element, x, y);
@@ -1296,17 +1302,6 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
   function bindLaneHeader(lane: HTMLElement, tr: TimelineTrack): void {
     const header = lane.querySelector<HTMLElement>(".timeline-lane-header");
     if (header === null) return;
-
-    // KEYBOARD REACHABLE (review, MAJOR: a plain `div` with no `tabIndex`
-    // had no keyboard route to the context menu at all -- double-click was
-    // the ONLY path to rename). `role="button"` and an explicit
-    // `aria-label` because the header's own text is either the track name
-    // (thread) or the cast member's live name -- `trackDisplayName` is
-    // read once here rather than trusting `header.textContent`, which the
-    // rename branch below clears.
-    header.tabIndex = 0;
-    header.setAttribute("role", "button");
-    header.setAttribute("aria-label", trackDisplayName(tr).text);
 
     if (tr.kind === "thread" && renamingTrackId === tr.id) {
       header.textContent = "";
@@ -1343,10 +1338,24 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
         input.focus();
         input.select();
       });
+      return;
     }
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "timeline-lane-action";
+    button.textContent = header.textContent;
+    button.setAttribute("aria-label", trackDisplayName(tr).text);
+    button.setAttribute("aria-haspopup", "menu");
+    header.replaceChildren(button);
+    button.addEventListener("click", () => {
+      const r = header.getBoundingClientRect();
+      openLaneHeaderContextMenu(header, tr, r.left, r.bottom);
+    });
 
     if (tr.kind === "thread") {
       header.addEventListener("dblclick", () => {
+        trackContextMenu.close();
         renamingTrackId = tr.id;
         render();
       });

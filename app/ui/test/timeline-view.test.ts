@@ -900,21 +900,104 @@ describe("mountTimeline", () => {
       m.destroy();
     });
 
-    // MAJOR (review): a plain div with no tabIndex had no keyboard route to
-    // the context menu at all.
     test("a lane header is a keyboard-reachable button with the track's name", () => {
       const { mount: m } = mount(baseBody());
       const header = container.querySelector<HTMLElement>(".timeline-lane .timeline-lane-header")!;
-      expect(header.tabIndex).toBe(0);
-      expect(header.getAttribute("role")).toBe("button");
-      expect(header.getAttribute("aria-label")).toBe("Ines");
+      const button = header.querySelector<HTMLButtonElement>("button")!;
+      expect(button instanceof HTMLButtonElement).toBe(true);
+      expect(button.type).toBe("button");
+      expect(button.tabIndex).toBe(0);
+      expect(button.getAttribute("aria-label")).toBe("Ines");
+      expect(button.getAttribute("aria-haspopup")).toBe("menu");
+      expect(header.getAttribute("role")).toBeNull();
+      expect(header.hasAttribute("tabindex")).toBe(false);
+      m.destroy();
+    });
+
+    test("clicking a lane button opens and anchors its track menu without changing the timeline", () => {
+      const { mount: m, dirty } = mount(baseBody());
+      const header = container.querySelector<HTMLElement>(".timeline-lane .timeline-lane-header")!;
+      header.getBoundingClientRect = () => rect(140, 44, 20, 50);
+      header.querySelector<HTMLButtonElement>("button")!.click();
+      const menu = document.getElementById("timeline-track-context-menu")!;
+      expect(menu.hidden).toBe(false);
+      expect(menu.style.left).toBe("20px");
+      expect(menu.style.top).toBe("94px");
+      expect(document.activeElement?.id).toBe("timeline-track-rename");
+      expect(dirty).toEqual([]);
+      m.destroy();
+    });
+
+    test.each(["Enter", " "])("%s at the lane button keeps native activation available", (key) => {
+      const { mount: m } = mount(baseBody());
+      const button = container.querySelector<HTMLButtonElement>(".timeline-lane-action")!;
+      button.focus();
+      const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+      button.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(false);
+      expect(document.activeElement === button).toBe(true);
+      expect(document.getElementById("timeline-card")!.hidden).toBe(true);
+      // happy-dom does not synthesize native keyboard clicks.
+      button.click();
+      expect(document.getElementById("timeline-track-context-menu")!.hidden).toBe(false);
+      m.destroy();
+    });
+
+    test("a full double-click sequence closes the click menu and opens a separate rename field", async () => {
+      const { mount: m, dirty } = mount(baseBody());
+      const button = container.querySelector<HTMLButtonElement>(".timeline-lane-action")!;
+      button.click();
+      expect(document.getElementById("timeline-track-context-menu")!.hidden).toBe(false);
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 2 }));
+      button.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, detail: 2 }));
+      await Promise.resolve();
+      const input = container.querySelector<HTMLInputElement>(".timeline-lane-rename")!;
+      expect(input !== null).toBe(true);
+      expect(input.closest("button") === null).toBe(true);
+      expect(document.activeElement === input).toBe(true);
+      expect(document.getElementById("timeline-track-context-menu")!.hidden).toBe(true);
+      input.value = "Harbour";
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      expect(dirty).toHaveLength(1);
+      expect(JSON.parse(dirty[0]!).tracks[0].name).toBe("Harbour");
+      m.destroy();
+    });
+
+    test("Escape from the track menu returns focus to its lane button", () => {
+      const { mount: m } = mount(baseBody());
+      const button = container.querySelector<HTMLButtonElement>(".timeline-lane-action")!;
+      button.click();
+      const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+      document.activeElement!.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.getElementById("timeline-track-context-menu")!.hidden).toBe(true);
+      expect(document.activeElement === button).toBe(true);
+      m.destroy();
+    });
+
+    test("a cast lane button opens relink rather than rename, including by right-click", () => {
+      const body = baseBody({ tracks: [{ id: "t1", name: "Thren", kind: "cast", memberId: "c1", colour: 1 }] });
+      const { mount: m } = mount(body, { cast: () => [{ id: "c1", name: "Thren" } as CastMemberRow] });
+      const button = container.querySelector<HTMLButtonElement>(".timeline-lane-action")!;
+      button.click();
+      expect(document.getElementById("timeline-track-relink") !== null).toBe(true);
+      expect(document.getElementById("timeline-track-rename") === null).toBe(true);
+      const event = new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 40, clientY: 60 });
+      button.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+      const menu = document.getElementById("timeline-track-context-menu")!;
+      expect(menu.style.left).toBe("40px");
+      expect(menu.style.top).toBe("60px");
+      expect(document.activeElement?.id).toBe("timeline-track-relink");
       m.destroy();
     });
 
     test("the ContextMenu key at a focused header opens the same menu as a right-click", () => {
       const { mount: m } = mount(baseBody());
       const header = container.querySelector<HTMLElement>(".timeline-lane .timeline-lane-header")!;
-      header.dispatchEvent(new KeyboardEvent("keydown", { key: "ContextMenu", bubbles: true }));
+      const button = header.querySelector<HTMLButtonElement>("button")!;
+      button.focus();
+      button.dispatchEvent(new KeyboardEvent("keydown", { key: "ContextMenu", bubbles: true }));
       expect(document.getElementById("timeline-track-rename")).not.toBeNull();
       m.destroy();
     });
@@ -922,7 +1005,9 @@ describe("mountTimeline", () => {
     test("Shift+F10 at a focused header opens the same menu", () => {
       const { mount: m } = mount(baseBody());
       const header = container.querySelector<HTMLElement>(".timeline-lane .timeline-lane-header")!;
-      header.dispatchEvent(new KeyboardEvent("keydown", { key: "F10", shiftKey: true, bubbles: true }));
+      const button = header.querySelector<HTMLButtonElement>("button")!;
+      button.focus();
+      button.dispatchEvent(new KeyboardEvent("keydown", { key: "F10", shiftKey: true, bubbles: true }));
       expect(document.getElementById("timeline-track-rename")).not.toBeNull();
       m.destroy();
     });
