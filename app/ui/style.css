@@ -5219,6 +5219,10 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   padding-top: 24px;
 }
 
+#scene-heading:not(:empty) + #timeline-view {
+  padding-top: 24px;
+}
+
 /* THE OPEN SCENE'S TITLE, READ-ONLY, at the top of the prose column.
    Painted by project.ts's paintSceneName alongside #scene-name; a
    rename happens in the navigator, never here. It shares the page's own
