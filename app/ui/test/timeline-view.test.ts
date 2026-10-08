@@ -501,6 +501,128 @@ describe("mountTimeline", () => {
     m.destroy();
   });
 
+  describe("branch keyboard navigation", () => {
+    function branchKeyboardBody(): string {
+      const event = (id: string, at: number, tracks: string[], branch: string | null) => ({
+        id, title: id, at, until: null, tracks, branch, scene: null, cast: [], note: "",
+      });
+      return baseBody({
+        tracks: [
+          { id: "t1", name: "First", kind: "thread", colour: 1 },
+          { id: "t2", name: "Second", kind: "thread", colour: 2 },
+        ],
+        branches: [
+          { id: "b1", name: "One", forkAt: 0, forkTrack: "t1", writing: false },
+          { id: "b2", name: "Two", forkAt: 0, forkTrack: "t1", writing: false },
+        ],
+        events: [event("main", 0, ["t1"], null), event("main2", 1000, ["t2"], null),
+          event("meeting", 200, ["t1", "t2"], "b1"), event("next", 400, ["t1"], "b1"),
+          event("other", 200, ["t1", "t2"], "b2")],
+      });
+    }
+
+    function press(key: string): void {
+      container.querySelector<HTMLElement>("#timeline-view")!
+        .dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    }
+
+    function button(eventId: string, trackId: string, branchId: string): HTMLButtonElement {
+      return [...container.querySelectorAll<HTMLButtonElement>(".tl-event")].find((el) =>
+        el.dataset.eventId === eventId && el.dataset.trackId === trackId && el.dataset.branchId === branchId)!;
+    }
+
+    test("main and every branch retain their own Tab entry while arrows stay inside the group", () => {
+      const { mount: m, dirty } = mount(branchKeyboardBody());
+      const entries = () => [...container.querySelectorAll<HTMLButtonElement>(".tl-event, .tl-dot")]
+        .filter((el) => el.tabIndex === 0).map((el) => el.dataset.branchId).sort();
+      expect(entries()).toEqual(["", "b1", "b2"]);
+      button("meeting", "t1", "b1").focus();
+      press("ArrowRight");
+      expect((document.activeElement as HTMLElement).dataset.eventId).toBe("next");
+      press("ArrowDown");
+      expect((document.activeElement as HTMLElement).dataset.eventId).toBe("meeting");
+      expect((document.activeElement as HTMLElement).dataset.trackId).toBe("t2");
+      press("ArrowDown");
+      expect((document.activeElement as HTMLElement).dataset.branchId).toBe("b1");
+      expect(entries()).toEqual(["", "b1", "b2"]);
+      button("main", "t1", "").focus();
+      press("ArrowDown");
+      expect((document.activeElement as HTMLElement).dataset.eventId).toBe("main2");
+      expect(dirty).toEqual([]);
+      m.destroy();
+    });
+
+    test("Enter anchors a meeting card to the focused track copy", () => {
+      const { mount: m } = mount(branchKeyboardBody());
+      let firstReads = 0;
+      let secondReads = 0;
+      button("meeting", "t1", "b1").getBoundingClientRect = () => { firstReads++; return rect(100, 30); };
+      const second = button("meeting", "t2", "b1");
+      second.getBoundingClientRect = () => { secondReads++; return rect(100, 30, 200, 300); };
+      second.focus();
+      press("Enter");
+      expect(secondReads).toBeGreaterThan(0);
+      expect(firstReads).toBe(0);
+      expect(document.getElementById("timeline-card")?.hidden).toBe(false);
+      m.destroy();
+    });
+
+    test("delete arming, disarming, repaint and removal preserve the branch and track copy", () => {
+      const { mount: m, dirty } = mount(branchKeyboardBody());
+      button("meeting", "t2", "b1").focus();
+      press("Delete");
+      expect((document.activeElement as HTMLElement).dataset.trackId).toBe("t2");
+      expect((document.activeElement as HTMLElement).dataset.branchId).toBe("b1");
+      press("ArrowUp");
+      expect((document.activeElement as HTMLElement).dataset.trackId).toBe("t1");
+      press("+");
+      expect((document.activeElement as HTMLElement).dataset.eventId).toBe("meeting");
+      expect((document.activeElement as HTMLElement).dataset.branchId).toBe("b1");
+      press("Delete");
+      press("Delete");
+      expect((document.activeElement as HTMLElement).dataset.eventId).toBe("next");
+      expect((document.activeElement as HTMLElement).dataset.branchId).toBe("b1");
+      expect(JSON.parse(dirty.at(-1)!).branches.map((b: { writing: boolean }) => b.writing)).toEqual([false, false]);
+      m.destroy();
+    });
+
+    test("zooming an event into a dot preserves its branch and track focus", () => {
+      const { mount: m, dirty } = mount(branchKeyboardBody());
+      button("next", "t1", "b1").focus();
+      for (let i = 0; i < 16; i++) press("-");
+      const active = document.activeElement as HTMLElement;
+      expect(active.classList.contains("tl-dot")).toBe(true);
+      expect(active.dataset.eventIds?.split(",")).toContain("next");
+      expect(active.dataset.branchId).toBe("b1");
+      expect(active.dataset.trackId).toBe("t1");
+      press("ArrowDown");
+      expect((document.activeElement as HTMLElement).dataset.branchId).toBe("b1");
+      expect((document.activeElement as HTMLElement).dataset.trackId).toBe("t2");
+      expect(dirty).toEqual([]);
+      m.destroy();
+    });
+
+    test("collapsed branch dots get a Tab entry and keep focus in the same track when separated", () => {
+      const body = JSON.parse(branchKeyboardBody());
+      body.events.find((e: { id: string }) => e.id === "main2").at = 100000;
+      body.events.find((e: { id: string }) => e.id === "next").at = 201;
+      const { mount: m } = mount(JSON.stringify(body));
+      const dot = [...container.querySelectorAll<HTMLButtonElement>(".tl-dot")]
+        .find((el) => el.dataset.branchId === "b1")!;
+      expect(dot.tabIndex).toBe(0);
+      expect(dot.dataset.trackId).toBe("t1");
+      dot.closest<HTMLElement>(".timeline-lane-events")!.getBoundingClientRect = () => rect(800, 32);
+      const anchor = dot.closest<HTMLElement>(".tl-dot-anchor")!;
+      anchor.getBoundingClientRect = () => rect(20, 20, Number.parseFloat(anchor.style.left), 12);
+      dot.focus();
+      press("Enter");
+      expect((document.activeElement as HTMLElement).dataset.branchId).toBe("b1");
+      expect((document.activeElement as HTMLElement).dataset.trackId).toBe("t1");
+      expect((document.activeElement as HTMLElement).dataset.eventId).toBe("meeting");
+      m.destroy();
+    });
+  });
+
   // ------------------------------------------------------- branches
 
   describe("branches", () => {

@@ -1368,6 +1368,29 @@ describe("replacing throughout the manuscript", () => {
     await settle();
     expect(rig.calls()).not.toContain("replaceEverywhere");
     expect(rig.bookButton().textContent).toContain("Really");
+    expect(rig.bookButton().getAttribute("aria-label")).toBe(rig.bookButton().textContent);
+    expect(rig.el("#find-status").getAttribute("role")).toBe("status");
+    expect(rig.status()).toContain(rig.bookButton().textContent!);
+  });
+
+  test("disarming restores the accessible name and the search summary", async () => {
+    const rig = mount();
+    open(rig);
+    rig.runSearch();
+    await settle();
+    const summary = rig.status();
+    const label = rig.bookButton().getAttribute("aria-label");
+    rig.clickReplaceBook();
+    expect(rig.status()).toContain(summary);
+    expect(rig.status()).toContain("Really");
+    rig.input().dispatchEvent(new Event("input", { bubbles: true }));
+    expect(rig.bookButton().getAttribute("aria-label")).toBe(label);
+    expect(rig.status()).toBe(summary);
+    rig.clickReplaceBook();
+    rig.replaceField().dispatchEvent(new Event("input", { bubbles: true }));
+    expect(rig.bookButton().getAttribute("aria-label")).toBe(label);
+    expect(rig.status()).toBe(summary);
+    expect(rig.calls()).not.toContain("replaceEverywhere");
   });
 
   test("the second press replaces, and the report names the snapshot", async () => {

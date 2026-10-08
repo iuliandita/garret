@@ -901,7 +901,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
         }
         eventsLayer.append(btn);
       } else {
-        eventsLayer.append(dotButton(item.leftPx, item.events, laneIndex));
+        eventsLayer.append(dotButton(item.leftPx, item.events, laneIndex, trackId, branchId));
       }
     });
 
@@ -914,7 +914,9 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
    *  layer, not the button. Held so `destroy()` can tear every one down. */
   let dotTooltips: Tooltip[] = [];
 
-  function dotButton(leftPx: number, events: readonly TimelineEvent[], laneIndex: number): HTMLElement {
+  function dotButton(
+    leftPx: number, events: readonly TimelineEvent[], laneIndex: number, trackId: string, branchId: string | null,
+  ): HTMLElement {
     const dot = document.createElement("button");
     dot.type = "button";
     dot.className = "tl-dot";
@@ -928,6 +930,8 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
     // a neighbour turned out to be inside a dot). The roving functions
     // below read this exactly as they read a `.tl-event` button's own.
     dot.dataset.lane = String(laneIndex);
+    dot.dataset.trackId = trackId;
+    dot.dataset.branchId = branchId ?? "";
     dot.tabIndex = -1;
     dot.addEventListener("click", () => zoomOnDot(dot, events));
     const tip = createTooltip({ control: dot, name: countLabel, hint: events.map((e) => e.title).join(", ") });
@@ -968,6 +972,9 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
       eraScale.hidden = true;
       calendarScale.hidden = true;
     }
+    const focused = focusedRoving();
+    const tabStops = [...lanes.querySelectorAll<HTMLButtonElement>(".tl-event[tabindex='0'], .tl-dot[tabindex='0']")]
+      .map(rovingAddress);
     lanes.replaceChildren();
     for (const tip of dotTooltips) tip.destroy();
     dotTooltips = [];
@@ -984,10 +991,21 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
 
     renderBranches(la);
 
-    // The roving tab stop: the first visible event or dot, so Tab into the
-    // pane lands somewhere useful rather than nowhere at all.
-    const firstItem = lanes.querySelector<HTMLButtonElement>(".tl-event, .tl-dot");
-    if (firstItem !== null) firstItem.tabIndex = 0;
+    // Main and each branch have their own entry point. Rebuilds retain the
+    // actual track copy, including when an event becomes part of a dot.
+    const groups = new Set(["", ...timeline.branches.map((b) => b.id)]);
+    for (const branchId of groups) {
+      const previous = tabStops.find((address) => address.branchId === branchId);
+      const items = rovingItemsInGroup(branchId);
+      const entry = (previous === undefined ? undefined : matchingRovingItem(previous, items)) ?? items[0];
+      if (entry !== undefined) entry.el.tabIndex = 0;
+    }
+    if (focused !== null) {
+      const items = rovingItemsInGroup(focused.branchId);
+      const next = matchingRovingItem(focused, items) ?? items[0] ?? rovingItemsInGroup("")[0];
+      if (next !== undefined) focusRovingItem(next.el);
+      else lanes.focus();
+    }
 
     paintStatus();
   }
@@ -1035,7 +1053,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
         if (tr === undefined) return;
         const display = trackDisplayName(tr);
         const events = la.branch.get(b.id)?.get(trackId) ?? [];
-        const lane = renderOneLane(trackId, -1, tr.colour, display.text, events, true, b.id);
+        const lane = renderOneLane(trackId, i, tr.colour, display.text, events, true, b.id);
         if (i === 0) lane.classList.add("timeline-branch-fork-lane");
         group.append(lane);
       });
@@ -1552,63 +1570,65 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
     return { event: ev, lane };
   }
 
-  function focusButtonFor(eventId: string): void {
-    const btn = lanes.querySelector<HTMLButtonElement>(`[data-event-id="${eventId}"]`);
-    if (btn === null) return;
-    lanes.querySelectorAll<HTMLButtonElement>(".tl-event").forEach((b) => (b.tabIndex = -1));
-    btn.tabIndex = 0;
-    btn.focus();
-  }
-
-  interface RovingItem {
-    el: HTMLButtonElement;
+  interface RovingAddress {
+    branchId: string;
+    trackId: string;
+    eventIds: string[];
+    laneIndex: number;
     leftPx: number;
   }
 
-  /** Every focusable item on a MAIN lane -- events AND dots (review, MINOR:
-   *  arrow-key navigation used to walk the model's own events and silently
-   *  no-op the moment a neighbour turned out to be collapsed into a dot),
-   *  in SCREEN ORDER left to right. A dot's own position is its
-   *  `.tl-dot-anchor` wrapper's `left`, never the button's own (the anchor
-   *  is what carries the coordinate; see `dotButton`). */
-  function rovingItemsOnLane(laneIndex: number): RovingItem[] {
-    const items: RovingItem[] = [];
-    lanes.querySelectorAll<HTMLButtonElement>(`.tl-event[data-lane="${laneIndex}"]`).forEach((el) => {
-      items.push({ el, leftPx: Number.parseFloat(el.style.left) || 0 });
-    });
-    lanes.querySelectorAll<HTMLElement>(".tl-dot-anchor").forEach((anchor) => {
-      const dot = anchor.querySelector<HTMLButtonElement>(".tl-dot");
-      if (dot === null || dot.dataset.lane !== String(laneIndex)) return;
-      items.push({ el: dot, leftPx: Number.parseFloat(anchor.style.left) || 0 });
-    });
-    items.sort((a, b) => a.leftPx - b.leftPx);
-    return items;
+  interface RovingItem extends RovingAddress {
+    el: HTMLButtonElement;
   }
 
-  /** The focused button's own lane and screen position, whether it is an
-   *  event or a dot -- the roving equivalent of `focusedEvent()`, which
-   *  only ever answers for a real event. */
-  function focusedRoving(): { laneIndex: number; leftPx: number } | null {
+  function rovingAddress(el: HTMLButtonElement): RovingAddress {
+    const anchor = el.closest<HTMLElement>(".tl-dot-anchor");
+    return {
+      branchId: el.dataset.branchId ?? "",
+      trackId: el.dataset.trackId ?? "",
+      eventIds: el.dataset.eventId === undefined ? (el.dataset.eventIds ?? "").split(",") : [el.dataset.eventId],
+      laneIndex: Number(el.dataset.lane),
+      leftPx: Number.parseFloat((anchor ?? el).style.left) || 0,
+    };
+  }
+
+  function rovingItemsInGroup(branchId: string): RovingItem[] {
+    return [...lanes.querySelectorAll<HTMLButtonElement>(".tl-event, .tl-dot")]
+      .filter((el) => el.dataset.branchId === branchId)
+      .map((el) => ({ el, ...rovingAddress(el) }));
+  }
+
+  function rovingItemsOnLane(branchId: string, trackId: string): RovingItem[] {
+    return rovingItemsInGroup(branchId).filter((item) => item.trackId === trackId)
+      .sort((a, b) => a.leftPx - b.leftPx);
+  }
+
+  function matchingRovingItem(address: RovingAddress, items: RovingItem[]): RovingItem | undefined {
+    const sameLane = items.filter((item) => item.trackId === address.trackId);
+    return sameLane.find((item) => item.eventIds.some((id) => address.eventIds.includes(id)))
+      ?? sameLane.sort((a, b) => Math.abs(a.leftPx - address.leftPx) - Math.abs(b.leftPx - address.leftPx))[0];
+  }
+
+  function focusedRoving(): RovingItem | null {
     const active = document.activeElement;
-    if (!(active instanceof HTMLElement)) return null;
-    if (active.classList.contains("tl-event")) {
-      const laneIndex = Number(active.dataset.lane ?? "-1");
-      return { laneIndex, leftPx: Number.parseFloat(active.style.left) || 0 };
-    }
-    if (active.classList.contains("tl-dot")) {
-      const laneIndex = Number(active.dataset.lane ?? "-1");
-      const anchor = active.closest<HTMLElement>(".tl-dot-anchor");
-      const leftPx = anchor !== null ? Number.parseFloat(anchor.style.left) || 0 : 0;
-      return { laneIndex, leftPx };
-    }
-    return null;
+    if (!(active instanceof HTMLButtonElement) || !lanes.contains(active)
+      || !active.matches(".tl-event, .tl-dot")) return null;
+    return { el: active, ...rovingAddress(active) };
   }
 
   function focusRovingItem(el: HTMLButtonElement): void {
-    lanes.querySelectorAll<HTMLButtonElement>(".tl-event, .tl-dot").forEach((b) => (b.tabIndex = -1));
+    for (const item of rovingItemsInGroup(el.dataset.branchId ?? "")) item.el.tabIndex = -1;
     el.tabIndex = 0;
     el.focus();
   }
+
+  const onRovingFocus = (): void => {
+    const focused = focusedRoving();
+    if (focused === null) return;
+    for (const item of rovingItemsInGroup(focused.branchId)) item.el.tabIndex = item.el === focused.el ? 0 : -1;
+  };
+  lanes.addEventListener("focusin", onRovingFocus);
 
   const onKeyDown = (event: KeyboardEvent): void => {
     if (isCompositionKey(event)) return;
@@ -1666,8 +1686,8 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
     if (event.key === "Enter") {
       if (current === null) return;
       event.preventDefault();
-      const btn = lanes.querySelector<HTMLButtonElement>(`[data-event-id="${current.event.id}"]`);
-      if (btn !== null) openCard(current.event, "read", btn);
+      const focused = focusedRoving();
+      if (focused !== null) openCard(current.event, "read", focused.el);
       return;
     }
     if (event.key === "Delete") {
@@ -1684,7 +1704,6 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
         // a lost focus here would silently turn "arm, then delete" into
         // "arm, then nothing" the moment a writer actually presses it twice.
         render();
-        focusButtonFor(current.event.id);
       }
       return;
     }
@@ -1702,8 +1721,8 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
     if (roving === null) return;
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault();
-      const items = rovingItemsOnLane(roving.laneIndex);
-      const idx = items.findIndex((it) => it.leftPx === roving.leftPx);
+      const items = rovingItemsOnLane(roving.branchId, roving.trackId);
+      const idx = items.findIndex((it) => it.el === roving.el);
       const step = event.key === "ArrowRight" ? 1 : -1;
       const next = items[idx + step];
       if (next !== undefined) focusRovingItem(next.el);
@@ -1713,12 +1732,11 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
       event.preventDefault();
       const step = event.key === "ArrowDown" ? 1 : -1;
       const nextLane = roving.laneIndex + step;
-      // BOUNDED TO THE MAIN LANES [0, tracks.length) -- branch-group items
-      // carry lane index -1 (`renderOneLane`'s own convention), which would
-      // otherwise match going ArrowUp from lane 0 and jump focus into a
-      // group arrow navigation was never meant to reach.
-      if (nextLane < 0 || nextLane >= timeline.tracks.length) return;
-      const items = rovingItemsOnLane(nextLane);
+      const branch = timeline.branches.find((b) => b.id === roving.branchId);
+      const tracks = branch === undefined ? timeline.tracks.map((tr) => tr.id) : branchTracks(timeline, branch);
+      const trackId = tracks[nextLane];
+      if (trackId === undefined) return;
+      const items = rovingItemsOnLane(roving.branchId, trackId);
       if (items.length === 0) return;
       let nearest = items[0]!;
       let best = Math.abs(nearest.leftPx - roving.leftPx);
@@ -1749,6 +1767,7 @@ export function mountTimeline(deps: TimelineMountDeps): TimelineMount {
       scalePanel.destroy();
       root.removeEventListener("wheel", onWheel);
       root.removeEventListener("keydown", onKeyDown);
+      lanes.removeEventListener("focusin", onRovingFocus);
       lanes.removeEventListener("pointerdown", onPointerDown);
       lanes.removeEventListener("pointermove", onPointerMove);
       lanes.removeEventListener("pointerup", onPointerUp);

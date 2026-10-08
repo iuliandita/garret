@@ -493,6 +493,8 @@ export function createFindBar(deps: FindBarDeps): FindBar {
     if (!bookArmed) return;
     bookArmed = false;
     replaceBook.textContent = t("find.replace-book");
+    replaceBook.setAttribute("aria-label", t("find.replace-book.label"));
+    status.textContent = shownSummary;
     replaceBook.removeAttribute("data-armed");
     // Back to quiet: at rest this is one of three replace buttons and must not
     // shout, and a danger tint outliving the confirmation it belonged to is a
@@ -506,7 +508,10 @@ export function createFindBar(deps: FindBarDeps): FindBar {
     if (refuseWithoutQuery(query)) return;
     if (!bookArmed) {
       bookArmed = true;
-      replaceBook.textContent = t("find.replace-book.armed");
+      const confirmation = t("find.replace-book.armed");
+      replaceBook.textContent = confirmation;
+      replaceBook.setAttribute("aria-label", confirmation);
+      status.textContent = [shownSummary, confirmation].filter(Boolean).join(" ");
       replaceBook.setAttribute("data-armed", "true");
       // ARMED ONLY. This is the one chrome action with no inverse short of the
       // history, and the press that follows is the one that cannot be taken
