@@ -50,6 +50,11 @@ export function failureProblem(value: unknown, operation?: string): string {
   const failure = failureOf(value);
   if (failure?.code === "application_locked" || value === "application locked") return t("host-error.locked");
   const detail = (failure?.detail ?? diagnostic(value)).toLowerCase();
+  if ((failure?.operation ?? operation) === "project_move"
+      && /^the book moved to [\s\S]+, but its saved location could not be updated:/.test(detail)) {
+    return t(detail.endsWith("keep the book open and retry adding its new location to library in books")
+      ? "host-error.move-registration" : "host-error.move-registration-unavailable");
+  }
   const known = CLASSES.find(([, pattern]) => pattern.test(detail));
   if ((known?.[0] === "host-error.unavailable" || known?.[0] === "host-error.io") && (failure?.operation ?? operation)?.startsWith("settings_set_") &&
       /permission denied|access (?:is )?denied|\(os error 13\)/.test(detail)) {

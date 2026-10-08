@@ -167,3 +167,30 @@ test("permission guidance is scoped to settings writes and keeps stronger failur
     expect(new HostCommandError("settings_set_theme", detail).problem).toBe(t(key));
   }
 });
+
+for (const locale of ["en", "de"]) {
+  test(`completed move registration guidance uses ${locale} and preserves Details`, () => {
+    const detail = "the book moved to /books/moved.db, but its saved location could not be updated: cannot replace settings.json: Permission denied (os error 13). Keep the book open and retry adding its new location to Library in Books";
+    const script = `globalThis.__appLocale = ${JSON.stringify(locale)};
+      const { HostCommandError, splitHostDetail } = await import(${JSON.stringify(new URL("../src/command-error.ts", import.meta.url).pathname)});
+      const error = new HostCommandError("project_move", { version: 1, code: "operation_failed", operation: "project_move", detail: ${JSON.stringify(detail)} });
+      console.log(JSON.stringify(splitHostDetail(error.message)));`;
+    const result = Bun.spawnSync([process.execPath, "-e", script]);
+    expect(result.exitCode).toBe(0);
+    const actual = JSON.parse(result.stdout.toString());
+    expect(actual.detail).toBe(detail);
+    expect(actual.headline).toBe(locale === "en"
+      ? "Your book moved and is still open, but its new location could not be remembered. Keep garret open and choose Add to Library in Books before closing."
+      : "Ihr Buch wurde verschoben und ist weiterhin geöffnet, aber der neue Speicherort konnte nicht gespeichert werden. Lassen Sie garret geöffnet und wählen Sie unter Bücher die Aktion Zur Bibliothek hinzufügen, bevor Sie garret schließen.");
+  });
+}
+
+test("completed move guidance distinguishes unavailable retry and actual open failures", () => {
+  const moved = "the book moved to /books/moved.db, but its saved location could not be updated: Permission denied (os error 13). ";
+  const noRetry = new HostCommandError("project_move", moved + "Reopen the book from its new location; a registration retry is unavailable: identity could not be read");
+  expect(noRetry.problem).toBe("Your book moved and is still open, but its new location could not be remembered. Keep a separate backup and open Details for the saved location and recovery information.");
+  expect(noRetry.problem).not.toContain("Add to Library");
+  const openFailure = new HostCommandError("project_move", "could not open the book after its move: Permission denied (os error 13)");
+  expect(openFailure.problem).toBe(t("host-error.unavailable"));
+  expect(new HostCommandError("project_open", moved).problem).toBe(t("host-error.unavailable"));
+});
