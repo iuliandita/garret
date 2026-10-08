@@ -1243,7 +1243,11 @@ fn restore_point_impl(
 ) -> Result<(ProjectSummary, Vec<String>), String> {
     let bundled = point.is_dir();
     let research_bundle = bundled && crate::backup_bundle::restore_inventory_version(point)? == 2;
-    let source_db = if bundled { crate::backup_bundle::db_path(point) } else { point.to_path_buf() };
+    let source_db = if bundled {
+        crate::backup_bundle::db_path(point)
+    } else {
+        point.to_path_buf()
+    };
     if bundled {
         let check = if allow_picture_gaps {
             crate::backup_bundle::verify_database_for_restore(point)
@@ -1263,89 +1267,142 @@ fn restore_point_impl(
         ));
     }
     if !bundled && crate::backup_bundle::marker_present(&source_db)? {
-        return Err("this database belongs to an asset-aware point; restore its whole folder".into());
+        return Err(
+            "this database belongs to an asset-aware point; restore its whole folder".into(),
+        );
     }
 
     fs::create_dir_all(library).map_err(|e| format!("cannot create {}: {e}", library.display()))?;
-    // Walk the ordinals, claiming each candidate outright. `AlreadyExists` is
-    // the only error that advances: anything else is a real filesystem problem
-    // and looping on it would spin. Everything after a successful claim must
-    // clean up after itself.
+    // A sidecar occupies a name even when its database is missing. Claim only
+    // a free name, then recheck before using any reserved destination.
     let mut ordinal: u32 = 1;
-    let path = loop {
+    let (path, mut claim) = loop {
         let restored = restored_stem(stem, ordinal);
         let candidate = library.join(format!("{restored}.db"));
+        match refuse_destination_logs(&candidate) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                ordinal += 1;
+                continue;
+            }
+            Err(e) => return Err(format!("{}: {e}", candidate.display())),
+        }
         match fs::OpenOptions::new()
             .write(true)
             .create_new(true)
             .open(&candidate)
         {
-            Ok(_) => {
+            Ok(claim) => {
+                if let Err(error) = refuse_destination_logs(&candidate) {
+                    drop(claim);
+                    fs::remove_file(&candidate).map_err(|cleanup| {
+                        format!(
+                            "{}: {error}; cannot remove the reserved database: {cleanup}",
+                            candidate.display()
+                        )
+                    })?;
+                    if error.kind() == std::io::ErrorKind::AlreadyExists {
+                        ordinal += 1;
+                        continue;
+                    }
+                    return Err(format!("{}: {error}", candidate.display()));
+                }
                 if bundled {
                     match fs::create_dir(crate::pictures::dir_for(&candidate)) {
-                        Ok(()) => {},
+                        Ok(()) => {}
                         Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                            drop(claim);
                             let _ = fs::remove_file(&candidate);
                             ordinal += 1;
                             continue;
                         }
                         Err(e) => {
+                            drop(claim);
                             let _ = fs::remove_file(&candidate);
                             return Err(format!("cannot reserve restored pictures: {e}"));
                         }
                     }
                     if research_bundle {
                         let mut builder = fs::DirBuilder::new();
-                        #[cfg(unix)] {
+                        #[cfg(unix)]
+                        {
                             use std::os::unix::fs::DirBuilderExt;
                             builder.mode(0o700);
                         }
                         match builder.create(crate::research::dir_for(&candidate)) {
-                            Ok(()) => {},
+                            Ok(()) => {}
                             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
                                 let _ = fs::remove_dir_all(crate::pictures::dir_for(&candidate));
+                                drop(claim);
                                 let _ = fs::remove_file(&candidate);
                                 ordinal += 1;
                                 continue;
                             }
                             Err(e) => {
                                 let _ = fs::remove_dir_all(crate::pictures::dir_for(&candidate));
+                                drop(claim);
                                 let _ = fs::remove_file(&candidate);
                                 return Err(format!("cannot reserve restored research: {e}"));
                             }
                         }
                     }
                 }
-                break candidate;
-            },
+                break (candidate, claim);
+            }
             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => ordinal += 1,
             Err(e) => return Err(format!("{}: {e}", candidate.display())),
         }
     };
 
     let mut picture_gaps = Vec::new();
-    let filled = (|| -> Result<(), String> {
-        copy(&source_db, &path)?;
+    let mut stage = None;
+    let filled = (|| -> Result<ProjectSummary, String> {
+        // SQLite must never see the destination's unrelated WAL or SHM.
+        let mut builder = tempfile::Builder::new();
+        builder.prefix(".garret-restore-");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            builder.permissions(fs::Permissions::from_mode(0o700));
+        }
+        stage = Some(
+            builder
+                .tempdir_in(library)
+                .map_err(|e| format!("cannot prepare the restored database: {e}"))?,
+        );
+        let staged = stage.as_ref().unwrap().path().join("project.db");
+        fs::File::create(&staged).map_err(|e| format!("{}: {e}", staged.display()))?;
+        copy(&source_db, &staged)?;
         if bundled {
-            crate::backup_bundle::verify_database_copy(point, &path)?;
+            crate::backup_bundle::verify_database_copy(point, &staged)?;
             if allow_picture_gaps {
                 picture_gaps = crate::backup_bundle::copy_assets_with_gaps(point, &path)?;
             } else {
                 crate::backup_bundle::copy_assets(point, &path)?;
             }
-            crate::backup_bundle::clear_marker(&path)?;
+            crate::backup_bundle::clear_marker(&staged)?;
         }
         // Read-write, on OUR OWN COPY. A point written by an older build
         // migrates forward here, which is correct: the migration lands on the
         // copy and never on the point.
-        let store = Store::open(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+        let store = Store::open(&staged).map_err(|e| format!("{}: {e}", path.display()))?;
         let copied_id = store
             .book_id()
-            .map_err(|e| format!("{}: cannot read the copied book identity: {e}", path.display()))?
+            .map_err(|e| {
+                format!(
+                    "{}: cannot read the copied book identity: {e}",
+                    path.display()
+                )
+            })?
             .ok_or_else(|| format!("{}: the copied book identity is missing", path.display()))?;
         store
             .fork_recovered_book_identity(&copied_id)
-            .map_err(|e| format!("{}: cannot create a new restored identity: {e}", path.display()))?;
+            .map_err(|e| {
+                format!(
+                    "{}: cannot create a new restored identity: {e}",
+                    path.display()
+                )
+            })?;
         // Read out of the COPY, which is the manuscript being restored. The
         // manifest also carries a name, and it is a describing file that can
         // disagree with what it describes; `describe_dir` settled the same
@@ -1364,24 +1421,86 @@ fn restore_point_impl(
             .map_err(|e| format!("{}: cannot record the recovery source: {e}", path.display()))?;
         store
             .set_meta(RECOVERED_AT_KEY, &now_ms.to_string())
-            .map_err(|e| format!("{}: cannot record the recovery time: {e}", path.display()))
+            .map_err(|e| format!("{}: cannot record the recovery time: {e}", path.display()))?;
+        store
+            .checkpoint()
+            .map_err(|e| format!("cannot finish the restored database: {e}"))?;
+        drop(store);
+        match fs::metadata(staged.with_extension("db-wal")) {
+            Ok(metadata) if metadata.len() > 0 => {
+                return Err("the restored database still has an uncheckpointed log".into());
+            }
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(format!("cannot check the restored database log: {error}")),
+        }
+        let mut summary = summarize(&staged);
+        refuse_destination_logs(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+        let mut completed =
+            fs::File::open(&staged).map_err(|e| format!("{}: {e}", staged.display()))?;
+        std::io::copy(&mut completed, &mut claim)
+            .and_then(|_| claim.sync_all())
+            .map_err(|e| {
+                format!(
+                    "{}: cannot publish the restored database: {e}",
+                    path.display()
+                )
+            })?;
+        summary.path = path.to_string_lossy().into_owned();
+        summary.modified_at = modified_at(&path);
+        Ok(summary)
     })();
 
-    if let Err(e) = filled {
-        // `create_imported`'s discipline: a half-written project file must not
-        // survive as something the switcher lists and the writer opens
-        // expecting their book. Best effort -- the error below is the one worth
-        // reporting either way.
-        let _ = fs::remove_file(&path);
-        let _ = fs::remove_file(path.with_extension("db-wal"));
-        let _ = fs::remove_file(path.with_extension("db-shm"));
-        if bundled {
-            let _ = fs::remove_dir_all(crate::pictures::dir_for(&path));
-            if research_bundle { let _ = fs::remove_dir_all(crate::research::dir_for(&path)); }
+    drop(claim);
+    let stage_cleanup = stage
+        .map(|stage| {
+            let retained = stage.path().to_path_buf();
+            stage.close().map_err(|error| {
+                format!(
+                    "temporary restore files remain at {}: {error}",
+                    retained.display()
+                )
+            })
+        })
+        .transpose();
+    let summary = match filled {
+        Ok(summary) => summary,
+        Err(mut e) => {
+            // Only the claimed database and exclusively created asset folders are
+            // ours. Destination WAL/SHM files never belong to this restore.
+            for owned in [
+                Some(path.clone()),
+                bundled.then(|| crate::pictures::dir_for(&path)),
+                research_bundle.then(|| crate::research::dir_for(&path)),
+            ]
+            .into_iter()
+            .flatten()
+            {
+                let cleanup = if owned == path {
+                    fs::remove_file(&owned)
+                } else {
+                    fs::remove_dir_all(&owned)
+                };
+                if let Err(error) = cleanup {
+                    if error.kind() != std::io::ErrorKind::NotFound {
+                        e.push_str(&format!(
+                            ". Cannot clean restored files at {}: {error}",
+                            owned.display()
+                        ));
+                    }
+                }
+            }
+            if let Err(cleanup) = stage_cleanup {
+                e.push_str(&format!(". {cleanup}"));
+            }
+            return Err(e);
         }
-        return Err(e);
+    };
+    if let Err(cleanup) = stage_cleanup {
+        // The saved book still needs to reach registration after publication.
+        eprintln!("the restored book is at {}: {cleanup}", path.display());
     }
-    Ok((summarize(&path), picture_gaps))
+    Ok((summary, picture_gaps))
 }
 
 /// True when `path` is a direct child of `library` and ends in `.db`. Used to
@@ -5483,6 +5602,113 @@ mod tests {
     }
 
     #[test]
+    fn restore_sidecars_survive_an_injected_copy_failure() {
+        let dir = tempdir().unwrap();
+        let point = dir.path().join("point.db");
+        a_point(&point);
+        let library = dir.path().join("projects");
+        fs::create_dir(&library).unwrap();
+        let candidate = library.join("my-book-recovered.db");
+        let donor_path = dir.path().join("donor.db");
+        let (_donor, files) = competing_creation_book(&donor_path);
+        let mut originals = Vec::new();
+        for (source, bytes) in files.into_iter().skip(1) {
+            let target = candidate.with_extension(source.extension().unwrap());
+            fs::write(&target, &bytes).unwrap();
+            originals.push((target, bytes));
+        }
+        let error =
+            restore_point_with(&point, &library, "my-book", 1_700_000_000_000, |_, dest| {
+                fs::write(dest, b"partial owned copy").unwrap();
+                Err("injected copy failure".into())
+            })
+            .unwrap_err();
+        assert!(error.contains("injected copy failure"), "{error}");
+        for (path, bytes) in originals {
+            assert_eq!(
+                fs::read(&path).unwrap(),
+                bytes,
+                "restore removed or changed {}",
+                path.display()
+            );
+        }
+        assert!(!candidate.exists());
+        assert!(!library.join("my-book-recovered-2.db").exists());
+        assert_eq!(fs::read_dir(&library).unwrap().count(), 2);
+    }
+
+    #[test]
+    fn restore_sidecars_arriving_during_copy_are_preserved() {
+        for fails in [false, true] {
+            let dir = tempdir().unwrap();
+            let point = dir.path().join("point.db");
+            a_point(&point);
+            let library = dir.path().join("projects");
+            let candidate = library.join("my-book-recovered.db");
+            let error = restore_point_with(
+                &point,
+                &library,
+                "my-book",
+                1_700_000_000_000,
+                |source, dest| {
+                    assert_ne!(dest, candidate, "SQLite must only copy into owned staging");
+                    for extension in ["db-wal", "db-shm"] {
+                        fs::write(candidate.with_extension(extension), extension.as_bytes())
+                            .unwrap();
+                    }
+                    if fails {
+                        fs::write(dest, b"partial copy").unwrap();
+                        Err("injected copy failure".into())
+                    } else {
+                        copy_point(source, dest)
+                    }
+                },
+            )
+            .unwrap_err();
+            assert!(
+                error.contains(if fails {
+                    "injected copy failure"
+                } else {
+                    "database sidecar"
+                }),
+                "{error}"
+            );
+            assert!(!candidate.exists());
+            for extension in ["db-wal", "db-shm"] {
+                assert_eq!(
+                    fs::read(candidate.with_extension(extension)).unwrap(),
+                    extension.as_bytes()
+                );
+            }
+            assert_eq!(fs::read_dir(&library).unwrap().count(), 2);
+        }
+    }
+
+    #[test]
+    fn restore_sidecars_occupy_a_candidate_without_a_database() {
+        for extension in ["db-wal", "db-shm"] {
+            let dir = tempdir().unwrap();
+            let point = dir.path().join("point.db");
+            a_point(&point);
+            let library = dir.path().join("projects");
+            fs::create_dir(&library).unwrap();
+            let candidate = library.join("my-book-recovered.db");
+            let sidecar = candidate.with_extension(extension);
+            fs::write(&sidecar, b"unrelated retained sidecar").unwrap();
+            let restored =
+                restore_point_into(&point, &library, "my-book", 1_700_000_000_000).unwrap();
+            assert!(
+                restored.path.ends_with("my-book-recovered-2.db"),
+                "{}",
+                restored.path
+            );
+            assert!(!candidate.exists());
+            assert_eq!(fs::read(sidecar).unwrap(), b"unrelated retained sidecar");
+            assert!(crate::cli::validate(Path::new(&restored.path)).unwrap().ok);
+        }
+    }
+
+    #[test]
     fn a_restore_never_writes_over_an_existing_library_file() {
         // A REAL, READABLE PROJECT at the name the restore wants -- not an empty
         // file, which would also be refused by every path that merely fails to
@@ -5981,7 +6207,14 @@ mod tests {
         a_point(&point);
         let library = dir.path().join("projects");
 
-        let err = restore_point_with(&point, &library, "my-book", 1_700_000_000_000, |_, _| {
+        let err = restore_point_with(&point, &library, "my-book", 1_700_000_000_000, |_, dest| {
+            fs::write(dest, b"partial owned database").unwrap();
+            fs::write(dest.with_extension("db-wal"), b"owned partial log").unwrap();
+            fs::write(
+                dest.with_extension("db-shm"),
+                b"owned partial shared memory",
+            )
+            .unwrap();
             Err("no space left on device".to_string())
         })
         .expect_err("a failed copy reported success");
