@@ -2,7 +2,6 @@
 """Exercise the real offline docs CLI in disposable Git repositories."""
 import json
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -210,6 +209,70 @@ class DocsTests(unittest.TestCase):
         for domain in ("editor", "project-format", "schema", "backup-recovery", "encryption", "native-packaging", "maintenance"):
             self.accept(domain)
         self.cli("--base", "base")
+
+    def test_shipped_platform_instructions_are_valid_citations(self):
+        paths = ("scripts/linux/README.txt", "scripts/windows/README.txt", "scripts/macos/README.txt", "scripts/android/README.md")
+        for path in paths:
+            self.write(path, "Updated platform installation requirements.\n")
+        self.git("add", ".")
+        for path in paths:
+            with self.subTest(path=path):
+                self.accept("native-packaging", path)
+        self.accept("maintenance")
+        self.cli("--base", "base")
+
+    def test_declared_breaking_editor_change_cannot_use_waiver(self):
+        consequence = "The previous editor shortcut is removed and existing workflows must change."
+        self.write("app/ui/src/editor.ts", "removeOldShortcut();\n")
+        self.cli("--base", "base", "--accept", "editor", "--no-impact", NOTE, "--breaking", consequence, ok=False, contains="no-impact is unavailable")
+        self.write("README.md", "Describe the new editor shortcut.\n")
+        self.cli("--base", "base", "--accept", "editor", "--docs", "README.md", "--note", NOTE, "--breaking", consequence, ok=False, contains="COMPATIBILITY.md")
+        self.write("docs/COMPATIBILITY.md", "Previous shortcuts are removed. Back up before upgrading; restore the backup with the old version to roll back.\n")
+        self.cli("--base", "base", "--accept", "editor", "--docs", "docs/COMPATIBILITY.md", "--note", NOTE, "--breaking", consequence, ok=False, contains="Migration note")
+        self.accept("editor", "docs/COMPATIBILITY.md", breaking=consequence, migration=MIGRATION)
+        self.cli("--base", "base")
+        self.commit("document breaking editor change")
+        self.cli()  # A valid historical breaking receipt stays valid.
+        lock = json.loads((self.root / "docs/docs-impact.json").read_text())
+        lock["receipts"]["editor"]["docs"] = {}
+        lock["receipts"]["editor"]["no_impact"] = NOTE
+        self.write("docs/docs-impact.json", json.dumps(lock))
+        self.cli(ok=False, contains="no-impact is unavailable")
+
+    def test_only_mapped_files_are_read_and_symlinks_are_refused(self):
+        excluded = self.root / "lab/excluded.rs"
+        excluded.parent.mkdir()
+        excluded.symlink_to("/proc/self/mem")
+        self.git("add", "lab/excluded.rs")
+        self.cli("--base", "base")  # Reading this excluded target would fail.
+        source = self.root / "app/ui/src/linked.ts"
+        source.symlink_to(self.root / "README.md")
+        self.git("add", "app/ui/src/linked.ts")
+        self.cli("--base", "base", ok=False, contains="must not be symlinks")
+        source.unlink()
+        self.git("rm", "--cached", "app/ui/src/linked.ts")
+        document = self.root / "README.md"
+        document.unlink()
+        document.symlink_to(self.root / "docs/COMPATIBILITY.md")
+        self.git("add", "README.md")
+        self.cli("--base", "base", ok=False, contains="must not be symlinks: README.md")
+
+    def test_cargo_dependency_changes_require_encryption_assessment(self):
+        self.write("app/shell-tauri/src-tauri/Cargo.toml", '[dependencies]\nargon2 = "0.5"\n')
+        self.git("add", "app/shell-tauri/src-tauri/Cargo.toml")
+        self.cli("--base", "base", ok=False, contains="encryption: source changed")
+        self.accept("encryption")
+        self.accept("native-packaging")
+        self.cli("--base", "base")
+
+    def test_release_base_must_be_reachable_ancestor(self):
+        self.git("checkout", "-qb", "other-release", "base")
+        self.write("other.txt", "Divergent release history.\n")
+        self.commit("divergent release")
+        self.git("tag", "unreachable-release")
+        self.git("checkout", "-q", "base")
+        self.cli("--release-base", "unreachable-release", ok=False, contains="must be an ancestor of HEAD")
+        self.cli("--release-base", "base")
 
     def test_missing_git_base_and_shallow_history_fail_clearly(self):
         outside = Path(self.temp.name) / "outside"

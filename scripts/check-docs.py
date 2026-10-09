@@ -15,7 +15,7 @@ HOST = "app/shell-tauri/src-tauri/"
 DOMAINS = {
     "editor": {
         "sources": ["app/ui/src/*", "app/ui/*.html", "app/ui/*.css", "app/mobile/*", "scripts/android/*.kt", HOST + "src/mobile*.rs"],
-        "docs": ["README.md", "docs/screenshots/README.md", "docs/screenshots/manifest.json", "docs/MAINTENANCE.md"],
+        "docs": ["README.md", "docs/COMPATIBILITY.md", "docs/screenshots/README.md", "docs/screenshots/manifest.json", "docs/MAINTENANCE.md"],
     },
     "project-format": {
         "sources": [HOST + "src/store*", HOST + "src/*import*.rs", HOST + "src/*export*.rs", HOST + "src/mirror*.rs", HOST + "src/package_format.rs", HOST + "src/projects.rs", HOST + "src/design_transfer.rs", HOST + "src/review_docx/*"],
@@ -30,16 +30,16 @@ DOMAINS = {
         "docs": ["README.md", "docs/COMPATIBILITY.md", "docs/MAINTENANCE.md"],
     },
     "encryption": {
-        "sources": [HOST + "src/encrypted_archive.rs", HOST + "src/protection.rs"],
+        "sources": [HOST + "src/encrypted_archive.rs", HOST + "src/protection.rs", HOST + "Cargo.*"],
         "docs": ["README.md", "docs/COMPATIBILITY.md", "docs/MAINTENANCE.md"],
     },
     "native-packaging": {
         "sources": [HOST + "Cargo.*", HOST + "build.rs", HOST + "tauri*.json", HOST + "capabilities/*", HOST + "command-boundary/*", "scripts/package-*", "scripts/android/*", "scripts/linux/*", "scripts/windows/*", "scripts/macos/*", ".github/workflows/*"],
-        "docs": ["README.md", "docs/COMPATIBILITY.md", "docs/RELEASES.md", "docs/releases.json", "docs/MAINTENANCE.md", "CONTRIBUTING.md"],
+        "docs": ["README.md", "docs/COMPATIBILITY.md", "docs/RELEASES.md", "docs/releases.json", "docs/MAINTENANCE.md", "CONTRIBUTING.md", "scripts/linux/README.txt", "scripts/windows/README.txt", "scripts/macos/README.txt", "scripts/android/README.md"],
     },
     "maintenance": {
         "sources": [HOST + "src/*", "scripts/*", ".github/workflows/*", "package.json", "bun.lock*", "app/ui/package.json", "app/tsconfig.json"],
-        "docs": ["docs/MAINTENANCE.md", "docs/RELEASES.md", "CONTRIBUTING.md"],
+        "docs": ["docs/MAINTENANCE.md", "docs/COMPATIBILITY.md", "docs/RELEASES.md", "CONTRIBUTING.md"],
     },
 }
 ALL_DOMAIN_SOURCES = {"scripts/check-docs.py"}
@@ -80,9 +80,24 @@ def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def reject_symlink(path):
+    candidate = Path(path)
+    if candidate.is_symlink() or any(parent.is_symlink() for parent in candidate.parents):
+        raise Failure(f"Tracked source/documentation paths must not be symlinks: {path}")
+
+
 def current_files():
     # The index includes staged additions, but not unrelated untracked scratch.
-    return {p: Path(p).read_bytes() for p in names(git("ls-files", "-z")) if Path(p).is_file()}
+    # Read only mapped inputs; frozen experiments and generated images/results
+    # have no effect on documentation receipts.
+    allowed_docs = set().union(*(set(rule["docs"]) for rule in DOMAINS.values()))
+    files = {}
+    for path in names(git("ls-files", "-z")):
+        if source_domains(path) or path in allowed_docs:
+            reject_symlink(path)
+            if Path(path).is_file():
+                files[path] = Path(path).read_bytes()
+    return files
 
 
 def digests(files):
@@ -209,6 +224,11 @@ def validate_record(domain, record, fingerprint, files):
             raise Failure(f"{domain}: a no-impact assessment cannot cite changed docs.")
     elif not cited:
         raise Failure(f"{domain}: cite updated documentation or explain --no-impact.")
+    if record.get("breaking", "none") != "none":
+        reason(record["breaking"], "Breaking-change assessment")
+        if no_impact or "docs/COMPATIBILITY.md" not in cited:
+            raise Failure(f"{domain}: a breaking consequence requires changed docs/COMPATIBILITY.md; no-impact is unavailable.")
+        compatibility_note(record)
     for path, expected in cited.items():
         if path not in DOMAINS[domain]["docs"]:
             raise Failure(f"{domain}: unrelated documentation citation: {path}")
@@ -238,6 +258,8 @@ def main():
     git("rev-parse", "--verify", "HEAD^{commit}")
     ref = args.release_base or args.base or "HEAD"
     resolved = git("rev-parse", "--verify", f"{ref}^{{commit}}").decode().strip()
+    if args.release_base and git("merge-base", "--is-ancestor", resolved, "HEAD", allow_missing=True) is None:
+        raise Failure("Release base must be an ancestor of HEAD; choose a reachable earlier release.")
     base = git("merge-base", resolved, "HEAD").decode().strip() if args.base else resolved
     files = current_files()
     fingerprints = digests(files)
@@ -251,6 +273,7 @@ def main():
             print("Sensitive production schema/format/profile migration changes: " + ", ".join(sorted(sensitive)))
     sensitive_domains = set().union(*(source_domains(p) for p in sensitive)) & {"schema", "project-format", "backup-recovery"} if sensitive else set()
     lock_path = Path(LOCK)
+    reject_symlink(LOCK)
     if args.init:
         if args.accept or args.docs or args.no_impact or args.migration or args.breaking != "none":
             raise Failure("--init accepts only --note and optional base/explain flags.")
@@ -297,6 +320,10 @@ def main():
             validate_record(domain, record, fingerprint, files)
         elif baseline.get(domain) != fingerprint:
             raise Failure(f"{domain}: source changed since baseline; record a documentation assessment.")
+        if record and record.get("breaking", "none") != "none" and record != base_lock["receipts"].get(domain):
+            path = "docs/COMPATIBILITY.md"
+            if (git("show", f"{base}:{path}", allow_missing=True) or b"") == files[path]:
+                raise Failure(f"{domain}: breaking consequences require compatibility documentation changed against base.")
         if domain in impacted:
             if not record or record == base_lock["receipts"].get(domain):
                 raise Failure(f"{domain}: range changes require a fresh assessment; baseline/reset receipts do not count.")
