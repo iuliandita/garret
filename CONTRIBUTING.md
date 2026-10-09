@@ -24,11 +24,18 @@ writing.
 ## Checks
 
 ```sh
+bun run check:docs
 bunx tsc --noEmit -p app/tsconfig.json   # typecheck
 bun test ./app/ui                        # interface tests
 bun test ./app/harness                   # harness unit tests
 cd app/shell-tauri/src-tauri && cargo test --bin garret
 ```
+
+Documentation checks require Python 3.11 or newer, Git, and full history with
+release tags. For a PR, run `sh scripts/check-docs --base origin/develop`.
+Review each affected domain and record a specific documentation update or
+no-impact assessment. See [documentation maintenance](docs/MAINTENANCE.md)
+for the commands, migration requirements, optional hook, and limits.
 
 The host tests need the built interface in `app/shell-tauri/dist`
 (`cd app/ui && bun run build`, then copy `app/ui/dist` there). A few host tests
@@ -103,7 +110,14 @@ python3 scripts/release.py set-version 0.0.2
 
 Commit the changed Cargo manifest/lockfile and Tauri configuration files through
 a PR into `develop`. Wait for CI to pass on the resulting `develop` commit.
-Then create and push an annotated tag from that exact commit:
+
+Before tagging, also run `sh scripts/check-docs --release`. It checks the
+complete range since the previous reachable alpha tag, including migration
+changes in earlier commits. Review the [compatibility and rollback guide](docs/COMPATIBILITY.md).
+Keep [published state](docs/RELEASES.md) separate from work on develop; update
+its release record only after the complete download set is public and verified.
+
+Then create and push an annotated tag from that exact checked commit:
 
 ```sh
 git switch develop

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "published": {
+    "tag": "v0.0.2",
+    "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15",
+    "downloads": ["linux-x86_64", "windows-x86_64", "android", "macos-arm64", "macos-x86_64"],
+    "android_scope": "library-and-scene-editor-manual-transfer"
+  },
+  "develop_only": ["documentation-drift-checks", "screenshot-provenance-manifest"]
+}
