@@ -28,6 +28,46 @@ export function stepZoom(current: Zoom, direction: 1 | -1): Zoom {
   return ZOOMS[next];
 }
 
+export interface ZoomPersistence {
+  current: () => Zoom;
+  request: (next: Zoom) => Promise<void>;
+}
+
+/** Panel and keyboard share one ordered stream of host writes. Only the
+ *  latest request may restore the last value the host actually accepted. */
+export function createZoomPersistence(
+  initial: Zoom,
+  persist: (next: Zoom) => Promise<void>,
+  onChange: (next: Zoom) => void,
+): ZoomPersistence {
+  let current = initial;
+  let confirmed = initial;
+  let generation = 0;
+  let pending = Promise.resolve();
+  return {
+    current: () => current,
+    request(next) {
+      const request = ++generation;
+      current = next;
+      onChange(next);
+      const save = pending.then(async () => {
+        try {
+          await persist(next);
+          confirmed = next;
+        } catch (error: unknown) {
+          if (request === generation) {
+            current = confirmed;
+            onChange(confirmed);
+          }
+          throw error;
+        }
+      });
+      pending = save.catch(() => {});
+      return save;
+    },
+  };
+}
+
 export type ZoomAction = "in" | "out" | "reset";
 
 /** Ctrl+= (and Ctrl+Shift+= which arrives as "+"), Ctrl+-, Ctrl+0. Alt or

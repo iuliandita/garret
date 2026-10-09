@@ -320,7 +320,7 @@ function seed(label: string): string {
 
 function homeFor(label: string): string {
   const dir = join(root, `home-${label}`);
-  mkdirSync(join(dir, "cc.local.app"), { recursive: true });
+  mkdirSync(join(dir, "garret"), { recursive: true });
   return dir;
 }
 

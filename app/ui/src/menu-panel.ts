@@ -47,6 +47,7 @@ export interface MenuItemSpec {
    *  menu-cli's id count and menu-drive's parsed indices do not see it. */
   separatorBefore?: boolean;
   groupLabel?: string;
+  children?: readonly MenuItemSpec[];
   run: () => void;
 }
 
@@ -103,6 +104,7 @@ export interface MenuPanelOptions {
    *  hidden and its owner still believing a menu is open, and the next request
    *  to open that same menu reads as a re-open and closes nothing twice. */
   onClose?: () => void;
+  backLabel?: () => string;
 }
 
 export function createMenuPanel(opts: MenuPanelOptions): MenuPanel {
@@ -112,10 +114,21 @@ export function createMenuPanel(opts: MenuPanelOptions): MenuPanel {
   panel.hidden = true;
 
   let items: HTMLButtonElement[] = [];
+  let current: { specs: readonly MenuItemSpec[]; label: string } | null = null;
+  const pages: Array<{ specs: readonly MenuItemSpec[]; label: string; focus: number }> = [];
+
+  function back(): void {
+    const previous = pages.pop();
+    if (!previous) return;
+    paintPage(previous.specs, previous.label);
+    focusItem(previous.focus);
+  }
 
   function close(): void {
     if (panel.hidden) return;
     items = [];
+    pages.length = 0;
+    current = null;
     panel.hidden = true;
     panel.replaceChildren();
     // AFTER the panel is already closed, so an owner whose handler closes again
@@ -141,6 +154,19 @@ export function createMenuPanel(opts: MenuPanelOptions): MenuPanel {
   function handleArrowKey(event: KeyboardEvent): boolean {
     if (isCompositionKey(event)) return false;
     if (panel.hidden) return false;
+    if (event.key === "ArrowLeft" && pages.length > 0) {
+      event.preventDefault();
+      back();
+      return true;
+    }
+    if (event.key === "ArrowRight") {
+      const focused = items[focusedIndex()];
+      if (focused?.getAttribute("aria-haspopup") === "menu") {
+        event.preventDefault();
+        focused.click();
+        return true;
+      }
+    }
     if (event.key === "ArrowDown") {
       event.preventDefault();
       focusItem(focusedIndex() + 1);
@@ -155,79 +181,101 @@ export function createMenuPanel(opts: MenuPanelOptions): MenuPanel {
     return false;
   }
 
+  function paintPage(specs: readonly MenuItemSpec[], label: string): void {
+    current = { specs, label };
+    const rendered: HTMLButtonElement[] = [];
+    const children: HTMLElement[] = [];
+    if (pages.length > 0) {
+      const button = document.createElement("button");
+      button.id = `${opts.id}-back`;
+      button.type = "button";
+      button.setAttribute("role", "menuitem");
+      button.tabIndex = -1;
+      button.textContent = opts.backLabel?.() ?? "";
+      button.addEventListener("click", back);
+      rendered.push(button);
+      children.push(button);
+    }
+    for (const spec of specs) {
+      if (spec.separatorBefore === true && rendered.length > 0) {
+        const rule = document.createElement("div");
+        rule.className = "menu-separator";
+        rule.setAttribute("role", "separator");
+        children.push(rule);
+      }
+      if (spec.groupLabel) {
+        const heading = document.createElement("div");
+        heading.className = "menu-group-label";
+        heading.setAttribute("role", "presentation");
+        heading.textContent = spec.groupLabel;
+        children.push(heading);
+      }
+      const element = document.createElement("button");
+      element.id = spec.id;
+      element.type = "button";
+      element.setAttribute("role", spec.checked ? "menuitemradio" : "menuitem");
+      if (spec.checked) element.setAttribute("aria-checked", String(spec.checked()));
+      if (spec.children) element.setAttribute("aria-haspopup", "menu");
+      else if (spec.opensDialog === true) element.setAttribute("aria-haspopup", "dialog");
+      // Every item is reachable by ArrowDown from the opener, so none of them
+      // needs to be a tab stop of its own; -1 keeps Tab leaving the menu
+      // entirely rather than walking items the arrows already cover.
+      element.tabIndex = -1;
+      if (spec.enabled) element.setAttribute("aria-disabled", String(!spec.enabled()));
+
+      const text = document.createElement("span");
+      text.className = "menu-item-label";
+      text.textContent = spec.label();
+      element.append(text);
+
+      if (spec.shortcut !== undefined) {
+        const hint = document.createElement("span");
+        hint.className = "menu-item-shortcut";
+        hint.textContent = spec.shortcut;
+        // The hint is decoration for the accessible name's purposes: it is
+        // appended to the name below in a form a screen reader can read out
+        // ("Undo, Control Z" rather than the glyph soup a visible hint may
+        // become), so exposing the span as well would say it twice.
+        hint.setAttribute("aria-hidden", "true");
+        element.append(hint);
+        element.setAttribute("aria-keyshortcuts", spec.shortcut);
+      }
+
+      element.addEventListener("click", () => {
+        if (spec.enabled?.() === false) return;
+        if (spec.children && current) {
+          pages.push({ ...current, focus: rendered.indexOf(element) });
+          paintPage(spec.children, text.textContent ?? "");
+          focusItem(0);
+          return;
+        }
+        // Close BEFORE running. The item may open a panel and move focus into
+        // it, and a dropdown still painted over that panel is the writer's
+        // next click landing on the wrong surface. Observed from inside the
+        // dep, never through a second listener on this element: listeners fire
+        // in registration order, so an observing listener added afterwards
+        // runs after `close()` either way and passes against the reversed
+        // implementation.
+        close();
+        spec.run();
+      });
+      rendered.push(element);
+      children.push(element);
+    }
+
+    panel.replaceChildren(...children);
+    panel.setAttribute("aria-label", label);
+    panel.hidden = false;
+    items = rendered;
+  }
+
   return {
     element: panel,
     isOpen: () => !panel.hidden,
-
-    paint(specs: readonly MenuItemSpec[], label: string): void {
-      const rendered: HTMLButtonElement[] = [];
-      const children: HTMLElement[] = [];
-      for (const spec of specs) {
-        if (spec.separatorBefore === true && rendered.length > 0) {
-          const rule = document.createElement("div");
-          rule.className = "menu-separator";
-          rule.setAttribute("role", "separator");
-          children.push(rule);
-        }
-        if (spec.groupLabel) {
-          const heading = document.createElement("div");
-          heading.className = "menu-group-label";
-          heading.setAttribute("role", "presentation");
-          heading.textContent = spec.groupLabel;
-          children.push(heading);
-        }
-        const element = document.createElement("button");
-        element.id = spec.id;
-        element.type = "button";
-        element.setAttribute("role", spec.checked ? "menuitemradio" : "menuitem");
-        if (spec.checked) element.setAttribute("aria-checked", String(spec.checked()));
-        if (spec.opensDialog === true) element.setAttribute("aria-haspopup", "dialog");
-        // Every item is reachable by ArrowDown from the opener, so none of them
-        // needs to be a tab stop of its own; -1 keeps Tab leaving the menu
-        // entirely rather than walking items the arrows already cover.
-        element.tabIndex = -1;
-        if (spec.enabled) element.setAttribute("aria-disabled", String(!spec.enabled()));
-
-        const text = document.createElement("span");
-        text.className = "menu-item-label";
-        text.textContent = spec.label();
-        element.append(text);
-
-        if (spec.shortcut !== undefined) {
-          const hint = document.createElement("span");
-          hint.className = "menu-item-shortcut";
-          hint.textContent = spec.shortcut;
-          // The hint is decoration for the accessible name's purposes: it is
-          // appended to the name below in a form a screen reader can read out
-          // ("Undo, Control Z" rather than the glyph soup a visible hint may
-          // become), so exposing the span as well would say it twice.
-          hint.setAttribute("aria-hidden", "true");
-          element.append(hint);
-          element.setAttribute("aria-keyshortcuts", spec.shortcut);
-        }
-
-        element.addEventListener("click", () => {
-          if (spec.enabled?.() === false) return;
-          // Close BEFORE running. The item may open a panel and move focus into
-          // it, and a dropdown still painted over that panel is the writer's
-          // next click landing on the wrong surface. Observed from inside the
-          // dep, never through a second listener on this element: listeners fire
-          // in registration order, so an observing listener added afterwards
-          // runs after `close()` either way and passes against the reversed
-          // implementation.
-          close();
-          spec.run();
-        });
-        rendered.push(element);
-        children.push(element);
-      }
-
-      panel.replaceChildren(...children);
-      panel.setAttribute("aria-label", label);
-      panel.hidden = false;
-      items = rendered;
+    paint(specs, label): void {
+      pages.length = 0;
+      paintPage(specs, label);
     },
-
     close,
     focusItem,
     focusedIndex,

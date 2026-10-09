@@ -82,7 +82,12 @@ the app remembers. Existing books stay where they were created. If the
 Documents folder cannot be resolved, the fallback is Books under your home.
 Settings and recovery use:
 
-    ~/.local/share/cc.local.app/
+    ~/.local/share/garret/
+
+The first launch moves the previous application-data folder here and keeps
+a compatibility link. Close older versions first. Keep that link when backing
+up or managing the application data. Older encrypted-archive CLI commands
+may refuse the compatibility link; use the current build.
 
 An absolute XDG_DATA_HOME override changes that data base. Older books may
 also remain there. Project-associated pictures and covers can live in

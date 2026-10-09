@@ -488,7 +488,7 @@ fn read_package(path: &Path) -> Result<Vec<u8>, String> {
     #[cfg(target_os = "linux")]
     {
         use std::os::unix::fs::OpenOptionsExt;
-        options.custom_flags(0o400000 | 0o4000);
+        options.custom_flags((rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::NONBLOCK).bits() as i32);
     }
     #[cfg(target_os = "macos")]
     {

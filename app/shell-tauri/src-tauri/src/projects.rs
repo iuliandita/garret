@@ -9,6 +9,7 @@
 use crate::store::Store;
 use crate::APP_DIR;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::fs;
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
@@ -90,9 +91,10 @@ pub fn without_directory(path: &Path) -> String {
     // `file_name` answers over normalized COMPONENTS, and a `.` is not a
     // component: it reads `/home/writer/.` as `writer` and hands back the
     // operating-system user's own name, which is the exact string this function
-    // exists to remove. Linux-only by scope decision, so `/` is the separator.
+    // exists to remove. Accept both separator spellings on every platform so
+    // a project moved between operating systems cannot retain its old directory.
     let raw = path.to_string_lossy();
-    match raw.rsplit('/').find(|part| !part.is_empty()) {
+    match raw.rsplit(['/', '\\']).find(|part| !part.is_empty()) {
         Some(".") | Some("..") | None => String::new(),
         Some(last) => last.to_string(),
     }
@@ -169,7 +171,7 @@ pub fn forget_recovery_directory(store: &Store) -> bool {
     store.set_meta(RECOVERED_FROM_KEY, &named).is_ok()
 }
 
-/// `<data_home>/cc.local.app/projects`
+/// `<data_home>/garret/projects`
 pub fn library_dir(data_home: &Path) -> PathBuf {
     data_home.join(APP_DIR).join("projects")
 }
@@ -211,7 +213,7 @@ pub fn resolve_new_book_dir(
         })
 }
 
-/// `<data_home>/cc.local.app/exports`, beside `projects/`.
+/// `<data_home>/garret/exports`, beside `projects/`.
 pub fn exports_dir(data_home: &Path) -> PathBuf {
     data_home.join(APP_DIR).join("exports")
 }
@@ -221,7 +223,7 @@ pub fn imports_dir(data_home: &Path) -> PathBuf {
     data_home.join(APP_DIR).join("imports")
 }
 
-/// `<data_home>/cc.local.app/spell`, beside `projects/`. Pointed to by
+/// `<data_home>/garret/spell`, beside `projects/`. Pointed to by
 /// `ENCHANT_CONFIG_DIR` so the open project's dictionary reaches enchant
 /// without ever touching the machine-global `~/.config/enchant/` -- see
 /// commands/spell.rs. APPLICATION-OWNED SCRATCH, not the storage of record:
@@ -231,7 +233,7 @@ pub fn spell_dir(data_home: &Path) -> PathBuf {
     data_home.join(APP_DIR).join("spell")
 }
 
-/// `<data_home>/cc.local.app/recovery/<slug>`, beside `projects/`.
+/// `<data_home>/garret/recovery/<slug>`, beside `projects/`.
 ///
 /// PER PROJECT, not one shared directory: the retention rule thins a book's own
 /// recovery points against each other, and a shared directory would let a
@@ -245,7 +247,7 @@ pub fn recovery_dir(data_home: &Path, slug: &str) -> PathBuf {
     data_home.join(APP_DIR).join("recovery").join(slug)
 }
 
-/// `<data_home>/cc.local.app/recovery/<slug>/archives`, for the file a writer
+/// `<data_home>/garret/recovery/<slug>/archives`, for the file a writer
 /// moves off this computer themselves.
 ///
 /// INSIDE the recovery area and NOT the recovery directory itself, and both
@@ -270,7 +272,7 @@ pub fn archives_dir(data_home: &Path, slug: &str) -> PathBuf {
     recovery_dir(data_home, slug).join("archives")
 }
 
-/// `<data_home>/cc.local.app/mirror/<slug>`, or wherever `APP_MIRROR_DIR`
+/// `<data_home>/garret/mirror/<slug>`, or wherever `APP_MIRROR_DIR`
 /// points, for the readable manuscript the writer opens in another editor.
 ///
 /// **The only directory in this file the writer is invited to look inside**,
@@ -352,40 +354,32 @@ pub fn list_imports(dir: &Path) -> Vec<String> {
 ///
 /// Deliberately NOT `create` plus a fill: `create` writes a starter scene, and a
 /// manuscript that arrived with three hundred scenes must not also carry an
-/// empty one nobody wrote. The two share the name/slug/collision rules and
-/// nothing else.
+/// empty one nobody wrote. Storage publication is shared; manuscript
+/// initialization remains separate.
 pub fn create_imported(
     library: &Path,
     name: &str,
     rows: &[crate::store::ImportRow<'_>],
     strings: &crate::strings::Strings,
 ) -> Result<ProjectSummary, String> {
-    let slug = slugify(name)
-        .ok_or_else(|| format!("\"{name}\" has no characters that can name a file"))?;
-    fs::create_dir_all(library).map_err(|e| format!("cannot create {}: {e}", library.display()))?;
-    let path = library.join(format!("{slug}.db"));
-    if path.exists() {
-        return Err(format!(
-            "a project named \"{name}\" already exists at {}",
-            path.display()
-        ));
-    }
-    let store = Store::open(&path).map_err(|e| format!("{}: {e}", path.display()))?;
-    let filled = (|| -> Result<(), String> {
-        store
-            .set_meta(NAME_KEY, name)
-            .map_err(|e| format!("{}: cannot record the project name: {e}", path.display()))?;
+    create_imported_with(library, name, rows, strings, |_| {})
+}
+
+fn create_imported_with(
+    library: &Path,
+    name: &str,
+    rows: &[crate::store::ImportRow<'_>],
+    strings: &crate::strings::Strings,
+    before_create: impl FnOnce(&Path),
+) -> Result<ProjectSummary, String> {
+    create_book_with(library, name, before_create, |store, path| {
         store.import_tree(rows).map(|_| ()).map_err(|e| {
             format!(
                 "{}: cannot write the imported manuscript: {e}",
                 path.display()
             )
         })?;
-        // Only when the manuscript brought no scene of its own. A Markdown file
-        // whose headings are all `#` and `##` is a legitimate thing to export
-        // and re-import - an outline before any prose - and it produces parts
-        // and chapters and nothing openable. Without this the project imports
-        // without error and then cannot be mounted at all.
+        // An outline still needs one scene to open; imported scenes gain none.
         store
             .ensure_starter_structure(strings)
             .map(|_| ())
@@ -395,19 +389,7 @@ pub fn create_imported(
                     path.display()
                 )
             })
-    })();
-    drop(store);
-    if let Err(e) = filled {
-        // A half-written project file must not survive as something the
-        // switcher will list and the writer will open expecting their book.
-        // Best effort: if the remove fails the error below is still the one
-        // worth reporting.
-        let _ = fs::remove_file(&path);
-        let _ = fs::remove_file(path.with_extension("db-wal"));
-        let _ = fs::remove_file(path.with_extension("db-shm"));
-        return Err(e);
-    }
-    Ok(summarize(&path))
+    })
 }
 
 /// The first free `<slug>.md`, `<slug>-2.md`, `<slug>-3.md`, ... in `dir`.
@@ -526,12 +508,12 @@ fn export_ordinal(file_name: &str, slug: &str) -> Option<u64> {
     }
 }
 
-/// `<data_home>/cc.local.app/settings.json`
+/// `<data_home>/garret/settings.json`
 pub fn settings_path(data_home: &Path) -> PathBuf {
     data_home.join(APP_DIR).join("settings.json")
 }
 
-/// `<data_home>/cc.local.app/startup-error.txt`, beside `settings.json`.
+/// `<data_home>/garret/startup-error.txt`, beside `settings.json`.
 ///
 /// It exists because a Windows GUI-subsystem executable HAS NO STDERR: nothing
 /// is attached to it, so a panic on a failed startup prints into a void and the
@@ -546,8 +528,8 @@ pub fn startup_error_path(data_home: &Path) -> PathBuf {
 
 /// Lowercase; ASCII alphanumerics and hyphens; runs of other characters
 /// collapse to a single hyphen; leading and trailing hyphens trimmed; capped at
-/// 64 characters. None when nothing survives: a project must be findable by the
-/// name the writer typed, and "" is not a name.
+/// 64 characters. When no ASCII survives, Unicode alphanumeric titles use a
+/// deterministic digest basename. Empty and punctuation-only titles are refused.
 ///
 /// A typed hyphen is treated as a separator too, so "a - b" is one gap rather
 /// than three; the output alphabet is unchanged either way.
@@ -566,11 +548,15 @@ pub fn slugify(name: &str) -> Option<String> {
     // The cap can land mid-gap, so the trim runs again rather than emitting a
     // name ending in a hyphen.
     trim_hyphens(&mut out);
-    if out.is_empty() {
-        None
-    } else {
-        Some(out)
+    if !out.is_empty() {
+        return Some(out);
     }
+    let title = name.trim();
+    if !title.chars().any(char::is_alphanumeric) {
+        return None;
+    }
+    let digest = Sha256::digest(title.as_bytes());
+    Some(format!("book-{:x}", digest)[..37].to_string())
 }
 
 fn trim_hyphens(s: &mut String) {
@@ -594,6 +580,8 @@ pub struct ProjectSummary {
     /// offers to FORGET a missing book and must not offer that for a present
     /// one that merely failed to open.
     pub missing: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub registration_warning: Option<crate::book_registration::Warning>,
 }
 
 /// 0 rather than an error: an unreadable mtime costs the list its ordering, not
@@ -608,6 +596,14 @@ pub(crate) fn modified_at(path: &Path) -> i64 {
         .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0)
+}
+
+pub(crate) fn book_is_missing(path: &Path) -> std::io::Result<bool> {
+    match fs::metadata(path) {
+        Ok(_) => Ok(false),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(true),
+        Err(error) => Err(error),
+    }
 }
 
 pub(crate) fn summarize(path: &Path) -> ProjectSummary {
@@ -633,7 +629,9 @@ pub(crate) fn summarize(path: &Path) -> ProjectSummary {
         name,
         modified_at: modified_at(path),
         error,
-        missing: !path.exists(),
+        // Lookup errors do not establish absence; the read error stays visible.
+        missing: book_is_missing(path).unwrap_or(false),
+        registration_warning: None,
     }
 }
 
@@ -722,7 +720,9 @@ pub fn known(data_home: &Path) -> Vec<PathBuf> {
 /// list (the scan finds it), so it is refused as "not remembered", which is
 /// the truth. Touches no file: what goes is a line in `settings.json`.
 pub fn forget_book(data_home: &Path, path: &str) -> Result<(), String> {
-    if Path::new(path).exists() {
+    if !book_is_missing(Path::new(path))
+        .map_err(|error| format!("{path}: could not check whether this book is missing: {error}"))?
+    {
         return Err(format!("{path}: this book is still there, so it cannot be forgotten"));
     }
     if !read_settings(data_home).books.iter().any(|b| b == path) {
@@ -765,6 +765,7 @@ pub fn move_target(from: &Path, dir: &Path) -> Result<PathBuf, String> {
             to.display()
         ));
     }
+    refuse_destination_logs(&to).map_err(|error| format!("{}: {error}", to.display()))?;
     let pictures = crate::pictures::dir_for(&to);
     if pictures.exists() {
         return Err(format!(
@@ -788,43 +789,164 @@ pub fn physical_same_file(a: &Path, b: &Path) -> Result<bool, String> {
     same_file::is_same_file(a, b).map_err(|e| format!("{} and {}: {e}", a.display(), b.display()))
 }
 
-/// Move the book's file and, when there is one, its pictures folder, from
-/// `from` to `to`. ONE FILESYSTEM ONLY: a rename, never a copy. The store must
-/// be closed and its log folded in (`Store::checkpoint`) before this is called;
-/// a `-wal` file with anything in it is refused here rather than moved, because
-/// a book whose log stayed behind is a book missing its last minutes.
-///
-/// Rolled back on the second rename failing: the file goes back where it was,
-/// so the caller never sees a book half in each folder.
-pub fn move_book_files(from: &Path, to: &Path) -> Result<(), String> {
+/// A failed move retains every component and records whether the whole book
+/// is still together. A caller must not reopen a database with missing assets.
+#[derive(Debug)]
+pub(crate) struct MoveBookError {
+    message: String,
+    pub(crate) reopen_at: Option<PathBuf>,
+}
+
+impl std::fmt::Display for MoveBookError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+fn refuse_destination_logs(to: &Path) -> std::io::Result<()> {
+    for path in [to.with_extension("db-wal"), to.with_extension("db-shm")] {
+        match fs::symlink_metadata(&path) {
+            Ok(_) => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::AlreadyExists,
+                    format!(
+                        "{}: there is already a database sidecar at this location",
+                        path.display()
+                    ),
+                ))
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error),
+        }
+    }
+    Ok(())
+}
+
+/// Exclusive publication also protects rollback from a new file at the old
+/// path. Unsupported filesystems fail closed; there is no copying fallback.
+#[cfg(any(target_os = "linux", target_os = "android", target_vendor = "apple"))]
+pub(crate) fn rename_without_replace(from: &Path, to: &Path) -> std::io::Result<()> {
+    rustix::fs::renameat_with(
+        rustix::fs::CWD,
+        from,
+        rustix::fs::CWD,
+        to,
+        rustix::fs::RenameFlags::NOREPLACE,
+    )
+    .map_err(Into::into)
+}
+
+#[cfg(windows)]
+pub(crate) fn rename_without_replace(from: &Path, to: &Path) -> std::io::Result<()> {
+    use std::os::windows::ffi::OsStrExt;
+    if [from, to]
+        .iter()
+        .any(|path| path.as_os_str().encode_wide().any(|unit| unit == 0))
+    {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "a move path contains a null character",
+        ));
+    }
+    // MoveFileExW with neither REPLACE_EXISTING nor COPY_ALLOWED.
+    renamore::rename_exclusive(from, to)
+}
+
+#[cfg(not(any(
+    target_os = "linux",
+    target_os = "android",
+    target_vendor = "apple",
+    windows
+)))]
+pub(crate) fn rename_without_replace(_from: &Path, _to: &Path) -> std::io::Result<()> {
+    Err(std::io::Error::new(
+        std::io::ErrorKind::Unsupported,
+        "exclusive moves are unavailable on this platform",
+    ))
+}
+
+/// Move a closed, checkpointed book within one filesystem. A nonempty WAL
+/// refuses the move. Every forward and rollback rename refuses replacement.
+/// If rollback is blocked, report all retained locations and leave the book
+/// closed until its components can be reunited without overwriting anything.
+pub(crate) fn move_book_files(from: &Path, to: &Path) -> Result<(), MoveBookError> {
+    move_book_files_with(from, to, rename_without_replace)
+}
+
+pub(crate) fn move_book_files_with(
+    from: &Path,
+    to: &Path,
+    mut rename: impl FnMut(&Path, &Path) -> std::io::Result<()>,
+) -> Result<(), MoveBookError> {
     let wal = from.with_extension("db-wal");
     if wal.metadata().map(|m| m.len() > 0).unwrap_or(false) {
-        return Err(format!(
-            "{}: the book is still being written; try again in a moment",
-            from.display()
-        ));
+        return Err(MoveBookError {
+            message: format!(
+                "{}: the book is still being written; try again in a moment",
+                from.display()
+            ),
+            reopen_at: Some(from.to_path_buf()),
+        });
     }
     let _ = fs::remove_file(&wal);
     let _ = fs::remove_file(from.with_extension("db-shm"));
-    fs::rename(from, to).map_err(|e| move_error(from, to, &e))?;
-    let pictures_from = crate::pictures::dir_for(from);
-    let mut moved_pictures = false;
-    if pictures_from.is_dir() {
-        let pictures_to = crate::pictures::dir_for(to);
-        if let Err(e) = fs::rename(&pictures_from, &pictures_to) {
-            let _ = fs::rename(to, from);
-            return Err(move_error(&pictures_from, &pictures_to, &e));
+    let mut parts = vec![("database", from.to_path_buf(), to.to_path_buf(), false)];
+    for (label, source, destination) in [
+        (
+            "pictures folder",
+            crate::pictures::dir_for(from),
+            crate::pictures::dir_for(to),
+        ),
+        (
+            "research folder",
+            crate::research::dir_for(from),
+            crate::research::dir_for(to),
+        ),
+    ] {
+        if source.is_dir() {
+            parts.push((label, source, destination, false));
         }
-        moved_pictures = true;
     }
-    let research_from = crate::research::dir_for(from);
-    if research_from.is_dir() {
-        let research_to = crate::research::dir_for(to);
-        if let Err(e) = fs::rename(&research_from, &research_to) {
-            if moved_pictures { let _ = fs::rename(crate::pictures::dir_for(to), &pictures_from); }
-            let _ = fs::rename(to, from);
-            return Err(move_error(&research_from, &research_to, &e));
+    for index in 0..parts.len() {
+        let (_, source, destination, _) = &parts[index];
+        let result = if index == 0 {
+            refuse_destination_logs(destination).and_then(|()| rename(source, destination))
+        } else {
+            rename(source, destination)
+        };
+        if let Err(error) = result {
+            let mut message = move_error(source, destination, &error);
+            for (label, source, destination, moved) in parts[..index].iter_mut().rev() {
+                let result = if *label == "database" {
+                    refuse_destination_logs(source).and_then(|()| rename(destination, source))
+                } else {
+                    rename(destination, source)
+                };
+                if let Err(back) = result {
+                    message.push_str(&format!(
+                        ". Rollback failed: {}",
+                        move_error(destination, source, &back)
+                    ));
+                } else {
+                    *moved = false;
+                }
+            }
+            let together = parts.iter().all(|(_, _, _, moved)| !moved);
+            for (label, source, destination, moved) in &parts {
+                let retained = if *moved { destination } else { source };
+                message.push_str(&format!(". The {label} is at {}", retained.display()));
+            }
+            if !together {
+                message.push_str(
+                    ". The book's files are in different folders; the book has been left closed",
+                );
+            }
+            return Err(MoveBookError {
+                message,
+                reopen_at: together.then(|| from.to_path_buf()),
+            });
         }
+        parts[index].3 = true;
     }
     Ok(())
 }
@@ -832,7 +954,7 @@ pub fn move_book_files(from: &Path, to: &Path) -> Result<(), String> {
 fn move_error(from: &Path, to: &Path, e: &std::io::Error) -> String {
     if e.kind() == std::io::ErrorKind::CrossesDevices {
         return format!(
-            "{}: that folder is on another drive. This application moves a book only within one drive; copy the file and its pictures folder yourself and open it from its new place",
+            "{}: that folder is on another drive. This application moves a book only within one drive; close the book, copy its database file and adjacent pictures and research folders, then open it from its new place",
             to.display()
         );
     }
@@ -897,8 +1019,8 @@ pub fn create(library: &Path, name: &str) -> Result<ProjectSummary, String> {
     create_in(library, name, &crate::strings::Strings::english())
 }
 
-/// Slugify, refuse an existing file, open (which creates schema v1), record the
-/// typed name, ensure a starter scene -- into a folder the writer chose. Does NOT make it the current
+/// Build a named book with a starter scene and publish it exclusively into the
+/// folder the writer chose. Does NOT make it the current
 /// project: creation and opening are separate acts, so a failed open cannot
 /// lose a just-created manuscript.
 pub fn create_in(
@@ -906,31 +1028,129 @@ pub fn create_in(
     name: &str,
     strings: &crate::strings::Strings,
 ) -> Result<ProjectSummary, String> {
+    create_in_with(dir, name, strings, |_| {})
+}
+
+fn create_in_with(
+    dir: &Path,
+    name: &str,
+    strings: &crate::strings::Strings,
+    before_create: impl FnOnce(&Path),
+) -> Result<ProjectSummary, String> {
+    create_book_with(dir, name, before_create, |store, path| {
+        store
+            .ensure_starter_structure(strings)
+            .map(|_| ())
+            .map_err(|e| {
+                format!(
+                    "{}: cannot create the starter chapter and scene: {e}",
+                    path.display()
+                )
+            })
+    })
+}
+
+/// Build only in an owned directory, then publish a closed, complete database.
+/// A competing destination is never opened, adopted, or removed on failure.
+fn create_book_with(
+    dir: &Path,
+    name: &str,
+    before_create: impl FnOnce(&Path),
+    fill: impl FnOnce(&Store, &Path) -> Result<(), String>,
+) -> Result<ProjectSummary, String> {
+    create_book_with_cleanup(dir, name, before_create, fill, tempfile::TempDir::close)
+}
+
+fn create_book_with_cleanup(
+    dir: &Path,
+    name: &str,
+    before_create: impl FnOnce(&Path),
+    fill: impl FnOnce(&Store, &Path) -> Result<(), String>,
+    cleanup: impl FnOnce(tempfile::TempDir) -> std::io::Result<()>,
+) -> Result<ProjectSummary, String> {
     let slug = slugify(name)
         .ok_or_else(|| format!("\"{name}\" has no characters that can name a file"))?;
     fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
     let path = dir.join(format!("{slug}.db"));
-    // Store::open would happily adopt an existing file, so without this a
-    // second project by the same name silently opens the first one's
-    // manuscript and the writer types into the wrong book.
     if path.exists() {
         return Err(format!(
             "a project named \"{name}\" already exists at {}",
             path.display()
         ));
     }
-    let store = Store::open(&path).map_err(|e| format!("{}: {e}", path.display()))?;
-    store
-        .set_meta(NAME_KEY, name)
-        .map_err(|e| format!("{}: cannot record the project name: {e}", path.display()))?;
-    store.ensure_starter_structure(strings).map_err(|e| {
-        format!(
-            "{}: cannot create the starter chapter and scene: {e}",
-            path.display()
-        )
-    })?;
-    drop(store);
-    Ok(summarize(&path))
+    before_create(&path);
+    let mut builder = tempfile::Builder::new();
+    builder.prefix(".garret-create-");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        builder.permissions(fs::Permissions::from_mode(0o700));
+    }
+    let stage = builder
+        .tempdir_in(dir)
+        .map_err(|e| format!("{}: cannot prepare a new book: {e}", path.display()))?;
+    let retained_stage = stage.path().to_path_buf();
+    let result = (|| {
+        let staged = stage.path().join("project.db");
+        let store = Store::open(&staged).map_err(|e| format!("{}: {e}", path.display()))?;
+        store
+            .set_meta(NAME_KEY, name)
+            .map_err(|e| format!("{}: cannot record the project name: {e}", path.display()))?;
+        fill(&store, &path)?;
+        store
+            .checkpoint()
+            .map_err(|e| format!("{}: cannot finish the new book: {e}", path.display()))?;
+        drop(store);
+        match fs::metadata(staged.with_extension("db-wal")) {
+            Ok(metadata) if metadata.len() > 0 => {
+                return Err(format!(
+                    "{}: the new book's log could not be folded into its database",
+                    path.display()
+                ))
+            }
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => {
+                return Err(format!(
+                    "{}: cannot check the new book's log: {error}",
+                    path.display()
+                ))
+            }
+        }
+        fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&staged)
+            .and_then(|file| file.sync_all())
+            .map_err(|e| format!("{}: cannot sync the new book: {e}", path.display()))?;
+        refuse_destination_logs(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+        rename_without_replace(&staged, &path).map_err(|e| {
+            format!(
+                "{}: cannot publish the new book without replacing an existing file: {e}",
+                path.display()
+            )
+        })?;
+        if let Ok(parent) = fs::File::open(dir) {
+            let _ = parent.sync_all();
+        }
+        Ok(summarize(&path))
+    })();
+    match (result, cleanup(stage)) {
+        (result, Ok(())) => result,
+        (Err(error), Err(cleanup)) => Err(format!(
+            "{error}. Temporary book files remain at {}: {cleanup}",
+            retained_stage.display()
+        )),
+        (Ok(made), Err(cleanup)) => {
+            // Publication succeeded; callers must still register the saved book.
+            eprintln!(
+                "the book was created at {}, but its temporary folder remains at {}: {cleanup}",
+                path.display(),
+                retained_stage.display()
+            );
+            Ok(made)
+        }
+    }
 }
 
 /// Copy a recovery point into the library as a NEW project.
@@ -1023,7 +1243,11 @@ fn restore_point_impl(
 ) -> Result<(ProjectSummary, Vec<String>), String> {
     let bundled = point.is_dir();
     let research_bundle = bundled && crate::backup_bundle::restore_inventory_version(point)? == 2;
-    let source_db = if bundled { crate::backup_bundle::db_path(point) } else { point.to_path_buf() };
+    let source_db = if bundled {
+        crate::backup_bundle::db_path(point)
+    } else {
+        point.to_path_buf()
+    };
     if bundled {
         let check = if allow_picture_gaps {
             crate::backup_bundle::verify_database_for_restore(point)
@@ -1043,89 +1267,142 @@ fn restore_point_impl(
         ));
     }
     if !bundled && crate::backup_bundle::marker_present(&source_db)? {
-        return Err("this database belongs to an asset-aware point; restore its whole folder".into());
+        return Err(
+            "this database belongs to an asset-aware point; restore its whole folder".into(),
+        );
     }
 
     fs::create_dir_all(library).map_err(|e| format!("cannot create {}: {e}", library.display()))?;
-    // Walk the ordinals, claiming each candidate outright. `AlreadyExists` is
-    // the only error that advances: anything else is a real filesystem problem
-    // and looping on it would spin. Everything after a successful claim must
-    // clean up after itself.
+    // A sidecar occupies a name even when its database is missing. Claim only
+    // a free name, then recheck before using any reserved destination.
     let mut ordinal: u32 = 1;
-    let path = loop {
+    let (path, mut claim) = loop {
         let restored = restored_stem(stem, ordinal);
         let candidate = library.join(format!("{restored}.db"));
+        match refuse_destination_logs(&candidate) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                ordinal += 1;
+                continue;
+            }
+            Err(e) => return Err(format!("{}: {e}", candidate.display())),
+        }
         match fs::OpenOptions::new()
             .write(true)
             .create_new(true)
             .open(&candidate)
         {
-            Ok(_) => {
+            Ok(claim) => {
+                if let Err(error) = refuse_destination_logs(&candidate) {
+                    drop(claim);
+                    fs::remove_file(&candidate).map_err(|cleanup| {
+                        format!(
+                            "{}: {error}; cannot remove the reserved database: {cleanup}",
+                            candidate.display()
+                        )
+                    })?;
+                    if error.kind() == std::io::ErrorKind::AlreadyExists {
+                        ordinal += 1;
+                        continue;
+                    }
+                    return Err(format!("{}: {error}", candidate.display()));
+                }
                 if bundled {
                     match fs::create_dir(crate::pictures::dir_for(&candidate)) {
-                        Ok(()) => {},
+                        Ok(()) => {}
                         Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                            drop(claim);
                             let _ = fs::remove_file(&candidate);
                             ordinal += 1;
                             continue;
                         }
                         Err(e) => {
+                            drop(claim);
                             let _ = fs::remove_file(&candidate);
                             return Err(format!("cannot reserve restored pictures: {e}"));
                         }
                     }
                     if research_bundle {
                         let mut builder = fs::DirBuilder::new();
-                        #[cfg(unix)] {
+                        #[cfg(unix)]
+                        {
                             use std::os::unix::fs::DirBuilderExt;
                             builder.mode(0o700);
                         }
                         match builder.create(crate::research::dir_for(&candidate)) {
-                            Ok(()) => {},
+                            Ok(()) => {}
                             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
                                 let _ = fs::remove_dir_all(crate::pictures::dir_for(&candidate));
+                                drop(claim);
                                 let _ = fs::remove_file(&candidate);
                                 ordinal += 1;
                                 continue;
                             }
                             Err(e) => {
                                 let _ = fs::remove_dir_all(crate::pictures::dir_for(&candidate));
+                                drop(claim);
                                 let _ = fs::remove_file(&candidate);
                                 return Err(format!("cannot reserve restored research: {e}"));
                             }
                         }
                     }
                 }
-                break candidate;
-            },
+                break (candidate, claim);
+            }
             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => ordinal += 1,
             Err(e) => return Err(format!("{}: {e}", candidate.display())),
         }
     };
 
     let mut picture_gaps = Vec::new();
-    let filled = (|| -> Result<(), String> {
-        copy(&source_db, &path)?;
+    let mut stage = None;
+    let filled = (|| -> Result<ProjectSummary, String> {
+        // SQLite must never see the destination's unrelated WAL or SHM.
+        let mut builder = tempfile::Builder::new();
+        builder.prefix(".garret-restore-");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            builder.permissions(fs::Permissions::from_mode(0o700));
+        }
+        stage = Some(
+            builder
+                .tempdir_in(library)
+                .map_err(|e| format!("cannot prepare the restored database: {e}"))?,
+        );
+        let staged = stage.as_ref().unwrap().path().join("project.db");
+        fs::File::create(&staged).map_err(|e| format!("{}: {e}", staged.display()))?;
+        copy(&source_db, &staged)?;
         if bundled {
-            crate::backup_bundle::verify_database_copy(point, &path)?;
+            crate::backup_bundle::verify_database_copy(point, &staged)?;
             if allow_picture_gaps {
                 picture_gaps = crate::backup_bundle::copy_assets_with_gaps(point, &path)?;
             } else {
                 crate::backup_bundle::copy_assets(point, &path)?;
             }
-            crate::backup_bundle::clear_marker(&path)?;
+            crate::backup_bundle::clear_marker(&staged)?;
         }
         // Read-write, on OUR OWN COPY. A point written by an older build
         // migrates forward here, which is correct: the migration lands on the
         // copy and never on the point.
-        let store = Store::open(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+        let store = Store::open(&staged).map_err(|e| format!("{}: {e}", path.display()))?;
         let copied_id = store
             .book_id()
-            .map_err(|e| format!("{}: cannot read the copied book identity: {e}", path.display()))?
+            .map_err(|e| {
+                format!(
+                    "{}: cannot read the copied book identity: {e}",
+                    path.display()
+                )
+            })?
             .ok_or_else(|| format!("{}: the copied book identity is missing", path.display()))?;
         store
             .fork_recovered_book_identity(&copied_id)
-            .map_err(|e| format!("{}: cannot create a new restored identity: {e}", path.display()))?;
+            .map_err(|e| {
+                format!(
+                    "{}: cannot create a new restored identity: {e}",
+                    path.display()
+                )
+            })?;
         // Read out of the COPY, which is the manuscript being restored. The
         // manifest also carries a name, and it is a describing file that can
         // disagree with what it describes; `describe_dir` settled the same
@@ -1144,24 +1421,86 @@ fn restore_point_impl(
             .map_err(|e| format!("{}: cannot record the recovery source: {e}", path.display()))?;
         store
             .set_meta(RECOVERED_AT_KEY, &now_ms.to_string())
-            .map_err(|e| format!("{}: cannot record the recovery time: {e}", path.display()))
+            .map_err(|e| format!("{}: cannot record the recovery time: {e}", path.display()))?;
+        store
+            .checkpoint()
+            .map_err(|e| format!("cannot finish the restored database: {e}"))?;
+        drop(store);
+        match fs::metadata(staged.with_extension("db-wal")) {
+            Ok(metadata) if metadata.len() > 0 => {
+                return Err("the restored database still has an uncheckpointed log".into());
+            }
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(format!("cannot check the restored database log: {error}")),
+        }
+        let mut summary = summarize(&staged);
+        refuse_destination_logs(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+        let mut completed =
+            fs::File::open(&staged).map_err(|e| format!("{}: {e}", staged.display()))?;
+        std::io::copy(&mut completed, &mut claim)
+            .and_then(|_| claim.sync_all())
+            .map_err(|e| {
+                format!(
+                    "{}: cannot publish the restored database: {e}",
+                    path.display()
+                )
+            })?;
+        summary.path = path.to_string_lossy().into_owned();
+        summary.modified_at = modified_at(&path);
+        Ok(summary)
     })();
 
-    if let Err(e) = filled {
-        // `create_imported`'s discipline: a half-written project file must not
-        // survive as something the switcher lists and the writer opens
-        // expecting their book. Best effort -- the error below is the one worth
-        // reporting either way.
-        let _ = fs::remove_file(&path);
-        let _ = fs::remove_file(path.with_extension("db-wal"));
-        let _ = fs::remove_file(path.with_extension("db-shm"));
-        if bundled {
-            let _ = fs::remove_dir_all(crate::pictures::dir_for(&path));
-            if research_bundle { let _ = fs::remove_dir_all(crate::research::dir_for(&path)); }
+    drop(claim);
+    let stage_cleanup = stage
+        .map(|stage| {
+            let retained = stage.path().to_path_buf();
+            stage.close().map_err(|error| {
+                format!(
+                    "temporary restore files remain at {}: {error}",
+                    retained.display()
+                )
+            })
+        })
+        .transpose();
+    let summary = match filled {
+        Ok(summary) => summary,
+        Err(mut e) => {
+            // Only the claimed database and exclusively created asset folders are
+            // ours. Destination WAL/SHM files never belong to this restore.
+            for owned in [
+                Some(path.clone()),
+                bundled.then(|| crate::pictures::dir_for(&path)),
+                research_bundle.then(|| crate::research::dir_for(&path)),
+            ]
+            .into_iter()
+            .flatten()
+            {
+                let cleanup = if owned == path {
+                    fs::remove_file(&owned)
+                } else {
+                    fs::remove_dir_all(&owned)
+                };
+                if let Err(error) = cleanup {
+                    if error.kind() != std::io::ErrorKind::NotFound {
+                        e.push_str(&format!(
+                            ". Cannot clean restored files at {}: {error}",
+                            owned.display()
+                        ));
+                    }
+                }
+            }
+            if let Err(cleanup) = stage_cleanup {
+                e.push_str(&format!(". {cleanup}"));
+            }
+            return Err(e);
         }
-        return Err(e);
+    };
+    if let Err(cleanup) = stage_cleanup {
+        // The saved book still needs to reach registration after publication.
+        eprintln!("the restored book is at {}: {cleanup}", path.display());
     }
-    Ok((summarize(&path), picture_gaps))
+    Ok((summary, picture_gaps))
 }
 
 /// True when `path` is a direct child of `library` and ends in `.db`. Used to
@@ -1201,41 +1540,34 @@ pub fn in_library(library: &Path, path: &Path) -> bool {
 /// not in the project's own `meta` table beside the day's baseline: "I write 500
 /// words a day" survives starting a new book.
 ///
-/// A CLOSED SET of five, so it parses exactly like the theme and the typography
-/// and the panel stays one control type. The cost is stated plainly: a writer
-/// who wants 750 cannot have it. A free numeric field is the obvious
-/// alternative, and it is a different control in an otherwise homogeneous panel
-/// plus a validation surface (zero, negative, 10^9, "five hundred") that five
-/// buttons do not have. If the five are wrong, the fix is the list.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+/// Stored as `off` or a canonical decimal string from 1 through 1,000,000.
+/// The existing presets retain their variants and wire spellings.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum DailyTarget {
     #[default]
     Off,
-    #[serde(rename = "250")]
     W250,
-    #[serde(rename = "500")]
     W500,
-    #[serde(rename = "1000")]
     W1000,
-    #[serde(rename = "2000")]
     W2000,
+    Custom(u32),
 }
 
 impl DailyTarget {
     /// The spelling the settings file and the page both use.
-    pub fn as_str(self) -> &'static str {
+    pub fn as_str(self) -> std::borrow::Cow<'static, str> {
+        use std::borrow::Cow::{Borrowed, Owned};
         match self {
-            DailyTarget::Off => "off",
-            DailyTarget::W250 => "250",
-            DailyTarget::W500 => "500",
-            DailyTarget::W1000 => "1000",
-            DailyTarget::W2000 => "2000",
+            DailyTarget::Off => Borrowed("off"),
+            DailyTarget::W250 => Borrowed("250"),
+            DailyTarget::W500 => Borrowed("500"),
+            DailyTarget::W1000 => Borrowed("1000"),
+            DailyTarget::W2000 => Borrowed("2000"),
+            DailyTarget::Custom(words) => Owned(words.to_string()),
         }
     }
 
-    /// None for anything else, so the page cannot write a value into the
-    /// preferences file that the next launch will not understand.
+    /// Refuse noncanonical spellings so one preference has one encoding.
     pub fn parse(s: &str) -> Option<DailyTarget> {
         match s {
             "off" => Some(DailyTarget::Off),
@@ -1243,8 +1575,35 @@ impl DailyTarget {
             "500" => Some(DailyTarget::W500),
             "1000" => Some(DailyTarget::W1000),
             "2000" => Some(DailyTarget::W2000),
-            _ => None,
+            _ => {
+                if s.starts_with('0') || !s.bytes().all(|byte| byte.is_ascii_digit()) {
+                    return None;
+                }
+                let words = s.parse::<u32>().ok()?;
+                (1..=1_000_000)
+                    .contains(&words)
+                    .then_some(DailyTarget::Custom(words))
+            }
         }
+    }
+}
+
+impl Serialize for DailyTarget {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str().as_ref())
+    }
+}
+
+impl<'de> Deserialize<'de> for DailyTarget {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        Self::parse(&raw).ok_or_else(|| serde::de::Error::custom("invalid daily target"))
     }
 }
 
@@ -1533,7 +1892,7 @@ fn default_mark_cast_names() -> bool {
 ///
 /// Read here and in nothing else: `contract_home` and `expand_home` take the
 /// home as a parameter, so they test without touching the environment.
-fn home_dir() -> Option<PathBuf> {
+pub(crate) fn home_dir() -> Option<PathBuf> {
     let raw = std::env::var_os("HOME")?;
     let path = PathBuf::from(raw);
     let text = path.to_str()?;
@@ -1650,6 +2009,36 @@ pub fn record_book_location(settings: &mut Settings, book_id: &str, path: &Path)
     });
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SidebarWordCounts {
+    #[serde(default = "default_sidebar_scene", deserialize_with = "lenient_sidebar_scene")]
+    pub scene: bool,
+    #[serde(default, deserialize_with = "lenient_sidebar_container")]
+    pub chapter: bool,
+    #[serde(default, deserialize_with = "lenient_sidebar_container")]
+    pub part: bool,
+}
+
+impl Default for SidebarWordCounts {
+    fn default() -> Self {
+        Self { scene: true, chapter: false, part: false }
+    }
+}
+
+fn default_sidebar_scene() -> bool { true }
+
+fn lenient_sidebar_scene<'de, D: serde::Deserializer<'de>>(d: D) -> Result<bool, D::Error> {
+    Ok(serde_json::Value::deserialize(d)?.as_bool().unwrap_or(true))
+}
+
+fn lenient_sidebar_container<'de, D: serde::Deserializer<'de>>(d: D) -> Result<bool, D::Error> {
+    Ok(serde_json::Value::deserialize(d)?.as_bool().unwrap_or(false))
+}
+
+fn lenient_sidebar_word_counts<'de, D: serde::Deserializer<'de>>(d: D) -> Result<SidebarWordCounts, D::Error> {
+    Ok(serde_json::from_value(serde_json::Value::deserialize(d)?).unwrap_or_default())
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
     pub last_project: Option<String>,
@@ -1666,6 +2055,8 @@ pub struct Settings {
     /// about the machine, beside `window` for the same reason. LENIENT.
     #[serde(default, deserialize_with = "crate::zoom::lenient_zoom")]
     pub zoom: crate::zoom::Zoom,
+    #[serde(default, deserialize_with = "lenient_sidebar_word_counts")]
+    pub sidebar_word_counts: SidebarWordCounts,
     /// LENIENT on purpose - see `lenient_daily_target`.
     #[serde(default, deserialize_with = "lenient_daily_target")]
     pub daily_target: DailyTarget,
@@ -1790,6 +2181,7 @@ impl Default for Settings {
             typography: Typography::default(),
             window: WindowSize::default(),
             zoom: crate::zoom::Zoom::default(),
+            sidebar_word_counts: SidebarWordCounts::default(),
             daily_target: DailyTarget::default(),
             bible_rows: default_bible_rows(),
             writing_modes: WritingModes::default(),
@@ -1981,10 +2373,10 @@ pub fn remember_open(data_home: &Path, explicit: bool, path: &Path, now_ms: u64)
     if explicit {
         return;
     }
-    let mut settings = read_settings(data_home);
-    settings.last_project = Some(path.to_string_lossy().into_owned());
-    record_recent(&mut settings, path, now_ms);
-    if let Err(e) = write_settings(data_home, &settings) {
+    if let Err(e) = update_settings(data_home, |settings| {
+        settings.last_project = Some(path.to_string_lossy().into_owned());
+        record_recent(settings, path, now_ms);
+    }) {
         eprintln!("cannot record the last project: {e}");
     }
 }
@@ -2111,14 +2503,8 @@ where
     Ok(raw.as_str().and_then(Theme::parse).unwrap_or_default())
 }
 
-/// Any JSON value that is not one of the five known strings reads as `off`, for
-/// the reason every field in this file is lenient: one unreadable preference
-/// must cost exactly itself, never `last_project` as well.
-///
-/// A NUMBER is not one of them, deliberately. `{"daily_target": 500}` reads as
-/// `off` rather than as five hundred, because the day the list gains a value the
-/// file has to say which spelling it means -- and a build that silently accepts
-/// both has two encodings of one preference from then on.
+/// A malformed target costs only this preference, never `last_project`.
+/// JSON numbers remain invalid: the settings wire format is always a string.
 fn lenient_daily_target<'de, D>(d: D) -> std::result::Result<DailyTarget, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -2350,7 +2736,7 @@ where
         .unwrap_or_default())
 }
 
-/// `<data_home>/cc.local.app/settings.json`. A missing or unparseable file reads
+/// `<data_home>/garret/settings.json`. A missing or unparseable file reads
 /// as default: this is a preferences file, losing it costs the user one click,
 /// and refusing to launch over it would be worse.
 ///
@@ -2504,6 +2890,211 @@ mod tests {
         super::create_in(dir, name, &english())
     }
 
+    fn competing_creation_book(path: &Path) -> (Store, Vec<(PathBuf, Vec<u8>)>) {
+        let other = Store::open(path).unwrap();
+        other.set_meta(NAME_KEY, "Competing manuscript").unwrap();
+        other.ensure_starter_structure(&english()).unwrap();
+        other.checkpoint().unwrap();
+        other
+            .set_meta(
+                "competition_marker",
+                "Distinct uncheckpointed manuscript state",
+            )
+            .unwrap();
+        let files = [
+            path.to_path_buf(),
+            path.with_extension("db-wal"),
+            path.with_extension("db-shm"),
+        ]
+        .into_iter()
+        .map(|path| {
+            let bytes = fs::read(&path).unwrap();
+            (path, bytes)
+        })
+        .collect();
+        (other, files)
+    }
+
+    #[test]
+    fn exclusive_creation_preserves_a_book_arriving_after_preflight() {
+        for (imported, with_sidecars) in
+            [(false, true), (true, true), (false, false), (true, false)]
+        {
+            let dir = tempdir().unwrap();
+            let mut competing = None;
+            let mut before = Vec::new();
+            let arrive = |path: &Path| {
+                let (store, files) = competing_creation_book(path);
+                if with_sidecars {
+                    competing = Some(store);
+                    before = files;
+                } else {
+                    store.checkpoint().unwrap();
+                    drop(store);
+                    before = vec![(path.to_path_buf(), fs::read(path).unwrap())];
+                }
+            };
+            let result = if imported {
+                super::create_imported_with(
+                    dir.path(),
+                    "Book",
+                    &[(None, "scene", "Imported scene", Some("Imported prose"))],
+                    &english(),
+                    arrive,
+                )
+            } else {
+                super::create_in_with(dir.path(), "Book", &english(), arrive)
+            };
+            assert!(
+                result.is_err(),
+                "a competing valid book must refuse creation instead of being adopted"
+            );
+            for (path, bytes) in before {
+                assert_eq!(
+                    fs::read(path).unwrap(),
+                    bytes,
+                    "creation touched a competing database or sidecar"
+                );
+            }
+            let competing = competing
+                .unwrap_or_else(|| Store::open_readonly(&dir.path().join("book.db")).unwrap());
+            assert_eq!(
+                competing.get_meta(NAME_KEY).unwrap().as_deref(),
+                Some("Competing manuscript")
+            );
+        }
+    }
+
+    #[test]
+    fn exclusive_creation_failed_import_never_cleans_a_competing_book() {
+        let dir = tempdir().unwrap();
+        let mut competing = None;
+        let mut before = Vec::new();
+        let rows = [
+            (None, "chapter", "First", None),
+            (Some(1usize), "scene", "Invalid parent", None),
+        ];
+        let result = super::create_imported_with(dir.path(), "Book", &rows, &english(), |path| {
+            let (store, files) = competing_creation_book(path);
+            competing = Some(store);
+            before = files;
+        });
+        assert!(result.is_err());
+        for (path, bytes) in before {
+            assert_eq!(
+                fs::read(&path).unwrap(),
+                bytes,
+                "failed import removed or changed the competing book at {}",
+                path.display()
+            );
+        }
+        assert_eq!(
+            competing.unwrap().get_meta(NAME_KEY).unwrap().as_deref(),
+            Some("Competing manuscript")
+        );
+    }
+
+    #[test]
+    fn exclusive_creation_cleans_only_owned_staging_after_fill_failure() {
+        let dir = tempdir().unwrap();
+        let result = super::create_book_with(
+            dir.path(),
+            "Book",
+            |_| {},
+            |store, path| {
+                assert!(!path.exists(), "the incomplete book must not be published");
+                let stage = fs::read_dir(dir.path())
+                    .unwrap()
+                    .next()
+                    .unwrap()
+                    .unwrap()
+                    .path();
+                assert!(stage
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .starts_with(".garret-create-"));
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    assert_eq!(
+                        fs::metadata(&stage).unwrap().permissions().mode() & 0o777,
+                        0o700
+                    );
+                }
+                assert!(stage.join("project.db").is_file());
+                store
+                    .set_meta("partial_import", "owned temporary data")
+                    .unwrap();
+                Err("injected filling failure".into())
+            },
+        );
+        assert!(result.unwrap_err().contains("injected filling failure"));
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn exclusive_creation_cleanup_failure_does_not_hide_a_published_book() {
+        let dir = tempdir().unwrap();
+        let mut retained = None;
+        let made = super::create_book_with_cleanup(
+            dir.path(),
+            "Book",
+            |_| {},
+            |store, _| {
+                store
+                    .ensure_starter_structure(&english())
+                    .map(|_| ())
+                    .map_err(|error| error.to_string())
+            },
+            |stage| {
+                retained = Some(stage.keep());
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::PermissionDenied,
+                    "injected staging cleanup failure",
+                ))
+            },
+        )
+        .expect("a cleanup failure must not hide a saved book from registration");
+        assert_eq!(Path::new(&made.path), dir.path().join("book.db"));
+        let store = Store::open_readonly(Path::new(&made.path)).unwrap();
+        assert_eq!(store.get_meta(NAME_KEY).unwrap().as_deref(), Some("Book"));
+        assert_eq!(store.items().unwrap().len(), 2);
+        let retained = retained.unwrap();
+        assert!(retained.is_dir());
+        assert!(!retained.join("project.db").exists());
+    }
+
+    #[test]
+    fn exclusive_creation_preserves_orphan_destination_sidecars() {
+        for extension in ["db-wal", "db-shm"] {
+            for imported in [false, true] {
+                let dir = tempdir().unwrap();
+                let arrive = |path: &Path| {
+                    fs::write(path.with_extension(extension), b"unrelated orphan").unwrap()
+                };
+                let result = if imported {
+                    super::create_imported_with(
+                        dir.path(),
+                        "Book",
+                        &[(None, "scene", "Imported", Some("Prose"))],
+                        &english(),
+                        arrive,
+                    )
+                } else {
+                    super::create_in_with(dir.path(), "Book", &english(), arrive)
+                };
+                assert!(result.unwrap_err().contains("database sidecar"));
+                assert!(!dir.path().join("book.db").exists());
+                assert_eq!(
+                    fs::read(dir.path().join(format!("book.{extension}"))).unwrap(),
+                    b"unrelated orphan"
+                );
+                assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+            }
+        }
+    }
+
     #[test]
     fn a_failed_import_leaves_no_project_and_preserves_its_neighbor() {
         let dir = tempdir().unwrap();
@@ -2538,6 +3129,14 @@ mod tests {
             assert!(!dir.path().join(name).exists(), "failed import left {name}");
         }
         assert_eq!(fs::read(neighbor_path).unwrap(), before);
+        assert!(
+            fs::read_dir(dir.path()).unwrap().all(|entry| !entry
+                .unwrap()
+                .file_name()
+                .to_string_lossy()
+                .starts_with(".garret-create-")),
+            "failed import left its owned staging directory"
+        );
         let store = Store::open_readonly(neighbor_path).unwrap();
         let scene = &store.items().unwrap()[0];
         assert_eq!(scene.title, "Keep this scene");
@@ -2668,6 +3267,73 @@ mod tests {
     }
 
     #[test]
+    fn unicode_only_titles_have_stable_distinct_safe_basenames() {
+        for (title, expected) in [
+            ("שלום", "book-b7ac0398ef74193ab738b21df0912329"),
+            ("العربية", "book-d274159863057eb5c633116c3b54e4f8"),
+            ("中文", "book-72726d8818f693066ceb69afa364218b"),
+        ] {
+            assert_eq!(slugify(title).as_deref(), Some(expected));
+            assert_eq!(slugify(&format!("  {title}  ")).as_deref(), Some(expected));
+        }
+        for title in ["", "   ", "!!!", "。？！", "—"] {
+            assert_eq!(slugify(title), None, "{title:?}");
+        }
+        for (title, expected) in [
+            ("  The Winter Harbour!  ", "the-winter-harbour"),
+            ("a - b", "a-b"),
+            ("Straße", "stra-e"),
+            ("中文 A", "a"),
+        ] {
+            assert_eq!(slugify(title).as_deref(), Some(expected));
+        }
+    }
+
+    #[test]
+    fn unicode_titles_create_and_import_without_replacing_existing_books() {
+        let created_dir = tempdir().unwrap();
+        let imported_dir = tempdir().unwrap();
+        let prose = r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Imported prose."}]}]}"#;
+        let rows = [(None, "scene", "Imported scene", Some(prose))];
+        for title in ["שלום", "العربية", "中文"] {
+            let created = create_in(created_dir.path(), title).unwrap();
+            let imported = create_imported(imported_dir.path(), title, &rows).unwrap();
+            for summary in [&created, &imported] {
+                assert_eq!(summary.name, title);
+                let store = Store::open_readonly(Path::new(&summary.path)).unwrap();
+                assert_eq!(store.get_meta(NAME_KEY).unwrap().as_deref(), Some(title));
+            }
+            let store = Store::open_readonly(Path::new(&imported.path)).unwrap();
+            let scenes: Vec<_> = store
+                .items()
+                .unwrap()
+                .into_iter()
+                .filter(|item| item.item_type == "scene")
+                .collect();
+            assert_eq!(scenes.len(), 1);
+            assert_eq!(scenes[0].title, "Imported scene");
+            let created_before = fs::read(&created.path).unwrap();
+            let imported_before = fs::read(&imported.path).unwrap();
+            assert!(create_in(created_dir.path(), title)
+                .unwrap_err()
+                .contains("already exists"));
+            assert!(create_imported(imported_dir.path(), title, &rows)
+                .unwrap_err()
+                .contains("already exists"));
+            assert_eq!(fs::read(&created.path).unwrap(), created_before);
+            assert_eq!(fs::read(&imported.path).unwrap(), imported_before);
+        }
+        for directory in [created_dir.path(), imported_dir.path()] {
+            let books = fs::read_dir(directory)
+                .unwrap()
+                .map(|entry| entry.unwrap().path())
+                .filter(|path| path.is_file() && path.extension().is_some_and(|ext| ext == "db"))
+                .count();
+            assert_eq!(books, 3);
+        }
+    }
+
+    #[test]
     fn non_ascii_becomes_a_separator_without_leaving_edge_hyphens() {
         let slug = slugify("  Straße  ").expect("a name with letters must yield a slug");
         assert!(!slug.is_empty());
@@ -2741,6 +3407,247 @@ mod tests {
     }
 
     #[test]
+    fn a_move_collision_after_preflight_preserves_both_books_and_sidecars() {
+        let a = tempdir().unwrap();
+        let b = tempdir().unwrap();
+        let book = book_at(a.path(), "Harbour");
+        let before = fs::read(&book).unwrap();
+        for dir in [
+            crate::pictures::dir_for(&book),
+            crate::research::dir_for(&book),
+        ] {
+            fs::create_dir(&dir).unwrap();
+            fs::write(dir.join("original"), b"source original").unwrap();
+        }
+        let to = move_target(&book, b.path()).unwrap();
+        let other = Store::open(&to).unwrap();
+        other.set_meta(NAME_KEY, "Another manuscript").unwrap();
+        other.checkpoint().unwrap();
+        drop(other);
+        let collision = fs::read(&to).unwrap();
+        for extension in ["db-wal", "db-shm"] {
+            fs::write(to.with_extension(extension), b"other book sidecar").unwrap();
+        }
+        let result = move_book_files(&book, &to);
+        assert!(
+            result.is_err(),
+            "a destination created after preflight must refuse publication"
+        );
+        assert_eq!(fs::read(&book).unwrap(), before);
+        assert_eq!(fs::read(&to).unwrap(), collision);
+        for extension in ["db-wal", "db-shm"] {
+            assert_eq!(
+                fs::read(to.with_extension(extension)).unwrap(),
+                b"other book sidecar"
+            );
+        }
+        for dir in [
+            crate::pictures::dir_for(&book),
+            crate::research::dir_for(&book),
+        ] {
+            assert_eq!(fs::read(dir.join("original")).unwrap(), b"source original");
+        }
+    }
+
+    #[test]
+    fn move_collision_with_a_database_alone_refuses_the_exclusive_rename() {
+        let a = tempdir().unwrap();
+        let b = tempdir().unwrap();
+        let book = book_at(a.path(), "Harbour");
+        let before = fs::read(&book).unwrap();
+        let to = move_target(&book, b.path()).unwrap();
+        let other = Store::open(&to).unwrap();
+        other.set_meta(NAME_KEY, "Another manuscript").unwrap();
+        other.checkpoint().unwrap();
+        drop(other);
+        let collision = fs::read(&to).unwrap();
+        assert!(!to.with_extension("db-wal").exists());
+        assert!(!to.with_extension("db-shm").exists());
+        assert!(move_book_files(&book, &to).is_err());
+        assert_eq!(fs::read(&book).unwrap(), before);
+        assert_eq!(fs::read(&to).unwrap(), collision);
+    }
+
+    #[test]
+    fn move_collision_with_orphan_destination_logs_preserves_the_orphans() {
+        for extension in ["db-wal", "db-shm"] {
+            let a = tempdir().unwrap();
+            let b = tempdir().unwrap();
+            let book = book_at(a.path(), "Harbour");
+            let before = fs::read(&book).unwrap();
+            let to = move_target(&book, b.path()).unwrap();
+            let sidecar = to.with_extension(extension);
+            fs::write(&sidecar, b"unrelated orphan").unwrap();
+            assert!(move_target(&book, b.path()).is_err());
+            let error = move_book_files(&book, &to).unwrap_err();
+            assert!(error.to_string().contains("database sidecar"), "{error}");
+            assert_eq!(fs::read(&book).unwrap(), before);
+            assert!(!to.exists());
+            assert_eq!(fs::read(&sidecar).unwrap(), b"unrelated orphan");
+        }
+    }
+
+    #[test]
+    fn move_collisions_with_empty_asset_directories_preserve_both_sides() {
+        for collision_is_pictures in [true, false] {
+            let a = tempdir().unwrap();
+            let b = tempdir().unwrap();
+            let book = book_at(a.path(), "Harbour");
+            let before = fs::read(&book).unwrap();
+            let pictures = crate::pictures::dir_for(&book);
+            let research = crate::research::dir_for(&book);
+            for dir in [&pictures, &research] {
+                fs::create_dir(dir).unwrap();
+                fs::write(dir.join("original"), b"retained original").unwrap();
+            }
+            let to = move_target(&book, b.path()).unwrap();
+            let collision = if collision_is_pictures {
+                crate::pictures::dir_for(&to)
+            } else {
+                crate::research::dir_for(&to)
+            };
+            fs::create_dir(&collision).unwrap();
+            let result = move_book_files(&book, &to);
+            assert!(
+                result.is_err(),
+                "even an empty destination directory must not be replaced"
+            );
+            assert_eq!(fs::read(&book).unwrap(), before);
+            assert!(!to.exists());
+            for dir in [&pictures, &research] {
+                assert_eq!(
+                    fs::read(dir.join("original")).unwrap(),
+                    b"retained original"
+                );
+            }
+            assert_eq!(fs::read_dir(&collision).unwrap().count(), 0);
+        }
+    }
+
+    #[test]
+    fn move_rollback_never_replaces_a_new_database_at_the_source() {
+        for with_sidecars in [false, true] {
+            let a = tempdir().unwrap();
+            let b = tempdir().unwrap();
+            let book = book_at(a.path(), "Harbour");
+            let before = fs::read(&book).unwrap();
+            let pictures = crate::pictures::dir_for(&book);
+            let research = crate::research::dir_for(&book);
+            for dir in [&pictures, &research] {
+                fs::create_dir(dir).unwrap();
+                fs::write(dir.join("original"), b"retained original").unwrap();
+            }
+            let to = move_target(&book, b.path()).unwrap();
+            let pictures_to = crate::pictures::dir_for(&to);
+            let mut collision_bytes = None;
+            let error = move_book_files_with(&book, &to, |source, destination| {
+                if source == pictures && destination == pictures_to {
+                    let other = Store::open(&book).unwrap();
+                    other.set_meta(NAME_KEY, "Another manuscript").unwrap();
+                    other.checkpoint().unwrap();
+                    drop(other);
+                    collision_bytes = Some(fs::read(&book).unwrap());
+                    fs::create_dir(&pictures_to).unwrap();
+                    if with_sidecars {
+                        fs::write(book.with_extension("db-wal"), b"other WAL").unwrap();
+                        fs::write(book.with_extension("db-shm"), b"other SHM").unwrap();
+                    }
+                }
+                rename_without_replace(source, destination)
+            })
+            .unwrap_err();
+            assert!(
+                error.reopen_at.is_none(),
+                "a split book must not be reopened"
+            );
+            assert!(error.to_string().contains("Rollback failed"), "{error}");
+            assert!(
+                error
+                    .to_string()
+                    .contains(&format!("The database is at {}", to.display())),
+                "{error}"
+            );
+            assert!(
+                error
+                    .to_string()
+                    .contains(&format!("The pictures folder is at {}", pictures.display())),
+                "{error}"
+            );
+            assert_eq!(fs::read(&to).unwrap(), before);
+            assert_eq!(fs::read(&book).unwrap(), collision_bytes.unwrap());
+            if with_sidecars {
+                assert_eq!(
+                    fs::read(book.with_extension("db-wal")).unwrap(),
+                    b"other WAL"
+                );
+                assert_eq!(
+                    fs::read(book.with_extension("db-shm")).unwrap(),
+                    b"other SHM"
+                );
+            }
+            for dir in [&pictures, &research] {
+                assert_eq!(
+                    fs::read(dir.join("original")).unwrap(),
+                    b"retained original"
+                );
+            }
+            assert_eq!(fs::read_dir(&pictures_to).unwrap().count(), 0);
+        }
+    }
+
+    #[test]
+    fn move_rollback_reports_pictures_retained_away_from_the_database() {
+        let a = tempdir().unwrap();
+        let b = tempdir().unwrap();
+        let book = book_at(a.path(), "Harbour");
+        let before = fs::read(&book).unwrap();
+        let pictures = crate::pictures::dir_for(&book);
+        let research = crate::research::dir_for(&book);
+        for dir in [&pictures, &research] {
+            fs::create_dir(dir).unwrap();
+            fs::write(dir.join("original"), b"retained original").unwrap();
+        }
+        let to = move_target(&book, b.path()).unwrap();
+        let pictures_to = crate::pictures::dir_for(&to);
+        let research_to = crate::research::dir_for(&to);
+        let error = move_book_files_with(&book, &to, |source, destination| {
+            if source == research && destination == research_to {
+                fs::create_dir(&pictures).unwrap();
+                fs::create_dir(&research_to).unwrap();
+            }
+            rename_without_replace(source, destination)
+        })
+        .unwrap_err();
+        assert!(error.reopen_at.is_none());
+        assert!(error.to_string().contains("Rollback failed"), "{error}");
+        assert!(
+            error
+                .to_string()
+                .contains(&format!("The database is at {}", book.display())),
+            "{error}"
+        );
+        assert!(
+            error.to_string().contains(&format!(
+                "The pictures folder is at {}",
+                pictures_to.display()
+            )),
+            "{error}"
+        );
+        assert_eq!(fs::read(&book).unwrap(), before);
+        assert!(!to.exists());
+        assert_eq!(
+            fs::read(pictures_to.join("original")).unwrap(),
+            b"retained original"
+        );
+        assert_eq!(
+            fs::read(research.join("original")).unwrap(),
+            b"retained original"
+        );
+        assert_eq!(fs::read_dir(&pictures).unwrap().count(), 0);
+        assert_eq!(fs::read_dir(&research_to).unwrap().count(), 0);
+    }
+
+    #[test]
     fn moving_carries_the_pictures_folder_and_leaves_nothing_behind() {
         let a = tempdir().unwrap();
         let b = tempdir().unwrap();
@@ -2748,12 +3655,20 @@ mod tests {
         let pictures = crate::pictures::dir_for(&book);
         fs::create_dir(&pictures).unwrap();
         fs::write(pictures.join("face.jpg"), b"jpeg").unwrap();
+        let research = crate::research::dir_for(&book);
+        fs::create_dir(&research).unwrap();
+        fs::write(research.join("source.pdf"), b"retained research").unwrap();
         let to = move_target(&book, b.path()).unwrap();
 
         move_book_files(&book, &to).unwrap();
 
         assert!(!book.exists());
         assert!(!pictures.exists());
+        assert!(!research.exists());
+        assert_eq!(
+            fs::read(crate::research::dir_for(&to).join("source.pdf")).unwrap(),
+            b"retained research"
+        );
         assert!(to.is_file());
         assert_eq!(
             fs::read(crate::pictures::dir_for(&to).join("face.jpg")).unwrap(),
@@ -2762,7 +3677,6 @@ mod tests {
         // And the moved file is still a project.
         assert!(Store::open(&to).unwrap().items().unwrap().len() > 0);
     }
-
     #[test]
     fn a_move_without_pictures_moves_the_one_file() {
         let a = tempdir().unwrap();
@@ -2783,7 +3697,7 @@ mod tests {
         fs::write(book.with_extension("db-wal"), b"frames").unwrap();
         let to = move_target(&book, b.path()).unwrap();
         let err = move_book_files(&book, &to).unwrap_err();
-        assert!(err.contains("still being written"), "{err}");
+        assert!(err.to_string().contains("still being written"), "{err}");
         assert!(book.exists());
         assert!(!to.exists());
     }
@@ -2801,7 +3715,7 @@ mod tests {
         fs::write(crate::pictures::dir_for(&to), b"in the way").unwrap();
 
         let err = move_book_files(&book, &to).unwrap_err();
-        assert!(err.contains("pictures"), "{err}");
+        assert!(err.to_string().contains("pictures"), "{err}");
         assert!(book.is_file(), "the file must be back where it was");
         assert!(!to.exists());
         assert!(pictures.is_dir());
@@ -2993,6 +3907,60 @@ mod tests {
         assert!(!by_name("Here").missing);
         assert!(by_name("gone").missing);
         assert!(by_name("gone").error.is_some());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_book_behind_a_permission_error_is_retained_in_both_library_views() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let home = tempdir().unwrap();
+        let elsewhere = tempdir().unwrap();
+        let present = book_at(elsewhere.path(), "Still Here");
+        let key = present.to_string_lossy().into_owned();
+        update_settings(home.path(), |settings| settings.books.push(key.clone())).unwrap();
+        let settings_before = fs::read(settings_path(home.path())).unwrap();
+        let book_before = fs::read(&present).unwrap();
+        let permissions = fs::metadata(elsewhere.path()).unwrap().permissions();
+        fs::set_permissions(elsewhere.path(), fs::Permissions::from_mode(0)).unwrap();
+        let lookup = fs::metadata(&present);
+        let listed = list_known(home.path());
+        let shelf = crate::commands::library::overview(home.path());
+        let forgotten = forget_book(home.path(), &key);
+        fs::set_permissions(elsewhere.path(), permissions).unwrap();
+
+        assert_eq!(lookup.unwrap_err().kind(), std::io::ErrorKind::PermissionDenied);
+        assert_eq!(listed.len(), 1);
+        assert!(!listed[0].missing, "lookup failure is not confirmed absence");
+        assert!(listed[0].error.is_some());
+        assert_eq!(shelf.books.len(), 1);
+        assert!(!shelf.books[0].missing, "the shelf must preserve the same boundary");
+        assert!(shelf.books[0].error.is_some());
+        assert!(forgotten.is_err(), "an unknown file state must refuse Forget");
+        assert_eq!(fs::read(settings_path(home.path())).unwrap(), settings_before);
+        assert_eq!(fs::read(&present).unwrap(), book_before);
+        assert_eq!(read_settings(home.path()).books, [key]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_book_behind_an_invalid_parent_is_retained_after_lookup_failure() {
+        let home = tempdir().unwrap();
+        let parent = home.path().join("former-folder");
+        fs::write(&parent, "folder replaced by a file").unwrap();
+        let path = parent.join("remembered.db");
+        let key = path.to_string_lossy().into_owned();
+        update_settings(home.path(), |settings| settings.books.push(key.clone())).unwrap();
+        let before = fs::read(settings_path(home.path())).unwrap();
+        assert_ne!(fs::metadata(&path).unwrap_err().kind(), std::io::ErrorKind::NotFound);
+
+        assert!(!summarize(&path).missing);
+        let shelf = crate::commands::library::overview(home.path());
+        assert_eq!(shelf.books.len(), 1);
+        assert!(!shelf.books[0].missing);
+        assert!(forget_book(home.path(), &key).is_err());
+        assert_eq!(fs::read(settings_path(home.path())).unwrap(), before);
+        assert_eq!(read_settings(home.path()).books, [key]);
     }
 
     #[test]
@@ -3229,7 +4197,7 @@ mod tests {
 
         // Also refused when the target exists, so the answer cannot depend on
         // whether the file happens to be there yet.
-        fs::write(dir.path().join("cc.local.app").join("escape.db"), b"x").unwrap();
+        fs::write(dir.path().join("garret").join("escape.db"), b"x").unwrap();
         assert!(!in_library(&lib, &escape), "{}", escape.display());
     }
 
@@ -3360,6 +4328,7 @@ mod tests {
                     height: 700,
                 },
                 zoom: crate::zoom::Zoom::Z150,
+                sidebar_word_counts: SidebarWordCounts::default(),
                 daily_target: DailyTarget::W1000,
                 bible_rows: 9,
                 writing_modes: WritingModes {
@@ -3407,6 +4376,50 @@ mod tests {
     }
 
     #[test]
+    fn daily_target_deserializes_leniently_without_losing_the_project() {
+        for value in [
+            serde_json::json!(null),
+            serde_json::json!(750),
+            serde_json::json!(true),
+            serde_json::json!([]),
+            serde_json::json!({"Custom":750}),
+            serde_json::json!(""),
+            serde_json::json!("0"),
+            serde_json::json!("0750"),
+            serde_json::json!(" 750"),
+            serde_json::json!("750 "),
+            serde_json::json!("+750"),
+            serde_json::json!("-750"),
+            serde_json::json!("7.5"),
+            serde_json::json!("1e3"),
+            serde_json::json!("1000001"),
+            serde_json::json!("4294967296"),
+            serde_json::json!("999999999999999999999999999999999999"),
+            serde_json::json!("７５０"),
+        ] {
+            let dir = tempdir().unwrap();
+            fs::create_dir_all(dir.path().join(APP_DIR)).unwrap();
+            fs::write(
+                settings_path(dir.path()),
+                serde_json::json!({
+                    "last_project":"/books/a.db", "theme":"dark", "zoom":"150", "daily_target":value
+                })
+                .to_string(),
+            )
+            .unwrap();
+            let settings = read_settings(dir.path());
+            assert_eq!(settings.daily_target, DailyTarget::Off, "{value}");
+            assert_eq!(
+                settings.last_project.as_deref(),
+                Some("/books/a.db"),
+                "{value}"
+            );
+            assert_eq!(settings.theme, Theme::Dark, "{value}");
+            assert_eq!(settings.zoom, crate::zoom::Zoom::Z150, "{value}");
+        }
+    }
+
+    #[test]
     fn bible_rows_deserializes_leniently_without_losing_the_project() {
         let dir = tempdir().unwrap();
         let path = settings_path(dir.path());
@@ -3442,7 +4455,7 @@ mod tests {
 
     #[test]
     fn an_absolute_remembered_folder_wins_over_every_default() {
-        let library = PathBuf::from("/home/writer/.local/share/cc.local.app/projects");
+        let library = PathBuf::from("/home/writer/.local/share/garret/projects");
         let custom = "/home/writer/Manuscripts";
         assert_eq!(
             resolve_new_book_dir(
@@ -3462,7 +4475,7 @@ mod tests {
         // hidden library included -- a profile from before this slice can hold
         // it as a "remembered" folder, and that is the legacy default, not a
         // choice.
-        let library = PathBuf::from("/home/writer/.local/share/cc.local.app/projects");
+        let library = PathBuf::from("/home/writer/.local/share/garret/projects");
         let documents = PathBuf::from("/home/writer/Documents");
         assert_eq!(
             resolve_new_book_dir(
@@ -3478,7 +4491,7 @@ mod tests {
 
     #[test]
     fn with_documents_available_the_default_is_documents_books() {
-        let library = PathBuf::from("/home/writer/.local/share/cc.local.app/projects");
+        let library = PathBuf::from("/home/writer/.local/share/garret/projects");
         let documents = PathBuf::from("/home/writer/Dokumente");
         assert_eq!(
             resolve_new_book_dir(None, &library, Some(documents.clone()), None).unwrap(),
@@ -3489,7 +4502,7 @@ mod tests {
 
     #[test]
     fn with_no_documents_folder_the_default_falls_back_to_home_books() {
-        let library = PathBuf::from("/home/writer/.local/share/cc.local.app/projects");
+        let library = PathBuf::from("/home/writer/.local/share/garret/projects");
         let home = PathBuf::from("/home/writer");
         assert_eq!(
             resolve_new_book_dir(None, &library, None, Some(home.clone())).unwrap(),
@@ -3499,7 +4512,7 @@ mod tests {
 
     #[test]
     fn with_neither_documents_nor_home_the_resolver_refuses() {
-        let library = PathBuf::from("/home/writer/.local/share/cc.local.app/projects");
+        let library = PathBuf::from("/home/writer/.local/share/garret/projects");
         let error = resolve_new_book_dir(None, &library, None, None).unwrap_err();
         assert!(!error.is_empty());
     }
@@ -3510,7 +4523,7 @@ mod tests {
         // (106's own discipline); a relative survivor from a hand-edited or
         // damaged settings file must not be handed to the writer as a folder
         // to create a book in.
-        let library = PathBuf::from("/home/writer/.local/share/cc.local.app/projects");
+        let library = PathBuf::from("/home/writer/.local/share/garret/projects");
         let documents = PathBuf::from("/home/writer/Documents");
         assert_eq!(
             resolve_new_book_dir(
@@ -3727,6 +4740,7 @@ mod tests {
             typography: Typography::default(),
             window: WindowSize::default(),
             zoom: crate::zoom::Zoom::default(),
+            sidebar_word_counts: SidebarWordCounts::default(),
             daily_target: DailyTarget::default(),
             bible_rows: default_bible_rows(),
             writing_modes: WritingModes::default(),
@@ -4248,6 +5262,63 @@ mod tests {
     }
 
     #[test]
+    fn remember_open_waits_for_a_settings_update_and_preserves_both_changes() {
+        let dir = tempdir().unwrap();
+        let home = dir.path();
+        let (started_tx, started_rx) = std::sync::mpsc::channel();
+        let (done_tx, done_rx) = std::sync::mpsc::channel();
+        let mut completed_while_locked = false;
+
+        std::thread::scope(|scope| {
+            update_settings(home, |settings| {
+                scope.spawn(move || {
+                    started_tx.send(()).unwrap();
+                    remember_open(home, false, Path::new("/lib/a.db"), 7);
+                    done_tx.send(()).unwrap();
+                });
+                started_rx.recv().unwrap();
+                // The ordinary update owns the lock until this callback returns.
+                completed_while_locked = done_rx
+                    .recv_timeout(std::time::Duration::from_millis(100))
+                    .is_ok();
+                settings.theme = Theme::Dark;
+                settings.window = WindowSize {
+                    width: 1200,
+                    height: 800,
+                };
+            })
+            .unwrap();
+        });
+
+        assert!(!completed_while_locked, "the open bypassed the settings lock");
+        let read = read_settings_checked(home).unwrap();
+        assert_eq!(read.last_project.as_deref(), Some("/lib/a.db"));
+        assert_eq!(read.recent.len(), 1);
+        assert_eq!(read.recent[0].path, "/lib/a.db");
+        assert_eq!(read.recent[0].opened_at, 7);
+        assert_eq!(read.theme, Theme::Dark);
+        assert_eq!(
+            read.window,
+            WindowSize {
+                width: 1200,
+                height: 800,
+            }
+        );
+    }
+
+    #[test]
+    fn remember_open_preserves_damaged_settings() {
+        let dir = tempdir().unwrap();
+        let path = settings_path(dir.path());
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, b"{").unwrap();
+
+        remember_open(dir.path(), false, Path::new("/lib/a.db"), 7);
+
+        assert_eq!(fs::read(path).unwrap(), b"{");
+    }
+
+    #[test]
     fn record_recent_drops_the_oldest_past_the_cap() {
         let mut s = Settings::default();
         for i in 0..21u64 {
@@ -4261,7 +5332,7 @@ mod tests {
     #[test]
     fn exports_dir_sits_beside_the_library() {
         let d = Path::new("/data");
-        assert_eq!(exports_dir(d), PathBuf::from("/data/cc.local.app/exports"));
+        assert_eq!(exports_dir(d), PathBuf::from("/data/garret/exports"));
         assert_eq!(exports_dir(d).parent(), library_dir(d).parent());
     }
 
@@ -4531,6 +5602,113 @@ mod tests {
     }
 
     #[test]
+    fn restore_sidecars_survive_an_injected_copy_failure() {
+        let dir = tempdir().unwrap();
+        let point = dir.path().join("point.db");
+        a_point(&point);
+        let library = dir.path().join("projects");
+        fs::create_dir(&library).unwrap();
+        let candidate = library.join("my-book-recovered.db");
+        let donor_path = dir.path().join("donor.db");
+        let (_donor, files) = competing_creation_book(&donor_path);
+        let mut originals = Vec::new();
+        for (source, bytes) in files.into_iter().skip(1) {
+            let target = candidate.with_extension(source.extension().unwrap());
+            fs::write(&target, &bytes).unwrap();
+            originals.push((target, bytes));
+        }
+        let error =
+            restore_point_with(&point, &library, "my-book", 1_700_000_000_000, |_, dest| {
+                fs::write(dest, b"partial owned copy").unwrap();
+                Err("injected copy failure".into())
+            })
+            .unwrap_err();
+        assert!(error.contains("injected copy failure"), "{error}");
+        for (path, bytes) in originals {
+            assert_eq!(
+                fs::read(&path).unwrap(),
+                bytes,
+                "restore removed or changed {}",
+                path.display()
+            );
+        }
+        assert!(!candidate.exists());
+        assert!(!library.join("my-book-recovered-2.db").exists());
+        assert_eq!(fs::read_dir(&library).unwrap().count(), 2);
+    }
+
+    #[test]
+    fn restore_sidecars_arriving_during_copy_are_preserved() {
+        for fails in [false, true] {
+            let dir = tempdir().unwrap();
+            let point = dir.path().join("point.db");
+            a_point(&point);
+            let library = dir.path().join("projects");
+            let candidate = library.join("my-book-recovered.db");
+            let error = restore_point_with(
+                &point,
+                &library,
+                "my-book",
+                1_700_000_000_000,
+                |source, dest| {
+                    assert_ne!(dest, candidate, "SQLite must only copy into owned staging");
+                    for extension in ["db-wal", "db-shm"] {
+                        fs::write(candidate.with_extension(extension), extension.as_bytes())
+                            .unwrap();
+                    }
+                    if fails {
+                        fs::write(dest, b"partial copy").unwrap();
+                        Err("injected copy failure".into())
+                    } else {
+                        copy_point(source, dest)
+                    }
+                },
+            )
+            .unwrap_err();
+            assert!(
+                error.contains(if fails {
+                    "injected copy failure"
+                } else {
+                    "database sidecar"
+                }),
+                "{error}"
+            );
+            assert!(!candidate.exists());
+            for extension in ["db-wal", "db-shm"] {
+                assert_eq!(
+                    fs::read(candidate.with_extension(extension)).unwrap(),
+                    extension.as_bytes()
+                );
+            }
+            assert_eq!(fs::read_dir(&library).unwrap().count(), 2);
+        }
+    }
+
+    #[test]
+    fn restore_sidecars_occupy_a_candidate_without_a_database() {
+        for extension in ["db-wal", "db-shm"] {
+            let dir = tempdir().unwrap();
+            let point = dir.path().join("point.db");
+            a_point(&point);
+            let library = dir.path().join("projects");
+            fs::create_dir(&library).unwrap();
+            let candidate = library.join("my-book-recovered.db");
+            let sidecar = candidate.with_extension(extension);
+            fs::write(&sidecar, b"unrelated retained sidecar").unwrap();
+            let restored =
+                restore_point_into(&point, &library, "my-book", 1_700_000_000_000).unwrap();
+            assert!(
+                restored.path.ends_with("my-book-recovered-2.db"),
+                "{}",
+                restored.path
+            );
+            assert!(!candidate.exists());
+            assert_eq!(fs::read(sidecar).unwrap(), b"unrelated retained sidecar");
+            assert!(crate::cli::validate(Path::new(&restored.path)).unwrap().ok);
+        }
+    }
+
+    #[test]
     fn a_restore_never_writes_over_an_existing_library_file() {
         // A REAL, READABLE PROJECT at the name the restore wants -- not an empty
         // file, which would also be refused by every path that merely fails to
@@ -4745,7 +5923,7 @@ mod tests {
         // A path that genuinely carries a home directory, so the assertion can
         // fail: this is the exact shape the row held before the fix.
         let leaky = Path::new(
-            "/home/writer/.local/share/cc.local.app/recovery/my-book/2026-08-21T09-00-00Z.db",
+            "/home/writer/.local/share/garret/recovery/my-book/2026-08-21T09-00-00Z.db",
         );
         assert!(
             leaky.to_string_lossy().contains("/home/writer"),
@@ -4764,6 +5942,61 @@ mod tests {
             without_directory(Path::new("2026-08-21T09-00-00Z.db")),
             "2026-08-21T09-00-00Z.db"
         );
+    }
+
+    #[test]
+    fn recovery_sources_remove_windows_unc_and_mixed_directories() {
+        for value in [
+            r"C:\Users\writer\recovery\point.db",
+            r"\\server\share\writer\recovery\point.db",
+            r"C:\Users/writer\recovery/point.db",
+            r"C:\Users\writer\recovery\point.db\",
+        ] {
+            assert_eq!(without_directory(Path::new(value)), "point.db", "{value}");
+        }
+        for value in [
+            r"C:\Users\writer\.",
+            r"C:\Users\writer\..",
+            r"\\server\share\writer\.\",
+            r"C:\Users/writer\../",
+            r"\\",
+        ] {
+            assert_eq!(without_directory(Path::new(value)), "", "{value}");
+        }
+    }
+
+    #[test]
+    fn opening_for_writing_normalizes_windows_recovery_metadata() {
+        let dir = tempdir().unwrap();
+        let db = dir.path().join("p.db");
+        for recorded in [
+            r"C:\Users\writer\recovery\point.db",
+            r"\\server\share\writer\recovery\point.db",
+            r"C:\Users/writer\recovery/point.db",
+        ] {
+            for existing_only in [false, true] {
+                {
+                    let store = Store::open(&db).unwrap();
+                    store.set_meta(RECOVERED_FROM_KEY, recorded).unwrap();
+                }
+                let store = if existing_only {
+                    open_existing_for_writing(&db).unwrap()
+                } else {
+                    open_for_writing(&db).unwrap()
+                };
+                assert_eq!(
+                    store.get_meta(RECOVERED_FROM_KEY).unwrap().as_deref(),
+                    Some("point.db")
+                );
+                assert!(!forget_recovery_directory(&store));
+                drop(store);
+                let store = Store::open_readonly(&db).unwrap();
+                assert_eq!(
+                    store.get_meta(RECOVERED_FROM_KEY).unwrap().as_deref(),
+                    Some("point.db")
+                );
+            }
+        }
     }
 
     #[test]
@@ -4826,7 +6059,7 @@ mod tests {
         let db = dir.path().join("p.db");
         let store = Store::open(&db).unwrap();
         let leaky =
-            "/home/writer/.local/share/cc.local.app/recovery/my-book/2026-08-21T09-00-00Z.db";
+            "/home/writer/.local/share/garret/recovery/my-book/2026-08-21T09-00-00Z.db";
         store.set_meta(RECOVERED_FROM_KEY, leaky).unwrap();
 
         assert!(forget_recovery_directory(&store), "nothing was rewritten");
@@ -4849,7 +6082,7 @@ mod tests {
             store
                 .set_meta(
                     RECOVERED_FROM_KEY,
-                    "/home/writer/.local/share/cc.local.app/recovery/my-book/2026-08-21T09-00-00Z.db",
+                    "/home/writer/.local/share/garret/recovery/my-book/2026-08-21T09-00-00Z.db",
                 )
                 .unwrap();
         }
@@ -4974,7 +6207,14 @@ mod tests {
         a_point(&point);
         let library = dir.path().join("projects");
 
-        let err = restore_point_with(&point, &library, "my-book", 1_700_000_000_000, |_, _| {
+        let err = restore_point_with(&point, &library, "my-book", 1_700_000_000_000, |_, dest| {
+            fs::write(dest, b"partial owned database").unwrap();
+            fs::write(dest.with_extension("db-wal"), b"owned partial log").unwrap();
+            fs::write(
+                dest.with_extension("db-shm"),
+                b"owned partial shared memory",
+            )
+            .unwrap();
             Err("no space left on device".to_string())
         })
         .expect_err("a failed copy reported success");
@@ -5131,7 +6371,7 @@ mod tests {
         let home = Path::new("/home/w/.local/share");
         assert_eq!(
             recovery_dir(home, "my-book"),
-            home.join("cc.local.app").join("recovery").join("my-book")
+            home.join("garret").join("recovery").join("my-book")
         );
         // Per project, not one shared directory: retention is per book and a
         // shared directory would thin one manuscript's points against
@@ -5144,7 +6384,7 @@ mod tests {
         let home = Path::new("/home/w/.local/share");
         assert_eq!(
             mirror_dir(home, None, "my-book"),
-            Path::new("/home/w/.local/share/cc.local.app/mirror/my-book")
+            Path::new("/home/w/.local/share/garret/mirror/my-book")
         );
         // BESIDE the recovery area, never inside it: `recovery/` is an
         // application-owned area the writer is not invited into, and a mirror

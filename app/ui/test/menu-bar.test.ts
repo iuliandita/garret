@@ -1,10 +1,12 @@
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { describe, expect, test } from "bun:test";
+import { menuRoute } from "../../harness/src/menu-drive";
 import type { MatterKind } from "../src/outline";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
 import { createMenuBar, type MenuBar, type ProjectsFocus } from "../src/menu-bar";
+import { createClosePrompt } from "../src/close-prompt";
 
 interface Calls {
   projects: ProjectsFocus[];
@@ -65,7 +67,7 @@ interface Rig {
   list(): HTMLElement;
 }
 
-function mount(privacy?: { enabled: boolean; calls: number; shortcut?: "ctrl_alt_l" | "ctrl_alt_p" | "off" }): Rig {
+function mount(privacy?: { enabled: boolean; calls: number; shortcut?: "ctrl_alt_l" | "ctrl_alt_p" | "off" }, openCreation?: () => void): Rig {
   const container = document.createElement("span");
   document.body.append(container);
 
@@ -113,6 +115,7 @@ function mount(privacy?: { enabled: boolean; calls: number; shortcut?: "ctrl_alt
 
   const bar = createMenuBar({
     container,
+    openCreation,
     showManuscript: () => undefined,
     showOutlineTable: () => undefined,
     showOutlineCards: () => undefined,
@@ -192,7 +195,18 @@ function mount(privacy?: { enabled: boolean; calls: number; shortcut?: "ctrl_alt
       if (element === null) throw new Error(`no menu title #${id}`);
       return element;
     },
-    item: (id) => byId<HTMLButtonElement>(id),
+    item: (id) => {
+      const existing = byId<HTMLButtonElement>(id);
+      if (existing) return existing;
+      let route;
+      try { route = menuRoute(id); } catch { return null; }
+      if (byId(route.menu)?.getAttribute("aria-expanded") !== "true") return null;
+      while (byId<HTMLButtonElement>("menu-panel-back")) byId<HTMLButtonElement>("menu-panel-back")!.click();
+      for (const step of route.path.slice(0, -1)) {
+        byId("menu-panel")?.querySelectorAll<HTMLButtonElement>("button")[step.index]?.click();
+      }
+      return byId<HTMLButtonElement>(id);
+    },
     panel() {
       const element = byId<HTMLElement>("menu-panel");
       if (element === null) throw new Error("no #menu-panel");
@@ -526,13 +540,12 @@ describe("what the items do", () => {
       // And neither of the other two export routes fired.
       expect(rig.calls.exported).toBe(0);
       expect(rig.calls.exportedAs).toBe(0);
-      // IMMEDIATELY AFTER Export as..., and Export manuscript above both: the
-      // File menu has no room above Export (export-cli's debounce gate), so a
-      // new export route lands below it.
+      // The less frequent export formats share the Publishing page.
       rig.title("menu-file").click();
+      rig.item("menu-publishing")!.click();
       const ids = [...rig.panel().querySelectorAll("button")].map((b) => b.id);
       expect(ids.indexOf("menu-export-docx")).toBe(ids.indexOf("menu-export-as") + 1);
-      expect(ids.indexOf("menu-export")).toBe(ids.indexOf("menu-export-as") - 1);
+      expect(ids).not.toContain("menu-export");
     } finally {
       teardown(rig);
     }
@@ -544,10 +557,8 @@ describe("what the items do", () => {
       rig.title("menu-file").click();
       const ids = [...rig.panel().querySelectorAll("button")].map((b) => b.id);
       expect(ids.indexOf("menu-library")).toBe(ids.indexOf("menu-preferences") - 1);
-      // menu-export's OWN index is UNCHANGED: the item sits below the exports,
-      // which is the whole point of the placement rule -- export-cli's walk
-      // down to menu-export never passes it.
-      expect(ids.indexOf("menu-export")).toBe(6);
+      // The ordinary manuscript export remains on the first page.
+      expect(ids.indexOf("menu-export")).toBe(4);
       rig.item("menu-library")?.click();
       expect(rig.calls.library).toBe(1);
     } finally {
@@ -647,6 +658,16 @@ describe("what the items do", () => {
     } finally {
       teardown(rig);
     }
+  });
+
+  test("Encrypted backups opens the existing backup controls without creating a recovery point", () => {
+    const rig = mount();
+    try {
+      rig.title("menu-file").click();
+      rig.item("menu-encrypted-backups")?.click();
+      expect(rig.calls.projects).toEqual(["backups"]);
+      expect(rig.calls.backedUp).toBe(0);
+    } finally { teardown(rig); }
   });
 
   test("Back up now takes a recovery point and does nothing else", () => {
@@ -846,7 +867,7 @@ describe("Back and Forward", () => {
     try {
       rig.title("menu-outline").click();
       const ids = [...rig.panel().querySelectorAll("[role='menuitem']")].map((el) => el.id);
-      expect(ids.slice(10, 13)).toEqual(["menu-nav-back", "menu-nav-forward", "menu-go-to"]);
+      expect(ids.slice(1, 4)).toEqual(["menu-go-to", "menu-nav-back", "menu-nav-forward"]);
     } finally {
       teardown(rig);
     }
@@ -906,12 +927,14 @@ describe("the context item says which action it will take", () => {
   });
 
   test("Who appears where opens the panel, with review actions grouped last", () => {
-    // Menu indices are consumed by the rigs, so new actions stay at the end.
+    // Review has its own replacement page.
     const rig = mount();
     try {
       rig.title("menu-outline").click();
       const items = [...rig.panel().querySelectorAll("[role='menuitem']")];
-      expect(items.slice(-4).map((item) => item.id)).toEqual([
+      expect(items.at(-1)?.id).toBe("menu-review");
+      rig.item("menu-review")!.click();
+      expect([...rig.panel().querySelectorAll("button")].slice(1).map((item) => item.id)).toEqual([
         "menu-statistics", "menu-analytics", "menu-craft-reports", "menu-review-proposals",
       ]);
 
@@ -1017,6 +1040,8 @@ describe("the context item says which action it will take", () => {
     });
     try {
       container.querySelector<HTMLButtonElement>("#menu-outline")?.click();
+      expect(reads).toBe(0);
+      container.querySelector<HTMLButtonElement>("#menu-organize")?.click();
       expect(reads).toBe(1);
       container.querySelector<HTMLButtonElement>("#menu-remove")?.click();
       // THE CLAIM. One read, at paint. An item that consulted the selection
@@ -1106,6 +1131,8 @@ describe("the context item says which action it will take", () => {
       // the writer had asked for anything.
       expect(reads).toBe(0);
       container.querySelector<HTMLButtonElement>("#menu-outline")?.click();
+      expect(reads).toBe(0);
+      container.querySelector<HTMLButtonElement>("#menu-organize")?.click();
       expect(reads).toBe(1);
     } finally {
       bar.destroy();
@@ -1211,6 +1238,32 @@ describe("the keyboard", () => {
       expect(event.defaultPrevented).toBe(false);
       expect(rig.panel().hidden).toBe(true);
     } finally {
+      teardown(rig);
+    }
+  });
+
+  test("arrows in the editor keep their default and focus while a submenu is open", () => {
+    const rig = mount();
+    const editor = document.createElement("textarea");
+    editor.id = "outside-the-open-menu";
+    document.body.append(editor);
+    try {
+      press("e", { altKey: true });
+      editor.focus();
+      for (const key of ["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"]) {
+        const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+        editor.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(false);
+        expect(document.activeElement?.id).toBe(editor.id);
+        expect(rig.panel().hidden).toBe(false);
+      }
+      press("Escape");
+      expect(rig.panel().hidden).toBe(true);
+      expect(document.activeElement?.id).toBe(editor.id);
+      press("f", { altKey: true });
+      expect(document.activeElement?.id).toBe("menu-project-new");
+    } finally {
+      editor.remove();
       teardown(rig);
     }
   });
@@ -1506,6 +1559,7 @@ describe("the items that open a page dialog say so", () => {
     "menu-project-new": "menu-file",
     "menu-project-open": "menu-file",
     "menu-mirror-changes": "menu-file",
+    "menu-encrypted-backups": "menu-file",
     "menu-library": "menu-file",
     "menu-preferences": "menu-file",
     "menu-book-design": "menu-file",
@@ -1614,11 +1668,20 @@ describe("the items that open a page dialog say so", () => {
     const rig = mount();
     try {
       const all = new Set<string>();
+      function inspectPage(): void {
+        const entries = [...rig.panel().querySelectorAll<HTMLButtonElement>("[role='menuitem']")];
+        for (const entry of entries) {
+          if (entry.id === "menu-panel-back") continue;
+          if (entry.getAttribute("aria-haspopup") === "menu") {
+            entry.click();
+            inspectPage();
+            rig.panel().querySelector<HTMLButtonElement>("#menu-panel-back")!.click();
+          } else all.add(entry.id);
+        }
+      }
       for (const menu of ["menu-file", "menu-edit", "menu-outline", "menu-help"]) {
         rig.title(menu).click();
-        for (const element of rig.panel().querySelectorAll("[role='menuitem']")) {
-          all.add(element.id);
-        }
+        inspectPage();
         rig.bar.close();
       }
       const unnamed = [...all].filter((id) => !named.has(id));
@@ -1710,7 +1773,8 @@ describe("Outline Undo and Redo", () => {
     try {
       rig.title("menu-outline").click();
       const ids = [...rig.panel().querySelectorAll("[role='menuitem']")].map((el) => el.id);
-      expect(ids.slice(-6, -4)).toEqual(["menu-open-reference", "menu-close-reference"]);
+      rig.item("menu-views")!.click();
+      expect([...rig.panel().querySelectorAll("button")].slice(-2).map((el) => el.id)).toEqual(["menu-open-reference", "menu-close-reference"]);
     } finally {
       teardown(rig);
     }
@@ -1833,44 +1897,109 @@ for (const composition of [{ isComposing: true }, { keyCode: 229 }]) {
   });
 }
 
-describe("the File menu is five groups", () => {
-  test("separators cut it into book, publish, proof, copies and app, none over six", () => {
+
+describe("short menu pages", () => {
+  test("File keeps frequent actions direct and moves publishing and copies onto pages", () => {
     const rig = mount();
     try {
       rig.title("menu-file").click();
-      const groups: string[][] = [[]];
-      for (const child of rig.panel().children) {
-        if (child.getAttribute("role") === "separator") groups.push([]);
-        else groups.at(-1)?.push(child.id);
-      }
-      expect(groups).toEqual([
-        ["menu-project-new", "menu-project-open", "menu-project-rename", "menu-import"],
-        ["menu-book-design", "menu-covers", "menu-export", "menu-export-as", "menu-export-docx"],
-        ["menu-epub-preview", "menu-pdf-preview", "menu-identities"],
-        ["menu-backup-now", "menu-mirror-changes"],
-        ["menu-library", "menu-preferences", "menu-privacy-lock", "menu-quit"],
+      expect([...rig.panel().querySelectorAll("button")].map((item) => item.id)).toEqual([
+        "menu-project-new", "menu-project-open", "menu-project-rename", "menu-import", "menu-export",
+        "menu-publishing", "menu-copies", "menu-library", "menu-preferences", "menu-privacy-lock", "menu-quit",
       ]);
-      expect(Math.max(...groups.map((g) => g.length))).toBeLessThanOrEqual(6);
-      // The one export given a chord shows it, like every other chorded item.
       expect(rig.item("menu-export")?.getAttribute("aria-keyshortcuts")).toBe("Ctrl+E");
-    } finally {
-      teardown(rig);
-    }
+      rig.item("menu-copies")!.click();
+      expect([...rig.panel().querySelectorAll("button")].map((item) => item.id)).toEqual([
+        "menu-panel-back", "menu-backup-now", "menu-encrypted-backups", "menu-mirror-changes",
+      ]);
+      expect(rig.title("menu-file").getAttribute("aria-expanded")).toBe("true");
+      press("ArrowLeft");
+      expect(document.activeElement?.id).toBe("menu-copies");
+      expect(rig.panel().hidden).toBe(false);
+    } finally { teardown(rig); }
+  });
+  test("Outline starts with eight task choices and creation falls back to common types plus More", () => {
+    const rig = mount();
+    try {
+      rig.title("menu-outline").click();
+      expect([...rig.panel().querySelectorAll("button")].map((item) => item.id)).toEqual([
+        "menu-new", "menu-go-to", "menu-nav-back", "menu-nav-forward", "menu-organize", "menu-planning", "menu-views", "menu-review",
+      ]);
+      rig.item("menu-new")!.click();
+      expect([...rig.panel().querySelectorAll("button")].map((item) => item.id)).toEqual([
+        "menu-panel-back", "menu-new-scene", "menu-new-chapter", "menu-new-part", "menu-more",
+      ]);
+      press("Escape");
+      expect(rig.panel().hidden).toBe(true);
+      expect(rig.list().hidden).toBe(true);
+    } finally { teardown(rig); }
+  });
+  test("New hands off to the provided chooser after closing the entire menu", () => {
+    let calls = 0;
+    const rig = mount(undefined, () => {
+      expect(rig.panel().hidden).toBe(true);
+      expect(rig.list().hidden).toBe(true);
+      calls++;
+    });
+    try {
+      rig.title("menu-outline").click();
+      expect(rig.item("menu-new")?.getAttribute("aria-haspopup")).toBe("dialog");
+      rig.item("menu-new")!.click();
+      expect(calls).toBe(1);
+      expect(rig.calls.created).toEqual([]);
+    } finally { teardown(rig); }
   });
 });
 
+for (const chord of [
+  { key: "f", altKey: true },
+  { key: "l", ctrlKey: true, shiftKey: true },
+  { key: "f", ctrlKey: true },
+]) {
+  test(`close warning contains ${JSON.stringify(chord)} before document shortcuts`, async () => {
+    const rig = mount();
+    const prompt = createClosePrompt({ container: document.body });
+    let findOpened = false;
+    const onFind = (event: KeyboardEvent): void => {
+      if (event.ctrlKey && !event.altKey && event.key === "f") findOpened = true;
+    };
+    document.addEventListener("keydown", onFind);
+    try {
+      const choice = prompt.openPreferences();
+      const stay = document.querySelector<HTMLButtonElement>("#close-prompt-panel button")!;
+      stay.dispatchEvent(new KeyboardEvent("keydown", { ...chord, bubbles: true, cancelable: true }));
+      expect(rig.panel().hidden).toBe(true);
+      expect(rig.calls.library).toBe(0);
+      expect(findOpened).toBe(false);
+      expect(document.activeElement === stay).toBe(true);
+      stay.click();
+      expect(await choice).toBe("stay");
+    } finally {
+      document.removeEventListener("keydown", onFind);
+      prompt.destroy();
+      teardown(rig);
+    }
+  });
+}
 
-test("Outline presents task groups and starts with scene and chapter creation", () => {
-  const rig = mount();
-  try {
-    rig.title("menu-outline").click();
-    const panel = rig.panel();
-    const items = [...panel.querySelectorAll("button")];
-    expect(items.slice(0, 3).map((item) => item.id)).toEqual(["menu-new-scene", "menu-new-chapter", "menu-new-part"]);
-    expect(panel.querySelectorAll('[role="separator"]').length).toBe(5);
-    expect([...panel.querySelectorAll(".menu-group-label")].map((el) => el.textContent)).toEqual([
-      "Add to the book", "Navigate", "Arrange the outline", "Plan scenes and cast", "Read and compare", "Review the book",
-    ]);
-    expect(items.length).toBe(38);
-  } finally { teardown(rig); }
-});
+for (const shortcut of ["ctrl_alt_l", "ctrl_alt_p", "off"] as const) {
+  test(`close warning retains only the configured privacy shortcut ${shortcut}`, async () => {
+    const privacy = { enabled: true, calls: 0, shortcut };
+    const rig = mount(privacy);
+    const prompt = createClosePrompt({ container: document.body, privacyShortcut: () => privacy.shortcut });
+    try {
+      const choice = prompt.open(1);
+      const stay = document.querySelector<HTMLButtonElement>("#close-prompt-panel button")!;
+      for (const key of ["l", "p"]) {
+        stay.dispatchEvent(new KeyboardEvent("keydown", { key, ctrlKey: true, altKey: true, bubbles: true, cancelable: true }));
+      }
+      expect(privacy.calls).toBe(shortcut === "off" ? 0 : 1);
+      expect(document.activeElement === stay).toBe(true);
+      stay.click();
+      await choice;
+    } finally {
+      prompt.destroy();
+      teardown(rig);
+    }
+  });
+}

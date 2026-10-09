@@ -59,7 +59,7 @@ export interface MenuSpec {
  *  of this slice. The variant stays because the panel's drop-folder import list
  *  is still a live surface with a graded rig behind it (`import-cli`), and the
  *  panel can still be asked to open on it. */
-export type ProjectsFocus = "list" | "create" | "import";
+export type ProjectsFocus = "list" | "create" | "import" | "backups";
 
 export interface MenuBarDeps {
   showManuscript: () => void;
@@ -142,6 +142,7 @@ export interface MenuBarDeps {
   /** A new part, chapter or scene. NO TITLE and no parent: both are properties
    *  of the walk, which this menu does not hold and must not read. The menu is a
    *  second SURFACE, not a second implementation. */
+  openCreation?: () => void;
   create: (itemType: string) => void;
   /** A document in the bible. ITS OWN ACTION rather than `create("note")`,
    *  because it is not placed from the selection: it belongs in one section,
@@ -230,84 +231,30 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
 
   const MENUS: readonly MenuSpec[] = [
     {
-      id: "menu-file",
-      label: t("menu.file"),
-      key: t("menu.file.key"),
-      items: [
-        // FIVE GROUPS: the book, publishing it, checking it, its
-        // copies, the application. A separator is drawn before the first
-        // item of each group and is not an item: the arrows skip it and
-        // menu-drive counts only ids, so no index moved for it. No group is
-        // over six items.
-        //
-        // New project and Open project are still the panel, with two different
-        // resting places for the caret: creating a project is naming one, and
-        // there is no file to choose. Open stays the panel because opening a
-        // `.db` from an arbitrary path would let projects live outside the
-        // library, which changes what a project IS - a library-semantics
-        // question, not a dialog. Import and Export as… ARE real OS dialogs.
+      id: "menu-file", label: t("menu.file"), key: t("menu.file.key"), items: [
         { id: "menu-project-new", opensDialog: true, label: () => t("menu.project-new"), run: () => deps.openProjects("create") },
         { id: "menu-project-open", opensDialog: true, label: () => t("menu.project-open"), run: () => deps.openProjects("list") },
-        // NOT a panel any more. The project panel used to open with the
-        // caret in a rename field; the book's name moved into the
-        // strip above the outline and became the rename affordance, so this
-        // item starts the rename there. Two routes, one implementation -- which
-        // is what that earlier argument demanded and what a second field would
-        // have broken.
         { id: "menu-project-rename", label: () => t("menu.project-rename"), run: deps.renameProject },
         { id: "menu-import", label: () => t("menu.import"), run: deps.importProject },
-        // ABOVE the exports, because it is what they will obey. It is a File
-        // item and not an Outline one for the recorded reason Back up now is:
-        // nothing here changes the outline. It is not in Preferences because
-        // Preferences is per WRITER and this is per BOOK -- that panel's one
-        // per-project group already calls itself out as the exception.
-        { id: "menu-book-design", separatorBefore: true, opensDialog: true, label: () => t("menu.book-design"), run: deps.openBookDesign },
-        // BESIDE Book design and not inside it, and the reason is that panel's
-        // own: it holds nothing that can grow and therefore
-        // needs no scroll, and two cover previews are tall enough to push its
-        // margin fields under the fold of a default window. Two items, one
-        // subject -- New project… and Open project…'s shape.
-        //
-        // ABOVE the exports for Book design's reason: the covers panel and the
-        // proof preview are what will put a cover on a book, and this is what they will obey.
-        { id: "menu-covers", opensDialog: true, label: () => t("menu.covers"), run: deps.openCovers },
-        // Ctrl+E: the one export a writer repeats, so the one given a
-        // chord. Bound by the export bar, never here (menu-panel's rule).
         { id: "menu-export", label: () => t("menu.export"), shortcut: t("menu.shortcut.export"), run: deps.exportProject },
-        { id: "menu-export-as", label: () => t("menu.export-as"), run: deps.exportAs },
-        // The third export format stays with the other export commands.
-        { id: "menu-export-docx", label: () => t("menu.export-docx"), run: () => deps.exportDocx() },
-        // The statistics files left this menu: they are the Statistics
-        // panel's footer now, beside the figures they write out.
-        // NOT `opensDialog`. That flag says the page is about to hand focus to
-        // a panel of its own; a rail is not a panel, does not dismiss on an
-        // outside click, and is meant to stay open beside the prose. It DOES
-        // take focus on open so Escape is heard, which is the panels' rule and
-        // is the one thing the flag is not about.
-        { id: "menu-epub-preview", separatorBefore: true, label: () => t("menu.epub-preview"), run: deps.openEpubPreview },
-        // It opens the SAME rail in the other format -- not a second
-        // surface.
-        { id: "menu-pdf-preview", label: () => t("menu.pdf-preview"), run: deps.openPdfPreview },
-        // Not beside Book design, where the subject plainly belongs: the
-        // whole publishing block stays together.
-        { id: "menu-identities", opensDialog: true, label: () => t("menu.identities"), run: deps.openIdentities },
-        // Beside the exports because it is the same kind of thing - a command
-        // that writes a file - and above Preferences so the File menu still
-        // ends where every reader expects it to.
-        { id: "menu-backup-now", separatorBefore: true, label: () => t("menu.backup-now"), run: deps.backupNow },
-        // BESIDE THE FILE COMMANDS, because that is what it is about: the
-        // folder of Markdown this application writes beside the project. Not
-        // in Outline -- nothing here changes the outline, and this build
-        // changes nothing at all. Above Preferences and Quit for the reason
-        // recorded on `menu-quit`: those two are where every reader of a File
-        // menu looks for them.
-        { id: "menu-mirror-changes", opensDialog: true, label: () => t("menu.mirror-changes"), run: deps.openMirrorChanges },
-        // Above Preferences because it is the application-chrome item every
-        // reader looks for near the bottom, and below Back up now / the mirror
-        // because those act on the OPEN book and this does not. In THIS slice it
-        // opens the switcher on the list, the same target `menu-project-new` and
-        // `menu-project-open` already reach -- the screen that replaces that
-        // target is the library's.
+        {
+          id: "menu-publishing", label: () => t("menu.publishing"), children: [
+            { id: "menu-book-design", opensDialog: true, label: () => t("menu.book-design"), run: deps.openBookDesign },
+            { id: "menu-covers", opensDialog: true, label: () => t("menu.covers"), run: deps.openCovers },
+            { id: "menu-export-as", label: () => t("menu.export-as"), run: deps.exportAs },
+            { id: "menu-export-docx", label: () => t("menu.export-docx"), run: () => deps.exportDocx() },
+            { id: "menu-epub-preview", label: () => t("menu.epub-preview"), run: deps.openEpubPreview },
+            { id: "menu-pdf-preview", label: () => t("menu.pdf-preview"), run: deps.openPdfPreview },
+            { id: "menu-identities", opensDialog: true, label: () => t("menu.identities"), run: deps.openIdentities }
+          ], run: () => {}
+        },
+        {
+          id: "menu-copies", label: () => t("menu.copies"), children: [
+            { id: "menu-backup-now", label: () => t("menu.backup-now"), run: deps.backupNow },
+            { id: "menu-encrypted-backups", opensDialog: true, label: () => t("menu.encrypted-backups"), run: () => deps.openProjects("backups") },
+            { id: "menu-mirror-changes", opensDialog: true, label: () => t("menu.mirror-changes"), run: deps.openMirrorChanges }
+          ], run: () => {}
+        },
         {
           id: "menu-library",
           separatorBefore: true,
@@ -318,13 +265,8 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
         },
         { id: "menu-preferences", opensDialog: true, label: () => t("menu.preferences"), run: deps.openPreferences },
         { id: "menu-privacy-lock", label: () => t("privacy.lock"), get shortcut() { return privacyShortcutLabel(deps.privacyShortcut?.() ?? "ctrl_alt_l"); }, enabled: () => deps.canLockPrivacy?.() ?? false, run: () => deps.lockPrivacy?.() },
-        // LAST, because that is where every reader of a File menu looks for it,
-        // and because `menu-cli` indexes items by position: an item inserted
-        // anywhere above this moves a coordinate five rigs compute rather than
-        // read. Not `opensDialog` -- that flag says the page is about to hand
-        // focus to a panel of its own, and this hands it to the window manager.
-        { id: "menu-quit", label: () => t("menu.quit"), shortcut: t("menu.shortcut.quit"), run: deps.quit },
-      ],
+        { id: "menu-quit", label: () => t("menu.quit"), shortcut: t("menu.shortcut.quit"), run: deps.quit }
+      ]
     },
     {
       id: "menu-edit",
@@ -380,126 +322,140 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
       ],
     },
     {
-      id: "menu-outline",
-      label: t("menu.outline"),
-      key: t("menu.outline.key"),
-      items: [
-        { groupLabel: t("menu.outline.group.create"), separatorBefore: true, id: "menu-new-scene", label: () => t("menu.new-scene"), run: () => deps.create("scene") },
-        { id: "menu-new-chapter", label: () => t("menu.new-chapter"), run: () => deps.create("chapter") },
-        { id: "menu-new-part", label: () => t("menu.new-part"), run: () => deps.create("part") },
-        { id: "menu-new-note", label: () => t("menu.new-note"), run: deps.createNote },
-        { id: "menu-new-bible-folder", label: () => t("menu.new-bible-folder"), run: deps.createBibleFolder },
-        { id: "menu-new-timeline", label: () => t("menu.new-timeline"), run: deps.createTimeline },
+      id: "menu-outline", label: t("menu.outline"), key: t("menu.outline.key"), items: [
         {
-          id: "menu-new-dedication",
-          label: () => t("menu.new-dedication"),
-          run: () => deps.createMatter("dedication"),
+          id: "menu-new", label: () => t("menu.new"), opensDialog: true, children: deps.openCreation ? undefined : [{ id: "menu-new-scene", label: () => t("menu.new-scene"), run: () => deps.create("scene") }, { id: "menu-new-chapter", label: () => t("menu.new-chapter"), run: () => deps.create("chapter") }, { id: "menu-new-part", label: () => t("menu.new-part"), run: () => deps.create("part") }, {
+              id: "menu-more", label: () => t("menu.more"), children: [{ id: "menu-new-note", label: () => t("menu.new-note"), run: deps.createNote }, { id: "menu-new-bible-folder", label: () => t("menu.new-bible-folder"), run: deps.createBibleFolder }, { id: "menu-new-timeline", label: () => t("menu.new-timeline"), run: deps.createTimeline }, {
+                  id: "menu-book-pages", label: () => t("menu.book-pages"), children: [
+                    {
+                      id: "menu-new-dedication",
+                      label: () => t("menu.new-dedication"),
+                      run: () => deps.createMatter("dedication"),
+                    },
+                    {
+                      id: "menu-new-foreword",
+                      label: () => t("menu.new-foreword"),
+                      run: () => deps.createMatter("foreword"),
+                    },
+                    {
+                      id: "menu-new-acknowledgements",
+                      label: () => t("menu.new-acknowledgements"),
+                      run: () => deps.createMatter("acknowledgements"),
+                    },
+                    {
+                      id: "menu-new-afterword",
+                      label: () => t("menu.new-afterword"),
+                      run: () => deps.createMatter("afterword"),
+                    }
+                  ], run: () => {}
+                }], run: () => {}
+            }], run: () => deps.openCreation?.()
         },
+        { id: "menu-go-to", opensDialog: true, label: () => t("menu.go-to"), shortcut: t("menu.shortcut.go-to"), run: deps.openQuickOpen },
         {
-          id: "menu-new-foreword",
-          label: () => t("menu.new-foreword"),
-          run: () => deps.createMatter("foreword"),
-        },
-        {
-          id: "menu-new-acknowledgements",
-          label: () => t("menu.new-acknowledgements"),
-          run: () => deps.createMatter("acknowledgements"),
-        },
-        {
-          id: "menu-new-afterword",
-          label: () => t("menu.new-afterword"),
-          run: () => deps.createMatter("afterword"),
-        },
-        {
-          groupLabel: t("menu.outline.group.navigate"), separatorBefore: true, id: "menu-nav-back",
+          id: "menu-nav-back",
           label: () => (deps.canNavBack() ? t("menu.nav-back") : t("menu.nav-back.empty")),
           shortcut: t("menu.shortcut.nav-back"),
           run: deps.navBack,
         },
         {
           id: "menu-nav-forward",
-          label: () =>
-            deps.canNavForward() ? t("menu.nav-forward") : t("menu.nav-forward.empty"),
+          label: () => deps.canNavForward() ? t("menu.nav-forward") : t("menu.nav-forward.empty"),
           shortcut: t("menu.shortcut.nav-forward"),
           run: deps.navForward,
         },
-        { id: "menu-go-to", opensDialog: true, label: () => t("menu.go-to"), shortcut: t("menu.shortcut.go-to"), run: deps.openQuickOpen },
-        { groupLabel: t("menu.outline.group.structure"), separatorBefore: true, id: "menu-move-up", label: () => t("menu.move-up"), shortcut: t("menu.shortcut.move-up"), run: () => deps.move("up") },
-        { id: "menu-move-down", label: () => t("menu.move-down"), shortcut: t("menu.shortcut.move-down"), run: () => deps.move("down") },
-        { id: "menu-move-out", label: () => t("menu.move-out"), shortcut: t("menu.shortcut.move-out"), run: () => deps.move("outdent") },
-        { id: "menu-move-in", label: () => t("menu.move-in"), shortcut: t("menu.shortcut.move-in"), run: () => deps.move("indent") },
-        { id: "menu-rename", label: () => t("menu.rename"), run: deps.beginRename },
         {
-          id: "menu-remove",
-          label: () => (deps.selectedTrashed() ? t("menu.restore") : t("menu.delete")),
-          run: deps.removeOrRestore,
+          id: "menu-organize", label: () => t("menu.organize"), children: [
+            { id: "menu-move-up", label: () => t("menu.move-up"), shortcut: t("menu.shortcut.move-up"), run: () => deps.move("up") },
+            { id: "menu-move-down", label: () => t("menu.move-down"), shortcut: t("menu.shortcut.move-down"), run: () => deps.move("down") },
+            { id: "menu-move-out", label: () => t("menu.move-out"), shortcut: t("menu.shortcut.move-out"), run: () => deps.move("outdent") },
+            { id: "menu-move-in", label: () => t("menu.move-in"), shortcut: t("menu.shortcut.move-in"), run: () => deps.move("indent") },
+            { id: "menu-rename", label: () => t("menu.rename"), run: deps.beginRename },
+            {
+              id: "menu-remove",
+              label: () => (deps.selectedTrashed() ? t("menu.restore") : t("menu.delete")),
+              run: deps.removeOrRestore,
+            },
+            {
+              id: "menu-outline-undo",
+              label: () => {
+                const what = deps.outlineUndoLabel();
+                return what === null ? t("menu.outline-undo.empty") : t("menu.outline-undo", { what });
+              },
+              shortcut: t("menu.shortcut.undo"),
+              run: deps.outlineUndo,
+            },
+            {
+              id: "menu-outline-redo",
+              label: () => {
+                const what = deps.outlineRedoLabel();
+                return what === null ? t("menu.outline-redo.empty") : t("menu.outline-redo", { what });
+              },
+              shortcut: t("menu.shortcut.redo"),
+              run: deps.outlineRedo,
+            }
+          ], run: () => {}
         },
         {
-          id: "menu-outline-undo",
-          label: () => {
-            const what = deps.outlineUndoLabel();
-            return what === null ? t("menu.outline-undo.empty") : t("menu.outline-undo", { what });
-          },
-          shortcut: t("menu.shortcut.undo"),
-          run: deps.outlineUndo,
+          id: "menu-planning", label: () => t("menu.planning"), children: [
+            {
+              id: "menu-synopsis",
+              opensDialog: true,
+              label: () => t("menu.synopsis"),
+              run: deps.openSynopsis,
+            },
+            {
+              id: "menu-revision-state",
+              opensDialog: true,
+              label: () => t("menu.revision-state"),
+              run: deps.openRevisionState,
+            },
+            {
+              id: "menu-cast",
+              opensDialog: true,
+              label: () => t("menu.cast"),
+              run: deps.openCast,
+            },
+            { id: "menu-knowledge", opensDialog: true, label: () => t("menu.knowledge"), run: () => deps.openKnowledge?.() },
+            {
+              id: "menu-appears",
+              opensDialog: true,
+              label: () => t("menu.appears"),
+              run: deps.openAppearances,
+            },
+            {
+              id: "menu-appears-map",
+              opensDialog: true,
+              label: () => t("menu.appears-map"),
+              run: deps.openAppearancesMap,
+            }
+          ], run: () => {}
         },
         {
-          id: "menu-outline-redo",
-          label: () => {
-            const what = deps.outlineRedoLabel();
-            return what === null ? t("menu.outline-redo.empty") : t("menu.outline-redo", { what });
-          },
-          shortcut: t("menu.shortcut.redo"),
-          run: deps.outlineRedo,
+          id: "menu-views", label: () => t("menu.views"), children: [
+            { id: "menu-view-manuscript", label: () => t("menu.view.manuscript"), checked: () => deps.outlineViewMode() === "manuscript", run: deps.showManuscript },
+            { id: "menu-view-table", label: () => t("menu.view.table"), checked: () => deps.outlineViewMode() === "table", run: deps.showOutlineTable },
+            { id: "menu-view-cards", label: () => t("menu.view.cards"), checked: () => deps.outlineViewMode() === "cards", run: deps.showOutlineCards },
+            { id: "menu-view-reading", label: () => t("menu.view.reading"), checked: () => deps.outlineViewMode() === "reading", run: deps.showReadThrough },
+            { id: "menu-view-continuous", label: () => t("menu.view.continuous"), checked: () => deps.outlineViewMode() === "continuous", run: deps.showContinuousChapter },
+            { id: "menu-open-reference", label: () => t("menu.open-reference"), run: deps.openReference },
+            { id: "menu-close-reference", label: () => t("menu.close-reference"), run: deps.closeReference }
+          ], run: () => {}
         },
         {
-          groupLabel: t("menu.outline.group.plan"), separatorBefore: true, id: "menu-synopsis",
-          opensDialog: true,
-          label: () => t("menu.synopsis"),
-          run: deps.openSynopsis,
-        },
-        {
-          id: "menu-revision-state",
-          opensDialog: true,
-          label: () => t("menu.revision-state"),
-          run: deps.openRevisionState,
-        },
-        {
-          id: "menu-cast",
-          opensDialog: true,
-          label: () => t("menu.cast"),
-          run: deps.openCast,
-        },
-        { id: "menu-knowledge", opensDialog: true, label: () => t("menu.knowledge"), run: () => deps.openKnowledge?.() },
-        {
-          id: "menu-appears",
-          opensDialog: true,
-          label: () => t("menu.appears"),
-          run: deps.openAppearances,
-        },
-        {
-          id: "menu-appears-map",
-          opensDialog: true,
-          label: () => t("menu.appears-map"),
-          run: deps.openAppearancesMap,
-        },
-        { groupLabel: t("menu.outline.group.views"), separatorBefore: true, id: "menu-view-manuscript", label: () => t("menu.view.manuscript"), checked: () => deps.outlineViewMode() === "manuscript", run: deps.showManuscript },
-        { id: "menu-view-table", label: () => t("menu.view.table"), checked: () => deps.outlineViewMode() === "table", run: deps.showOutlineTable },
-        { id: "menu-view-cards", label: () => t("menu.view.cards"), checked: () => deps.outlineViewMode() === "cards", run: deps.showOutlineCards },
-        { id: "menu-view-reading", label: () => t("menu.view.reading"), checked: () => deps.outlineViewMode() === "reading", run: deps.showReadThrough },
-        { id: "menu-view-continuous", label: () => t("menu.view.continuous"), checked: () => deps.outlineViewMode() === "continuous", run: deps.showContinuousChapter },
-        { id: "menu-open-reference", label: () => t("menu.open-reference"), run: deps.openReference },
-        { id: "menu-close-reference", label: () => t("menu.close-reference"), run: deps.closeReference },
-        {
-          groupLabel: t("menu.outline.group.review"), separatorBefore: true, id: "menu-statistics",
-          opensDialog: true,
-          label: () => t("menu.statistics"),
-          run: deps.openStatistics,
-        },
-        { id: "menu-analytics", opensDialog: true, label: () => t("menu.analytics"), run: deps.openAnalytics },
-        { id: "menu-craft-reports", opensDialog: true, label: () => t("menu.craft-reports"), run: () => deps.openCraftReports?.() },
-        { id: "menu-review-proposals", opensDialog: true, label: () => t("menu.review-proposals"), run: deps.openReviewProposals },
-      ],
+          id: "menu-review", label: () => t("menu.review"), children: [
+            {
+              id: "menu-statistics",
+              opensDialog: true,
+              label: () => t("menu.statistics"),
+              run: deps.openStatistics,
+            },
+            { id: "menu-analytics", opensDialog: true, label: () => t("menu.analytics"), run: deps.openAnalytics },
+            { id: "menu-craft-reports", opensDialog: true, label: () => t("menu.craft-reports"), run: () => deps.openCraftReports?.() },
+            { id: "menu-review-proposals", opensDialog: true, label: () => t("menu.review-proposals"), run: deps.openReviewProposals }
+          ], run: () => {}
+        }
+      ]
     },
     {
       id: "menu-help",
@@ -526,6 +482,7 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
   // item has moved the writer elsewhere.
   const panel = createMenuPanel({
     id: "menu-panel",
+    backLabel: () => t("menu.back"),
     onClose: () => {
       if (painted !== null) close();
     },
@@ -607,8 +564,7 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
     // title's offsetTop is the row's top in the list's own box.
     const rowTop = title?.offsetTop ?? 0;
     panel.element.style.top = `${rowTop}px`;
-    // the Outline menu is 22 rows and left the window at the 640x480
-    // floor. The room is measured from THIS row, not the viewport, because
+    // Room is measured from this row, not the viewport, because
     // the dropdown hangs off its title and a lower title has less of it; the
     // stylesheet's overflow-y does the scrolling. 120px keeps a menu readable
     // on a window too short for anything.
@@ -729,6 +685,7 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
       }
       return;
     }
+    if (!container.contains(document.activeElement)) return;
     if (painted !== null) {
       if (panel.handleArrowKey(event)) return;
       if (event.key === "ArrowLeft") {

@@ -4,12 +4,15 @@ import { afterEach, describe, expect, test } from "bun:test";
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
 import { createPreferences, LOCALES, STARTS, type Locale, type Start } from "../src/preferences";
-import { CATALOGS, t } from "../src/i18n";
+import { CATALOGS, formatNumber, t } from "../src/i18n";
+import { wireLifecycle, CLOSE_EVENT, type LifecycleDeps } from "../src/lifecycle";
+import { createClosePrompt } from "../src/close-prompt";
+import type { SidebarWordCounts } from "../src/sidebar-word-counts";
 import type { Theme } from "../src/theme";
 import { DEFAULT_TYPOGRAPHY, type Typography } from "../src/typography";
 import { DAILY_TARGETS, DEFAULT_DAILY_TARGET, type DailyTarget } from "../src/goals";
 import { DEFAULT_WRITING_MODES, type FocusMode, type WritingModes } from "../src/writing-modes";
-import { DEFAULT_ZOOM, type Zoom } from "../src/zoom";
+import { createZoomPersistence, installZoomKeys, DEFAULT_ZOOM, type Zoom, type ZoomPersistence } from "../src/zoom";
 
 const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -26,6 +29,15 @@ function rig(
   // and defaults to nobody.
   onWritingModes?: (modes: WritingModes) => void,
   openPrivacy?: () => Promise<void>,
+  dictPersist?: { add?: (word: string) => Promise<string>; remove?: (word: string) => Promise<void> },
+  initialDictionary: readonly string[] | null = [],
+  recordedPersist?: {
+    locale?: (value: Locale) => Promise<void>;
+    start?: (value: Start) => Promise<void>;
+    zoom?: (value: Zoom) => Promise<void>;
+    zoomPersistence?: ZoomPersistence;
+    sidebar?: (value: SidebarWordCounts) => Promise<void>;
+  },
 ) {
   const container = document.createElement("div");
   const root = document.createElement("html");
@@ -45,6 +57,7 @@ function rig(
   const zooms: Zoom[] = [];
   const locales: Locale[] = [];
   const starts: Start[] = [];
+  const sidebarCounts: SidebarWordCounts[] = [];
   const markCastNames: boolean[] = [];
   const markCastNamesAnnounced: boolean[] = [];
   let reject: string | null = null;
@@ -60,13 +73,15 @@ function rig(
       palettes.push(family);
       if (reject !== null) throw new Error(reject);
     },
-    initialDictionary: [],
+    initialDictionary,
     persistDictAdd: async (word) => {
+      if (dictPersist?.add) return dictPersist.add(word);
       if (dictReject !== null) throw new Error(dictReject);
       dictAdds.push(word);
       return word;
     },
     persistDictRemove: async (word) => {
+      if (dictPersist?.remove) return dictPersist.remove(word);
       if (dictReject !== null) throw new Error(dictReject);
       dictRemoves.push(word);
     },
@@ -82,17 +97,26 @@ function rig(
     initialDailyTarget,
     initialWritingModes,
     initialZoom,
+    onSidebarWordCounts: (counts) => sidebarCounts.push(counts),
+    persistSidebarWordCounts: async (counts) => {
+      if (recordedPersist?.sidebar) return recordedPersist.sidebar(counts);
+      if (reject !== null) throw new Error(reject);
+    },
+    zoomPersistence: recordedPersist?.zoomPersistence,
     persistZoom: async (zoom) => {
+      if (recordedPersist?.zoom) return recordedPersist.zoom(zoom);
       zooms.push(zoom);
       if (reject !== null) throw new Error(reject);
     },
     initialLocale,
     persistLocale: async (locale) => {
+      if (recordedPersist?.locale) return recordedPersist.locale(locale);
       locales.push(locale);
       if (reject !== null) throw new Error(reject);
     },
     initialStart,
     persistStart: async (start) => {
+      if (recordedPersist?.start) return recordedPersist.start(start);
       starts.push(start);
       if (reject !== null) throw new Error(reject);
     },
@@ -140,9 +164,14 @@ function rig(
     if (!(el instanceof HTMLInputElement)) throw new Error("no dictionary input mounted");
     return el;
   };
+  const goalInput = (): HTMLInputElement => {
+    const el = container.querySelector("#prefs-goal-custom");
+    if (!(el instanceof HTMLInputElement)) throw new Error("no custom goal input mounted");
+    return el;
+  };
   const dictWords = (): string[] =>
     [...container.querySelectorAll("#prefs-dict-list li")]
-      .filter((li) => li.id !== "prefs-dict-empty")
+      .filter((li) => li.id !== "prefs-dict-empty" && li.id !== "prefs-dict-unavailable")
       .map((li) => li.querySelector("span")?.textContent ?? "");
   const languageSelect = (): HTMLSelectElement => {
     const el = container.querySelector("#prefs-language");
@@ -176,7 +205,9 @@ function rig(
     starts,
     markCastNames,
     markCastNamesAnnounced,
+    sidebarCounts,
     dictInput,
+    goalInput,
     dictWords,
     languageSelect,
     startSelect,
@@ -217,20 +248,46 @@ afterEach(() => {
 });
 
 describe("the preferences panel", () => {
-  test("two headed sections, Writing then Application, share the body's grid", () => {
+  test("the dialog uses the localized visible title as its accessible name", () => {
     const r = rig();
-    const body = r.panel().querySelector(".panel-body");
-    expect(body instanceof HTMLElement).toBe(true);
-    if (!(body instanceof HTMLElement)) return;
-    const order = [...body.children].map((c) => (c.classList.contains("prefs-section") ? `# ${c.textContent}` : c.id));
-    expect(order).toEqual([
-      `# ${t("prefs.section.writing")}`,
-      "prefs-family", "prefs-size", "prefs-measure", "prefs-goal", "prefs-focus",
-      "prefs-typewriter", "prefs-spelling", "prefs-mark-cast-names", "prefs-dict",
-      `# ${t("prefs.section.app")}`,
-      "prefs-palette", "prefs-theme", "prefs-language-group", "prefs-start-group", "prefs-zoom",
-      ...(r.panel().querySelector("#prefs-privacy") === null ? [] : ["prefs-privacy"]),
-    ]);
+    expect(r.panel().getAttribute("aria-label")).toBe(t("prefs.title"));
+    expect(r.panel().getAttribute("aria-label")).not.toBe("preferences");
+  });
+
+  test("three named tabs show one category while Writing aids start collapsed", () => {
+    const r = rig();
+    const tabs = [...r.panel().querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const pages = [...r.panel().querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+    expect(tabs.map((tab) => tab.textContent)).toEqual(["writing", "appearance", "application"].map((name) => t(`prefs.tab.${name}`)));
+    expect(pages.map((page) => page.hidden)).toEqual([false, true, true]);
+    for (const [index, tab] of tabs.entries()) {
+      expect(tab.getAttribute("aria-controls")).toBe(pages[index].id);
+      expect(pages[index].getAttribute("aria-labelledby")).toBe(tab.id);
+    }
+    expect([...pages[0].children].map((child) => child.id)).toEqual(["prefs-family", "prefs-size", "prefs-measure", "prefs-goal", "prefs-writing-aids"]);
+    expect([...pages[1].children].map((child) => child.id)).toEqual(["prefs-palette", "prefs-theme", "prefs-zoom", "prefs-sidebar-word-counts"]);
+    expect([...pages[2].children].map((child) => child.id)).toEqual(["prefs-language-group", "prefs-start-group"]);
+    expect(r.panel().querySelector<HTMLDetailsElement>("#prefs-writing-aids")?.open).toBe(false);
+    r.control.destroy();
+  });
+
+  test("tab keys wrap and preserve dictionary drafts and disclosed writing aids", async () => {
+    const r = rig();
+    r.control.open();
+    const aids = r.panel().querySelector<HTMLDetailsElement>("#prefs-writing-aids")!;
+    aids.open = true;
+    r.dictInput().value = "Kethrani";
+    const keys = [["ArrowLeft", "application"], ["Home", "writing"], ["End", "application"], ["ArrowRight", "writing"]];
+    for (const [key, category] of keys) {
+      r.panel().querySelector('[role="tab"][aria-selected="true"]')?.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+      expect(document.activeElement?.id).toBe(`prefs-tab-${category}`);
+      expect(r.panel().querySelectorAll('[role="tab"][tabindex="0"]')).toHaveLength(1);
+    }
+    expect(aids.open).toBe(true);
+    expect(r.dictInput().value).toBe("Kethrani");
+    await r.click("prefs-dict-add");
+    expect(r.dictWords()).toEqual(["Kethrani"]);
+    r.control.destroy();
   });
 
   test("ordinary choice groups preserve their accessible group names around neutral choices wrappers", () => {
@@ -508,6 +565,138 @@ describe("preferences: the daily goal", () => {
     expect(r.targets).toEqual([]);
   });
 
+  test("the custom numeric field follows 2000 and restores only nonpreset goals", () => {
+    for (const target of ["off", "500", "750"] as const) {
+      const r = rig("system", DEFAULT_TYPOGRAPHY, target);
+      const input = r.goalInput();
+      expect(input.type).toBe("number");
+      expect(input.min).toBe("1");
+      expect(input.max).toBe("1000000");
+      expect(input.getAttribute("aria-label")).toBe(t("prefs.goal.custom"));
+      expect(CATALOGS.de["prefs.goal.custom"]).toBe("Eigenes tägliches Wortziel");
+      const label = input.closest("label");
+      expect(label?.htmlFor).toBe(input.id);
+      expect(label?.textContent).toBe(t("prefs.goal.custom"));
+      expect(label?.previousElementSibling?.id).toBe("prefs-goal-2000");
+      expect(input.getAttribute("aria-describedby")).toBe("prefs-goal-custom-error");
+      expect(input.getAttribute("aria-invalid")).toBe("false");
+      expect(input.value).toBe(target === "750" ? "750" : "");
+      r.control.destroy();
+    }
+  });
+
+  test("Enter commits a complete custom goal immediately and blur does not save it twice", async () => {
+    const r = rig();
+    r.control.open();
+    const input = r.goalInput();
+    input.value = "750";
+    expect(r.announced).toEqual([]);
+    const enter = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+    input.dispatchEvent(enter);
+    expect(enter.defaultPrevented).toBe(true);
+    expect(r.announced).toEqual(["750"]);
+    input.dispatchEvent(new Event("blur"));
+    await settle();
+    expect(r.targets).toEqual(["750"]);
+    expect(input.value).toBe("750");
+    for (const target of DAILY_TARGETS) expect(r.byId(`prefs-goal-${target}`).getAttribute("aria-pressed")).toBe("false");
+    r.control.destroy();
+  });
+
+  test("blur commits a custom goal and a preset clears the field", async () => {
+    const r = rig();
+    r.goalInput().value = "750";
+    r.goalInput().dispatchEvent(new Event("blur"));
+    await settle();
+    expect(r.targets).toEqual(["750"]);
+    await r.click("prefs-goal-500");
+    expect(r.goalInput().value).toBe("");
+    expect(r.targets).toEqual(["750", "500"]);
+    expect(r.byId("prefs-goal-500").getAttribute("aria-pressed")).toBe("true");
+    r.control.destroy();
+  });
+
+  test("invalid and empty drafts preserve the active goal and composition Enter does not commit", async () => {
+    const r = rig("system", DEFAULT_TYPOGRAPHY, "750");
+    const input = r.goalInput();
+    for (const value of ["", "0", "0750", "750.5", "1e3", "1000001"]) {
+      input.value = value;
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      expect(input.getAttribute("aria-invalid")).toBe(String(value !== ""));
+      const error = r.panel().querySelector<HTMLElement>("#prefs-goal-custom-error")!;
+      expect(error.hidden).toBe(value === "");
+      expect(error.getAttribute("role")).toBe("alert");
+      expect(error.textContent).toBe(t("prefs.goal.invalid", { min: formatNumber(1), max: formatNumber(1000000) }));
+      input.dispatchEvent(new Event("blur"));
+      expect(input.getAttribute("aria-invalid")).toBe("false");
+      expect(error.hidden).toBe(true);
+      expect(input.value).toBe("750");
+    }
+    expect(r.notices).toEqual([]);
+    input.value = "900";
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", isComposing: true, bubbles: true }));
+    await settle();
+    expect(r.targets).toEqual([]);
+    expect(r.announced).toEqual([]);
+    input.value = "750";
+    input.dispatchEvent(new Event("blur"));
+    expect(r.targets).toEqual([]);
+    r.control.destroy();
+  });
+
+  test("invalid blur restores the active custom goal or blank preset without a global notice", () => {
+    for (const target of ["750", "500"] as const) {
+      const r = rig("system", DEFAULT_TYPOGRAPHY, target);
+      r.goalInput().value = "0";
+      r.goalInput().dispatchEvent(new Event("blur"));
+      expect(r.notices).toEqual([]);
+      expect(r.goalInput().value).toBe(target === "750" ? "750" : "");
+      expect(r.targets).toEqual([]);
+      r.control.destroy();
+    }
+  });
+
+  test("bad native input is invalid even when empty and editing a valid value clears feedback", () => {
+    const r = rig();
+    const input = r.goalInput();
+    Object.defineProperty(input, "validity", { configurable: true, value: { badInput: true } });
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    expect(r.panel().querySelector<HTMLElement>("#prefs-goal-custom-error")!.hidden).toBe(false);
+    expect(r.targets).toEqual([]);
+    Object.defineProperty(input, "validity", { value: { badInput: false } });
+    input.value = "900";
+    input.dispatchEvent(new Event("input"));
+    expect(input.getAttribute("aria-invalid")).toBe("false");
+    expect(r.panel().querySelector<HTMLElement>("#prefs-goal-custom-error")!.hidden).toBe(true);
+    expect(r.notices).toEqual([]);
+    r.control.destroy();
+  });
+
+  test("a custom goal save failure retains the live value and reports the existing notice", async () => {
+    const r = rig();
+    r.failWith("read-only file system");
+    r.goalInput().value = "750";
+    r.goalInput().dispatchEvent(new Event("blur"));
+    await settle();
+    expect(r.announced).toEqual(["750"]);
+    expect(r.goalInput().value).toBe("750");
+    expect(r.notices).toHaveLength(1);
+    expect(r.notices[0]).toContain("daily goal");
+    expect(r.notices[0]).toContain("read-only file system");
+    r.control.destroy();
+  });
+
+  test("destroy removes custom goal commit handlers", () => {
+    const r = rig();
+    const input = r.goalInput();
+    r.control.destroy();
+    input.value = "750";
+    input.dispatchEvent(new Event("blur"));
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    expect(r.targets).toEqual([]);
+  });
+
   test("the goal writes nothing onto the root", () => {
     // Unlike the theme and the three type axes, this preference selects no
     // stylesheet rule. An attribute here would be state with no reader, and the
@@ -709,6 +898,204 @@ describe("the mark-cast-names group", () => {
 });
 
 describe("the project dictionary", () => {
+  function deferred<T>() {
+    let resolve!: (value: T) => void;
+    let reject!: (reason: Error) => void;
+    const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; });
+    return { promise, resolve, reject };
+  }
+
+  function deferredRig(persist: { add?: (word: string) => Promise<string>; remove?: (word: string) => Promise<void> }) {
+    return rig(undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+      undefined, undefined, persist);
+  }
+
+  function removeButton(r: ReturnType<typeof rig>, word: string): HTMLButtonElement {
+    const button = [...r.container.querySelectorAll<HTMLButtonElement>("[data-dict-remove]")]
+      .find((candidate) => candidate.dataset.dictRemove === word);
+    if (!button) throw new Error(`missing Remove for ${word}`);
+    return button;
+  }
+
+  for (const rejectedFirst of ["add", "remove"] as const) {
+    test(`dictionary drain waits for both writes when ${rejectedFirst} rejects first`, async () => {
+      const add = deferred<string>();
+      const remove = deferred<void>();
+      const r = deferredRig({ add: () => add.promise, remove: () => remove.promise });
+      r.control.open();
+      r.control.setDictionary(["Oldword"]);
+      r.dictInput().value = "Addedword";
+      r.byId("prefs-dict-add").click();
+      removeButton(r, "Oldword").click();
+      r.control.invalidateDictionary();
+      let drained = false;
+      const drain = r.control.drainDictionary().then(() => { drained = true; });
+      await settle();
+      expect(drained).toBe(false);
+      if (rejectedFirst === "add") add.reject(new Error("add refused"));
+      else remove.reject(new Error("remove refused"));
+      await settle();
+      expect(drained).toBe(false);
+      expect(r.dictInput().disabled).toBe(true);
+      expect(r.notices).toEqual([]);
+      if (rejectedFirst === "add") remove.resolve();
+      else add.resolve("Addedword");
+      await drain;
+      expect(drained).toBe(true);
+      expect(r.dictWords()).toEqual([]);
+      expect(r.dictInput().disabled).toBe(true);
+      expect(r.notices).toEqual([]);
+      await r.control.drainDictionary();
+    });
+  }
+
+  test("tracking dictionary writes preserves synchronous invocation failures", async () => {
+    const r = deferredRig({
+      add: () => { throw new Error("add invocation failed"); },
+      remove: () => { throw new Error("remove invocation failed"); },
+    });
+    await expect(r.control.addWord("Addedword")).rejects.toThrow("add invocation failed");
+    r.control.setDictionary(["Oldword"]);
+    removeButton(r, "Oldword").click();
+    await settle();
+    expect(r.notices).toHaveLength(1);
+    expect(r.notices[0]).toContain("remove invocation failed");
+    expect(r.dictWords()).toEqual(["Oldword"]);
+    await r.control.drainDictionary();
+  });
+
+  test("an empty boot hides the dictionary without reading it", () => {
+    const r = rig(undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+      undefined, undefined, undefined, null);
+    expect((r.container.querySelector("#prefs-dict") as HTMLElement).hidden).toBe(true);
+    expect(r.dictInput().disabled).toBe(true);
+    expect(r.dictAdds).toEqual([]);
+  });
+
+  test("a failed read clears prior words and leaves a visible disabled unavailable group", async () => {
+    const r = rig();
+    r.control.setDictionary(["Oldbook"]);
+    const read = deferred<readonly string[]>();
+    const pending = r.control.refreshDictionary(() => read.promise);
+    expect(r.dictWords()).toEqual([]);
+    expect(r.dictInput().disabled).toBe(true);
+    expect(r.byId("prefs-dict-add").disabled).toBe(true);
+    expect((r.container.querySelector("#prefs-dict") as HTMLElement).hidden).toBe(false);
+    expect(r.container.querySelector("#prefs-dict-unavailable")?.textContent).toBe(t("prefs.dict.loading"));
+    read.reject(new Error("unreadable"));
+    await pending;
+    expect(r.container.querySelector("#prefs-dict-unavailable")?.textContent).toBe(t("prefs.dict.unavailable"));
+    expect(r.dictInput().disabled).toBe(true);
+    await expect(r.control.addWord("Blocked")).rejects.toThrow();
+    expect(r.dictAdds).toEqual([]);
+  });
+
+  test("delayed old reads cannot replace a newer book or its unavailable state", async () => {
+    const r = rig();
+    const old = deferred<readonly string[]>();
+    const oldRead = r.control.refreshDictionary(() => old.promise);
+    await r.control.refreshDictionary(async () => ["Newbook"]);
+    old.resolve(["Oldbook"]);
+    await oldRead;
+    expect(r.dictWords()).toEqual(["Newbook"]);
+    const late = deferred<readonly string[]>();
+    const lateRead = r.control.refreshDictionary(() => late.promise);
+    await r.control.refreshDictionary(async () => { throw new Error("unreadable"); });
+    late.resolve(["Stale"]);
+    await lateRead;
+    expect(r.dictWords()).toEqual([]);
+    expect(r.dictInput().disabled).toBe(true);
+    expect(r.container.querySelector("#prefs-dict-unavailable")?.textContent).toBe(t("prefs.dict.unavailable"));
+  });
+
+  test("invalidation rejects a pending read even before the next book finishes opening", async () => {
+    const r = rig();
+    const old = deferred<readonly string[]>();
+    const pending = r.control.refreshDictionary(() => old.promise);
+    r.control.invalidateDictionary();
+    old.resolve(["Oldbook"]);
+    await pending;
+    expect(r.dictWords()).toEqual([]);
+    expect(r.dictInput().disabled).toBe(true);
+    r.control.setDictionary(null);
+    expect((r.container.querySelector("#prefs-dict") as HTMLElement).hidden).toBe(true);
+  });
+
+  for (const fails of [false, true]) {
+    test(`an old add ${fails ? "failure" : "success"} cannot repaint, clear new input, focus or notify`, async () => {
+      const add = deferred<string>();
+      const r = deferredRig({ add: () => add.promise });
+      r.control.open();
+      r.dictInput().value = "Oldword";
+      r.byId("prefs-dict-add").click();
+      r.control.invalidateDictionary();
+      r.control.setDictionary(["Newbook"]);
+      r.dictInput().value = "Newword";
+      r.byId("prefs-theme-dark").focus();
+      if (fails) add.reject(new Error("old error"));
+      else add.resolve("Oldword");
+      await settle();
+      expect(r.dictWords()).toEqual(["Newbook"]);
+      expect(r.dictInput().value).toBe("Newword");
+      expect(document.activeElement).toBe(r.byId("prefs-theme-dark"));
+      expect(r.notices).toEqual([]);
+    });
+
+    test(`an old removal ${fails ? "failure" : "success"} cannot remove a new book's same word or notify`, async () => {
+      const remove = deferred<void>();
+      const r = deferredRig({ remove: () => remove.promise });
+      r.control.setDictionary(["Sharedword"]);
+      removeButton(r, "Sharedword").click();
+      r.control.invalidateDictionary();
+      r.control.setDictionary(["Sharedword"]);
+      r.dictInput().focus();
+      if (fails) remove.reject(new Error("old error"));
+      else remove.resolve();
+      await settle();
+      expect(r.dictWords()).toEqual(["Sharedword"]);
+      expect(document.activeElement).toBe(r.dictInput());
+      expect(r.notices).toEqual([]);
+    });
+  }
+
+  for (const [words, removed, next] of [
+    [["Amber", "Mireth", "Zorbulax"], "Mireth", "Zorbulax"],
+    [["Amber", "Mireth"], "Mireth", "Amber"],
+    [["Amber"], "Amber", null],
+  ] as const) {
+    test(`removing focused ${removed} returns focus to ${next ?? "the word input"}`, async () => {
+      const remove = deferred<void>();
+      const r = deferredRig({ remove: () => remove.promise });
+      r.control.open();
+      r.control.setDictionary(words);
+      const button = removeButton(r, removed);
+      button.focus();
+      button.click();
+      expect(document.activeElement).toBe(button);
+      remove.resolve();
+      await settle();
+      expect(document.activeElement).toBe(next === null ? r.dictInput() : removeButton(r, next));
+    });
+  }
+
+  for (const movedTo of ["input", "another Remove", "outside dictionary"]) {
+    test(`a delayed removal preserves focus moved to ${movedTo}`, async () => {
+      const remove = deferred<void>();
+      const r = deferredRig({ remove: () => remove.promise });
+      r.control.open();
+      r.control.setDictionary(["Amber", "Mireth"]);
+      const button = removeButton(r, "Amber");
+      button.focus();
+      button.click();
+      const target = movedTo === "input" ? r.dictInput()
+        : movedTo === "another Remove" ? removeButton(r, "Mireth") : r.byId("prefs-theme-dark");
+      target.focus();
+      remove.resolve();
+      await settle();
+      expect(document.activeElement).toBe(movedTo === "another Remove" ? removeButton(r, "Mireth") : target);
+    });
+  }
+
   test("starts on the injected list and shows nothing added yet when it is empty", () => {
     const r = rig();
     r.control.open();
@@ -952,13 +1339,375 @@ test("privacy preferences routes to native settings and states the file boundary
 });
 
 
-test("ambiguous writing modes carry readable descriptions on their controls", () => {
+test("ambiguous writing modes describe each group once", () => {
   const r = rig();
-  for (const stem of ["focus", "typewriter", "mark-cast-names"]) {
+  for (const stem of ["typewriter", "mark-cast-names"]) {
     const note = r.container.querySelector(`#prefs-${stem}-note`);
     expect(note?.textContent).toBe(t(`prefs.${stem}.note`));
-    for (const button of r.container.querySelectorAll(`#prefs-${stem} button`)) {
-      expect(button.getAttribute("aria-describedby")).toBe(`prefs-${stem}-note`);
+    const group = r.container.querySelector(`#prefs-${stem}`);
+    expect(group?.getAttribute("aria-describedby")).toBe(`prefs-${stem}-note`);
+    expect(group?.querySelectorAll("[aria-describedby]").length).toBe(0);
+    for (const button of group?.querySelectorAll("button") ?? []) {
+      expect(["true", "false"]).toContain(button.getAttribute("aria-pressed") ?? "");
     }
   }
 });
+
+
+test("Focus help replaces its permanent note and works on hover and keyboard focus until destroy", () => {
+  const r = rig();
+  r.control.open();
+  r.panel().querySelector<HTMLDetailsElement>("#prefs-writing-aids")!.open = true;
+  const button = r.byId("prefs-focus-help");
+  const anchor = button.parentElement!;
+  expect(r.panel().querySelector("#prefs-focus-note") === null).toBe(true);
+  expect(button.closest('[aria-hidden="true"]') === null).toBe(true);
+  expect(button.getAttribute("aria-label")).toBe(t("help.about", { label: t("prefs.legend.focus") }));
+  expect(button.getAttribute("aria-describedby")).toBe("prefs-focus-help-text");
+  expect(r.panel().querySelector("#prefs-focus-help-text")?.textContent).toBe(t("prefs.focus.note"));
+  expect(anchor.querySelector(".tip") === null).toBe(true);
+  button.dispatchEvent(new MouseEvent("mouseenter"));
+  expect(anchor.querySelector(".tip-name")?.textContent).toBe(t("prefs.focus.note"));
+  button.dispatchEvent(new MouseEvent("mouseleave"));
+  expect(anchor.querySelector(".tip") === null).toBe(true);
+  button.focus();
+  expect(anchor.querySelector(".tip-name")?.textContent).toBe(t("prefs.focus.note"));
+  r.control.destroy();
+  expect(anchor.querySelector(".tip") === null).toBe(true);
+  button.dispatchEvent(new MouseEvent("mouseenter"));
+  button.dispatchEvent(new Event("focus"));
+  expect(anchor.querySelector(".tip") === null).toBe(true);
+});
+
+describe("recorded preference request ownership", () => {
+  function deferredSave() {
+    let resolve!: () => void;
+    let reject!: (error: Error) => void;
+    const promise = new Promise<void>((yes, no) => { resolve = yes; reject = no; });
+    return { promise, resolve, reject };
+  }
+
+  for (const preference of ["locale", "start", "zoom"] as const) {
+    for (const outcome of ["later succeeds", "both fail", "earlier succeeds"] as const) {
+      test(`${preference}: ${outcome} keeps the latest choice or last confirmed value`, async () => {
+        const first = deferredSave();
+        const second = deferredSave();
+        const writes: string[] = [];
+        const persist = (value: string): Promise<void> => {
+          writes.push(value);
+          return writes.length === 1 ? first.promise : second.promise;
+        };
+        const r = rig(undefined, undefined, undefined, undefined, undefined,
+          undefined, undefined, undefined, undefined, undefined, undefined,
+          { [preference]: persist });
+        const initial = preference === "locale" ? "en" : preference === "start" ? "last" : "100";
+        const older = preference === "locale" ? "de" : preference === "start" ? "home" : "125";
+        const newer = preference === "locale" ? "en" : preference === "start" ? "blank" : "150";
+        const choose = (value: string) => preference === "locale"
+          ? r.changeLanguage(value) : preference === "start" ? r.changeStart(value) : r.click(`prefs-zoom-${value}`);
+        const selected = (): string => preference === "locale"
+          ? r.languageSelect().value : preference === "start" ? r.startSelect().value
+          : r.panel().querySelector('#prefs-zoom [aria-pressed="true"]')?.getAttribute("data-prefs-value") ?? "";
+        await choose(older);
+        await choose(newer);
+        expect(selected()).toBe(newer);
+        expect(writes).toEqual([older]);
+        if (outcome === "earlier succeeds") first.resolve();
+        else first.reject(new Error("older refused"));
+        await settle();
+        expect(selected()).toBe(newer);
+        expect(writes).toEqual([older, newer]);
+        if (outcome === "later succeeds") second.resolve();
+        else second.reject(new Error("newer refused"));
+        await settle();
+        expect(selected()).toBe(outcome === "later succeeds" ? newer
+          : outcome === "earlier succeeds" ? older : initial);
+        expect(r.notices.length).toBe(outcome === "both fail" ? 2 : 1);
+        expect(r.dones.length).toBe(preference === "locale" && outcome === "later succeeds" ? 1 : 0);
+        r.control.destroy();
+      });
+    }
+  }
+
+  for (const firstRoute of ["panel", "keyboard"] as const) {
+    for (const laterFails of [false, true]) {
+      test(`zoom shares ownership with ${firstRoute} first and later save ${laterFails ? "refused" : "accepted"}`, async () => {
+        const first = deferredSave();
+        const second = deferredSave();
+        const writes: Zoom[] = [];
+        const shared = createZoomPersistence("100", (value) => {
+          writes.push(value);
+          return writes.length === 1 ? first.promise : second.promise;
+        }, (value) => r.control.setZoom(value));
+        const r = rig(undefined, undefined, undefined, undefined, undefined,
+          undefined, undefined, undefined, undefined, undefined, undefined,
+          { zoomPersistence: shared });
+        const keyFailures: unknown[] = [];
+        const stop = installZoomKeys(document, {
+          current: shared.current,
+          set: (value) => { void shared.request(value).catch((error: unknown) => keyFailures.push(error)); },
+        });
+        const key = () => document.dispatchEvent(new KeyboardEvent("keydown", {
+          key: "=", ctrlKey: true, cancelable: true,
+        }));
+        try {
+          if (firstRoute === "panel") await r.click("prefs-zoom-125");
+          else { key(); await settle(); }
+          if (firstRoute === "panel") key();
+          else await r.click("prefs-zoom-150");
+          expect(shared.current()).toBe("150");
+          expect(r.byId("prefs-zoom-150").getAttribute("aria-pressed")).toBe("true");
+          expect(writes).toEqual(["125"]);
+          first.reject(new Error("older refused"));
+          await settle();
+          expect(shared.current()).toBe("150");
+          expect(r.byId("prefs-zoom-150").getAttribute("aria-pressed")).toBe("true");
+          expect(writes).toEqual(["125", "150"]);
+          if (laterFails) second.reject(new Error("newer refused"));
+          else second.resolve();
+          await settle();
+          const expected = laterFails ? "100" : "150";
+          expect(shared.current()).toBe(expected);
+          expect(r.byId(`prefs-zoom-${expected}`).getAttribute("aria-pressed")).toBe("true");
+          expect(r.notices.length + keyFailures.length).toBe(laterFails ? 2 : 1);
+        } finally {
+          stop();
+          r.control.destroy();
+        }
+      });
+    }
+  }
+});
+
+test("the dictionary word field has a concise visible associated label", () => {
+  const r = rig();
+  const label = document.querySelector<HTMLLabelElement>('label[for="prefs-dict-word"]');
+  expect(label?.textContent).toBe("Add a word");
+  expect(label?.htmlFor).toBe(r.dictInput().id);
+});
+
+test("sidebar count checkboxes apply independently and serialize rapid saves", async () => {
+  const writes: SidebarWordCounts[] = [];
+  let finish: (() => void) | undefined;
+  const r = rig("system", undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, [], {
+    sidebar: async (counts) => {
+      writes.push(counts);
+      if (writes.length === 1) await new Promise<void>(resolve => { finish = resolve; });
+    },
+  });
+  const scene = r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-scene")!;
+  const chapter = r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-chapter")!;
+  const part = r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-part")!;
+  expect([scene.checked, chapter.checked, part.checked]).toEqual([true, false, false]);
+  scene.click(); chapter.click(); part.click();
+  expect(r.sidebarCounts).toEqual([
+    { scene: false, chapter: false, part: false },
+    { scene: false, chapter: true, part: false },
+    { scene: false, chapter: true, part: true },
+  ]);
+  await settle();
+  expect(writes).toHaveLength(1);
+  finish!();
+  await settle();
+  expect(writes).toEqual(r.sidebarCounts);
+  r.failWith("disk unavailable");
+  r.control.destroy();
+});
+
+test("failed sidebar count saves report the failure and keep this window's choice", async () => {
+  const r = rig();
+  r.failWith("disk unavailable");
+  const chapter = r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-chapter")!;
+  chapter.click();
+  await settle();
+  expect(chapter.checked).toBe(true);
+  expect(r.sidebarCounts).toEqual([{ scene: true, chapter: true, part: false }]);
+  expect(r.notices.at(-1)).toContain("disk unavailable");
+  r.control.destroy();
+});
+
+
+test("application close waits for the final queued sidebar count snapshot", async () => {
+  const writes: SidebarWordCounts[] = [];
+  const first = deferredCountWrite();
+  const last = deferredCountWrite();
+  let saved: SidebarWordCounts | undefined;
+  const r = rig("system", undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, [], {
+    sidebar: async (counts) => {
+      writes.push(counts);
+      if (writes.length === 1) await first.promise;
+      if (writes.length === 3) await last.promise;
+      saved = counts;
+    },
+  });
+  const events = new Map<string, (event?: { payload: number }) => void | Promise<void>>();
+  const acknowledgements: unknown[] = [];
+  await wireLifecycle({
+    session: { flushPending: async () => {}, failed: () => false, dirtyCount: () => 0 },
+    ...{ preferences: r.control },
+    listen: async (event, cb) => { events.set(event, cb); },
+    invoke: async (command, args) => {
+      acknowledgements.push([command, args]);
+      if (command === "confirm_close") expect(saved).toEqual({ scene: false, chapter: true, part: true });
+    },
+    addWindowListener: () => {}, addDocumentListener: () => {}, isHidden: () => false,
+  });
+  for (const kind of ["scene", "chapter", "part"]) {
+    r.container.querySelector<HTMLInputElement>(`#prefs-sidebar-word-counts-${kind}`)!.click();
+  }
+  await settle();
+  expect(writes).toHaveLength(1);
+  const closing = events.get(CLOSE_EVENT)!({ payload: 8 });
+  await settle();
+  expect(acknowledgements).toEqual([["holding_close", { attempt: 8 }]]);
+  const group = r.container.querySelector<HTMLFieldSetElement>("#prefs-sidebar-word-counts")!;
+  expect(group.disabled).toBe(true);
+  const scene = r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-scene")!;
+  scene.checked = true;
+  scene.dispatchEvent(new Event("change"));
+  expect(scene.checked).toBe(false);
+  expect(r.sidebarCounts).toHaveLength(3);
+  first.resolve();
+  await settle();
+  expect(writes).toEqual(r.sidebarCounts);
+  expect(acknowledgements).toEqual([["holding_close", { attempt: 8 }]]);
+  last.resolve();
+  await closing;
+  expect(acknowledgements).toEqual([["holding_close", { attempt: 8 }], ["confirm_close", { attempt: 8 }]]);
+  r.control.destroy();
+});
+
+function deferredCountWrite() {
+  let resolve = () => {};
+  const promise = new Promise<void>((done) => { resolve = done; });
+  return { promise, resolve };
+}
+
+
+test("failed count choices can keep the window open or be discarded without bypassing manuscript safety", async () => {
+  const r = rig();
+  r.failWith("disk unavailable");
+  const chapter = r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-chapter")!;
+  chapter.click();
+  await settle();
+  let preferenceChoice: "stay" | "close" = "stay";
+  let manuscriptChoice: "stay" | "close" = "stay";
+  let manuscriptPrompts = 0;
+  let flushes = 0;
+  const close = await countCloseHarness(r.control, {
+    session: { flushPending: async () => { flushes++; }, failed: () => true, dirtyCount: () => 2 },
+    promptPreferencesClose: async () => preferenceChoice,
+    promptUnsavedClose: async (count) => { expect(count).toBe(2); manuscriptPrompts++; return manuscriptChoice; },
+  });
+  const group = r.container.querySelector<HTMLFieldSetElement>("#prefs-sidebar-word-counts")!;
+  await close.request();
+  expect(close.commands).toEqual(["holding_close", "release_close"]);
+  expect(group.disabled).toBe(false);
+  expect(flushes).toBe(0);
+  expect(r.notices.at(-1)).toContain("disk unavailable");
+  // A canceled close restores a live control, rather than only its appearance.
+  chapter.click();
+  await settle();
+  expect(chapter.checked).toBe(false);
+  expect(r.sidebarCounts).toHaveLength(2);
+  preferenceChoice = "close";
+  close.commands.length = 0;
+  await close.request();
+  expect(close.commands).toEqual(["holding_close", "holding_close", "release_close"]);
+  expect(manuscriptPrompts).toBe(1);
+  expect(group.disabled).toBe(false);
+  manuscriptChoice = "close";
+  close.commands.length = 0;
+  await close.request();
+  expect(close.commands).toEqual(["holding_close", "holding_close", "confirm_close"]);
+  expect(manuscriptPrompts).toBe(2);
+  expect(group.disabled).toBe(true);
+  r.control.destroy();
+});
+
+test("a successful final count snapshot recovers from an earlier queued save failure", async () => {
+  const first = deferredCountWrite();
+  const writes: SidebarWordCounts[] = [];
+  const r = rig("system", undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, [], {
+    sidebar: async (counts) => {
+      writes.push(counts);
+      if (writes.length === 1) { await first.promise; throw new Error("earlier refused"); }
+    },
+  });
+  r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-scene")!.click();
+  r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-chapter")!.click();
+  const close = await countCloseHarness(r.control, {
+    promptPreferencesClose: async () => { throw new Error("final snapshot saved: no discard prompt needed"); },
+  });
+  const closing = close.request();
+  await settle();
+  expect(close.commands).toEqual(["holding_close"]);
+  first.resolve();
+  await closing;
+  expect(writes).toEqual(r.sidebarCounts);
+  expect(close.commands).toEqual(["holding_close", "confirm_close"]);
+  expect(r.notices.at(-1)).toContain("earlier refused");
+  r.control.destroy();
+});
+
+async function countCloseHarness(preferences: ReturnType<typeof createPreferences>, overrides: Partial<LifecycleDeps> = {}) {
+  const events = new Map<string, (event?: { payload: number }) => void | Promise<void>>();
+  const commands: string[] = [];
+  await wireLifecycle({
+    session: { flushPending: async () => {}, failed: () => false, dirtyCount: () => 0 },
+    preferences,
+    listen: async (event, cb) => { events.set(event, cb); },
+    invoke: async (command) => { commands.push(command); },
+    addWindowListener: () => {}, addDocumentListener: () => {}, isHidden: () => false,
+    ...overrides,
+  });
+  return { commands, request: () => events.get(CLOSE_EVENT)!({ payload: 9 }) };
+}
+
+for (const answer of ["Return", "Escape"]) {
+  test(`canceling failed count close with ${answer} restores the enabled preference focus owner`, async () => {
+    const r = rig();
+    const prompt = createClosePrompt({ container: document.body });
+    try {
+      r.control.open();
+      const chapter = r.container.querySelector<HTMLInputElement>("#prefs-sidebar-word-counts-chapter")!;
+      // Choose the Appearance tab by its controlled page rather than a label.
+      const page = chapter.closest<HTMLElement>("[role=tabpanel]")!;
+      r.container.querySelector<HTMLButtonElement>(`[aria-controls="${page.id}"]`)!.click();
+      r.failWith("Permission denied (os error 13)");
+      chapter.click();
+      await settle();
+      chapter.focus();
+      expect(document.activeElement === chapter).toBe(true);
+      const events = new Map<string, () => void | Promise<void>>();
+      const commands: string[] = [];
+      const captureCloseFocus = () => prompt.captureFocus();
+      await wireLifecycle({
+        session: { flushPending: async () => {}, failed: () => false, dirtyCount: () => 0 },
+        preferences: r.control,
+        promptPreferencesClose: () => prompt.openPreferences(),
+        invoke: async (command: string) => { commands.push(command); },
+        listen: async (event: string, cb: () => void | Promise<void>) => { events.set(event, cb); },
+        addWindowListener: () => {}, addDocumentListener: () => {}, isHidden: () => false,
+        captureCloseFocus,
+      });
+      const closing = events.get(CLOSE_EVENT)!();
+      await settle();
+      const stay = document.querySelector<HTMLButtonElement>("#close-prompt-panel button")!;
+      expect(document.activeElement === stay).toBe(true);
+      const key = new KeyboardEvent("keydown", { key: answer === "Return" ? "Enter" : answer, bubbles: true, cancelable: true });
+      stay.dispatchEvent(key);
+      // happy-dom does not perform the browser's default Return button activation.
+      if (answer === "Return" && !key.defaultPrevented) stay.click();
+      await closing;
+      expect(commands).toEqual(["holding_close", "release_close"]);
+      expect(chapter.matches(":disabled")).toBe(false);
+      expect(document.activeElement === chapter).toBe(true);
+      expect(r.container.querySelector<HTMLElement>("#prefs-panel")!.hidden).toBe(false);
+    } finally {
+      prompt.destroy();
+      r.control.destroy();
+      r.container.remove();
+    }
+  });
+}

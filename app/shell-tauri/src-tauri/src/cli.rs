@@ -1148,10 +1148,10 @@ fn parse(args: &[String]) -> Result<Options, String> {
 /// The source project's slug for a point, taken from the directory the point
 /// sits in.
 ///
-/// A recovery directory IS `<data_home>/cc.local.app/recovery/<slug>`, so the
-/// parent's name is the original project's file stem by construction rather
-/// than by convention. A point somewhere else falls back to its own stem, which
-/// is the only other thing on hand and still produces a name a person can read.
+/// Legacy recovery folders use the source file stem. Current folders under
+/// `garret/recovery/by-id` use the book identity instead, so this is only a
+/// filename hint; the restored book keeps its title from the stored metadata.
+/// A point without a parent name falls back to its own file stem.
 fn source_slug_of(point: &Path) -> String {
     point
         .parent()
@@ -1204,6 +1204,11 @@ impl std::fmt::Display for Refusal {
 ///
 /// Returns the process exit code rather than calling `process::exit`, so every
 /// branch of it is reachable from a test.
+pub(crate) fn uses_profile(command: &str) -> bool {
+    matches!(command, "export" | "salvage" | "import" | "preflight" | "mirror-preview"
+        | "archive-encrypt" | "archive-verify" | "archive-restore")
+}
+
 pub fn run(argv: &[String]) -> i32 {
     match dispatch(argv) {
         Ok(code) => code,
@@ -1555,6 +1560,18 @@ mod tests {
     use super::*;
     use crate::store::{FlushEntry, Store};
     use tempfile::tempdir;
+
+    #[test]
+    fn only_profile_commands_require_application_data_preparation() {
+        for command in ["export", "salvage", "import", "preflight", "mirror-preview",
+            "archive-encrypt", "archive-verify", "archive-restore"] {
+            assert!(uses_profile(command), "{command}");
+        }
+        for command in ["inspect", "validate", "search", "history", "knowledge", "analytics",
+            "design-export", "design-preview", "design-apply", "archive-keygen", "--seed"] {
+            assert!(!uses_profile(command), "{command}");
+        }
+    }
 
     fn import(data_home: &Path, source: &Path, library: &Path) -> Result<ImportResult, String> {
         super::import(data_home, source, library, &crate::strings::Strings::english())

@@ -20,12 +20,20 @@ export interface LifecycleDeps {
     dirtyCount(): number;
   };
   privacyLocked?: () => Promise<boolean>;
+  /** Capture before preparation disables controls; restore after cancellation. */
+  captureCloseFocus?: () => (() => void);
   drafts?: {
     pending(): boolean;
     /** True grants this close attempt a hold; false or throw grants none. */
     prepareClose(): Promise<boolean>;
     cancelClose(): void;
   };
+  preferences?: {
+    prepareClose(): Promise<boolean>;
+    cancelClose(): void;
+  };
+  /** Ask before losing count choices that failed to persist. */
+  promptPreferencesClose?: () => Promise<"stay" | "close">;
   /** Absent outside the Tauri host. */
   invoke?: (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
   /** Absent outside the Tauri host. */
@@ -75,12 +83,35 @@ export async function wireLifecycle(deps: LifecycleDeps): Promise<boolean> {
   }).catch((err: unknown) => { installed = false; deps.onError?.(String(err)); });
 
   const closeListener = deps.listen?.(CLOSE_EVENT, async (event) => {
+    const restoreFocus = deps.captureCloseFocus?.();
     const attempt = event?.payload;
     let confirmed = false;
     let prepared = false;
+    let preferencesPrepared = false;
     try {
       // A failed status read must never allow the ordinary discard dialog.
       let locked = await deps.privacyLocked?.().catch(() => true) ?? false;
+      if (deps.preferences) {
+        await deps.invoke?.("holding_close", { attempt });
+        preferencesPrepared = true;
+        const saved = await deps.preferences.prepareClose();
+        locked = locked || (await deps.privacyLocked?.().catch(() => true) ?? false);
+        if (!saved) {
+          if (locked) {
+            await deps.invoke?.("privacy_close_failed");
+            return;
+          }
+          const choice = (await deps.promptPreferencesClose?.()) ?? "stay";
+          if (await deps.privacyLocked?.().catch(() => true)) {
+            await deps.invoke?.("privacy_close_failed");
+            return;
+          }
+          if (choice !== "close") {
+            await deps.invoke?.("release_close", { attempt });
+            return;
+          }
+        }
+      }
       if (!locked && deps.drafts) {
         if (deps.drafts.pending()) await deps.invoke?.("holding_close", { attempt });
         const mayClose = await deps.drafts.prepareClose();
@@ -150,6 +181,8 @@ export async function wireLifecycle(deps: LifecycleDeps): Promise<boolean> {
       }
     } finally {
       if (!confirmed && prepared) deps.drafts?.cancelClose();
+      if (!confirmed && preferencesPrepared) deps.preferences?.cancelClose();
+      if (!confirmed && restoreFocus && !(await deps.privacyLocked?.().catch(() => true) ?? false)) restoreFocus();
     }
   }).catch((err: unknown) => {
     installed = false;

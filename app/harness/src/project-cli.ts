@@ -51,7 +51,7 @@ const FIXTURE = "lab/fixtures/out/tiny";
 const RESULTS = "app/results";
 
 /** Must match app/shell-tauri/src-tauri/src/projects.rs library_dir(). */
-const APP_DIR = "cc.local.app";
+const APP_DIR = "garret";
 const PROJECTS_DIR = "projects";
 
 /* Click geometry, restated from app/ui/style.css rather than imported, for the

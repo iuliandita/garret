@@ -230,7 +230,7 @@ function firstTextNode(node: unknown): { text: string } | null {
 
 const workDir = mkdtempSync(join(tmpdir(), "app-preflight-"));
 const dataHome = join(workDir, "data");
-mkdirSync(join(dataHome, "cc.local.app"), { recursive: true });
+mkdirSync(join(dataHome, "garret"), { recursive: true });
 function cleanup(): void {
   rmSync(workDir, { recursive: true, force: true });
 }

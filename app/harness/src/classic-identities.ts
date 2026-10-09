@@ -45,7 +45,7 @@ export function pinClassicBook(path: string, fixture: string): void {
 }
 
 export function writeClassicVault(dataHome: string, staleFixture?: string): void {
-  const dir = join(dataHome, "cc.local.app");
+  const dir = join(dataHome, "garret");
   mkdirSync(dir, { recursive: true });
   const vault = staleFixture === undefined ? CLASSIC_VAULT : {
     ...CLASSIC_VAULT,

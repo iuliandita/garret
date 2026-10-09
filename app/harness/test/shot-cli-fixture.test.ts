@@ -81,3 +81,30 @@ describe("shot-cli mirror route", () => {
     expect(diagnostic(run)).toContain("--theme with --mirror-changes must be light or dark");
   });
 });
+
+describe("shot-cli stable menu action", () => {
+  test("accepts grouped actions and retains numeric menu selection", () => {
+    for (const args of [
+      ["--menu-action", "menu-review-proposals"],
+      ["--menu-action", "menu-encrypted-backups", "--locale", "de"],
+      ["--menu-action", "menu-new-scene"],
+      ["--menu-item", "outline:37"],
+    ]) {
+      const run = Bun.spawnSync(["bun", "app/harness/src/shot-cli.ts", "tiny", ...args], {
+        env: { ...process.env, APP_GUI: "0" }, stdout: "pipe", stderr: "pipe",
+      });
+      expect(run.exitCode).toBe(0);
+      expect(run.stdout.toString()).toContain("APP_GUI=1 not set; screenshot skipped");
+    }
+  });
+
+  test("refuses an unknown action before a headless capture could skip", () => {
+    const run = Bun.spawnSync(["bun", "app/harness/src/shot-cli.ts", "tiny", "--menu-action", "menu-missing"], {
+      env: { ...process.env, APP_GUI: "0" }, stdout: "pipe", stderr: "pipe",
+    });
+    expect(run.exitCode).not.toBe(0);
+    expect(diagnostic(run)).toContain("--menu-action:");
+    expect(diagnostic(run)).toContain("menu-missing");
+    expect(run.stdout.toString()).not.toContain("screenshot skipped");
+  });
+});

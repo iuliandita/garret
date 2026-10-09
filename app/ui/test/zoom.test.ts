@@ -4,6 +4,7 @@ import { describe, expect, test } from "bun:test";
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
 import {
+  createZoomPersistence,
   DEFAULT_ZOOM,
   ZOOMS,
   installZoomKeys,
@@ -97,4 +98,32 @@ describe("zoom keys", () => {
     // page should react to it either.
     expect(e.defaultPrevented).toBe(true);
   });
+});
+
+
+test("zoom failure restores the last completed host write, even while a newer request is displayed", async () => {
+  let accept!: () => void;
+  let refuse!: (error: Error) => void;
+  const first = new Promise<void>((resolve) => { accept = resolve; });
+  const second = new Promise<void>((_, reject) => { refuse = reject; });
+  const writes: Zoom[] = [];
+  const displayed: Zoom[] = [];
+  const persistence = createZoomPersistence("100", (value) => {
+    writes.push(value);
+    return writes.length === 1 ? first : second;
+  }, (value) => displayed.push(value));
+  const older = persistence.request("125");
+  const newer = persistence.request("175").catch((error: unknown) => error);
+  expect(persistence.current()).toBe("175");
+  await Promise.resolve();
+  expect(writes).toEqual(["125"]);
+  accept();
+  await older;
+  expect(persistence.current()).toBe("175");
+  const error = new Error("refused");
+  refuse(error);
+  expect(await newer).toBe(error);
+  expect(writes).toEqual(["125", "175"]);
+  expect(persistence.current()).toBe("125");
+  expect(displayed).toEqual(["125", "175", "125"]);
 });

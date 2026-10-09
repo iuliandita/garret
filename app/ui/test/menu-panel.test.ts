@@ -270,3 +270,36 @@ describe("separators", () => {
     panel.destroy();
   });
 });
+
+
+test("replacement pages keep the owner open, offer Back, and close before a leaf runs", () => {
+  let closed = 0;
+  let ran = false;
+  const panel = createMenuPanel({ id: "pages", backLabel: () => "Back", onClose: () => closed++ });
+  document.body.append(panel.element);
+  panel.paint([{ id: "group", label: () => "Organize", children: [
+    { id: "leaf", label: () => "Rename", run: () => { expect(panel.isOpen()).toBe(false); ran = true; } },
+  ], run: () => { throw new Error("group must not run"); } }], "Outline");
+  panel.focusItem(0);
+  const right = new KeyboardEvent("keydown", { key: "ArrowRight", cancelable: true });
+  expect(panel.handleArrowKey(right)).toBe(true);
+  expect(right.defaultPrevented).toBe(true);
+  expect(panel.isOpen()).toBe(true);
+  expect(closed).toBe(0);
+  expect(document.activeElement?.id).toBe("pages-back");
+  expect(panel.element.getAttribute("aria-label")).toBe("Organize");
+  expect(document.getElementById("group")).toBeNull();
+  panel.handleArrowKey(new KeyboardEvent("keydown", { key: "ArrowLeft", cancelable: true }));
+  expect(document.activeElement?.id).toBe("group");
+  expect(document.getElementById("pages-back")).toBeNull();
+  document.getElementById("group")!.click();
+  document.getElementById("pages-back")!.click();
+  expect(document.activeElement?.id).toBe("group");
+  document.getElementById("group")!.click();
+  document.getElementById("leaf")!.click();
+  expect(ran).toBe(true);
+  expect(closed).toBe(1);
+  panel.paint([{ id: "fresh", label: () => "Fresh", run: () => {} }], "Fresh");
+  expect(document.getElementById("pages-back")).toBeNull();
+  panel.destroy();
+});

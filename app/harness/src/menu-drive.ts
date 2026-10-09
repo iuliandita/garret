@@ -20,7 +20,9 @@
  *  check the EFFECT, which is why `menu-cli` asserts on the store and the
  *  export file rather than on the menu.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import ts from "typescript";
 
 /** Long enough for the dropdown to paint. Measured in `menu-cli`, where the
  *  same value drives six boots. */
@@ -47,13 +49,13 @@ export interface MenuItemRoute {
   /** Zero-based position in the menu. The driver chooses the shorter wrapped
    *  ArrowUp or ArrowDown route from the initially highlighted first item. */
   index: number;
+  path: readonly { index: number; count: number }[];
 }
 
 interface ParsedMenus {
   routes: Map<string, MenuItemRoute>;
   /** The chord that opens each menu, by menu id. */
   chords: Map<MenuId, string>;
-  counts: Map<MenuId, number>;
   itemCount: number;
 }
 
@@ -66,61 +68,69 @@ function cachedMenus(sourcePath: string, catalogPath: string): ParsedMenus {
   return cached.menus;
 }
 
-/** The menu source, parsed into a route per item id.
- *
- *  Sequential by construction: an id in MENU_IDS opens a new menu, and every
- *  id after it belongs to that menu until the next one. That holds because the
- *  table is a literal written in paint order, which is also the only reason the
- *  index means anything.
- */
+/** Read literal menu pages without executing the UI module. Each child page
+ *  starts with Back, so leaf indices and ancestor routes include that row. */
 function parseMenus(sourcePath: string, catalogPath: string): ParsedMenus {
   const source = readFileSync(sourcePath, "utf8");
   const routes = new Map<string, MenuItemRoute>();
   const chords = new Map<MenuId, string>();
-  const counts = new Map<MenuId, number>();
   const seen = new Set<string>();
   let itemCount = 0;
-  let menu: MenuId | null = null;
-  let chord: string | null = null;
-  let index = 0;
 
-  // `id: "menu-x"` for both menus and items; `key: t("menu.x.key")` only ever
-  // appears on a menu, on the line after its own id. Since 088 the letter is
-  // a catalog value (German opens Datei with Alt+D); the rigs drive the
-  // English page, so the key is resolved through `en.ts`. A literal letter in
-  // the source is no longer a shape this accepts: it would be a bar that
-  // ignores the catalog.
-  const pattern = /\bid:\s*"(menu-[a-z-]+)"|\bkey:\s*t\("(menu\.[a-z]+\.key)"\)/g;
-  for (const match of source.matchAll(pattern)) {
-    const id = match[1];
-    const keyName = match[2];
-    if (keyName !== undefined) {
-      if (menu === null) {
-        throw new Error(`${sourcePath}: found key ${keyName} before any menu id; the table's shape changed`);
-      }
-      chord = `alt+${catalogLetter(keyName, catalogPath)}`;
-      chords.set(menu, chord);
-      continue;
-    }
-    if (id === undefined) continue;
-    if (seen.has(id)) {
-      throw new Error(`${sourcePath}: the id "${id}" appears twice, so an index parsed from it is ambiguous`);
-    }
-    seen.add(id);
-    if ((MENU_IDS as readonly string[]).includes(id)) {
-      menu = id as MenuId;
-      chord = null;
-      index = 0;
-      continue;
-    }
-    if (menu === null || chord === null) {
-      throw new Error(`${sourcePath}: the item "${id}" precedes any menu id and key; the table's shape changed`);
-    }
-    routes.set(id, { menu, chord, index });
-    index += 1;
-    counts.set(menu, index);
-    itemCount += 1;
+  const tree = ts.createSourceFile(sourcePath, source, ts.ScriptTarget.Latest, true);
+  function property(object: ts.ObjectLiteralExpression, name: string): ts.Expression | undefined {
+    const found = object.properties.find((entry) => ts.isPropertyAssignment(entry) && entry.name.getText(tree) === name);
+    return found && ts.isPropertyAssignment(found) ? found.initializer : undefined;
   }
+  function array(value: ts.Expression | undefined): ts.ArrayLiteralExpression | undefined {
+    if (value && ts.isConditionalExpression(value)) value = value.whenFalse;
+    return value && ts.isArrayLiteralExpression(value) ? value : undefined;
+  }
+  function visitPage(page: ts.ArrayLiteralExpression, owner: MenuId, accelerator: string,
+    ancestors: readonly { index: number; count: number }[], nested: boolean): void {
+    const count = page.elements.length + (nested ? 1 : 0);
+    for (const [position, node] of page.elements.entries()) {
+      if (!ts.isObjectLiteralExpression(node)) throw new Error(`${sourcePath}: menu page must contain literal items`);
+      const identity = property(node, "id");
+      if (!identity || !ts.isStringLiteral(identity)) throw new Error(`${sourcePath}: menu item has no literal id`);
+      const id = identity.text;
+      if (seen.has(id)) throw new Error(`${sourcePath}: the id "${id}" appears twice, so an index parsed from it is ambiguous`);
+      seen.add(id);
+      const index = position + (nested ? 1 : 0);
+      const path = [...ancestors, { index, count }];
+      routes.set(id, { menu: owner, chord: accelerator, index, path });
+      itemCount++;
+      const children = array(property(node, "children"));
+      if (children) visitPage(children, owner, accelerator, path, true);
+    }
+  }
+  function visit(node: ts.Node): void {
+    if (ts.isObjectLiteralExpression(node)) {
+      const identity = property(node, "id");
+      if (identity && ts.isStringLiteral(identity) && (MENU_IDS as readonly string[]).includes(identity.text)) {
+        const owner = identity.text as MenuId;
+        if (seen.has(owner)) throw new Error(`${sourcePath}: the id "${owner}" appears twice`);
+        seen.add(owner);
+        const key = property(node, "key");
+        if (!key || !ts.isCallExpression(key) || key.expression.getText(tree) !== "t" ||
+          !key.arguments[0] || !ts.isStringLiteral(key.arguments[0])) {
+          throw new Error(`${sourcePath}: item precedes any menu id and key; expected a catalog accelerator`);
+        }
+        const accelerator = `alt+${catalogLetter(key.arguments[0].text, catalogPath)}`;
+        chords.set(owner, accelerator);
+        const page = array(property(node, "items"));
+        if (!page) throw new Error(`${sourcePath}: ${owner} has no literal items page`);
+        visitPage(page, owner, accelerator, [], false);
+        return;
+      }
+      if (identity && ts.isStringLiteral(identity) && identity.text.startsWith("menu-") &&
+          identity.text !== "menu-panel" && !seen.has(identity.text)) {
+        throw new Error(`${sourcePath}: the item "${identity.text}" precedes any menu id and key`);
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(tree);
 
   // Vacuity guards. A parse that silently matches nothing hands every caller
   // index 0 of a menu that never opened, and the rig then reports whatever the
@@ -133,7 +143,7 @@ function parseMenus(sourcePath: string, catalogPath: string): ParsedMenus {
   if (itemCount < 12) {
     throw new Error(`${sourcePath}: parsed only ${itemCount} menu items, which is fewer than the menu has ever had`);
   }
-  return { routes, chords, counts, itemCount };
+  return { routes, chords, itemCount };
 }
 
 /** A catalog string read from the selected source. Kept here with the menu
@@ -210,6 +220,43 @@ export function resetMenuCache(): void {
   cached = null;
 }
 
+/** Creation is a dialog in the mounted app. Read its control order so the
+ *  native driver follows the same New command as the writer. Legacy mounts
+ *  without a chooser source retain the grouped menu fallback. */
+function creationKeys(itemId: string, sourcePath: string): string[] | null {
+  if (!itemId.startsWith("menu-new-")) return null;
+  const chooserPath = join(dirname(sourcePath), "creation-chooser.ts");
+  if (!existsSync(chooserPath)) return null;
+  const source = readFileSync(chooserPath, "utf8");
+  const tree = ts.createSourceFile(chooserPath, source, ts.ScriptTarget.Latest, true);
+  const loops = new Map<string, string[]>();
+  function visit(node: ts.Node): void {
+    if (ts.isForOfStatement(node) && ts.isVariableDeclarationList(node.initializer)) {
+      const name = node.initializer.declarations[0]?.name.getText(tree);
+      const expression = ts.isAsExpression(node.expression) ? node.expression.expression : node.expression;
+      if (name && ts.isArrayLiteralExpression(expression)) {
+        const values = expression.elements.map((value) => ts.isStringLiteral(value) ? value.text : null);
+        if (values.every((value): value is string => value !== null)) loops.set(name, values);
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(tree);
+  const common = loops.get("type");
+  const matter = loops.get("kind");
+  const bible = [...source.matchAll(/action\("(create-bible-[a-z-]+)"/g)].map((match) => match[1]!);
+  if (!common?.length || !matter?.length || bible.length !== 3 || !source.includes('more.id = "creation-more"')) {
+    throw new Error(`${chooserPath}: creation chooser control order changed`);
+  }
+  const target = itemId === "menu-new-note" ? "create-bible-entry"
+    : itemId === "menu-new-timeline" ? "create-bible-timeline" : itemId.replace("menu-new-", "create-");
+  const commonIndex = common.indexOf(target.slice("create-".length));
+  if (commonIndex >= 0) return [...Array<string>(commonIndex).fill("Tab"), "Return"];
+  const index = [...bible, ...matter.map((kind) => `create-${kind}`)].indexOf(target);
+  if (index < 0) throw new Error(`${chooserPath}: no creation choice for ${itemId}`);
+  return [...Array<string>(common.length).fill("Tab"), "Return", ...Array<string>(index + 1).fill("Tab"), "Return"];
+}
+
 export interface MenuDriver {
   /** Send a chord to the shell's window. */
   key(chord: string): void;
@@ -253,18 +300,26 @@ export function menuDriver(
     key,
     openMenu,
     activate: async (itemId: string): Promise<void> => {
-      const route = menuRoute(itemId, sourcePath, catalogPath);
-      const count = cachedMenus(sourcePath, catalogPath).counts.get(route.menu);
-      if (count === undefined) throw new Error(`no items parsed for ${route.menu}`);
-      const upward = count - route.index;
-      const keyName = upward < route.index ? "Up" : "Down";
-      const steps = Math.min(route.index, upward);
+      const creation = creationKeys(itemId, sourcePath);
+      const route = menuRoute(creation ? "menu-new" : itemId, sourcePath, catalogPath);
       await openMenu(route.chord);
-      for (let i = 0; i < steps; i++) {
-        key(keyName);
-        await Bun.sleep(KEY_STEP_MS);
+      for (const [page, step] of route.path.entries()) {
+        const upward = step.count - step.index;
+        const keyName = upward < step.index ? "Up" : "Down";
+        for (let i = 0; i < Math.min(step.index, upward); i++) {
+          key(keyName);
+          await Bun.sleep(KEY_STEP_MS);
+        }
+        key("Return");
+        if (page < route.path.length - 1) await Bun.sleep(MENU_OPEN_MS);
       }
-      key("Return");
+      if (creation) {
+        await Bun.sleep(MENU_OPEN_MS);
+        for (const chord of creation) {
+          key(chord);
+          await Bun.sleep(KEY_STEP_MS);
+        }
+      }
       await Bun.sleep(MENU_SETTLE_MS);
     },
   };

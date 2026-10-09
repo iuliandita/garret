@@ -109,16 +109,24 @@ pull request instructions.
 ## Where your work lives
 
 New books default to `Documents/Books` until you choose another folder.
-Settings and recovery copies live under `~/.local/share/cc.local.app/`. Pictures
-and research originals sit in folders next to each book, so back up a book's
+On Linux, settings and recovery copies default to `~/.local/share/garret/`.
+Migrated profiles retain a compatibility link at the former `cc.local.app`
+location. Pictures and research originals sit next to each book, so back up a book's
 `.db` file together with those folders, with the app closed.
+
+If garret stops while preparing its application data, keep both folders named in
+the warning. Close every version of garret and back up both folders separately
+before attempting recovery. Do not delete, merge or overwrite either folder.
+Request recovery help and include the warning, removing personal paths before
+posting it publicly. A symbolic link inside the old profile also stops the move;
+garret does not follow it or remove it for you.
 
 ### Keep a safe copy of your book
 
-Keep your working book outside cloud-synced folders. **Back up now** makes a
+Keep your working book outside cloud-synced folders. **File > Copies > Create recovery point** makes a
 local recovery copy; it cannot protect your work if you lose the device.
 
-1. Open **File > Open book > Backups and archives**.
+1. Open **File > Copies > Encrypted backups**.
 2. Choose **Create recovery key** and keep the key separately from your backups.
    A lost key means you cannot restore an encrypted archive.
 3. Select **Choose backup folder**, then **Make encrypted archive** and save
@@ -128,6 +136,30 @@ local recovery copy; it cannot protect your work if you lose the device.
 
 garret remembers the backup destination folder. Making and saving each archive
 is manual. **Restore encrypted archive** restores it as a separate book.
+
+### If a backup was interrupted
+
+Open the error's **Details** for the exact parent directory and retained folder.
+Close garret, preserve a local copy of that folder, and inspect it first.
+Application-private temporary files may contain unencrypted writing; keep them
+out of cloud folders. To list retained folders, replace the placeholders below
+with the parent directory and folder name from Details:
+
+```sh
+garret archive-stage-list "<parent-dir>"
+```
+
+Only after inspecting and preserving the selected folder, deliberately discard
+its temporary files with:
+
+```sh
+garret archive-stage-clean "<parent-dir>" "<stage-name>"
+```
+
+Then retry the backup. For destination temporary encrypted files, choosing another
+backup folder also works while keeping the retained files. Another filename in
+the same folder does not help. Changing the backup folder cannot bypass retained
+application-private files.
 
 ## Support garret
 

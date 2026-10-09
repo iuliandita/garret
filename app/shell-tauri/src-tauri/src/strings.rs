@@ -311,7 +311,7 @@ const EN_ENTRIES: &[(&str, &str)] = &[
     ("salvage.loss.table_unreadable", "A table could not be read."),
     ("salvage.loss.unknown", "A recovery problem was recorded."),
     ("salvage.loss.unreadable_analytics_row", "A session observation could not be read."),
-    ("salvage.loss.unreadable_appearance_row", "A appearance record could not be read."),
+    ("salvage.loss.unreadable_appearance_row", "An appearance record could not be read."),
     ("salvage.loss.unreadable_blob_row", "A stored content record could not be read."),
     ("salvage.loss.unreadable_body", "A document could not be interpreted; inspect its recovered raw bytes."),
     ("salvage.loss.unreadable_cast_alias_row", "A cast alias could not be read."),
@@ -321,7 +321,7 @@ const EN_ENTRIES: &[(&str, &str)] = &[
     ("salvage.loss.unreadable_cover", "A cover image could not be recovered."),
     ("salvage.loss.unreadable_design_row", "A book design record could not be read."),
     ("salvage.loss.unreadable_doc_row", "A document record could not be read."),
-    ("salvage.loss.unreadable_item_row", "A outline entry could not be read."),
+    ("salvage.loss.unreadable_item_row", "An outline entry could not be read."),
     ("salvage.loss.unreadable_knowledge_link_row", "A relationship record could not be read."),
     ("salvage.loss.unreadable_meta_row", "A metadata record could not be read."),
     ("salvage.loss.unreadable_picture", "A picture could not be recovered."),
@@ -342,6 +342,7 @@ const EN_ENTRIES: &[(&str, &str)] = &[
     ("salvage.title.snapshots", "{name} - snapshots"),
     ("salvage.title.synopses", "{name} - synopses"),
     ("salvage.title.wordlist", "{name} - wordlist"),
+    ("startup.data_migration", "garret could not safely prepare its application data. Your existing data has been preserved.\n\nOlder folder:\n{old}\n\nNewer folder:\n{new}\n\nClose every version of garret and back up both folders separately. Do not delete, merge or overwrite them. For recovery help, open github.com/iuliandita/garret/issues and include the details below, removing personal paths before posting publicly.\n\nTechnical details (English):"),
     ("startup.detail", "Technical details:"),
     ("startup.help", "The application could not open its window. On Windows, check that the Microsoft Edge WebView2 Evergreen Runtime is installed: https://developer.microsoft.com/microsoft-edge/webview2/ . An installed runtime does not rule out another startup problem. Keep the technical details below when reporting the failure."),
 ];
@@ -475,6 +476,7 @@ const DE_ENTRIES: &[(&str, &str)] = &[
     ("salvage.title.snapshots", "{name} - Schnappschüsse"),
     ("salvage.title.synopses", "{name} - Inhaltsangaben"),
     ("salvage.title.wordlist", "{name} - Wortliste"),
+    ("startup.data_migration", "garret konnte seine Anwendungsdaten nicht sicher vorbereiten. Ihre vorhandenen Daten wurden erhalten.\n\nBisheriger Ordner:\n{old}\n\nNeuer Ordner:\n{new}\n\nSchließen Sie alle Versionen von garret und sichern Sie beide Ordner getrennt. Löschen, verbinden oder überschreiben Sie sie nicht. Hilfe bei der Wiederherstellung erhalten Sie unter github.com/iuliandita/garret/issues. Geben Sie die folgenden Details an und entfernen Sie persönliche Pfade vor einer öffentlichen Meldung.\n\nTechnische Details (Englisch):"),
     ("startup.detail", "Technische Details:"),
     ("startup.help", "Die Anwendung konnte ihr Fenster nicht öffnen. Prüfen Sie unter Windows, ob die Microsoft Edge WebView2 Evergreen Runtime installiert ist: https://developer.microsoft.com/microsoft-edge/webview2/ . Eine installierte Runtime schließt andere Startprobleme nicht aus. Bewahren Sie die folgenden technischen Details für einen Fehlerbericht auf."),
 ];

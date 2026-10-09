@@ -70,6 +70,8 @@ export function createSession(deps: SessionDeps): Session {
   return {
     activeDocId: () => docId,
     noteChange(change?: EditSourceChange): void {
+      // Timeline edits supply their own body directly to the flusher.
+      if (deps.isTimelineDoc?.(docId) === true) return;
       flusher.markDirty(docId, editor.serialize(), change);
     },
     flushPending: () => flusher.drain(),

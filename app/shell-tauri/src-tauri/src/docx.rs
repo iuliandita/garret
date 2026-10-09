@@ -65,10 +65,13 @@ fn run_xml(text: &str, node: &serde_json::Value) -> String {
     } else {
         format!("<w:rPr>{rpr}</w:rPr>")
     };
-    format!(
-        "<w:r>{rpr}<w:t xml:space=\"preserve\">{}</w:t></w:r>",
-        xml_escape(text)
-    )
+    // Newlines are the editor's manual breaks. Keep them inside this marked
+    // run so Word receives the same leading, trailing and repeated breaks.
+    let content = text.split('\n')
+        .map(|part| format!("<w:t xml:space=\"preserve\">{}</w:t>", xml_escape(part)))
+        .collect::<Vec<_>>()
+        .join("<w:br/>");
+    format!("<w:r>{rpr}{content}</w:r>")
 }
 
 /// One block's run sequence, and whether it carries any real content.
@@ -92,7 +95,7 @@ fn append_inline(node: &serde_json::Value, out: &mut String, has_content: &mut b
     match node.get("type").and_then(|t| t.as_str()) {
         Some("text") => {
             if let Some(text) = node.get("text").and_then(|t| t.as_str()) {
-                if !text.trim().is_empty() {
+                if !text.trim().is_empty() || text.contains('\n') {
                     *has_content = true;
                 }
                 out.push_str(&run_xml(text, node));
@@ -546,6 +549,26 @@ mod tests {
             "<w:p><w:r><w:t xml:space=\"preserve\">one</w:t></w:r><w:r><w:br/></w:r>\
              <w:r><w:t xml:space=\"preserve\">two</w:t></w:r></w:p>"
         );
+    }
+
+    #[test]
+    fn marked_text_newlines_and_break_only_paragraphs_become_word_breaks() {
+        let doc = serde_json::json!({"type":"doc","content":[
+            {"type":"paragraph","content":[text_node("\none\n\ntwo\n", &["strong", "em", "underline"])]},
+            {"type":"paragraph","content":[text_node("\n\n", &["underline"])]}
+        ]});
+        let paragraphs = document_paragraphs(&doc.to_string()).unwrap();
+        assert_eq!(paragraphs.len(), 2);
+        assert_eq!(paragraphs[0], concat!(
+            "<w:p><w:r><w:rPr><w:b/><w:i/><w:u w:val=\"single\"/></w:rPr>",
+            "<w:t xml:space=\"preserve\"></w:t><w:br/>",
+            "<w:t xml:space=\"preserve\">one</w:t><w:br/>",
+            "<w:t xml:space=\"preserve\"></w:t><w:br/>",
+            "<w:t xml:space=\"preserve\">two</w:t><w:br/>",
+            "<w:t xml:space=\"preserve\"></w:t></w:r></w:p>"
+        ));
+        assert_eq!(paragraphs[1].matches("<w:br/>").count(), 2);
+        assert!(paragraphs[1].contains("<w:u w:val=\"single\"/>"));
     }
 
     /// NO `docProps/` ENTRY AND NO `creator` BYTES ANYWHERE IN THE ZIP. A

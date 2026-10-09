@@ -77,6 +77,20 @@ describe("createSession", () => {
     ]);
   });
 
+  test("noteChange does not serialize hidden prose while a timeline is active", async () => {
+    const { rec, deps } = fakes();
+    let serializations = 0;
+    deps.editor.serialize = () => { serializations++; return "hidden prose"; };
+    deps.isTimelineDoc = (id) => id === "timeline-1";
+    deps.loadDoc = async () => ({ body: '{"kind":"timeline"}', rev: 3 });
+    const session = createSession(deps);
+    expect(await session.switchTo("timeline-1")).toBe("switched");
+    serializations = 0;
+    session.noteChange({ source: "typing" });
+    expect(serializations).toBe(0);
+    expect(rec.dirty).toEqual([]);
+  });
+
   test("flushPending drains", async () => {
     // drain() clears an armed debounce timer and fires it; settled() abandons
     // it. Getting this wrong loses the last edit before a quit, which is the

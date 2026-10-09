@@ -94,7 +94,7 @@
 //                         Mara's with one pending change and Jonas's with two,
 //                         so the proposal list's summary line is in the
 //                         picture. Planted, like --comments-demo; open the
-//                         panel with --menu-item outline:37.
+//                         panel with --menu-action menu-review-proposals.
 //   --marks-demo          split the open scene's first paragraph into runs
 //                         carrying strong, em and underline, so a capture shows
 //                         what the three formatting controls do and what the
@@ -325,6 +325,7 @@
 //                         two lines a container can carry are both in the
 //                         picture.
 //   --menu-item <m>:<n>   activate item n of menu m (file:0 is New project)
+//   --menu-action <id>    activate a stable menu item id through grouped pages
 //   --cast-card            hover the leftmost cast match in the open scene's
 //                         prose (098, W5; 105: a name OR an alias, whichever
 //                         sorts first) and capture the card. Only works on
@@ -448,7 +449,7 @@ import { pinBook, plantDemoIdentities } from "./demo-vault";
 import { parseFirstRun } from "./first-run";
 import { CLASSIC_FIXTURES, isClassicFixture, resolveFixtureDir } from "./fixture-name";
 import { pinClassicBook, writeClassicVault } from "./classic-identities";
-import { catalogText, KEY_STEP_MS, menuChord, menuDriver, type MenuId } from "./menu-drive";
+import { catalogText, KEY_STEP_MS, menuChord, menuDriver, menuRoute, type MenuId } from "./menu-drive";
 import { centreOf, locateNodes } from "./nodes";
 import { assertOutlineViewShown, outlineRows, type OutlineBox, PY_OUTLINE_VIEW } from "./outline-shot-check";
 import { pidListArg } from "./atspi";
@@ -761,6 +762,7 @@ interface Options {
    *  whose sentence and control layout nothing else photographs. */
   castMissing: boolean;
   menuItem: string | null;
+  menuAction: string | null;
   /** Photograph the chrome fade: "gone" past the hide, "woken" past a
    *  subsequent pointer displacement too. Null for no --fade. */
   fade: "gone" | "woken" | null;
@@ -891,6 +893,7 @@ function parseArgs(argv: string[]): Options {
   let analyticsDemo = false;
   let status = false;
   let menuItem: string | null = null;
+  let menuAction: string | null = null;
   let fade: "gone" | "woken" | null = null;
   let firstRun: string[] | null = null;
   let start: "home" | "last" | "blank" | null = null;
@@ -1394,6 +1397,12 @@ function parseArgs(argv: string[]): Options {
         if (value !== "table" && value !== "cards" && value !== "reading") throw new Error(`--outline-view wants table, cards or reading, not ${value}`);
         outlineView = value;
         break;
+      case "--menu-action": {
+        try { menuRoute(value); }
+        catch (error) { throw new Error(`--menu-action: ${error instanceof Error ? error.message : String(error)}`); }
+        menuAction = value;
+        break;
+      }
       case "--menu-item": {
         // <menu>:<index>. Activating a menu item is the ONE route this rig
         // could not take, and it is the route the help panel was broken on:
@@ -1571,6 +1580,7 @@ function parseArgs(argv: string[]): Options {
     analyticsDemo,
     status,
     menuItem,
+    menuAction,
     fade,
     firstRun,
     start,
@@ -1629,7 +1639,7 @@ function dataHome(
   reuse?: string,
 ): string {
   const dir = reuse ?? mkdtempSync(join(tmpdir(), `app-data-${theme}-`));
-  mkdirSync(join(dir, "cc.local.app"), { recursive: true });
+  mkdirSync(join(dir, "garret"), { recursive: true });
   const [family, size, measure] = (prose ?? "").split(",");
   const typography =
     prose === null ? {} : { typography: { family, size, measure } };
@@ -1649,7 +1659,7 @@ function dataHome(
   // under width pressure has to photograph.
   const windowField = windowSize === null ? {} : { window: windowSize };
   writeFileSync(
-    join(dir, "cc.local.app", "settings.json"),
+    join(dir, "garret", "settings.json"),
     JSON.stringify({ theme, locale, ...typography, ...writing, ...paletteField, ...windowField }),
   );
   return dir;
@@ -2023,7 +2033,7 @@ if (options.ghostBook) {
   // A path under the run's own work dir that nothing creates: the shape of a
   // book the writer moved in their file manager. Planted through settings.json
   // like every other preference, so the panel meets it the way a launch would.
-  const settingsPath = join(appDataHome, "cc.local.app", "settings.json");
+  const settingsPath = join(appDataHome, "garret", "settings.json");
   const settings = JSON.parse(readFileSync(settingsPath, "utf8")) as Record<string, unknown>;
   settings.books = [join(workDir, "moved-away", "the-harbour.db")];
   writeFileSync(settingsPath, JSON.stringify(settings));
@@ -2045,7 +2055,7 @@ const plantedStart =
         ? "home"
         : null);
 if (plantedStart !== null) {
-  const settingsPath = join(appDataHome, "cc.local.app", "settings.json");
+  const settingsPath = join(appDataHome, "garret", "settings.json");
   const settings = JSON.parse(readFileSync(settingsPath, "utf8")) as Record<string, unknown>;
   settings.start = plantedStart;
   writeFileSync(settingsPath, JSON.stringify(settings));
@@ -2199,7 +2209,7 @@ if (options.librarySeries || options.hostError) {
 // line the first capture showed two pen names and "No books yet." over three
 // seeded books. `--ghost-book`'s own route, with real files.
 if (options.library || options.libraryOverBook || (isClassicFixture(options.fixture) && options.projects)) {
-  const settingsPath = join(appDataHome, "cc.local.app", "settings.json");
+  const settingsPath = join(appDataHome, "garret", "settings.json");
   const settings = JSON.parse(readFileSync(settingsPath, "utf8")) as Record<string, unknown>;
   settings.books = [projectPath, ...libraryExtraPaths];
   writeFileSync(settingsPath, JSON.stringify(settings));
@@ -3119,6 +3129,7 @@ try {
         options.shortcuts ||
         options.navContext ||
         options.menuItem !== null ||
+        options.menuAction !== null ||
         options.outlineView !== null ||
         options.continuous ||
         options.reference ||
@@ -3841,6 +3852,11 @@ try {
           await Bun.sleep(150);
         }
         xdo(display, ["key", "--window", wid, "Return"]);
+        await Bun.sleep(TYPE_SETTLE_MS);
+      }
+
+      if (options.menuAction !== null) {
+        await localizedMenuDriver(display, wid).activate(options.menuAction);
         await Bun.sleep(TYPE_SETTLE_MS);
       }
 

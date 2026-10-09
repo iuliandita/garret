@@ -156,7 +156,7 @@ function isInternalThrow(before: string): boolean {
  *  went behind `help.keys.*`. */
 function isKeyNameComparison(text: string, before: string): boolean {
   const KEYS =
-    /^(Escape|Enter|Tab|Backspace|Delete|Home|End|Space|ArrowUp|ArrowDown|ArrowLeft|ArrowRight|PageUp|PageDown)$/;
+    /^(Unidentified|Escape|Enter|Tab|Backspace|Delete|Home|End|Space|ArrowUp|ArrowDown|ArrowLeft|ArrowRight|PageUp|PageDown)$/;
   if (!KEYS.test(text)) return false;
   return /\bkey\b|\bcode\b|MOVE_KEYS|case\s*$/.test(before);
 }
@@ -171,6 +171,8 @@ function isKeyNameComparison(text: string, before: string): boolean {
  * list, is what needs fixing.
  */
 const ALLOWED = new Map<string, string>([
+  ['${t("registration.warning", { path: project.path })} ${t("registration.session")}', "switcher.ts: composed catalog messages with no literal prose"],
+  ["${warning} ${disclosure}", "switcher.ts: composed translated registration and recovery notices"],
   ["(max-width: 900px)", "chrome-toggles.ts: responsive media query, not displayed text"],
   ["application locked", "command-error.ts: legacy host lock rejection recognized during bootstrap, not a displayed label"],
   [
@@ -203,6 +205,13 @@ const ALLOWED = new Map<string, string>([
     "navigator/visible.ts: the tail of an invariant throw",
   ],
   ["input, textarea, [role='dialog']", "project.ts: a CSS selector list"],
+  ["input, textarea, select", "timeline-view.ts: editable control selector list"],
+  ["button, input, select, textarea", "library.ts: a CSS selector list for disabling controls"],
+  ["button, input, select, textarea, [tabindex]", "library.ts: a CSS selector list for focusable controls"],
+  ["${Math.max(0, bounds.bottom - bounds.top - 8)}px", "help-tip.ts: a CSS maximum height"],
+  ["${Math.max(0, Math.min(300, bounds.right - bounds.left - 8))}px", "help-tip.ts: a CSS maximum width"],
+  ["${left - anchor.left}px", "help-tip.ts: a CSS horizontal offset"],
+  ["${top - anchor.top}px", "help-tip.ts: a CSS vertical offset"],
   [
     'state-choice-${value === "" ? "none" : value}',
     "revision-panel.ts: an element id built from a state name",
@@ -297,6 +306,17 @@ describe("no user-facing literal outside the catalog", () => {
     expect(
       isUserFacing({ file: "x.ts", line: 1, text: "Underline", before: "" }),
     ).toBe(true);
+  });
+
+  test("technical allowlist entries do not exempt nearby prose", () => {
+    for (const text of [
+      "button, input, select, textarea are unavailable while opening",
+      "${left - anchor.left}px from the edge",
+      "Keep this tooltip inside the window",
+      "${warning} Registration failed",
+    ]) {
+      expect(isUserFacing({ file: "x.ts", line: 1, text, before: "" })).toBe(true);
+    }
   });
 
   test("the allowlist is short, and every entry is still reachable", () => {

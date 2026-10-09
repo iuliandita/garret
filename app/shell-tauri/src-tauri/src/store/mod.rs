@@ -245,6 +245,8 @@ pub enum StoreError {
     NoRoom {
         parent_id: Option<String>,
     },
+    TooDeep,
+    MoveIntoDescendant { item_id: String, parent_id: String },
     /// The file's rows do not form a tree: an orphan, a cycle, or an
     /// impossible depth. Distinguished from Sqlite because it means the data
     /// is wrong, not the query.
@@ -353,6 +355,8 @@ impl std::fmt::Display for StoreError {
                     "there is no room left between two top-level items; nothing was moved"
                 ),
             },
+            StoreError::TooDeep => write!(f, "this would nest items too deeply; nothing was changed"),
+            StoreError::MoveIntoDescendant { .. } => write!(f, "an item cannot be moved inside itself or one of its descendants; nothing was changed"),
             StoreError::Corrupt(msg) => write!(f, "project structure is corrupt: {msg}"),
             StoreError::InvalidSourceWordDay { day } => {
                 write!(f, "{day:?} is not a calendar date")
@@ -729,6 +733,28 @@ impl Store {
         Ok(out)
     }
 
+    // Called inside the write transaction; the bound also stops existing cycles.
+    fn item_depth(&self, id: &str) -> Result<i64> {
+        let mut current = id.to_string();
+        for depth in 0..MAX_DEPTH {
+            let parent: Option<Option<String>> = self
+                .conn
+                .query_row("SELECT parent_id FROM item WHERE id = ?1", [&current], |r| r.get(0))
+                .optional()?;
+            match parent {
+                Some(None) => return Ok(depth),
+                Some(Some(parent)) => current = parent,
+                None if depth == 0 => {
+                    return Err(StoreError::UnknownItem { item_id: current })
+                }
+                None => return Err(StoreError::Corrupt("orphaned parent_id".into())),
+            }
+        }
+        Err(StoreError::Corrupt(
+            "cycle or nesting beyond the depth limit".into(),
+        ))
+    }
+
     /// Appends a child at the end of `parent_id`'s sibling group. A scene also
     /// gets an empty document in the SAME transaction: a scene without one
     /// fails load_doc the first time the writer clicks it.
@@ -779,6 +805,9 @@ impl Store {
                     return Err(StoreError::UnknownItem {
                         item_id: p.to_string(),
                     });
+                }
+                if self.item_depth(p)? + 1 >= MAX_DEPTH {
+                    return Err(StoreError::TooDeep);
                 }
             }
             // ORDER BY position DESC LIMIT 1 is what satisfies `after`'s
@@ -1135,17 +1164,12 @@ impl Store {
             // Every check runs inside the write transaction. Outside it, an
             // insert landing between the check and the UPDATE would let the
             // refused move through anyway.
+            self.item_depth(id)?;
+            let parent_depth = match new_parent_id {
+                Some(parent) => self.item_depth(parent)?,
+                None => -1,
+            };
             if let Some(target) = new_parent_id {
-                let known: i64 = self.conn.query_row(
-                    "SELECT count(*) FROM item WHERE id = ?1",
-                    [target],
-                    |r| r.get(0),
-                )?;
-                if known == 0 {
-                    return Err(StoreError::UnknownItem {
-                        item_id: target.to_string(),
-                    });
-                }
                 // The walk anchors on `id` itself, so target == id is caught
                 // here as the depth-0 case and needs no branch of its own.
                 // The depth bound is what keeps this from recursing forever over
@@ -1163,10 +1187,27 @@ impl Store {
                     |r| r.get(0),
                 )?;
                 if in_subtree > 0 {
-                    return Err(StoreError::Corrupt(format!(
-                        "{target} is a descendant of {id}; moving it there would detach the subtree"
-                    )));
+                    return Err(StoreError::MoveIntoDescendant {
+                        item_id: id.to_string(), parent_id: target.to_string(),
+                    });
                 }
+            }
+
+            let height: i64 = self.conn.query_row(
+                "WITH RECURSIVE sub(id, depth) AS (
+                   SELECT id, 0 FROM item WHERE id = ?1
+                   UNION ALL
+                   SELECT i.id, s.depth + 1 FROM item i JOIN sub s ON i.parent_id = s.id
+                    WHERE s.depth < ?2
+                 ) SELECT max(depth) FROM sub",
+                rusqlite::params![id, MAX_DEPTH],
+                |r| r.get(0),
+            )?;
+            if height >= MAX_DEPTH {
+                return Err(StoreError::Corrupt("subtree exceeds the depth limit".into()));
+            }
+            if parent_depth + 1 + height >= MAX_DEPTH {
+                return Err(StoreError::TooDeep);
             }
 
             let left: Option<String> = match after_id {
@@ -4523,6 +4564,81 @@ mod tests {
     }
 
     #[test]
+    fn depth_boundary_creation_refuses_without_changing_items_or_documents() {
+        let dir = tempdir().unwrap();
+        let store = Store::open(&dir.path().join("deep.db")).unwrap();
+        let mut parent = None;
+        for depth in 0..MAX_DEPTH {
+            let made = if depth % 2 == 0 {
+                store.item_create(parent.as_deref(), "scene", "Nested scene")
+            } else {
+                store.item_create_after(parent.as_deref(), "part", "Nested part", None)
+            }
+            .unwrap();
+            parent = Some(made.id);
+        }
+        let before = serde_json::to_value(store.items().unwrap()).unwrap();
+        assert_eq!(before.as_array().unwrap().last().unwrap()["depth"], MAX_DEPTH - 1);
+        let counts = || store.conn.query_row(
+            "SELECT (SELECT count(*) FROM item), (SELECT count(*) FROM doc)", [],
+            |r| Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)?)),
+        ).unwrap();
+        let original_counts = counts();
+        assert!(matches!(store.item_create(parent.as_deref(), "scene", "Too deep"),
+            Err(StoreError::TooDeep)));
+        assert!(matches!(store.item_create_after(parent.as_deref(), "scene", "Too deep", None),
+            Err(StoreError::TooDeep)));
+        assert_eq!(counts(), original_counts);
+        assert_eq!(serde_json::to_value(store.items().unwrap()).unwrap(), before);
+    }
+
+    #[test]
+    fn depth_boundary_move_checks_the_deepest_descendant_and_preserves_refused_rows() {
+        let dir = tempdir().unwrap();
+        let store = Store::open(&dir.path().join("deep.db")).unwrap();
+        let mut chain = Vec::<String>::new();
+        for _ in 0..MAX_DEPTH - 2 {
+            let made = store.item_create(chain.last().map(String::as_str), "scene", "Destination")
+                .unwrap();
+            chain.push(made.id);
+        }
+        let root = store.item_create(None, "scene", "Moving root").unwrap();
+        let middle = store.item_create(Some(&root.id), "part", "Moving middle").unwrap();
+        let leaf = store.item_create(Some(&middle.id), "scene", "Moving leaf").unwrap();
+        let moved = store.item_move(&root.id, Some(&chain[chain.len() - 2]), None, 1).unwrap();
+        let items = store.items().unwrap();
+        assert_eq!(items.iter().find(|i| i.id == leaf.id).unwrap().depth, MAX_DEPTH - 1);
+        let before = serde_json::to_value(items).unwrap();
+        let counts = || store.conn.query_row(
+            "SELECT (SELECT count(*) FROM item), (SELECT count(*) FROM doc)", [],
+            |r| Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)?)),
+        ).unwrap();
+        let original_counts = counts();
+        assert!(matches!(store.item_move(&root.id, chain.last().map(String::as_str), None, moved.rev),
+            Err(StoreError::TooDeep)));
+        assert_eq!(counts(), original_counts);
+        assert_eq!(serde_json::to_value(store.items().unwrap()).unwrap(), before);
+    }
+
+    #[test]
+    fn depth_boundary_writes_refuse_existing_orphaned_or_cyclic_ancestors() {
+        for parent in ["missing", "c-1"] {
+            let dir = tempdir().unwrap();
+            let store = nested_store(dir.path());
+            store.conn.pragma_update(None, "foreign_keys", "OFF").unwrap();
+            store.conn.execute("UPDATE item SET parent_id = ?1, position = 'zzzz' WHERE id = 'c-1'", [parent]).unwrap();
+            assert!(matches!(store.item_create(Some("c-1"), "scene", "Refused"),
+                Err(StoreError::Corrupt(_))));
+            assert!(matches!(store.item_create_after(Some("c-1"), "scene", "Refused", None),
+                Err(StoreError::Corrupt(_))));
+            assert!(matches!(store.item_move("p-2", Some("c-1"), None, 1),
+                Err(StoreError::Corrupt(_))));
+            assert!(matches!(store.item_move("c-1", None, None, 1),
+                Err(StoreError::Corrupt(_))));
+        }
+    }
+
+    #[test]
     fn two_siblings_cannot_share_a_position() {
         // Not tidiness: identical sibling keys give the two subtrees identical
         // path prefixes, so the walk interleaves them and the row count still
@@ -4899,8 +5015,11 @@ mod tests {
         // p-1 -> c-1 -> s-1. Moving p-1 under s-1 would detach the whole
         // subtree from every root and lose it from the walk.
         match store.item_move("p-1", Some("s-1"), None, 1) {
-            Err(StoreError::Corrupt(msg)) => assert!(msg.contains("descendant"), "{msg}"),
-            other => panic!("expected Corrupt, got {other:?}"),
+            Err(StoreError::MoveIntoDescendant { item_id, parent_id }) => {
+                assert_eq!(item_id, "p-1");
+                assert_eq!(parent_id, "s-1");
+            }
+            other => panic!("expected MoveIntoDescendant, got {other:?}"),
         }
         let ids: Vec<String> = store.items().unwrap().into_iter().map(|i| i.id).collect();
         assert_eq!(ids, vec!["p-1", "c-1", "s-1", "c-2", "p-2", "c-3"]);
@@ -4911,11 +5030,11 @@ mod tests {
         let dir = tempdir().unwrap();
         let store = nested_store(dir.path());
         match store.item_move("c-1", Some("c-1"), None, 1) {
-            Err(StoreError::Corrupt(msg)) => {
-                assert!(msg.contains("descendant"), "{msg}");
-                assert!(msg.contains("c-1"), "{msg}");
+            Err(StoreError::MoveIntoDescendant { item_id, parent_id }) => {
+                assert_eq!(item_id, "c-1");
+                assert_eq!(parent_id, "c-1");
             }
-            other => panic!("expected Corrupt, got {other:?}"),
+            other => panic!("expected MoveIntoDescendant, got {other:?}"),
         }
         let ids: Vec<String> = store.items().unwrap().into_iter().map(|i| i.id).collect();
         assert_eq!(ids, vec!["p-1", "c-1", "s-1", "c-2", "p-2", "c-3"]);
@@ -4972,8 +5091,11 @@ mod tests {
 
         let deepest = format!("i{}", MAX_DEPTH - 1);
         match store.item_move("i0", Some(&deepest), None, 1) {
-            Err(StoreError::Corrupt(msg)) => assert!(msg.contains("descendant"), "{msg}"),
-            other => panic!("expected Corrupt, got {other:?}"),
+            Err(StoreError::MoveIntoDescendant { item_id, parent_id }) => {
+                assert_eq!(item_id, "i0");
+                assert_eq!(parent_id, deepest);
+            }
+            other => panic!("expected MoveIntoDescendant, got {other:?}"),
         }
     }
 

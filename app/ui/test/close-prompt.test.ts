@@ -195,3 +195,123 @@ describe("createClosePrompt", () => {
     container.remove();
   });
 });
+
+
+test("count failure uses a separate safe prompt and restores manuscript wording afterward", async () => {
+  const { container, panel } = mount();
+  try {
+    const el = panelEl(container);
+    let choice = panel.openPreferences();
+    expect(el.querySelector("#close-prompt-heading")?.textContent).toBe("Unsaved preferences");
+    expect(el.querySelector("#close-prompt-body")?.textContent).toContain("sidebar word count choices could not be saved");
+    const buttons = el.querySelectorAll<HTMLButtonElement>("button");
+    expect(buttons[0]?.textContent).toBe("Keep open");
+    expect(document.activeElement?.textContent).toBe("Keep open");
+    expect(buttons[1]?.textContent).toBe("Close without saving these choices");
+    press(el, "Escape");
+    expect(await choice).toBe("stay");
+    choice = panel.openPreferences();
+    buttons[1]!.click();
+    expect(await choice).toBe("close");
+    choice = panel.open(2);
+    expect(el.querySelector("#close-prompt-heading")?.textContent).toBe("Unsaved work");
+    expect(el.querySelector("#close-prompt-body")?.textContent).toContain("2 documents");
+    expect(buttons[0]?.textContent).toBe("Keep editing");
+    expect(buttons[1]?.textContent).toBe("Close and discard the unsaved work");
+    buttons[0]!.click();
+    expect(await choice).toBe("stay");
+  } finally {
+    panel.destroy();
+    container.remove();
+  }
+});
+
+
+test("close warning isolates new and existing background while preserving prior inert states", async () => {
+  const container = document.createElement("div");
+  const workspace = document.createElement("button");
+  const concealed = document.createElement("section");
+  concealed.inert = true;
+  container.append(workspace, concealed);
+  document.body.append(container);
+  const prompt = createClosePrompt({ container });
+  try {
+    const choice = prompt.openPreferences();
+    expect(workspace.inert).toBe(true);
+    expect(concealed.inert).toBe(true);
+    const newcomer = document.createElement("button");
+    container.append(newcomer);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(newcomer.inert).toBe(true);
+    press(panelEl(container), "Escape");
+    expect(await choice).toBe("stay");
+    expect(workspace.inert).toBe(false);
+    expect(newcomer.inert).toBe(false);
+    expect(concealed.inert).toBe(true);
+    const next = prompt.open(1);
+    prompt.destroy();
+    expect(await next).toBe("stay");
+    expect(workspace.inert).toBe(false);
+    expect(concealed.inert).toBe(true);
+  } finally {
+    prompt.destroy();
+    container.remove();
+  }
+});
+
+for (const invalidOwner of ["removed", "hidden", "disabled", "inert", "css-hidden"]) {
+  test(`canceled close falls back when the original focus owner is ${invalidOwner}`, async () => {
+    const container = document.createElement("div");
+    const owner = document.createElement("button");
+    const fallback = document.createElement("button");
+    container.append(owner, fallback);
+    document.body.append(container);
+    let concealed = false;
+    const prompt = createClosePrompt({ container, canRestoreFocus: () => !concealed, focusFallbacks: () => [fallback] });
+    try {
+      owner.focus();
+      const restore = prompt.captureFocus();
+      const choice = prompt.open(1);
+      if (invalidOwner === "removed") owner.remove();
+      if (invalidOwner === "hidden") owner.hidden = true;
+      if (invalidOwner === "disabled") owner.disabled = true;
+      // Set these after release so their deliberate new state survives the isolation snapshot.
+      press(panelEl(container), "Escape");
+      await choice;
+      if (invalidOwner === "inert") owner.inert = true;
+      if (invalidOwner === "css-hidden") owner.style.display = "none";
+      restore();
+      expect(document.activeElement === fallback).toBe(true);
+      fallback.blur();
+      concealed = true;
+      restore();
+      expect(document.activeElement === fallback).toBe(false);
+    } finally {
+      prompt.destroy();
+      container.remove();
+    }
+  });
+}
+
+test("composition remains local and physical reverse Tab stays inside the warning", async () => {
+  const { container, panel } = mount();
+  let escaped = 0;
+  const onKey = () => { escaped++; };
+  document.addEventListener("keydown", onKey);
+  try {
+    const choice = panel.open(1);
+    const el = panelEl(container);
+    const buttons = el.querySelectorAll<HTMLButtonElement>("button");
+    buttons[0]!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", isComposing: true, bubbles: true }));
+    expect(el.hidden).toBe(false);
+    expect(escaped).toBe(0);
+    buttons[0]!.dispatchEvent(new KeyboardEvent("keydown", { key: "Unidentified", code: "Tab", shiftKey: true, bubbles: true, cancelable: true }));
+    expect(document.activeElement === buttons[1]).toBe(true);
+    buttons[0]!.click();
+    await choice;
+  } finally {
+    document.removeEventListener("keydown", onKey);
+    panel.destroy();
+    container.remove();
+  }
+});

@@ -13,6 +13,7 @@ import { join } from "node:path";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
+import { t } from "../src/i18n";
 import { createNavigator } from "../src/navigator/index";
 import { REVISION_STATES, STATE_MARKS, stateDescriptionId } from "../src/revision-states";
 
@@ -366,7 +367,7 @@ describe("the synopsis mark", () => {
     nav.setSynopses(new Set(["s-1"]));
     const mark = rowNamed(container, "Sc 1").querySelector(".nav-synopsis");
     expect(mark?.textContent).toBe("\u00a7");
-    expect(mark?.getAttribute("title")).toBe("Has a synopsis");
+    expect((mark as HTMLElement)?.dataset.navHint).toBe("Has a synopsis");
     expect(mark?.getAttribute("aria-hidden")).toBe("true");
     expect(mark?.closest(".nav-title")).toBeNull();
     const plain = rowNamed(container, "Ch A").querySelector(".nav-synopsis");
@@ -448,4 +449,103 @@ describe("a truncated title", () => {
     expect(row.getAttribute("aria-label")).toBeNull();
     nav.destroy();
   });
+});
+
+
+test("delegated indicator tips follow hover and keyboard selection without changing row names", async () => {
+  const container = makeContainer();
+  const nav = createNavigator({ container, source: statedSource(), rowHeight: 24, overscan: 2, mode: "virtual" });
+  nav.setSynopses(new Set(["s-1"]));
+  nav.setAppearances(new Set(["s-1"]));
+  nav.setCounts(new Map([["s-1", 35]]));
+  const row = rowNamed(container, "Sc 1");
+  const tip = (): HTMLElement | null => document.querySelector(".nav-indicator-tip");
+  for (const [selector, text] of [[".nav-synopsis", t("nav.synopsis.described")], [".nav-appearances", t("nav.appearances.described")], [".nav-state", t("nav.state.described", { state: "Draft" })], [".nav-count", t("nav.words.described", { count: "35" })]]) {
+    row.querySelector(selector)?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    expect(tip()?.textContent).toBe(text);
+    expect(row.children.length).toBe(5);
+  }
+  const hovered = tip()!;
+  row.querySelector(".nav-count")?.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: document.body }));
+  hovered.dispatchEvent(new MouseEvent("mouseenter"));
+  await Bun.sleep(250);
+  expect(tip()).toBe(hovered);
+  hovered.dispatchEvent(new MouseEvent("mouseleave"));
+  expect(tip()).toBeNull();
+  container.focus();
+  nav.selectById("s-1");
+  expect(tip()?.textContent).toContain(t("nav.words.described", { count: "35" }));
+  expect(row.getAttribute("aria-describedby")).toContain("nav-word-description");
+  expect(document.getElementById("nav-word-description")?.textContent).toBe(t("nav.words.described", { count: "35" }));
+  container.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+  expect(tip()?.textContent).toBe(t("nav.state.described", { state: "Outline" }));
+  container.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", isComposing: true, bubbles: true }));
+  expect(tip() !== null).toBe(true);
+  container.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+  expect(tip()).toBeNull();
+  row.querySelector(".nav-count")?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+  container.dispatchEvent(new Event("scroll"));
+  expect(tip()).toBeNull();
+  nav.setCounts(new Map());
+  expect((row.querySelector(".nav-count") as HTMLElement).dataset.navHint).toBeUndefined();
+  nav.reload(statedSource());
+  expect(tip()).toBeNull();
+  nav.destroy();
+  container.focus();
+  expect(tip()).toBeNull();
+  container.remove();
+});
+
+
+test("keyboard indicator descriptions sit beside the row without covering the next row", () => {
+  const container = makeContainer();
+  const nav = createNavigator({ container, source: statedSource(), rowHeight: 24, overscan: 2, mode: "virtual" });
+  nav.setCounts(new Map([["s-1", 35]]));
+  const row = rowNamed(container, "Sc 1");
+  row.getBoundingClientRect = () => ({ left: 4, right: 240, top: 60, bottom: 84, width: 236, height: 24, x: 4, y: 60, toJSON: () => ({}) });
+  try {
+    container.focus(); nav.selectById("s-1");
+    const tip = document.querySelector<HTMLElement>(".nav-indicator-tip")!;
+    expect(Number.parseFloat(tip.style.left)).toBe(248);
+    expect(Number.parseFloat(tip.style.top)).toBe(60);
+  } finally { nav.destroy(); container.remove(); }
+});
+
+test("sidebar counts independently follow item type through recycled rows", () => {
+  const container = makeContainer();
+  const nav = createNavigator({ container, source: statedSource(), rowHeight: 24, overscan: 2, mode: "virtual" });
+  nav.setCounts(new Map([["p-1", 35], ["c-1", 35], ["s-1", 0], ["b-1", 7]]));
+  const count = (name: string): string => rowNamed(container, name).querySelector(".nav-count")!.textContent!;
+  expect(count("Part One")).toBe("");
+  expect(count("Ch A")).toBe("");
+  expect(count("Sc 1")).toBe("0");
+  nav.selectById("s-1");
+  nav.setSidebarWordCounts({ scene: false, chapter: true, part: false });
+  expect(count("Sc 1")).toBe("");
+  expect(count("Ch A")).toBe("35");
+  const scene = rowNamed(container, "Sc 1");
+  expect(scene.getAttribute("aria-describedby") ?? "").not.toContain("nav-word-description");
+  expect(document.getElementById("nav-word-description")?.textContent).toBe("");
+  expect((scene.querySelector(".nav-count") as HTMLElement).dataset.navHint).toBeUndefined();
+  nav.setSidebarWordCounts({ scene: false, chapter: false, part: true });
+  expect(count("Part One")).toBe("35");
+  expect(count("Deep Part")).toBe("7");
+  expect(count("Part Two")).toBe("");
+  expect(count("Ch A")).toBe("");
+  nav.selectById("p-1");
+  nav.handleKey("ArrowLeft");
+  nav.setSidebarWordCounts({ scene: true, chapter: true, part: false });
+  nav.handleKey("ArrowRight");
+  expect(count("Part One")).toBe("");
+  expect(count("Sc 1")).toBe("0");
+  nav.setSidebarWordCounts({ scene: false, chapter: false, part: false });
+  expect([...container.querySelectorAll(".nav-count")].every(el => el.textContent === "")).toBe(true);
+  expect(document.getElementById("nav-word-description")?.textContent).toBe("");
+  const source = statedSource();
+  nav.reload({ ...source, typeAt: (i) => i === 2 ? "note" : source.typeAt(i) });
+  nav.setSidebarWordCounts({ scene: true, chapter: true, part: true });
+  expect(count("Sc 1")).toBe("");
+  expect(count("Deep Part")).toBe("7");
+  nav.destroy();
+  container.remove();
 });

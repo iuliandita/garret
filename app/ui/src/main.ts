@@ -5,7 +5,7 @@ import { createPrivacyStartupInvoke, waitForPrivacyUnlock, type PrivacyStatus } 
 // from a build-time define: discovery baked variants into separate bundles, so
 // its control and test ran different code. One bundle, one switch, is the whole
 // point of a negative control.
-import { t } from "./i18n";
+import { messages, t } from "./i18n";
 import { createMutationPlanner } from "./measure/mutation-plan";
 import { createOnsetTracker } from "./measure/onset";
 import { measure, type Sample } from "./measure/recorder";
@@ -21,8 +21,9 @@ import { createClosePrompt } from "./close-prompt";
 import { mountProject, type MountedProject } from "./project";
 import { mountEmpty } from "./empty-project";
 import { createBookCopyPrompt, type BookCopyConflict } from "./book-copy-prompt";
-import { createProjectSwitcher } from "./project-switch";
-import { createSwitcher, lossesNotice, type Switcher, type ProjectSummary } from "./switcher";
+import { createLibraryBookActions } from "./library-book-actions";
+import { createProjectSwitcher, performProjectMove } from "./project-switch";
+import { createSwitcher, importResultNotice, type Switcher, type ProjectSummary } from "./switcher";
 import {
   createLibrary,
   type Library,
@@ -40,13 +41,16 @@ import {
 } from "./preferences";
 import { createFocusToggle, createOutlineToggle, type FocusToggle } from "./chrome-toggles";
 import { createMenuBar } from "./menu-bar";
+import { createTooltip } from "./tooltip";
+import { createIcon } from "./icons";
 import { createQuit } from "./quit";
 import { createHelpPanel } from "./help";
 import { themeFamilyFrom, themeFrom, type Theme } from "./theme";
 import { typographyFrom, type Typography } from "./typography";
 import { showProjectLoading } from "./loading";
 import { writingModesFrom } from "./writing-modes";
-import { installZoomKeys, zoomFrom, type Zoom } from "./zoom";
+import { sidebarWordCountsFrom } from "./sidebar-word-counts";
+import { createZoomPersistence, installZoomKeys, zoomFrom, type Zoom } from "./zoom";
 import type { Archive, ArchiveReport } from "./archive-indicator";
 import type { ImportOutcome, ImportReport, MirrorCheck, MirrorPreview, MirrorReport } from "./switcher";
 import {
@@ -60,6 +64,8 @@ export { SLOW_FRAME_MS } from "./measure/summary";
 declare global {
   interface Window {
     __appPrivacyLocked?: boolean;
+    __appLibraryDiagnostics?: boolean;
+    __appTimelineDiagnostics?: boolean;
     __appCandidate?: string;
     __appSeed?: string;
     __appMode?: string;
@@ -82,6 +88,7 @@ declare global {
      *  from settings.json. A bare boolean, unlike every other
      *  injected preference: there is no spelling of it to validate. */
     __appMarkCastNames?: boolean;
+    __appSidebarWordCounts?: unknown;
     __appProject?: string;
     /** A copied book the host deferred until the page can ask whether it is
      *  the same book or a separate one. */
@@ -131,6 +138,7 @@ interface CycleRecord {
 }
 
 async function main(): Promise<void> {
+  document.documentElement.lang = messages.locale;
   const transport = window.__TAURI__?.core.invoke;
   const rawInvoke = transport ? localizedInvoke(transport) : undefined;
   if (rawInvoke && window.__TAURI__?.event?.listen) {
@@ -191,18 +199,14 @@ async function main(): Promise<void> {
   // The same shape, for the same reason: the switch is read per edit and a
   // project mounted after it was flipped must see the new state.
   let timeTracking = timeTrackingFrom(window.__appTimeTracking);
-  // Follows what the host has applied to this webview. The page never draws
-  // this itself -- see zoom.ts -- it only needs the current word so the Ctrl
-  // chords and the preferences panel can agree on where they are; when the
-  // host refuses a change (settings_set_zoom rejects) both call sites below
-  // put this back to what it was, because the host records first and applies
-  // only on success and a page ahead of a refused write is a phantom word the
-  // next chord would step from.
+  // Panel and shortcuts share an immediate requested value; failed writes
+  // restore the last host-confirmed value through one persistence owner.
   let zoom: Zoom = zoomFrom(window.__appZoom);
   // The same shape as `dailyTarget` and `timeTracking`, and for the same
   // reason: a project mounted after the writer flips this must start on the
   // new value. Absent reads as on -- the host's own default.
   let markCastNames = window.__appMarkCastNames !== false;
+  let sidebarWordCounts = sidebarWordCountsFrom(window.__appSidebarWordCounts);
   let privacyStatus: PrivacyStatus = { enabled: false, locked: true, recovery: false, shortcut: "ctrl_alt_l" };
   // The preferences panel's dictionary route, set once the panel exists
   // (below, beside the menu bar): the mount hands it to every project.
@@ -211,11 +215,13 @@ async function main(): Promise<void> {
   const mountAt = async (generation: number): Promise<MountedProject> =>
     mountProject({
       mode,
+      diagnostics: window.__appTimelineDiagnostics === true,
       seed: window.__appSeed ?? "unknown",
       persistMode,
       projectPath,
       invoke,
       markCastNames: () => markCastNames,
+      sidebarWordCounts: () => sidebarWordCounts,
       privacyLocked: () => privacyStatus.locked || privacyStatus.recovery,
       openProjectPanel: () => switcherHandle?.open("copies"),
       // Through the panel, not straight to the host: the panel holds the
@@ -299,6 +305,7 @@ async function main(): Promise<void> {
     // empty boot starts on the empty string instead, which is what a real
     // switch's own name updates land on top of just the same.
     let currentName = projectPath === "" ? "" : "project";
+    let preferenceClose: Pick<Preferences, "prepareClose" | "cancelClose"> | undefined;
 
     const prepareArchive = async (purpose: "archive" | "mirror" = "archive"): Promise<number> => {
       const project = current;
@@ -334,20 +341,16 @@ async function main(): Promise<void> {
       currentPath = opened?.path ?? currentPath;
       currentName = opened?.name ?? currentName;
 
-      // Read once, here, for the same reason the palette and typography are:
-      // this is the FIRST project's list, injected into the panel at
-      // construction rather than fetched by it. `preferences` does not exist
-      // yet, so a later switch cannot go through this constant - it goes
-      // through `onSwitched` below instead, which is why that mutable binding
-      // exists rather than a `const`.
-      //
-      // `null` AT AN EMPTY BOOT: `dict_list` answers the OPEN project's own
-      // dictionary and errors with nothing open, so it is not called at all -
-      // `Preferences.setDictionary`'s own doc comment names the same rule.
-      const initialDictionary: string[] | null =
-        projectPath === ""
-          ? null
-          : ((await invoke("dict_list")) as { word: string }[]).map((w) => w.word);
+      // Keep an empty boot hidden; an open book's list is loaded after the
+      // persistent panel mounts so a failed read cannot abort the whole page.
+      const initialDictionary = null;
+      let preferences: Preferences | undefined;
+      let dictionarySwitch = 0;
+      const refreshDictionary = (): void => {
+        if (currentPath === "") preferences?.setDictionary(null);
+        else void preferences?.refreshDictionary(async () =>
+          ((await invoke("dict_list")) as { word: string }[]).map((word) => word.word));
+      };
       // The header's Focus button, built once beside the menu bar below. The
       // panel reports every writing-mode change through `onWritingModes`, and
       // that callback is wired at construction, before the button exists -
@@ -362,13 +365,16 @@ async function main(): Promise<void> {
       });
       const bookCopyPrompt = createBookCopyPrompt(document.body);
 
-      const switchProject = createProjectSwitcher<MountedProject>({
+      const performProjectSwitch = createProjectSwitcher<MountedProject>({
         current: () => current,
         setCurrent: (next) => {
           current = next;
         },
         currentPath: () => currentPath,
         prepareOpen: async (path) => {
+          dictionarySwitch += 1;
+          preferences?.invalidateDictionary();
+          await preferences?.drainDictionary();
           const conflict = (await invoke("project_open_check", { path })) as BookCopyConflict | null;
           return conflict === null ? undefined : bookCopyPrompt.choose(conflict);
         },
@@ -393,46 +399,47 @@ async function main(): Promise<void> {
           // matters (a switch out of a real book into another leaves this
           // already true and the call a no-op).
           switcher.setBookOpen(true);
-          // The dictionary is per-project and the panel is mounted once (see
-          // its construction below), so a switch has to repaint this one group
-          // by hand rather than being torn down and rebuilt with the rest of
-          // the mount. Swallowed on failure: a stale word list is a lesser
-          // problem than a notice competing with the switch's own.
-          void invoke("dict_list")
-            .then((words) => {
-              preferences?.setDictionary((words as { word: string }[]).map((w) => w.word));
-            })
-            .catch(() => undefined);
+          refreshDictionary();
         },
         // The loading state. `mountAt` tears the page down before it opens the
         // next project, so without this the writer watches a completely blank
         // application for as long as the open and the mount take - longest for
         // the manuscripts that matter most.
         onBusy: showProjectLoading,
-        onFailure: (message) => {
-          // switchProject destroys the outgoing mount BEFORE opening the next
-          // one (project-switch.ts's own step 3); on failure `setCurrent` is
-          // never called, so `current` is left pointing at that
-          // already-destroyed object. Starting from a real book this reads
-          // fine -- destroy() already restored the footer, and the banner
-          // over it says "nothing is open, choose a project to continue"
-          // (switch.error.closed). Starting from the EMPTY workspace it does
-          // not: that destroy() also restored the footer, but there is no
-          // book behind it either, so the writer would see live chrome (word
-          // count, save state) around a bare #editor with no prompt and no
-          // "Open the library" button. Remounting the empty workspace is
-          // what a failed switch out of it always meant to fall back to.
-          if (currentPath === "") {
+        onFailure: (message, closed) => {
+          // A destroyed mount cannot prepare another switch or close. Keep
+          // the old book only when the failure preceded teardown.
+          if (closed) {
+            currentPath = "";
+            currentName = "";
             current = mountEmpty({ openLibrary: () => libraryHandle?.open() });
+            switcher.setBookOpen(false);
+            preferences?.setDictionary(null);
           }
           current.raiseNotice(message);
         },
       });
 
+      const switchProject = async (path: string, name?: string) => {
+        const pending = performProjectSwitch(path, name);
+        const attempt = dictionarySwitch;
+        const outcome = await pending;
+        // Cancellation and pre-teardown failures retain the outgoing book.
+        // Reload its list because starting a switch invalidated pending work.
+        if (attempt === dictionarySwitch &&
+            (outcome === "cancelled" || (outcome === "failed" && currentPath !== ""))) {
+          refreshDictionary();
+        }
+        return outcome;
+      };
+
       const switcher = createSwitcher({
         container: bar,
         nameContainer: navHeader,
+        openCreation: () => current.menuActions.openCreation(),
         listProjects: async () => (await invoke("project_list")) as ProjectSummary[],
+        listPendingRegistrations: async () => (await invoke("project_pending_registrations")) as import("./switcher").PendingRegistration[],
+        retryRegistration: async (token) => (await invoke("project_retry_registration", { token })) as ProjectSummary,
         createProject: async (name) =>
           (await invoke("project_create", { name })) as ProjectSummary,
         // `null` is the writer cancelling the folder dialog, which the host
@@ -485,9 +492,14 @@ async function main(): Promise<void> {
         // of the path follows it, because the switcher's `aria-current`, its
         // "this book is at" line and every `same` check read that copy.
         moveProject: async () => {
-          const moved = (await invoke("project_move")) as ProjectSummary | null;
-          if (moved !== null) currentPath = moved.path;
-          return moved;
+          const project = current;
+          const generation = currentGeneration;
+          return performProjectMove<ProjectSummary>({
+            move: async () => (await invoke("project_move")) as ProjectSummary | null,
+            current: async () => (await invoke("project_current")) as ProjectSummary | null,
+            isCurrent: () => current === project && currentGeneration === generation,
+            accept: (summary) => { currentPath = summary.path; },
+          });
         },
         currentPath: () => currentPath,
         currentName: () => currentName,
@@ -528,32 +540,30 @@ async function main(): Promise<void> {
       // opens it whether or not a book is mounted; `openProjects` below
       // routes New/Open to it only while nothing is, because its other
       // sections (recovery, archives, the mirror) are about an open book.
+      const libraryBookActions = createLibraryBookActions({
+        invoke,
+        switchProject,
+        refresh: () => switcher.refresh(currentName),
+        onPendingRegistration: () => switcher.open("list"),
+        currentWorkspace: () => current,
+        canReportCreated: async () => {
+          privacyStatus = await invoke("privacy_status") as PrivacyStatus;
+          return !privacyStatus.locked && !privacyStatus.recovery;
+        },
+        onNotice: (message) => current.raiseNotice(message),
+      });
       const library = createLibrary({
+        diagnostics: window.__appLibraryDiagnostics === true,
+        openBooks: (focus) => switcher.open(focus),
+        openPreferences: () => preferences?.open(),
+        openHelp: () => help.open(),
+        quit: () => quit.run(),
         overview: async () => (await invoke("library_overview")) as LibraryOverview,
         bookWords: async (path) => (await invoke("library_book_words", { path })) as LibraryWordsAnswer,
         bookStats: async (path, today) => (await invoke("library_book_stats", { path, today })) as import("./library-summary").BookStats,
         getMembership: async () => (await invoke("library_membership_get")) as import("./library-summary").MembershipView,
         saveMembership: async (generation, edit) => (await invoke("library_membership_set", { generation, edit })) as import("./library-summary").LibraryMembership,
-        openBook: async (path) => {
-          await switchProject(path);
-          switcher.refresh(currentName);
-        },
-        createBook: async (name, identityId) => {
-          const created = (await invoke("project_create", { name })) as ProjectSummary;
-          await switchProject(created.path);
-          switcher.refresh(currentName);
-          if (identityId !== null) {
-            try {
-              await invoke("identity_pin", { id: identityId });
-            } catch (error: unknown) {
-              current.raiseNotice(
-                t("library.error.pin", {
-                  error: error instanceof Error ? error.message : String(error),
-                }),
-              );
-            }
-          }
-        },
+        ...libraryBookActions,
         forget: async (path) => {
           await invoke("project_forget", { path });
         },
@@ -582,11 +592,6 @@ async function main(): Promise<void> {
         onDone: (message) => current.announce(message),
       });
       libraryHandle = library;
-      // `home`, `home-cli`'s own gate: nothing mounted and the screen up.
-      if (projectPath === "" && window.__appStart === "home" && window.__appPendingProject === undefined) {
-        library.open();
-      }
-
       // Inside this block on purpose: persisting the choice is a host command,
       // and a control that silently forgets what it was told is worse than no
       // control. Mounted once, not per project - a palette is an application
@@ -596,7 +601,6 @@ async function main(): Promise<void> {
         throw new Error("page shell is missing #prefs-controls: index.html and main.ts disagree");
       }
       const injectedLocale = window.__appLocale ?? "";
-      let preferences: Preferences | undefined;
       const refreshPrivacy = async (): Promise<void> => {
         privacyStatus = await invoke("privacy_status") as PrivacyStatus;
         if (privacyStatus.locked || privacyStatus.recovery) current.reviewPrivacyChanged();
@@ -625,6 +629,17 @@ async function main(): Promise<void> {
       const lockPrivacy = (): void => {
         if (!privacyStatus.enabled || privacyStatus.locked || privacyStatus.recovery) return;
         void invoke("privacy_lock").catch(raiseFailure);
+      };
+      const persistZoom = async (next: Zoom): Promise<void> => {
+        await invoke("settings_set_zoom", { zoom: next });
+      };
+      const zoomPersistence = createZoomPersistence(zoom, persistZoom, (next) => {
+        zoom = next;
+        preferences?.setZoom(next);
+      });
+      const restoreWorkspaceFocus = (): void => {
+        if (currentPath !== "") current.editor.focus();
+        else document.getElementById("empty-open-library")?.focus();
       };
       preferences = createPreferences({
         openPrivacy: async () => { await invoke("privacy_settings"); },
@@ -678,6 +693,14 @@ async function main(): Promise<void> {
           // underlines belong to WebKitWebContext, which the page cannot reach.
           await invoke("settings_set_spelling", { spelling });
         },
+        initialSidebarWordCounts: sidebarWordCounts,
+        persistSidebarWordCounts: async (counts) => {
+          await invoke("settings_set_sidebar_word_counts", { ...counts });
+        },
+        onSidebarWordCounts: (counts) => {
+          sidebarWordCounts = counts;
+          current.setSidebarWordCounts(counts);
+        },
         initialMarkCastNames: markCastNames,
         persistMarkCastNames: async (on) => {
           await invoke("settings_set_mark_cast_names", { mark: on });
@@ -687,21 +710,8 @@ async function main(): Promise<void> {
         initialWritingModes,
         onWritingModes: (modes) => focusToggle?.set(modes.focus),
         initialZoom: zoom,
-        persistZoom: async (next) => {
-          const previous = zoom;
-          zoom = next;
-          // The host both records this AND applies it to the live webview:
-          // page zoom belongs to WebKit, which the page cannot reach. On a
-          // refusal the page is put back to what the webview still shows,
-          // and the error is rethrown so preferences.ts's own record() still
-          // raises its notice and repaints the panel.
-          try {
-            await invoke("settings_set_zoom", { zoom: next });
-          } catch (error: unknown) {
-            zoom = previous;
-            throw error;
-          }
-        },
+        persistZoom,
+        zoomPersistence,
         onDailyTarget: (target) => {
           dailyTarget = target;
           // The bar belongs to the mounted project, and the panel does not.
@@ -731,8 +741,10 @@ async function main(): Promise<void> {
         // `onDailyTarget` is: a panel dismissed after a project switch must
         // focus the editor on screen, not the one that was there when the
         // panel was built.
-        onDismiss: () => current.editor.focus(),
+        onDismiss: restoreWorkspaceFocus,
       });
+      refreshDictionary();
+      preferenceClose = preferences;
       addWordToDictionary = (word) => preferences.addWord(word);
 
       // Ctrl+= / Ctrl+- / Ctrl+0 from anywhere in the page. The panel is told
@@ -740,16 +752,9 @@ async function main(): Promise<void> {
       // it. No teardown: this listener is application chrome, like the panel
       // and the menu bar around it, and lives as long as the window.
       installZoomKeys(document, {
-        current: () => zoom,
+        current: zoomPersistence.current,
         set: (next) => {
-          const previous = zoom;
-          zoom = next;
-          preferences.setZoom(next);
-          void invoke("settings_set_zoom", { zoom: next }).catch((error: unknown) => {
-            // Refused: put the word and the panel back, or the next chord
-            // steps from a screen the host never actually reached.
-            zoom = previous;
-            preferences.setZoom(previous);
+          void zoomPersistence.request(next).catch((error: unknown) => {
             current.raiseNotice(
               t("prefs.error.save", { what: t("prefs.what.zoom"), error: String(error) }),
             );
@@ -769,6 +774,14 @@ async function main(): Promise<void> {
           "page shell is missing #outline-controls or #focus-controls: index.html and main.ts disagree",
         );
       }
+      const home = document.createElement("button");
+      home.id = "home-button";
+      home.type = "button";
+      home.setAttribute("aria-label", t("chrome.home.label"));
+      home.append(createIcon("house"));
+      home.addEventListener("click", () => library.open());
+      const homeTip = createTooltip({ control: home, name: t("chrome.home"), hint: t("chrome.home.hint") });
+      outlineEl.before(homeTip.anchor);
       createOutlineToggle({ container: outlineEl, body: document.body });
       focusToggle = createFocusToggle({
         container: focusEl,
@@ -823,18 +836,28 @@ async function main(): Promise<void> {
         // drop-folder route gives. Import deliberately does not switch to it -
         // a writer mid-scene must not be moved to another book.
         importProject: () => {
+          const workspace = current;
+          const generation = currentGeneration;
+          const canReport = async (): Promise<boolean> => {
+            if (workspace !== current || generation !== currentGeneration) return false;
+            try {
+              privacyStatus = await invoke("privacy_status") as PrivacyStatus;
+              return !privacyStatus.locked && !privacyStatus.recovery && workspace === current && generation === currentGeneration;
+            } catch { return false; }
+          };
           void invoke("project_import_pick")
-            .then((created) => {
+            .then(async (created) => {
               // null is the writer cancelling. Nothing happened because that is
               // what they chose; reporting it back would be reporting their own
               // decision to them as an event.
-              if (created === null || created === undefined) return;
-              const notice = lossesNotice((created as ImportOutcome).losses, (created as ImportOutcome).derived_contents);
-              if (notice !== null) current.announce(notice);
+              if (created === null || created === undefined || !await canReport()) return;
+              const notice = importResultNotice(created as ImportOutcome);
+              if (notice?.problem) current.raiseNotice(notice.message);
+              else if (notice) current.announce(notice.message);
               switcher.open("list");
             })
-            .catch((err: unknown) => {
-              current.raiseNotice(t("project.error.import", { error: String(err) }));
+            .catch(async (err: unknown) => {
+              if (await canReport()) current.raiseNotice(t("project.error.import", { error: String(err) }));
             });
         },
         openFind: () => current.menuActions.openFind(),
@@ -873,6 +896,7 @@ async function main(): Promise<void> {
         openReference: () => current.menuActions.openReference(),
         closeReference: () => current.menuActions.closeReference(),
         outlineViewMode: () => current.menuActions.outlineViewMode(),
+        openCreation: () => current.menuActions.openCreation(),
         create: (itemType) => current.menuActions.create(itemType),
         createNote: () => current.menuActions.createNote(),
         createBibleFolder: () => current.menuActions.createBibleFolder(),
@@ -885,7 +909,7 @@ async function main(): Promise<void> {
         quit: () => quit.run(),
       });
       // AFTER the menu bar, deliberately. See the note above.
-      const help = createHelpPanel({ container: menuBar, privacyShortcut: () => privacyStatus.shortcut });
+      const help = createHelpPanel({ container: menuBar, privacyShortcut: () => privacyStatus.shortcut, onDismiss: restoreWorkspaceFocus });
       if (window.__appPendingProject !== undefined && window.__appPendingProject !== "") {
         void switchProject(window.__appPendingProject).then(() => switcher.refresh(currentName));
       }
@@ -910,8 +934,20 @@ async function main(): Promise<void> {
       },
     });
 
+    // The Library's application actions must be ready before it accepts input.
+    if (projectPath === "" && window.__appStart === "home" && window.__appPendingProject === undefined) {
+      libraryHandle?.open();
+    }
+
     {
-      const closePrompt = createClosePrompt({ container: document.body });
+      const closePrompt = createClosePrompt({
+        container: document.body,
+        privacyShortcut: () => privacyStatus.shortcut,
+        canRestoreFocus: () => !privacyStatus.locked && !privacyStatus.recovery,
+        focusFallbacks: () => document.querySelectorAll<HTMLElement>(
+          "#library, #editor .ProseMirror, #empty-open-library, #app-menu",
+        ),
+      });
       const lifecycleReady = await wireLifecycle({
         // An accessor, not the mounted session: a project switch replaces it,
         // and a lifecycle handler holding the original would drain the store of
@@ -934,6 +970,9 @@ async function main(): Promise<void> {
           const status = await invoke("privacy_status") as PrivacyStatus;
           return status.locked || status.recovery;
         },
+        captureCloseFocus: () => closePrompt.captureFocus(),
+        preferences: preferenceClose,
+        promptPreferencesClose: () => closePrompt.openPreferences(),
         drafts: {
           pending: () => current.reviewPending(),
           prepareClose: () => current.prepareToLeave(),
@@ -1127,6 +1166,7 @@ async function main(): Promise<void> {
       try {
         if (plan.kind === "create") {
           const ack = (await invoke("item_create", {
+            generation: window.__appGeneration ?? 1,
             parentId: plan.parentId,
             itemType: "scene",
             title: `Added scene ${plan.seq}`,
@@ -1138,6 +1178,7 @@ async function main(): Promise<void> {
           }
         } else if (plan.kind === "rename") {
           const rev = (await invoke("item_rename", {
+            generation: window.__appGeneration ?? 1,
             id: plan.id,
             title: plan.title,
             baseRev: plan.baseRev,
@@ -1145,6 +1186,7 @@ async function main(): Promise<void> {
           planner.applyRename(plan.id, rev);
         } else {
           const moved = (await invoke("item_move", {
+            generation: window.__appGeneration ?? 1,
             id: plan.id,
             newParentId: plan.newParentId,
             afterId: null,

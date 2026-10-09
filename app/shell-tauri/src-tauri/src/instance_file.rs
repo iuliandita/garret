@@ -2,15 +2,34 @@
 //! removing it would let a new process lock a different file at the same name.
 
 use std::fs::{self, File, OpenOptions, TryLockError};
-use std::io;
+use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
+
+const MIGRATED_CONTENT: &[u8] = b"garret-storage-v1\n";
 
 const RETRY_DELAY: Duration = Duration::from_secs(1);
 const POLL_INTERVAL: Duration = Duration::from_millis(250);
 
 pub(crate) struct Guard {
     _file: File,
+}
+
+impl Guard {
+    pub(crate) fn migrated(&self) -> Result<bool, String> {
+        self._file
+            .metadata()
+            .map(|metadata| metadata.len() != 0)
+            .map_err(|error| error.to_string())
+    }
+
+    pub(crate) fn mark_migrated(&self) -> Result<(), String> {
+        let mut file = &self._file;
+        file.seek(SeekFrom::Start(0))
+            .and_then(|_| file.write_all(MIGRATED_CONTENT))
+            .and_then(|_| file.sync_all())
+            .map_err(|error| error.to_string())
+    }
 }
 
 pub(crate) enum Claim {
@@ -55,12 +74,6 @@ fn open_lock(path: &Path) -> io::Result<File> {
             "instance lock is not a regular file",
         ));
     }
-    if metadata.len() != 0 {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "instance lock is not empty",
-        ));
-    }
     #[cfg(windows)]
     {
         use std::os::windows::fs::MetadataExt;
@@ -77,7 +90,20 @@ fn open_lock(path: &Path) -> io::Result<File> {
 fn try_claim(path: &Path) -> io::Result<Option<Guard>> {
     let file = open_lock(path)?;
     match file.try_lock() {
-        Ok(()) => Ok(Some(Guard { _file: file })),
+        Ok(()) => {
+            let mut reader = &file;
+            reader.seek(SeekFrom::Start(0))?;
+            let mut content = Vec::new();
+            reader.take(MIGRATED_CONTENT.len() as u64 + 1)
+                .read_to_end(&mut content)?;
+            if !content.is_empty() && content != MIGRATED_CONTENT {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "instance lock contains an unknown record",
+                ));
+            }
+            Ok(Some(Guard { _file: file }))
+        }
         Err(TryLockError::WouldBlock) => Ok(None),
         Err(TryLockError::Error(error)) => Err(error),
     }
@@ -205,7 +231,6 @@ mod tests {
         assert!(request_focus(&marker_dir.join("focus.request")).is_err());
     }
 
-    #[cfg(unix)]
     #[test]
     fn child_holds_lock_until_killed() {
         use std::io::{BufRead, BufReader};
@@ -239,16 +264,16 @@ mod tests {
         assert!(matches!(claim(root.path()), Claim::Owned(_)));
     }
 
-    #[cfg(unix)]
     #[test]
     fn lock_holder_child() {
         let Some(home) = std::env::var_os("INSTANCE_LOCK_TEST_HOME") else {
             return;
         };
-        let _guard = match claim(Path::new(&home)) {
+        let guard = match claim(Path::new(&home)) {
             Claim::Owned(guard) => guard,
             _ => panic!("child claim"),
         };
+        guard.mark_migrated().unwrap();
         println!("INSTANCE_LOCK_READY");
         std::thread::sleep(Duration::from_secs(30));
     }

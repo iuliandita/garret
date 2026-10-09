@@ -34,7 +34,7 @@
 // an option is changed, and it DRAINS the flush scheduler first, so what it
 // shows is the book as saved. That is what an export is.
 import { isCompositionKey } from "./composition-key";
-import { plural, t } from "./i18n";
+import { formatNumber, plural, t } from "./i18n";
 import {
   STYLE_FLAGS,
   gutterVerdict,
@@ -83,7 +83,7 @@ export interface PreviewRailDeps {
    *  happened. */
   saveAs(format: PreviewFormat): void;
   onNotice(message: string): void;
-  /** Where focus goes when the rail is dismissed with Escape. */
+  /** Where focus goes when the writer dismisses the rail. */
   onDismiss(): void;
 }
 
@@ -203,6 +203,14 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   /** An answer resolving after a newer render, after a close, or after teardown
    *  must not paint: the writer would be shown a book they have left. */
   let generation = 0;
+  let lifecycle = 0;
+  let styleWrite: Promise<void> | null = null;
+
+  function updateStyleControls(): void {
+    const disabled = destroyed || rail.hidden || style === null || styleWrite !== null;
+    for (const control of options.querySelectorAll<HTMLButtonElement>("button")) control.disabled = disabled;
+  }
+  updateStyleControls();
 
   function button(id: string, label: string): HTMLButtonElement {
     const control = document.createElement("button");
@@ -254,8 +262,8 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   function paintPreview(view: EpubPreview): void {
     saySummary([
       plural("preview.epub.summary", view.items, {
-        items: String(view.items),
-        words: String(view.words),
+        items: formatNumber(view.items),
+        words: formatNumber(view.words),
       }),
     ]);
     // THE BOOK'S OWN STYLESHEET, scoped. A stylesheet this page cannot scope is
@@ -293,6 +301,10 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     // for the wrong surface works by accident until a rule is added for it.
     delete pages.dataset.proof;
     pages.replaceChildren(...painted);
+    for (const link of pages.querySelectorAll<HTMLAnchorElement>("a[href]")) {
+      link.tabIndex = -1;
+      link.setAttribute("aria-disabled", "true");
+    }
   }
 
   /** Paint the leaves the printer was handed.
@@ -304,9 +316,9 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   function paintProof(view: PdfPreview): void {
     const lines: string[] = [
       plural("preview.pdf.summary", view.leaves, {
-        leaves: String(view.leaves),
-        items: String(view.items),
-        words: String(view.words),
+        leaves: formatNumber(view.leaves),
+        items: formatNumber(view.items),
+        words: formatNumber(view.words),
       }),
     ];
     // WHAT WAS MEASURED, NOT WHAT WAS ASKED FOR. This
@@ -320,7 +332,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     const verdict = gutterVerdict(view.gutter_minimum_um, view.inner_um);
     if (verdict !== "unknown") {
       lines.push(t(`preview.pdf.gutter.${verdict}`, {
-        pages: String(view.leaves),
+        pages: formatNumber(view.leaves),
         minimum: millimetres(view.gutter_minimum_um ?? 0),
         inner: millimetres(view.inner_um),
       }));
@@ -328,8 +340,8 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     if (view.truncated) {
       lines.push(
         t("preview.pdf.truncated", {
-          shown: String(view.pages.length),
-          leaves: String(view.leaves),
+          shown: formatNumber(view.pages.length),
+          leaves: formatNumber(view.leaves),
         }),
       );
     }
@@ -350,6 +362,10 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     // sets, because a `getComputedStyle` assertion under happy-dom is vacuous.
     pages.dataset.proof = "true";
     pages.replaceChildren(...painted);
+    for (const link of pages.querySelectorAll<HTMLAnchorElement>("a[href]")) {
+      link.tabIndex = -1;
+      link.setAttribute("aria-disabled", "true");
+    }
     fit();
   }
 
@@ -434,6 +450,8 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   }
 
   async function render(): Promise<void> {
+    if (destroyed || rail.hidden || showing === null) return;
+    const wanted = showing;
     generation += 1;
     const mine = generation;
     try {
@@ -444,7 +462,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       // THE FORMAT IS READ BEFORE THE AWAIT AND CHECKED AFTER IT, on the
       // generation's own rule: a Refresh pressed for a proof must not paint an
       // archive because the rail was reopened as an EPUB while it ran.
-      const wanted = showing;
+      if (destroyed || rail.hidden || mine !== generation || showing !== wanted) return;
       if (wanted === "pdf") {
         const view = await deps.readProof();
         if (destroyed || mine !== generation || showing !== wanted) return;
@@ -455,7 +473,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       if (destroyed || mine !== generation || showing !== wanted) return;
       paintPreview(view);
     } catch (error: unknown) {
-      if (destroyed || mine !== generation) return;
+      if (destroyed || rail.hidden || mine !== generation) return;
       // NOT AN EMPTY RAIL. A catch that painted the no-documents state would
       // report a host that could not answer as a book with nothing in it --
       // the recorded `renderImports([])` defect.
@@ -464,28 +482,27 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     }
   }
 
-  async function commit(next: ChapterStyle): Promise<void> {
-    const mine = generation;
-    try {
-      const landed = await deps.writeStyle(next);
-      if (destroyed) return;
-      style = landed;
-      paintOptions();
-      await render();
-    } catch (error: unknown) {
-      if (destroyed || mine !== generation) return;
-      // NO REPAINT HERE, AND THAT IS DELIBERATE RATHER THAN AN OMISSION.
-      // The design panel repaints in its catch because it can be showing a
-      // value the writer typed; this rail paints ONLY from the host's answer,
-      // so on a refusal the pressed states already say exactly what the file
-      // holds. A `paintOptions()` here was written first and a mutation
-      // DELETING it survived the whole suite -- no input can tell it from its
-      // absence, which is the `import_name_ok` shape, and a guard nothing can
-      // reach is worse than none because a reader credits it. Do not add it
-      // back: what makes the rail truthful is that nothing is painted before
-      // the answer arrives.
-      deps.onNotice(t("preview.error.style", { error: messageOf(error) }));
-    }
+  function commit(next: ChapterStyle): void {
+    if (destroyed || rail.hidden || style === null || styleWrite !== null) return;
+    const owner = lifecycle;
+    const pending = (async (): Promise<void> => {
+      try {
+        const landed = await deps.writeStyle(next);
+        if (destroyed || rail.hidden || owner !== lifecycle) return;
+        style = landed;
+        paintOptions();
+        void render();
+      } catch (error: unknown) {
+        if (destroyed || rail.hidden || owner !== lifecycle) return;
+        // Pressed states still describe the last acknowledged style.
+        deps.onNotice(t("preview.error.style", { error: messageOf(error) }));
+      }
+    })().finally(() => {
+      if (styleWrite === pending) styleWrite = null;
+      updateStyleControls();
+    });
+    styleWrite = pending;
+    updateStyleControls();
   }
 
   const onClick = (event: Event): void => {
@@ -509,6 +526,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     }
     if (target.closest("#preview-close") !== null) {
       close();
+      deps.onDismiss();
       return;
     }
     if (target.closest("#preview-save-as") !== null) {
@@ -520,7 +538,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       return;
     }
     const current = style;
-    if (current === null) return;
+    if (destroyed || rail.hidden || current === null || styleWrite !== null) return;
     const ornament = target.closest<HTMLElement>("[data-preview-glyph]");
     if (ornament !== null) {
       const value = ornament.dataset.previewGlyph ?? "";
@@ -549,8 +567,11 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     // A CLOSE BUMPS THE GENERATION, so a render still in flight cannot paint
     // into a rail the writer has already dismissed.
     generation += 1;
+    lifecycle += 1;
     pageSetup?.hide();
     rail.hidden = true;
+    style = null;
+    updateStyleControls();
   }
 
   rail.addEventListener("click", onClick);
@@ -558,11 +579,14 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
 
   return {
     async open(format: PreviewFormat): Promise<void> {
+      if (destroyed) return;
       // A REOPEN IN ANOTHER FORMAT BUMPS THE GENERATION, so a render still in
       // flight for the book the writer has left cannot paint over the one they
       // asked for.
       generation += 1;
-      const opening = generation;
+      const opening = ++lifecycle;
+      style = null;
+      updateStyleControls();
       showing = format;
       if (format !== "pdf") pageSetup?.hide();
       rail.setAttribute("aria-label", t(`preview.${format}.label`));
@@ -588,15 +612,17 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
         : Promise.resolve();
       try {
         await setupReady;
-        if (destroyed || rail.hidden || opening !== generation) return;
+        await styleWrite;
+        if (destroyed || rail.hidden || opening !== lifecycle) return;
         const answer = await deps.readStyle();
-        if (destroyed || rail.hidden || opening !== generation) return;
+        if (destroyed || rail.hidden || opening !== lifecycle) return;
         style = answer.style;
         glyphs = answer.glyphs;
         buildOrnaments();
         paintOptions();
+        updateStyleControls();
       } catch (error: unknown) {
-        if (destroyed) return;
+        if (destroyed || rail.hidden || opening !== lifecycle) return;
         deps.onNotice(t("preview.error.style", { error: messageOf(error) }));
       }
       await render();
@@ -611,6 +637,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     destroy(): void {
       if (destroyed) return;
       destroyed = true;
+      lifecycle += 1;
       pageSetup?.destroy();
       rail.removeEventListener("click", onClick);
       rail.removeEventListener("keydown", onKeyDown);

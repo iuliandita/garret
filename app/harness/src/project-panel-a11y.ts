@@ -10,6 +10,7 @@ export interface PanelA11yNode {
   role: string;
   name: string;
   text: string | null;
+  description: string;
   states: string[];
   id: string | null;
 }
@@ -65,13 +66,14 @@ def walk(node, depth):
     try:
         role = node.getRoleName()
         name = node.name or ""
+        description = node.description or ""
         states = [s.value_nick for s in node.getState().get_states()]
         count = node.childCount
     except Exception as e:
         errors.append("node: " + type(e).__name__)
         return
     out.append({"order": len(out), "depth": depth, "role": role, "name": name,
-                "text": text_of(node), "states": states, "id": ident(node)})
+                "text": text_of(node), "description": description, "states": states, "id": ident(node)})
     for i in range(count):
         try:
             child = node.getChildAtIndex(i)
@@ -102,11 +104,11 @@ export function parsePanelA11yWalk(raw: string): PanelA11yWalk {
     const n = value as Record<string, unknown>;
     if (
       n.order !== index || typeof n.depth !== "number" || !Number.isInteger(n.depth) || n.depth < 0 || typeof n.role !== "string" ||
-      typeof n.name !== "string" || (n.text !== null && typeof n.text !== "string") ||
+      typeof n.name !== "string" || typeof n.description !== "string" || (n.text !== null && typeof n.text !== "string") ||
       !Array.isArray(n.states) || !n.states.every((s) => typeof s === "string") ||
       (n.id !== null && typeof n.id !== "string")
     ) throw new Error(`AT-SPI node ${index} has malformed fields`);
-    return { order: index, depth: n.depth, role: n.role, name: n.name, text: n.text, states: n.states as string[], id: n.id as string | null };
+    return { order: index, depth: n.depth, role: n.role, name: n.name, text: n.text, description: n.description, states: n.states as string[], id: n.id as string | null };
   });
   if (nodes.length === 0 || nodes[0]!.depth !== 0 || nodes[0]!.role.toLowerCase() !== "application") {
     throw new Error("AT-SPI walker returned a partial tree");
@@ -147,21 +149,20 @@ function states(n: PanelA11yNode | undefined, enabled: boolean): boolean {
     ? n.states.includes("enabled") && n.states.includes("sensitive")
     : !n.states.includes("enabled") && !n.states.includes("sensitive");
 }
-function exactText(n: PanelA11yNode | undefined, expected: string): boolean {
-  return n !== undefined && n.role === "section" && n.name === "" && states(n, true) && n.text === expected;
-}
 
 export function evaluateProjectPanelA11y(walk: PanelA11yWalk): GateResult[] {
   const scope = scopeOf(walk);
   const panel = node(scope, "project-panel");
   const listboxes = [
-    ["project-list", "projects"], ["project-imports", "files to import"],
-    ["project-recovery-points", "recovery points"], ["project-archives", "archives"],
+    ["project-list", "Books", "The open book is not listed in this library. Name another below to create it.", true],
+    ["project-imports", "files to import", "Drop a .md or .docx file in the import folder.", true],
+    ["project-recovery-points", "recovery points", "No recovery point has been taken on this device yet.", true],
+    ["project-archives", "archives", "No archive has been made yet.", false],
   ] as const;
   const explanatory = [
-    ["project-recovery-note", "Restoring adds a new project. Nothing is replaced. New recovery point folders include referenced original pictures. Older database-only points do not."],
-    ["project-archive-note", "A new archive is one complete folder. To protect against losing this computer, move the whole folder off this computer yourself: onto a USB stick, another machine, or a sync folder. Older .db archives did not include pictures."],
-    ["project-mirror-note", "The mirror keeps your manuscript as ordinary Markdown files, one per scene, within ten seconds of what you have typed. It is a copy to read and edit elsewhere, not a backup: it is on this computer, and this application writes it rather than reading it back."],
+    ["project-recovery-note-help", "About Recovery points on this device", "Restoring adds a new book. Nothing is replaced. New recovery point folders include referenced original pictures. Older database-only points do not."],
+    ["project-archive-note-help", "About If you lose this computer", "A new archive is one complete, unencrypted folder. Anyone with access to it can read your book. To protect against losing this computer, move the whole folder off this computer yourself: onto a USB stick, another machine, or a sync folder. Older .db archives did not include pictures."],
+    ["project-mirror-note-help", "About A readable copy you can open anywhere", "The mirror keeps your manuscript as ordinary Markdown files, one per scene, within ten seconds of what you have typed. It is a copy to read and edit elsewhere, not a backup: it is on this computer, and this application writes it rather than reading it back."],
   ] as const;
   const headings = [
     // Sentence case (no uppercase labels); the notes as the catalog has held
@@ -169,32 +170,63 @@ export function evaluateProjectPanelA11y(walk: PanelA11yWalk): GateResult[] {
     ["project-import-heading", "Import"],
     ["project-recovery-heading", "Recovery points on this device"],
     ["project-archive-heading", "If you lose this computer"],
+    ["project-encrypted-archive-heading", "Encrypted backups"],
     ["project-mirror-heading", "A readable copy you can open anywhere"],
   ] as const;
   const ordered = [
     "project-list", "project-move", "project-new-name", "project-new-choose", "project-create",
     "project-import-heading", "project-imports",
-    "project-recovery-heading", "project-recovery-note", "project-recovery-points",
-    "project-archive-heading", "project-archive-note", "project-archive-now", "project-archives",
-    "project-mirror-heading", "project-mirror-note", "project-mirror-toggle", "mirror-check",
+    "project-recovery-heading", "project-recovery-note-help", "project-recovery-points",
+    "project-archive-heading", "project-archive-note-help", "project-archive-now", "project-archives",
+    "project-encrypted-archive-heading",
+    "project-mirror-heading", "project-mirror-note-help", "project-mirror-toggle", "mirror-check",
   ];
-  const controls = [["project-new-name", "entry", "New project name"], ["project-create", "button", "Create"], ["project-new-choose", "button", "Choose a folder…"], ["project-move", "button", "Move this book…"], ["project-archive-now", "button", "Make an archive"], ["project-mirror-toggle", "button", "Turn the mirror on"]] as const;
-  const ids = [...listboxes.map(([id]) => id), ...explanatory.map(([id]) => id), ...ordered, ...controls.map(([id]) => id), "mirror-check"];
-  const allUnique = ids.every((id) => unique(walk, id));
-  const listOk = scope.valid && allUnique && listboxes.every(([id, name]) => node(scope, id)?.role.toLowerCase() === "list box" && node(scope, id)?.name === name && states(node(scope, id), true));
-  const notes = explanatory.map(([id, expected]) => exactText(node(scope, id), expected));
+  const controls = [["project-new-name", "entry", "New book name"], ["project-create", "button", "Create"], ["project-new-choose", "button", "Choose a folder…"], ["project-move", "button", "Move this book…"], ["project-archive-now", "button", "Make unencrypted archive"], ["project-mirror-toggle", "button", "Turn the mirror on"]] as const;
+  const uniqueIds = (ids: readonly string[]): boolean => ids.every((id) => unique(walk, id));
+  const listOk = scope.valid && uniqueIds(listboxes.map(([id]) => id)) && listboxes.every(([id, name, empty, actionable]) => {
+    const container = node(scope, id);
+    if (!container || container.name !== name || !states(container, true)) return false;
+    const start = scope.nodes.indexOf(container);
+    let end = start + 1;
+    while (end < scope.nodes.length && scope.nodes[end]!.depth > container.depth) end++;
+    const children = scope.nodes.slice(start + 1, end);
+    const rows = children.filter((n) => n.role.toLowerCase() === "list item");
+    const buttons = children.filter((n) => n.role.toLowerCase() === "button");
+    if (rows.length === 0 && buttons.length === 0) {
+      return ["panel", "list"].includes(container.role.toLowerCase()) &&
+        children.some((n) => n.text === empty && states(n, true));
+    }
+    if (container.role.toLowerCase() !== "list" || rows.length === 0) return false;
+    if (children.some((n) => n.text === empty)) return false;
+    return rows.every((row, index) => {
+      if (!states(row, true)) return false;
+      const next = rows[index + 1]?.order ?? Infinity;
+      const actions = buttons.filter((button) => button.order > row.order && button.order < next && button.depth > row.depth);
+      return actionable ? actions.length === 1 && actions[0]!.name !== "" && states(actions[0], true)
+        : actions.length === 0 && (row.text !== null && row.text !== "" || row.name !== "");
+    }) && (!actionable || buttons.length === rows.length);
+  });
+  const notes = explanatory.map(([id, name, expected]) => {
+    const help = node(scope, id);
+    return help?.role.toLowerCase() === "button" && help.name === name && help.description === expected && states(help, true);
+  });
   const orderedNodes = ordered.map((id) => node(scope, id));
-  const orderOk = headings.every(([id, expected]) => exactText(node(scope, id), expected)) && orderedNodes.every((n) => n !== undefined) && orderedNodes.every((n, i) => i === 0 || n!.order > orderedNodes[i - 1]!.order);
-  const controlsOk = scope.valid && allUnique && controls.every(([id, role, name]) => node(scope, id)?.role.toLowerCase() === role && node(scope, id)?.name === name && states(node(scope, id), true));
+  // WebKit includes an object replacement character for the nested help button.
+  const orderOk = headings.every(([id, expected]) => {
+    const heading = node(scope, id);
+    return heading?.role.toLowerCase() === "heading" && heading.name === expected && states(heading, true) &&
+      heading.text?.replace(/\uFFFC/g, "").trim() === expected;
+  }) && orderedNodes.every((n) => n !== undefined) && orderedNodes.every((n, i) => i === 0 || n!.order > orderedNodes[i - 1]!.order);
+  const controlsOk = scope.valid && uniqueIds(controls.map(([id]) => id)) && controls.every(([id, role, name]) => node(scope, id)?.role.toLowerCase() === role && node(scope, id)?.name === name && states(node(scope, id), true));
   const check = node(scope, "mirror-check");
-  const checkOff = scope.valid && allUnique && check?.role.toLowerCase() === "button" && check.name === "Check the mirror thoroughly" && states(check, false);
+  const checkOff = scope.valid && uniqueIds(["mirror-check"]) && check?.role.toLowerCase() === "button" && check.name === "Check the mirror thoroughly" && states(check, false);
   return [
-    { gate: "project_panel_open", value: scope.valid ? `${panel?.role ?? "absent"} ${JSON.stringify(panel?.name ?? "")}` : scope.reason, threshold: 'one AT-SPI dialog named "projects"', verdict: scope.valid && panel?.role.toLowerCase() === "dialog" && panel.name === "projects" && states(panel, true) ? "PASS" : "FAIL" },
-    { gate: "project_panel_listboxes", value: listboxes.map(([id]) => `${id}=${node(scope, id)?.name ?? "absent"}`).join("; "), threshold: "four named visible platform list boxes in the project panel", verdict: listOk ? "PASS" : "FAIL" },
+    { gate: "project_panel_open", value: scope.valid ? `${panel?.role ?? "absent"} ${JSON.stringify(panel?.name ?? "")}` : scope.reason, threshold: 'one AT-SPI dialog named "Books"', verdict: scope.valid && panel?.role.toLowerCase() === "dialog" && panel.name === "Books" && states(panel, true) ? "PASS" : "FAIL" },
+    { gate: "project_panel_listboxes", value: listboxes.map(([id]) => `${id}=${node(scope, id)?.name ?? "absent"}`).join("; "), threshold: "four named visible containers: populated lists expose rows and their actions; empty containers expose truthful empty messages", verdict: listOk ? "PASS" : "FAIL" },
     { gate: "project_panel_actions", value: controls.map(([id]) => `${id}=${node(scope, id)?.name ?? "absent"}`).join(", "), threshold: "named create input and enabled Create, Choose folder, Move, Archive and mirror buttons", verdict: controlsOk ? "PASS" : "FAIL" },
     { gate: "project_panel_mirror_check_off", value: check === undefined ? "absent" : check.name, threshold: "named mirror check is visibly disabled while the mirror is off", verdict: checkOff ? "PASS" : "FAIL" },
-    { gate: "project_panel_explanations", value: notes.every(Boolean) ? "exact recovery, archive and mirror text exposed" : "one or more exact explanatory texts are absent", threshold: "full recovery, archive and mirror explanatory text is exposed", verdict: scope.valid && allUnique && notes.every(Boolean) ? "PASS" : "FAIL" },
-    { gate: "project_panel_reading_order", value: orderedNodes.map((n) => n?.order ?? "absent").join(" < "), threshold: "visible named sections in Create, Import, Recovery, Archive, Mirror order, with explanations before actions", verdict: scope.valid && allUnique && orderOk ? "PASS" : "FAIL" },
+    { gate: "project_panel_explanations", value: notes.every(Boolean) ? "exact recovery, archive and mirror descriptions exposed" : "one or more exact explanatory texts are absent", threshold: "named visible help buttons expose full recovery, archive and mirror descriptions", verdict: scope.valid && uniqueIds(explanatory.map(([id]) => id)) && notes.every(Boolean) ? "PASS" : "FAIL" },
+    { gate: "project_panel_reading_order", value: orderedNodes.map((n) => n?.order ?? "absent").join(" < "), threshold: "visible named headings in Create, Import, Recovery, Archive, Encrypted backups, Mirror order, with explanations before actions", verdict: scope.valid && uniqueIds([...ordered, ...headings.map(([id]) => id)]) && orderOk ? "PASS" : "FAIL" },
   ];
 }
 
@@ -211,7 +243,7 @@ export function redactPanelA11yWalk(walk: PanelA11yWalk, scratch: string, home?:
     return home === undefined || home === "" ? scrubbed
       : scrubbed.replace(new RegExp(`${home.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\S*`, "g"), "<home>");
   };
-  return { nodes: walk.nodes.map((n) => ({ ...n, name: redact(n.name)!, text: redact(n.text) })) };
+  return { nodes: walk.nodes.map((n) => ({ ...n, name: redact(n.name)!, text: redact(n.text), description: redact(n.description)! })) };
 }
 
 /** The full walk establishes attribution and completeness; only the panel's
