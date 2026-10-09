@@ -18,6 +18,20 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Documentation checks
+        env:
+          DOCS_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          python3 scripts/test-release.py
+          python3 scripts/test-docs.py
+          python3 scripts/test-docs-facts.py
+          if [ -n "$DOCS_BASE" ]; then
+            sh scripts/check-docs --base "$DOCS_BASE"
+          else
+            sh scripts/check-docs
+          fi
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: "1.4.2"

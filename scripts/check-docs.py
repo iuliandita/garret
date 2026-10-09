@@ -163,7 +163,7 @@ def sensitive_change(before, after, path):
     # Compare production lines, so a query edit near a schema declaration is not
     # confused with changing the declaration itself.
     import difflib
-    if path == HOST + "src/package_format.rs":
+    if path in {HOST + "src/package_format.rs", HOST + "src/data_migration.rs"}:
         return production(before) != production(after)
     before_text, after_text = production(before), production(after)
     if schema_blocks(before_text) != schema_blocks(after_text):
@@ -187,12 +187,15 @@ def range_state(base, files):
     # version bump or reverted migration must not hide a compatibility obligation.
     for commit in commits:
         parents = git("rev-list", "--parents", "-n", "1", commit).decode().split()[1:]
-        for parent in parents:
-            paths = names(git("diff", "--name-only", "--no-renames", "-z", parent, commit, "--"))
-            changed.update(paths)
-            for path in paths:
-                if sensitive_path(path) and sensitive_change(git("show", f"{parent}:{path}", allow_missing=True) or b"", git("show", f"{commit}:{path}", allow_missing=True) or b"", path):
-                    sensitive.add(path)
+        # Inherited merge content belongs to its original commits. Only novel
+        # resolutions differ from every parent; comparing against the current
+        # base would also mistake older intermediate merges for regressions.
+        parent_paths = [names(git("diff", "--name-only", "--no-renames", "-z", parent, commit, "--")) for parent in parents]
+        paths = set.intersection(*parent_paths) if parent_paths else set()
+        changed.update(paths)
+        for path in paths:
+            if sensitive_path(path) and all(sensitive_change(git("show", f"{parent}:{path}", allow_missing=True) or b"", git("show", f"{commit}:{path}", allow_missing=True) or b"", path) for parent in parents):
+                sensitive.add(path)
     for path in changed:
         if sensitive_path(path) and sensitive_change(git("show", f"{base}:{path}", allow_missing=True) or b"", files.get(path, b""), path):
             sensitive.add(path)

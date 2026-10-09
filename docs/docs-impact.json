@@ -1,0 +1,96 @@
+{
+  "baseline": {
+    "note": "Introduce the explicit documentation review baseline for the existing application and release tooling without certifying historical behavior.",
+    "source": {
+      "backup-recovery": "8d64b7abddd83fe26399b44add9ba4a21cee1c662e4e294bf9e18776e003709d",
+      "editor": "fe000bbddfe710eca6e39e42af99f03bb103717699f802bb44c3a4a666223eb1",
+      "encryption": "77a29ecbfa4b7bd860a414a300768480dd1f558bc3001733af0c2c2e7c55f87c",
+      "maintenance": "d3606e7397662b1b8f271bb3a4aa01d852a24e3fb077fb29af0fe8d6abd03af3",
+      "native-packaging": "002e5c81d2a37d7d17bd7a5b77bab1568d63f0dd7aecde78558eac5b2e296276",
+      "project-format": "131cef13b9085b006201dcf5ad38a24ae34871444297e357cfc6433642151726",
+      "schema": "dda21678799ff4d4bcf914922e514023d93226c828bd4a24f53a8df9b98e31dc"
+    }
+  },
+  "receipts": {
+    "backup-recovery": {
+      "breaking": "none",
+      "docs": {
+        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
+        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
+      },
+      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
+      "no_impact": "",
+      "note": "Document complete book and profile backups, interrupted migration preservation, archive boundaries, and restoring separate pre-upgrade copies.",
+      "source_sha256": "2edd84df587e32edba860845496359304bc871189b1a9f8bacee26f390bea937"
+    },
+    "editor": {
+      "breaking": "none",
+      "docs": {
+        "README.md": "b35059901dcb44d9fbfac5f7df55c344ab9a79834de10568397d7b332aa0f781",
+        "docs/screenshots/README.md": "82ff45a17837e4ed8e6731540e77633f42c1f1b6c3f953393011d66270dfd566",
+        "docs/screenshots/manifest.json": "d8e7703817a4acd5197540376ee95d584171884491ace0553755f8bcd2b8df67"
+      },
+      "migration": "",
+      "no_impact": "",
+      "note": "Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance.",
+      "source_sha256": "0e4f0d0a283e6d20ed949c9cf1571526fe34324d91603deeffdb00f7c1d408fc"
+    },
+    "encryption": {
+      "breaking": "none",
+      "docs": {
+        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
+        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
+      },
+      "migration": "",
+      "no_impact": "",
+      "note": "Distinguish encrypted portable archives from plaintext working files and add encryption dependency and source review obligations.",
+      "source_sha256": "3de071163792f42498cde75496e4894e6649599b1f5d949390410cf68e8a3c9a"
+    },
+    "maintenance": {
+      "breaking": "none",
+      "docs": {
+        "CONTRIBUTING.md": "2f2f37e30908550486e94d4968f1073e600d770d0a088d879a5d53a2bc1347f3",
+        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
+      },
+      "migration": "",
+      "no_impact": "",
+      "note": "Explain deterministic checks, source-bound receipts, full PR and release ranges, meaningful failure fixtures, and the limits of static documentation validation.",
+      "source_sha256": "a61d259ca0bbb7be01dd8eec233a6cba69e8ef7484e0a4e2d0c8940ad584b671"
+    },
+    "native-packaging": {
+      "breaking": "none",
+      "docs": {
+        "CONTRIBUTING.md": "2f2f37e30908550486e94d4968f1073e600d770d0a088d879a5d53a2bc1347f3",
+        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75",
+        "docs/RELEASES.md": "f620346ee53d8fff96e8465fe26c27a44e3830827c7dd321db0bc118e888077d"
+      },
+      "migration": "",
+      "no_impact": "",
+      "note": "Require the offline documentation gate before packaging the checked source; record published platform downloads separately from development capabilities.",
+      "source_sha256": "f9f113deebe5b8ffea97d45d21df9f16cef1b8863ccce97b1a0c5c84b82aeb61"
+    },
+    "project-format": {
+      "breaking": "none",
+      "docs": {
+        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
+        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
+      },
+      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
+      "no_impact": "",
+      "note": "Document bounded foreign DOCX expansion and unchanged manuscript schema, and require source-bound review for project-format changes.",
+      "source_sha256": "633eb04cbb992be4f186db0ed49f4ba7929e26aa0029d3512d17e3861292a724"
+    },
+    "schema": {
+      "breaking": "none",
+      "docs": {
+        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
+        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
+      },
+      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
+      "no_impact": "",
+      "note": "Document current SQLite schema 17 and profile migration compatibility, backup, upgrade, and rollback limits; introduce conservative migration review obligations.",
+      "source_sha256": "62d95aba766994ebe98af65fd148d822bf59daffd49ad561db365ed0b52c59c4"
+    }
+  },
+  "version": 1
+}

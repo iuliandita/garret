@@ -47,6 +47,19 @@ jobs:
         with:
           python-version: '3.13.15'
       - run: python3 scripts/test-release.py
+      - name: Documentation release gate
+        env:
+          DOCS_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python3 scripts/test-docs.py
+          python3 scripts/test-docs-facts.py
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            sh scripts/check-docs --release
+          elif [ -n "$DOCS_BASE" ]; then
+            sh scripts/check-docs --base "$DOCS_BASE"
+          else
+            sh scripts/check-docs
+          fi
       - name: Check source version
         id: version
         run: |

@@ -11,6 +11,13 @@ are kept in the repository. Samples are not bundled into installable builds.
 Desktop captures use the Linux app; Android captures use the Android app
 in an emulator.
 
+The gallery shows the published [0.0.2 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.2),
+captured on October 9, 2026. Desktop images use the downloaded Linux package;
+Android images use the downloaded APK. The [provenance manifest](manifest.json)
+records each original image's hash, application version, and source revision.
+The images illustrate the interface; they do not certify every platform or
+prove that backup, restore, or upgrade operations succeed.
+
 [Back to the project README](../../README.md)
 
 ## Desktop
@@ -83,7 +90,7 @@ Follow the cast across scenes.
 
 ### Timeline
 
-Linked scene events arranged across character and story tracks.
+Linked scene events arranged along a story track.
 
 ![Timeline](timeline.png)
 

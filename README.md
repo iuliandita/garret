@@ -16,6 +16,10 @@ or an internet connection to write. Your books stay on your own disk.
 
 > **Early alpha.** garret moves fast; keep backups of your work.
 
+The current published build is [0.0.2 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.2).
+See [published and development changes](docs/RELEASES.md) and the
+[compatibility and rollback guide](docs/COMPATIBILITY.md).
+
 ![garret writing view](docs/screenshots/editor-light.png)
 
 [Website](https://usegarret.com) | [Full screenshot gallery](docs/screenshots/README.md) | [Sample books](app/fixtures/classics/README.md)

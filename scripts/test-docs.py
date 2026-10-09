@@ -27,7 +27,7 @@ class DocsTests(unittest.TestCase):
             self.write(path, "Initial documentation.\n")
         self.write("app/ui/src/editor.ts", "export const editor = 1;\n")
         self.write(HOST + "store/mod.rs", "const SCHEMA_VERSION: u32 = 17;\nfn query() { select(); }\n")
-        self.write(HOST + "data_migration.rs", "fn migrate_profile() { old(); }\n")
+        self.write(HOST + "data_migration.rs", 'const LEGACY_DIR: &str = "old";\nfn prepare_copy() { old(); }\n')
         self.write(HOST + "package_format.rs", "const VERSION: u16 = 20;\n")
         self.commit("initial")
         self.cli("--init", "--note", "Explicit source baseline only; documentation correctness remains independently reviewed.")
@@ -173,7 +173,7 @@ class DocsTests(unittest.TestCase):
         self.cli("--base", "data-base", "--accept", "schema", "--no-impact", NOTE, ok=False, contains="no-impact is unavailable")
 
     def test_profile_migration_body_cannot_use_waiver(self):
-        self.write(HOST + "data_migration.rs", "fn migrate_profile() { new_location(); }\n")
+        self.write(HOST + "data_migration.rs", 'const LEGACY_DIR: &str = "new";\nfn prepare_copy() { new_location(); }\n')
         self.cli("--base", "base", "--accept", "backup-recovery", "--no-impact", NOTE, ok=False, contains="no-impact is unavailable")
         self.write("docs/COMPATIBILITY.md", "Back up the old profile before migration; restore it for rollback.\n")
         self.cli("--base", "base", "--accept", "schema", "--docs", "docs/COMPATIBILITY.md", "--note", NOTE, "--migration", "Migration is safe and should succeed for everyone.", ok=False, contains="compatibility")
@@ -273,6 +273,45 @@ class DocsTests(unittest.TestCase):
         self.git("checkout", "-q", "base")
         self.cli("--release-base", "unreachable-release", ok=False, contains="must be an ancestor of HEAD")
         self.cli("--release-base", "base")
+
+    def test_upstream_migrations_are_not_new_pr_obligations(self):
+        self.git("branch", "feature", "base")
+        self.write("upstream.txt", "Earlier upstream change.\n")
+        self.commit("earlier upstream change")
+        self.git("tag", "early-upstream")
+        self.git("checkout", "-q", "feature")
+        self.write("unmapped.txt", "Unrelated feature change.\n")
+        self.commit("unrelated feature")
+        self.git("merge", "--no-ff", "-qm", "earlier upstream merge", "early-upstream")
+        self.git("checkout", "-qb", "upstream", "early-upstream")
+        self.write(HOST + "store/mod.rs", "const SCHEMA_VERSION: u32 = 18;\n")
+        self.write("docs/COMPATIBILITY.md", MIGRATION)
+        for domain in ("schema", "project-format"):
+            self.accept(domain, "docs/COMPATIBILITY.md", migration=MIGRATION)
+        self.accept("maintenance")
+        self.commit("document upstream migration")
+        self.git("tag", "updated-base")
+        self.git("checkout", "-q", "feature")
+        self.git("branch", "unmerged-feature")
+        self.git("merge", "--no-ff", "-qm", "merge upstream into feature", "updated-base")
+        self.cli("--base", "updated-base")
+        self.git("checkout", "-qb", "synthetic", "updated-base")
+        self.git("merge", "--no-ff", "-qm", "synthetic PR checkout", "unmerged-feature")
+        self.cli("--base", "updated-base")
+
+    def test_reverted_merge_resolution_migration_is_retained(self):
+        self.git("checkout", "-qb", "left", "base")
+        self.write(HOST + "store/mod.rs", "const SCHEMA_VERSION: u32 = 17;\nfn query() { left(); }\n")
+        self.commit("left query")
+        self.git("checkout", "-qb", "right", "base")
+        self.write(HOST + "store/mod.rs", "const SCHEMA_VERSION: u32 = 17;\nfn query() { right(); }\n")
+        self.commit("right query")
+        self.git("merge", "--no-ff", "--no-commit", "left", expected=1)
+        self.write(HOST + "store/mod.rs", "const SCHEMA_VERSION: u32 = 18;\nfn query() { resolved(); }\n")
+        self.commit("merge introduces migration")
+        self.write(HOST + "store/mod.rs", "const SCHEMA_VERSION: u32 = 17;\nfn query() { resolved(); }\n")
+        self.commit("revert migration marker")
+        self.cli("--release-base", "base", "--accept", "schema", "--no-impact", NOTE, ok=False, contains="no-impact is unavailable")
 
     def test_missing_git_base_and_shallow_history_fail_clearly(self):
         outside = Path(self.temp.name) / "outside"

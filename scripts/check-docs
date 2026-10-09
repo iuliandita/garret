@@ -1,0 +1,26 @@
+#!/bin/sh
+set -eu
+command -v python3 >/dev/null 2>&1 || { echo 'Documentation checks require Python 3.11 or newer.' >&2; exit 1; }
+command -v git >/dev/null 2>&1 || { echo 'Documentation checks require Git and complete repository history.' >&2; exit 1; }
+python3 -c 'import sys; sys.version_info >= (3, 11) or sys.exit("Documentation checks require Python 3.11 or newer.")'
+repo=$(git rev-parse --show-toplevel)
+cd "$repo"
+python3 scripts/release.py check
+python3 scripts/check-docs-facts.py
+if [ "${1:-}" = --release ]; then
+  shift
+  previous=$(python3 - <<'PY'
+import re, subprocess
+version = subprocess.check_output(['python3', 'scripts/release.py', 'check'], text=True).strip()
+tags = subprocess.check_output(['git', 'tag', '--merged', 'HEAD'], text=True).splitlines()
+current = tuple(map(int, version.split('.')))
+earlier = [(tuple(map(int, tag[1:].split('.'))), tag) for tag in tags
+           if re.fullmatch(r'v0\.\d+\.\d+', tag) and tuple(map(int, tag[1:].split('.'))) < current]
+if not earlier:
+    raise SystemExit('Release documentation checks need the previous reachable alpha tag and full history.')
+print(max(earlier)[1])
+PY
+  )
+  exec python3 scripts/check-docs.py --release-base "$previous" "$@"
+fi
+exec python3 scripts/check-docs.py "$@"
