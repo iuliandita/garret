@@ -51,18 +51,19 @@
       },
       "migration": "",
       "no_impact": "",
-      "note": "Explain deterministic checks, source-bound receipts, full PR and release ranges, meaningful failure fixtures, and the limits of static documentation validation. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged.",
-      "source_sha256": "a61d259ca0bbb7be01dd8eec233a6cba69e8ef7484e0a4e2d0c8940ad584b671"
+      "note": "Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged.",
+      "source_sha256": "f38f6d6a0678d7ffd0a4bf023ae6f9aac685727c2507728ae4188fac8b518e9b"
     },
     "native-packaging": {
       "breaking": "none",
       "docs": {
-        "CONTRIBUTING.md": "272888b63e282071b5f8c40e627910c1064d4fe6d422f5967dab9dd6fa456d11"
+        "CONTRIBUTING.md": "272888b63e282071b5f8c40e627910c1064d4fe6d422f5967dab9dd6fa456d11",
+        "docs/RELEASES.md": "a89c23cedc46f620969337f6a3957ddceb589017a562d600bed0bb1da86ac48d"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Require the offline documentation gate before packaging the checked source; record published platform downloads separately from development capabilities. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged.",
-      "source_sha256": "f9f113deebe5b8ffea97d45d21df9f16cef1b8863ccce97b1a0c5c84b82aeb61"
+      "note": "Require the latest exact-commit develop push CI run to succeed before alpha tag packaging; an older success cannot hide a pending or failed newer run. Existing platforms, asset publication, tag ancestry, application behavior, and compatibility remain unchanged.",
+      "source_sha256": "2f6c313459ffcf4cacba835bae2f161f2fa7a56e95c5a4614e855eacb9ef9f8e"
     },
     "project-format": {
       "breaking": "none",
