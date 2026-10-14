@@ -1,0 +1,52 @@
+name: Bug report
+description: A failure in garret
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use a sample book, not your only copy of real writing. Remove private manuscript content, personal paths, credentials, and recovery keys from attachments, logs, and screenshots. Report security problems privately through [SECURITY.md](https://github.com/iuliandita/garret/blob/develop/SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: garret version
+      description: Include the release version or source commit for a development build.
+      placeholder: "e.g. 0.0.2 alpha"
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Operating system and version
+      description: Include the device architecture and package type if relevant.
+      placeholder: "e.g. Windows 11 x86_64, portable package"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Describe the starting book state and the actions that trigger the failure.
+      placeholder: |
+        1. Open a sample book ...
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include the exact warning or error, with personal information removed.
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: Minimal sample book, logs, or screenshots
+      description: Optional. Share only the smallest sample you are allowed to publish. Remove private writing, personal paths, credentials, and recovery keys. For import or export failures, include the format and steps used.

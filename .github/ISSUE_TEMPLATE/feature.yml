@@ -1,0 +1,25 @@
+name: Feature request
+description: A writing workflow garret could support
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or workflow
+      description: What are you trying to do, and where does the current workflow get in the way? Remove private writing and personal information.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the outcome you need and any workaround you use now.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: How would you know it works?
+      description: Give a concrete example of completing the workflow, including the platform or file format if relevant.
+    validations:
+      required: true

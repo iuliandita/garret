@@ -32,7 +32,10 @@ Follow the [alpha release procedure](../CONTRIBUTING.md#alpha-testing-releases).
 Review the complete range since the previous reachable release tag, including
 earlier migrations superseded by later refactors. Check compatibility, backup,
 upgrade, and rollback guidance across that whole range. Publish the same
-integrated source commit that passed the required CI and release gate.
+integrated source commit that passed the required CI and release gate. The
+latest CI push run for that exact commit on `develop` must succeed before
+a tag can build release packages. A newer pending, running, or failed run
+blocks publication even when an older run succeeded.
 
 The deterministic checks are offline. They validate recorded tags, versions,
 commands, links, hashes, and review obligations. They do not contact the

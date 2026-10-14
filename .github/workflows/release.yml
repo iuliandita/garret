@@ -75,9 +75,9 @@ jobs:
           python3 scripts/release.py check --tag "$TAG"
           test "$(git cat-file -t "refs/tags/$TAG")" = tag
           git merge-base --is-ancestor "$GITHUB_SHA" origin/develop
-          passed=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&status=success" \
-            --jq '[.workflow_runs[] | select(.event == "push" and .head_branch == "develop")] | length')
-          test "$passed" -gt 0 || { echo 'The tagged develop commit needs passing CI first.' >&2; exit 1; }
+          latest=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&per_page=100" \
+            --jq '[.workflow_runs[] | select(.event == "push" and .head_branch == "develop")] | max_by(.id) | .conclusion')
+          test "$latest" = success || { echo 'The latest CI push run for the tagged develop commit must pass first.' >&2; exit 1; }
 
   desktop:
     needs: prepare

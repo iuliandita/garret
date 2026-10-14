@@ -24,6 +24,8 @@ See [published and development changes](docs/RELEASES.md) and the
 
 [Website](https://usegarret.com) | [Full screenshot gallery](docs/screenshots/README.md) | [Sample books](app/fixtures/classics/README.md)
 
+[Recovery and compatibility](docs/COMPATIBILITY.md) | [Contributing](CONTRIBUTING.md) | [Security](SECURITY.md) | [Help](https://github.com/iuliandita/garret/issues/new?labels=question)
+
 ## Write, plan, and revise
 
 Write in a calm editor with formatting, book-wide search, undo/redo, and
@@ -165,7 +167,11 @@ backup folder also works while keeping the retained files. Another filename in
 the same folder does not help. Changing the backup folder cannot bypass retained
 application-private files.
 
-## Support garret
+## Help
+
+For setup or recovery questions, [open a question issue](https://github.com/iuliandita/garret/issues/new?labels=question). Include the app version, operating system, and the warning or steps involved. Remove personal paths and manuscript content before posting. Use the [bug report form](https://github.com/iuliandita/garret/issues/new?template=bug.yml) for failures and the [private reporting process](SECURITY.md) for security problems.
+
+## Support development
 
 If you would like to support development, you can
 [leave a tip on Ko-fi](https://ko-fi.com/Q3O027XM2F). It is entirely optional;
@@ -176,3 +182,5 @@ every feature remains free.
 garret is free software under the GNU General Public License, version 3 or
 later; see [COPYING](COPYING). Third-party notices are in
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+Made by [Iulian Dita](https://iuliandita.com). [Other projects](https://iuliandita.com/projects/).
