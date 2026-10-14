@@ -3,6 +3,10 @@
 garret is an early alpha. Issues and small, focused pull requests are welcome.
 For anything larger, open an issue first so we can agree on the shape.
 
+Use the [bug report form](https://github.com/iuliandita/garret/issues/new?template=bug.yml) for failures and the [feature form](https://github.com/iuliandita/garret/issues/new?template=feature.yml) for workflow changes. For assistance, [open a question issue](https://github.com/iuliandita/garret/issues/new?labels=question). Report vulnerabilities through [SECURITY.md](SECURITY.md), privately.
+
+Share only a minimal sample book you are allowed to publish. Remove private writing, personal paths, credentials, and recovery keys from samples, logs, and screenshots.
+
 ## Dev setup
 
 Linux is the development platform. You need [Bun](https://bun.sh) 1.4 or newer,
@@ -73,7 +77,8 @@ The Website workflow builds it on pull requests and deploys changes from
   `app/ui/src/i18n/`; change both.
 - Nothing that identifies a person or a machine goes into tracked files:
   no home paths, hostnames or private manuscripts in fixtures or results.
-  Public-domain sample texts retain their source credits and licenses.
+  Public-domain sample texts retain their source credits and licenses; see
+  [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 ## Submitting a PR
 
