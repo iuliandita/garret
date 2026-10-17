@@ -163,7 +163,7 @@ impl<R: Runtime> Bridge<R> {
                     .run_mobile_plugin_async(command, payload)
                     .await
                     .map_err(|error| match error {
-                        tauri::plugin::PluginInvokeError::InvokeRejected(reply)
+                        tauri::plugin::mobile::PluginInvokeError::InvokeRejected(reply)
                             if matches!(
                                 reply.code.as_deref(),
                                 Some("transfer_too_large" | "transfer_storage")
