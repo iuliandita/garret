@@ -1,19 +1,22 @@
 # Published and development builds
 
-The current published release is [0.0.3 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.3).
+The current published release is [0.0.4 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.4).
 Its source and platform inventory are recorded in [releases.json](releases.json).
 That record is an explicit observation of published state, not an automatic
 claim that the current develop commit has shipped. Update it only after the
 release and complete downloads are public and verified.
 
-The release adds project presets for short fiction and nonfiction, chapter
-opener positions, sinks and ornaments, a References back-matter page, and a
-resizable preview rail with device frames. Desktop builds use the identifier
-`com.usegarret.app` and ship Windows `-setup.exe`, Linux `.deb`, `.rpm` and
-`.AppImage`, and macOS `.dmg` installers beside the portable archives. Releases
-carry signed checksums and build attestations. Android adds book export and
-import archives, scene rename and move, search, goals, synopsis, Bible and cast
-lookup, comments, and a text size setting.
+The release adds in-project collections of short stories (story containers,
+per-story author and status, whole-collection and single-story export), books
+without chapters and short fiction and nonfiction on Android, and a lighter
+preview rail that mounts only nearby documents. It fixes replace-all with an
+empty replacement leaving scenes unreadable, and repairs affected scenes
+automatically. Saved documents are now checked more strictly against the
+supported format. The Android package is now `com.usegarret.app`, with the same
+signing certificate. It installs next to the old `cc.local.app` app, and books
+move by export and import once; see
+[the Android notes](../scripts/android/README.md). Desktop installers and signed
+checksums are as in 0.0.3.
 
 Linux and Windows x86_64, Android, and macOS Apple Silicon and Intel packages
 are published. Packaging success establishes a build and archive check, not new
@@ -22,8 +25,8 @@ not synchronize books automatically.
 
 ## Develop-only work
 
-Android support for books without chapters is on develop and not yet released.
-Future user-visible capabilities awaiting release belong here and in the
+Nothing user-visible is pending on develop. Future user-visible capabilities
+awaiting release belong here and in the
 separate `develop_only` list in releases.json.
 
 ## Preparing the next release
