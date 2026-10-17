@@ -734,7 +734,7 @@ fn markdown_conversion_stays_disabled_before_any_publication_or_import_writes() 
     let dest = fixture.root.path().join("refused.md");
     let before = fixture.store.documents().unwrap();
     assert!(export_as(&fixture.db, "Collected", &dest, crate::export::Format::Markdown,
-        &crate::identity::Vault::default(), crate::strings::Strings::english()).is_err());
+        &crate::identity::Vault::default(), crate::strings::Strings::english()).unwrap_err().contains("cannot be exported by this build"));
     assert!(!dest.exists()); assert!(!fixture.root.path().join("assets").exists());
     assert!(check_save_as(&fixture.db, "Collected", crate::export::Format::Markdown,
         &crate::identity::Vault::default(), crate::strings::Strings::english(), None).is_err());

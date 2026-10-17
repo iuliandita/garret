@@ -382,7 +382,7 @@ const ATOM_CSS: &str = "figure { margin: 1.5em 0; break-inside: avoid; }\n\
     figure img { display: block; width: 100%; max-width: 100%; height: auto; margin: auto; }\n\
     figure.half img { max-width: 50%; }\n\
     figure.page { page-break-before: always; break-before: page; page-break-after: always; break-after: page; }\n\
-    figcaption { text-align: center; }\n\
+    figcaption { margin-top: 0.4em; font-size: 0.9em; text-align: center; }\n\
     hr.scene-break { border: 0; text-align: center; margin: 1.5em 0; }\n\
     hr.scene-break::after { content: '* * *'; }\n\
     a.noteref { vertical-align: super; font-size: smaller; }\n";

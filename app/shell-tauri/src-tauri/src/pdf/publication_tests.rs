@@ -19,6 +19,33 @@ pub(crate) fn exif_document() -> String {
     document_with_original("Rotatedcaption: EXIF orientation six.", Some(bytes))
 }
 
+pub(crate) fn png_exif_document() -> String {
+    let mut bytes = Vec::new();
+    {
+        let mut encoder = png::Encoder::new(&mut bytes, 300, 200);
+        encoder.set_color(png::ColorType::Rgb);
+        encoder.set_depth(png::BitDepth::Eight);
+        let mut writer = encoder.write_header().unwrap();
+        writer.write_chunk(png::chunk::eXIf, b"II\x2a\0\x08\0\0\0\x01\0\x12\x01\x03\0\x01\0\0\0\x06\0\0\0\0\0\0\0").unwrap();
+        writer.write_image_data(&[35, 90, 125].repeat(300 * 200)).unwrap();
+    }
+    document_with_original("PNGcaption: PNG eXIf orientation six.", Some(bytes))
+}
+
+pub(crate) fn legacy_cover_document(bytes: &[u8], media_type: &'static str) -> String {
+    let rows = vec![("one".into(), "Chapter".into(), 0)];
+    let book = Book { publication: None, single_scene: false, name: "Legacy cover",
+        contents_title: "Contents", front: &[], chapters: &rows, back: &[] };
+    let bodies = HashMap::from([("one".into(), json!({"type":"doc","content":[
+        {"type":"paragraph","content":[{"type":"text","text":"Legacycoverprose: retained after a damaged cover."}]}
+    ]}).to_string())]);
+    proof_document(&Proof { book: &book, bodies: &bodies, language: "en",
+        design: &crate::design::default_design(), style: Default::default(),
+        openings: Default::default(), front_cover: Some(Cover { bytes: bytes.to_vec(),
+            media_type, fit: crate::covers::CoverFit::Contain }),
+        back_cover: None, markup_limit: None, pin: None })
+}
+
 fn document_with_original(caption: &str, original: Option<Vec<u8>>) -> String {
     let rows = vec![
         ("one".into(), "The crossing".into(), 0),
@@ -96,6 +123,22 @@ fn document_with_original(caption: &str, original: Option<Vec<u8>>) -> String {
         Asset::verified(&record, bytes.clone())
     })
     .unwrap();
+    if record.mime == "image/png" && record.orientation == 6 {
+        assert_eq!((width_px, height_px), (300, 200));
+        let docx = crate::docx::render_planned(&book, &bodies, "en", Some(&plan)).unwrap();
+        let entries = crate::epub::read_zip(&docx.bytes).unwrap();
+        assert!(entries.iter().any(|(name, data)| name.starts_with("word/media/") && data == &bytes));
+        let xml = &entries.iter().find(|(name, _)| name == "word/document.xml").unwrap().1;
+        assert!(String::from_utf8_lossy(xml).contains("<wp:extent cx=\"5943600\" cy=\"3962400\"/>"));
+        let epub = crate::epub::render(&crate::epub::Epub { book: &book, plan: Some(&plan),
+            notes_title: "Notes", bodies: &bodies, book_id: None, story_id: None,
+            language: "en", font: "serif", style: Default::default(),
+            openings: Default::default(), cover: None, modified: "2026-10-17T00:00:00Z", pin: None });
+        let entries = crate::epub::read_zip(&epub).unwrap();
+        assert!(entries.iter().any(|(name, data)| name.ends_with(".png") && data == &bytes));
+        let css = &entries.iter().find(|(name, _)| name == "OEBPS/style.css").unwrap().1;
+        assert!(String::from_utf8_lossy(css).contains("height: auto"));
+    }
     proof_document_planned(
         &Proof {
             book: &book,

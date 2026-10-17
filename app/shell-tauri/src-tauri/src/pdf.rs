@@ -628,9 +628,10 @@ pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), r#"
       if (block.tagName === "P") current.querySelector(".proof-runhead").textContent = running;
     }
     if (own !== null) {
-      // Its own leaf. A cover and a title page are not prose and share nothing
-      // with it: no folio, no running head, no measure.
-      if (textOf(current).childNodes.length) current = next();
+      var group = own === "interior" ? companions(block, textOf(current).lastElementChild) : [];
+      var previous = textOf(current);
+      if (previous.childNodes.length > group.length) current = next();
+      for (var g = 0; g < group.length; g++) textOf(current).appendChild(group[g]);
       current.setAttribute("data-kind", own);
       if (own !== "interior") current.querySelector(".proof-runhead").textContent = "";
       textOf(current).appendChild(block);
@@ -669,7 +670,7 @@ pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), r#"
     var image = probe.querySelector("img");
     image.style.display = "none";
     var caption = probe.querySelector("figcaption");
-    var captionHeight = caption.getBoundingClientRect().height;
+    var captionHeight = caption.getBoundingClientRect().height + parseFloat(getComputedStyle(caption).marginTop);
     var group = companions(block);
     var leadHeight = group.length && box.childNodes.length === group.length + 2 ?
       block.getBoundingClientRect().top - box.getBoundingClientRect().top : 0;
@@ -678,13 +679,13 @@ pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), r#"
     var width = box.clientWidth * (block.getAttribute("data-width") === "half" ? 0.5 : 1);
     var pixelsW = Number(block.getAttribute("data-pixels-width"));
     var pixelsH = Number(block.getAttribute("data-pixels-height"));
-    var orientation = Number(block.getAttribute("data-orientation"));
-    var rotated = orientation >= 5;
+    var target = block.querySelector("img");
+    var rotated = pixelsW !== pixelsH && target.naturalWidth === pixelsH && target.naturalHeight === pixelsW;
+    var orientation = rotated ? 6 : 1;
     var ratio = (rotated ? pixelsW : pixelsH) / (rotated ? pixelsH : pixelsW);
     var height = width * ratio;
     if (height > available) { height = available; width = height / ratio; }
     box.removeChild(probe);
-    var target = block.querySelector("img");
     target.style.width = width + "px";
     target.style.height = height + "px";
     var check = proofFigureDpi(pixelsW, pixelsH, orientation, width / 96, height / 96);
@@ -743,9 +744,9 @@ pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), r#"
   // over a scene heading over the scene's first paragraph is one unit, and so
   // is an ornament on either side of a title. Bounded, so a book of nothing
   // but headings cannot make every placement move an unbounded run.
-  function companions(block) {
+  function companions(block, previous) {
     var group = [];
-    var prev = block.previousElementSibling;
+    var prev = previous === undefined ? block.previousElementSibling : previous;
     while (prev !== null && group.length < 4 &&
         (/^H[1-6]$/.test(prev.tagName) || prev.classList.contains("ornament") || prev.classList.contains("story-byline"))) {
       group.unshift(prev);
@@ -957,7 +958,8 @@ pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), r#"
   var images = Array.from(flow.querySelectorAll("img"));
   if (images.length) {
     window.__proofReady = Promise.all(images.map(function(image) {
-      return image.decode();
+      var decoded = image.decode();
+      return image.closest("figure") ? decoded : decoded.catch(function() {});
     })).then(paginate).catch(function() {
       window.__proofError = "a proof image did not decode";
     });

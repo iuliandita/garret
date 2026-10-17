@@ -58,7 +58,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \
-            libjavascriptcoregtk-4.1-dev librsvg2-dev
+            libjavascriptcoregtk-4.1-dev librsvg2-dev poppler-utils
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: "1.4.2"
@@ -89,11 +89,11 @@ jobs:
             --skip salvage::tests::a_v8_file_recovers_its_cast_and_is_not_asked_about_appearances \
             --skip salvage::tests::a_v9_file_recovers_its_cast_and_is_not_asked_about_aliases
       # The proof paginator runs in a web view and needs a display, so it is
-      # ignored by default. Run only that test, under a virtual one.
+      # ignored by default. Run the paginator fixtures under a virtual one.
       - name: Install a virtual display
         run: sudo apt-get install -y --no-install-recommends xvfb
       - name: Proof paginator
-        timeout-minutes: 7
+        timeout-minutes: 8
         working-directory: app/shell-tauri/src-tauri
         env:
           GDK_BACKEND: x11
@@ -103,15 +103,17 @@ jobs:
           NO_AT_BRIDGE: "1"
         run: |
           # The outer bound also covers compilation and startup (#324).
-          if env -u WAYLAND_DISPLAY timeout --verbose --signal=TERM --kill-after=30s 300s \
-            xvfb-run -a cargo test --locked --bin garret -- \
-              --ignored --exact --test-threads=1 \
-              printer::tests::rich_paragraphs_keep_text_and_marks_and_oversized_headings_refuse; then
+          if env -u WAYLAND_DISPLAY timeout --verbose --signal=TERM --kill-after=30s 420s \
+            xvfb-run -a sh -c '
+              cargo test --locked --bin garret -- --ignored --exact --test-threads=1 \
+                printer::tests::rich_paragraphs_keep_text_and_marks_and_oversized_headings_refuse &&
+              cargo test --locked --bin garret -- --ignored --exact --test-threads=1 \
+                printer::tests::notes_figures_and_plates_decode_before_layout_and_print_intact'; then
             exit 0
           else
             status=$?
             if [ "$status" -eq 124 ] || [ "$status" -eq 137 ]; then
-              echo '::error::Proof paginator exceeded 300 seconds (30-second kill grace); see #324.'
+              echo '::error::Proof paginator exceeded 420 seconds (30-second kill grace); see #324.'
               ps -eo pid,ppid,stat,etime,wchan:32,comm
             fi
             exit "$status"

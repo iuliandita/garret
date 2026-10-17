@@ -6,16 +6,22 @@ Prepared PDF publication reuses the shared scoped publication plan for endnotes,
 figures, captions, and scene breaks. Notes follow their scope, never the bottom
 of a page. Full and half figures fit within the text column; page figures use a
 separate interior leaf with normal margins and a folio. Images preserve their
-oriented aspect ratio without crop or bleed. Images shrink to keep captions at
-the normal type size, and an unfit caption refuses the proof. Pagination waits
-for every image to decode and refuses failed decoding under the existing timeout.
+decoded aspect ratio without crop or bleed. Captions have 0.4em of space above
+and use 0.9em type in PDF and EPUB. Images shrink to retain that caption size,
+and an unfit caption refuses the proof. Pagination waits for image decoding;
+failed figure decoding refuses the proof under the existing timeout. Damaged
+legacy covers remain non-fatal. A heading group directly before an interior
+plate travels with it.
 Legacy prose rendering and existing proof fixtures retain their behavior.
 
 The paginator reports effective DPI for each figure from oriented pixels and its
 actual placed size. Below 300 DPI is a warning; below 200 DPI is also flagged.
 These advisories do not block publication. A 1200 by 1800 image is 300 DPI at
-4 by 6 inches, 200 DPI at 6 by 9, and 150 DPI at 8 by 12. EXIF rotation swaps the
-pixel axes before calculation. Preview reports include per-placement `figures`
+4 by 6 inches, 200 DPI at 6 by 9, and 150 DPI at 8 by 12. Decoded image dimensions
+determine whether pixel axes swap before calculation. WebKit applies JPEG EXIF
+rotation but retains raw PNG dimensions for PNG eXIf; the proof follows that
+displayed geometry. EPUB retains the original PNG and DOCX uses its raw drawing
+dimensions. Preview reports include per-placement `figures`
 with item and instance IDs, DPI, warning, and flag values. Authoring, publication
 of new nodes, and their activation interface remain disabled; SQLite stays at
 schema 17 and no migration runs. Native Linux output is exercised under a virtual

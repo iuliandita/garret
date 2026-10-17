@@ -593,10 +593,21 @@ mod tests {
         page_um: (i64, i64),
         watchdog: &TestWatchdog,
     ) -> Result<Printed, String> {
+        render_for_test_with_timeout(html, dest, page_um, watchdog, 15)
+    }
+
+    #[cfg(target_os = "linux")]
+    fn render_for_test_with_timeout(
+        html: &str,
+        dest: Option<&std::path::Path>,
+        page_um: (i64, i64),
+        watchdog: &TestWatchdog,
+        timeout_seconds: u32,
+    ) -> Result<Printed, String> {
         watchdog.phase("setting up WebKit render");
         let result = std::rc::Rc::new(std::cell::RefCell::new(None));
         let done = result.clone();
-        render_with_timeout(html, dest, page_um, 15, move |value| {
+        render_with_timeout(html, dest, page_um, timeout_seconds, move |value| {
             *done.borrow_mut() = Some(value);
             gtk::main_quit();
         });
@@ -890,6 +901,9 @@ mod tests {
               var caption = figure.querySelector('figcaption').getBoundingClientRect();
               var page = figure.closest('.proof-leaf');
               if (image.bottom > caption.top + 1 || caption.bottom > box.bottom + 1 || image.top < box.top - 1 || image.left < box.left - 1 || image.right > box.right + 1) throw new Error('figure containment failed');
+              var captionSize = parseFloat(getComputedStyle(figure.querySelector('figcaption')).fontSize);
+              var bodySize = parseFloat(getComputedStyle(figure).fontSize);
+              if (Math.abs(captionSize / bodySize - 0.9) > 0.01 || caption.top - image.bottom < captionSize * 0.39) throw new Error('caption size or spacing missing');
               geometry.push({id:figure.getAttribute('data-instance'), page:Number(page.getAttribute('data-folio')), kind:page.getAttribute('data-kind'), image:{x:image.left-box.left,y:image.top-box.top,width:image.width,height:image.height}, caption:{y:caption.top-box.top,height:caption.height}, column:{width:box.width,height:box.height}, decoded:decoded});
             });
             window.__proof.pages.push(JSON.stringify(geometry));
@@ -944,6 +958,16 @@ mod tests {
         let heading_figure = render_for_test(&heading_figure, None, page, &watchdog).unwrap();
         assert_eq!(heading_figure.report.leaves, 1, "the image must shrink below its heading");
         assert!(heading_figure.report.pages[0].contains("Fullcaption:"));
+        let plate_start = document.find("<figure class=\"proof-figure\" data-proof-leaf=\"interior\"").unwrap();
+        let plate_end = plate_start + document[plate_start..].find("</figure>").unwrap() + "</figure>".len();
+        for prose in ["", "<p>Beforeplateheading: preceding prose stays behind.</p>"] {
+            let heading_plate = format!("{}{prose}<h2>Platepart</h2><div class=\"ornament\">*</div><h3>Platesurvey</h3>{}{}", &document[..flow_start], &document[plate_start..plate_end], &document[flow_end..]);
+            let heading_plate = render_for_test(&heading_plate, None, page, &watchdog).unwrap();
+            assert_eq!(heading_plate.report.leaves, if prose.is_empty() { 1 } else { 2 });
+            let plate = heading_plate.report.pages.last().unwrap();
+            assert!(plate.contains("Platepart") && plate.contains("Platesurvey") && plate.contains("Platecaption:"));
+            assert!(!plate.contains("Beforeplateheading:"));
+        }
         let rotated = crate::pdf::publication_tests::exif_document();
         let rotated = rotated.replace("</body>", r#"<script>
           window.__proofReady.then(function() {
@@ -960,13 +984,46 @@ mod tests {
         let rotated = render_for_test(&rotated, None, page, &watchdog).unwrap();
         assert_eq!(rotated.report.figures.len(), 3);
         assert!(rotated.report.figures.iter().all(|figure| figure.warning && figure.flag));
+        let png = crate::pdf::publication_tests::png_exif_document();
+        let png = png.replace("</body>", r#"<script>
+          window.__proofReady.then(function() {
+            document.querySelectorAll('figure').forEach(function(figure) {
+              var image = figure.querySelector('img');
+              var box = image.getBoundingClientRect();
+              if (figure.getAttribute('data-orientation') !== '6' || image.naturalWidth !== 300 || image.naturalHeight !== 200) throw new Error('PNG eXIf fixture did not retain raw geometry');
+              if (Math.abs(box.width / box.height - 1.5) > 0.001) throw new Error('PNG eXIf distorted the proof');
+              var expected = Math.min(300 / (box.width / 96), 200 / (box.height / 96));
+              if (Math.abs(Number(figure.getAttribute('data-dpi')) - expected) > 0.01) throw new Error('PNG eXIf DPI does not match displayed pixels');
+            });
+          }).catch(function(error) { window.__proofError = error.message; });
+        </script></body>"#);
+        let png = render_for_test(&png, None, page, &watchdog).unwrap();
+        assert_eq!(png.report.figures.len(), 3);
+        for (bytes, mime) in [
+            (&include_bytes!("../fixtures/black-and-clear.png")[..40], "image/png"),
+            (&include_bytes!("../fixtures/two-halves.jpg")[..40], "image/jpeg"),
+        ] {
+            let legacy = crate::pdf::publication_tests::legacy_cover_document(bytes, mime).replace("</body>", r#"<script>
+              window.__proofReady.then(function() {
+                if (document.querySelector('.proof-plate img').naturalWidth !== 0) throw new Error('damaged cover fixture decoded');
+              }).catch(function(error) { window.__proofError = error.message; });
+            </script></body>"#);
+            let legacy = render_for_test(&legacy, Some(&dest), page, &watchdog).unwrap();
+            assert!(legacy.report.figures.is_empty());
+            assert!(legacy.report.pages[0].contains("data-kind=\"plate\""));
+            assert!(outside("pdftotext", &["-layout", dest.to_str().unwrap(), "-"]).contains("Legacycoverprose:"));
+            assert_eq!(crate::pdf::pdf_page_count(legacy.bytes.as_ref().unwrap()), Some(legacy.report.leaves));
+        }
         let refused = crate::pdf::publication_tests::document(&"Caption line\n".repeat(100));
         let error = match render_for_test(&refused, None, page, &watchdog) { Ok(_) => panic!("unfit caption printed"), Err(error) => error };
         assert_eq!(error, "proof layout failed: a proof figure caption exceeds the page");
-        let broken = document.replace("return image.decode();", "return Promise.reject(new Error('broken image'));");
+        let broken = document.replace("<script>function proofFigureDpi", "<script>HTMLImageElement.prototype.decode = function() { return Promise.reject(new Error('broken figure')); }; function proofFigureDpi");
         assert_ne!(broken, document);
         let error = match render_for_test(&broken, None, page, &watchdog) { Ok(_) => panic!("undecoded image printed"), Err(error) => error };
         assert_eq!(error, "proof layout failed: a proof image did not decode");
+        let stalled = document.replace("<script>function proofFigureDpi", "<script>HTMLImageElement.prototype.decode = function() { return new Promise(function() {}); }; function proofFigureDpi");
+        let error = match render_for_test_with_timeout(&stalled, None, page, &watchdog, 2) { Ok(_) => panic!("stalled decode printed"), Err(error) => error };
+        assert_eq!(error, "the proof did not finish within 2 seconds");
     }
 
     #[test]
