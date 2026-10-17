@@ -24,7 +24,7 @@ const DESIGN_VIEW: BookDesignView = {
   page_sizes: [{ name: "trade", width_um: 152_400, height_um: 228_600 }], presets: [],
 };
 const STYLE: ChapterStyleView = {
-  style: { glyph: null, new_page: false, caps_title: false, drop_cap: false },
+  style: { glyph: null, new_page: false, caps_title: false, drop_cap: false, ornament_above: false, sink: "none" },
   glyphs: [],
 };
 const XHTML = (body: string): string =>
