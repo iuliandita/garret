@@ -1531,3 +1531,18 @@ test("each matching field has an accessible target that forwards its exact locat
   rig.rows()[2]!.click();
   expect(rig.openedLocators()).toEqual([locators[2]]);
 });
+
+
+test("prose snippets omit the field label while note, caption and alt keep it", async () => {
+  const locators: FieldLocator[] = ["prose", "note", "caption", "alt"].map(field => ({
+    item_id: "s1", instance_id: field === "prose" ? null : field,
+    field: field as FieldLocator["field"], from: 1, to: 4,
+  }));
+  const rig = mount({ find: async () => results({ results: [hit({ locators })] }) });
+  rig.type("inn"); rig.runSearch(); await settle();
+  expect(rig.rows().map(row => row.querySelector(".find-snippet")?.textContent)).toEqual([
+    "she reached the inn at dusk", `${t("document.field.note")}: inn`,
+    `${t("document.field.caption")}: inn`, `${t("document.field.alt")}: inn`,
+  ]);
+  expect(rig.rows()[0]!.getAttribute("aria-label")).not.toContain(`${t("document.field.prose")}:`);
+});

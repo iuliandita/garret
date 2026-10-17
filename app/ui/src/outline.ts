@@ -16,7 +16,7 @@ import type { ProjectPreset } from "./project-preset";
 // contain - is the store and the page disagreeing about the shape of the
 // manuscript, and reporting it as "nothing to do" makes it invisible. Hence a
 // tagged plan rather than a nullable target.
-import { t } from "./i18n";
+import { CATALOGS, t } from "./i18n";
 import { bibleParentFor } from "./bible-rows";
 import {
   BACK_MATTER_TYPE,
@@ -137,6 +137,20 @@ export function readingOrderItems(
     ...groups.filter((_, index) => index === bible || index === trash),
   ];
   return order.flat();
+}
+
+export function isReferencesPage(items: readonly ProjectItem[], id: string | undefined): boolean {
+  const item = items.find(row => row.id === id);
+  if (item?.type !== "matter" || !Object.values(CATALOGS).some(catalog => catalog["item.matter.references"].toLowerCase() === item.title.trim().toLowerCase())) return false;
+  const back = items.find(row => row.parent_id === null && row.type === BACK_MATTER_TYPE);
+  let parent = item.parent_id;
+  const seen = new Set<string>();
+  while (parent !== null && !seen.has(parent)) {
+    if (parent === back?.id) return true;
+    seen.add(parent);
+    parent = items.find(row => row.id === parent)?.parent_id ?? null;
+  }
+  return false;
 }
 
 export type MovePlan =

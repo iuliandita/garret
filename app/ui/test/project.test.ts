@@ -960,6 +960,31 @@ describe("mountProject store path", () => {
     }
   });
 
+  test("References paragraphs use left alignment and a hanging indent only while that page is open", async () => {
+    shell();
+    const rows = [...walk(),
+      { ...walk()[0]!, id: "back", parent_id: null, type: "back", title: "Back matter", depth: 0 },
+      { ...walk()[0]!, id: "refs", parent_id: "back", type: "matter", title: "References", depth: 1 },
+    ];
+    const h = host({ walks: [rows] });
+    const mounted = await mountProject(deps({ invoke: h.invoke }));
+    try {
+      mounted.navigator.revealAndSelectById!("refs");
+      document.getElementById("nav")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      await settle();
+      expect(document.getElementById("editor")?.classList.contains("references-open")).toBe(true);
+      const css = readFileSync(join(import.meta.dir, "../style.css"), "utf8");
+      const rule = css.match(/#editor\.references-open \.ProseMirror p \{([^}]+)\}/)?.[1];
+      expect(rule).toContain("text-align: left");
+      expect(rule).toContain("padding-left: 1.5em");
+      expect(rule).toContain("text-indent: -1.5em");
+      mounted.navigator.revealAndSelectById!("scene-0");
+      document.getElementById("nav")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      await settle();
+      expect(document.getElementById("editor")?.classList.contains("references-open")).toBe(false);
+    } finally { mounted.destroy(); }
+  });
+
   test("the open scene's title is painted as the page's heading", async () => {
     shell();
     const h = host({ walks: [walk()] });

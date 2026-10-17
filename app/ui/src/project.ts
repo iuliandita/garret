@@ -32,6 +32,7 @@ import { parseTimeline } from "./timeline-model";
 import {
   createOutline,
   chapterItemsIn,
+  isReferencesPage,
   isTrashedIn,
   liveItemsIn,
   readingOrderItems,
@@ -616,6 +617,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     // is nowhere it could say the writer is.
     sceneNameEl.hidden = text === "";
     sceneHeadingEl.textContent = text;
+    editorEl.classList.toggle("references-open", isReferencesPage(latestItems, itemId));
   };
   const navigator = createNavigator({
     sidebarWordCounts: deps.sidebarWordCounts?.(),
@@ -3520,6 +3522,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       sceneNameTip.anchor.replaceWith(sceneNameEl);
       sceneNameTip.destroy();
       sceneHeadingEl.textContent = "";
+      editorEl.classList.remove("references-open");
       navigator.destroy();
       editor.destroy();
       mounted.flusher = null;

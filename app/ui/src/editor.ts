@@ -17,7 +17,7 @@ import { focusPlugin, typewriterScrollTop } from "./writing-modes";
 import { type CommentAnchor, commentsKey, commentsPlugin } from "./comments";
 import { type CastNamePair, CAST_MARK_CLASS, castMarksKey, castMarksPlugin } from "./cast-marks";
 import { isOneWord, wordAround, type WordRange } from "./word-at";
-import { spellRedrawKey, spellRedrawPlugin } from "./spell-redraw";
+import { numericSpellingPlugin, spellRedrawKey, spellRedrawPlugin } from "./spell-redraw";
 import { EditSourceTracker, type EditSourceChange } from "./edit-source";
 import { t } from "./i18n";
 import { validDocument, validDocumentShape } from "./document-format";
@@ -376,6 +376,7 @@ export function editorPlugins(): Plugin[] {
     // Draws nothing a reader can see; its decoration exists for one
     // transaction at a time. Last, so it is outside every real one.
     spellRedrawPlugin(),
+    numericSpellingPlugin(),
   ];
 }
 
