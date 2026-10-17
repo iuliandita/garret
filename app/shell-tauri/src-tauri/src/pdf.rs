@@ -652,30 +652,18 @@ pub const PAGINATOR_JS: &str = r#"
     throw new Error("a proof paragraph needs too many pages");
   }
 
-  // The blocks that must not be left at the foot of a leaf without the block
-  // they introduce: the heading before a block, the ornament either side of
-  // it, and an ornament above a heading that is itself being placed.
+  // The run of headings and ornaments directly before a block: none of them
+  // may be left at the foot of a leaf without what follows. A chapter heading
+  // over a scene heading over the scene's first paragraph is one unit, and so
+  // is an ornament on either side of a title. Bounded, so a book of nothing
+  // but headings cannot make every placement move an unbounded run.
   function companions(block) {
-    var heading = /^H[1-6]$/;
-    var prev = block.previousElementSibling;
     var group = [];
-    function ornament(node, above) {
-      return node !== null && node.classList.contains("ornament") &&
-        node.classList.contains("ornament-above") === above;
-    }
-    if (heading.test(block.tagName)) {
-      if (ornament(prev, true)) group.push(prev);
-      return group;
-    }
-    if (ornament(prev, false)) {
+    var prev = block.previousElementSibling;
+    while (prev !== null && group.length < 4 &&
+        (/^H[1-6]$/.test(prev.tagName) || prev.classList.contains("ornament"))) {
       group.unshift(prev);
       prev = prev.previousElementSibling;
-    }
-    if (prev !== null && heading.test(prev.tagName)) {
-      group.unshift(prev);
-      if (ornament(prev.previousElementSibling, true)) {
-        group.unshift(prev.previousElementSibling);
-      }
     }
     return group;
   }
@@ -1580,7 +1568,7 @@ mod tests {
         let flow = flow_of(&html);
         assert_eq!(flow.matches("data-proof-sink").count(), 1, "{flow}");
         assert!(
-            flow.contains("<p class=\"ornament ornament-above\" data-proof-sink=\"third\">\u{2767}</p>\n<h3 id=\"proof-chapter\""),
+            flow.contains("<p class=\"ornament ornament-above start\" data-proof-sink=\"third\">\u{2767}</p>\n<h3 id=\"proof-chapter\""),
             "{flow}"
         );
         assert!(html.contains(".ornament-above + h3"), "{html}");

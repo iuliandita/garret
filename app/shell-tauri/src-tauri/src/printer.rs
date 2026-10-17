@@ -687,6 +687,12 @@ mod tests {
         assert!(!above.report.pages[0].contains("ornament"), "{:?}", above.report.pages);
         let second = &above.report.pages[1];
         assert!(second.find("ornament").unwrap() < second.find("Head").unwrap());
+        let stacked = paginate(document(&format!(
+            "<p>a</p><p>b</p><p>c</p><h2>Part</h2><h3>Scene</h3><p>{long}</p>"
+        )))
+        .unwrap();
+        assert!(!stacked.report.pages[0].contains("Part"), "{:?}", stacked.report.pages);
+        assert!(stacked.report.pages[1].contains("Part"));
     }
 
     #[test]

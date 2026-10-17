@@ -683,6 +683,9 @@ interface Options {
    *  implies `previewStyled`. */
   previewGlyph: string | null;
   previewRow: string | null;
+  /** Retype the fixture's top-level parts as chapters, so chapter openers
+   *  have something to style. */
+  previewChapters: boolean;
   /** How far to scroll the preview before capturing, in wheel notches. */
   previewScroll: number;
   /** The same for the preferences panel's body. */
@@ -870,6 +873,7 @@ function parseArgs(argv: string[]): Options {
   let previewStyled = false;
   let previewGlyph: string | null = null;
   let previewRow: string | null = null;
+  let previewChapters = false;
   let previewScroll = 0;
   let prefsScroll = 0;
   let coversFull = false;
@@ -1128,6 +1132,11 @@ function parseArgs(argv: string[]): Options {
     // 044. THE SAME RAIL IN THE OTHER FORMAT, which is why these are two flags
     // on one mechanism rather than two capture routes: the menu item differs
     // and nothing else does.
+    if (flag === "--preview-chapters") {
+      previewChapters = true;
+      i += 1;
+      continue;
+    }
     if (flag === "--preview-glyph" || flag === "--preview-row") {
       const value = rest[i + 1];
       if (value === undefined) throw new Error(`${flag} needs a value`);
@@ -1568,6 +1577,7 @@ function parseArgs(argv: string[]): Options {
     previewStyled,
     previewGlyph,
     previewRow,
+    previewChapters,
     previewScroll,
     prefsScroll,
     coversFull,
@@ -2993,6 +3003,14 @@ if (options.warningHistory) {
 // to drive four presses to reach the state it is photographing would be
 // photographing the presses.
 if (options.previewStyled) plantChapterStyle(projectPath, options.previewGlyph, options.previewRow);
+if (options.previewChapters) {
+  const db = new Database(projectPath);
+  try {
+    db.query("UPDATE item SET type = 'chapter' WHERE type = 'part'").run();
+  } finally {
+    db.close();
+  }
+}
 // THE CAST FIRST AND THE TAGS SECOND, and the order is load-bearing rather than
 // tidy: an appearance names a cast member, and one planted before the member
 // exists is a row the store would have refused and the panel cannot draw.

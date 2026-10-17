@@ -1442,11 +1442,11 @@ mod tests {
             ..below.clone()
         });
         assert!(
-            doc.contains("<p class=\"ornament ornament-above\">\u{2767}</p>\n<h2 id=\"h1\">One</h2>"),
+            doc.contains("<p class=\"ornament ornament-above\">\u{2767}</p>\n<h2 id=\"h1\" class=\"book-body-heading\">One</h2>"),
             "{doc}"
         );
         // Only the chapter's division: the scene under it has no ornament.
-        assert_eq!(doc.matches(ORNAMENT_CLASS).count(), 1, "{doc}");
+        assert_eq!(doc.matches("<p class=\"ornament").count(), 1, "{doc}");
         assert!(css.contains(".ornament-above + h2"), "{css}");
 
         // Without an ornament the position has nothing to move.
@@ -1483,7 +1483,10 @@ mod tests {
             sink: Sink::Third,
             ..ChapterStyle::default()
         });
-        assert!(doc.contains("<h3 id=\"h2\" class=\"sink-third\">Chapter</h3>"), "{doc}");
+        assert!(
+            doc.contains("<h3 id=\"h2\" class=\"start sink-third book-body-heading\">Chapter</h3>"),
+            "{doc}"
+        );
         // The part and the scene are not chapter openings.
         assert_eq!(doc.matches("sink-third").count(), 1, "{doc}");
         assert!(css.contains(".sink-third { padding-top: 6em; }"), "{css}");
@@ -1493,7 +1496,7 @@ mod tests {
             sink: Sink::Half,
             ..ChapterStyle::default()
         });
-        assert!(doc.contains("class=\"sink-half\""), "{doc}");
+        assert!(doc.contains("class=\"start sink-half book-body-heading\""), "{doc}");
         assert!(css.contains(".sink-half { padding-top: 10em; }"), "{css}");
         assert!(!css.contains("sink-third"), "{css}");
 
