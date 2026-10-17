@@ -2,6 +2,33 @@
 
 SQLite schema: 17.
 
+DOCX import now refuses files containing footnotes, endnotes, or drawings before
+creating or registering a book. Previous builds dropped note references and
+reported their count; manuscripts with footnotes therefore no longer import
+with that loss. Keep the original DOCX, including its notes and pictures. Files
+containing only note separator records still import. No migration runs, and
+existing books remain unchanged. For rollback, retain the closed-book backup
+and use the previous package with a separate copy; importing there still drops
+notes. Removing notes or drawings in an external copy is an explicit lossy choice.
+
+Prepared DOCX publication uses the shared plan for native endnotes, scoped
+numbering, inline pictures, captions, alternative text, and scene breaks. Legacy
+DOCX bytes remain unchanged. New-node publication and conversion remain disabled
+in production. Scoped publications include section restart settings and native
+custom note marks so readers that ignore those settings still display the plan's
+numbers. Those custom labels are fixed at export; after editing notes, export
+again to derive their numbering. LibreOffice opens native notes with these
+labels but collects them at the document end rather than each section end.
+Microsoft Word placement and editing behavior still need native qualification.
+
+The prepared importer keeps Word footnotes and endnotes as independent owned
+plain-text notes with new IDs. It reports affected-note counts separately for
+flattened formatting, missing bodies (empty notes retained), and dropped note
+drawings. It does not preserve rich-note formatting. The interoperability fixture
+was written by LibreOffice, not Microsoft Word; native Word import qualification
+remains external. The CLI JSON loss object adds `note_formatting`,
+`missing_note_bodies`, and `note_drawings`; human-readable notices name each loss.
+
 Restoring a backup or transferring a book preserves legacy document bodies and
 history, including empty text runs. The copy is refused if a stored document or
 version contains the new node types, and the refusal names its item ID. History

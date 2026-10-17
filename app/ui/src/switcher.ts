@@ -83,6 +83,9 @@ export interface ImportLosses {
   tables: number;
   pictures: number;
   notes: number;
+  note_formatting: number;
+  missing_note_bodies: number;
+  note_drawings: number;
   comments: number;
   links: number;
   fields: number;
@@ -272,6 +275,9 @@ export function lossesNotice(losses: ImportLosses, derivedContents?: string | nu
     ["tables", "import.loss.tables"],
     ["pictures", "import.loss.pictures"],
     ["notes", "import.loss.notes"],
+    ["note_formatting", "import.loss.note_formatting"],
+    ["missing_note_bodies", "import.loss.missing_note_bodies"],
+    ["note_drawings", "import.loss.note_drawings"],
     ["comments", "import.loss.comments"],
     ["links", "import.loss.links"],
     ["fields", "import.loss.fields"],

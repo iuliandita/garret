@@ -634,8 +634,7 @@ fn format_import_parsers_keep_future_constructs_out_of_stored_documents() {
     let markdown = crate::import::parse("# Book\n\n## Scene\n\nProse[^note]\n\n[^note]: A note\n\n![Figure](image.png)\n\n---\n", "book");
     let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Prose</w:t><w:endnoteReference w:id="1"/><w:drawing/></w:r></w:p></w:body></w:document>"#;
     let bytes = crate::epub::zip(&[crate::epub::Entry::text("word/document.xml", xml)]);
-    let docx = crate::docx_import::parse(&bytes, "book").unwrap();
-    assert_eq!(docx.losses.notes, 1);
+    assert!(crate::docx_import::parse(&bytes, "book").unwrap_err().contains("conversion is disabled"));
     let dir = tempfile::tempdir().unwrap();
     let db = dir.path().join("damaged.db");
     let (store, ids) = setup(&db);
@@ -649,7 +648,7 @@ fn format_import_parsers_keep_future_constructs_out_of_stored_documents() {
     let recovered = std::fs::read_to_string(out.join(crate::salvage::MANUSCRIPT_NAME)).unwrap();
     assert!(recovered.contains("Salvaged prose"));
     let salvage = crate::import::parse(&recovered, "salvaged");
-    for imported in [markdown, docx.imported, salvage] {
+    for imported in [markdown, salvage] {
         let bodies: Vec<_> = imported.items.iter().filter_map(|item| item.body.as_deref()).collect();
         assert!(!bodies.is_empty());
         for body in bodies { validate_write(body).unwrap(); }

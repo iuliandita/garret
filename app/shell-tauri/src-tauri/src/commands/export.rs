@@ -494,7 +494,14 @@ fn render_scope_policy(
         // Word document is Letter/A4 by their own default and this only has
         // to be valid, so `docx::render` asks this function for nothing but
         // the book, the bodies and the language.
-        crate::export::Format::Docx => crate::docx::render(&book, &bodies, strings.tag()),
+        crate::export::Format::Docx => {
+            let plan = if has_new {
+                Some(crate::publication_plan::Plan::from_store(
+                    &book, &bodies, publication_scopes(&store)?, &store, path,
+                )?)
+            } else { None };
+            crate::docx::render_planned(&book, &bodies, strings.tag(), plan.as_ref())?
+        },
     };
     Ok((written, items.len() as u64, index.count().words, preflight))
 }

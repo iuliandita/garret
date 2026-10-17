@@ -8831,6 +8831,27 @@ mod tests {
     }
 
     #[test]
+    fn note_and_figure_docx_refusal_leaves_both_import_destinations_unchanged() {
+        for element in [r#"<w:footnoteReference w:id="1"/>"#, r#"<w:endnoteReference w:id="1"/>"#, "<w:drawing/>"] {
+            for picked in [false, true] {
+                let (dir, library, drop_dir) = import_fixture("Source remains");
+                let path = drop_dir.join("book.docx");
+                let xml = format!(r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Manuscript</w:t>{element}</w:r></w:p></w:body></w:document>"#);
+                let bytes = crate::epub::zip(&[crate::epub::Entry::text("word/document.xml", &xml)]);
+                std::fs::write(&path, &bytes).unwrap();
+                let settings = crate::projects::settings_path(dir.path());
+                let before = std::fs::read(&settings).ok();
+                let error = if picked { import_path(dir.path(), &library, &path) }
+                    else { import_named(dir.path(), &library, &drop_dir, "book.docx") }.unwrap_err();
+                assert!(error.contains("conversion is disabled"), "{error}");
+                assert_eq!(std::fs::read_dir(&library).unwrap().count(), 0);
+                assert_eq!(std::fs::read(&settings).ok(), before);
+                assert_eq!(std::fs::read(&path).unwrap(), bytes);
+            }
+        }
+    }
+
+    #[test]
     fn the_starter_project_is_named() {
         // Until this slice a first launch met a book called `default` -- the
         // window title, the project bar and the project list all said it,

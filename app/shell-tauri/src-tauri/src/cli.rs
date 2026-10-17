@@ -808,6 +808,9 @@ fn print_import(r: &ImportResult) {
         ("tables", r.losses.tables),
         ("pictures", r.losses.pictures),
         ("notes", r.losses.notes),
+        ("notes with flattened formatting", r.losses.note_formatting),
+        ("missing note bodies", r.losses.missing_note_bodies),
+        ("notes with dropped drawings", r.losses.note_drawings),
         ("comments", r.losses.comments),
         ("links", r.losses.links),
         ("fields", r.losses.fields),
@@ -3885,7 +3888,7 @@ mod tests {
         assert_eq!(keys_of(&r), vec!["items", "losses", "name", "path"]);
         assert_eq!(
             keys_of(&r.losses),
-            vec!["comments", "fields", "links", "lists", "notes", "pictures", "revisions", "tables"]
+            vec!["comments", "fields", "links", "lists", "missing_note_bodies", "note_drawings", "note_formatting", "notes", "pictures", "revisions", "tables"]
         );
     }
 

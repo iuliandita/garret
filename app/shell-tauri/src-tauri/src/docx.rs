@@ -25,6 +25,20 @@ use crate::epub::{xml_escape, zip, Entry};
 use crate::export::{heading_level, Book, Format, Manuscript};
 use std::collections::HashMap;
 
+mod publication;
+
+pub(crate) fn render_planned(
+    book: &Book,
+    bodies: &HashMap<String, String>,
+    lang: &str,
+    plan: Option<&crate::publication_plan::Plan>,
+) -> Result<Manuscript, String> {
+    match plan.filter(|plan| plan.has_new) {
+        Some(plan) => publication::render(book, bodies, lang, plan),
+        None => Ok(render(book, bodies, lang)),
+    }
+}
+
 /// `word/document.xml`'s namespace, restated here rather than assumed by every
 /// literal that opens a `<w:...>` element.
 const W_NS: &str = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
@@ -282,7 +296,7 @@ fn document_rels_xml() -> String {
 /// PAGE SIZE IS US LETTER AND MARGINS ARE 1IN, and that is not the book
 /// design's page (`design.rs`'s -- the PROOF's business): an editor's own
 /// Word document opens at their own default and this only has to be valid.
-fn document_xml(book: &Book, bodies: &HashMap<String, String>) -> String {
+fn publication_preamble(book: &Book) -> String {
     let mut body = styled_paragraph("Title", &heading_text(book.name));
     if let Some(author) = book.author() { body.push_str(&byline_paragraph(author)); }
     if book.publication.is_some_and(|publication| publication.contents.is_some()) && !book.single_scene {
@@ -295,6 +309,11 @@ fn document_xml(book: &Book, bodies: &HashMap<String, String>) -> String {
             body.push_str(page_break);
         }
     }
+    body
+}
+
+fn document_xml(book: &Book, bodies: &HashMap<String, String>) -> String {
+    let mut body = publication_preamble(book);
     for (run_index, run) in [book.front, book.chapters, book.back].into_iter().enumerate() {
         for (id, title, depth) in run {
             if !book.suppresses_heading(run_index, title) {
