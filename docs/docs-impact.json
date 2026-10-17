@@ -31,7 +31,7 @@
       "migration": "",
       "no_impact": "",
       "note": "Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. README now mentions the resizable preview rail with its optional device frame and refresh after a pause; device-local width preference only, no project format or compatibility change.",
-      "source_sha256": "abe61195cc8a620d52f269ccb0286fd75ae4c258b91773a25782241ff6252321"
+      "source_sha256": "151652731d9311f2452b886b1c7b912fd6ea27e3a957b13c81072a145d78d318"
     },
     "encryption": {
       "breaking": "none",
