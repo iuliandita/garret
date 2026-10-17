@@ -5,47 +5,34 @@ umask 077
 here=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 repo=$(cd -- "$here/.." && pwd)
 revision=$(git -C "$repo" rev-parse HEAD)
+source_date_epoch=$(git -C "$repo" log -1 --format=%ct)
 if [[ -n $(git -C "$repo" status --porcelain) ]]; then
   echo "commit or set aside working-tree changes before packaging" >&2
   exit 1
 fi
 
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/garret-android-build"
-keys="${ANDROID_SIGNING_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/garret/android-signing}"
-if [[ ${CI:-} == true && ${ANDROID_ALLOW_NEW_KEY:-0} != 1 ]]; then
-  [[ -s "$keys/preview.jks" && -s "$keys/password" ]] || {
-    echo "release signing key/password missing; refusing to generate a replacement" >&2
-    exit 1
-  }
-fi
 out="$repo/app/dist-android/$revision"
-mkdir -p "$cache/cargo" "$cache/builder" "$keys" "$out"
-chmod 700 "$keys"
-if [[ ! -f "$keys/password" ]]; then
-  [[ ! -e "$keys/preview.jks" ]] || { echo "signing password is missing" >&2; exit 1; }
-  python3 -c 'from pathlib import Path; import secrets, sys; Path(sys.argv[1]).write_text(secrets.token_hex(32))' "$keys/password"
-fi
-export APK_SIGNING_PASSWORD
-APK_SIGNING_PASSWORD=$(cat "$keys/password")
+mkdir -p "$cache/cargo" "$cache/builder" "$out"
+build_root=${ANDROID_BUILD_ROOT:-/src}
+[[ $build_root == /* && $build_root != / ]] || { echo 'ANDROID_BUILD_ROOT must be an absolute directory' >&2; exit 1; }
 
 cpus=$(getconf _NPROCESSORS_ONLN)
 if (( cpus > 8 )); then cpus=8; fi
 container=(docker run --rm --cpus "$cpus" --user "$(id -u):$(id -g)"
-  --mount "type=bind,src=$repo,dst=/src"
+  --mount "type=bind,src=$repo,dst=$build_root"
   --mount "type=bind,src=$cache/cargo,dst=/cargo"
   --mount "type=bind,src=$cache/builder,dst=/home/builder"
   --env HOME=/home/builder --env CARGO_HOME=/cargo --env "CARGO_BUILD_JOBS=$cpus"
+  --env "SOURCE_DATE_EPOCH=$source_date_epoch"
   --env "JAVA_TOOL_OPTIONS=-XX:ActiveProcessorCount=$cpus -Duser.home=/home/builder"
-  --workdir /src/app/shell-tauri)
+  --workdir "$build_root/app/shell-tauri")
 # Untracked local notes stay out of the build container.
 if [[ -d "$repo/docs/local" ]]; then
-  container+=(--mount "type=tmpfs,dst=/src/docs/local,tmpfs-mode=0700")
+  container+=(--mount "type=tmpfs,dst=$build_root/docs/local,tmpfs-mode=0700")
 fi
 
-(cd "$repo/app/mobile-ui" && bun run build)
-"${container[@]}" garret-android tauri android init --ci --skip-targets-install
-python3 "$here/android/prepare.py"
-"${container[@]}" garret-android nice -n 10 tauri android build --ci --apk --target aarch64 x86_64 -- --locked
+"${container[@]}" garret-android bash "$build_root/scripts/android/build-release"
 
 if [[ $(git -C "$repo" rev-parse HEAD) != "$revision" || -n $(git -C "$repo" status --porcelain) ]]; then
   echo "source changed during the build; refusing to label this package" >&2
@@ -64,6 +51,26 @@ print(apks[0])
 PY
 )
 cp "$unsigned" "$out/unsigned.apk"
+if [[ ${ANDROID_UNSIGNED:-0} == 1 ]]; then
+  printf 'Unsigned APK: %s\n' "$out/unsigned.apk"
+  exit 0
+fi
+keys="${ANDROID_SIGNING_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/garret/android-signing}"
+if [[ ${CI:-} == true && ${ANDROID_ALLOW_NEW_KEY:-0} != 1 ]]; then
+  [[ -s "$keys/preview.jks" && -s "$keys/password" ]] || {
+    echo "release signing key/password missing; refusing to generate a replacement" >&2
+    exit 1
+  }
+fi
+mkdir -p "$keys"
+chmod 700 "$keys"
+if [[ ! -f "$keys/password" ]]; then
+  [[ ! -e "$keys/preview.jks" ]] || { echo "signing password is missing" >&2; exit 1; }
+  python3 -c 'from pathlib import Path; import secrets, sys; Path(sys.argv[1]).write_text(secrets.token_hex(32))' "$keys/password"
+fi
+export APK_SIGNING_PASSWORD
+APK_SIGNING_PASSWORD=$(cat "$keys/password")
+# shellcheck disable=SC2016 # Variables expand inside the signing container.
 "${container[@]}" --mount "type=bind,src=$keys,dst=/signing" --env APK_SIGNING_PASSWORD garret-android sh -eu -c '
   if [ ! -f /signing/preview.jks ]; then
     keytool -genkeypair -keystore /signing/preview.jks \
@@ -77,7 +84,7 @@ cp "$unsigned" "$out/unsigned.apk"
     --out "$1/garret-android.apk" "$1/aligned.apk"
   "$tools/apksigner" verify --verbose "$1/garret-android.apk"
   "$tools/zipalign" -c -P 16 4 "$1/garret-android.apk"
-' sh "/src/app/dist-android/$revision"
+' sh "$build_root/app/dist-android/$revision"
 unset APK_SIGNING_PASSWORD
 {
   printf 'Source revision: %s\n' "$revision"
