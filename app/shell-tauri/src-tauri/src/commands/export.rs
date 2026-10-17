@@ -2825,7 +2825,7 @@ mod tests {
         let legacy = serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":[
             {"type":"text","text":"Bram Kell","marks":[{"type":"unknown"}]}
         ]}]}).to_string();
-        assert!(crate::store::document_fields::fields(&legacy).is_none());
+        assert_eq!(crate::store::document_fields::fields(&legacy).unwrap()[0].text, "Bram Kell");
         let bodies = std::collections::HashMap::from([("scene".into(), legacy)]);
         let report = super::checked(crate::export::Format::Markdown, "Book", &vault, Some(&pin), &[&item], &bodies, &[]);
         assert!(report.blockers > 0);
