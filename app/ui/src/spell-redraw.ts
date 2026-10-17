@@ -47,3 +47,53 @@ function decorationOver(doc: PmNode, from: number, to: number): DecorationSet {
   if (from < 0 || to > doc.content.size || from >= to) return DecorationSet.empty;
   return DecorationSet.create(doc, [Decoration.inline(from, to, { class: SPELL_REDRAW_CLASS })]);
 }
+
+function numericDecorations(doc: PmNode, from = 0, to = doc.content.size): Decoration[] {
+  const decorations: Decoration[] = [];
+  doc.nodesBetween(from, to, (node, pos) => {
+    if (!node.isTextblock) return true;
+    const text = node.textBetween(0, node.content.size, "\ufffc", "\ufffc");
+    for (const token of text.matchAll(/\S+/gu)) {
+      const bare = token[0].replace(/^\p{P}+|\p{P}+$/gu, "");
+      if (/^\p{Nd}+$/u.test(bare)) {
+        decorations.push(Decoration.inline(pos + 1 + token.index, pos + 1 + token.index + token[0].length, { spellcheck: "false" }));
+      }
+    }
+    return false;
+  });
+  return decorations;
+}
+
+/** Native spelling stays enabled on words; numeric tokens opt out in the DOM only. */
+export function numericSpellingPlugin(): Plugin<DecorationSet> {
+  const key = new PluginKey<DecorationSet>("numeric-spelling");
+  return new Plugin<DecorationSet>({
+    key,
+    state: {
+      init: (_, state) => DecorationSet.create(state.doc, numericDecorations(state.doc)),
+      apply(tr, previous) {
+        if (!tr.docChanged) return previous;
+        let next = previous.map(tr.mapping, tr.doc);
+        const blocks = new Map<number, PmNode>();
+        tr.mapping.maps.forEach((map, index) => {
+          map.forEach((_oldFrom, _oldTo, from, to) => {
+            const rest = tr.mapping.slice(index + 1);
+            const start = Math.max(0, rest.map(from, -1) - 1);
+            const end = Math.min(tr.doc.content.size, rest.map(to, 1) + 1);
+            tr.doc.nodesBetween(start, end, (node, pos) => {
+              if (!node.isTextblock) return true;
+              blocks.set(pos, node);
+              return false;
+            });
+          });
+        });
+        for (const [pos, node] of blocks) {
+          next = next.remove(next.find(pos, pos + node.nodeSize));
+          next = next.add(tr.doc, numericDecorations(tr.doc, pos, pos + node.nodeSize));
+        }
+        return next;
+      },
+    },
+    props: { decorations: state => key.getState(state) },
+  });
+}

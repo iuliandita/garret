@@ -318,7 +318,7 @@ export function createFindBar(deps: FindBarDeps): FindBar {
       const titleOnly = hit.snippet === "";
       const snippet = document.createElement("span");
       snippet.className = "find-snippet";
-      snippet.textContent = titleOnly ? hit.kind : [locator ? t(`document.field.${locator.field}`) : "", index ? shownQuery : hit.snippet].filter(Boolean).join(": ");
+      snippet.textContent = titleOnly ? hit.kind : [locator && locator.field !== "prose" ? t(`document.field.${locator.field}`) : "", index ? shownQuery : hit.snippet].filter(Boolean).join(": ");
 
       // The whole row's accessible name, because WebKitGTK prunes untyped
       // generic containers -- the two spans above are exactly that, and the

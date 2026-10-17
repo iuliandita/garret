@@ -62,3 +62,21 @@ describe("redrawSpelling", () => {
     e.destroy();
   });
 });
+
+
+test("numeric tokens opt out of native spelling in prose, including punctuation and edits", () => {
+  const mount = document.createElement("div");
+  const text = "In 2024. and (2023.), 42 １２３; 2024a wrng 12.34.";
+  const e = createEditor(mount, { kind: "blocks", blocks: [{ type: "paragraph", text }] }, { onChange: () => undefined });
+  const exempt = () => [...mount.querySelectorAll('[spellcheck="false"]')].map(node => node.textContent);
+  try {
+    expect(exempt()).toEqual(["2024.", "(2023.),", "42", "１２３;"]);
+    e.replaceAll("2024.", "2025.");
+    expect(exempt()).toEqual(["2025.", "(2023.),", "42", "１２３;"]);
+    e.replaceAll("2025.", "wrng");
+    expect(exempt()).toEqual(["(2023.),", "42", "１２３;"]);
+    expect(e.serialize()).not.toContain("spellcheck");
+    e.caretToParagraph(0); e.splitParagraph(); e.typeChar("2026.");
+    expect(exempt()).toContain("2026.");
+  } finally { e.destroy(); }
+});

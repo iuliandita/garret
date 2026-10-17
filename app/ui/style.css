@@ -5328,6 +5328,13 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   text-indent: 1.5em;
 }
 
+#editor.references-open .ProseMirror p {
+  text-align: left;
+  padding-left: 1.5em;
+  text-indent: -1.5em;
+  margin-bottom: 0.75em;
+}
+
 /* The selection under long text was left to the platform for a while; the
    calm-panels record now themes it per palette (::selection near the top): a
    translucent accent under the ink, whose contrast was checked per palette. */
