@@ -815,10 +815,12 @@ fn atom_documents_and_proposals_refuse_docx_handoff_and_return() {
         let mut affected = snapshot();
         let block = if inline { serde_json::json!({"type":"paragraph","content":[node.clone()]}) } else { node.clone() };
         affected.body = serde_json::json!({"type":"doc","content":[block]}).to_string();
+        assert!(manifest(&affected).unwrap_err().contains("review DOCX does not support"));
         assert!(export(&affected).unwrap_err().contains("review DOCX does not support"));
         assert!(inspect_return(&package.bytes, &affected).unwrap_err().contains("review DOCX does not support"));
         let hunk = ReviewHunk { from: if inline { 1 } else { 0 }, to: if inline { 1 } else { 0 }, before: vec![], after: vec![FragmentToken::Atom { node }] };
         let affected = proposal(&plain.body, hunk);
+        assert!(manifest(&affected).unwrap_err().contains("review DOCX does not support"));
         assert!(export(&affected).unwrap_err().contains("review DOCX does not support"));
         assert!(inspect_return(&package.bytes, &affected).unwrap_err().contains("review DOCX does not support"));
     }
