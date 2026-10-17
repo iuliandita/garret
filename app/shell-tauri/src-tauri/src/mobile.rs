@@ -619,10 +619,21 @@ fn complete_transfer(
     let Ok(mut session) = host.session.lock() else {
         return;
     };
-    let result = if matches!(&result, Err(code) if code == "transfer_restart") {
-        result
-    } else {
-        cleanup.and(result)
+    let result = match result {
+        Ok(None) => {
+            if cleanup.is_err() {
+                if let Some(job) = session
+                    .transfer
+                    .as_mut()
+                    .filter(|job| job.status.token == token)
+                {
+                    job.status.code = Some("transfer_cleanup".into());
+                }
+            }
+            Ok(None)
+        }
+        Err(code) if code == "transfer_restart" => Err(code),
+        result => cleanup.and(result),
     };
     settle(&mut session, token, result);
 }
@@ -790,8 +801,6 @@ async fn export_book(
     let digest = blocking(move || transfer::encrypt(&bundle, &encrypt_stage, &key_path)).await?;
     pick_write(app, token, Kind::Archive, digest).await?;
     phase(app, token, "preparing")?;
-    // Native replies and cancellation closers have drained before this cleanup.
-    fs::remove_dir_all(&stage).map_err(|_| "transfer_cleanup")?;
     Ok(None)
 }
 async fn import_book(
@@ -1111,6 +1120,54 @@ mod tests {
             complete_transfer(&host, &next.token, Err("transfer_cancelled".into()));
             finish_transfer(&host, &next.token).unwrap();
         }
+    }
+    #[test]
+    fn mobile_transfer_verified_export_stays_done_until_cleanup_can_be_retried() {
+        let root = tempfile::tempdir().unwrap();
+        let (host, id) = host(root.path());
+        let generation = open_book(&host, &id).unwrap().generation;
+        let original = fs::read(book_path(&host, &id).unwrap()).unwrap();
+        let status = start_transfer(&host, Direction::Export, generation).unwrap();
+        let stage = host.transfers.join(&status.token);
+        let destination = root.path().join("verified.age");
+        fs::write(&destination, b"verified encrypted archive").unwrap();
+        fs::remove_dir(&stage).unwrap();
+        fs::write(&stage, b"cleanup unavailable").unwrap();
+
+        complete_transfer(&host, &status.token, Ok(None));
+        {
+            let session = host.session.lock().unwrap();
+            let job = session.transfer.as_ref().unwrap();
+            assert_eq!(job.status.phase, "done");
+            assert_eq!(job.status.code.as_deref(), Some("transfer_cleanup"));
+            assert!(!job.running);
+        }
+        assert_eq!(
+            finish_transfer(&host, &status.token).unwrap_err(),
+            "transfer_cleanup"
+        );
+        assert_eq!(
+            host.session
+                .lock()
+                .unwrap()
+                .transfer
+                .as_ref()
+                .unwrap()
+                .status
+                .phase,
+            "done"
+        );
+        fs::remove_file(&stage).unwrap();
+        transfer::private_dir(&stage).unwrap();
+        fs::write(stage.join("archive.out"), b"verified encrypted archive").unwrap();
+        finish_transfer(&host, &status.token).unwrap();
+        assert!(!stage.exists());
+        assert!(host.session.lock().unwrap().transfer.is_none());
+        assert_eq!(
+            fs::read(destination).unwrap(),
+            b"verified encrypted archive"
+        );
+        assert_eq!(fs::read(book_path(&host, &id).unwrap()).unwrap(), original);
     }
     #[test]
     fn mobile_transfer_terminal_cleanup_retains_only_uncertain_ciphertext() {

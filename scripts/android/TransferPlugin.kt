@@ -99,8 +99,8 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
             }
         }
     }
-    private fun deleteCreated(s: Slot, uri: Uri?) {
-        if (s.mode != "create" || uri == null) return
+    private fun deleteCreated(mode: String, uri: Uri?) {
+        if (mode != "create" || uri == null) return
         try {
             closer.execute { try { DocumentsContract.deleteDocument(activity.contentResolver, uri) } catch (_: Exception) { } }
         } catch (_: Exception) { }
@@ -149,10 +149,13 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
         if (s.phase != "picker") return
         try {
             val original = invoke.getArgs().getString("operation")
-            if (original != s.operation) return
+            if (original != s.operation) {
+                if (result.resultCode == Activity.RESULT_OK) deleteCreated(invoke.getArgs().optString("mode"), result.data?.data)
+                return
+            }
             if (result.resultCode == Activity.RESULT_CANCELED || s.canceled.get()) {
                 synchronized(monitor) { if (slot === s) slot = null }
-                if (result.resultCode == Activity.RESULT_OK) deleteCreated(s, result.data?.data)
+                if (result.resultCode == Activity.RESULT_OK) deleteCreated(s.mode, result.data?.data)
                 s.picker.resolve(canceled(s))
                 return
             }
@@ -166,7 +169,7 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
             s.picker.resolve(JSObject().put("operation", s.operation).put("cancelled", false).put("ticket", s.ticket))
         } catch (_: Exception) {
             synchronized(monitor) { if (slot === s) slot = null }
-            if (result.resultCode == Activity.RESULT_OK) deleteCreated(s, result.data?.data)
+            if (result.resultCode == Activity.RESULT_OK) deleteCreated(s.mode, result.data?.data)
             s.picker.reject("saf_picker_failed")
         }
     }
@@ -291,7 +294,7 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
                     synchronized(monitor) {
                         if (!drained) { destroyed = true; failure = "transfer_restart"; result = null }
                         if (s.canceled.get() || destroyed) result = null
-                        if (result == null) deleteCreated(s, s.uri)
+                        if (result == null) deleteCreated(s.mode, s.uri)
                         if (drained) {
                             s.streams.clear(); s.uri = null
                             if (slot === s) slot = null
@@ -321,7 +324,7 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
                 if (canceledOperations.size > 128) canceledOperations.remove(canceledOperations.first())
                 slot?.takeIf { it.operation == operation }?.let { s ->
                     stop(s)
-                    if (s.phase == "ready") { deleteCreated(s, s.uri); slot = null }
+                    if (s.phase == "ready") { deleteCreated(s.mode, s.uri); slot = null }
                 }
             }
             reply.resolve(JSObject().put("operation", operation))
@@ -332,7 +335,7 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
             destroyed = true
             slot?.let { s ->
                 stop(s)
-                if (s.phase == "ready") deleteCreated(s, s.uri)
+                if (s.phase == "ready") deleteCreated(s.mode, s.uri)
                 if (s.phase == "picker") { s.picker.resolve(canceled(s)); slot = null }
             }
         }

@@ -84,8 +84,9 @@ transfer into a restart-required state; it cannot admit another operation.
 Finishing removes every import stage and any export stage that never reached
 a destination write. Failed exports delete recovery keys and plaintext
 snapshots as soon as the destination state is known. Only encrypted output
-and a small state marker survive an unverified provider write. Startup sweeps
-disposable stages and strips plaintext from uncertain export stages without
+and a small state marker survive an unverified provider write. A verified export
+stays successful if temporary cleanup fails; finishing retries that cleanup.
+Startup sweeps disposable stages and strips plaintext from uncertain export stages without
 touching books. The library's **Discard leftover transfer files** action deletes
 remaining transfer files, including uncertain ciphertext, without deleting books.
 Probe directories never count toward the 16-stage admission bound. Transfers
