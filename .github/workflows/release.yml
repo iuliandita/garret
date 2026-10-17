@@ -3,7 +3,7 @@ on:
   push:
     tags: ['v0.*']
   pull_request:
-    branches: [develop, codex/277-desktop-identifier]
+    branches: [develop, codex/277-desktop-identifier, codex/280-friendly-installers]
     paths:
       - .github/workflows/release.yml
       - scripts/package-*
@@ -225,6 +225,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -237,7 +239,7 @@ jobs:
           pattern: alpha-*
           path: app/dist-release/downloads
           merge-multiple: true
-      - name: Verify downloads and publish prerelease
+      - name: Verify downloads and write checksum manifest
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -247,10 +249,31 @@ jobs:
           python3 scripts/release.py check --tag "$TAG"
           git fetch origin "refs/tags/$TAG"
           test "$(git rev-parse 'FETCH_HEAD^{commit}')" = "$GITHUB_SHA"
-          python3 scripts/release.py verify-downloads
+          python3 scripts/release.py manifest
           cd app/dist-release/downloads
-          sha256sum -c ./*.sha256
-          cat ./*.sha256 > SHA256SUMS.txt
+          sha256sum -c SHA256SUMS
+      - name: Sign and verify checksum manifest
+        env:
+          RELEASE_GPG_PRIVATE_KEY: ${{ secrets.RELEASE_GPG_PRIVATE_KEY }}
+          RELEASE_GPG_PASSPHRASE: ${{ secrets.RELEASE_GPG_PASSPHRASE }}
+          ALLOW_UNSIGNED_RELEASE: ${{ vars.ALLOW_UNSIGNED_RELEASE }}
+        run: |
+          args=()
+          if [ "$ALLOW_UNSIGNED_RELEASE" = true ]; then args+=(--allow-unsigned); fi
+          python3 scripts/release.py sign-manifest "${args[@]}"
+      - name: Attest release downloads and signed manifest
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: app/dist-release/downloads/*
+      - name: Publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          ALLOW_UNSIGNED_RELEASE: ${{ vars.ALLOW_UNSIGNED_RELEASE }}
+        run: |
+          cd app/dist-release/downloads
           cat > release-notes.md <<'NOTES'
           Alpha testing build. Keep a backup of your work before trying a new version.
 
@@ -260,8 +283,18 @@ jobs:
           the Android info ZIP contains instructions and build details. The phone app has fewer
           features than the desktop app and does not sync books automatically.
 
-          See SHA256SUMS.txt for download checksums. Please report problems through GitHub Issues.
+          Verify SHA256SUMS.asc with the published GPG key, then run sha256sum -c SHA256SUMS.
+          See SECURITY.md for the signing key status and GitHub attestation verification.
+          Please report problems through GitHub Issues.
           NOTES
+          args=()
+          assets=(garret-* SHA256SUMS)
+          if [ "$ALLOW_UNSIGNED_RELEASE" = true ]; then args+=(--allow-unsigned); fi
+          if [ -f SHA256SUMS.asc ]; then
+            assets+=(SHA256SUMS.asc)
+          else
+            printf '\nWARNING: This release has no GPG manifest signature; unsigned publication was explicitly enabled.\n' >> release-notes.md
+          fi
           # A rerun may complete an interrupted draft, but never replaces a published release.
           releases=$(gh api "repos/$REPO/releases" --paginate --slurp)
           existing=$(printf '%s' "$releases" | jq -r --arg tag "$TAG" 'flatten | map(select(.tag_name == $tag)) | if length == 0 then "absent" else .[0].draft end')
@@ -272,7 +305,7 @@ jobs:
             echo 'This release is already public; use a new version instead of replacing downloads.' >&2
             exit 1
           fi
-          gh release view "$TAG" --repo "$REPO" --json assets | python3 ../../../scripts/release.py verify-remote-assets
-          gh release upload "$TAG" --repo "$REPO" --clobber garret-* SHA256SUMS.txt
-          gh release view "$TAG" --repo "$REPO" --json assets | python3 ../../../scripts/release.py verify-remote-assets --complete
+          gh release view "$TAG" --repo "$REPO" --json assets | python3 ../../../scripts/release.py verify-remote-assets "${args[@]}"
+          gh release upload "$TAG" --repo "$REPO" --clobber "${assets[@]}"
+          gh release view "$TAG" --repo "$REPO" --json assets | python3 ../../../scripts/release.py verify-remote-assets --complete "${args[@]}"
           gh release edit "$TAG" --repo "$REPO" --draft=false --prerelease --latest=false

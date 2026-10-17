@@ -25,7 +25,7 @@
     "editor": {
       "breaking": "none",
       "docs": {
-        "README.md": "6a1ac0ac867a513b5e8a6f05242cddb8fca258baa13a5df12c52954857d97d1d"
+        "README.md": "70d14a1c7c2f0b1b3c1f36ff7444d3e61560759415108fbd7ba93a09e712f533"
       },
       "migration": "",
       "no_impact": "",
@@ -46,24 +46,25 @@
       "breaking": "none",
       "docs": {
         "docs/COMPATIBILITY.md": "f77a6ec0d56387ca8dc31fda01c531fc6dda7b70301c5b97e05e8fd489d47051",
+        "docs/MAINTENANCE.md": "2c7ad6cacf04354cd8bc3b35d5c477b88ca952506b880d147f0c5374e662773c",
         "docs/RELEASES.md": "5fd30e30eb593e4fb54dda099696f595ec88a3c90ca65b545f1855b8abe32c44"
       },
       "migration": "Desktop identifier changes leave books, settings, and SQLite schema 17 unchanged. Windows retains its previous WebView2 profile; Android retains its package. macOS starts fresh regenerable caches and native window restore state, leaving old entries untouched. Keep the normal closed-book and profile backup before upgrade; rollback uses the previous package and preserved files.",
       "no_impact": "",
-      "note": "Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged. Document fresh macOS caches and native window state without a startup migration, stable books and settings, and retained Windows editor and proof WebView2 profiles. Installer formats preserve portable layouts and book data; installer identity, bundled resources, locked packaging tools and content validation are documented.",
-      "source_sha256": "2084d7b14006ed5be1cf727024c294adba371d185d3414c501619f03397992ea"
+      "note": "Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged. Document fresh macOS caches and native window state without a startup migration, stable books and settings, and retained Windows editor and proof WebView2 profiles. Installer formats preserve portable layouts and book data; installer identity, bundled resources, locked packaging tools and content validation are documented. Add signed release manifests, fail-closed signing with an explicit unsigned override, artifact attestations and public verification/signing policy; preserve tag eligibility and compatibility. Enable pull-request checks for the installer stack base.",
+      "source_sha256": "7107850ff0be33a03147f42fe93867da2e0e3d06d9e81051fddfb9b439c80b1e"
     },
     "native-packaging": {
       "breaking": "none",
       "docs": {
-        "README.md": "6a1ac0ac867a513b5e8a6f05242cddb8fca258baa13a5df12c52954857d97d1d",
+        "README.md": "70d14a1c7c2f0b1b3c1f36ff7444d3e61560759415108fbd7ba93a09e712f533",
         "docs/COMPATIBILITY.md": "f77a6ec0d56387ca8dc31fda01c531fc6dda7b70301c5b97e05e8fd489d47051",
         "docs/RELEASES.md": "5fd30e30eb593e4fb54dda099696f595ec88a3c90ca65b545f1855b8abe32c44"
       },
       "migration": "Desktop identifier changes leave books, settings, and SQLite schema 17 unchanged. Windows retains its previous WebView2 profile; Android retains its package. macOS starts fresh regenerable caches and native window restore state, leaving old entries untouched. Keep the normal closed-book and profile backup before upgrade; rollback uses the previous package and preserved files.",
       "no_impact": "",
-      "note": "Require the latest exact-commit develop push CI run to succeed before alpha tag packaging; an older success cannot hide a pending or failed newer run. Existing platforms, asset publication, tag ancestry, application behavior, and compatibility remain unchanged. Change the desktop identifier, explicitly preserve the Android package and Windows WebView2 profile, and derive macOS bundle identity from configuration. Installer formats preserve portable layouts and book data; installer identity, bundled resources, locked packaging tools and content validation are documented.",
-      "source_sha256": "304d5da9c2e150341a10f0623e1c42c95afed1dc7fc57a3bb5eb5fe26a07e59a"
+      "note": "Require the latest exact-commit develop push CI run to succeed before alpha tag packaging; an older success cannot hide a pending or failed newer run. Existing platforms, asset publication, tag ancestry, application behavior, and compatibility remain unchanged. Change the desktop identifier, explicitly preserve the Android package and Windows WebView2 profile, and derive macOS bundle identity from configuration. Installer formats preserve portable layouts and book data; installer identity, bundled resources, locked packaging tools and content validation are documented. Add signed release manifests, fail-closed signing with an explicit unsigned override, artifact attestations and public verification/signing policy; preserve tag eligibility and compatibility. Enable pull-request checks for the installer stack base.",
+      "source_sha256": "5d64c1ef4f6481672a2e614be87d2a0c8a45a9c889e0b9a65f8fa1d544b3a72a"
     },
     "project-format": {
       "breaking": "none",
