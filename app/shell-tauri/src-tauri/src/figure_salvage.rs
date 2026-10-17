@@ -2,18 +2,11 @@
 use crate::{
     figures, pictures,
     salvage::Loss,
-    store::{
-        document_format,
-        figure_assets::{self, FigureAsset},
-    },
+    store::figure_assets::{self, FigureAsset},
 };
 use serde_json::{json, Value};
 use std::io::Read;
-use std::{
-    collections::{BTreeMap, HashSet},
-    fs,
-    path::Path,
-};
+use std::{collections::BTreeMap, fs, path::Path};
 
 fn loss(losses: &mut Vec<Loss>, kind: &str, detail: String, item: Option<&str>) {
     losses.push(Loss {
@@ -23,30 +16,39 @@ fn loss(losses: &mut Vec<Loss>, kind: &str, detail: String, item: Option<&str>) 
     });
 }
 
-fn registry(conn: &rusqlite::Connection) -> Result<BTreeMap<String, FigureAsset>, String> {
-    figure_assets::read(conn)
-        .map(|assets| {
-            assets
-                .into_iter()
+pub(crate) fn registry(
+    conn: &rusqlite::Connection,
+    losses: &mut Vec<Loss>,
+) -> BTreeMap<String, FigureAsset> {
+    match figure_assets::read(conn) {
+        Ok(registry) => {
+            for error in registry.errors {
+                loss(losses, "unreadable_figure_registry", error, None);
+            }
+            registry
+                .assets
+                .into_values()
                 .map(|asset| (asset.id.clone(), asset))
                 .collect()
-        })
-        .map_err(|e| e.to_string())
+        }
+        Err(error) => {
+            loss(
+                losses,
+                "unreadable_figure_registry",
+                error.to_string(),
+                None,
+            );
+            BTreeMap::new()
+        }
+    }
 }
 
 pub(crate) fn recover(
-    conn: &rusqlite::Connection,
+    assets: &BTreeMap<String, FigureAsset>,
     source: &Path,
     out: &Path,
     losses: &mut Vec<Loss>,
 ) -> Result<(u64, u64, Option<String>), String> {
-    let assets = match registry(conn) {
-        Ok(assets) => assets,
-        Err(error) => {
-            loss(losses, "unreadable_figure_registry", error, None);
-            BTreeMap::new()
-        }
-    };
     let from = pictures::dir_for(source);
     let mut names: BTreeMap<String, Option<&FigureAsset>> = assets
         .values()
@@ -56,8 +58,31 @@ pub(crate) fn recover(
     // retains them too, explicitly marked as having no registry record.
     match fs::symlink_metadata(&from) {
         Ok(meta) if meta.is_dir() && !meta.file_type().is_symlink() => {
-            for entry in fs::read_dir(&from).map_err(|e| e.to_string())? {
-                let entry = entry.map_err(|e| e.to_string())?;
+            let entries = match fs::read_dir(&from) {
+                Ok(entries) => Some(entries),
+                Err(error) => {
+                    loss(
+                        losses,
+                        "unreadable_figure_directory",
+                        error.to_string(),
+                        None,
+                    );
+                    None
+                }
+            };
+            for entry in entries.into_iter().flatten() {
+                let entry = match entry {
+                    Ok(entry) => entry,
+                    Err(error) => {
+                        loss(
+                            losses,
+                            "unreadable_figure_directory",
+                            error.to_string(),
+                            None,
+                        );
+                        continue;
+                    }
+                };
                 if let Some(name) = entry
                     .file_name()
                     .to_str()
@@ -75,7 +100,7 @@ pub(crate) fn recover(
                 "figure directory is missing or unsafe".into(),
                 None,
             );
-            return write_registry(out, &assets, 0);
+            return write_registry(out, assets, 0);
         }
     }
     let into = out.join("pictures");
@@ -91,9 +116,6 @@ pub(crate) fn recover(
         }
         fs::create_dir_all(&into).map_err(|e| e.to_string())?;
         let result = (|| {
-            if let Some(asset) = asset {
-                figures::verify_original(&from.join(name), asset)?;
-            }
             let mut input = crate::backup_bundle::open_regular_with_limit(
                 &from.join(name),
                 pictures::MAX_PICTURE_BYTES,
@@ -114,7 +136,14 @@ pub(crate) fn recover(
             }
             output.sync_all().map_err(|e| e.to_string())?;
             if let Some(asset) = asset {
-                figures::verify_original(&into.join(name), asset)?;
+                if let Err(error) = figures::verify_original(&into.join(name), asset) {
+                    loss(
+                        losses,
+                        "corrupt_figure_original",
+                        format!("{error}; recorded SHA-256 {}", asset.sha256),
+                        None,
+                    );
+                }
             }
             Ok::<(), String>(())
         })();
@@ -123,12 +152,15 @@ pub(crate) fn recover(
             Err(error) => loss(
                 losses,
                 "missing_figure_original",
-                format!("{name}: {error}"),
+                asset.map_or_else(
+                    || format!("{name}: {error}"),
+                    |asset| format!("figure {}: {name}: {error}", asset.id),
+                ),
                 None,
             ),
         }
     }
-    write_registry(out, &assets, copied)
+    write_registry(out, assets, copied)
 }
 
 fn write_registry(
@@ -172,27 +204,17 @@ pub(crate) fn has_new_nodes(body: &str) -> bool {
 }
 
 pub(crate) fn document_markdown(
-    conn: &rusqlite::Connection,
+    assets: &BTreeMap<String, FigureAsset>,
     body: &str,
     id: &str,
     prefix: &str,
     strings: crate::strings::Strings,
     losses: &mut Vec<Loss>,
 ) -> Option<String> {
-    let normalized = crate::replace::normalize_legacy_text(body);
-    let mut root: Value = serde_json::from_str(&normalized).ok()?;
-    let assets = registry(conn).unwrap_or_default(); // recover() separately reports registry read failure.
-    let mut ids: HashSet<String> = assets.keys().cloned().collect();
-    // A readable placeholder can survive a missing mapping; its loss must be
-    // reported, while unknown node fields/encodings still preserve raw bytes.
-    for block in root.get("content")?.as_array()? {
-        if block["type"] == "figure" {
-            if let Some(id) = block["attrs"]["asset_id"].as_str() {
-                ids.insert(id.into());
-            }
-        }
+    if !has_new_nodes(body) {
+        return crate::export::document_markdown(body);
     }
-    document_format::validate(&root, true, &ids).ok()?;
+    let mut root: Value = serde_json::from_str(body).ok()?;
     let mut notes = Vec::new();
     let mut markdown = String::new();
     let mut flattened = false;
@@ -202,6 +224,9 @@ pub(crate) fn document_markdown(
                 if let Some(content) = block["content"].as_array_mut() {
                     for node in content {
                         if node["type"] == "endnote" {
+                            if node["attrs"]["fmt"] != "text" {
+                                return None;
+                            }
                             notes.push(node["attrs"]["body"].as_str()?.to_string());
                             *node = json!({"type":"text","text":format!("[{}]", notes.len())});
                             flattened = true;
@@ -233,7 +258,10 @@ pub(crate) fn document_markdown(
                     loss(
                         losses,
                         "missing_figure_original",
-                        format!("{asset_id}: figure has no registry mapping"),
+                        format!(
+                            "figure {}: asset {asset_id} has no registry mapping",
+                            attrs["id"].as_str()?
+                        ),
                         Some(id),
                     );
                 }

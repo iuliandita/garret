@@ -65,7 +65,14 @@ fn valid_asset(asset: &FigureAsset) -> bool {
         && (1..=8).contains(&asset.orientation)
 }
 
-pub(crate) fn read(conn: &Connection) -> Result<Vec<FigureAsset>> {
+#[derive(Default)]
+pub(crate) struct Registry {
+    pub present: bool,
+    pub assets: BTreeMap<String, FigureAsset>,
+    pub errors: Vec<String>,
+}
+
+pub(crate) fn read(conn: &Connection) -> Result<Registry> {
     let present: bool = conn.query_row(
         "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='figure_asset')",
         [],
@@ -74,32 +81,57 @@ pub(crate) fn read(conn: &Connection) -> Result<Vec<FigureAsset>> {
     if !present {
         let version: i64 = conn.pragma_query_value(None, "user_version", |r| r.get(0))?;
         if version >= SCHEMA_VERSION {
-            return Err(StoreError::Corrupt("figure registry is missing".into()));
+            return Err(StoreError::Corrupt(
+                "figure registry: table is missing".into(),
+            ));
         }
-        return Ok(Vec::new());
+        return Ok(Registry::default());
     }
+    let mut registry = Registry {
+        present: true,
+        ..Registry::default()
+    };
     let mut stmt = conn.prepare("SELECT id, stored_name, mime, bytes, sha256, width_px, height_px, orientation FROM figure_asset ORDER BY id")?;
-    let rows = stmt.query_map([], |r| {
-        Ok(FigureAsset {
-            id: r.get(0)?,
-            stored_name: r.get(1)?,
-            mime: r.get(2)?,
-            bytes: u64::from(r.get::<_, u32>(3)?),
-            sha256: r.get(4)?,
-            width_px: r.get(5)?,
-            height_px: r.get(6)?,
-            orientation: r.get(7)?,
-        })
-    })?;
-    let mut assets = Vec::new();
-    for row in rows {
-        let asset = row?;
-        if !valid_asset(&asset) {
-            return Err(StoreError::Corrupt("invalid figure registry record".into()));
+    let mut rows = stmt.query([])?;
+    loop {
+        let row = match rows.next() {
+            Ok(Some(row)) => row,
+            Ok(None) => break,
+            Err(error) => {
+                registry.errors.push(format!(
+                    "figure <unknown>: registry enumeration stopped: {error}"
+                ));
+                break;
+            }
+        };
+        let id = row
+            .get::<_, String>(0)
+            .unwrap_or_else(|_| "<unknown>".into());
+        let asset = (|| -> rusqlite::Result<FigureAsset> {
+            Ok(FigureAsset {
+                id: row.get(0)?,
+                stored_name: row.get(1)?,
+                mime: row.get(2)?,
+                bytes: row.get::<_, u32>(3)?.into(),
+                sha256: row.get(4)?,
+                width_px: row.get(5)?,
+                height_px: row.get(6)?,
+                orientation: row.get(7)?,
+            })
+        })();
+        match asset {
+            Ok(asset) if valid_asset(&asset) => {
+                registry.assets.insert(asset.stored_name.clone(), asset);
+            }
+            Ok(_) => registry
+                .errors
+                .push(format!("figure {id}: invalid registry record")),
+            Err(error) => registry
+                .errors
+                .push(format!("figure {id}: unreadable registry record: {error}")),
         }
-        assets.push(asset);
     }
-    Ok(assets)
+    Ok(registry)
 }
 
 fn insert(conn: &Connection, asset: &FigureAsset) -> Result<()> {
@@ -112,7 +144,11 @@ fn insert(conn: &Connection, asset: &FigureAsset) -> Result<()> {
 
 impl Store {
     pub fn figure_assets(&self) -> Result<Vec<FigureAsset>> {
-        read(&self.conn)
+        let registry = self.figure_registry()?;
+        if !registry.errors.is_empty() {
+            return Err(StoreError::Corrupt(registry.errors.join("; ")));
+        }
+        Ok(registry.assets.into_values().collect())
     }
 
     pub(crate) fn register_figure_asset(&self, asset: &FigureAsset) -> Result<()> {
@@ -124,38 +160,68 @@ impl Store {
         insert(&self.conn, asset)
     }
 
-    /// All registered originals, including abandoned insertions. References in
-    /// the bin and every retained automatic/named version must also resolve.
-    pub(crate) fn figure_inventory(&self) -> Result<BTreeMap<String, FigureAsset>> {
-        let assets = self.figure_assets()?;
-        let ids: HashSet<String> = assets.iter().map(|a| a.id.clone()).collect();
-        let validate = |id: &str, body: &str| -> Result<()> {
-            let normalized = crate::replace::normalize_legacy_text(body);
-            let value = serde_json::from_str(&normalized).map_err(|_| {
-                StoreError::InvalidDocument(format!("{id}: unreadable figure references"))
-            })?;
-            document_format::validate(&value, true, &ids)
+    pub(crate) fn figure_registry(&self) -> Result<Registry> {
+        read(&self.conn)
+    }
+
+    /// Inspect only figure references, without imposing write validation on
+    /// retained prose. Legacy books without a registry keep legacy enumeration.
+    pub(crate) fn figure_inventory(&self) -> Result<Registry> {
+        let mut registry = self.figure_registry()?;
+        if !registry.present {
+            return Ok(registry);
+        }
+        let ids: HashSet<String> = registry.assets.values().map(|a| a.id.clone()).collect();
+        let mut scan = |id: &str, body: Option<&str>| match body
+            .and_then(|body| serde_json::from_str(body).ok())
+        {
+            Some(value) => scan_references(&value, id, &ids, &mut registry.errors),
+            None => registry.errors.push(format!(
+                "figure <unknown>: unreadable references in item {id}"
+            )),
         };
         let mut stmt = self.conn.prepare("SELECT d.item_id, d.body FROM doc d LEFT JOIN item i ON i.id=d.item_id WHERE i.type IS NULL OR i.type != ?1")?;
         for row in stmt.query_map([TIMELINE_TYPE], |r| {
-            Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))
+            Ok((r.get::<_, String>(0)?, r.get::<_, Option<String>>(1)?))
         })? {
             let (id, body) = row?;
-            validate(&id, &body)?;
+            scan(&id, body.as_deref());
         }
         if self.user_version()? >= 2 {
             let mut stmt = self.conn.prepare("SELECT v.item_id, b.body FROM doc_version v LEFT JOIN blob b ON b.key=v.blob_key LEFT JOIN item i ON i.id=v.item_id WHERE i.type IS NULL OR i.type != ?1")?;
             for row in stmt.query_map([TIMELINE_TYPE], |r| {
-                Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))
+                Ok((r.get::<_, String>(0)?, r.get::<_, Option<String>>(1)?))
             })? {
                 let (id, body) = row?;
-                validate(&id, &body)?;
+                scan(&id, body.as_deref());
             }
         }
-        Ok(assets
-            .into_iter()
-            .map(|a| (a.stored_name.clone(), a))
-            .collect())
+        Ok(registry)
+    }
+}
+
+fn scan_references(
+    value: &serde_json::Value,
+    item: &str,
+    assets: &HashSet<String>,
+    errors: &mut Vec<String>,
+) {
+    if value["type"] == "figure" {
+        let id = value["attrs"]["id"].as_str().unwrap_or("<unknown>");
+        match value["attrs"]["asset_id"].as_str() {
+            Some(asset) if assets.contains(asset) => {}
+            Some(asset) => errors.push(format!(
+                "figure {id}: asset {asset} has no readable registry mapping (item {item})"
+            )),
+            None => errors.push(format!(
+                "figure {id}: missing asset reference (item {item})"
+            )),
+        }
+    }
+    if let Some(children) = value.get("content").and_then(serde_json::Value::as_array) {
+        for child in children {
+            scan_references(child, item, assets, errors);
+        }
     }
 }
 
@@ -165,6 +231,9 @@ pub(crate) mod test_support {
     pub fn install(store: &Store) {
         assert_eq!(store.user_version().unwrap(), 17);
         store.conn.execute_batch(PROPOSED_MIGRATION).unwrap();
+    }
+    pub fn allow_corruption(conn: &Connection) {
+        conn.execute_batch("ALTER TABLE figure_asset RENAME TO unchecked_source; CREATE TABLE figure_asset AS SELECT * FROM unchecked_source; DROP TABLE unchecked_source;").unwrap();
     }
     pub fn register(store: &Store, asset: &FigureAsset) -> std::result::Result<(), String> {
         insert(&store.conn, asset).map_err(|e| e.to_string())

@@ -1534,6 +1534,7 @@ fn extract(
     }
 
     // ------------------------------------------------------------- write
+    let figure_assets = crate::figure_salvage::registry(&conn, &mut losses);
     std::fs::create_dir(out_dir.join(DOCUMENTS_DIR)).map_err(|e| e.to_string())?;
     let mut names = FileNames::default();
     let mut renamed = BTreeMap::new();
@@ -1543,7 +1544,7 @@ fn extract(
     let mut documents_recovered = 0u64;
 
     for (id, body) in &docs {
-        match crate::figure_salvage::document_markdown(&conn, body, id, "..", strings, &mut losses) {
+        match crate::figure_salvage::document_markdown(&figure_assets, body, id, "..", strings, &mut losses) {
             Some(markdown) => {
                 let file = names.pick(id, "md");
                 if file != format!("{id}.md") {
@@ -1691,6 +1692,7 @@ fn extract(
         &walk_order,
         &mut losses,
         strings,
+        &figure_assets,
     )?;
     // EVERY `meta` ROW, through the raw connection for `project_name`'s reason:
     // a file damaged enough to need salvaging need not open as a `Store` at all.
@@ -1740,7 +1742,7 @@ fn extract(
         write_pictures(out_dir, source, &members, &covers, &mut losses)?;
     let covers_file = write_covers(out_dir, &name, &covers, covers_recovered, strings)?;
     let (figure_assets_recovered, figure_originals_recovered, figures_file) =
-        crate::figure_salvage::recover(&conn, source, out_dir, &mut losses)?;
+        crate::figure_salvage::recover(&figure_assets, source, out_dir, &mut losses)?;
     let pictures_dir = pictures_dir.or_else(|| (figure_originals_recovered > 0).then(|| PICTURES_DIR.to_string()));
 
     let counted = index.count();
@@ -1812,7 +1814,7 @@ fn loss_report(losses: &[Loss], strings: crate::strings::Strings) -> String {
     if losses.is_empty() { report.push_str(&format!("\n{}\n", strings.t("salvage.loss-report.none"))); }
     for (index, loss) in losses.iter().enumerate() {
         let key = match loss.kind.as_str() {
-            "document_structure_flattened" | "missing_figure_original" | "unreadable_figure_registry" | "unregistered_figure_original" | "enumeration_stopped" | "file_truncated" | "missing_blob" | "missing_cover" | "missing_picture" | "orphan_appearance" | "orphan_cast_alias" | "orphan_cast_field" | "orphan_comment" | "orphan_doc" | "orphan_item" | "orphan_synopsis" | "orphan_version" | "structure" | "table_unreadable" | "unreadable_appearance_row" | "unreadable_blob_row" | "unreadable_body" | "unreadable_cast_alias_row" | "unreadable_cast_field_row" | "unreadable_cast_member_row" | "unreadable_comment_row" | "unreadable_cover" | "unreadable_design_row" | "unreadable_doc_row" | "unreadable_item_row" | "unreadable_meta_row" | "unreadable_picture" | "unreadable_revision_pass_row" | "unreadable_revision_task_row" | "unreadable_snapshot_row" | "unreadable_synopsis_row" | "unreadable_version_body" | "unreadable_version_row" | "unreadable_wordlist_row" | "unreadable_analytics_row" | "unreadable_research_row" | "unreadable_knowledge_link_row" | "missing_research_original" | "corrupt_research_original" | "orphan_research_original" | "orphan_knowledge_link" | "invalid_review_record" | "unreadable_review_record" => format!("salvage.loss.{}", loss.kind),
+            "corrupt_figure_original" | "unreadable_figure_directory" | "document_structure_flattened" | "missing_figure_original" | "unreadable_figure_registry" | "unregistered_figure_original" | "enumeration_stopped" | "file_truncated" | "missing_blob" | "missing_cover" | "missing_picture" | "orphan_appearance" | "orphan_cast_alias" | "orphan_cast_field" | "orphan_comment" | "orphan_doc" | "orphan_item" | "orphan_synopsis" | "orphan_version" | "structure" | "table_unreadable" | "unreadable_appearance_row" | "unreadable_blob_row" | "unreadable_body" | "unreadable_cast_alias_row" | "unreadable_cast_field_row" | "unreadable_cast_member_row" | "unreadable_comment_row" | "unreadable_cover" | "unreadable_design_row" | "unreadable_doc_row" | "unreadable_item_row" | "unreadable_meta_row" | "unreadable_picture" | "unreadable_revision_pass_row" | "unreadable_revision_task_row" | "unreadable_snapshot_row" | "unreadable_synopsis_row" | "unreadable_version_body" | "unreadable_version_row" | "unreadable_wordlist_row" | "unreadable_analytics_row" | "unreadable_research_row" | "unreadable_knowledge_link_row" | "missing_research_original" | "corrupt_research_original" | "orphan_research_original" | "orphan_knowledge_link" | "invalid_review_record" | "unreadable_review_record" => format!("salvage.loss.{}", loss.kind),
             _ => "salvage.loss.unknown".into(),
         };
         report.push_str(&format!("\n{}. {} [{}; {}]\n", index + 1, strings.t(&key), loss.kind, serde_json::to_string(&loss.item_id).expect("optional string serializes")));
@@ -2062,6 +2064,7 @@ fn write_snapshots(
     walk_order: &HashMap<String, usize>,
     losses: &mut Vec<Loss>,
     strings: crate::strings::Strings,
+    figure_assets: &BTreeMap<String, crate::store::figure_assets::FigureAsset>,
 ) -> Result<(u64, Option<String>), String> {
     let mut by_snapshot: BTreeMap<i64, Vec<&RecoveredVersion>> = BTreeMap::new();
     for v in versions {
@@ -2213,7 +2216,7 @@ fn write_snapshots(
                 std::fs::create_dir_all(&into).map_err(|e| e.to_string())?;
                 made = true;
             }
-            match crate::figure_salvage::document_markdown(conn, &body, &v.item_id, "../../..", strings, losses) {
+            match crate::figure_salvage::document_markdown(figure_assets, &body, &v.item_id, "../..", strings, losses) {
                 Some(markdown) => {
                     let file = names.pick(&v.item_id, "md");
                     let mut out = String::new();
@@ -7199,6 +7202,7 @@ pub(crate) mod tests {
             &HashMap::new(),
             &mut losses,
             crate::strings::Strings::english(),
+            &BTreeMap::new(),
         )
         .unwrap();
         assert_eq!(file.as_deref(), Some(SNAPSHOTS_NAME));
@@ -7245,6 +7249,7 @@ pub(crate) mod tests {
             &HashMap::new(),
             &mut losses,
             crate::strings::Strings::english(),
+            &BTreeMap::new(),
         )
         .unwrap();
         let text = read(&out.join(SNAPSHOTS_NAME));

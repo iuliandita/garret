@@ -34,6 +34,12 @@ remain readable. Supporting salvage preserves unknown bodies verbatim, writes
 readable notes and figure placeholders with relative original links, and retains
 registered originals even when automatic text versions are omitted. Salvage
 reports those omissions and layout losses; it is not an editable downgrade.
+Legacy bodies retain the existing readable Markdown fallback, including unknown
+marks. A damaged original is copied with a `corrupt_figure_original` loss and its
+recorded hash kept for diagnosis. An unreadable registry row or directory records
+a loss without stopping the remaining recovery. The salvage manifest adds
+`figure_assets_recovered` and `figure_originals_recovered` counts, plus `figures`
+for the relative registry filename, or null when no registry was recovered.
 
 ## Before upgrading
 

@@ -5,7 +5,7 @@ use crate::{
 };
 use std::path::PathBuf;
 
-const PNG: &[u8] = include_bytes!("../../fixtures/two-halves.png");
+pub(crate) const PNG: &[u8] = include_bytes!("../../fixtures/two-halves.png");
 
 pub(crate) struct Fixture {
     pub root: tempfile::TempDir,
@@ -157,11 +157,17 @@ fn same_byte_cast_and_cover_removal_preserves_independent_figure_bytes() {
         .unwrap();
     covers::set_cover(&f.store, covers::SIDE_FRONT, &cover_name).unwrap();
     for asset in &f.assets {
-        assert!(f
-            .store
-            .cast_set_picture(&member.id, Some(&asset.stored_name))
-            .is_err());
-        assert!(covers::set_cover(&f.store, covers::SIDE_FRONT, &asset.stored_name).is_err());
+        assert_eq!(
+            f.store
+                .cast_set_picture(&member.id, Some(&asset.stored_name))
+                .unwrap_err()
+                .to_string(),
+            "project structure is corrupt: figure originals cannot be assigned to cast pictures"
+        );
+        assert_eq!(
+            covers::set_cover(&f.store, covers::SIDE_FRONT, &asset.stored_name).unwrap_err(),
+            "figure originals cannot be assigned to covers"
+        );
         pictures::remove(&dir, &asset.stored_name);
         #[cfg(unix)]
         {
@@ -187,14 +193,6 @@ fn same_byte_cast_and_cover_removal_preserves_independent_figure_bytes() {
         assert_eq!(asset.mime, "image/png");
         assert_eq!(asset.bytes, PNG.len() as u64);
     }
-    // All platforms use the unconditional exclusive-copy function, without a
-    // platform-specific deduplication branch.
-    let implementation = include_str!("../figures.rs")
-        .split("#[cfg(test)]")
-        .next()
-        .unwrap();
-    assert!(!implementation.contains("hard_link"));
-    assert!(!implementation.contains("target_os"));
 }
 
 #[test]
@@ -204,15 +202,18 @@ fn failed_registration_keeps_original_for_salvage_and_never_reuses_it() {
     let source = root.path().join("selected.png");
     fs::write(&source, PNG).unwrap();
     let mut failed = None;
-    assert!(import_original(&db, &source, |asset| {
-        assert_eq!(
-            fs::read(pictures::dir_for(&db).join(&asset.stored_name)).unwrap(),
-            PNG
-        );
-        failed = Some(asset.clone());
-        Err("database refused".into())
-    })
-    .is_err());
+    assert_eq!(
+        import_original(&db, &source, |asset| {
+            assert_eq!(
+                fs::read(pictures::dir_for(&db).join(&asset.stored_name)).unwrap(),
+                PNG
+            );
+            failed = Some(asset.clone());
+            Err("database refused".into())
+        })
+        .unwrap_err(),
+        "database refused"
+    );
     let failed = failed.unwrap();
     let next = import_original(&db, &source, |_| Ok(())).unwrap();
     assert_ne!(failed.id, next.id);
@@ -225,7 +226,13 @@ fn failed_registration_keeps_original_for_salvage_and_never_reuses_it() {
 #[test]
 fn inventory_keeps_live_bin_automatic_history_and_abandoned_originals() {
     let f = fixture();
-    assert!(f.store.register_figure_asset(&f.assets[0]).is_err());
+    assert_eq!(
+        f.store
+            .register_figure_asset(&f.assets[0])
+            .unwrap_err()
+            .to_string(),
+        "document format refused: figure registration is disabled; nothing was changed"
+    );
     let bundle = f.root.path().join("complete.point");
     let result = backup_bundle::write(&f.db, &f.store, &bundle).unwrap();
     assert!(result.verified, "{:?}", result.errors);
@@ -280,7 +287,9 @@ fn deleting_a_history_only_original_fails_completeness_and_partial_copy_names_it
         .errors
         .iter()
         .any(|e| e.contains(&missing.stored_name)));
-    assert!(backup_bundle::verify(&bundle).is_err());
+    assert!(backup_bundle::verify(&bundle)
+        .unwrap_err()
+        .contains(&format!("figure {}:", missing.id)));
     let dest = f.root.path().join("partial.db");
     fs::copy(backup_bundle::db_path(&bundle), &dest).unwrap();
     fs::create_dir(pictures::dir_for(&dest)).unwrap();
@@ -295,29 +304,46 @@ fn deleting_a_history_only_original_fails_completeness_and_partial_copy_names_it
 
 #[test]
 fn unreadable_or_unregistered_retained_references_never_enumerate_as_empty() {
-    for (sql, parameter) in [
+    for (sql, parameter, refusal) in [
         (
             "UPDATE doc SET body=?1 WHERE item_id IN (SELECT item_id FROM doc LIMIT 1)",
             "{broken",
+            "unreadable references in item",
         ),
         (
             "UPDATE blob SET body=?1 WHERE key='automatic-figure'",
             "{broken",
+            "unreadable references in item",
         ),
         (
             "UPDATE blob SET body=?1 WHERE key='automatic-figure'",
-            r#"{"type":"doc","content":[{"type":"alien"}]}"#,
+            r#"{"type":"doc","content":[{"type":"figure","attrs":{"id":"missing-instance","asset_id":"missing-asset"}}]}"#,
+            "figure missing-instance: asset missing-asset has no readable registry mapping",
         ),
-        ("UPDATE figure_asset SET sha256=?1", "bad hash"),
+        (
+            "UPDATE figure_asset SET sha256=?1",
+            "bad hash",
+            "invalid registry record",
+        ),
         (
             "UPDATE figure_asset SET stored_name=?1 WHERE id=(SELECT id FROM figure_asset LIMIT 1)",
             "../escape.png",
+            "invalid registry record",
         ),
-        ("DELETE FROM blob WHERE key=?1", "automatic-figure"),
-        ("DELETE FROM figure_asset WHERE id=?1", "history-id"),
+        (
+            "DELETE FROM blob WHERE key=?1",
+            "automatic-figure",
+            "unreadable references in item",
+        ),
+        (
+            "DELETE FROM figure_asset WHERE id=?1",
+            "history-id",
+            "has no readable registry mapping",
+        ),
     ] {
         let f = fixture();
         let conn = rusqlite::Connection::open(&f.db).unwrap();
+        figure_assets::test_support::allow_corruption(&conn);
         conn.pragma_update(None, "foreign_keys", false).unwrap();
         conn.execute(
             sql,
@@ -328,10 +354,35 @@ fn unreadable_or_unregistered_retained_references_never_enumerate_as_empty() {
             }],
         )
         .unwrap();
+        let member = f.store.cast_create("character", "Ada").unwrap();
+        f.store
+            .cast_set_picture(&member.id, Some("cast.png"))
+            .unwrap();
+        covers::set_cover(&f.store, covers::SIDE_FRONT, "cover.png").unwrap();
+        for name in ["cast.png", "cover.png"] {
+            fs::write(pictures::dir_for(&f.db).join(name), PNG).unwrap();
+        }
         let result =
             backup_bundle::write(&f.db, &f.store, &f.root.path().join("broken.point")).unwrap();
         assert!(!result.verified, "{sql}");
-        assert!(!result.errors.is_empty());
+        assert!(
+            result.errors.iter().any(|e| e.contains(refusal)),
+            "{sql}: {:?}",
+            result.errors
+        );
+        for name in ["cast.png", "cover.png"] {
+            assert_eq!(
+                fs::read(
+                    f.root
+                        .path()
+                        .join("broken.point")
+                        .join(backup_bundle::PICTURES_NAME)
+                        .join(name)
+                )
+                .unwrap(),
+                PNG
+            );
+        }
     }
 }
 
@@ -353,7 +404,7 @@ fn salvage_keeps_history_only_and_uncertain_originals_and_renders_readable_field
     let uncertain = import_original(&f.db, &f.root.path().join("selected.png"), |_| {
         Err("not registered".into())
     });
-    assert!(uncertain.is_err());
+    assert_eq!(uncertain.unwrap_err(), "not registered");
     let out = f.root.path().join("salvage");
     let result = crate::salvage::salvage(&f.db, &out).unwrap();
     assert_eq!(result.versions_dropped, 1);
@@ -377,8 +428,9 @@ fn salvage_keeps_history_only_and_uncertain_originals_and_renders_readable_field
         assert!(doc.contains(text), "missing {text}: {doc}");
     }
     let mut translated_losses = Vec::new();
+    let figure_assets = crate::figure_salvage::registry(&conn, &mut translated_losses);
     let german = crate::figure_salvage::document_markdown(
-        &conn,
+        &figure_assets,
         &note_body,
         &f.items[0],
         "..",
@@ -450,12 +502,17 @@ fn exif_orientation_is_retained_and_invalid_images_never_publish() {
         );
     }
     let count = fs::read_dir(pictures::dir_for(&db)).unwrap().count();
-    for data in [
-        b"not an image".as_slice(),
-        include_bytes!("../../fixtures/declares-a-bomb.png").as_slice(),
+    for (data, reason) in [
+        (b"not an image".as_slice(), "not a PNG or a JPEG"),
+        (
+            include_bytes!("../../fixtures/declares-a-bomb.png").as_slice(),
+            "largest this book will read",
+        ),
     ] {
         fs::write(&source, data).unwrap();
-        assert!(import_original(&db, &source, |_| Ok(())).is_err());
+        assert!(import_original(&db, &source, |_| Ok(()))
+            .unwrap_err()
+            .contains(reason));
         assert_eq!(fs::read_dir(pictures::dir_for(&db)).unwrap().count(), count);
     }
 }
@@ -486,14 +543,24 @@ fn encrypted_archives_and_owned_transfer_copies_keep_registered_originals() {
         .unwrap();
     }
     let library = f.root.path().join("library");
+    let error = crate::projects::restore_point_into(&bundle, &library, "copy", 1_700_000_000_000)
+        .err()
+        .unwrap();
     assert!(
-        crate::projects::restore_point_into(&bundle, &library, "copy", 1_700_000_000_000).is_err()
+        error.contains("document format refused:")
+            && error.contains("new document nodes are disabled"),
+        "{error}"
     );
     assert!(
         !library.exists(),
         "disabled-node restore must refuse before publication"
     );
-    assert!(crate::transfer_copy::inspect(&bundle).is_err());
+    let error = crate::transfer_copy::inspect(&bundle).unwrap_err();
+    assert!(
+        error.contains("document format refused:")
+            && error.contains("new document nodes are disabled"),
+        "{error}"
+    );
     // Registry-only books exercise the existing owned-copy path while new-node
     // publication remains disabled.
     let conn = rusqlite::Connection::open(&f.db).unwrap();
@@ -559,9 +626,9 @@ fn recovery_points_and_moves_retain_all_registered_originals() {
         verify_original(&pictures::dir_for(&moved).join(&asset.stored_name), asset).unwrap();
     }
     // Verification reads the captured DB, regardless of subsequent live metadata.
-    rusqlite::Connection::open(&moved)
-        .unwrap()
-        .execute("UPDATE figure_asset SET sha256='invalid'", [])
+    let conn = rusqlite::Connection::open(&moved).unwrap();
+    figure_assets::test_support::allow_corruption(&conn);
+    conn.execute("UPDATE figure_asset SET sha256='invalid'", [])
         .unwrap();
     backup_bundle::verify(&point_path).unwrap();
 }

@@ -1033,9 +1033,11 @@ fn salvage_report(v: &salvage::Salvage, out_dir: &Path) -> String {
         v.research_resources_recovered,
         v.knowledge.as_deref().map(|f| format!(" ({f})")).unwrap_or_default()
     ));
-    out.push_str(&format!("figures    {} record(s), {} original file(s){}\n",
-        v.figure_assets_recovered, v.figure_originals_recovered,
-        v.figures.as_deref().map(|f| format!(" ({f})")).unwrap_or_default()));
+    if v.figure_assets_recovered > 0 || v.figure_originals_recovered > 0 {
+        out.push_str(&format!("figures    {} record(s), {} original file(s){}\n",
+            v.figure_assets_recovered, v.figure_originals_recovered,
+            v.figures.as_deref().map(|f| format!(" ({f})")).unwrap_or_default()));
+    }
     out.push_str(&format!(
         "research   {} original file(s){}\n",
         v.research_originals_recovered,
@@ -3323,6 +3325,22 @@ mod tests {
             salvage_report(&english, &out_en),
             salvage_report(&other, &out_en)
         );
+    }
+
+    #[test]
+    fn salvage_report_only_prints_figures_when_something_was_recovered() {
+        let dir = tempdir().unwrap();
+        let db = dir.path().join("book.db");
+        fixture(&db);
+        let out = dir.path().join("out");
+        let mut recovered = salvage::salvage(&db, &out).unwrap();
+        assert!(!salvage_report(&recovered, &out).lines().any(|l| l.starts_with("figures    ")));
+        for (records, originals) in [(1, 0), (0, 1)] {
+            recovered.figure_assets_recovered = records;
+            recovered.figure_originals_recovered = originals;
+            assert!(salvage_report(&recovered, &out).contains(&format!(
+                "figures    {records} record(s), {originals} original file(s)\n")));
+        }
     }
 
     #[test]

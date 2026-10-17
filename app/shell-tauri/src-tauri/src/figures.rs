@@ -93,7 +93,7 @@ fn import_original(
 }
 
 pub(crate) fn verify_original(path: &Path, asset: &FigureAsset) -> Result<(), String> {
-    let data = read_original(path)?;
+    let data = read_original(path).map_err(|error| format!("figure {}: {error}", asset.id))?;
     if data.len() as u64 != asset.bytes || format!("{:x}", Sha256::digest(&data)) != asset.sha256 {
         return Err(format!(
             "figure {}: original hash or size mismatch",
@@ -221,3 +221,7 @@ pub(crate) mod test_support {
 
 #[cfg(test)]
 pub(crate) mod tests;
+
+#[cfg(test)]
+#[path = "figures/review_tests.rs"]
+mod review_tests;
