@@ -74,6 +74,23 @@ If migration stops, preserve both folders named in the warning, close garret,
 and request recovery help. Do not merge, overwrite, or delete them. The Android
 application identifier remains `cc.local.app`; profile migration is not sync.
 
+The desktop application identifier is `com.usegarret.app`. This changes the
+Linux menu-entry identity and macOS bundle identity without relocating books,
+`settings.json`, recovery copies, or single-instance ownership. Linux keeps its
+WebView data in the `garret` profile; Windows keeps its existing WebView2 data
+under the local application-data directory's `cc.local.app` folder. Android
+explicitly keeps `cc.local.app`, so installing an update preserves its sandbox.
+
+On macOS, the new identifier starts fresh WebKit and HTTP caches, temporary
+caches, and native window positions and restore state. The previous native window
+positions and restore state do not carry over. Old `cc.local.app` entries in your
+home Library and temporary folder are left in place; garret does not move or
+delete them. Books and application settings are unaffected: garret keeps its
+preferences in the existing `settings.json`, and the desktop interface does not
+store writing or settings in WebView localStorage or IndexedDB.
+Linux old-to-new book and settings reuse is exercised on disposable data; macOS
+and Windows native upgrade behavior still requires testing on those platforms.
+
 ## Backup, restore, and rollback
 
 Use a disposable book to verify an encrypted archive with its separately saved

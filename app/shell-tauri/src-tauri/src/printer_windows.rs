@@ -220,11 +220,19 @@ fn start_window(app: &tauri::AppHandle, job: Arc<Job>) {
     let url = proof_url(&job.nonce);
     let allowed = job.nonce.clone();
     let loaded = job.clone();
+    let data_directory = match crate::legacy_webview_data_dir(app) {
+        Ok(path) => path,
+        Err(error) => {
+            job.fail(format!("proof profile unavailable: {error}"));
+            return;
+        }
+    };
     let result = WebviewWindowBuilder::new(
         app,
         job.label.clone(),
         WebviewUrl::CustomProtocol(url.parse().expect("local proof URL")),
     )
+    .data_directory(data_directory)
     .visible(false)
     .focused(false)
     .skip_taskbar(true)

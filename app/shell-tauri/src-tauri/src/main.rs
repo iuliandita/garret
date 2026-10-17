@@ -81,6 +81,11 @@ mod words;
 mod warning_history;
 mod zoom;
 
+#[cfg(windows)]
+fn legacy_webview_data_dir(app: &tauri::AppHandle) -> tauri::Result<PathBuf> {
+    app.path().resolve(data_migration::LEGACY_DIR, tauri::path::BaseDirectory::LocalData)
+}
+
 fn write_measurement_sink(
     payload: &serde_json::Value,
     destination: Option<&std::ffi::OsStr>,
@@ -4760,6 +4765,9 @@ fn main() {
             // after migration, blocking the next launch on a fresh installation.
             #[cfg(target_os = "linux")]
             let window = window.data_directory(app.state::<DataHome>().0.join(APP_DIR));
+            // WebView2's default follows the identifier, independently of books and settings.
+            #[cfg(windows)]
+            let window = window.data_directory(legacy_webview_data_dir(app.handle())?);
             window.build()?;
 
             #[cfg(target_os = "linux")]

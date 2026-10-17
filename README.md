@@ -141,7 +141,9 @@ scripts/run-app
 
 `scripts/run-app` rebuilds the interface, builds the host on first use, and
 starts the app. `scripts/install-desktop-entry` adds a menu entry for that
-launcher. Release-style packages come from `scripts/package-linux`,
+launcher, using desktop identifier `com.usegarret.app`. Android retains package
+`cc.local.app`. See [upgrade compatibility](docs/COMPATIBILITY.md) for native
+profile preservation. Release-style packages come from `scripts/package-linux`,
 `scripts/package-windows`, `scripts/package-macos` and `scripts/package-android`.
 
 ## Checks
