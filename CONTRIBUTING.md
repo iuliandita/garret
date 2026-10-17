@@ -52,6 +52,26 @@ your live desktop session. Screenshots they capture land in
 lives in `docs/screenshots/`. Rebuild its [classic sample books](app/fixtures/classics/README.md)
 when refreshing those captures.
 
+### Preview rail typing comparison
+
+Generate the synthetic stress book with `cd lab && bun fixtures/gen/src/cli.ts stress`.
+Build the interface and host as above. The persistence rig accepts
+`APP_GUI=1 bun app/harness/src/persist-cli.ts 5 --preview-rail=open` and the
+matching `--preview-rail=closed` baseline. Use the same build and renderer.
+Both modes enable idle refresh and pause five seconds between complete writing
+cycles, so the open rail can refresh after its normal three-second idle delay.
+The workload is named `writing-v1-preview-pauses-v1`; older continuous-writing
+results are historical context, not identical workloads.
+
+The open mode requires a visible EPUB rail before typing and at least one
+subsequent document paint during the writing phase. Closed mode requires no
+visible rail or document paints. These are structural assertions: failure
+aborts without writing evidence. Results record `metrics.preview_rail` and
+`environment.renderer`, and use separate `-rail-open`/`-rail-closed` filenames.
+Existing gates remain: typing p95 < 50 ms, p99 < 100 ms, stall rate < 0.01,
+and peak process-tree RSS < 750 MB. Any failed gate exits nonzero. Keep runs
+at five minutes or less because of the known headless frame-clock event.
+
 ## Website
 
 The website lives at [usegarret.com](https://usegarret.com), built from

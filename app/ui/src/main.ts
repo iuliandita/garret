@@ -8,6 +8,7 @@ import { createPrivacyStartupInvoke, waitForPrivacyUnlock, type PrivacyStatus } 
 import { messages, t } from "./i18n";
 import { createMutationPlanner } from "./measure/mutation-plan";
 import { createOnsetTracker } from "./measure/onset";
+import { measurePreviewRail } from "./measure/preview-rail";
 import { measure, type Sample } from "./measure/recorder";
 import { percentiles } from "./measure/stats";
 import { summarize } from "./measure/summary";
@@ -1015,6 +1016,8 @@ async function main(): Promise<void> {
   let charsTyped = 0;
   let actions = 0;
 
+  const previewMeasurement = persistMode === "verify" ? null
+    : await measurePreviewRail(() => mounted.menuActions.openEpubPreview());
   const t0 = performance.now();
   const startupMs = Math.round(t0 - entryAt);
 
@@ -1136,7 +1139,11 @@ async function main(): Promise<void> {
       charsTyped,
       partial: !completed,
     });
+    if (completed && previewMeasurement && performance.now() + 5000 < deadline) {
+      await previewMeasurement.pause();
+    }
   }
+  const previewRailMeasurement = previewMeasurement?.finish() ?? null;
 
   if (flusher !== null) await flusher.drain();
   const finalRev =
@@ -1233,7 +1240,8 @@ async function main(): Promise<void> {
     candidate: window.__appCandidate ?? "unknown",
     seed: window.__appSeed ?? "unknown",
     mode,
-    workload_script: WORKLOAD_SCRIPT,
+    workload_script: previewMeasurement ? "writing-v1-preview-pauses-v1" : WORKLOAD_SCRIPT,
+    preview_rail: previewRailMeasurement,
     rows: source.count,
     activeIndexAtEnd: navigator.activeIndex(),
     startup_ms: startupMs,
