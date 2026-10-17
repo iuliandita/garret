@@ -17,8 +17,6 @@ use tauri::Emitter;
 use tauri::{Manager, State, WebviewUrl, WebviewWindowBuilder};
 
 mod data_migration;
-#[cfg(all(unix, any(target_os = "macos", test)))]
-mod native_identity;
 mod command_error;
 mod core_constants;
 mod book_open;
@@ -4087,14 +4085,6 @@ fn main() {
     };
     #[cfg(windows)]
     let migration = data_migration::prepare(&data_home, &owned_file);
-    #[cfg(target_os = "macos")]
-    let migration = migration.and_then(|()| {
-        if owned_socket.is_none() {
-            return Err("cannot guard native state during identifier migration".into());
-        }
-        let home = dirs::home_dir().ok_or("cannot locate the home directory for native state")?;
-        native_identity::prepare(&home, &std::env::temp_dir())
-    });
     if let Err(error) = migration {
         // Reporting must not create a destination that would block a retry.
         report_migration_failure(&data_home, &error);

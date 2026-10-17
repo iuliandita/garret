@@ -42,17 +42,13 @@ WebView data in the `garret` profile; Windows keeps its existing WebView2 data
 under the local application-data directory's `cc.local.app` folder. Android
 explicitly keeps `cc.local.app`, so installing an update preserves its sandbox.
 
-On macOS, close older builds before upgrading. The first launch moves existing
-bundle-owned WebKit data, caches, HTTP storage, cookies, native preferences, and
-saved-window state to the new identity, retaining links from their former names.
-The identifier-owned temporary WebKit media cache also retains compatibility access.
-Back up these entries in your home Library along with the desktop profile before
-upgrading. A journal makes an interrupted move resumable. Conflicting destinations,
-unexpected links, and changed file identities stop startup with an error; keep
-both locations and the migration journal for recovery help. Nothing is merged or
-discarded. The application stores its own preferences in `settings.json`, rather
-than the macOS preferences domain. Rollback retains access through the links, but
-keep the pre-upgrade backup in case an older native component replaces a link.
+On macOS, the new identifier starts fresh WebKit and HTTP caches, temporary
+caches, and native window positions and restore state. The previous native window
+positions and restore state do not carry over. Old `cc.local.app` entries in your
+home Library and temporary folder are left in place; garret does not move or
+delete them. Books and application settings are unaffected: garret keeps its
+preferences in the existing `settings.json`, and the desktop interface does not
+store writing or settings in WebView localStorage or IndexedDB.
 Linux old-to-new book and settings reuse is exercised on disposable data; macOS
 and Windows native upgrade behavior still requires testing on those platforms.
 
