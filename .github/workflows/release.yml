@@ -3,7 +3,7 @@ on:
   push:
     tags: ['v0.*']
   pull_request:
-    branches: [develop, codex/277-desktop-identifier, codex/280-friendly-installers]
+    branches: [develop]
     paths:
       - .github/workflows/release.yml
       - scripts/package-*
