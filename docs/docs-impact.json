@@ -26,9 +26,9 @@
       "breaking": "none",
       "docs": {},
       "migration": "",
-      "no_impact": "Add an opt-in measurement-only rail mode to the persistence harness; interactive editor behavior, labels, preferences and file formats are unchanged. CONTRIBUTING.md documents the invocation, pauses, assertions and thresholds.",
-      "note": "Add an opt-in measurement-only rail mode to the persistence harness; interactive editor behavior, labels, preferences and file formats are unchanged. CONTRIBUTING.md documents the invocation, pauses, assertions and thresholds.",
-      "source_sha256": "91cbde9808bc096c3970797bd3718f46a7226755f041d27b57914b8d541ba0ce"
+      "no_impact": "Read the actual host privacy status before the opt-in preview measurement; this initializes the same publishing guard used by interactive startup without changing locking, saved preferences or interactive behavior. CONTRIBUTING.md documents the measurement mode.",
+      "note": "Read the actual host privacy status before the opt-in preview measurement; this initializes the same publishing guard used by interactive startup without changing locking, saved preferences or interactive behavior. CONTRIBUTING.md documents the measurement mode.",
+      "source_sha256": "efca6cf3ea08c38daddbe9c4cf0446306f28d48d81479d6b005b2f712adc3036"
     },
     "encryption": {
       "breaking": "none",

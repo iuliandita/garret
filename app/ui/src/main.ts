@@ -1016,6 +1016,9 @@ async function main(): Promise<void> {
   let charsTyped = 0;
   let actions = 0;
 
+  if (document.documentElement.dataset.measurePreviewRail !== undefined && invoke) {
+    privacyStatus = await invoke("privacy_status") as PrivacyStatus;
+  }
   const previewMeasurement = persistMode === "verify" ? null
     : await measurePreviewRail(() => mounted.menuActions.openEpubPreview());
   const t0 = performance.now();
