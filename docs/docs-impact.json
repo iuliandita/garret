@@ -15,71 +15,71 @@
     "backup-recovery": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "35d7f36004de62491c959e3cd8b723fc4e27137ae4e2a98ec8dc2f254bed1d0f"
+        "docs/COMPATIBILITY.md": "1930c216febe6d06fd333afac7d4d2c0cf58d8d8ad1d5f702fa8b57c1b19f361"
       },
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Android retains schema 17 and the desktop archive format; update the same application with its retained signing key and preserve complete exported copies with separate keys for rollback. Newer schemas are refused before unsupported presets without changing the library.",
       "no_impact": "",
-      "note": "Android preserves originals and uncertain private staging, verifies archives before provider output and publishes copied books database last. Imports and pre-write exports are disposable; uncertain writes retain ciphertext only, with startup sweeping and explicit disposal.",
+      "note": "Drafting tools preserve the existing transfer and recovery contracts; compatibility guidance adds the data used by the new mobile dialogs.",
       "source_sha256": "d131299ba4c35a99d2e754400cdd3d7abacdcf07500dbaf48698c86ab38619a4"
     },
     "editor": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "35d7f36004de62491c959e3cd8b723fc4e27137ae4e2a98ec8dc2f254bed1d0f"
+        "docs/COMPATIBILITY.md": "1930c216febe6d06fd333afac7d4d2c0cf58d8d8ad1d5f702fa8b57c1b19f361"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Android adds localized archive preview, explicit separate-copy confirmation and guarded transfer admission through cancellation. Transfers now dispose disposable stages, offer localized leftover-file disposal and keep status responsive during transfer I/O.",
-      "source_sha256": "116057c112406c3d4bf0214f83203ad1f55b82cf10dc3b906c14993035aed01b"
+      "note": "Android drafting dialogs reuse outline presentation, save admission, scene search selections and existing book data with EN/DE strings.",
+      "source_sha256": "70a5bdc3aa8c1d917a0dc4e0598ec47aa1cbb0f02cdae5da5b823f3d5bce5ffb"
     },
     "encryption": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "35d7f36004de62491c959e3cd8b723fc4e27137ae4e2a98ec8dc2f254bed1d0f"
+        "docs/COMPATIBILITY.md": "1930c216febe6d06fd333afac7d4d2c0cf58d8d8ad1d5f702fa8b57c1b19f361"
       },
       "migration": "",
       "no_impact": "",
-      "note": "The existing age format gains bounded mobile extraction and authenticated capability inspection; ciphertext staging uses private file permissions. Terminal export cleanup removes plaintext snapshots and recovery keys; only uncertain ciphertext remains.",
+      "note": "Drafting tools do not change encryption; the updated compatibility guide retains the existing complete archive and separate-key contract.",
       "source_sha256": "8876541906dc08c79373280daf3a0281a6d11011bcacb3abe59f58a357abec12"
     },
     "maintenance": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "35d7f36004de62491c959e3cd8b723fc4e27137ae4e2a98ec8dc2f254bed1d0f"
+        "docs/COMPATIBILITY.md": "1930c216febe6d06fd333afac7d4d2c0cf58d8d8ad1d5f702fa8b57c1b19f361"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Compatibility guidance documents Android resource limits, ordered capability refusals, retained staging and the limits of automated verification. Compatibility guidance describes automatic cleanup, explicit disposal, unavailable transfer storage, and exact SQLite probe behavior.",
-      "source_sha256": "1b1b18bf58c188a0d5108b776432bebc36e454989d54c5f02010c9e4a4d6706a"
+      "note": "Android drafting now exposes scene mutations, search, goals, synopsis, references and comment resolution with documented privacy boundaries.",
+      "source_sha256": "223a7fca2c8acd2575674892f8f83a149e6bc866a55070091fb6dd48725e08ac"
     },
     "native-packaging": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "35d7f36004de62491c959e3cd8b723fc4e27137ae4e2a98ec8dc2f254bed1d0f"
+        "docs/COMPATIBILITY.md": "1930c216febe6d06fd333afac7d4d2c0cf58d8d8ad1d5f702fa8b57c1b19f361"
       },
       "migration": "",
       "no_impact": "",
-      "note": "The source remains version 0.0.2 with Android code 2. Release preparation raises both before an in-place update; the signing flow and application identifier remain unchanged.",
-      "source_sha256": "8d85d83371ff15541e69af4af4808a5411ad5d3ecff62f8032cbdfccb1974e58"
+      "note": "Android appearance preferences gain persistent text size; stacked transfer-branch PRs run the existing CI and package checks.",
+      "source_sha256": "bc61c5e15e6b53a834eddb73cdbf23bd1bc856cea679b492d7b5c5eb15b5fe98"
     },
     "project-format": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "35d7f36004de62491c959e3cd8b723fc4e27137ae4e2a98ec8dc2f254bed1d0f"
+        "docs/COMPATIBILITY.md": "1930c216febe6d06fd333afac7d4d2c0cf58d8d8ad1d5f702fa8b57c1b19f361"
       },
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Android retains schema 17 and the desktop archive format; update the same application with its retained signing key and preserve complete exported copies with separate keys for rollback. Newer schemas are refused before unsupported presets without changing the library.",
       "no_impact": "",
-      "note": "Android uses the existing archive and copy format; capability checks precede publication without changing book identities or stored format. Mobile probes inspect the header and WAL-aware raw metadata without a full database copy; import still verifies its complete staged bundle.",
-      "source_sha256": "4b72f2583f8e39e6e2f5ab04de2026c8c406db2205949a8784e9aa745b7c64f9"
+      "note": "Android scene mutations, synopsis and comments reuse existing Store methods; daily targets retain the desktop string encoding through a shared type.",
+      "source_sha256": "81be8080a0930a49aad0bba4d809c853efbb1677858da410c01b69707e883204"
     },
     "schema": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "35d7f36004de62491c959e3cd8b723fc4e27137ae4e2a98ec8dc2f254bed1d0f"
+        "docs/COMPATIBILITY.md": "1930c216febe6d06fd333afac7d4d2c0cf58d8d8ad1d5f702fa8b57c1b19f361"
       },
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Android retains schema 17 and the desktop archive format; update the same application with its retained signing key and preserve complete exported copies with separate keys for rollback. Newer schemas are refused before unsupported presets without changing the library.",
       "no_impact": "",
-      "note": "SQLite remains schema 17; Android refuses newer schema before preset inspection and preserves existing databases without migration on refusal. The schema remains unchanged; existing-book opening has no transfer-space or size admission requirement.",
+      "note": "Android drafting uses existing schema 17 tables and metadata without a migration or a new storage format.",
       "source_sha256": "3a3f0770def2607e26a2a0c01dd15678cde275d2b0ee0e7fbb0b1c9b47bffba2"
     }
   },

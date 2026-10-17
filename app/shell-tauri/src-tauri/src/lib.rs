@@ -1,3 +1,4 @@
+mod daily_target;
 pub mod core_constants;
 pub mod mobile_core;
 mod package_format;

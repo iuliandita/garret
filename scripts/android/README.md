@@ -7,6 +7,21 @@ The preview creates books and scenes, edits prose with basic formatting, and
 saves locally. It includes light/dark appearances and English/German labels
 selected from the device language. No account is needed.
 
+Outline also offers scene rename and move/reorder, search in the current scene
+or book, daily word goals, scene notes, Bible/cast lookup, comments, and text size.
+Move changes only a scene (including any existing children); parts and chapters
+have no editing actions. Choose an existing destination and the preceding item,
+or First. Search results open the scene and select a matching passage.
+
+Scene notes use the desktop Synopsis field and save with an explicit Save action;
+closing discards an unsaved note draft. Comments retain their quoted passages and
+can be resolved. Bible/cast lookup is read-only. Daily progress uses the desktop
+saved-typing ledger, including negative progress and its paused/unavailable states;
+pasted/imported words do not count as typing. The daily target is an application
+preference, separate from book transfer. Text size persists beside the device's
+theme preference. Android uses the system lock screen rather than an app privacy
+lock.
+
 Use sample writing. In a book, **Outline > Export book** saves a complete
 encrypted desktop-compatible archive through the system picker. Save a new
 recovery key first or choose an existing key, and keep it separately. In the

@@ -6,6 +6,7 @@
 // WebKitGTK webview => no CDP, matching the measured scope.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod daily_target;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
