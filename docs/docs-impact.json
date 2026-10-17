@@ -31,8 +31,8 @@
       },
       "migration": "Android migration: update the previous cc.local.app to transfer-capable 0.0.3, export a complete backup copy of each book archive and separate recovery key, install com.usegarret.app alongside it, import and compare manuscripts, notes and pictures before removing the old app. Preferences need resetting; both apps stay independent. Keep exports and old books for rollback; later edits require fresh exports into a compatible build. Retain the signing key and keep increasing version codes during release preparation. Collections retain schema 17. Older Android builds refuse this preset; keep the closed database and adjacent originals for rollback. none: ceiling unchanged, writes refused. Existing schema-17 books remain compatible with previous builds; no upgrade migration runs. Keep closed-book backups with adjacent originals, and restore the complete previous copy for rollback, omitting later edits.",
       "no_impact": "",
-      "note": "Collection creation, story details and scoped export are documented with English and German controls and existing navigator counts and revision states. Empty replace-all drops empty text runs and joins equally marked neighbors; the editor normalizes affected stored scenes on load without a schema migration. Share deterministic Android build preparation with F-Droid; path, timestamp and configuration normalization are verified by independent source-root comparisons. Schema-17 format write guards refuse unsupported nodes before mutation while preserving legacy recovery routes; no new-node writes are enabled.",
-      "source_sha256": "70d405e30d347011afc428760aa370b68e16c54efa7891054fcbb67a4b79116e"
+      "note": "Mount only visible EPUB documents and one neighbor each way, with a minimum of three; preserve preview positions and fractional reader column geometry. Schema-17 format write guards refuse unsupported nodes before mutation while preserving legacy recovery routes; no new-node writes are enabled.",
+      "source_sha256": "3564f82352206cae3278ec0f9cf14af9e076eabcf3f7e760f2c0e3e14100fff0"
     },
     "encryption": {
       "breaking": "none",
