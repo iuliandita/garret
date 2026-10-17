@@ -60,6 +60,7 @@ async function finish(f: ReturnType<typeof fixture>) {
 test("mobile rename and move use the selected scene and fresh item revision, then reload the acknowledged outline", async () => {
   const calls: unknown[] = [];
   const f = fixture({
+    structure: async () => [...structure, ...["part", "chapter"].map(type => ({ id: `empty-${type}`, type, title: "", parent_id: null, depth: 0, rev: 1 }))],
     rename: async (...args) => { calls.push(args); return [{ ...scenes[0], title: "Renamed" }, scenes[1]]; },
     move: async (...args) => { calls.push(args); return [scenes[1], { ...scenes[0], title: "Renamed", context: [{ id: "later", title: "Later", kind: "chapter" }] }]; },
   });
@@ -70,6 +71,8 @@ test("mobile rename and move use the selected scene and fresh item revision, the
   expect(calls[0]).toEqual(["a", "Renamed", 4]); expect(f.mount.querySelector("h1")!.textContent).toBe("Renamed");
   const move = await open(f, f.m.move);
   const selects = move.querySelectorAll("select");
+  expect(selects[0].querySelector('option[value="empty-part"]')!.textContent).toBe(f.m.untitledPart);
+  expect(selects[0].querySelector('option[value="empty-chapter"]')!.textContent).toBe(f.m.untitledChapter);
   expect([...selects[0].options].some(option => option.value === "a")).toBe(false);
   selects[0].value = "later"; selects[0].dispatchEvent(new Event("change"));
   expect(selects[1].options.length).toBe(1);

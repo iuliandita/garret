@@ -105,12 +105,13 @@ export function createDraftingTools(opts: Options) {
     for (const row of items) if (row.parent_id && descendants.has(row.parent_id)) descendants.add(row.id);
     const parent = node("select"); const after = node("select");
     const option = (value: string, text: string) => { const result = node("option", text); result.value = value; return result; };
+    const title = (row: StructureItem) => row.title || (row.type === "part" ? m.untitledPart : row.type === "chapter" ? m.untitledChapter : m.untitled);
     parent.append(option("", m.manuscript));
-    for (const row of items) if (!descendants.has(row.id)) parent.append(option(row.id, `${"\u00a0".repeat(Math.min(row.depth, 6) * 2)}${row.title || m.untitled}`));
+    for (const row of items) if (!descendants.has(row.id)) parent.append(option(row.id, `${"\u00a0".repeat(Math.min(row.depth, 6) * 2)}${title(row)}`));
     parent.value = item.parent_id ?? "";
     function neighbors() {
       after.replaceChildren(option("", m.first));
-      for (const row of items) if (row.id !== id && row.parent_id === (parent.value || null)) after.append(option(row.id, row.title || m.untitled));
+      for (const row of items) if (row.id !== id && row.parent_id === (parent.value || null)) after.append(option(row.id, title(row)));
     }
     neighbors();
     const siblings = items.filter(row => row.parent_id === item.parent_id); const index = siblings.findIndex(row => row.id === id);
