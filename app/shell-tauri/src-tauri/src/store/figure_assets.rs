@@ -179,6 +179,7 @@ impl Store {
         let mut registry = self.figure_registry()?;
         let ids: HashSet<String> = registry.assets.values().map(|a| a.id.clone()).collect();
         let mut scan = |id: &str, body: Option<&str>| match body
+            .filter(|body| registry.present || body.contains("figure"))
             .and_then(|body| serde_json::from_str(body).ok())
         {
             Some(value) => scan_references(&value, id, &ids, &mut registry.errors),

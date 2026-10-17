@@ -125,6 +125,19 @@ describe("CLDR plural categories", () => {
   });
 });
 
+test.each(["en", "de"])("control-character export notices use writer-facing plurals in %s", (locale) => {
+  const m = createMessages(locale === "en" ? EN : DE, locale);
+  for (const count of [1, 2]) {
+    const notice = m.plural("export.done.xmlCharacters", count);
+    expect(notice).not.toContain("XML");
+    if (locale === "en") {
+      expect(notice).toBe(`Replaced or removed ${count} invisible control character${count === 1 ? "" : "s"} that EPUB and Word files cannot hold; your manuscript is unchanged.`);
+    } else {
+      expect(notice).toBe(`${count} unsichtbare${count === 1 ? "s" : ""} Steuerzeichen ersetzt oder entfernt, ${count === 1 ? "das" : "die"} EPUB- und Word-Dateien nicht enthalten können; Ihr Manuskript bleibt unverändert.`);
+    }
+  }
+});
+
 describe("the English catalog", () => {
   test("the module-level instance reads the English catalog", () => {
     expect(messages.locale).toBe("en");

@@ -2,25 +2,30 @@
 
 SQLite schema: 17.
 
-EPUB and DOCX exports remove XML 1.0-forbidden characters from scene prose in
-the exported copy. The export result adds `xml_characters_removed`; the interface
-and CLI report a nonzero count. Stored prose, marks, history, and ordinary XML
+EPUB and DOCX exports replace vertical tabs and form feeds with spaces and remove
+the other XML 1.0-forbidden characters from scene prose in the exported copy.
+The export result adds `xml_characters_removed`, counting both replacements and
+deletions; the interface and CLI explain a nonzero count in plain language.
+Stored prose, marks, history, and ordinary XML
 whitespace remain unchanged. Fixtures without these characters retain identical
 output bytes. Identity preflight and export word counts inspect the cleaned prose.
 Markdown and PDF prose are unchanged by this cleanup.
+Title and metadata handling is separate from this scene-prose cleanup.
 
 Backup reports figure references in live, bin, and retained history bodies even
 when a schema-17 database lacks the registry table. An unreadable row with a
 safe figure UUID retains both PNG and JPEG filename candidates in the incomplete
 inventory so any available originals are copied. Missing candidates remain gaps;
 this never certifies damaged metadata. Salvage reports an existing unsafe or
-unreadable pictures directory even with no registered figures.
+unreadable pictures directory even with no registered figures. Without a registry
+table, bodies without the substring `figure` bypass reference parsing.
 
 Only a format marker on the first line selects the garret Markdown dialect
 (with an optional BOM). Unmarked files containing garret comments import as
 ordinary Markdown. A Markdown package requires filesystem hard links; the host
 probes support before staging originals or creating the published assets folder.
 An unsupported filesystem produces a plain refusal and leaves no probe debris.
+Probe-file cleanup failures also attempt to remove the empty staging directory.
 Existing uncertain publication stages remain retained for inspection.
 
 Replace-all still refuses a body with unknown marks and rolls back the whole

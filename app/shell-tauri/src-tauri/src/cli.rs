@@ -1484,7 +1484,7 @@ fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
                     r.path, r.format, r.items, r.words
                 );
                 if r.xml_characters_removed > 0 {
-                    println!("removed {} character(s) that XML cannot represent; the manuscript is unchanged", r.xml_characters_removed);
+                    println!("Replaced or removed {} invisible control character{} that EPUB and Word files cannot hold; your manuscript is unchanged.", r.xml_characters_removed, if r.xml_characters_removed == 1 { "" } else { "s" });
                 }
                 Ok(EXIT_OK)
             })
@@ -3798,6 +3798,38 @@ mod tests {
         }
         assert!(!is_subcommand("--seed"));
         assert!(!is_subcommand("--crash-child"));
+    }
+
+    #[test]
+    fn export_reports_control_character_changes_in_plain_language() {
+        const CHILD: &str = "GARRET_TEST_XML_NOTICE";
+        if std::env::var_os(CHILD).is_some() {
+            let dir = tempdir().unwrap();
+            let db = dir.path().join("p.db");
+            let store = Store::open(&db).unwrap();
+            let scene = store.item_create(None, "scene", "Opening").unwrap();
+            let conn = rusqlite::Connection::open(&db).unwrap();
+            for (count, text) in ["a b", "a\u{b}b", "a\u{b}b\u{c}c"].into_iter().enumerate() {
+                let body = serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":text}]}]}).to_string();
+                conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![body, scene.id]).unwrap();
+                let dest = dir.path().join(format!("{count}.epub"));
+                assert_eq!(run(&argv(&["export", db.to_str().unwrap(), dest.to_str().unwrap(), "--format", "epub"])), EXIT_OK);
+            }
+            return;
+        }
+        let home = tempdir().unwrap();
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "cli::tests::export_reports_control_character_changes_in_plain_language", "--nocapture"])
+            .env(CHILD, "1")
+            .env("XDG_DATA_HOME", home.path())
+            .output().unwrap();
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        assert!(output.status.success(), "{stdout}\n{}", String::from_utf8_lossy(&output.stderr));
+        let notices: Vec<_> = stdout.lines().filter(|line| line.starts_with("Replaced or removed")).collect();
+        assert_eq!(notices, [
+            "Replaced or removed 1 invisible control character that EPUB and Word files cannot hold; your manuscript is unchanged.",
+            "Replaced or removed 2 invisible control characters that EPUB and Word files cannot hold; your manuscript is unchanged.",
+        ]);
     }
 
     #[test]

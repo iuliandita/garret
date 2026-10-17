@@ -163,12 +163,12 @@ fn publish_with_link(
     let support = write_new(&probe, b"Markdown package probe")
         .and_then(|_| link(&probe, &probe_link).map_err(|e| format!(
             "This filesystem cannot hold a Markdown package because it does not support hard links: {e}"
-        )));
+        )))
+        .and_then(|_| fs::remove_file(&probe_link).and_then(|_| fs::remove_file(&probe)).map_err(|e| e.to_string()));
     if let Err(error) = support {
         fs::remove_dir_all(&stage).map_err(|cleanup| format!("{error}; probe stage could not be removed: {cleanup}"))?;
         return Err(error);
     }
-    fs::remove_file(&probe_link).and_then(|_| fs::remove_file(&probe)).map_err(|e| e.to_string())?;
     let mut assets_created = false;
     let result: Result<(), String> = (|| {
         fs::create_dir(stage.join("assets")).map_err(|e| e.to_string())?;
@@ -216,6 +216,19 @@ mod tests {
 
     fn read_asset(root: &Path, path: &str) -> Result<Vec<u8>, String> {
         Root::new(root)?.read_asset(path)
+    }
+
+    #[test]
+    fn failed_probe_cleanup_removes_the_empty_stage() {
+        let out = tempfile::tempdir().unwrap();
+        let dest = out.path().join("book.md");
+        let error = publish_with_link(&dest, b"book", &BTreeMap::new(), || panic!("publication reached"), |from, to| {
+            fs::hard_link(from, to)?;
+            fs::remove_file(to)
+        }).unwrap_err();
+        assert!(!error.is_empty());
+        assert_eq!(fs::read_dir(out.path()).unwrap().count(), 0);
+        publish(&dest, b"book", &BTreeMap::new()).unwrap();
     }
 
     #[test]

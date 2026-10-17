@@ -207,7 +207,7 @@ describe("exporting the manuscript", () => {
     );
   });
 
-  test.each([0, 1, 31])("reports removed XML characters: %s", async (count) => {
+  test.each([0, 1, 31])("reports replaced or removed control characters: %s", async (count) => {
     const rig = mount({ exportProject: () => Promise.resolve({
       path: "/exports/book.epub", underlined: 0, assets_written: false, format: "epub", xml_characters_removed: count,
     }) });
@@ -215,10 +215,10 @@ describe("exporting the manuscript", () => {
     await settle();
     const message = rig.dones()[0];
     expect(message).toContain("/exports/book.epub");
-    if (count === 0) expect(message).not.toContain("XML");
+    if (count === 0) expect(message).not.toContain("control character");
     else {
-      expect(message).toContain(`Removed ${count} character${count === 1 ? "" : "s"} that XML cannot represent`);
-      expect(message).toContain("the manuscript is unchanged");
+      expect(message).toContain(`Replaced or removed ${count} invisible control character${count === 1 ? "" : "s"} that EPUB and Word files cannot hold`);
+      expect(message).toContain("your manuscript is unchanged");
     }
   });
 

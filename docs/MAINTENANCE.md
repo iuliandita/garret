@@ -148,11 +148,13 @@ Page fitting reserves the figure's top margin as well as caption space. Verify
 unsafe empty-registry salvage directories, unreadable-row PNG/JPEG copies, and
 live/bin/history references without a figure table. Markdown package tests inject
 unsupported hard links before asset staging and exercise both save-as and export
-replacement refusals through the shared rendering boundary. XML export fixtures
-cover all 31 forbidden characters, counted removal, unchanged stored bodies,
+replacement refusals through the shared rendering boundary. A disappearing probe
+link exercises cleanup of the empty stage after probe-file removal fails.
+XML export fixtures cover all 31 forbidden characters, counted cleanup, unchanged stored bodies,
 selected-story counts, identity checks after cleanup, and identical clean package
-contents. Interface notices
-cover zero, singular, and plural removal counts. Replace-all's unknown-mark
+contents. Vertical-tab and form-feed cases preserve word separation with spaces.
+Interface and subprocess CLI notices cover zero, singular, and plural cleanup
+counts in writer-facing language. Replace-all's unknown-mark
 fixture pins atomic refusal and unchanged history.
 
 macOS packaging retries the specific hdiutil resource-busy creation failure up

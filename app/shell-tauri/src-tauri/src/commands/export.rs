@@ -532,11 +532,17 @@ fn strip_xml_prose(body: &mut String) -> u64 {
         let mut removed = 0;
         if node["type"] == "text" {
             if let Some(serde_json::Value::String(text)) = node.get_mut("text") {
-                text.retain(|c| {
-                    let allowed = matches!(c, '\t' | '\n' | '\r' | '\u{20}'..='\u{d7ff}' | '\u{e000}'..='\u{fffd}' | '\u{10000}'..='\u{10ffff}');
-                    removed += u64::from(!allowed);
-                    allowed
-                });
+                *text = text.chars().filter_map(|c| match c {
+                    '\u{b}' | '\u{c}' => {
+                        removed += 1;
+                        Some(' ')
+                    }
+                    '\t' | '\n' | '\r' | '\u{20}'..='\u{d7ff}' | '\u{e000}'..='\u{fffd}' | '\u{10000}'..='\u{10ffff}' => Some(c),
+                    _ => {
+                        removed += 1;
+                        None
+                    }
+                }).collect();
             }
         }
         if let Some(children) = node.get_mut("content").and_then(|v| v.as_array_mut()) {
@@ -1529,7 +1535,7 @@ mod tests {
         let forbidden: String = (0..=8).chain([11, 12]).chain(14..=31).chain([0xfffe, 0xffff])
             .map(|c| char::from_u32(c).unwrap()).collect();
         assert_eq!(forbidden.chars().count(), 31);
-        let clean = serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"keep\tline\n\r café 😀 & <text>","marks":[{"type":"em"}]}]}]}).to_string();
+        let clean = serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"keep  \tline\n\r café 😀 & <text>","marks":[{"type":"em"}]}]}]}).to_string();
         let mut value: serde_json::Value = serde_json::from_str(&clean).unwrap();
         value["content"][0]["content"][0]["text"] = serde_json::json!(format!("keep{forbidden}\tline\n\r café 😀 & <text>"));
         let dirty = value.to_string();
@@ -1558,6 +1564,28 @@ mod tests {
                 results.push(entries);
             }
             assert_eq!(results[0], results[1], "{} clean output changed", format.id());
+        }
+    }
+
+    #[test]
+    fn xml_exports_replace_manual_breaks_with_spaces() {
+        let dir = tempdir().unwrap();
+        let db = dir.path().join("book.db");
+        let store = crate::store::Store::open(&db).unwrap();
+        let scene = store.item_create(None, "scene", "Opening").unwrap();
+        let conn = rusqlite::Connection::open(&db).unwrap();
+        for format in [crate::export::Format::Epub, crate::export::Format::Docx] {
+            for (index, text) in ["a\u{b}b", "a\u{c}b"].into_iter().enumerate() {
+                let body = serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":text}]}]}).to_string();
+                conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![body, scene.id]).unwrap();
+                let dest = dir.path().join(format!("{index}.{}", format.id()));
+                let result = super::export_as(&db, "Book", &dest, format, &crate::identity::Vault::default(), crate::strings::Strings::english()).unwrap();
+                assert_eq!(result.xml_characters_removed, 1);
+                assert_eq!(result.words, 2);
+                assert_eq!(store.load_doc(&scene.id).unwrap().body, body);
+                let entries = crate::epub::read_zip(&std::fs::read(dest).unwrap()).unwrap();
+                assert!(entries.iter().any(|(_, bytes)| String::from_utf8_lossy(bytes).contains(">a b<")), "{}: {text:?}", format.id());
+            }
         }
     }
 
