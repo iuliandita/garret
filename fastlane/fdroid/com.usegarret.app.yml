@@ -51,7 +51,9 @@ Builds:
       - rustup default 1.98.1
       - rustup target add aarch64-linux-android x86_64-linux-android
       # Tauri drives Cargo directly; cargo-ndk is not invoked or installed.
-    output: app/shell-tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+    srclibs:
+      - reproducible-apk-tools@9401d827a2404827ec3de6cb90a879d9fbd3f60d
+    output: fdroid-unsigned.apk
     build:
       - export PATH=/usr/local/bin:$HOME/.cargo/bin:$PATH
       - export ANDROID_HOME=$$SDK$$
@@ -60,6 +62,8 @@ Builds:
       - export CARGO_BUILD_JOBS=8
       - export JAVA_TOOL_OPTIONS=-XX:ActiveProcessorCount=8
       - bash scripts/android/build-release
+      # apksigner 35+ replaces AGP's zero padding with alignment extra fields.
+      - python3 $$reproducible-apk-tools$$/zipalign.py --page-size 16 --pad-like-apksigner --replace app/shell-tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk fdroid-unsigned.apk
     ndk: 30.0.16248370
 
 AutoUpdateMode: Version

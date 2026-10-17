@@ -41,6 +41,11 @@ result below before submitting.
    The checkout's `origin` must be the public GitHub repository, reachable
    from inside the container. Use a fresh container for each attempt:
    `--on-server` removes `sudo` after provisioning, even if a later step fails.
+   Also pre-populate `build/srclib/reproducible-apk-tools` at the recipe's
+   pinned commit; `--on-server` assumes the outer build host has fetched
+   srclibs. The existing fdroiddata srclib definition points to F-Droid's
+   mirror, and the pinned commit is also available from
+   [the upstream GitHub repository](https://github.com/obfusk/reproducible-apk-tools/tree/9401d827a2404827ec3de6cb90a879d9fbd3f60d).
    The `--on-server` option executes the recipe's tool-installation commands;
    plain local builds skip its `sudo` section. Keep the logs. Resolve scanner,
    SDK/tool provisioning and lint findings;
@@ -139,3 +144,24 @@ The container needs `/dev/fuse`, `SYS_ADMIN` and permission to mount FUSE
 (for Docker, `--device /dev/fuse --cap-add SYS_ADMIN --security-opt apparmor=unconfined`).
 This changes the build environment, not the tagged application source.
 
+After sorting traversal, every payload entry matched, but signature verification
+still failed because apksigner 35+ replaces AGP's zero padding with `0xd935`
+Android ZIP Alignment Extra Fields. Ordinary SDK `zipalign -P 16 -f 4` does
+not perform that replacement. The recipe therefore pins the existing
+`reproducible-apk-tools` srclib to commit
+`9401d827a2404827ec3de6cb90a879d9fbd3f60d` and runs:
+
+```sh
+python3 "$tools/zipalign.py" --page-size 16 --pad-like-apksigner --replace \
+  app/shell-tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk \
+  fdroid-unsigned.apk
+```
+
+Here `$tools` denotes the srclib path supplied by fdroidserver. This follows
+[apksigcopier's documented workaround](https://github.com/obfusk/apksigcopier#zip-alignment).
+The recipe's unsigned output is `fdroid-unsigned.apk`, including this
+normalization. Copying the published signature onto that output produced an
+APK byte-identical to the published release, with SHA-256
+`f7e11bb6ba0b3e2b52f358b5439ee4eff035c6e2cba330d8843661c42918a56b`.
+`apksigner verify --print-certs` passed and confirmed the retained certificate
+fingerprint above. No application source fix or replacement release is needed.
