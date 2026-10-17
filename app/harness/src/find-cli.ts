@@ -20,6 +20,7 @@
 // path can be interpreted as a command.
 //
 // Usage: APP_GUI=1 bun app/harness/src/find-cli.ts <tiny|stress>
+import { legacyText } from "./document-read";
 import { Database } from "bun:sqlite";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -91,57 +92,9 @@ interface WalkRow {
   depth: number;
 }
 
-/** THE RIG'S OWN plain-text projection of a stored ProseMirror body.
- *
- *  Restated from the format, deliberately, and not imported from
- *  `store::document_text`. It is the same rule -- text nodes concatenated with
- *  nothing between them, a separator before each block node's content -- but
- *  restating it is what makes the oracle independent. A projection taken from
- *  the implementation would agree with the implementation by construction, and
- *  `find_total_matches_oracle` would say nothing at all.
- *
- *  Returns null for a body that is not a document, which is what the store
- *  counts as `skipped`. */
-function projectText(body: string): string | null {
-  let root: unknown;
-  try {
-    root = JSON.parse(body);
-  } catch {
-    return null;
-  }
-  if (typeof root !== "object" || root === null) return null;
-  if ((root as { type?: unknown }).type !== "doc") return null;
-
-  let out = "";
-  const walk = (node: unknown): void => {
-    if (typeof node !== "object" || node === null) return;
-    const n = node as { type?: unknown; text?: unknown; content?: unknown };
-    if (n.type === "text") {
-      if (typeof n.text === "string") out += n.text;
-      return;
-    }
-    // Every non-text node in the page's schema is a block, so its content
-    // begins a new run: ONE separator before the node's content, and none
-    // between its children -- a mark boundary splits one word across several
-    // text nodes, and separating those would turn "bewitched" into two words.
-    //
-    // The `out.length > 0` guard matters: without it the projection starts with
-    // a leading space the store's text does not have.
-    //
-    // The first version of this restatement emitted a separator before EVERY
-    // CHILD instead, doubling every block separator. `find_total_matches_oracle`
-    // could not see it -- single-word containment does not care how many spaces
-    // sit between paragraphs -- and it PASSED at 14,048 == 14,048 while the
-    // projection was wrong. `find_snippet_fidelity` caught it, at `stress`
-    // only, as 12 of 184 snippets: exactly the ones spanning a paragraph
-    // boundary. THE DEFECT WAS THE RIG'S, not the application's.
-    if (out.length > 0) out += " ";
-    if (Array.isArray(n.content)) {
-      for (const child of n.content) walk(child);
-    }
-  };
-  walk(root);
-  return out;
+/** Paragraph-only search oracle; unsupported fields must never disappear from a grade. */
+function projectText(body: string): string {
+  return legacyText(body);
 }
 
 interface Corpus {

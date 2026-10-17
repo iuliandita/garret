@@ -30,6 +30,7 @@
 // needs no geometry.
 //
 // Usage: APP_GUI=1 bun app/harness/src/import-cli.ts
+import { legacyMarkedRuns, legacyText } from "./document-read";
 import { Database } from "bun:sqlite";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -244,36 +245,12 @@ function readStore(path: string): StoredItem[] {
  * imported and not inferred from the importer — the same reason
  * `markdown-read.ts` exists. */
 function bodyText(body: string): string {
-  const root: unknown = JSON.parse(body);
-  let out = "";
-  const append = (node: unknown, isBlock: boolean): void => {
-    if (typeof node !== "object" || node === null) return;
-    const n = node as { type?: unknown; text?: unknown; content?: unknown };
-    if (n.type === "text") {
-      if (typeof n.text === "string") out += n.text;
-      return;
-    }
-    if (isBlock && out.length > 0) out += " ";
-    if (Array.isArray(n.content)) for (const child of n.content) append(child, false);
-  };
-  const top = root as { content?: unknown };
-  if (Array.isArray(top.content)) for (const block of top.content) append(block, true);
-  return out;
+  return legacyText(body);
 }
 
 /** Every run of text in a body that carries at least one mark. */
 function markedRuns(body: string): string[] {
-  const out: string[] = [];
-  const visit = (node: unknown): void => {
-    if (typeof node !== "object" || node === null) return;
-    const n = node as { type?: unknown; text?: unknown; marks?: unknown; content?: unknown };
-    if (n.type === "text" && typeof n.text === "string" && Array.isArray(n.marks) && n.marks.length > 0) {
-      out.push(n.text);
-    }
-    if (Array.isArray(n.content)) for (const child of n.content) visit(child);
-  };
-  visit(JSON.parse(body));
-  return out;
+  return legacyMarkedRuns(body);
 }
 
 if (process.env.APP_GUI !== "1") {

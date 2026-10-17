@@ -1,3 +1,4 @@
+import { readLegacyDocument } from "./document-read";
 import { Database } from "bun:sqlite";
 
 const MAX_DEPTH = 64;
@@ -85,9 +86,9 @@ export async function waitForExactBootSceneText(
 function parseStoredText(body: string): StoredText {
   let document: unknown;
   try {
-    document = JSON.parse(body);
-  } catch {
-    throw new Error("boot scene body is not valid JSON");
+    document = readLegacyDocument(body);
+  } catch (error) {
+    throw new Error(`boot scene body is unreadable: ${String(error)}`);
   }
   if (!isRecord(document) || document.type !== "doc" || !Array.isArray(document.content)) {
     throw new Error("boot scene body is not a ProseMirror document");

@@ -430,6 +430,7 @@
 // preferences -- and it exercises the whole path the application uses, from the
 // settings file through the init script to the head script, rather than a
 // shortcut only the rig has.
+import { readLegacyDocument } from "./document-read";
 import { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import {
@@ -2323,7 +2324,7 @@ if (options.library || options.libraryOverBook || (isClassicFixture(options.fixt
  *  page's builders: the harness does not import page source. A wrong shape here
  *  fails loudly, at the panel, in a capture whose filename says --compare. */
 function demoOlderBody(body: string): string {
-  const doc = JSON.parse(body) as {
+  const doc = readLegacyDocument(body) as {
     type: string;
     content?: { type: string; content?: { type: string; text?: string }[] }[];
   };
@@ -2562,7 +2563,7 @@ function plantDemoReview(path: string): void {
       )
       .get() as { id: string; body: string } | null;
     if (row === null) throw new Error("--review-demo found no document in the fixture");
-    const parsed = JSON.parse(row.body) as { content?: { content?: { text?: string; marks?: unknown[] }[] }[] };
+    const parsed = readLegacyDocument(row.body) as { content?: { content?: { text?: string; marks?: unknown[] }[] }[] };
     const node = parsed.content?.[0]?.content?.[0];
     const text = node?.text ?? "";
     if (text.length < 40 || (node?.marks?.length ?? 0) > 0) {
@@ -2608,7 +2609,7 @@ function plantDemoComments(path: string, classic: boolean): string {
       )
       .get() as { id: string; body: string } | null;
     if (row === null) throw new Error("--comments-demo found no document in the fixture");
-    const parsed = JSON.parse(row.body) as {
+    const parsed = readLegacyDocument(row.body) as {
       content?: { content?: { text?: string }[] }[];
     };
     const text = parsed.content?.[0]?.content?.[0]?.text ?? "";
@@ -2689,7 +2690,7 @@ function plantDemoMarks(path: string): void {
       )
       .get() as { id: string; body: string } | null;
     if (row === null) throw new Error("--marks-demo found no document in the fixture");
-    const parsed = JSON.parse(row.body) as {
+    const parsed = readLegacyDocument(row.body) as {
       content?: { content?: { type: string; text?: string }[] }[];
     };
     const first = parsed.content?.[0];

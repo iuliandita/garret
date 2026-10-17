@@ -36,6 +36,7 @@
 // shell is involved anywhere in this file.
 //
 // Usage: APP_GUI=1 bun app/harness/src/replace-cli.ts <tiny|stress>
+import { readLegacyDocument, legacyText } from "./document-read";
 import { Database } from "bun:sqlite";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -121,31 +122,8 @@ interface WalkRow {
  *  nodes concatenated with nothing between them, one separator before each
  *  block node's content, none before the first -- but restating it is what
  *  makes the oracle independent of the thing it grades. */
-function projectText(body: string): string | null {
-  let root: unknown;
-  try {
-    root = JSON.parse(body);
-  } catch {
-    return null;
-  }
-  if (typeof root !== "object" || root === null) return null;
-  if ((root as { type?: unknown }).type !== "doc") return null;
-
-  let out = "";
-  const walk = (node: unknown): void => {
-    if (typeof node !== "object" || node === null) return;
-    const n = node as { type?: unknown; text?: unknown; content?: unknown };
-    if (n.type === "text") {
-      if (typeof n.text === "string") out += n.text;
-      return;
-    }
-    if (out.length > 0) out += " ";
-    if (Array.isArray(n.content)) {
-      for (const child of n.content) walk(child);
-    }
-  };
-  walk(root);
-  return out;
+function projectText(body: string): string {
+  return legacyText(body);
 }
 
 /** Fold ONE CODE POINT AT A TIME, restated from find-locate.ts's rule and from
@@ -271,28 +249,9 @@ function storeTextOf(projectPath: string, itemId: string): string | null {
  *  Read out of the raw stored JSON rather than out of a projection: the whole
  *  claim is about marks, and the projection throws them away by construction. */
 function emphasisedTextNodes(body: string, needle: string): { total: number; emphasised: number } {
-  let root: unknown;
-  try {
-    root = JSON.parse(body);
-  } catch {
-    return { total: 0, emphasised: 0 };
-  }
-  let total = 0;
-  let emphasised = 0;
-  const walk = (node: unknown): void => {
-    if (typeof node !== "object" || node === null) return;
-    const n = node as { type?: unknown; text?: unknown; marks?: unknown; content?: unknown };
-    if (n.type === "text" && typeof n.text === "string" && n.text.includes(needle)) {
-      total++;
-      const marks = Array.isArray(n.marks) ? n.marks : [];
-      if (marks.some((m) => typeof m === "object" && m !== null && (m as { type?: unknown }).type === "em")) {
-        emphasised++;
-      }
-    }
-    if (Array.isArray(n.content)) for (const child of n.content) walk(child);
-  };
-  walk(root);
-  return { total, emphasised };
+  const runs = readLegacyDocument(body).content.flatMap((block) => block.content ?? [])
+    .filter((node) => node.text.includes(needle));
+  return { total: runs.length, emphasised: runs.filter((node) => node.marks?.some((mark) => mark.type === "em")).length };
 }
 
 // ---------------------------------------------------------------- AT-SPI
