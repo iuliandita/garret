@@ -45,9 +45,7 @@
     "maintenance": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "f77a6ec0d56387ca8dc31fda01c531fc6dda7b70301c5b97e05e8fd489d47051",
-        "docs/MAINTENANCE.md": "2c7ad6cacf04354cd8bc3b35d5c477b88ca952506b880d147f0c5374e662773c",
-        "docs/RELEASES.md": "5fd30e30eb593e4fb54dda099696f595ec88a3c90ca65b545f1855b8abe32c44"
+        "docs/MAINTENANCE.md": "2c7ad6cacf04354cd8bc3b35d5c477b88ca952506b880d147f0c5374e662773c"
       },
       "migration": "Desktop identifier changes leave books, settings, and SQLite schema 17 unchanged. Windows retains its previous WebView2 profile; Android retains its package. macOS starts fresh regenerable caches and native window restore state, leaving old entries untouched. Keep the normal closed-book and profile backup before upgrade; rollback uses the previous package and preserved files.",
       "no_impact": "",
@@ -57,9 +55,7 @@
     "native-packaging": {
       "breaking": "none",
       "docs": {
-        "README.md": "70d14a1c7c2f0b1b3c1f36ff7444d3e61560759415108fbd7ba93a09e712f533",
-        "docs/COMPATIBILITY.md": "f77a6ec0d56387ca8dc31fda01c531fc6dda7b70301c5b97e05e8fd489d47051",
-        "docs/RELEASES.md": "5fd30e30eb593e4fb54dda099696f595ec88a3c90ca65b545f1855b8abe32c44"
+        "README.md": "70d14a1c7c2f0b1b3c1f36ff7444d3e61560759415108fbd7ba93a09e712f533"
       },
       "migration": "Desktop identifier changes leave books, settings, and SQLite schema 17 unchanged. Windows retains its previous WebView2 profile; Android retains its package. macOS starts fresh regenerable caches and native window restore state, leaving old entries untouched. Keep the normal closed-book and profile backup before upgrade; rollback uses the previous package and preserved files.",
       "no_impact": "",
