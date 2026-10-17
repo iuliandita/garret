@@ -38,6 +38,7 @@ export const EN = {
   "collection.new-story": "New story",
   "collection.fields": "Story details",
   "collection.title": "Story title",
+  "collection.title-required": "Enter a story title.",
   "collection.author": "Author (optional)",
   "collection.status": "Status",
   "collection.save": "Save story",

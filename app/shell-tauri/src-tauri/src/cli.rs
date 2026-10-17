@@ -181,6 +181,13 @@ fn print_knowledge(value: &KnowledgeRead) {
     for title in &value.missing_originals { println!("unavailable {title}"); }
 }
 
+#[derive(Debug, Serialize)]
+pub struct InspectedStory {
+    pub id: String,
+    pub title: String,
+    pub author: Option<String>,
+}
+
 /// What `inspect` answers. The field names ARE the JSON keys and they are the
 /// contract: `inspect_json_keys` fails on a rename, so a script reading this
 /// breaks a test here rather than in production.
@@ -192,6 +199,8 @@ pub struct Inspection {
     pub series: Option<crate::store::series::Group>,
     pub universe: Option<crate::store::series::Group>,
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stories: Option<Vec<InspectedStory>>,
     pub items: u64,
     /// Counted from the item ROWS, not from the walk, so the figure is what the
     /// file holds even when the walk cannot reach all of it. BTreeMap so the
@@ -285,13 +294,25 @@ pub fn inspect(path: &Path) -> Result<Inspection, String> {
 
     let words_index = store.word_index().map_err(|e| e.to_string())?;
     // The walk is allowed to fail here. Everything above it is a row count.
-    let (trashed, excluded, structure_error) = match store.items() {
-        Ok(walk) => (
-            store::trashed_ids(&walk).len() as u64,
-            store::excluded_from_book(&walk),
-            None,
-        ),
-        Err(e) => (0, Default::default(), Some(e.to_string())),
+    let (trashed, excluded, structure_error, stories) = match store.items() {
+        Ok(walk) => {
+            let trashed = store::trashed_ids(&walk).len() as u64;
+            let excluded = store::excluded_from_book(&walk);
+            let stories = if store.project_preset().map_err(|error| error.to_string())? == "collection" {
+                let chapters = store::book_walk(walk).chapters;
+                let ids = crate::collection::story_ids(&chapters);
+                Some(chapters.into_iter().filter(|item| ids.contains(&item.id)).map(|item| {
+                    Ok(InspectedStory { author: crate::collection::author(&store, &item.id)?, id: item.id, title: item.title })
+                }).collect::<Result<Vec<_>, String>>()?)
+            } else { None };
+            (
+                trashed,
+                excluded,
+                None,
+                stories,
+            )
+        },
+        Err(e) => (0, Default::default(), Some(e.to_string()), None),
     };
     // `words` is the MANUSCRIPT's, so the bible comes out of it with the bin.
     // `trashed_items` stays the bin's own count: it names one section and would
@@ -361,6 +382,7 @@ pub fn inspect(path: &Path) -> Result<Inspection, String> {
         series: membership.series,
         universe: membership.universe,
         name: project_name(&store, path),
+        stories,
         items: items_by_type.values().sum(),
         items_by_type,
         documents: count_of(&conn, "SELECT count(*) FROM doc")?,
@@ -2177,6 +2199,44 @@ mod tests {
                 "words",
             ]
         );
+    }
+
+    #[test]
+    fn collection_cli_lists_stories_and_scopes_only_valid_exports() {
+        let dir = tempdir().unwrap();
+        let made = projects::create_in_preset(dir.path(), "Collected", &crate::strings::Strings::english(), Some("collection")).unwrap();
+        let path = Path::new(&made.path);
+        let store = store::Store::open(path).unwrap();
+        let items = store.items().unwrap();
+        let first = items.iter().find(|item| item.item_type == "chapter").unwrap();
+        let scene = items.iter().find(|item| item.item_type == "scene").unwrap();
+        crate::collection::save(&store, &first.id, "The Harbour", "Ada Lane", None, first.rev).unwrap();
+        let second = store.item_create(None, "chapter", "The Forest").unwrap();
+        let listed = serde_json::to_value(inspect(path).unwrap()).unwrap();
+        assert_eq!(listed["stories"], serde_json::json!([
+            { "id": first.id, "title": "The Harbour", "author": "Ada Lane" },
+            { "id": second.id, "title": "The Forest", "author": null },
+        ]));
+        let dest = dir.path().join("story.md");
+        assert_eq!(run(&argv(&["export", path.to_str().unwrap(), dest.to_str().unwrap(), "--story", &first.id])), EXIT_OK);
+        let text = std::fs::read_to_string(&dest).unwrap();
+        assert!(text.starts_with("# The Harbour\n\nAda Lane\n"), "{text}");
+        let refused = dir.path().join("refused.md");
+        for (command, id, code, message) in [
+            ("export", scene.id.as_str(), EXIT_UNREADABLE, "not a story"),
+            ("inspect", first.id.as_str(), EXIT_USAGE, "--story applies only to export"),
+        ] {
+            let error = dispatch(&argv(&[command, path.to_str().unwrap(), refused.to_str().unwrap(), "--story", id])).err().expect("scope must refuse");
+            assert_eq!(error.code(), code);
+            assert!(error.to_string().contains(message), "{error}");
+            assert!(!refused.exists());
+        }
+        store.set_meta(crate::core_constants::PRESET_KEY, "novel").unwrap();
+        assert!(inspect(path).unwrap().stories.is_none());
+        let error = dispatch(&argv(&["export", path.to_str().unwrap(), refused.to_str().unwrap(), "--story", &first.id])).err().expect("novel scope must refuse");
+        assert_eq!(error.code(), EXIT_UNREADABLE);
+        assert!(error.to_string().contains("not a collection"), "{error}");
+        assert!(!refused.exists());
     }
 
     #[test]

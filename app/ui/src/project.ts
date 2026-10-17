@@ -2973,7 +2973,11 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     },
     export: (id, format) => exportBar?.runAs(format, id),
     notice: raiseNotice,
-    returnFocus: () => navEl.focus(),
+    returnFocus: (id) => {
+      if (navigator.revealAndSelectById !== undefined) navigator.revealAndSelectById(id);
+      else navigator.selectById(id);
+      navEl.focus();
+    },
   }) : null;
 
   // The navigator's context menu. A SECOND ROUTE to operations the Outline menu

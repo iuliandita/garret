@@ -57,8 +57,11 @@ to an older desktop build needs no preset conversion. Android preset support
 is handled separately; do not assume an older Android build understands it.
 
 Collections use ordinary chapter containers as stories. The outermost chapters
-in the manuscript are stories; nested chapters remain sections. New story adds
-a story without an automatic part. Scenes stay in the selected story or section.
+in the manuscript are stories; nested chapters remain sections. New story follows
+the selected story in the same parent, without an automatic part. Scenes stay in
+the selected story or section. Outside a story, a new scene goes into the nearest
+preceding story in outline order (the last story when nothing is selected). If
+none precedes it, a new story holds the scene, inside the selected part if any.
 Each story keeps its existing title and revision status; navigator counts sum
 its scenes. Right-click a story (or press Shift+F10) and choose Story details to
 edit its title, optional public author, and status, or save and export it alone.
@@ -78,8 +81,13 @@ EPUB stores its effective author as creator; all four formats print its byline.
 An explicit story author omits the book pin's other identity and publishing
 fields. Falling back to the book author retains that pin's export fields.
 The CLI supports `garret export book.db story.epub --format epub --story ID`;
-use `garret inspect book.db --json` to find the story's chapter ID. A whole-book
-export omits `--story`. No export changes stored book metadata.
+use the `stories` list in `garret inspect book.db --json` to find each live story's
+`id`, `title` and `author` (or null when inherited). A whole-book export omits
+`--story`. The `garret preflight` command checks the whole book and does not
+accept `--story`.
+DOCX contents are generated only for a whole collection. Scoped EPUB identifiers
+combine the book identity and story ID. Only chapter items receive chapter
+openers in scoped exports. No export changes stored book metadata.
 
 Collections introduce no schema migration. Keep the complete closed-book and
 profile backup described above. Rollback needs no conversion; preserve the

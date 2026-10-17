@@ -304,7 +304,11 @@ impl<'a> Book<'a> {
     }
 
     pub fn byline(&self, id: &str) -> Option<&str> {
-        self.publication.and_then(|p| p.bylines.get(id)).map(String::as_str)
+        let author = self.publication?.bylines.get(id)?;
+        if self.single_scene && self.chapters.iter().any(|(item, title, _)| item == id && title.trim().is_empty()) {
+            return None;
+        }
+        Some(author.as_str())
     }
 
     pub fn lists(&self, id: &str) -> bool {

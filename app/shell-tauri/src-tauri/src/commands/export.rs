@@ -427,7 +427,8 @@ fn render_scope_with(
                 book: &book,
                 language: strings.tag(),
                 bodies: &bodies,
-                book_id: if story.is_some() { story_id.filter(|id| uuid::Uuid::parse_str(id).is_ok()) } else { book_id.as_deref() },
+                book_id: book_id.as_deref(),
+                story_id,
                 font: &design.font,
                 style,
                 openings,
@@ -499,7 +500,7 @@ fn walk_scope(store: &store::Store, story_id: Option<&str>) -> std::result::Resu
     let bodies = store.documents().map_err(|e| e.to_string())?;
     let mut openings = crate::export::ChapterOpenings::default();
     for item in &walk.chapters {
-        if item.item_type == "chapter" || (item.depth == 0 && item.item_type != "part") {
+        if item.item_type == "chapter" || (story_id.is_none() && item.depth == 0 && item.item_type != "part") {
             openings.styled.insert(item.id.clone());
         }
         if item.item_type == "chapter" || item.item_type == "part" {
@@ -515,11 +516,15 @@ fn walk_scope(store: &store::Store, story_id: Option<&str>) -> std::result::Resu
             (item.id, title, item.depth)
         }).collect()
     };
+    let chapters = tuples(walk.chapters);
+    if single_scene {
+        publication.bylines.retain(|id, _| chapters.iter().any(|(item, title, _)| item == id && !title.trim().is_empty()));
+    }
     Ok(Walked {
         publication,
         single_scene,
         front: tuples(walk.front),
-        chapters: tuples(walk.chapters),
+        chapters,
         back: tuples(walk.back),
         bodies,
         openings,
@@ -2970,6 +2975,22 @@ mod tests {
 mod project_presets_tests {
     use super::*;
 
+    fn assert_byline(text: &str, format: crate::export::Format, title: &str, author: &str, scoped: bool) {
+        use crate::export::Format;
+        let escaped = crate::epub::xml_escape(author);
+        match format {
+            Format::Markdown => assert!(text.contains(&format!("#{} {title}\n\n{author}\n", if scoped { "" } else { "#" })), "{text}"),
+            Format::Docx => assert!(text.contains(&format!(">{}</w:t></w:r></w:p><w:p><w:pPr><w:pStyle w:val=\"Normal\"/><w:jc w:val=\"center\"/></w:pPr><w:r><w:t xml:space=\"preserve\">{escaped}</w:t>", crate::epub::xml_escape(title))), "{text}"),
+            Format::Epub | Format::Pdf => {
+                let class = if scoped && format == Format::Pdf { "proof-byline" } else { "story-byline" };
+                let before = text.split(&format!("<p class=\"{class}\">{escaped}</p>")).next().unwrap();
+                assert!(before.len() < text.len(), "missing standalone byline: {text}");
+                let heading = &before[before.rfind("<h").unwrap()..];
+                assert!(heading.contains(&format!(">{}</h", crate::epub::xml_escape(title))), "{heading}");
+            }
+        }
+    }
+
     fn text_of(written: crate::export::Manuscript, format: crate::export::Format) -> String {
         match format {
             crate::export::Format::Epub => {
@@ -3037,6 +3058,7 @@ mod project_presets_tests {
                 let byline = if format == crate::export::Format::Markdown { "The Harbour (Ada & Lane)" } else { "The Harbour (Ada &amp; Lane)" };
                 // EPUB reading order includes the visible contents document.
                 assert!(whole.contains(byline), "{format:?}: {whole}");
+                assert_byline(&whole, format, "The Harbour", "Ada & Lane", false);
                 for (id, title, author, prose, other) in [(&first.id, "The Harbour", "Ada & Lane", "Harbour words remain.", "Forest words remain."), (&second.id, "The Forest", "Book Author", "Forest words remain.", "Harbour words remain.")] {
                     let (written, _, count, preflight) = render_scope_with(path, "Collected tales", format, &crate::identity::Vault::default(), crate::strings::Strings::english(), None, Some(id)).unwrap();
                     assert_eq!(count, if multi_scene && id == &second.id { 4 } else { 3 });
@@ -3048,8 +3070,11 @@ mod project_presets_tests {
                         assert!(opf.contains(&crate::epub::xml_escape(author)), "{opf}");
                         assert_eq!(opf.contains("Collection Press"), id == &second.id, "{opf}");
                         assert_eq!(opf.contains("Author, Book"), id == &second.id, "{opf}");
+                        let book_id = uuid::Uuid::parse_str(&store::Store::open_readonly(path).unwrap().book_id().unwrap().unwrap()).unwrap();
+                        assert!(opf.contains(&format!("urn:garret:collection:{book_id}:story:{id}")), "{opf}");
                     }
                     let text = text_of(written, format);
+                    assert_byline(&text, format, title, author, true);
                     assert!(text.contains(title) && text.contains(prose), "{format:?}: {text}");
                     for absent in ["Collected tales", "Dedication", "Afterword", other] { assert!(!text.contains(absent), "{format:?}: unexpected {absent}"); }
                     if !multi_scene || id == &first.id {
@@ -3057,6 +3082,9 @@ mod project_presets_tests {
                         assert!(!text.contains("## Contents") && !text.contains(">Contents</"), "{format:?}: {text}");
                     } else {
                         assert!(text.contains("The clearing"), "{format:?}: {text}");
+                    }
+                    if format == crate::export::Format::Docx {
+                        assert!(!text.contains(">Contents</w:t>"), "scoped DOCX contents: {text}");
                     }
                 }
             }
@@ -3066,6 +3094,26 @@ mod project_presets_tests {
             assert!(export_scope_into_with(path, "Collected tales", &dest, Dest::New, crate::export::Format::Markdown, &crate::identity::Vault::default(), crate::strings::Strings::english(), Some(&first_scene.id), Ok).is_err());
             assert!(!dest.exists());
         }
+    }
+
+    #[test]
+    fn collection_suppressed_headings_have_no_byline_and_scoped_scenes_are_not_openers() {
+        let dir = tempfile::tempdir().unwrap();
+        let made = crate::projects::create_in_preset(dir.path(), "Collected", &crate::strings::Strings::english(), Some("collection")).unwrap();
+        let path = Path::new(&made.path);
+        let store = store::Store::open(path).unwrap();
+        let items = store.items().unwrap();
+        let story = items.iter().find(|item| item.item_type == "chapter").unwrap();
+        let scene = items.iter().find(|item| item.item_type == "scene").unwrap();
+        crate::collection::save(&store, &story.id, "Story 1", "Ada Lane", None, story.rev).unwrap();
+        let scoped = walk_scope(&store, Some(&story.id)).unwrap();
+        assert!(!scoped.openings.styled.contains(&scene.id));
+        for format in crate::export::Format::ALL {
+            let (written, _, _, _) = render_scope_with(path, "Collected", format, &crate::identity::Vault::default(), crate::strings::Strings::english(), None, None).unwrap();
+            assert!(!text_of(written, format).contains("Ada Lane"), "{format:?}: byline without its heading");
+        }
+        let section = store.item_create(Some(&story.id), "chapter", "Section").unwrap();
+        assert!(walk_scope(&store, Some(&story.id)).unwrap().openings.styled.contains(&section.id));
     }
 
     #[test]

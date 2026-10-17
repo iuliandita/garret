@@ -34,6 +34,7 @@ export const DE = {
   "collection.new-story": "Neue Geschichte",
   "collection.fields": "Geschichtendetails",
   "collection.title": "Titel der Geschichte",
+  "collection.title-required": "Bitte einen Titel für die Geschichte eingeben.",
   "collection.author": "Autor (optional)",
   "collection.status": "Bearbeitungsstand",
   "collection.save": "Geschichte speichern",

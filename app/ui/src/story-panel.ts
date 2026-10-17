@@ -16,7 +16,7 @@ export function createStoryPanel(deps: {
   save(story: StoryFields): Promise<void>;
   export(id: string, format: ExportFormat): void;
   notice(message: string): void;
-  returnFocus(): void;
+  returnFocus(id: string): void;
 }): { open(id: string): Promise<void>; destroy(): void } {
   const panel = document.createElement("div");
   panel.id = "story-panel";
@@ -26,6 +26,7 @@ export function createStoryPanel(deps: {
   panel.setAttribute("aria-modal", "false");
   panel.setAttribute("aria-label", t("collection.fields"));
   let story: StoryFields | null = null;
+  let originId: string | null = null;
   let busy = false;
   let epoch = 0;
   let destroyed = false;
@@ -36,7 +37,7 @@ export function createStoryPanel(deps: {
     story = null;
   };
   const shell = createPanelShell({ panel, title: t("collection.fields"), footer: true,
-    close, returnFocus: deps.returnFocus, outsideClick: false });
+    close, returnFocus: () => { if (!busy && originId !== null) deps.returnFocus(originId); }, outsideClick: false });
   document.body.append(panel);
   const title = document.createElement("input");
   const author = document.createElement("input");
@@ -60,7 +61,20 @@ export function createStoryPanel(deps: {
     status.append(option);
   }
   const hint = document.createElement("p");
+  hint.id = "story-inheritance";
   hint.textContent = t("collection.inheritance");
+  panel.setAttribute("aria-describedby", hint.id);
+  author.setAttribute("aria-describedby", hint.id);
+  const error = document.createElement("p");
+  error.id = "story-title-error";
+  error.setAttribute("role", "status");
+  error.setAttribute("aria-live", "polite");
+  title.setAttribute("aria-describedby", error.id);
+  title.addEventListener("input", () => {
+    title.removeAttribute("aria-invalid");
+    error.textContent = "";
+  });
+  shell.body.insertBefore(error, author.previousSibling);
   shell.body.append(hint);
   const button = (id: string, text: string, run: () => void): HTMLButtonElement => {
     const control = document.createElement("button");
@@ -73,7 +87,12 @@ export function createStoryPanel(deps: {
   const save = async (format?: ExportFormat): Promise<void> => {
     if (busy || story === null || destroyed) return;
     const captured = story;
-    if (!title.value.trim()) { title.focus(); return; }
+    if (!title.value.trim()) {
+      title.setAttribute("aria-invalid", "true");
+      error.textContent = t("collection.title-required");
+      title.focus();
+      return;
+    }
     busy = true;
     const controls = panel.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>("input,select,button");
     controls.forEach((control) => { control.disabled = true; });
@@ -82,7 +101,7 @@ export function createStoryPanel(deps: {
       if (destroyed) return;
       busy = false;
       close();
-      deps.returnFocus();
+      deps.returnFocus(captured.id);
       if (format !== undefined) deps.export(captured.id, format);
     } catch (error) {
       if (!destroyed) deps.notice(t("collection.error", { error: String(error) }));
@@ -97,7 +116,10 @@ export function createStoryPanel(deps: {
   const exports = document.createElement("div");
   exports.className = "story-exports";
   const exportLabel = document.createElement("h3");
+  exportLabel.id = "story-export-label";
   exportLabel.textContent = t("collection.export");
+  exports.setAttribute("role", "group");
+  exports.setAttribute("aria-labelledby", exportLabel.id);
   shell.body.append(exportLabel, exports);
   for (const format of EXPORT_FORMATS) {
     exports.append(button(`story-export-${format}`, exportFormatName(format), () => { void save(format); }));
@@ -110,7 +132,10 @@ export function createStoryPanel(deps: {
         const read = await deps.read(id);
         if (destroyed || request !== epoch) return;
         story = read;
+        originId = read.id;
         title.value = read.title;
+        title.removeAttribute("aria-invalid");
+        error.textContent = "";
         author.value = read.author ?? "";
         status.value = read.state ?? "";
         panel.hidden = false;
