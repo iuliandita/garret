@@ -23,17 +23,17 @@
     "editor": {
       "breaking": "none",
       "docs": {
-        "README.md": "31f4dcc467b159f49c99039c09f2523916fe78468b7a51662fd3a7fbdefbb7f7"
+        "README.md": "fba4a00232588464118ecdbc858abf7fdccedbc42b3043e5347a48305fef7f77"
       },
       "migration": "",
       "no_impact": "",
       "note": "Document chapter openers (ornament, its position, chapter sink) in the book preparation summary; the preview rail gains two option groups and three ornaments.",
-      "source_sha256": "55b61b478f288299691b8552d70cb20c7abc5a4e026bce10a6fa54c8db52ba4d"
+      "source_sha256": "2e93f617cea7068d2b10e29ab9a21aee11547cde58d1d3700f9e70b0f28af773"
     },
     "encryption": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "be6a84efbf4ad40a4543cd2dec932804edfc909b8aca478ee4b2dbbe5737f2b6"
+        "docs/COMPATIBILITY.md": "aaf05cc02dc251a134e65de1d2a26332d7d75aca1f7ababc4109d8197381fe27"
       },
       "migration": "",
       "no_impact": "",
@@ -44,25 +44,22 @@
       "breaking": "none",
       "docs": {},
       "migration": "",
-      "no_impact": "Renderer, paginator and test sources changed for chapter openers; contributor guidance, documentation checks and native-test exclusions are unchanged.",
+      "no_impact": "Renderer, paginator and test sources changed for chapter openers and CI runs one display-gated paginator test; contributor guidance, documentation checks and native-test exclusions are unchanged.",
       "note": "No contributor workflow change.",
-      "source_sha256": "d76343dcb6bfab4bd93fdff702ad3b9885da0a4cbbf48951afb1d476648b065d"
+      "source_sha256": "4d66c16a67bb05c50e5500bea732cbd5c9af79c0e4e1a4c926460ab19488b76d"
     },
     "native-packaging": {
       "breaking": "none",
-      "docs": {
-        "CONTRIBUTING.md": "272888b63e282071b5f8c40e627910c1064d4fe6d422f5967dab9dd6fa456d11",
-        "docs/RELEASES.md": "a89c23cedc46f620969337f6a3957ddceb589017a562d600bed0bb1da86ac48d"
-      },
+      "docs": {},
       "migration": "",
-      "no_impact": "",
-      "note": "Require the latest exact-commit develop push CI run to succeed before alpha tag packaging; an older success cannot hide a pending or failed newer run. Existing platforms, asset publication, tag ancestry, application behavior, and compatibility remain unchanged.",
-      "source_sha256": "2f6c313459ffcf4cacba835bae2f161f2fa7a56e95c5a4614e855eacb9ef9f8e"
+      "no_impact": "CI gains one narrow display-gated paginator test step in the host job; packaging, release admission and artifacts are unchanged.",
+      "note": "Require the latest exact-commit develop push CI run to succeed before alpha tag packaging; an older success cannot hide a pending or failed newer run. Existing platforms, asset publication, tag ancestry, application behavior, and compatibility remain unchanged. The host job also runs one display-gated proof paginator test.",
+      "source_sha256": "d6ce91ef8888dbd6613d38e3b794bb7ea12e98cc981e184e9c8cace733bc5c4d"
     },
     "project-format": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "be6a84efbf4ad40a4543cd2dec932804edfc909b8aca478ee4b2dbbe5737f2b6"
+        "docs/COMPATIBILITY.md": "aaf05cc02dc251a134e65de1d2a26332d7d75aca1f7ababc4109d8197381fe27"
       },
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Chapter openers add optional words (ornament-above, sink-third, sink-half) and three ornament names to the stored chapter options; older builds ignore them, so back up the closed book before upgrading as above and expect an older package to show the ornament below the title with no sink.",
       "no_impact": "",
@@ -72,7 +69,7 @@
     "schema": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "be6a84efbf4ad40a4543cd2dec932804edfc909b8aca478ee4b2dbbe5737f2b6"
+        "docs/COMPATIBILITY.md": "aaf05cc02dc251a134e65de1d2a26332d7d75aca1f7ababc4109d8197381fe27"
       },
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
       "no_impact": "",

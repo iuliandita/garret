@@ -31,11 +31,18 @@ not change the stored manuscript schema or require converting existing books.
 
 Chapter openers add three optional words to a book's stored chapter options:
 `ornament-above`, `sink-third` and `sink-half`, plus three more ornament names.
-The SQLite schema is unchanged and a book without these words renders exactly
-as before. An older build ignores the words (the ornament sits below the title
-and chapters start at the top of the page), draws no ornament for the new names,
-drops the words if it saves the chapter options, and refuses a book-design
-transfer file that carries them.
+The SQLite schema is unchanged and the defaults of existing books are
+unchanged: ornament below the title, chapters starting at the top. The sink
+means a chapter opening starts a third or half of the way down the text area
+(the page inside its margins, a proof's text block), measured from the top of
+that area; in an EPUB it is relative spacing and a reading system decides the
+page. PDF pagination changed on purpose: a heading, the heading above it and
+any adjacent ornament now move to the next leaf together instead of leaving a
+heading at the foot of a page, so some proofs gain a page. An older build
+ignores the words (the ornament sits below the title and chapters start at the
+top of the page), draws no ornament for the new names, drops the words if it
+saves the chapter options, and refuses a book-design transfer file that
+carries them.
 
 The desktop profile now uses `garret` instead of `cc.local.app`, preserving a
 compatibility link after migration. Close older versions before first launch.

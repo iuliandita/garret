@@ -183,7 +183,7 @@ describe("the book design panel", () => {
     expect(text).toContain("New page for parts and chapters");
     expect(text).toContain("Book-body headings in capitals");
     expect(text).toContain("Ornament above the chapter title");
-    expect(text).toContain("Chapters start halfway down the page");
+    expect(text).toContain("Chapters start halfway down the text area");
     expect(text).toContain("Hedera");
     expect(text).toContain("Chapter ornament will change from a setting this version cannot read to Hedera.");
     expect(text).toContain("Margins will change from the default to");
@@ -205,8 +205,8 @@ describe("the book design panel", () => {
     await settle();
     const text = r.el("design-transfer-review")?.textContent ?? "";
     expect(text).toContain(EN["design.transfer.invalid-saved"]);
-    expect(text).toContain("Chapters start halfway down the page");
-    expect(text).not.toContain("a third down the page");
+    expect(text).toContain("Chapters start halfway down the text area");
+    expect(text).not.toContain("a third of the way down");
   });
   test("a post-apply read failure reports refresh without calling the transfer failed", async () => {
     const preview: DesignTransferPreview = {

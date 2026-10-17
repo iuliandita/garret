@@ -327,7 +327,8 @@ fn stylesheet(font: &str, style: &ChapterStyle) -> String {
     }
     if style.ornament_above {
         css.push_str(&format!(
-            ".{ORNAMENT_ABOVE_CLASS} {{ margin: 2em 0 0; }}\n\
+            ".{ORNAMENT_ABOVE_CLASS} {{ margin: 2em 0 0; page-break-after: avoid; \
+             break-after: avoid; }}\n\
              .{ORNAMENT_ABOVE_CLASS} + h1, .{ORNAMENT_ABOVE_CLASS} + h2, \
              .{ORNAMENT_ABOVE_CLASS} + h3, .{ORNAMENT_ABOVE_CLASS} + h4, \
              .{ORNAMENT_ABOVE_CLASS} + h5, .{ORNAMENT_ABOVE_CLASS} + h6 \
@@ -1448,6 +1449,11 @@ mod tests {
         // Only the chapter's division: the scene under it has no ornament.
         assert_eq!(doc.matches("<p class=\"ornament").count(), 1, "{doc}");
         assert!(css.contains(".ornament-above + h2"), "{css}");
+        // The ornament must not be left at the foot of a page without its title.
+        assert!(
+            css.contains(".ornament-above { margin: 2em 0 0; page-break-after: avoid; break-after: avoid; }"),
+            "{css}"
+        );
 
         // Without an ornament the position has nothing to move.
         let (doc, _) = render_with(ChapterStyle {
