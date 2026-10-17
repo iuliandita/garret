@@ -28,11 +28,23 @@
 // is the publishing track's constraint (c), and it means the rail can only
 // disagree with the file when the file is wrong.
 //
-// NOTHING REPAINTS ON ITS OWN. A render is O(the manuscript) -- 240-300 ms at
-// the `stress` fixture -- and this application's keystroke path is measured and
-// gated. The rail renders when it is opened, when Refresh is pressed and when
-// an option is changed, and it DRAINS the flush scheduler first, so what it
-// shows is the book as saved. That is what an export is.
+// NOTHING REPAINTS ON ITS OWN UNLESS THE WRITER ASKS. A render is O(the
+// manuscript) -- 240-300 ms at the `stress` fixture -- and this application's
+// keystroke path is measured and gated. The rail renders when it is opened,
+// when Refresh is pressed and when an option is changed, and it DRAINS the
+// flush scheduler first, so what it shows is the book as saved. That is what an
+// export is. The one addition is the opt-in refresh after a pause (off by
+// default): it rides the save scheduler's state TRANSITIONS, never an edit, and
+// fires only after a quiet spell with the rail open.
+//
+// THE WIDTH IS THE WRITER'S, within bounds: a divider in the rail's own grid
+// cell resizes it from 420px to about half the window, and the request is kept
+// per device. The rail stays the third column and a closed rail still measures
+// zero; under 900px it is still the overlay and has no divider.
+//
+// THE FRAMES ARE COSMETIC. With the device frame on, the same painted bytes sit
+// in a generic e-reader (paged by CSS columns) or tablet (one whole leaf); the
+// host's EPUB documents and proof leaves are never recomposed for it.
 import { isCompositionKey } from "./composition-key";
 import { formatNumber, plural, t } from "./i18n";
 import {
@@ -548,7 +560,6 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     cancelIdle();
     idleTimer = setTimer(() => {
       idleTimer = null;
-      if (destroyed || rail.hidden || !autoOn) return;
       void render();
     }, idleMs);
   }
@@ -753,8 +764,8 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       // move the box it leaves behind.
       const height = pages.clientHeight - (Number.isFinite(inset) ? inset : 0);
       scale = Math.min(scale, scaleFor(height, leaf.offsetHeight));
-      pages.style.setProperty("--proof-x", `${Math.max(0, (pages.clientWidth - leaf.offsetWidth * scale) / 2)}px`);
-      pages.style.setProperty("--proof-y", `${Math.max(0, (pages.clientHeight - leaf.offsetHeight * scale) / 2)}px`);
+      pages.style.setProperty("--proof-x", [String(Math.max(0, (pages.clientWidth - leaf.offsetWidth * scale) / 2)), "px"].join(""));
+      pages.style.setProperty("--proof-y", [String(Math.max(0, (pages.clientHeight - leaf.offsetHeight * scale) / 2)), "px"].join(""));
     }
     pages.style.setProperty("--proof-scale", String(scale));
     // The height the transform stops using. Without it the rail scrolls a

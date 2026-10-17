@@ -54,6 +54,11 @@ to the text, and organize the next draft into revision passes and tasks.
 Export to Markdown, DOCX, or EPUB, or make a PDF proof copy. Set up book design,
 front and back matter, covers, and pen names before exporting.
 
+The EPUB and PDF previews sit beside your prose in a rail you can widen by
+dragging its divider or with the arrow keys; the width is remembered on that
+device. An optional e-reader or tablet frame shows an approximate paged view,
+and an optional refresh runs after you stop typing.
+
 ### Keep control of your work
 
 Books live on your own disk. Recovery copies, scene history, salvage tools,
