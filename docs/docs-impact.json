@@ -15,75 +15,76 @@
     "backup-recovery": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "871666f7dcb941937055035211fd9f8f8cf23239d91b430cc2647d4dbe5ace0e",
+        "docs/COMPATIBILITY.md": "d4adaad17993c1729c34604818c06dd8afdf4c566e8d849a5ab38bced6df4476",
         "docs/MAINTENANCE.md": "139f9bf616b0405f87734482d00d0a76d655e95d1e175c65c4e62a11cefd5eda"
       },
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Preset metadata uses the existing meta table without a schema migration. Missing and unknown stored values retain novel behavior; unknown values remain stored verbatim. Backups, archive restores, transfer, and salvage preserve this metadata. Older builds need no preset conversion.",
       "no_impact": "",
-      "note": "Document complete book and profile backups, interrupted migration preservation, archive boundaries, and restoring separate pre-upgrade copies. Backup, archive restore, portable transfer, and salvage retain preset metadata verbatim.",
-      "source_sha256": "eba09c2895c4988b7b6b40a46edfb0d2195ce0fe1317a670b55ea6bf35ba059b"
+      "note": "Document complete book and profile backups, interrupted migration preservation, archive boundaries, and restoring separate pre-upgrade copies. Backup, archive restore, portable transfer, and salvage retain preset metadata verbatim. No recovery or backup behavior changes. Salvage reports design rows verbatim and is unchanged; only a test fixture gained default fields for the new chapter options, so recovery behavior and archive contracts are unaffected.",
+      "source_sha256": "290a1f37de95eebbbb56efbd4619df45bf33fadc24e179c9408c29dc02e0f1b8"
     },
     "editor": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "871666f7dcb941937055035211fd9f8f8cf23239d91b430cc2647d4dbe5ace0e",
+        "README.md": "22ed7f65ef1f39adeea9876ebd69a054e6d9543b93d9e3ec3de01429e2ac297c",
+        "docs/COMPATIBILITY.md": "d4adaad17993c1729c34604818c06dd8afdf4c566e8d849a5ab38bced6df4476",
         "docs/MAINTENANCE.md": "139f9bf616b0405f87734482d00d0a76d655e95d1e175c65c4e62a11cefd5eda"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Book creation offers three presets with aligned themed controls. Nonfiction reference labels preserve custom titles and fiction tools remain available under More; switching to a novel restores Cast.",
-      "source_sha256": "a40535ba083ddf56c87c3552f120502a8088b74d6d4f22522a871f978f4500ec"
+      "note": "Book creation offers three presets with aligned themed controls. Nonfiction reference labels preserve custom titles and fiction tools remain available under More; switching to a novel restores Cast. Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. README now mentions the resizable preview rail with its optional device frame and refresh after a pause; device-local width preference only, no project format or compatibility change. Document chapter openers (ornament, its position, chapter sink) in the book preparation summary; the preview rail gains two option groups and three ornaments. Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. The creation menu and README also cover the References back-matter page.",
+      "source_sha256": "36c40eaacd3eee92204cd821ac3b94380ce08029482ae9f0823be6ad3e0abac1"
     },
     "encryption": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "871666f7dcb941937055035211fd9f8f8cf23239d91b430cc2647d4dbe5ace0e",
+        "docs/COMPATIBILITY.md": "d4adaad17993c1729c34604818c06dd8afdf4c566e8d849a5ab38bced6df4476",
         "docs/MAINTENANCE.md": "139f9bf616b0405f87734482d00d0a76d655e95d1e175c65c4e62a11cefd5eda"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Encrypted archive restore preserves optional preset metadata, including unknown stored values, while encryption, keys, passwords, and working-file protection boundaries remain unchanged.",
+      "note": "Encrypted archive restore preserves optional preset metadata, including unknown stored values, while encryption, keys, passwords, and working-file protection boundaries remain unchanged. Distinguish encrypted portable archives from plaintext working files and add encryption dependency and source review obligations. Chapter openers change no encryption behavior; only a compatibility paragraph was added.",
       "source_sha256": "3e1bcb841f885c8386601525e587497470ba05f1e73747d7b270eb0df149ae34"
     },
     "maintenance": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "871666f7dcb941937055035211fd9f8f8cf23239d91b430cc2647d4dbe5ace0e",
+        "docs/COMPATIBILITY.md": "d4adaad17993c1729c34604818c06dd8afdf4c566e8d849a5ab38bced6df4476",
         "docs/MAINTENANCE.md": "139f9bf616b0405f87734482d00d0a76d655e95d1e175c65c4e62a11cefd5eda"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Preserve full-range migration, backup, and rollback assessments when adding optional preset metadata. Focused fixtures cover preset creation, export formatting, and metadata recovery.",
-      "source_sha256": "ff46a86eaa7804e393465e1146b29d1f91c669e5812bde3e9890bbfaf20e5d0f"
+      "note": "Preserve full-range migration, backup, and rollback assessments when adding optional preset metadata. Focused fixtures cover preset creation, export formatting, and metadata recovery. No contributor workflow change. Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged. Renderer, paginator and test sources changed for chapter openers and CI runs one display-gated paginator test; contributor guidance, documentation checks and native-test exclusions are unchanged. Harness and test files changed only for the References menu item; contributor guidance, documentation checks and recovery contracts are unchanged.",
+      "source_sha256": "6725ff4df04f7912aca14071d481fc7f48bc188c3fa620ec8c9395c30a04b028"
     },
     "native-packaging": {
       "breaking": "none",
       "docs": {},
       "migration": "",
-      "no_impact": "Desktop preset behavior adds no dependencies, packaging configuration, or capability permissions and leaves native distribution unchanged.",
-      "note": "Desktop preset behavior adds no dependencies, packaging configuration, or capability permissions and leaves native distribution unchanged.",
-      "source_sha256": "2f6c313459ffcf4cacba835bae2f161f2fa7a56e95c5a4614e855eacb9ef9f8e"
+      "no_impact": "Desktop preset behavior adds no dependencies, packaging configuration, or capability permissions and leaves native distribution unchanged. CI gains one narrow display-gated paginator test step in the host job; packaging, release admission and artifacts are unchanged.",
+      "note": "Desktop preset behavior adds no dependencies, packaging configuration, or capability permissions and leaves native distribution unchanged. Require the latest exact-commit develop push CI run to succeed before alpha tag packaging; an older success cannot hide a pending or failed newer run. Existing platforms, asset publication, tag ancestry, application behavior, and compatibility remain unchanged. The host job also runs one display-gated proof paginator test.",
+      "source_sha256": "d6ce91ef8888dbd6613d38e3b794bb7ea12e98cc981e184e9c8cace733bc5c4d"
     },
     "project-format": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "871666f7dcb941937055035211fd9f8f8cf23239d91b430cc2647d4dbe5ace0e",
+        "docs/COMPATIBILITY.md": "d4adaad17993c1729c34604818c06dd8afdf4c566e8d849a5ab38bced6df4476",
         "docs/MAINTENANCE.md": "139f9bf616b0405f87734482d00d0a76d655e95d1e175c65c4e62a11cefd5eda"
       },
-      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Preset metadata uses the existing meta table without a schema migration. Missing and unknown stored values retain novel behavior; unknown values remain stored verbatim. Backups, archive restores, transfer, and salvage preserve this metadata. Older builds need no preset conversion.",
+      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Preset metadata uses the existing meta table without a schema migration. Missing and unknown stored values retain novel behavior; unknown values remain stored verbatim. Backups, archive restores, transfer, and salvage preserve this metadata. Older builds need no preset conversion. Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Chapter openers add optional words (ornament-above, sink-third, sink-half) and three ornament names to the stored chapter options; older builds ignore them, so back up the closed book before upgrading as above and expect an older package to show the ornament below the title with no sink.",
       "no_impact": "",
-      "note": "Document bounded foreign DOCX expansion and unchanged manuscript schema, and require source-bound review for project-format changes. Optional preset metadata preserves unknown values; single-scene exports keep author-written titles, matter navigation, and enabled drop caps while omitting generated contents and scaffold headings.",
-      "source_sha256": "3c27e68019ab9a9a181eecc40a27c392de98ee40d991fccc1d78a1d692bbbf4d"
+      "note": "Document bounded foreign DOCX expansion and unchanged manuscript schema, and require source-bound review for project-format changes. Optional preset metadata preserves unknown values; single-scene exports keep author-written titles, matter navigation, and enabled drop caps while omitting generated contents and scaffold headings. Chapter openers add optional words to the stored chapter options and three ornament names; the SQLite schema is unchanged and books without them render as before. Document bounded foreign DOCX expansion and unchanged manuscript schema, and require source-bound review for project-format changes. A References page adds no stored format. No stored-format change: a References page is an ordinary matter document at the same SQLite schema, so older builds open such books unchanged; only EPUB export gains a section semantic.",
+      "source_sha256": "2c14c08679231b0ea60b3ed0b81feca8951b8aeaa2969edb44e5a79097bad0ad"
     },
     "schema": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "871666f7dcb941937055035211fd9f8f8cf23239d91b430cc2647d4dbe5ace0e",
+        "docs/COMPATIBILITY.md": "d4adaad17993c1729c34604818c06dd8afdf4c566e8d849a5ab38bced6df4476",
         "docs/MAINTENANCE.md": "139f9bf616b0405f87734482d00d0a76d655e95d1e175c65c4e62a11cefd5eda"
       },
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Preset metadata uses the existing meta table without a schema migration. Missing and unknown stored values retain novel behavior; unknown values remain stored verbatim. Backups, archive restores, transfer, and salvage preserve this metadata. Older builds need no preset conversion.",
       "no_impact": "",
-      "note": "Document current SQLite schema 17 and profile migration compatibility, backup, upgrade, and rollback limits; introduce conservative migration review obligations. Project presets use the existing meta table without changing schema 17 or introducing a migration.",
+      "note": "Document current SQLite schema 17 and profile migration compatibility, backup, upgrade, and rollback limits; introduce conservative migration review obligations. Project presets use the existing meta table without changing schema 17 or introducing a migration. Document current SQLite schema 17 and profile migration compatibility, backup, upgrade, and rollback limits; introduce conservative migration review obligations. The schema stays at 17 for chapter openers, which add optional words to an existing row.",
       "source_sha256": "9fc1ff179e06c0b79e37af9ae07f82c8d560b6d7f23f0944ddd6a3f6a35d93d1"
     }
   },

@@ -348,6 +348,11 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
                       id: "menu-new-afterword",
                       label: () => t("menu.new-afterword"),
                       run: () => deps.createMatter("afterword"),
+                    },
+                    {
+                      id: "menu-new-references",
+                      label: () => t("menu.new-references"),
+                      run: () => deps.createMatter("references"),
                     }
                   ], run: () => {}
                 }], run: () => {}

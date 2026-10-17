@@ -921,6 +921,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // "current" are the same thing) and as the write payload's baseline.
   const loadedBodyHash = bodyHash(editor.serialize());
   let referenceRail: ReferenceRail | null = null;
+  let previewRail: PreviewRail | null = null;
   let craftPanel: CraftPanel | null = null;
   const flusher = createFlushScheduler({
     wordCountOf: (body) => countWords(bodyText(body)),
@@ -1004,7 +1005,12 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     // transition arriving before then has nothing to draw on and nothing
     // to lose: the indicator opens on `flusher.saveState()`, so it starts
     // from the truth rather than from whatever it missed.
-    onStateChange: (state) => saveIndicator?.set(state),
+    // The rail hears the same transitions for its refresh after a pause; it
+    // returns at once while closed, and this still fires on transitions only.
+    onStateChange: (state) => {
+      saveIndicator?.set(state);
+      previewRail?.saveStateChanged(state);
+    },
   });
   {
     flusher.register(activeDocId, activeDocRev);
@@ -2777,7 +2783,6 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // BUILT ONLY WHERE THERE IS A HOST AND A FLUSHER, exactly as the export bar
   // is and for the same reason: a preview is a rendering of the book AS SAVED,
   // and "as saved" means nothing without a scheduler to drain.
-  let previewRail: PreviewRail | null = null;
   const epubEl = document.getElementById("preview-controls");
   if (epubEl === null) {
     throw new Error("page shell is missing #preview-controls: index.html and project.ts disagree");
@@ -2806,6 +2811,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
           newPage: style.new_page,
           capsTitle: style.caps_title,
           dropCap: style.drop_cap,
+          ornamentAbove: style.ornament_above,
+          sink: style.sink,
         })) as ChapterStyle,
       // THE EXPORT BAR'S OWN ROUTE, as EPUB. Not a second export path: that
       // unit owns the drain, the single-flight latch and both notices, and a

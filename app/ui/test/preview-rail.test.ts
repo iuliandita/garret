@@ -37,7 +37,10 @@ function preview(over: Partial<EpubPreview> = {}): EpubPreview {
 
 function styleView(over: Partial<ChapterStyle> = {}): ChapterStyleView {
   return {
-    style: { glyph: null, new_page: false, caps_title: false, drop_cap: false, ...over },
+    style: {
+      glyph: null, new_page: false, caps_title: false, drop_cap: false,
+      ornament_above: false, sink: "none", ...over,
+    },
     glyphs: [
       { id: "asterisks", ornament: "* * *" },
       { id: "asterism", ornament: "⁂" },
@@ -394,7 +397,7 @@ describe("the four options", () => {
     press('[data-preview-glyph="asterism"]');
     await new Promise((r) => setTimeout(r, 0));
     expect(h.written).toEqual([
-      { glyph: "asterism", new_page: false, caps_title: false, drop_cap: false },
+      { glyph: "asterism", new_page: false, caps_title: false, drop_cap: false, ornament_above: false, sink: "none" },
     ]);
     expect(h.reads).toBe(2);
   });
@@ -413,7 +416,7 @@ describe("the four options", () => {
     press("#preview-flag-new_page");
     await new Promise((r) => setTimeout(r, 0));
     expect(h.written).toEqual([
-      { glyph: null, new_page: true, caps_title: true, drop_cap: false },
+      { glyph: null, new_page: true, caps_title: true, drop_cap: false, ornament_above: false, sink: "none" },
     ]);
     press("#preview-flag-caps_title");
     await new Promise((r) => setTimeout(r, 0));
@@ -422,6 +425,8 @@ describe("the four options", () => {
       new_page: true,
       caps_title: false,
       drop_cap: false,
+      ornament_above: false,
+      sink: "none",
     });
   });
 
@@ -456,6 +461,56 @@ describe("the four options", () => {
     expect(document.querySelector("#preview-flag-new_page")?.getAttribute("aria-pressed")).toBe(
       "false",
     );
+  });
+
+  test("the ornament position and the chapter sink each write the whole style", async () => {
+    const h = mount({}, preview(), styleView({ glyph: "asterism", drop_cap: true }));
+    await h.rail.open("epub");
+    press("#preview-position-above");
+    await new Promise((r) => setTimeout(r, 0));
+    expect(h.written[0]).toEqual({
+      glyph: "asterism", new_page: false, caps_title: false, drop_cap: true,
+      ornament_above: true, sink: "none",
+    });
+    press("#preview-sink-half");
+    await new Promise((r) => setTimeout(r, 0));
+    expect(h.written[1]).toEqual({ ...h.written[0]!, sink: "half" });
+    press("#preview-position-below");
+    await new Promise((r) => setTimeout(r, 0));
+    expect(h.written[2]).toEqual({ ...h.written[1]!, ornament_above: false });
+    expect(h.reads).toBe(4);
+  });
+
+  test("the position and sink in effect are pressed states", async () => {
+    const h = mount({}, preview(), styleView({ ornament_above: true, sink: "third" }));
+    await h.rail.open("epub");
+    const pressed = (id: string): string | null =>
+      document.querySelector(id)?.getAttribute("aria-pressed") ?? null;
+    expect(pressed("#preview-position-above")).toBe("true");
+    expect(pressed("#preview-position-below")).toBe("false");
+    expect(pressed("#preview-sink-third")).toBe("true");
+    expect(pressed("#preview-sink-none")).toBe("false");
+    expect(pressed("#preview-sink-half")).toBe("false");
+  });
+
+  test("A SINK THE HOST NEVER OFFERED CANNOT BE STORED", async () => {
+    const h = mount();
+    await h.rail.open("epub");
+    const smuggled = document.createElement("button");
+    smuggled.dataset.previewSink = "quarter";
+    document.querySelector("#preview-sink .preview-choices")?.append(smuggled);
+    smuggled.click();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(h.written).toEqual([]);
+  });
+
+  test("the new controls are the same format-neutral options in the proof", async () => {
+    const h = mount();
+    await h.rail.open("pdf");
+    press("#preview-sink-third");
+    await new Promise((r) => setTimeout(r, 0));
+    expect(h.written.at(-1)?.sink).toBe("third");
+    expect(h.proofReads).toBe(2);
   });
 
   test("A REFUSED WRITE LEAVES THE PRESSED STATE THE FILE ACTUALLY HOLDS", async () => {
@@ -808,7 +863,7 @@ describe("chapter style acknowledgement ownership", () => {
     expect(flag("new_page").getAttribute("aria-pressed")).toBe("true");
     expect(flag("caps_title").disabled).toBe(false);
     flag("caps_title").click(); await tick();
-    expect(written[1]).toEqual({ glyph: "asterisks", new_page: true, caps_title: true, drop_cap: false });
+    expect(written[1]).toEqual({ glyph: "asterisks", new_page: true, caps_title: true, drop_cap: false, ornament_above: false, sink: "none" });
   });
 
   test("a refused acknowledgement retains the saved state and releases controls for the next change", async () => {

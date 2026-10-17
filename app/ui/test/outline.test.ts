@@ -1784,6 +1784,17 @@ describe("createMatter: front and back matter", () => {
     });
   });
 
+  test("references go to the back section and create an ordinary matter page", async () => {
+    const r = await seeded({ walks: [book(), withBack(), withBack()] });
+    await r.outline.createMatter("references");
+    const creates = r.calls.filter((c) => c.cmd === "item_create");
+    expect(creates[0]?.args).toMatchObject({ itemType: BACK_MATTER_TYPE });
+    expect(creates[1]?.args).toMatchObject({
+      itemType: MATTER_TYPE,
+      title: "References",
+    });
+  });
+
   /** NOT NUMBERED. `Dedication 1` in a book with one dedication is a lie about
    *  the book, and unlike `Scene`, `Note` or `Chapter` the word alone is already
    *  a title a writer can read. */
@@ -1795,6 +1806,7 @@ describe("createMatter: front and back matter", () => {
       ["foreword", "Foreword"],
       ["acknowledgements", "Acknowledgements"],
       ["afterword", "Afterword"],
+      ["references", "References"],
     ] as const) {
       const section = kind === "dedication" || kind === "foreword" ? withFront() : withBack();
       const r = await seeded({ walks: [section] });

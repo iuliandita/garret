@@ -172,7 +172,7 @@ pub(crate) fn chapter_style_get(
 /// Record how the OPEN project's chapters are set, and answer with what landed.
 ///
 /// THE WHOLE STYLE, ALWAYS, which is `book_design_set`'s shape: the rail paints
-/// four controls and every one of them is the act, so a press sends the state
+/// its controls and every one of them is the act, so a press sends the state
 /// of all four rather than a delta nothing could validate as a whole.
 ///
 /// SEPARATE FROM `book_design_set`, and that is the containment. The rail shows
@@ -187,6 +187,8 @@ pub(crate) fn chapter_style_set(
     new_page: bool,
     caps_title: bool,
     drop_cap: bool,
+    ornament_above: bool,
+    sink: design::Sink,
 ) -> std::result::Result<design::ChapterStyle, String> {
     let wanted = design::ChapterStyle {
         // An empty word is how a `<select>` says "none"; it is not an ornament
@@ -197,6 +199,8 @@ pub(crate) fn chapter_style_set(
         new_page,
         caps_title,
         drop_cap,
+        ornament_above,
+        sink,
     };
     let guard = locked(&state);
     let store = &open_project(&guard)?.store;

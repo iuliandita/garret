@@ -1618,6 +1618,7 @@ describe("the items that open a page dialog say so", () => {
     "menu-new-foreword": "menu-outline",
     "menu-new-acknowledgements": "menu-outline",
     "menu-new-afterword": "menu-outline",
+    "menu-new-references": "menu-outline",
     "menu-rename": "menu-outline",
     "menu-remove": "menu-outline",
     "menu-nav-back": "menu-outline",
@@ -1706,6 +1707,7 @@ describe("the four pages that are not chapters", () => {
         ["menu-new-foreword", "foreword"],
         ["menu-new-acknowledgements", "acknowledgements"],
         ["menu-new-afterword", "afterword"],
+        ["menu-new-references", "references"],
       ] as const) {
         rig.title("menu-outline").click();
         rig.item(item)?.click();
@@ -1715,6 +1717,7 @@ describe("the four pages that are not chapters", () => {
         "foreword",
         "acknowledgements",
         "afterword",
+        "references",
       ]);
       // Never `create(...)`: these are placed in one section, always, and
       // routing them through `planPlacement` would land a dedication in the

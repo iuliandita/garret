@@ -678,4 +678,36 @@ mod tests {
             .unwrap();
         assert!(String::from_utf8_lossy(&doc.1).contains("Chapter One"));
     }
+
+    fn references_body() -> String {
+        serde_json::json!({"type":"doc","content":[
+            {"type":"paragraph","content":[{"type":"text","text":"Austen, J. Emma. 1815."}]},
+            {"type":"paragraph","content":[{"type":"text","text":"Woolf, V. The Waves. 1931."}]},
+        ]})
+        .to_string()
+    }
+
+    #[test]
+    fn a_references_page_is_a_heading_followed_by_one_paragraph_per_entry() {
+        let back = [("r".to_string(), "References".to_string(), 0i64)];
+        let mut bodies = HashMap::new();
+        bodies.insert("r".to_string(), references_body());
+        let out = render(&book("N", &[], &[], &back), &bodies, "en");
+        let entries = crate::epub::read_zip(&out.bytes).unwrap();
+        let doc = entries.iter().find(|(n, _)| n == "word/document.xml").unwrap();
+        let xml = String::from_utf8_lossy(&doc.1);
+        assert!(
+            heading_walk(&xml).contains(&("Heading1".to_string(), "References".to_string())),
+            "{xml}"
+        );
+        let heading = xml.find("References").unwrap();
+        let after = &xml[heading..];
+        let first = after.find("Austen, J. Emma. 1815.").expect("first entry");
+        let second = after.find("Woolf, V. The Waves. 1931.").expect("second entry");
+        assert!(first < second);
+        assert!(
+            after[first..second].contains("</w:p><w:p>"),
+            "entries share a paragraph: {xml}"
+        );
+    }
 }

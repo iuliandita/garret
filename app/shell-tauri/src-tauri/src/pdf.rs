@@ -62,6 +62,8 @@ pub const START_CLASS: &str = "start";
 pub const OPENING_CLASS: &str = "opening";
 /// The ornament between divisions.
 pub const ORNAMENT_CLASS: &str = "ornament";
+/// Added to the ornament when it sits above the title.
+pub const ORNAMENT_ABOVE_CLASS: &str = "ornament-above";
 /// The underline the writer applied. XHTML carries one and so does this.
 pub const UNDERLINE_CLASS: &str = "u";
 
@@ -230,6 +232,17 @@ pub fn stylesheet(design: &BookDesign, style: &ChapterStyle) -> String {
              line-height: 0.82; padding: 0.02em 0.08em 0 0; }}\n"
         ));
     }
+    // The sink has no rule: it is a distance down the leaf, and only the
+    // paginator knows how tall the leaf's text area is.
+    if style.ornament_above {
+        css.push_str(&format!(
+            ".{ORNAMENT_ABOVE_CLASS} {{ margin: 2em 0 0; }}\n\
+             .{ORNAMENT_ABOVE_CLASS} + h1, .{ORNAMENT_ABOVE_CLASS} + h2, \
+             .{ORNAMENT_ABOVE_CLASS} + h3, .{ORNAMENT_ABOVE_CLASS} + h4, \
+             .{ORNAMENT_ABOVE_CLASS} + h5, .{ORNAMENT_ABOVE_CLASS} + h6 \
+             {{ margin-top: 0.6em; }}\n"
+        ));
+    }
     css
 }
 
@@ -337,11 +350,21 @@ pub fn proof_document(proof: &Proof) -> String {
             // The first division does not request an extra break: that once
             // produced a blank initial leaf. Later typed parts and chapters
             // can request one without forcing a break before scene headings.
-            let mut classes = Vec::new();
-            if page && !first_division { classes.push(START_CLASS); }
-            if run_index == 1 { classes.push("book-body-heading"); }
-            let class = if classes.is_empty() { String::new() }
-                else { format!(" class=\"{}\"", classes.join(" ")) };
+            let ornament_here = styled.then_some(ornament).flatten();
+            let above = ornament_here.is_some() && proof.style.ornament_above;
+            let mut heading_classes = Vec::new();
+            if run_index == 1 { heading_classes.push("book-body-heading"); }
+            // The first block of the opening carries the break, the sink and
+            // the running head: with an ornament above the title that is the
+            // ornament, so the group stays one unit for the paginator.
+            let mut lead_classes = Vec::new();
+            if page && !first_division { lead_classes.push(START_CLASS); }
+            let sink = if styled { proof.style.sink.word() } else { None };
+            let sink_attr = match sink {
+                Some(crate::design::SINK_THIRD) => " data-proof-sink=\"third\"",
+                Some(_) => " data-proof-sink=\"half\"",
+                None => "",
+            };
             if opens {
                 first_division = false;
             }
@@ -359,22 +382,43 @@ pub fn proof_document(proof: &Proof) -> String {
             if scaffold_free && opens {
                 running_pending = Some(proof.book.name);
             }
+            let class_attr = |classes: &[&str]| if classes.is_empty() {
+                String::new()
+            } else {
+                format!(" class=\"{}\"", classes.join(" "))
+            };
             if !scaffold_free {
-                flow.push_str(&format!(
-                    "<h{level} id=\"{anchor}\"{class}{running}>{}</h{level}>\n",
-                    xml_escape(title),
-                    anchor = anchor_id(id),
-                ));
-            }
-            // THE ORNAMENT MARKS A DIVISION, not every heading under it --
-            // 043's rule and its reason, unchanged: a dinkus under every scene
-            // title is a page of dinkuses.
-            if styled {
-                if let Some(ornament) = ornament {
+                if above {
+                    let mut classes = vec![ORNAMENT_CLASS, ORNAMENT_ABOVE_CLASS];
+                    classes.extend(&lead_classes);
                     flow.push_str(&format!(
-                        "<p class=\"{ORNAMENT_CLASS}\">{}</p>\n",
-                        xml_escape(ornament)
+                        "<p{}{sink_attr}{running}>{}</p>\n",
+                        class_attr(&classes),
+                        xml_escape(ornament_here.expect("above implies an ornament"))
                     ));
+                    flow.push_str(&format!(
+                        "<h{level} id=\"{anchor}\"{}>{}</h{level}>\n",
+                        class_attr(&heading_classes),
+                        xml_escape(title),
+                        anchor = anchor_id(id),
+                    ));
+                } else {
+                    heading_classes.splice(0..0, lead_classes);
+                    flow.push_str(&format!(
+                        "<h{level} id=\"{anchor}\"{}{sink_attr}{running}>{}</h{level}>\n",
+                        class_attr(&heading_classes),
+                        xml_escape(title),
+                        anchor = anchor_id(id),
+                    ));
+                    // THE ORNAMENT MARKS A DIVISION, not every heading under it --
+                    // 043's rule and its reason, unchanged: a dinkus under every
+                    // scene title is a page of dinkuses.
+                    if let Some(ornament) = ornament_here {
+                        flow.push_str(&format!(
+                            "<p class=\"{ORNAMENT_CLASS}\">{}</p>\n",
+                            xml_escape(ornament)
+                        ));
+                    }
                 }
             }
             let prose = proof
@@ -485,6 +529,10 @@ pub const PAGINATOR_JS: &str = r#"
     meta.markupLimit === null || meta.markupLimit === undefined ? 0 : meta.markupLimit;
   var index = 0;
   var running = "";
+  // How far down the text area a sunk opening starts, by the word the markup
+  // carries. The proof's own measure: the text area is the leaf less its
+  // margins, running head and folio.
+  var SINK = { third: 1 / 3, half: 1 / 2 };
 
   function leaf(kind) {
     index += 1;
@@ -551,13 +599,20 @@ pub const PAGINATOR_JS: &str = r#"
       if (i + 1 < blocks.length) current = next();
       continue;
     }
+    // A sunk opening is the top of a fresh leaf by definition: starting a
+    // third of the way down the middle of a page is not a sunk opening.
+    var sink = block.getAttribute("data-proof-sink");
     var opensLeaf =
       block.getAttribute("data-proof-break") === "page" ||
+      sink !== null ||
       (meta.newPage && block.classList.contains("start"));
     if (opensLeaf && textOf(current).childNodes.length) {
       current = next();
       current.querySelector(".proof-runhead").textContent =
         current.getAttribute("data-side") === "verso" ? meta.book : running;
+    }
+    if (sink !== null && SINK[sink]) {
+      block.style.marginTop = Math.round(textOf(current).clientHeight * SINK[sink]) + "px";
     }
     textOf(current).appendChild(block);
     if (!full(current)) continue;
@@ -578,18 +633,30 @@ pub const PAGINATOR_JS: &str = r#"
         continue;
       }
       var text = textOf(page);
+      var group = companions(block);
+      var lead = group.length ? group[0] : block;
+      // A sunk opening that leaves no room for what follows gives its sink up
+      // before the proof is refused: the page is the writer's, the sink is a
+      // preference.
+      var alone = text.childNodes.length === (group.length ? group.length + 1 : 1);
+      if (alone && lead.style.marginTop !== "") {
+        lead.style.marginTop = "";
+        if (!full(page)) return page;
+        continue;
+      }
       if (text.childNodes.length === 1) {
         throw new Error("a proof " + block.tagName.toLowerCase() + " exceeds the page");
       }
-      var heading = /^H[1-6]$/.test(block.tagName) ? null : previousHeading(block);
-      if (heading !== null && text.childNodes.length === 2) {
+      if (alone) {
         throw new Error("a proof heading and following block exceed the page");
       }
       text.removeChild(block);
       page = next();
-      if (heading !== null && heading.parentNode === text) {
-        text.removeChild(heading);
-        textOf(page).appendChild(heading);
+      for (var g = 0; g < group.length; g++) {
+        if (group[g].parentNode === text) {
+          text.removeChild(group[g]);
+          textOf(page).appendChild(group[g]);
+        }
       }
       textOf(page).appendChild(block);
       if (!full(page)) return page;
@@ -597,9 +664,20 @@ pub const PAGINATOR_JS: &str = r#"
     throw new Error("a proof paragraph needs too many pages");
   }
 
-  function previousHeading(block) {
+  // The run of headings and ornaments directly before a block: none of them
+  // may be left at the foot of a leaf without what follows. A chapter heading
+  // over a scene heading over the scene's first paragraph is one unit, and so
+  // is an ornament on either side of a title. Bounded, so a book of nothing
+  // but headings cannot make every placement move an unbounded run.
+  function companions(block) {
+    var group = [];
     var prev = block.previousElementSibling;
-    return prev !== null && /^H[1-6]$/.test(prev.tagName) ? prev : null;
+    while (prev !== null && group.length < 4 &&
+        (/^H[1-6]$/.test(prev.tagName) || prev.classList.contains("ornament"))) {
+      group.unshift(prev);
+      prev = prev.previousElementSibling;
+    }
+    return group;
   }
 
   // Range.cloneContents keeps marks and every whitespace character intact.
@@ -907,7 +985,7 @@ pub fn gutter_minimum_um(pages: u32) -> Option<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::design::{default_design, ChapterStyle};
+    use crate::design::{default_design, ChapterStyle, Sink};
     use crate::export::Book;
 
     fn design() -> BookDesign {
@@ -920,6 +998,7 @@ mod tests {
             new_page: false,
             caps_title: false,
             drop_cap: false,
+            ..Default::default()
         }
     }
 
@@ -1116,6 +1195,7 @@ mod tests {
                     new_page: false,
                     caps_title: true,
                     drop_cap: false,
+                    ..Default::default()
                 },
                 "text-transform: uppercase",
                 "first-letter",
@@ -1126,6 +1206,7 @@ mod tests {
                     new_page: false,
                     caps_title: false,
                     drop_cap: true,
+                    ..Default::default()
                 },
                 "::first-letter",
                 "text-transform",
@@ -1150,6 +1231,7 @@ mod tests {
             new_page: true,
             caps_title: false,
             drop_cap: false,
+            ..Default::default()
         };
         let css = stylesheet(&design(), &on);
         assert!(!css.contains("break-before"), "{css}");
@@ -1433,6 +1515,7 @@ mod tests {
             style: ChapterStyle {
                 glyph: Some("diamond".to_string()), new_page: true,
                 caps_title: true, drop_cap: true,
+                ..Default::default()
             },
             openings: ChapterOpenings {
                 styled: ["chapter".to_string()].into(),
@@ -1449,6 +1532,68 @@ mod tests {
         assert!(!heading_for(&html, "front").contains("book-body-heading"), "{html}");
         assert!(heading_for(&html, "chapter").contains("book-body-heading"), "{html}");
         assert!(!heading_for(&html, "back").contains("book-body-heading"), "{html}");
+    }
+
+    #[test]
+    fn opener_settings_reach_the_proof_as_markup_and_the_paginator_owns_the_sink() {
+        let chapters = [item("part", "Part", 0), item("chapter", "Chapter", 1)];
+        let b = book("The Harbour", &chapters);
+        let bodies: HashMap<String, String> = [("chapter", "prose")]
+            .into_iter()
+            .map(|(id, text)| (
+                id.to_string(),
+                serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":[
+                    {"type":"text","text":text}]}]}).to_string(),
+            ))
+            .collect();
+        let d = design();
+        let proof_with = |style: ChapterStyle| {
+            proof_document(&Proof {
+                language: "en", book: &b, bodies: &bodies, design: &d, style,
+                openings: ChapterOpenings {
+                    styled: ["chapter".to_string()].into(),
+                    page: ["part".to_string(), "chapter".to_string()].into(),
+                },
+                front_cover: None, back_cover: None, markup_limit: None, pin: None,
+            })
+        };
+
+        // A book that chose neither renders as it did before they existed.
+        let html = proof_with(ChapterStyle {
+            glyph: Some("hedera".to_string()),
+            ..ChapterStyle::default()
+        });
+        let flow = flow_of(&html);
+        assert!(!flow.contains("data-proof-sink") && !flow.contains(ORNAMENT_ABOVE_CLASS), "{flow}");
+        assert!(!html.contains(".ornament-above"), "{html}");
+        assert!(
+            flow.find("<h3").unwrap() < flow.find("class=\"ornament\"").unwrap(),
+            "{flow}"
+        );
+
+        // Sunk and above: the ornament leads, carrying the sink and the
+        // running head, and the heading follows it with its anchor.
+        let html = proof_with(ChapterStyle {
+            glyph: Some("hedera".to_string()),
+            ornament_above: true,
+            sink: Sink::Third,
+            ..ChapterStyle::default()
+        });
+        let flow = flow_of(&html);
+        assert_eq!(flow.matches("data-proof-sink").count(), 1, "{flow}");
+        assert!(
+            flow.contains("<p class=\"ornament ornament-above start\" data-proof-sink=\"third\">\u{2767}</p>\n<h3 id=\"proof-chapter\""),
+            "{flow}"
+        );
+        assert!(html.contains(".ornament-above + h3"), "{html}");
+
+        // Sunk without an ornament above: the heading carries the sink.
+        let flow = flow_of(&proof_with(ChapterStyle {
+            sink: Sink::Half,
+            ..ChapterStyle::default()
+        }));
+        assert!(heading_for(&format!("{flow}"), "chapter").contains("data-proof-sink=\"half\""), "{flow}");
+        assert!(!heading_for(&flow, "part").contains("data-proof-sink"), "{flow}");
     }
 
     #[test]
@@ -1735,5 +1880,37 @@ mod tests {
             "{leaf}"
         );
         assert!(!leaf.contains("<script>"), "{leaf}");
+    }
+
+    fn references_body() -> String {
+        serde_json::json!({"type":"doc","content":[
+            {"type":"paragraph","content":[{"type":"text","text":"Austen, J. Emma. 1815."}]},
+            {"type":"paragraph","content":[{"type":"text","text":"Woolf, V. The Waves. 1931."}]},
+        ]})
+        .to_string()
+    }
+
+    #[test]
+    fn a_references_page_sets_a_heading_and_one_paragraph_per_entry() {
+        let chapters = [item("c", "Chapter One", 0)];
+        let back = [item("r", "References", 0)];
+        let b = Book {
+            name: "Book", contents_title: "Contents", front: &[],
+            chapters: &chapters, back: &back,
+            single_scene: false,
+        };
+        let bodies: HashMap<String, String> =
+            [("r".to_string(), references_body())].into_iter().collect();
+        let d = design();
+        let html = proof_document(&Proof {
+            language: "en", book: &b, bodies: &bodies, design: &d, style: plain(),
+            openings: test_openings(&b),
+            front_cover: None, back_cover: None, markup_limit: None, pin: None,
+        });
+        let flow = flow_of(&html);
+        assert!(heading_for(&html, "r").starts_with("<h2"), "{flow}");
+        assert!(flow.contains("References</h2>"), "{flow}");
+        assert!(flow.contains("<p>Austen, J. Emma. 1815.</p>"), "{flow}");
+        assert!(flow.contains("<p>Woolf, V. The Waves. 1931.</p>"), "{flow}");
     }
 }

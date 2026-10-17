@@ -261,7 +261,7 @@ export const BIBLE_TITLE = t("outline.bible-title");
  *
  *  A UNION OF FOUR WORDS rather than four methods, because the four differ in
  *  exactly two values and a method each would be four copies of one body. */
-export type MatterKind = "dedication" | "foreword" | "acknowledgements" | "afterword";
+export type MatterKind = "dedication" | "foreword" | "acknowledgements" | "afterword" | "references";
 
 /** WHICH SECTION EACH KIND GOES IN, and it is the only place that decision is
  *  written down.
@@ -294,6 +294,11 @@ const MATTER_KINDS: Readonly<
     section: BACK_MATTER_TYPE,
     sectionTitle: () => t("outline.back-matter-title"),
     title: () => t("item.matter.afterword"),
+  },
+  references: {
+    section: BACK_MATTER_TYPE,
+    sectionTitle: () => t("outline.back-matter-title"),
+    title: () => t("item.matter.references"),
   },
 };
 

@@ -4734,7 +4734,7 @@ describe("publishing requires acknowledged prose", () => {
       if (cmd === "project_export" || cmd === "project_export_as") return { path: "/exports/test", underlined: 0, format: args?.format ?? "markdown" };
       if (cmd === "epub_preview") return epub;
       if (cmd === "pdf_preview") return pdf;
-      if (cmd === "chapter_style_get") return { style: { glyph: null, new_page: false, caps_title: false, drop_cap: false }, glyphs: [] };
+      if (cmd === "chapter_style_get") return { style: { glyph: null, new_page: false, caps_title: false, drop_cap: false, ornament_above: false, sink: "none" }, glyphs: [] };
       if (cmd === "book_design_get") return { design, fonts: [design.font], page_sizes: [design.page], presets: [] };
       return fallback.invoke(cmd, args);
     };

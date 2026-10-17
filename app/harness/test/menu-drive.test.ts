@@ -79,7 +79,7 @@ describe("the menu source parses into routes", () => {
     expect(file.map((id) => menuRoute(id, REAL).index)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect(menuRoute("menu-export-docx", REAL).path).toEqual([{ index: 5, count: 11 }, { index: 4, count: 8 }]);
     expect(menuRoute("menu-new-afterword", REAL).path).toEqual([
-      { index: 0, count: 8 }, { index: 4, count: 5 }, { index: 4, count: 5 }, { index: 4, count: 5 },
+      { index: 0, count: 8 }, { index: 4, count: 5 }, { index: 4, count: 5 }, { index: 4, count: 6 },
     ]);
   });
 
