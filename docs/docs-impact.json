@@ -26,13 +26,11 @@
     "editor": {
       "breaking": "none",
       "docs": {
-        "README.md": "22ed7f65ef1f39adeea9876ebd69a054e6d9543b93d9e3ec3de01429e2ac297c",
-        "docs/COMPATIBILITY.md": "d4adaad17993c1729c34604818c06dd8afdf4c566e8d849a5ab38bced6df4476",
-        "docs/MAINTENANCE.md": "139f9bf616b0405f87734482d00d0a76d655e95d1e175c65c4e62a11cefd5eda"
+        "README.md": "00b5600ad881cdef37b9f1cf6580fda94651701a03193e1f9de47c6f4059f468"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Book creation offers three presets with aligned themed controls. Nonfiction reference labels preserve custom titles and fiction tools remain available under More; switching to a novel restores Cast. Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. README now mentions the resizable preview rail with its optional device frame and refresh after a pause; device-local width preference only, no project format or compatibility change. Document chapter openers (ornament, its position, chapter sink) in the book preparation summary; the preview rail gains two option groups and three ornaments. Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. The creation menu and README also cover the References back-matter page.",
+      "note": "Document the Obtainium update channel for the Android app in the README: the GitHub source URL, the release APK asset to pick, the signing certificate SHA-256 fingerprint to compare, the one-time package move that ends in-place updates, and the fact that books cannot move between the old and new app yet. Book creation offers three presets with aligned themed controls. Nonfiction reference labels preserve custom titles and fiction tools remain available under More; switching to a novel restores Cast. Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. README now mentions the resizable preview rail with its optional device frame and refresh after a pause; device-local width preference only, no project format or compatibility change. Document chapter openers (ornament, its position, chapter sink) in the book preparation summary; the preview rail gains two option groups and three ornaments. Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. The creation menu and README also cover the References back-matter page.",
       "source_sha256": "36c40eaacd3eee92204cd821ac3b94380ce08029482ae9f0823be6ad3e0abac1"
     },
     "encryption": {
@@ -48,22 +46,22 @@
     },
     "maintenance": {
       "breaking": "none",
-      "docs": {
-        "docs/COMPATIBILITY.md": "d4adaad17993c1729c34604818c06dd8afdf4c566e8d849a5ab38bced6df4476",
-        "docs/MAINTENANCE.md": "139f9bf616b0405f87734482d00d0a76d655e95d1e175c65c4e62a11cefd5eda"
-      },
+      "docs": {},
       "migration": "",
-      "no_impact": "",
-      "note": "Preserve full-range migration, backup, and rollback assessments when adding optional preset metadata. Focused fixtures cover preset creation, export formatting, and metadata recovery. No contributor workflow change. Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged. Renderer, paginator and test sources changed for chapter openers and CI runs one display-gated paginator test; contributor guidance, documentation checks and native-test exclusions are unchanged. Harness and test files changed only for the References menu item; contributor guidance, documentation checks and recovery contracts are unchanged.",
-      "source_sha256": "6725ff4df04f7912aca14071d481fc7f48bc188c3fa620ec8c9395c30a04b028"
+      "no_impact": "Only Android update documentation and store metadata change; contributor guidance, documentation checks, and CI behavior remain unchanged.",
+      "note": "Rewrite only the Android preview guide's update instructions and the README; the documentation guard, its tests, and CI behavior are unchanged. Preserve full-range migration, backup, and rollback assessments when adding optional preset metadata. Focused fixtures cover preset creation, export formatting, and metadata recovery. No contributor workflow change. Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged. Renderer, paginator and test sources changed for chapter openers and CI runs one display-gated paginator test; contributor guidance, documentation checks and native-test exclusions are unchanged. Harness and test files changed only for the References menu item; contributor guidance, documentation checks and recovery contracts are unchanged.",
+      "source_sha256": "156178eccd5820ce3d2161bdfac636fe1b7206ffae37d532c2fdca2a7b67b658"
     },
     "native-packaging": {
       "breaking": "none",
-      "docs": {},
+      "docs": {
+        "README.md": "00b5600ad881cdef37b9f1cf6580fda94651701a03193e1f9de47c6f4059f468",
+        "scripts/android/README.md": "2c1e1bb647734d6bb19f102d8349484446b79d9e04b20be5c47d2e550b153237"
+      },
       "migration": "",
-      "no_impact": "Desktop preset behavior adds no dependencies, packaging configuration, or capability permissions and leaves native distribution unchanged. CI gains one narrow display-gated paginator test step in the host job; packaging, release admission and artifacts are unchanged.",
-      "note": "Desktop preset behavior adds no dependencies, packaging configuration, or capability permissions and leaves native distribution unchanged. Require the latest exact-commit develop push CI run to succeed before alpha tag packaging; an older success cannot hide a pending or failed newer run. Existing platforms, asset publication, tag ancestry, application behavior, and compatibility remain unchanged. The host job also runs one display-gated proof paginator test.",
-      "source_sha256": "d6ce91ef8888dbd6613d38e3b794bb7ea12e98cc981e184e9c8cace733bc5c4d"
+      "no_impact": "",
+      "note": "Point the Android preview guide at the Obtainium update instructions and state that in-place updates depend on the unchanged package name and signing key and that books cannot move between the old and new app yet. Desktop preset behavior adds no dependencies, packaging configuration, or capability permissions and leaves native distribution unchanged. Require the latest exact-commit develop push CI run to succeed before alpha tag packaging; an older success cannot hide a pending or failed newer run. Existing platforms, asset publication, tag ancestry, application behavior, and compatibility remain unchanged. The host job also runs one display-gated proof paginator test. Desktop preset behavior adds no dependencies, packaging configuration, or capability permissions and leaves native distribution unchanged. CI gains one narrow display-gated paginator test step in the host job; packaging, release admission and artifacts are unchanged.",
+      "source_sha256": "9d8aab5dd52e3aa363607c6b9d139dcbe06e64983cd6414834d33515cc5506ba"
     },
     "project-format": {
       "breaking": "none",

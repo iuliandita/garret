@@ -103,6 +103,29 @@ follow the included instructions. Android uses an APK; the phone app has fewer
 features and does not sync books automatically. Keep a backup before trying a
 new build.
 
+### Android updates with Obtainium
+
+[Obtainium](https://github.com/ImranR98/Obtainium) installs each new Android
+release for you:
+
+1. Add `https://github.com/iuliandita/garret` as an app source.
+2. Pick the asset whose name ends in `-android.apk`, for example
+   `garret-0.0.2-android.apk`. The `-android-info.zip` asset holds instructions
+   and build details; it is not installable.
+3. Check the signing certificate. Obtainium shows the certificate hash for the
+   installed app on its app page; the SHA-256 digest must be
+   `BD:DD:33:9D:88:32:A6:37:8D:BD:04:71:E4:1A:3D:21:48:F4:41:1F:A8:B0:04:C6:B5:52:4C:93:F6:68:4A:92`.
+   To read it from a downloaded APK, run `apksigner verify --print-certs` from
+   the Android SDK build-tools, or `keytool -printcert -jarfile`, and compare
+   the reported certificate SHA-256 digest.
+
+An installed copy keeps updating in place only while the package name and the
+signing key stay the same. One package change is planned: the Android app moves
+from `cc.local.app` to `com.usegarret.app` in
+[#279](https://github.com/iuliandita/garret/issues/279). That build installs
+next to the existing app instead of updating it, so keep the current app
+installed; books cannot be moved between the two yet.
+
 ## Building from source (Linux)
 
 You need [Bun](https://bun.sh), a stable Rust toolchain, and the
