@@ -1,13 +1,22 @@
 #!/usr/bin/env python3
 """Apply reproducible private-preview settings after Tauri Android generation."""
 from pathlib import Path
+import json
 import shutil
+import sys
 import xml.etree.ElementTree as ET
 
 source = Path(__file__).resolve().parent
 repo = source.parent.parent
 android = repo / "app/shell-tauri/src-tauri/gen/android"
 main = android / "app/src/main"
+if sys.argv[1:] == ["--canonicalize-config"]:
+    # Tauri serializes desktop packaging HashMaps in a random order on Android.
+    config = main / "assets/tauri.conf.json"
+    config.write_text(json.dumps(json.loads(config.read_text()), sort_keys=True, separators=(",", ":")) + "\n")
+    raise SystemExit(0)
+if sys.argv[1:]:
+    raise SystemExit("usage: prepare.py [--canonicalize-config]")
 namespace = "http://schemas.android.com/apk/res/android"
 ET.register_namespace("android", namespace)
 manifest = main / "AndroidManifest.xml"
@@ -71,4 +80,18 @@ allprojects {
 if archive_settings not in gradle.read_text():
     with gradle.open("a") as output:
         output.write(archive_settings)
+app_gradle = android / "app/build.gradle.kts"
+canonicalize = '''
+tasks.matching { it.name == "mergeUniversalReleaseAssets" }.configureEach {
+    dependsOn("rustBuildUniversalRelease")
+    doFirst {
+        project.exec {
+            commandLine("python3", "${rootDir}/../../../../../scripts/android/prepare.py", "--canonicalize-config")
+        }
+    }
+}
+'''
+if canonicalize not in app_gradle.read_text():
+    with app_gradle.open("a") as output:
+        output.write(canonicalize)
 print("Prepared Android preview: local data, bounded builds, lifecycle and keyboard handling")

@@ -131,6 +131,9 @@ ordering and timestamps. `ANDROID_UNSIGNED=1 scripts/package-android` builds
 without opening signing material; `ANDROID_BUILD_ROOT` changes the container
 source path for independent reproducibility checks. See the
 [F-Droid draft and submission checklist](../../fastlane/fdroid/README.md).
+Before release assets are merged, Gradle canonicalizes the generated Tauri
+configuration after both Rust builds. This preserves its values while removing
+random key ordering from the embedded desktop packaging maps.
 
 
 ## Isolated runtime check

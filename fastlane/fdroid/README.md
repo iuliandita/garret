@@ -29,9 +29,11 @@ still require validation on F-Droid's builder.
    release includes the English/German fastlane metadata.
 3. From fdroiddata, run `fdroid lint com.usegarret.app`,
    `fdroid rewritemeta com.usegarret.app`, then
-   `fdroid build --verbose com.usegarret.app`. Use the
-   [official buildserver container procedure](https://f-droid.org/en/docs/Submitting_to_F-Droid_Quick_Start_Guide/)
-   and keep its logs. Resolve scanner, SDK/tool provisioning and lint findings;
+   `fdroid build --verbose --test --on-server com.usegarret.app` inside a
+   disposable [official buildserver container](https://f-droid.org/en/docs/Submitting_to_F-Droid_Quick_Start_Guide/).
+   The `--on-server` option executes the recipe's tool-installation commands;
+   plain local builds skip its `sudo` section. Keep the logs. Resolve scanner,
+   SDK/tool provisioning and lint findings;
    the draft grants no blanket scanner exclusions. Review availability of the
    exact NDK/SDK versions in that buildserver before enabling the recipe.
 4. Download the release APK and run `apksigner verify --print-certs` on it.
@@ -78,6 +80,8 @@ nonzero result reports differing entry hashes or metadata-only differences.
 The shared build uses locked Cargo and Bun dependencies, path remapping for
 Rust/C/C++, UTC/C.UTF-8, a commit-derived `SOURCE_DATE_EPOCH`, and deterministic
 Gradle archives. APK timestamps are normalized by the Android Gradle plugin.
+The generated Tauri configuration is sorted before asset merging: its embedded
+desktop packaging maps otherwise serialize in random key order.
 Build receipts outside the APK may include wall-clock time.
 
 Two local builds establish only local determinism. F-Droid must independently
