@@ -171,7 +171,6 @@ pub(super) fn render(
         types = types.replace("</Types>", "<Override PartName=\"/word/settings.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml\"/></Types>");
         rels = rels.replace("</Relationships>", &format!("<Relationship Id=\"rIdSettings\" Type=\"{R_NS}/settings\" Target=\"settings.xml\"/></Relationships>"));
         entries.push(Entry::text("word/settings.xml", &format!("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><w:settings xmlns:w=\"{W_NS}\"><w:endnotePr><w:endnote w:id=\"-1\"/><w:endnote w:id=\"0\"/></w:endnotePr></w:settings>")));
-
     }
     entries.extend([
         Entry::text("[Content_Types].xml", &types),
