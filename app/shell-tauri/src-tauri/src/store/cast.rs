@@ -634,6 +634,9 @@ impl Store {
         id: &str,
         picture: Option<&str>,
     ) -> Result<(Option<String>, CastMember)> {
+        if picture.is_some_and(|name| name.starts_with("fig-")) {
+            return Err(StoreError::Corrupt("figure originals cannot be assigned to cast pictures".into()));
+        }
         let previous: Option<String> = self
             .conn
             .query_row(

@@ -528,6 +528,15 @@ pub fn base64(bytes: &[u8]) -> String {
     out
 }
 
+pub(crate) fn inspect_original(data: &[u8]) -> Result<(Format, u32, u32), PictureError> {
+    if data.len() as u64 > MAX_PICTURE_BYTES {
+        return Err(PictureError::TooLarge { bytes: data.len() as u64, limit: MAX_PICTURE_BYTES });
+    }
+    let format = sniff(data).ok_or(PictureError::UnknownFormat)?;
+    let image = decode(data, format)?;
+    Ok((format, image.width, image.height))
+}
+
 /// Take a picture into this project: check it, retain the writer's bytes under
 /// a fresh name, and cache a thumbnail beside them. Returns the name the
 /// database stores.
@@ -622,7 +631,7 @@ fn link_existing_original(
         let Some(candidate_name) = candidate_name.to_str() else {
             continue;
         };
-        if !is_stored_name(candidate_name)
+        if candidate_name.starts_with("fig-") || !is_stored_name(candidate_name)
             || candidate_name.ends_with(THUMB_SUFFIX)
             || !candidate_name.ends_with(format.extension())
         {
@@ -761,6 +770,9 @@ pub fn view(dir: &Path, stored: Option<&str>) -> PictureView {
 /// gate `view` takes, so a value a foreign tool wrote into that column cannot
 /// address a file this function then unlinks.
 pub fn remove(dir: &Path, stored: &str) {
+    if stored.starts_with("fig-") {
+        return;
+    }
     let Some(thumb_at) = thumb_name(stored) else {
         eprintln!("pictures: {stored:?} is not a picture this build wrote; nothing was deleted");
         return;
@@ -930,6 +942,17 @@ mod tests {
         let p = dir.join(name);
         std::fs::write(&p, bytes).unwrap();
         p
+    }
+
+    #[test]
+    fn cast_picture_removal_never_unlinks_a_figure_original() {
+        let root = tempfile::tempdir().unwrap();
+        let name = "fig-019b1234-5678-7abc-8def-123456789abc.png";
+        let bytes = include_bytes!("../fixtures/two-halves.png");
+        std::fs::write(root.path().join(name), bytes).unwrap();
+        assert!(is_stored_name(name), "backup inventory must accept figure originals");
+        remove(root.path(), name);
+        assert_eq!(std::fs::read(root.path().join(name)).unwrap(), bytes);
     }
 
     #[test]

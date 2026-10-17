@@ -38,6 +38,10 @@ nodes are refused before preview or publication, with the affected item ID in
 English or German. A refused save names the scene and keeps its text pending;
 use the recovery-copy action before restarting.
 
+Figure-original retention uses shared archive verification, but this preparation
+does not enable new document nodes or raise the phone's schema ceiling above 17.
+A future format upgrade still requires a compatible Android release.
+
 Cancellation waits for the original native operation. Close an open system
 picker to let cancellation finish. Provider write, close or readback failures
 leave the destination unverified. The app attempts to delete documents it created
