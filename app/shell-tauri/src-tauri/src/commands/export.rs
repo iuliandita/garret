@@ -648,8 +648,11 @@ fn checked(
             .filter_map(|(id, _)| {
                 bodies
                     .get(*id)
-                    .and_then(|body| crate::store::document_fields::fields(body))
-                    .map(|fields| fields.into_iter().map(|field| field.text).collect::<Vec<_>>().join("\n"))
+                    .and_then(|body| {
+                        crate::store::document_fields::fields(body)
+                            .map(|fields| fields.into_iter().map(|field| field.text).collect::<Vec<_>>().join("\n"))
+                            .or_else(|| crate::store::document_text(body))
+                    })
                     .map(|text| (*id, text))
             })
             .collect()
@@ -2819,6 +2822,13 @@ mod tests {
             let report = checked(crate::export::Format::Markdown, "Book", &vault, Some(&pin), &[&item], &bodies, &[]);
             assert!(report.blockers > 0, "{field}");
         }
+        let legacy = serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":[
+            {"type":"text","text":"Bram Kell","marks":[{"type":"unknown"}]}
+        ]}]}).to_string();
+        assert!(crate::store::document_fields::fields(&legacy).is_none());
+        let bodies = std::collections::HashMap::from([("scene".into(), legacy)]);
+        let report = checked(crate::export::Format::Markdown, "Book", &vault, Some(&pin), &[&item], &bodies, &[]);
+        assert!(report.blockers > 0);
     }
 
     #[test]
