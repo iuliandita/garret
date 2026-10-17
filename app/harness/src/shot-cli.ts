@@ -1401,8 +1401,6 @@ function parseArgs(argv: string[]): Options {
         outlineView = value;
         break;
       case "--menu-action": {
-        try { menuRoute(value); }
-        catch (error) { throw new Error(`--menu-action: ${error instanceof Error ? error.message : String(error)}`); }
         menuAction = value;
         break;
       }
@@ -1497,6 +1495,10 @@ function parseArgs(argv: string[]): Options {
   // No fixture was seeded, so no fixture segment names one: a filename ending
   // in "-tiny" would say this book came from a fixture it never touched.
   const fixtureTag = firstRun === null ? `-${fixture}` : "";
+  if (menuAction !== null) {
+    try { menuRoute(menuAction, undefined, undefined, projectPreset ?? "novel"); }
+    catch (error) { throw new Error(`--menu-action: ${error instanceof Error ? error.message : String(error)}`); }
+  }
   return {
     fixture,
     scheme,
