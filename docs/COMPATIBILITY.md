@@ -44,7 +44,7 @@ Opening a supported older book can upgrade its SQLite schema. A newer schema
 is refused by an older build; do not edit `PRAGMA user_version` to bypass this.
 Static version checks do not establish that every legacy book upgrades correctly.
 
-0.0.1, 0.0.2 and 0.0.3 use SQLite schema 17. The 0.0.2 DOCX importer adds
+0.0.1 through 0.0.4 use SQLite schema 17. The 0.0.2 DOCX importer adds
 archive expansion limits: 128 entries, 128 MiB combined, and 64 MiB per entry.
 An oversized foreign document can now be refused. Preserve the original and
 split or simplify a copy before retrying; do not bypass the limits. This does
