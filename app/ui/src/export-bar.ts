@@ -56,7 +56,7 @@ export interface ExportBarDeps {
   /** The same, through the operating system's own save dialog. Resolves null
    *  when the writer cancelled — an ANSWER, not a failure, so it raises no
    *  notice at all. Optional because the corpus path has no host to ask. */
-  exportProjectAs?: (format: ExportFormat) => Promise<ExportWritten | null>;
+  exportProjectAs?: (format: ExportFormat, storyId?: string) => Promise<ExportWritten | null>;
   /** GOOD NEWS, and a different channel from onNotice deliberately. Both used
    *  to go through onNotice, which raised a red role="alert" bar that could not
    *  be dismissed - so "Exported to <path>" was announced as an emergency and
@@ -76,7 +76,7 @@ export interface ExportBar {
   /** Export to a destination the writer picks in an OS dialog. File > Export
    *  as…. Shares the same latch and the same drain as `run`: the two routes
    *  differ in where the file lands, and in nothing else. */
-  runAs(format: ExportFormat): void;
+  runAs(format: ExportFormat, storyId?: string): void;
   destroy(): void;
 }
 
@@ -91,7 +91,7 @@ export function createExportBar(deps: ExportBarDeps): ExportBar {
   // state, and both menu items reach these entry points directly.
   let running = false;
 
-  const run = async (format: ExportFormat, chooseDestination: boolean): Promise<void> => {
+  const run = async (format: ExportFormat, chooseDestination: boolean, storyId?: string): Promise<void> => {
     // NO `destroyed` CHECK, and this is now a claim rather than an
     // impossibility. Until the retirement slice the only entry was a click on a
     // listener destroy() removed, so nothing could reach here afterwards. The
@@ -118,7 +118,7 @@ export function createExportBar(deps: ExportBarDeps): ExportBar {
       // and is still called their manuscript.
       await deps.drain();
       const result = chooseDestination
-        ? await deps.exportProjectAs?.(format)
+        ? await (storyId === undefined ? deps.exportProjectAs?.(format) : deps.exportProjectAs?.(format, storyId))
         : await deps.exportProject(format);
       // null is the writer cancelling the dialog. Saying nothing is the whole
       // response: they asked for a choice, made one, and nothing happened
@@ -167,8 +167,8 @@ export function createExportBar(deps: ExportBarDeps): ExportBar {
     run(format: ExportFormat): void {
       void run(format, false);
     },
-    runAs(format: ExportFormat): void {
-      void run(format, true);
+    runAs(format: ExportFormat, storyId?: string): void {
+      void run(format, true, storyId);
     },
     destroy(): void {
       // Still a real latch, not a formality: it is what stops an export

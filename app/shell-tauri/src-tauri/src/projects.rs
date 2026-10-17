@@ -1034,7 +1034,7 @@ pub fn create_in(
 
 pub fn validate_preset(preset: Option<&str>) -> Result<(), String> {
     match preset {
-        None | Some("novel" | "short" | "nonfiction") => Ok(()),
+        None | Some("novel" | "short" | "nonfiction" | "collection") => Ok(()),
         Some(_) => Err("unknown project preset".into()),
     }
 }
@@ -6406,7 +6406,7 @@ mod project_presets_tests {
 
     #[test]
     fn project_presets_survive_backup_archive_restore_transfer_and_salvage_verbatim() {
-        for value in ["short", "nonfiction", "future-preset"] {
+        for value in ["short", "nonfiction", "collection", "future-preset"] {
             let dir = tempfile::tempdir().unwrap();
             let made = create_in_preset(
                 dir.path(),
@@ -6424,6 +6424,9 @@ mod project_presets_tests {
             store
                 .set_meta(crate::core_constants::PRESET_KEY, value)
                 .unwrap();
+            let author_key = format!("collection.author.{}", store.items().unwrap().iter().find(|item| item.item_type == "chapter").map(|item| item.id.as_str()).unwrap_or("retained-story"));
+            let author = "  Ada & Lane  ";
+            store.set_meta(&author_key, author).unwrap();
             let point = dir.path().join("copy.point");
             assert!(
                 crate::backup_bundle::write(path, &store, &point)
@@ -6431,6 +6434,7 @@ mod project_presets_tests {
                     .verified
             );
             let copy = Store::open_readonly(&crate::backup_bundle::db_path(&point)).unwrap();
+            assert_eq!(copy.get_meta(&author_key).unwrap().as_deref(), Some(author));
             assert_eq!(
                 copy.get_meta(crate::core_constants::PRESET_KEY)
                     .unwrap()
@@ -6442,6 +6446,7 @@ mod project_presets_tests {
             std::fs::create_dir(&stage).unwrap();
             let transferred = crate::transfer_copy::stage(&point, &stage, &expected).unwrap();
             let copy = Store::open_readonly(&transferred.database).unwrap();
+            assert_eq!(copy.get_meta(&author_key).unwrap().as_deref(), Some(author));
             assert_eq!(
                 copy.get_meta(crate::core_constants::PRESET_KEY)
                     .unwrap()
@@ -6461,6 +6466,7 @@ mod project_presets_tests {
             )
             .unwrap();
             let restored_store = Store::open_readonly(Path::new(&restored.path)).unwrap();
+            assert_eq!(restored_store.get_meta(&author_key).unwrap().as_deref(), Some(author));
             assert_eq!(
                 restored_store
                     .get_meta(crate::core_constants::PRESET_KEY)
@@ -6469,6 +6475,7 @@ mod project_presets_tests {
                 Some(value)
             );
             let recovered = crate::salvage::salvage(path, &dir.path().join("salvage")).unwrap();
+            assert_eq!(recovered.meta.as_ref().unwrap().get(&author_key).map(String::as_str), Some(author));
             assert_eq!(
                 recovered
                     .meta
@@ -6487,6 +6494,7 @@ mod project_presets_tests {
             Some("novel"),
             Some("short"),
             Some("nonfiction"),
+            Some("collection"),
             Some("future-preset"),
         ] {
             let dir = tempfile::tempdir().unwrap();
@@ -6533,6 +6541,7 @@ mod project_presets_tests {
                 match value {
                     Some("short") => "short",
                     Some("nonfiction") => "nonfiction",
+                    Some("collection") => "collection",
                     _ => "novel",
                 }
             );
@@ -6545,8 +6554,8 @@ mod project_presets_tests {
         }
     }
     #[test]
-    fn project_presets_creation_refuses_unknown_and_reserved_values() {
-        for value in ["collection", "future-preset", "", "SHORT"] {
+    fn project_presets_creation_refuses_unknown_values() {
+        for value in ["future-preset", "", "SHORT"] {
             let dir = tempfile::tempdir().unwrap();
             assert!(create_in_preset(
                 dir.path(),

@@ -13,6 +13,33 @@ const input: DocInput = {
   ],
 };
 
+test.each([false, true])("a stored empty text run reopens and can be edited (marked: %s)", (marked) => {
+  const marks = marked ? [{ type: "em" }] : undefined;
+  const body = JSON.stringify({ type: "doc", content: [
+    { type: "paragraph", content: [{ type: "text", text: "", marks }] },
+    { type: "paragraph", content: [
+      { type: "text", text: "left", marks },
+      { type: "text", text: "", marks },
+      { type: "text", text: "right", marks },
+    ] },
+  ] });
+  const parsed = readableBody(body);
+  expect(parsed).not.toBeNull();
+  if (!parsed) throw new Error("Legacy empty text runs must reopen");
+  const editor = createEditor(document.createElement("div"), { kind: "pmjson", json: parsed });
+  try {
+    const doc = schema.nodeFromJSON(parsed as unknown as Record<string, unknown>);
+    expect(doc.child(0).childCount).toBe(0);
+    expect(doc.child(1).childCount).toBe(1);
+    expect(doc.child(1).textContent).toBe("leftright");
+    editor.caretToParagraph(0);
+    editor.typeChar("x");
+    expect(readableBody(editor.serialize())).not.toBeNull();
+  } finally {
+    editor.destroy();
+  }
+});
+
 describe("createEditor onChange", () => {
   test("fires only on a document change, not on a caret move", () => {
     const mount = document.createElement("div");

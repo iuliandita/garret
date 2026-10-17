@@ -735,6 +735,7 @@ mod tests {
         gtk::init().unwrap();
         let chapters = vec![("chapter".to_string(), "Chapter".to_string(), 0)];
         let book = Book {
+            publication: None,
             single_scene: false,
             name: "Proof Test",
             contents_title: "Contents",

@@ -1,4 +1,5 @@
 import type { ProjectPreset } from "./project-preset";
+import { storyIds } from "./collection";
 // app/ui/src/placement.ts
 // Where a new part, chapter or scene lands.
 //
@@ -41,8 +42,9 @@ export interface Placement {
   /** Containers to create BEFORE the item, outermost first, each inside the
    *  one before it and the item inside the last.
    *
-   *  EMPTY IN EVERY CASE BUT ONE. A new book holds one scene and no part, so a
-   *  chapter had nowhere to live and landed at the root beside the starter
+   *  A collection scene without a story builds one chapter. Otherwise a
+   *  chapter without a part builds its missing holder. A new book holds one
+   *  scene and no part, so a chapter had nowhere to live and landed beside the starter
    *  scene -- and the part created next was placed after THAT, appearing below
    *  the chapter it was meant to contain. Reported with a screenshot on
    *  2026-08-27; every step was correct by the rule and the result was three
@@ -227,12 +229,37 @@ export function planPlacement(
   // last root that is not the bin or the bible -- never a plain append, which
   // would land under both of them.
   const rootAnswer = (after?: string | null): Placement => ({
-    holders: preset === "short" ? [] : holderFor(itemType),
+    holders: preset === "short" || preset === "collection" ? [] : holderFor(itemType),
     parentId: null,
     afterId: after === undefined ? rootAppendPoint(items) : after,
   });
+  const chain = selectedId === null ? [] : ancestorsOrSelf(items, selectedId);
+  if (preset === "collection" && (itemType === "chapter" || itemType === "scene")) {
+    const excluded = new Set<string>();
+    const sections = new Set<string>();
+    const stories = storyIds(items.filter((row) => {
+      const section = isReservedRoot(row) && !sections.has(row.type);
+      if (section) sections.add(row.type);
+      if (section || (row.parent_id !== null && excluded.has(row.parent_id))) {
+        excluded.add(row.id);
+        return false;
+      }
+      return true;
+    }));
+    const story = chain.find((row) => stories.has(row.id));
+    if (itemType === "chapter" && story !== undefined) {
+      return { holders: [], parentId: story.parent_id, afterId: story.id };
+    }
+    if (itemType === "scene" && story === undefined) {
+      const selectedIndex = items.findIndex((row) => row.id === selectedId);
+      const preceding = items.slice(0, selectedIndex < 0 ? items.length : selectedIndex).reverse().find((row) => stories.has(row.id));
+      if (preceding !== undefined) return { holders: [], parentId: preceding.id, afterId: null };
+      const top = chain.at(-1);
+      const part = top !== undefined && !isReservedRoot(top) ? chain.find((row) => row.type === "part") : undefined;
+      return { holders: ["chapter"], parentId: part?.id ?? null, afterId: part === undefined ? rootAppendPoint(items) : null };
+    }
+  }
   if (selectedId === null) return rootAnswer();
-  const chain = ancestorsOrSelf(items, selectedId);
   if (chain.length === 0) return rootAnswer();
 
   const holders = HOLDERS[itemType];

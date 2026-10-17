@@ -86,6 +86,7 @@ pub struct Epub<'a> {
     /// The store identity when this project has one. Legacy stores have none
     /// and retain the title-derived publication identifier.
     pub book_id: Option<&'a str>,
+    pub story_id: Option<&'a str>,
     /// The BCP-47 tag on `<package xml:lang>`, `dc:language` and every XHTML
     /// document.
     ///
@@ -323,6 +324,7 @@ fn stylesheet(font: &str, style: &ChapterStyle) -> String {
          {{ text-indent: 0; }}\n\
          .{ORNAMENT_CLASS} {{ text-align: center; text-indent: 0; margin: 1.5em 0; }}\n\
          .{UNDERLINE_CLASS} {{ text-decoration: underline; }}\n\
+         .story-byline {{ text-align: center; text-indent: 0; margin: 0.5em 0 1em; break-after: avoid; }}\n\
          nav ol {{ list-style: none; padding-left: 1em; }}\n\
          a {{ color: inherit; text-decoration: none; }}\n",
         family = css_string(font),
@@ -487,6 +489,9 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
                     ));
                 }
             }
+            if let Some(author) = epub.book.byline(id) {
+                doc.body.push_str(&format!("<p class=\"story-byline\">{}</p>\n", xml_escape(author)));
+            }
             // An item with no body, and an item whose body this build cannot
             // read, contribute a heading only. `export::manuscript`'s rule:
             // losing a chapter silently is the worst thing either renderer can
@@ -577,7 +582,7 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
             epub,
             epub.book.name,
             "titlepage",
-            &format!("<section><h1>{}</h1></section>", xml_escape(epub.book.name)),
+            &format!("<section><h1>{}</h1>{}</section>", xml_escape(epub.book.name), epub.book.author().map(|author| format!("<p class=\"story-byline\">{}</p>", xml_escape(author))).unwrap_or_default()),
         ),
     ));
 
@@ -680,7 +685,7 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
              <manifest>{manifest}</manifest>\n\
              <spine>{spine}</spine>\n\
              </package>\n",
-            identifier = xml_escape(&identifier_for(epub.book.name, epub.book_id)?),
+            identifier = xml_escape(&identifier_for(epub.book.name, epub.book_id, epub.story_id)?),
             title = xml_escape(epub.book.name),
             modified = xml_escape(epub.modified),
             language = xml_escape(epub.language),
@@ -744,31 +749,30 @@ const CREATOR_ID: &str = "creator";
 
 /// The publication's `dc:identifier`.
 ///
-/// DERIVED FROM THE TITLE, AND THAT IS A RECORDED GAP RATHER THAN A DESIGN. A
-/// publication identifier is meant to be unique and permanent, and the honest
-/// statement of what this one is is in the name: it is stable across every
-/// export of one book, which is the property a reading system's library
-/// actually uses, and two different books with the same title share it. Minting
-/// a real one needs a value written into the project the first time it is
-/// exported, and an export opens the store READONLY on purpose -- so it is a
-/// slice, not a line.
-fn identifier_for(name: &str, book_id: Option<&str>) -> Result<String, String> {
-    if let Some(book_id) = book_id {
+/// Modern books use their stored UUID; legacy books retain a title fallback.
+/// Scoped publications include both identities without writing to the source.
+fn identifier_for(name: &str, book_id: Option<&str>, story_id: Option<&str>) -> Result<String, String> {
+    let book = if let Some(book_id) = book_id {
         let id = uuid::Uuid::parse_str(book_id)
             .map_err(|_| "the book identity is not a UUID".to_string())?;
-        return Ok(format!("urn:uuid:{}", id.hyphenated()));
-    }
-    let slug: String = name
-        .chars()
-        .map(|c| {
-            if c.is_ascii_alphanumeric() {
-                c.to_ascii_lowercase()
-            } else {
-                '-'
-            }
-        })
-        .collect();
-    Ok(format!("book:{}", slug.trim_matches('-')))
+        format!("urn:uuid:{}", id.hyphenated())
+    } else {
+        let slug: String = name
+            .chars()
+            .map(|c| if c.is_ascii_alphanumeric() { c.to_ascii_lowercase() } else { '-' })
+            .collect();
+        format!("book:{}", slug.trim_matches('-'))
+    };
+    Ok(match story_id {
+        Some(id) => {
+            let story: String = id.bytes().map(|byte| match byte {
+                b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'.' | b'_' => char::from(byte).to_string(),
+                _ => format!("%{byte:02X}"),
+            }).collect();
+            format!("urn:garret:collection:{}:story:{story}", book.strip_prefix("urn:uuid:").unwrap_or(&book))
+        }
+        None => book,
+    })
 }
 
 #[cfg(test)]
@@ -976,6 +980,7 @@ mod tests {
 
     fn plain<'a>(name: &'a str, runs: &'a [(String, String, i64)]) -> Book<'a> {
         Book {
+            publication: None,
             single_scene: false,
             name,
             contents_title: "Contents",
@@ -1007,6 +1012,7 @@ mod tests {
             book,
             bodies,
             book_id: None,
+            story_id: None,
             font: "Crimson Text",
             style: ChapterStyle::default(),
             openings: ChapterOpenings { styled: top.clone(), page: top },
@@ -1070,6 +1076,13 @@ mod tests {
         c.book_id = Some("018f8d7a-8c44-7d59-9c50-5f281752238c");
         assert_eq!(package_identifier(&a), package_identifier(&b));
         assert_ne!(package_identifier(&b), package_identifier(&c));
+        a.story_id = Some("018f8d7a-8c44-7d59-9c50-5f281752239a");
+        b.story_id = a.story_id;
+        c.story_id = a.story_id;
+        assert_eq!(package_identifier(&a), package_identifier(&b));
+        assert_ne!(package_identifier(&b), package_identifier(&c));
+        b.story_id = Some("018f8d7a-8c44-7d59-9c50-5f281752239b");
+        assert_ne!(package_identifier(&a), package_identifier(&b));
     }
 
     #[test]
@@ -1138,6 +1151,7 @@ mod tests {
         let rows = chapters(&[("a", "One", 0), ("c", "A scene", 1)]);
         let front = chapters(&[("d", "Dedication", 0)]);
         let book = Book {
+            publication: None,
             single_scene: false,
             name: "My Novel",
             contents_title: "Contents",
@@ -1639,6 +1653,7 @@ mod tests {
         let body = chapters(&[("a", "One", 0)]);
         let back = chapters(&[("z", "Afterword", 0)]);
         let book = Book {
+            publication: None,
             single_scene: false,
             name: "N",
             contents_title: "Contents",
@@ -2030,6 +2045,7 @@ mod tests {
         // `identity_metadata` fails HERE, which is the only thing that stops the
         // check becoming a list of promises.
         let book = Book {
+            publication: None,
             single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
@@ -2067,6 +2083,7 @@ mod tests {
         // exactly what it was before this slice, or the graded EPUB evidence is
         // about a file nobody had.
         let book = Book {
+            publication: None,
             single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
@@ -2085,6 +2102,7 @@ mod tests {
     fn a_name_with_markup_in_it_is_escaped_into_the_package_document() {
         // A pen name is the writer's own text and the package document is XML.
         let book = Book {
+            publication: None,
             single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
@@ -2115,6 +2133,7 @@ mod tests {
         let body = chapters(&[("a", "One", 0)]);
         let back = chapters(&[("r", title, 0)]);
         let book = Book {
+            publication: None,
             name: "N",
             contents_title: "Contents",
             front: &[],

@@ -2,6 +2,7 @@ pub(crate) mod appearances;
 pub(crate) mod analytics;
 pub(crate) mod cast;
 pub(crate) mod comments;
+pub(crate) mod collection;
 pub(crate) mod covers;
 pub(crate) mod design;
 pub(crate) mod dialogs;

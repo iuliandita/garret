@@ -175,7 +175,7 @@ impl Strings {
 
 /// Defaults can outlive the locale in which a book was created.
 pub fn is_numbered_heading(title: &str, kind: &str) -> bool {
-    if !matches!(kind, "part" | "chapter" | "scene") {
+    if !matches!(kind, "part" | "chapter" | "scene" | "story") {
         return false;
     }
     CATALOGS.iter().any(|locale| {
@@ -243,6 +243,7 @@ const EN_ENTRIES: &[(&str, &str)] = &[
     ("item.numbered.chapter", "Chapter {n}"),
     ("item.numbered.part", "Part {n}"),
     ("item.numbered.scene", "Scene {n}"),
+    ("item.numbered.story", "Story {n}"),
     // The window title with nothing open: the
     // one non-book title this application has, and not a product name.
     ("library", "Library"),
@@ -377,6 +378,7 @@ const DE_ENTRIES: &[(&str, &str)] = &[
     ("item.numbered.chapter", "Kapitel {n}"),
     ("item.numbered.part", "Teil {n}"),
     ("item.numbered.scene", "Szene {n}"),
+    ("item.numbered.story", "Geschichte {n}"),
     ("library", "Bibliothek"),
     ("privacy.acknowledge", "Ich verstehe, dass dies die Anwendung verbirgt und meine Dateien nicht verschlüsselt."),
     ("privacy.capabilities", "Betriebssystem-Anmeldung und das Leeren der Zwischenablage sind nicht verfügbar. Ihr Verlauf bleibt ungeschützt."),

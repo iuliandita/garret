@@ -12,6 +12,7 @@ export interface BibleCreation {
 
 export function createCreationChooser(deps: {
   referenceTitle?(): string;
+  collection?: boolean;
   create(type: string): void;
   bible(): BibleCreation;
   matter(kind: MatterKind): void;
@@ -73,7 +74,7 @@ export function createCreationChooser(deps: {
         shell.body.append(bibleChoices(target, false));
       } else {
         for (const type of ["scene", "chapter", "part"]) {
-          shell.body.append(action(`create-${type}`, t(`menu.new-${type}`), () => deps.create(type)));
+          shell.body.append(action(`create-${type}`, t(deps.collection && type === "chapter" ? "collection.new-story" : `menu.new-${type}`), () => deps.create(type)));
         }
         const more = document.createElement("details");
         more.id = "creation-more";

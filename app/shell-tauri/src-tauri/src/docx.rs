@@ -172,6 +172,10 @@ fn styled_paragraph(style: &str, text: &str) -> String {
     )
 }
 
+fn byline_paragraph(author: &str) -> String {
+    format!("<w:p><w:pPr><w:pStyle w:val=\"Normal\"/><w:jc w:val=\"center\"/></w:pPr><w:r><w:t xml:space=\"preserve\">{}</w:t></w:r></w:p>", heading_text(author))
+}
+
 /// The `Heading{n}` style id for a store depth, `n` = the item's Markdown
 /// level minus one: `heading_level` clamps to 2..6 (Markdown H2..H6), so this
 /// clamps to `Heading1`..`Heading5` -- the same six-level ceiling, restated
@@ -279,11 +283,23 @@ fn document_rels_xml() -> String {
 /// Word document opens at their own default and this only has to be valid.
 fn document_xml(book: &Book, bodies: &HashMap<String, String>) -> String {
     let mut body = styled_paragraph("Title", &heading_text(book.name));
+    if let Some(author) = book.author() { body.push_str(&byline_paragraph(author)); }
+    if book.publication.is_some_and(|publication| publication.contents.is_some()) && !book.single_scene {
+        let contents = crate::export::contents_of(book);
+        if !contents.is_empty() {
+            let page_break = "<w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>";
+            body.push_str(page_break);
+            body.push_str(&styled_paragraph("Heading1", &heading_text(book.contents_title)));
+            for entry in contents { body.push_str(&styled_paragraph("Normal", &heading_text(&entry.title))); }
+            body.push_str(page_break);
+        }
+    }
     for (run_index, run) in [book.front, book.chapters, book.back].into_iter().enumerate() {
         for (id, title, depth) in run {
             if !book.suppresses_heading(run_index, title) {
                 body.push_str(&styled_paragraph(&heading_style(*depth), &heading_text(title)));
             }
+            if let Some(author) = book.byline(id) { body.push_str(&byline_paragraph(author)); }
             // An item with no body, and an item whose body this build cannot
             // read, contribute a heading only -- `export::manuscript`'s
             // rule: losing a chapter silently is the worst thing either
@@ -381,6 +397,7 @@ mod tests {
         back: &'a [(String, String, i64)],
     ) -> Book<'a> {
         Book {
+            publication: None,
             single_scene: false,
             name,
             contents_title: "Contents",

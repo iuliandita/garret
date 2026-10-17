@@ -162,7 +162,15 @@ pub(crate) fn export_into_with(
     strings: crate::strings::Strings,
     convert: impl FnOnce(Vec<u8>) -> std::result::Result<Vec<u8>, String>,
 ) -> std::result::Result<ExportResult, String> {
-    let (written, items, words, preflight) = render_project(path, name, format, vault, strings)?;
+    export_scope_into_with(path, name, dest, mode, format, vault, strings, None, convert)
+}
+
+pub(crate) fn export_scope_into_with(
+    path: &Path, name: &str, dest: &Path, mode: Dest, format: crate::export::Format,
+    vault: &crate::identity::Vault, strings: crate::strings::Strings, story_id: Option<&str>,
+    convert: impl FnOnce(Vec<u8>) -> std::result::Result<Vec<u8>, String>,
+) -> std::result::Result<ExportResult, String> {
+    let (written, items, words, preflight) = render_scope_with(path, name, format, vault, strings, None, story_id)?;
     let bytes = convert(written.bytes)?;
     let pages = match format {
         crate::export::Format::Pdf => Some(
@@ -259,7 +267,16 @@ fn render_project_with(
     strings: crate::strings::Strings,
     markup_limit: Option<u32>,
 ) -> std::result::Result<Rendered, String> {
+    render_scope_with(path, name, format, vault, strings, markup_limit, None)
+}
+
+fn render_scope_with(
+    path: &Path, name: &str, format: crate::export::Format, vault: &crate::identity::Vault,
+    strings: crate::strings::Strings, markup_limit: Option<u32>, story_id: Option<&str>,
+) -> std::result::Result<Rendered, String> {
     let store = store::Store::open_readonly(path).map_err(|e| e.to_string())?;
+    let story = story_id.map(|id| crate::collection::story(&store, id)).transpose()?;
+    let name = story.as_ref().map(|story| story.title.as_str()).unwrap_or(name);
     let book_id = store.book_id().map_err(|e| e.to_string())?;
     let Walked {
         front,
@@ -268,7 +285,8 @@ fn render_project_with(
         bodies,
         openings,
         single_scene,
-    } = walk_of(&store)?;
+        mut publication,
+    } = walk_scope(&store, story_id)?;
     // ONE list for every question that is about the file as a whole -- the word
     // count below and the reported item count. A dedication is prose in the
     // exported file, so it is prose in the figure that describes it.
@@ -293,8 +311,21 @@ fn render_project_with(
         }
     }
 
+    let pin = crate::identity::pin_of_project(&store)?;
+    let mut export_pin = pin.clone();
+    if let Some(story) = &story {
+        let author = story.author.as_deref().or_else(|| pin.as_ref().map(|pin| pin.public.name.as_str())).filter(|value| !value.trim().is_empty());
+        publication.author = author.map(str::to_string);
+        if story.author.is_some() {
+            export_pin = author.map(|name| crate::identity::Pin {
+                public: crate::identity::Public { name: name.to_string(), ..Default::default() },
+                ..Default::default()
+            });
+        }
+    }
     let contents_title = strings.t(CONTENTS_KEY);
     let book = crate::export::Book {
+        publication: (story.is_some() || publication.contents.is_some()).then_some(&publication),
         single_scene,
         name,
         contents_title: &contents_title,
@@ -315,11 +346,11 @@ fn render_project_with(
     // opens nothing and writes nothing, so it is unit-testable without a command
     // and without a display. It is also why the override log is NOT in this
     // slice: this function opens the store READ-ONLY and cannot record one.
-    let pin = crate::identity::pin_of_project(&store)?;
     let planning = if crate::identity::has_needles(vault, pin.as_ref()) {
         planning_texts(&store)?
     } else { Vec::new() };
     let mut preflight = checked(format, name, vault, pin.as_ref(), &items, &bodies, &planning);
+    publication_disclosures(&mut preflight, &publication, format, export_pin.as_ref(), story.is_some(), single_scene);
     preflight.reason_history = crate::warning_history::read(&store)?;
     // A CROSS-IDENTITY LEAK BLOCKS AND CANNOT BE DISMISSED. Section 8 says so in
     // those words, and the rule that stops a blocker being a trap is that a
@@ -340,6 +371,7 @@ fn render_project_with(
             let design = crate::design::design_of(&store)?;
             let style = crate::design::chapter_style_of(&store)?;
             let cover = |side: &str| -> std::result::Result<Option<crate::pdf::Cover>, String> {
+                if story.is_some() { return Ok(None); }
                 let fit = crate::covers::fit_of(&store, side)?;
                 Ok(crate::covers::cover_of(&store, side)?
                     .and_then(|stored| {
@@ -364,7 +396,7 @@ fn render_project_with(
                 front_cover: cover(crate::covers::SIDE_FRONT)?,
                 back_cover: cover(crate::covers::SIDE_BACK)?,
                 markup_limit,
-                pin: pin.as_ref(),
+                pin: export_pin.as_ref(),
             });
             crate::export::Manuscript {
                 bytes: html.into_bytes(),
@@ -382,7 +414,7 @@ fn render_project_with(
             // a missing file does not clear the claim -- with the consequence
             // that belongs to an export: what went missing is the cover, not
             // the manuscript.
-            let cover = crate::covers::cover_of(&store, crate::covers::SIDE_FRONT)?
+            let cover = if story.is_some() { None } else { crate::covers::cover_of(&store, crate::covers::SIDE_FRONT)? }
                 .and_then(|stored| {
                     crate::pictures::original(&crate::pictures::dir_for(path), &stored)
                 })
@@ -396,12 +428,13 @@ fn render_project_with(
                 language: strings.tag(),
                 bodies: &bodies,
                 book_id: book_id.as_deref(),
+                story_id,
                 font: &design.font,
                 style,
                 openings,
                 cover,
                 modified: &crate::epub::iso8601_utc(now_seconds()),
-                pin: pin.as_ref(),
+                pin: export_pin.as_ref(),
             })?
         }
         // NEEDS NO DESIGN, NO COVER, NO DISPLAY -- unlike PDF, it works
@@ -431,6 +464,7 @@ fn render_project_with(
 /// a tripwire rather than a pair of matching blind spots.
 struct Walked {
     single_scene: bool,
+    publication: crate::export::Publication,
     front: Vec<(String, String, i64)>,
     chapters: Vec<(String, String, i64)>,
     back: Vec<(String, String, i64)>,
@@ -439,7 +473,26 @@ struct Walked {
 }
 
 fn walk_of(store: &store::Store) -> std::result::Result<Walked, String> {
-    let walk = store::book_walk(store.items().map_err(|e| e.to_string())?);
+    walk_scope(store, None)
+}
+
+fn walk_scope(store: &store::Store, story_id: Option<&str>) -> std::result::Result<Walked, String> {
+    let mut walk = store::book_walk(store.items().map_err(|e| e.to_string())?);
+    let collection = store.project_preset().map_err(|e| e.to_string())? == "collection";
+    let mut publication = crate::export::Publication::default();
+    if let Some(id) = story_id {
+        crate::collection::story(store, id)?;
+        let start = walk.chapters.iter().position(|item| item.id == id).ok_or("the story is no longer available")?;
+        let depth = walk.chapters[start].depth;
+        let end = walk.chapters.iter().enumerate().skip(start + 1).find(|(_, item)| item.depth <= depth).map(|(index, _)| index).unwrap_or(walk.chapters.len());
+        walk.chapters = walk.chapters.drain(start + 1..end).map(|mut item| { item.depth -= depth + 1; item }).collect();
+        walk.front.clear();
+        walk.back.clear();
+    } else if collection {
+        let ids = crate::collection::story_ids(&walk.chapters);
+        publication.bylines = crate::collection::authors(store, &ids)?;
+        publication.contents = Some(ids);
+    }
     let single_scene = walk.chapters.last().is_some_and(|item| item.item_type == "scene")
         && walk.chapters.windows(2).all(|pair| pair[1].parent_id.as_deref() == Some(pair[0].id.as_str()))
         && walk.chapters.iter().take(walk.chapters.len().saturating_sub(1))
@@ -447,7 +500,7 @@ fn walk_of(store: &store::Store) -> std::result::Result<Walked, String> {
     let bodies = store.documents().map_err(|e| e.to_string())?;
     let mut openings = crate::export::ChapterOpenings::default();
     for item in &walk.chapters {
-        if item.item_type == "chapter" || (item.depth == 0 && item.item_type != "part") {
+        if item.item_type == "chapter" || (story_id.is_none() && item.depth == 0 && item.item_type != "part") {
             openings.styled.insert(item.id.clone());
         }
         if item.item_type == "chapter" || item.item_type == "part" {
@@ -457,16 +510,21 @@ fn walk_of(store: &store::Store) -> std::result::Result<Walked, String> {
     let tuples = |rows: Vec<store::Item>| -> Vec<(String, String, i64)> {
         rows.into_iter().map(|item| {
             // Suppress only this item's own default, including defaults from an earlier locale.
-            let title = if single_scene && crate::strings::is_numbered_heading(&item.title, &item.item_type) {
+            let title = if single_scene && (crate::strings::is_numbered_heading(&item.title, &item.item_type) || (collection && item.item_type == "chapter" && crate::strings::is_numbered_heading(&item.title, "story"))) {
                 String::new()
             } else { item.title };
             (item.id, title, item.depth)
         }).collect()
     };
+    let chapters = tuples(walk.chapters);
+    if single_scene {
+        publication.bylines.retain(|id, _| chapters.iter().any(|(item, title, _)| item == id && !title.trim().is_empty()));
+    }
     Ok(Walked {
+        publication,
         single_scene,
         front: tuples(walk.front),
-        chapters: tuples(walk.chapters),
+        chapters,
         back: tuples(walk.back),
         bodies,
         openings,
@@ -502,7 +560,8 @@ pub(crate) fn preflight_of_store(
         back,
         bodies,
         openings: _,
-        single_scene: _,
+        single_scene,
+        publication,
     } = walk_of(&store)?;
     let items: Vec<&(String, String, i64)> =
         front.iter().chain(chapters.iter()).chain(back.iter()).collect();
@@ -511,8 +570,27 @@ pub(crate) fn preflight_of_store(
         planning_texts(&store)?
     } else { Vec::new() };
     let mut report = checked(format, name, vault, pin.as_ref(), &items, &bodies, &planning);
+    publication_disclosures(&mut report, &publication, format, pin.as_ref(), false, single_scene);
     report.reason_history = crate::warning_history::read(store)?;
     Ok(report)
+}
+
+fn publication_disclosures(report: &mut crate::identity::Preflight, publication: &crate::export::Publication, format: crate::export::Format, pin: Option<&crate::identity::Pin>, scoped: bool, single_scene: bool) {
+    if scoped {
+        report.fields = crate::identity::disclosed(format, pin).into_iter().map(|(at, value)| crate::identity::DisclosedField { field: crate::identity::fields_for(format).iter().find(|row| row.at == at).map(|row| row.field.id()).unwrap_or(at), at, value: value.to_string() }).collect();
+        if let Some(author) = &publication.author {
+            if format != crate::export::Format::Pdf {
+                report.fields.push(crate::identity::DisclosedField { field: "name", at: "title-page", value: author.clone() });
+            }
+        }
+    }
+    let mut bylines: Vec<_> = publication.bylines.iter().collect();
+    bylines.sort_by_key(|(id, _)| *id);
+    for (_, author) in bylines {
+        for at in if single_scene { &["story-heading"][..] } else { &["story-heading", "story-contents"][..] } {
+            report.fields.push(crate::identity::DisclosedField { field: "name", at, value: author.clone() });
+        }
+    }
 }
 
 fn planning_texts(store: &store::Store) -> std::result::Result<Vec<crate::identity::PlanningText>, String> {
@@ -1279,6 +1357,7 @@ mod tests {
         let bodies = store.documents().unwrap();
         let rendered = crate::export::manuscript(
             &crate::export::Book {
+                publication: None,
                 single_scene: true,
                 name: "My Novel",
                 contents_title: &crate::strings::Strings::english().t(CONTENTS_KEY),
@@ -2893,6 +2972,22 @@ mod tests {
 mod project_presets_tests {
     use super::*;
 
+    fn assert_byline(text: &str, format: crate::export::Format, title: &str, author: &str, scoped: bool) {
+        use crate::export::Format;
+        let escaped = crate::epub::xml_escape(author);
+        match format {
+            Format::Markdown => assert!(text.contains(&format!("#{} {title}\n\n{author}\n", if scoped { "" } else { "#" })), "{text}"),
+            Format::Docx => assert!(text.contains(&format!(">{}</w:t></w:r></w:p><w:p><w:pPr><w:pStyle w:val=\"Normal\"/><w:jc w:val=\"center\"/></w:pPr><w:r><w:t xml:space=\"preserve\">{escaped}</w:t>", crate::epub::xml_escape(title))), "{text}"),
+            Format::Epub | Format::Pdf => {
+                let class = if scoped && format == Format::Pdf { "proof-byline" } else { "story-byline" };
+                let before = text.split(&format!("<p class=\"{class}\">{escaped}</p>")).next().unwrap();
+                assert!(before.len() < text.len(), "missing standalone byline: {text}");
+                let heading = &before[before.rfind("<h").unwrap()..];
+                assert!(heading.contains(&format!(">{}</h", crate::epub::xml_escape(title))), "{heading}");
+            }
+        }
+    }
+
     fn text_of(written: crate::export::Manuscript, format: crate::export::Format) -> String {
         match format {
             crate::export::Format::Epub => {
@@ -2912,6 +3007,110 @@ mod project_presets_tests {
             .unwrap(),
             _ => String::from_utf8(written.bytes).unwrap(),
         }
+    }
+
+    #[test]
+    fn collection_exports_scope_titles_bylines_contents_and_matter_in_every_format() {
+        for multi_scene in [false, true] {
+            let dir = tempfile::tempdir().unwrap();
+            let made = crate::projects::create_in_preset(dir.path(), "Collected tales", &crate::strings::Strings::english(), Some("collection")).unwrap();
+            let path = Path::new(&made.path);
+            let store = store::Store::open(path).unwrap();
+            let items = store.items().unwrap();
+            let first = items.iter().find(|item| item.item_type == "chapter").unwrap();
+            let first_scene = items.iter().find(|item| item.item_type == "scene").unwrap();
+            crate::collection::save(&store, &first.id, "The Harbour", "Ada & Lane", Some("done"), first.rev).unwrap();
+            let group = multi_scene.then(|| store.item_create(None, "part", "Other shores").unwrap());
+            let second = store.item_create(group.as_ref().map(|item| item.id.as_str()), "chapter", "The Forest").unwrap();
+            let second_scene = store.item_create(Some(&second.id), "scene", "Scene 1").unwrap();
+            let front = store.item_create(None, store::FRONT_MATTER_TYPE, "Front matter").unwrap();
+            let dedication = store.item_create(Some(&front.id), "matter", "Dedication").unwrap();
+            let back = store.item_create(None, store::BACK_MATTER_TYPE, "Back matter").unwrap();
+            let afterword = store.item_create(Some(&back.id), "matter", "Afterword").unwrap();
+            for (id, text) in [(&first_scene.id, "Harbour words remain."), (&second_scene.id, "Forest words remain."), (&dedication.id, "For everybody."), (&afterword.id, "Until tomorrow.")] {
+                store.flush(&[store::FlushEntry { item_id: id.clone(), body: crate::test_support::body(text), base_rev: store.load_doc(id).unwrap().rev, comments: None }]).unwrap();
+            }
+            if multi_scene {
+                let extra = store.item_create(Some(&second.id), "scene", "The clearing").unwrap();
+                store.flush(&[store::FlushEntry { item_id: extra.id, body: crate::test_support::body("Clearing."), base_rev: extra.doc_rev.unwrap(), comments: None }]).unwrap();
+            }
+            let pin = crate::identity::Pin { public: crate::identity::Public { name: "Book Author".into(), sort_name: "Author, Book".into(), ..Default::default() }, publishing: crate::identity::Publishing { imprint: "Collection Press".into(), rights: "Book rights".into() }, ..Default::default() };
+            store.set_meta(crate::core_constants::PIN_KEY, &serde_json::to_string(&pin).unwrap()).unwrap();
+            let snapshot = store.items().unwrap().into_iter().map(|item| (item.id, item.rev)).collect::<Vec<_>>();
+            drop(store);
+            for format in crate::export::Format::ALL {
+                let (whole, _, words, report) = render_scope_with(path, "Collected tales", format, &crate::identity::Vault::default(), crate::strings::Strings::english(), None, None).unwrap();
+                assert_eq!(words, if multi_scene { 11 } else { 10 });
+                assert!(report.fields.iter().any(|field| field.at == "story-contents" && field.value == "Ada & Lane"));
+                if format == crate::export::Format::Epub {
+                    let zip = crate::epub::read_zip(&whole.bytes).unwrap();
+                    let nav = String::from_utf8_lossy(&zip.iter().find(|(name, _)| name.ends_with("/nav.xhtml")).unwrap().1);
+                    assert_eq!(nav.matches("<ol>").count(), 1, "{nav}");
+                    assert!(!nav.contains("Other shores"), "{nav}");
+                }
+                let whole = text_of(whole, format);
+                for title in ["Collected tales", "The Harbour", "The Forest", "Dedication", "Afterword", "Harbour words remain.", "Forest words remain."] {
+                    assert!(whole.contains(title), "{format:?}: missing {title}");
+                }
+                let byline = if format == crate::export::Format::Markdown { "The Harbour (Ada & Lane)" } else { "The Harbour (Ada &amp; Lane)" };
+                // EPUB reading order includes the visible contents document.
+                assert!(whole.contains(byline), "{format:?}: {whole}");
+                assert_byline(&whole, format, "The Harbour", "Ada & Lane", false);
+                for (id, title, author, prose, other) in [(&first.id, "The Harbour", "Ada & Lane", "Harbour words remain.", "Forest words remain."), (&second.id, "The Forest", "Book Author", "Forest words remain.", "Harbour words remain.")] {
+                    let (written, _, count, preflight) = render_scope_with(path, "Collected tales", format, &crate::identity::Vault::default(), crate::strings::Strings::english(), None, Some(id)).unwrap();
+                    assert_eq!(count, if multi_scene && id == &second.id { 4 } else { 3 });
+                    assert!(preflight.fields.iter().any(|field| field.value == author), "{format:?}: {preflight:?}");
+                    if format == crate::export::Format::Epub {
+                        let zip = crate::epub::read_zip(&written.bytes).unwrap();
+                        let opf = String::from_utf8_lossy(&zip.iter().find(|(name, _)| name == crate::epub::OPF_PATH).unwrap().1).to_string();
+                        assert!(opf.contains(&format!("<dc:title>{title}</dc:title>")), "{opf}");
+                        assert!(opf.contains(&crate::epub::xml_escape(author)), "{opf}");
+                        assert_eq!(opf.contains("Collection Press"), id == &second.id, "{opf}");
+                        assert_eq!(opf.contains("Author, Book"), id == &second.id, "{opf}");
+                        let book_id = uuid::Uuid::parse_str(&store::Store::open_readonly(path).unwrap().book_id().unwrap().unwrap()).unwrap();
+                        assert!(opf.contains(&format!("urn:garret:collection:{book_id}:story:{id}")), "{opf}");
+                    }
+                    let text = text_of(written, format);
+                    assert_byline(&text, format, title, author, true);
+                    assert!(text.contains(title) && text.contains(prose), "{format:?}: {text}");
+                    for absent in ["Collected tales", "Dedication", "Afterword", other] { assert!(!text.contains(absent), "{format:?}: unexpected {absent}"); }
+                    if !multi_scene || id == &first.id {
+                        assert!(!text.contains("Scene 1"), "{format:?}: {text}");
+                        assert!(!text.contains("## Contents") && !text.contains(">Contents</"), "{format:?}: {text}");
+                    } else {
+                        assert!(text.contains("The clearing"), "{format:?}: {text}");
+                    }
+                    if format == crate::export::Format::Docx {
+                        assert!(!text.contains(">Contents</w:t>"), "scoped DOCX contents: {text}");
+                    }
+                }
+            }
+            let reader = store::Store::open_readonly(path).unwrap();
+            assert_eq!(reader.items().unwrap().into_iter().map(|item| (item.id, item.rev)).collect::<Vec<_>>(), snapshot);
+            let dest = dir.path().join("refused.md");
+            assert!(export_scope_into_with(path, "Collected tales", &dest, Dest::New, crate::export::Format::Markdown, &crate::identity::Vault::default(), crate::strings::Strings::english(), Some(&first_scene.id), Ok).is_err());
+            assert!(!dest.exists());
+        }
+    }
+
+    #[test]
+    fn collection_suppressed_headings_have_no_byline_and_scoped_scenes_are_not_openers() {
+        let dir = tempfile::tempdir().unwrap();
+        let made = crate::projects::create_in_preset(dir.path(), "Collected", &crate::strings::Strings::english(), Some("collection")).unwrap();
+        let path = Path::new(&made.path);
+        let store = store::Store::open(path).unwrap();
+        let items = store.items().unwrap();
+        let story = items.iter().find(|item| item.item_type == "chapter").unwrap();
+        let scene = items.iter().find(|item| item.item_type == "scene").unwrap();
+        crate::collection::save(&store, &story.id, "Story 1", "Ada Lane", None, story.rev).unwrap();
+        let scoped = walk_scope(&store, Some(&story.id)).unwrap();
+        assert!(!scoped.openings.styled.contains(&scene.id));
+        for format in crate::export::Format::ALL {
+            let (written, _, _, _) = render_scope_with(path, "Collected", format, &crate::identity::Vault::default(), crate::strings::Strings::english(), None, None).unwrap();
+            assert!(!text_of(written, format).contains("Ada Lane"), "{format:?}: byline without its heading");
+        }
+        let section = store.item_create(Some(&story.id), "chapter", "Section").unwrap();
+        assert!(walk_scope(&store, Some(&story.id)).unwrap().openings.styled.contains(&section.id));
     }
 
     #[test]
@@ -3042,7 +3241,7 @@ mod project_presets_tests {
 
     #[test]
     fn project_presets_single_scene_exports_keep_prose_and_matter_without_scaffolding() {
-        for preset in [None, Some("short"), Some("nonfiction")] {
+        for preset in [None, Some("short"), Some("nonfiction"), Some("collection")] {
             let dir = tempfile::tempdir().unwrap();
             let made = crate::projects::create_in_preset(
                 dir.path(),
@@ -3098,6 +3297,7 @@ mod project_presets_tests {
                 .unwrap();
             let walked = walk_of(&store).unwrap();
             let book = crate::export::Book {
+                publication: None,
                 single_scene: true,
                 name: "Draft",
                 contents_title: "Contents",
@@ -3190,6 +3390,7 @@ mod project_presets_tests {
                 assert!(text.contains("Dedication"));
                 assert!(!text.contains("Scene 1"));
                 assert!(!text.contains("Chapter 1"));
+                assert!(!text.contains("Story 1"));
                 assert!(!text.contains(">Contents</h"));
                 assert!(!text.contains("## Contents"));
             }

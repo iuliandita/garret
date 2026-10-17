@@ -48,6 +48,8 @@ export function isContextMenuChord(event: KeyboardEvent): boolean {
 
 export interface NavContextMenuDeps {
   preset?: ProjectPreset;
+  isStory?(id: string): boolean;
+  openStory?(id: string): void;
   /** Where the panel is appended. The body, not `#nav`: the panel is
    *  `position: fixed` and a row near the foot of the pane opens a menu that
    *  must be allowed to stand outside the navigator's own scroll box. */
@@ -126,10 +128,13 @@ export function createNavContextMenu(deps: NavContextMenuDeps): NavContextMenu {
     const items: MenuItemSpec[] = [
       ...CREATES.map((spec) => ({
         id: spec.id,
-        label: () => spec.label,
+        label: () => deps.preset === "collection" && spec.itemType === "chapter" ? t("collection.new-story") : spec.label,
         run: () => deps.create(itemId, spec.itemType),
       })),
     ];
+    if (!trashed && deps.isStory?.(itemId)) {
+      items.push({ id: "nav-context-story", label: () => t("collection.fields"), opensDialog: true, run: () => deps.openStory?.(itemId) });
+    }
     // ABOVE RENAME: a writer reaching for the row's own words should
     // not have to pass the row's own name first.
     if (carriesABody(itemId)) {

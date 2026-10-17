@@ -124,9 +124,33 @@ fn rewrite_node(
         return;
     }
     if let Some(children) = node.get_mut("content").and_then(|c| c.as_array_mut()) {
-        for child in children {
+        for child in children.iter_mut() {
             rewrite_node(child, query, replacement, replaced);
         }
+        let mut normalized: Vec<serde_json::Value> = Vec::with_capacity(children.len());
+        for child in std::mem::take(children) {
+            if child.get("type").and_then(|v| v.as_str()) == Some("text") {
+                let Some(text) = child.get("text").and_then(|v| v.as_str()) else {
+                    normalized.push(child);
+                    continue;
+                };
+                if text.is_empty() {
+                    continue;
+                }
+                if let Some(previous) = normalized.last_mut() {
+                    if previous.get("type").and_then(|v| v.as_str()) == Some("text")
+                        && previous.get("marks") == child.get("marks")
+                    {
+                        if let Some(value) = previous.get("text").and_then(|v| v.as_str()) {
+                            previous["text"] = serde_json::Value::String(format!("{value}{text}"));
+                            continue;
+                        }
+                    }
+                }
+            }
+            normalized.push(child);
+        }
+        *children = normalized;
     }
 }
 

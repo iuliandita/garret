@@ -5,12 +5,15 @@
   </picture>
 </p>
 
-New desktop books offer Novel, Short fiction, and Nonfiction project types.
+New desktop books offer Novel, Short fiction, Nonfiction, and Story collection project types.
 Short fiction starts with one scene and grows structure as needed. Nonfiction
 starts with its own book design, calls the Bible Reference notes, and keeps
 fiction tools available under Planning > More. A single-scene manuscript
 exports without generated contents or outline headings; front and back matter
-remain included.
+remain included. Collections keep stories in one book, with their own titles,
+optional authors, status and word counts. Use Story details from a story's
+navigator context menu to edit its fields or export it alone in Markdown, EPUB,
+PDF or Word. See [collection export rules](docs/COMPATIBILITY.md).
 
 ## A writing studio for the whole book.
 
@@ -237,7 +240,7 @@ This is a manual copy, not synchronization or merging.
 
 The phone accepts archives up to 1 GiB and contents up to 512 MiB, with extra
 private storage required for verification and copying. This Android version
-supports absent, `novel`, `short`, and `nonfiction` project presets; other presets are refused
+supports absent, `novel`, `short`, `nonfiction`, and `collection` project presets; other presets are refused
 before editable opening. See [compatibility and recovery](docs/COMPATIBILITY.md)
 for interrupted transfers, leftover-file disposal, updates, and verification
 limits. Android transfer is not certified on physical devices.

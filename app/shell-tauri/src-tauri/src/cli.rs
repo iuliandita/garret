@@ -97,7 +97,7 @@ usage:
   garret analytics <project.db> [--json]
   garret search    <project.db> <query> [--limit N] [--json]
   garret validate  <project.db> [--json]
-  garret export    <project.db> <dest> [--format markdown|epub|pdf]
+  garret export    <project.db> <dest> [--format markdown|epub|pdf|docx] [--story ID]
                             (pdf is laid out by a web engine and needs a display)
   garret history   <project.db> [--item ID] [--json]
   garret knowledge <project.db> [--json]
@@ -181,6 +181,13 @@ fn print_knowledge(value: &KnowledgeRead) {
     for title in &value.missing_originals { println!("unavailable {title}"); }
 }
 
+#[derive(Debug, Serialize)]
+pub struct InspectedStory {
+    pub id: String,
+    pub title: String,
+    pub author: Option<String>,
+}
+
 /// What `inspect` answers. The field names ARE the JSON keys and they are the
 /// contract: `inspect_json_keys` fails on a rename, so a script reading this
 /// breaks a test here rather than in production.
@@ -192,6 +199,8 @@ pub struct Inspection {
     pub series: Option<crate::store::series::Group>,
     pub universe: Option<crate::store::series::Group>,
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stories: Option<Vec<InspectedStory>>,
     pub items: u64,
     /// Counted from the item ROWS, not from the walk, so the figure is what the
     /// file holds even when the walk cannot reach all of it. BTreeMap so the
@@ -285,13 +294,25 @@ pub fn inspect(path: &Path) -> Result<Inspection, String> {
 
     let words_index = store.word_index().map_err(|e| e.to_string())?;
     // The walk is allowed to fail here. Everything above it is a row count.
-    let (trashed, excluded, structure_error) = match store.items() {
-        Ok(walk) => (
-            store::trashed_ids(&walk).len() as u64,
-            store::excluded_from_book(&walk),
-            None,
-        ),
-        Err(e) => (0, Default::default(), Some(e.to_string())),
+    let (trashed, excluded, structure_error, stories) = match store.items() {
+        Ok(walk) => {
+            let trashed = store::trashed_ids(&walk).len() as u64;
+            let excluded = store::excluded_from_book(&walk);
+            let stories = if store.project_preset().map_err(|error| error.to_string())? == "collection" {
+                let chapters = store::book_walk(walk).chapters;
+                let ids = crate::collection::story_ids(&chapters);
+                Some(chapters.into_iter().filter(|item| ids.contains(&item.id)).map(|item| {
+                    Ok(InspectedStory { author: crate::collection::author(&store, &item.id)?, id: item.id, title: item.title })
+                }).collect::<Result<Vec<_>, String>>()?)
+            } else { None };
+            (
+                trashed,
+                excluded,
+                None,
+                stories,
+            )
+        },
+        Err(e) => (0, Default::default(), Some(e.to_string()), None),
     };
     // `words` is the MANUSCRIPT's, so the bible comes out of it with the bin.
     // `trashed_items` stays the bin's own count: it names one section and would
@@ -361,6 +382,7 @@ pub fn inspect(path: &Path) -> Result<Inspection, String> {
         series: membership.series,
         universe: membership.universe,
         name: project_name(&store, path),
+        stories,
         items: items_by_type.values().sum(),
         items_by_type,
         documents: count_of(&conn, "SELECT count(*) FROM doc")?,
@@ -490,6 +512,10 @@ pub fn export(
     dest: &Path,
     format: export::Format,
 ) -> Result<crate::commands::export::ExportResult, String> {
+    export_scope(path, dest, format, None)
+}
+
+pub fn export_scope(path: &Path, dest: &Path, format: export::Format, story_id: Option<&str>) -> Result<crate::commands::export::ExportResult, String> {
     let store = store::Store::open_readonly(path).map_err(|e| e.to_string())?;
     let name = project_name(&store, path);
     drop(store);
@@ -523,7 +549,7 @@ pub fn export(
             .tempfile()
             .map_err(|e| e.to_string())?;
         let scratch_path = scratch.path().to_path_buf();
-        return crate::commands::export::export_into_with(
+        return crate::commands::export::export_scope_into_with(
             path,
             &name,
             dest,
@@ -531,6 +557,7 @@ pub fn export(
             format,
             &vault,
             strings,
+            story_id,
             move |html| {
                 let text = String::from_utf8(html).map_err(|e| e.to_string())?;
                 let printed = crate::printer::render_standalone(&text, Some(&scratch_path), page)?;
@@ -540,7 +567,7 @@ pub fn export(
             },
         );
     }
-    crate::commands::export::export_into(
+    crate::commands::export::export_scope_into_with(
         path,
         &name,
         dest,
@@ -548,6 +575,8 @@ pub fn export(
         format,
         &vault,
         strings,
+        story_id,
+        Ok,
     )
 }
 
@@ -1081,6 +1110,7 @@ struct Options {
     limit: usize,
     item: Option<String>,
     key: Option<String>,
+    story: Option<String>,
     /// Which file `export` writes.
     ///
     /// A FLAG AND NOT THE DESTINATION'S EXTENSION. Deriving it from the name
@@ -1099,6 +1129,7 @@ fn parse(args: &[String]) -> Result<Options, String> {
         limit: find::DEFAULT_LIMIT,
         item: None,
         key: None,
+        story: None,
         format: export::Format::Markdown,
         positional: Vec::new(),
     };
@@ -1125,6 +1156,10 @@ fn parse(args: &[String]) -> Result<Options, String> {
                 let raw = args.get(i + 1).ok_or("--format needs a format")?;
                 out.format = export::Format::from_id(raw)
                     .ok_or_else(|| format!("--format {raw:?} is not a format this build writes"))?;
+                i += 1;
+            }
+            "--story" => {
+                out.story = Some(args.get(i + 1).ok_or("--story needs a story id")?.clone());
                 i += 1;
             }
             "--item" => {
@@ -1227,6 +1262,9 @@ fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
         return Err(Refusal::Usage("no subcommand given".into()));
     };
     let opts = parse(&argv[1..]).map_err(Refusal::Usage)?;
+    if opts.story.is_some() && command != "export" {
+        return Err(Refusal::Usage("--story applies only to export".into()));
+    }
     if opts.allow_picture_gaps && command != "restore" {
         return Err(Refusal::Usage("--allow-picture-gaps applies only to restore".into()));
     }
@@ -1424,7 +1462,10 @@ fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
             // lie, and 1 would tell a script its arguments were wrong when they
             // were fine and the destination was occupied.
             read(&|| {
-                let r = export(&path, &dest, opts.format)?;
+                let r = match opts.story.as_deref() {
+                    Some(id) => export_scope(&path, &dest, opts.format, Some(id))?,
+                    None => export(&path, &dest, opts.format)?,
+                };
                 // No `--json` on export: its answer is a FILE, and the one line
                 // saying where it landed is the same in both shapes.
                 println!(
@@ -2158,6 +2199,44 @@ mod tests {
                 "words",
             ]
         );
+    }
+
+    #[test]
+    fn collection_cli_lists_stories_and_scopes_only_valid_exports() {
+        let dir = tempdir().unwrap();
+        let made = projects::create_in_preset(dir.path(), "Collected", &crate::strings::Strings::english(), Some("collection")).unwrap();
+        let path = Path::new(&made.path);
+        let store = store::Store::open(path).unwrap();
+        let items = store.items().unwrap();
+        let first = items.iter().find(|item| item.item_type == "chapter").unwrap();
+        let scene = items.iter().find(|item| item.item_type == "scene").unwrap();
+        crate::collection::save(&store, &first.id, "The Harbour", "Ada Lane", None, first.rev).unwrap();
+        let second = store.item_create(None, "chapter", "The Forest").unwrap();
+        let listed = serde_json::to_value(inspect(path).unwrap()).unwrap();
+        assert_eq!(listed["stories"], serde_json::json!([
+            { "id": first.id, "title": "The Harbour", "author": "Ada Lane" },
+            { "id": second.id, "title": "The Forest", "author": null },
+        ]));
+        let dest = dir.path().join("story.md");
+        assert_eq!(run(&argv(&["export", path.to_str().unwrap(), dest.to_str().unwrap(), "--story", &first.id])), EXIT_OK);
+        let text = std::fs::read_to_string(&dest).unwrap();
+        assert!(text.starts_with("# The Harbour\n\nAda Lane\n"), "{text}");
+        let refused = dir.path().join("refused.md");
+        for (command, id, code, message) in [
+            ("export", scene.id.as_str(), EXIT_UNREADABLE, "not a story"),
+            ("inspect", first.id.as_str(), EXIT_USAGE, "--story applies only to export"),
+        ] {
+            let error = dispatch(&argv(&[command, path.to_str().unwrap(), refused.to_str().unwrap(), "--story", id])).err().expect("scope must refuse");
+            assert_eq!(error.code(), code);
+            assert!(error.to_string().contains(message), "{error}");
+            assert!(!refused.exists());
+        }
+        store.set_meta(crate::core_constants::PRESET_KEY, "novel").unwrap();
+        assert!(inspect(path).unwrap().stories.is_none());
+        let error = dispatch(&argv(&["export", path.to_str().unwrap(), refused.to_str().unwrap(), "--story", &first.id])).err().expect("novel scope must refuse");
+        assert_eq!(error.code(), EXIT_UNREADABLE);
+        assert!(error.to_string().contains("not a collection"), "{error}");
+        assert!(!refused.exists());
     }
 
     #[test]
@@ -3826,6 +3905,7 @@ mod tests {
     fn importing_this_crates_own_docx_has_items_and_no_losses() {
         let dir = tempdir().unwrap();
         let book = crate::export::Book {
+            publication: None,
             single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",

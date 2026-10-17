@@ -326,12 +326,16 @@ test("a duplicated id is refused, because an index parsed from it is ambiguous",
 });
 
 test("the shipped module parses, and the removal item is where the rig expects", () => {
-  expect(navContextItemCount("app/ui/src/nav-context-menu.ts")).toBe(8);
+  expect(navContextItemCount("app/ui/src/nav-context-menu.ts")).toBe(9);
   expect(navContextIndex("nav-context-remove", "scene", "app/ui/src/nav-context-menu.ts")).toBe(6);
   expect(navContextIndex("nav-context-remove", "part", "app/ui/src/nav-context-menu.ts")).toBe(4);
   expect(navContextIndex("nav-context-remove", "scene", "app/ui/src/nav-context-menu.ts", "nonfiction")).toBe(5);
   expect(navContextIndex("nav-context-remove", "part", "app/ui/src/nav-context-menu.ts", "nonfiction")).toBe(4);
   expect(() => navContextIndex("nav-context-appears", "scene", "app/ui/src/nav-context-menu.ts", "nonfiction")).toThrow(/hidden/);
+  expect(navContextIndex("nav-context-story", "chapter", "app/ui/src/nav-context-menu.ts", "collection")).toBe(3);
+  expect(navContextIndex("nav-context-remove", "chapter", "app/ui/src/nav-context-menu.ts", "collection")).toBe(5);
+  expect(navContextIndex("nav-context-remove", "scene", "app/ui/src/nav-context-menu.ts", "collection")).toBe(6);
+  expect(() => navContextIndex("nav-context-story", "scene", "app/ui/src/nav-context-menu.ts", "collection")).toThrow(/hidden/);
 });
 
 

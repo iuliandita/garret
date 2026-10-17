@@ -874,6 +874,7 @@ body {
 #project-panel button,
 #find-panel button,
 #history-panel button,
+#story-panel button,
 #state-panel button,
 #synopsis-panel button,
 #cast-panel button,
@@ -1129,6 +1130,7 @@ body {
 #project-panel button:hover,
 #find-panel button:hover,
 #history-panel button:hover,
+#story-panel button:hover,
 #state-panel button:hover,
 #synopsis-panel button:hover,
 #cast-panel button:hover,
@@ -1173,6 +1175,7 @@ body {
 #project-panel button:active,
 #find-panel button:active,
 #history-panel button:active,
+#story-panel button:active,
 #state-panel button:active,
 #synopsis-panel button:active,
 #cast-panel button:active,
@@ -1473,6 +1476,9 @@ body {
 #project-panel button:focus-visible,
 #find-panel button:focus-visible,
 #history-panel button:focus-visible,
+#story-panel button:focus-visible,
+#story-panel input:focus-visible,
+#story-panel select:focus-visible,
 #state-panel button:focus-visible,
 #synopsis-panel button:focus-visible,
 #cast-panel button:focus-visible,
@@ -2855,6 +2861,7 @@ body.nav-hidden #nav-column {
 #design-page-select,
 #proof-page-select,
 #cast-panel select,
+#story-panel select,
 #revision-planning select,
 #craft-panel select,
 #library-group-filters select,
@@ -9364,3 +9371,19 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
   gap: 4px;
   margin-inline-end: 12px;
 }
+
+#story-panel {
+  position: fixed;
+  z-index: 10;
+  top: min(12vh, 90px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100vh - 110px);
+}
+#story-panel[hidden] { display: none; }
+#story-panel .panel-body { display: grid; gap: var(--space-2); }
+#story-panel input, #story-panel select { width: 100%; box-sizing: border-box; }
+#story-panel p { margin: var(--space-2) 0; color: var(--muted); }
+#story-panel h3 { margin: var(--space-3) 0 0; font-size: var(--text-sm); }
+#story-panel .story-exports { display: flex; flex-wrap: wrap; gap: var(--space-2); }

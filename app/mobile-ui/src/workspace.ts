@@ -1,5 +1,5 @@
 import { createDraftingTools, type MobileDrafting } from "./drafting";
-import { createEditor, schema, countWordsIn, type Editor } from "../../ui/src/editor";
+import { createEditor, schema, countWordsIn, readableBody, type Editor } from "../../ui/src/editor";
 import { flushAnchorsFor, MAX_MAPPED_COMMENTS, type CommentAnchor } from "../../ui/src/comments";
 import { parseReviewBody } from "../../ui/src/review-fragments";
 import { createSession, type Session } from "../../ui/src/session";
@@ -51,7 +51,9 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
   function checked(doc: MobileDocument, expectedId: string) {
     if (doc.item_id !== expectedId || !Number.isSafeInteger(doc.rev) || doc.rev < 0) throw new Error(m.unsupported);
     try {
-      const parsed = parseReviewBody(doc.body, schema);
+      const json = readableBody(doc.body);
+      if (!json) throw new Error(m.unsupported);
+      const parsed = parseReviewBody(JSON.stringify(json), schema);
       const ids = new Set<number>();
       if (doc.comments.length > MAX_MAPPED_COMMENTS) throw new Error(m.unsupported);
       for (const anchor of doc.comments) {
