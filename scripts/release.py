@@ -92,6 +92,16 @@ def collect(platform: str) -> None:
     out = ROOT / "app/dist-release" / platform
     out.mkdir(parents=True, exist_ok=False)
     shutil.copyfile(sources[platform], out / names[platform])
+    installers = {
+        "linux": (".deb", ".rpm", ".AppImage"),
+        "windows": ("-setup.exe",),
+        "macos-arm64": (".dmg",),
+        "macos-x86_64": (".dmg",),
+    }
+    for extension in installers.get(platform, ()):
+        architecture = platform if platform.startswith("macos-") else f"{platform}-x86_64"
+        source = sources[platform].parent / f"garret-{architecture}{extension}"
+        shutil.copyfile(source, out / f"garret-{value}-{architecture}{extension}")
     if platform == "android":
         with zipfile.ZipFile(out / f"garret-{value}-android-info.zip", "w", zipfile.ZIP_DEFLATED) as archive:
             for name in ("BUILD.txt", "README.md", "COPYING", "THIRD-PARTY-NOTICES.md"):
@@ -109,7 +119,9 @@ def verify_downloads() -> None:
     names = {
         f"garret-{value}-{suffix}"
         for suffix in ("linux-x86_64.tar.gz", "windows-x86_64.zip", "android.apk",
-                       "android-info.zip", "macos-arm64.zip", "macos-x86_64.zip")
+                       "android-info.zip", "macos-arm64.zip", "macos-x86_64.zip",
+                       "linux-x86_64.deb", "linux-x86_64.rpm", "linux-x86_64.AppImage",
+                       "windows-x86_64-setup.exe", "macos-arm64.dmg", "macos-x86_64.dmg")
     }
     expected = names | {f"{name}.sha256" for name in names}
     actual = {path.name for path in folder.iterdir()}

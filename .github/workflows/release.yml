@@ -8,10 +8,17 @@ on:
       - .github/workflows/release.yml
       - scripts/package-*
       - scripts/release.py
+      - scripts/collect-installers.py
+      - scripts/check-linux-installers.py
+      - scripts/test-collect-installers.py
+      - package.json
+      - bun.lock
+      - scripts/test-release.py
       - scripts/android/**
       - scripts/linux/**
       - scripts/windows/**
       - scripts/macos/**
+      - app/shell-tauri/src-tauri/src/main.rs
       - app/shell-tauri/src-tauri/Cargo.toml
       - app/shell-tauri/src-tauri/Cargo.lock
       - app/shell-tauri/src-tauri/tauri*.conf.json
@@ -47,6 +54,7 @@ jobs:
         with:
           python-version: '3.13.15'
       - run: python3 scripts/test-release.py
+      - run: python3 scripts/test-collect-installers.py
       - name: Documentation release gate
         env:
           DOCS_BASE: ${{ github.event.pull_request.base.sha }}
@@ -119,14 +127,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \
-            libjavascriptcoregtk-4.1-dev librsvg2-dev
+            libjavascriptcoregtk-4.1-dev librsvg2-dev patchelf libfuse2t64 appstream rpm
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           workspaces: app/shell-tauri/src-tauri
           key: alpha-${{ matrix.platform }}-1.98.1
+      - name: Validate AppStream metadata
+        if: runner.os == 'Linux'
+        run: appstreamcli validate --no-net scripts/linux/com.usegarret.app.metainfo.xml
       - name: Package Linux
         if: runner.os == 'Linux'
         run: bash scripts/package-linux
+      - name: Check Linux installer contents
+        if: runner.os == 'Linux'
+        run: python3 scripts/check-linux-installers.py app/dist-linux
       - name: Package Windows
         if: runner.os == 'Windows'
         shell: pwsh
@@ -241,7 +255,8 @@ jobs:
           Alpha testing build. Keep a backup of your work before trying a new version.
 
           Downloads: Linux and Windows x86_64, Android arm64/x86_64, and macOS Apple Silicon/Intel.
-          Extract the whole desktop package and follow its README. On Android, install the APK;
+          Choose a desktop installer or extract the whole portable archive and follow its README.
+          On Android, install the APK;
           the Android info ZIP contains instructions and build details. The phone app has fewer
           features than the desktop app and does not sync books automatically.
 

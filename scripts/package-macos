@@ -131,6 +131,10 @@ archive="$build/garret-macos-$architecture.zip"
 ditto -c -k --sequesterRsrc --keepParent "$stage" "$archive"
 (cd "$build" && shasum -a 256 "$(basename "$archive")" > "$(basename "$archive").sha256")
 check_source
+rm -rf "$repo/app/shell-tauri/src-tauri/target/$target/release/bundle"
+(cd "$repo/app/shell-tauri" && CARGO_TARGET_DIR="$repo/app/shell-tauri/src-tauri/target" bun "$repo/node_modules/@tauri-apps/cli/tauri.js" bundle --ci --no-binary-patching --target "$target" --bundles dmg)
+python3 "$here/collect-installers.py" "macos-$architecture" "$repo/app/shell-tauri/src-tauri/target/$target/release/bundle" "$build"
+check_source
 rm "$build/INCOMPLETE.txt"
 printf '\nWrote %s\n' "$archive"
 printf 'Ad-hoc signed only. Gatekeeper approval and native functionality remain unverified.\n'

@@ -16,7 +16,10 @@ protect against losing that device.
 
 ## Upgrade and compatibility
 
-Extract the new desktop package into a separate folder, keeping its interface
+For installed builds, close garret and run the new installer or use your package
+manager to upgrade. Removal keeps manuscripts, settings and recovery data; it
+does not replace a backup. For portable builds, extract into a separate folder,
+keeping the interface
 files beside the executable or inside the macOS bundle. First open a disposable
 copy of a book and check its prose, outline, pictures, research, and exports.
 Opening a supported older book can upgrade its SQLite schema. A newer schema
@@ -90,6 +93,17 @@ preferences in the existing `settings.json`, and the desktop interface does not
 store writing or settings in WebView localStorage or IndexedDB.
 Linux old-to-new book and settings reuse is exercised on disposable data; macOS
 and Windows native upgrade behavior still requires testing on those platforms.
+
+
+On Windows, the uninstaller's optional "Delete the application data" checkbox
+removes only `%APPDATA%\com.usegarret.app` and
+`%LOCALAPPDATA%\com.usegarret.app` for the current user. It also clears installer
+registry preferences. Neither directory contains books or settings: those remain
+under `%APPDATA%\garret` (including its library and recovery files), or in a
+folder you selected. The single-instance lock remains under
+`%APPDATA%\cc.local.app`, and the pinned WebView2 profile remains under
+`%LOCALAPPDATA%\cc.local.app`. The checkbox does not remove those folders and
+is not applied during an installer upgrade.
 
 ## Backup, restore, and rollback
 

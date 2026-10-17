@@ -3,6 +3,7 @@
 import hashlib
 import importlib.util
 import json
+import shutil
 from pathlib import Path
 import tempfile
 import sys
@@ -78,6 +79,32 @@ class ReleaseTests(unittest.TestCase):
             self.assertEqual(set(archive.namelist()), {"BUILD.txt", "README.md", "COPYING", "THIRD-PARTY-NOTICES.md"})
         self.assertEqual((out / "garret-0.0.1-android.apk").read_bytes(), b"garret-android.apk")
 
+    def test_desktop_collection_includes_installers_and_portable_archives(self):
+        for platform, suffixes in {
+            "linux": ("-linux-x86_64.tar.gz", "-linux-x86_64.deb", "-linux-x86_64.rpm", "-linux-x86_64.AppImage"),
+            "windows": ("-windows-x86_64.zip", "-windows-x86_64-setup.exe"),
+            "macos-arm64": ("-macos-arm64.zip", "-macos-arm64.dmg"),
+            "macos-x86_64": ("-macos-x86_64.zip", "-macos-x86_64.dmg"),
+        }.items():
+            folder = self.root / "app" / ("dist-macos/build-fresh" if platform.startswith("macos-") else f"dist-{platform}")
+            folder.mkdir(parents=True, exist_ok=True)
+            for suffix in suffixes:
+                (folder / f"garret{suffix}").write_bytes(suffix.encode())
+            with patch.object(release.subprocess, "check_output", return_value="revision\n"):
+                release.collect(platform)
+            out = self.root / "app/dist-release" / platform
+            names = {f"garret-0.0.1{suffix}" for suffix in suffixes}
+            self.assertEqual({p.name for p in out.iterdir()}, names | {f"{name}.sha256" for name in names})
+            for suffix in suffixes:
+                name = f"garret-0.0.1{suffix}"
+                self.assertEqual((out / name).read_bytes(), suffix.encode())
+                self.assertEqual((out / f"{name}.sha256").read_text(), f"{hashlib.sha256(suffix.encode()).hexdigest()}  {name}\n")
+            shutil.rmtree(out)
+            (folder / f"garret{suffixes[-1]}").unlink()
+            with patch.object(release.subprocess, "check_output", return_value="revision\n"):
+                with self.assertRaises(FileNotFoundError):
+                    release.collect(platform)
+
     def test_draft_resume_refuses_unchecked_remote_assets(self):
         out = self.root / "app/dist-release/downloads"
         out.mkdir(parents=True)
@@ -96,7 +123,9 @@ class ReleaseTests(unittest.TestCase):
         out = self.root / "app/dist-release/downloads"
         out.mkdir(parents=True)
         for suffix in ("linux-x86_64.tar.gz", "windows-x86_64.zip", "android.apk", "android-info.zip",
-                       "macos-arm64.zip", "macos-x86_64.zip"):
+                       "macos-arm64.zip", "macos-x86_64.zip", "linux-x86_64.deb",
+                       "linux-x86_64.rpm", "linux-x86_64.AppImage", "windows-x86_64-setup.exe",
+                       "macos-arm64.dmg", "macos-x86_64.dmg"):
             name = f"garret-0.0.1-{suffix}"
             (out / name).write_bytes(b"package")
             (out / f"{name}.sha256").write_text(f"{hashlib.sha256(b'package').hexdigest()}  {name}\n")
