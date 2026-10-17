@@ -2179,6 +2179,7 @@ mod tests {
                     new_page: true,
                     caps_title: true,
                     drop_cap: true,
+                    ..Default::default()
                 },
             )
             .unwrap();

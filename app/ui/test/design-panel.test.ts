@@ -164,8 +164,8 @@ describe("the book design panel", () => {
           { field: "font", before: "Author's Serif", after: "EB Garamond" },
           { field: "page", before: "160000x240000 custom-trim", after: "152400x228600 trade" },
           { field: "margins", before: null, after: "19050,15875,15875,19050" },
-          { field: "chapter", before: "", after: "new-page caps-title drop-cap" },
-          { field: "glyph", before: "unlisted", after: "fleuron" },
+          { field: "chapter", before: "", after: "new-page caps-title drop-cap ornament-above sink-half" },
+          { field: "glyph", before: "unlisted", after: "hedera" },
           { field: "cover_fit_front", before: "contain", after: "fill" },
         ],
       }),
@@ -182,13 +182,31 @@ describe("the book design panel", () => {
     expect(text).toContain("No chapter options");
     expect(text).toContain("New page for parts and chapters");
     expect(text).toContain("Book-body headings in capitals");
-    expect(text).toContain("Fleuron");
-    expect(text).toContain("Chapter ornament will change from a setting this version cannot read to Fleuron.");
+    expect(text).toContain("Ornament above the chapter title");
+    expect(text).toContain("Chapters start halfway down the page");
+    expect(text).toContain("Hedera");
+    expect(text).toContain("Chapter ornament will change from a setting this version cannot read to Hedera.");
     expect(text).toContain("Margins will change from the default to");
     expect(text).not.toContain("→");
     expect(text).toContain("Fill page (crop edges)");
     expect(text).not.toContain("19050,15875");
     expect(text).not.toContain("caps-title");
+    expect(text).not.toContain("sink-half");
+  });
+  test("a chapter row stating two sinks is described as unreadable, not as either", async () => {
+    const r = mount({
+      previewDesign: async () => ({
+        source: "book-design", token: "two-sinks", skipped: [],
+        changes: [{ field: "chapter", before: "sink-third sink-half", after: "sink-half" }],
+      }),
+    });
+    await r.panel.open();
+    r.container.querySelector<HTMLButtonElement>("[data-design-transfer='preview']")!.click();
+    await settle();
+    const text = r.el("design-transfer-review")?.textContent ?? "";
+    expect(text).toContain(EN["design.transfer.invalid-saved"]);
+    expect(text).toContain("Chapters start halfway down the page");
+    expect(text).not.toContain("a third down the page");
   });
   test("a post-apply read failure reports refresh without calling the transfer failed", async () => {
     const preview: DesignTransferPreview = {

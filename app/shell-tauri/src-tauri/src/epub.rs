@@ -21,7 +21,7 @@
 // stronger than "callable without writing a file" -- the preview renders the
 // archive and then UNZIPS it, so it cannot be right while the file is wrong.
 
-use crate::design::{glyph_ornament, ChapterStyle};
+use crate::design::{glyph_ornament, ChapterStyle, Sink};
 use crate::export::{Book, ChapterOpenings};
 use std::collections::HashMap;
 
@@ -61,6 +61,11 @@ pub const COVER_HREF: &str = "cover.xhtml";
 pub const UNDERLINE_CLASS: &str = "u";
 /// The class the chapter ornament is drawn as.
 pub const ORNAMENT_CLASS: &str = "ornament";
+/// Added to the ornament when it sits above the title.
+pub const ORNAMENT_ABOVE_CLASS: &str = "ornament-above";
+/// The classes a sunk chapter opening carries on its first block.
+pub const SINK_THIRD_CLASS: &str = "sink-third";
+pub const SINK_HALF_CLASS: &str = "sink-half";
 /// A typed part or chapter heading that starts a new page within its document.
 /// The first heading of a spine document already begins on a new page.
 pub const START_CLASS: &str = "start";
@@ -320,6 +325,24 @@ fn stylesheet(font: &str, style: &ChapterStyle) -> String {
              line-height: 0.82; padding: 0.02em 0.08em 0 0; }}\n"
         ));
     }
+    if style.ornament_above {
+        css.push_str(&format!(
+            ".{ORNAMENT_ABOVE_CLASS} {{ margin: 2em 0 0; }}\n\
+             .{ORNAMENT_ABOVE_CLASS} + h1, .{ORNAMENT_ABOVE_CLASS} + h2, \
+             .{ORNAMENT_ABOVE_CLASS} + h3, .{ORNAMENT_ABOVE_CLASS} + h4, \
+             .{ORNAMENT_ABOVE_CLASS} + h5, .{ORNAMENT_ABOVE_CLASS} + h6 \
+             {{ margin-top: 0.6em; }}\n"
+        ));
+    }
+    // RELATIVE TO THE TYPE, not to a page: a reflowable book has no page
+    // height to take a third of, so the sink is padding in ems, which scales
+    // with the reader's type size. Padding rather than margin because a
+    // reading system may drop a margin at the top of a page.
+    match style.sink {
+        Sink::None => {}
+        Sink::Third => css.push_str(&format!(".{SINK_THIRD_CLASS} {{ padding-top: 6em; }}\n")),
+        Sink::Half => css.push_str(&format!(".{SINK_HALF_CLASS} {{ padding-top: 10em; }}\n")),
+    }
     css
 }
 
@@ -386,20 +409,47 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
             targets.insert(id.clone(), format!("{}#{fragment}", doc.href));
             // A spine document already begins on a new page, so only a typed
             // part or chapter within that document needs the break class.
-            let mut classes = Vec::new();
-            if page && !opens { classes.push(START_CLASS); }
-            if run_index == 1 { classes.push("book-body-heading"); }
-            let class = if classes.is_empty() { String::new() }
-                else { format!(" class=\"{}\"", classes.join(" ")) };
-            doc.body.push_str(&format!(
-                "<h{level} id=\"{fragment}\"{class}>{}</h{level}>\n",
-                xml_escape(title)
-            ));
+            // The first block of the opening carries the break and the sink:
+            // the ornament when it sits above the title, else the heading.
+            let ornament_here = styled.then_some(ornament).flatten();
+            let above = ornament_here.is_some() && epub.style.ornament_above;
+            let mut lead = Vec::new();
+            if page && !opens { lead.push(START_CLASS); }
+            if styled {
+                match epub.style.sink {
+                    Sink::None => {}
+                    Sink::Third => lead.push(SINK_THIRD_CLASS),
+                    Sink::Half => lead.push(SINK_HALF_CLASS),
+                }
+            }
+            let mut heading_classes = Vec::new();
+            if run_index == 1 { heading_classes.push("book-body-heading"); }
+            let class_attr = |classes: &[&str]| if classes.is_empty() {
+                String::new()
+            } else {
+                format!(" class=\"{}\"", classes.join(" "))
+            };
             // THE ORNAMENT MARKS A CHAPTER, not every heading under it. A
             // dinkus under every scene title is a page of dinkuses, and the
             // the design calls for a glyph at the chapter break.
-            if styled {
-                if let Some(ornament) = ornament {
+            if above {
+                let mut classes = vec![ORNAMENT_CLASS, ORNAMENT_ABOVE_CLASS];
+                classes.extend(&lead);
+                doc.body.push_str(&format!(
+                    "<p{}>{}</p>\n",
+                    class_attr(&classes),
+                    xml_escape(ornament_here.expect("above implies an ornament"))
+                ));
+            } else {
+                heading_classes.splice(0..0, lead);
+            }
+            doc.body.push_str(&format!(
+                "<h{level} id=\"{fragment}\"{}>{}</h{level}>\n",
+                class_attr(&heading_classes),
+                xml_escape(title)
+            ));
+            if !above {
+                if let Some(ornament) = ornament_here {
                     doc.body.push_str(&format!(
                         "<p class=\"{ORNAMENT_CLASS}\">{}</p>\n",
                         xml_escape(ornament)
@@ -1353,6 +1403,7 @@ mod tests {
             drop_cap: true,
             new_page: true,
             caps_title: true,
+            ..ChapterStyle::default()
         };
         let archive = render(&e);
         let doc = named(&archive, &format!("{OEBPS}/{TEXT_DIR}/0001.xhtml"));
@@ -1362,6 +1413,107 @@ mod tests {
         assert!(doc.contains("<p class=\"opening\">first</p>"), "{doc}");
         assert!(css.contains(".book-body-heading { text-transform"), "{css}");
         assert!(!css.contains("h1, h2, h3, h4, h5, h6 { text-transform"), "{css}");
+    }
+
+    #[test]
+    fn the_ornament_can_sit_above_the_title_and_leads_the_opening() {
+        let rows = chapters(&[("a", "One", 0), ("b", "A scene", 1)]);
+        let book = plain("N", &rows);
+        let bodies = bodies(&[("a", "alpha")]);
+        let render_with = |style: ChapterStyle| {
+            let mut e = input(&book, &bodies);
+            e.style = style;
+            let archive = render(&e);
+            (
+                named(&archive, &format!("{OEBPS}/{TEXT_DIR}/0001.xhtml")),
+                named(&archive, &format!("{OEBPS}/{CSS_HREF}")),
+            )
+        };
+        let below = ChapterStyle {
+            glyph: Some("hedera".to_string()),
+            ..ChapterStyle::default()
+        };
+        let (doc, css) = render_with(below.clone());
+        assert!(doc.find("<h2").unwrap() < doc.find(ORNAMENT_CLASS).unwrap(), "{doc}");
+        assert!(!doc.contains(ORNAMENT_ABOVE_CLASS) && !css.contains(ORNAMENT_ABOVE_CLASS));
+
+        let (doc, css) = render_with(ChapterStyle {
+            ornament_above: true,
+            ..below.clone()
+        });
+        assert!(
+            doc.contains("<p class=\"ornament ornament-above\">\u{2767}</p>\n<h2 id=\"h1\">One</h2>"),
+            "{doc}"
+        );
+        // Only the chapter's division: the scene under it has no ornament.
+        assert_eq!(doc.matches(ORNAMENT_CLASS).count(), 1, "{doc}");
+        assert!(css.contains(".ornament-above + h2"), "{css}");
+
+        // Without an ornament the position has nothing to move.
+        let (doc, _) = render_with(ChapterStyle {
+            ornament_above: true,
+            ..ChapterStyle::default()
+        });
+        assert!(!doc.contains(ORNAMENT_CLASS), "{doc}");
+    }
+
+    #[test]
+    fn the_sink_is_a_relative_padding_on_the_first_block_of_the_opening() {
+        let rows = chapters(&[("part", "Part", 0), ("chapter", "Chapter", 1), ("scene", "Scene", 2)]);
+        let book = plain("N", &rows);
+        let body = bodies(&[("scene", "first")]);
+        let render_with = |style: ChapterStyle| {
+            let mut e = input(&book, &body);
+            e.openings = ChapterOpenings {
+                styled: ["chapter".to_string()].into(),
+                page: ["part".to_string(), "chapter".to_string()].into(),
+            };
+            e.style = style;
+            let archive = render(&e);
+            (
+                named(&archive, &format!("{OEBPS}/{TEXT_DIR}/0001.xhtml")),
+                named(&archive, &format!("{OEBPS}/{CSS_HREF}")),
+            )
+        };
+
+        let (doc, css) = render_with(ChapterStyle::default());
+        assert!(!doc.contains("sink-") && !css.contains("padding-top"), "{doc}{css}");
+
+        let (doc, css) = render_with(ChapterStyle {
+            sink: Sink::Third,
+            ..ChapterStyle::default()
+        });
+        assert!(doc.contains("<h3 id=\"h2\" class=\"sink-third\">Chapter</h3>"), "{doc}");
+        // The part and the scene are not chapter openings.
+        assert_eq!(doc.matches("sink-third").count(), 1, "{doc}");
+        assert!(css.contains(".sink-third { padding-top: 6em; }"), "{css}");
+        assert!(!css.contains("sink-half"), "{css}");
+
+        let (doc, css) = render_with(ChapterStyle {
+            sink: Sink::Half,
+            ..ChapterStyle::default()
+        });
+        assert!(doc.contains("class=\"sink-half\""), "{doc}");
+        assert!(css.contains(".sink-half { padding-top: 10em; }"), "{css}");
+        assert!(!css.contains("sink-third"), "{css}");
+
+        // With the ornament above, the ornament leads: it carries the page
+        // break and the sink, and the heading keeps only its own class.
+        let (doc, _) = render_with(ChapterStyle {
+            glyph: Some("asterisks".to_string()),
+            ornament_above: true,
+            new_page: true,
+            caps_title: true,
+            sink: Sink::Half,
+            ..ChapterStyle::default()
+        });
+        assert!(
+            doc.contains(
+                "<p class=\"ornament ornament-above start sink-half\">* * *</p>\n\
+                 <h3 id=\"h2\" class=\"book-body-heading\">Chapter</h3>"
+            ),
+            "{doc}"
+        );
     }
 
     #[test]
@@ -1776,6 +1928,7 @@ mod tests {
                 new_page: true,
                 caps_title: true,
                 drop_cap: true,
+                ..Default::default()
             },
         ] {
             assert!(!stylesheet("Crimson Text", &style).contains('@'));

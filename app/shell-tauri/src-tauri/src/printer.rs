@@ -643,6 +643,50 @@ mod tests {
             refused,
             "proof layout failed: a proof heading and following block exceed the page"
         );
+
+        // A SUNK OPENING starts that far down a fresh leaf: the text area of
+        // this fixture is 110px.
+        let half = paginate(document(
+            "<h2 data-proof-sink=\"half\">Chapter</h2><p>text</p>",
+        ))
+        .unwrap();
+        assert_eq!(half.report.leaves, 1);
+        assert!(half.report.pages[0].contains("margin-top: 55px"), "{:?}", half.report.pages);
+        let third = paginate(document(
+            "<p>before</p><h2 data-proof-sink=\"third\">Chapter</h2><p>text</p>",
+        ))
+        .unwrap();
+        assert_eq!(third.report.leaves, 2, "a sunk opening opens its own leaf");
+        assert!(!third.report.pages[0].contains("Chapter"));
+        assert!(third.report.pages[1].contains("margin-top: 37px"), "{:?}", third.report.pages);
+
+        // A sink that leaves no room for the heading and its text gives way
+        // rather than refusing the proof; the same pair without a sink is the
+        // refusal asserted above.
+        let yielded = paginate(document(
+            "<h2 data-proof-sink=\"half\" style=\"height:60px\">Head</h2><p>tail</p>",
+        ))
+        .unwrap();
+        assert_eq!(yielded.report.leaves, 1);
+        assert!(!yielded.report.pages[0].contains("margin-top"), "{:?}", yielded.report.pages);
+
+        // A heading group is never left at the foot of a leaf without the text
+        // it introduces, whichever side the ornament is on.
+        let long = "words to wrap ".repeat(40);
+        let below = paginate(document(&format!(
+            "<p>a</p><p>b</p><p>c</p><h2>Head</h2><p class=\"ornament\">*</p><p>{long}</p>"
+        )))
+        .unwrap();
+        assert!(!below.report.pages[0].contains("Head"), "{:?}", below.report.pages);
+        assert!(below.report.pages[1].contains("Head"));
+        let above = paginate(document(&format!(
+            "<p>a</p><p>b</p><p>c</p><p class=\"ornament ornament-above\">*</p>\
+             <h2>Head</h2><p>{long}</p>"
+        )))
+        .unwrap();
+        assert!(!above.report.pages[0].contains("ornament"), "{:?}", above.report.pages);
+        let second = &above.report.pages[1];
+        assert!(second.find("ornament").unwrap() < second.find("Head").unwrap());
     }
 
     #[test]
@@ -687,6 +731,7 @@ mod tests {
                 new_page: false,
                 caps_title: false,
                 drop_cap: false,
+                ..Default::default()
             },
             front_cover: Some(Cover {
                 bytes: include_bytes!("../fixtures/black-and-clear.png").to_vec(),

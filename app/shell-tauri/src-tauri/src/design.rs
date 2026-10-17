@@ -202,6 +202,42 @@ pub const CHAPTER_KEY: &str = "design.chapter";
 pub const NEW_PAGE: &str = "new-page";
 pub const CAPS_TITLE: &str = "caps-title";
 pub const DROP_CAP: &str = "drop-cap";
+/// The ornament above the title instead of below it. Absent means below, which
+/// is what every book written before this word existed renders.
+pub const ORNAMENT_ABOVE: &str = "ornament-above";
+pub const SINK_THIRD: &str = "sink-third";
+pub const SINK_HALF: &str = "sink-half";
+
+/// How far down its page a chapter opening starts.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Sink {
+    #[default]
+    None,
+    Third,
+    Half,
+}
+
+impl Sink {
+    pub fn word(self) -> Option<&'static str> {
+        match self {
+            Sink::None => None,
+            Sink::Third => Some(SINK_THIRD),
+            Sink::Half => Some(SINK_HALF),
+        }
+    }
+}
+
+/// Every word of the chapter row this build understands. A word outside this
+/// list belongs to a newer build and is carried through a write untouched.
+const KNOWN_FLAGS: [&str; 6] = [
+    NEW_PAGE,
+    CAPS_TITLE,
+    DROP_CAP,
+    ORNAMENT_ABOVE,
+    SINK_THIRD,
+    SINK_HALF,
+];
 
 /// An ornament this application offers, and the word a stored row names it by.
 ///
@@ -213,13 +249,13 @@ pub struct GlyphSpec {
     pub id: &'static str,
     /// The characters printed. Every one is in the Unicode ranges a reading
     /// system's default serif face carries, which is the whole reason this list
-    /// is four ornaments and not forty: this application ships no fonts, so an
+    /// is a handful of ornaments and not forty: this application ships no fonts, so an
     /// ornament nothing can draw is a box in somebody's book.
     pub ornament: &'static str,
 }
 
 /// In the order the rail offers them.
-pub const GLYPHS: [GlyphSpec; 4] = [
+pub const GLYPHS: [GlyphSpec; 7] = [
     // The typesetter's dinkus, and the one a manuscript is normally typed with.
     GlyphSpec {
         id: "asterisks",
@@ -240,6 +276,21 @@ pub const GLYPHS: [GlyphSpec; 4] = [
         id: "diamond",
         ornament: "\u{2666}",
     },
+    // Three MIDDLE DOTS, U+00B7: a quieter dinkus, from Latin-1 so every face has it.
+    GlyphSpec {
+        id: "dots",
+        ornament: "\u{b7} \u{b7} \u{b7}",
+    },
+    // ROTATED FLORAL HEART BULLET, U+2767 -- the hedera.
+    GlyphSpec {
+        id: "hedera",
+        ornament: "\u{2767}",
+    },
+    // EM DASH, BULLET, EM DASH (U+2014, U+2022): the short rule with a seed.
+    GlyphSpec {
+        id: "rule",
+        ornament: "\u{2014} \u{2022} \u{2014}",
+    },
 ];
 
 /// The ornament a stored word names, or None for absence and for a word this
@@ -255,6 +306,8 @@ pub struct ChapterStyle {
     pub new_page: bool,
     pub caps_title: bool,
     pub drop_cap: bool,
+    pub ornament_above: bool,
+    pub sink: Sink,
 }
 
 /// This project's chapter styling, with absence meaning the plainest book.
@@ -265,11 +318,24 @@ pub fn chapter_style_of(store: &Store) -> std::result::Result<ChapterStyle, Stri
     let glyph = read(GLYPH_KEY)?.filter(|v| glyph_ornament(v).is_some());
     let flags = read(CHAPTER_KEY)?.unwrap_or_default();
     let has = |flag: &str| flags.split_whitespace().any(|w| w == flag);
+    // Two sink words in one row can only come from a hand edit or a foreign
+    // writer; the first one stated wins so the answer does not depend on which
+    // build reads it.
+    let sink = flags
+        .split_whitespace()
+        .find_map(|w| match w {
+            SINK_THIRD => Some(Sink::Third),
+            SINK_HALF => Some(Sink::Half),
+            _ => None,
+        })
+        .unwrap_or_default();
     Ok(ChapterStyle {
         glyph,
         new_page: has(NEW_PAGE),
         caps_title: has(CAPS_TITLE),
         drop_cap: has(DROP_CAP),
+        ornament_above: has(ORNAMENT_ABOVE),
+        sink,
     })
 }
 
@@ -285,6 +351,10 @@ pub fn write_chapter_style(store: &Store, style: &ChapterStyle) -> std::result::
             return Err(format!("{id:?} is not an ornament this application offers"));
         }
     }
+    let stored = store
+        .get_meta(CHAPTER_KEY)
+        .map_err(|e| e.to_string())?
+        .unwrap_or_default();
     let mut flags: Vec<&str> = Vec::new();
     if style.new_page {
         flags.push(NEW_PAGE);
@@ -294,6 +364,17 @@ pub fn write_chapter_style(store: &Store, style: &ChapterStyle) -> std::result::
     }
     if style.drop_cap {
         flags.push(DROP_CAP);
+    }
+    if style.ornament_above {
+        flags.push(ORNAMENT_ABOVE);
+    }
+    flags.extend(style.sink.word());
+    // A word a newer build wrote is not ours to drop: this write replaces the
+    // flags it understands and leaves the rest of the row as it found it.
+    for word in stored.split_whitespace() {
+        if !KNOWN_FLAGS.contains(&word) && !flags.contains(&word) {
+            flags.push(word);
+        }
     }
     store
         .set_meta(GLYPH_KEY, style.glyph.as_deref().unwrap_or(""))
@@ -572,12 +653,7 @@ mod tests {
         let dir = tempdir().unwrap();
         assert_eq!(
             chapter_style_of(&store(&dir)).unwrap(),
-            ChapterStyle {
-                glyph: None,
-                new_page: false,
-                caps_title: false,
-                drop_cap: false
-            }
+            ChapterStyle::default()
         );
     }
 
@@ -601,9 +677,62 @@ mod tests {
             new_page: true,
             caps_title: false,
             drop_cap: true,
+            ornament_above: true,
+            sink: Sink::Half,
         };
         write_chapter_style(&s, &wanted).unwrap();
         assert_eq!(chapter_style_of(&s).unwrap(), wanted);
+        assert_eq!(
+            s.get_meta(CHAPTER_KEY).unwrap().as_deref(),
+            Some("new-page drop-cap ornament-above sink-half")
+        );
+    }
+
+    #[test]
+    fn a_row_written_before_the_new_words_reads_as_below_and_not_sunk() {
+        // Existing books must render exactly as they did: the new settings are
+        // read from words an old row cannot contain.
+        let dir = tempdir().unwrap();
+        let s = store(&dir);
+        s.set_meta(CHAPTER_KEY, "new-page caps-title drop-cap").unwrap();
+        let style = chapter_style_of(&s).unwrap();
+        assert!(style.new_page && style.caps_title && style.drop_cap);
+        assert!(!style.ornament_above);
+        assert_eq!(style.sink, Sink::None);
+    }
+
+    #[test]
+    fn a_word_from_a_newer_build_survives_a_write() {
+        let dir = tempdir().unwrap();
+        let s = store(&dir);
+        s.set_meta(CHAPTER_KEY, "new-page future-word sink-third future-word")
+            .unwrap();
+        write_chapter_style(
+            &s,
+            &ChapterStyle {
+                drop_cap: true,
+                sink: Sink::Half,
+                ..ChapterStyle::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            s.get_meta(CHAPTER_KEY).unwrap().as_deref(),
+            Some("drop-cap sink-half future-word")
+        );
+        let style = chapter_style_of(&s).unwrap();
+        assert!(!style.new_page && style.drop_cap);
+        assert_eq!(style.sink, Sink::Half);
+    }
+
+    #[test]
+    fn the_first_sink_word_wins_when_a_row_states_two() {
+        let dir = tempdir().unwrap();
+        let s = store(&dir);
+        s.set_meta(CHAPTER_KEY, "sink-half sink-third").unwrap();
+        assert_eq!(chapter_style_of(&s).unwrap().sink, Sink::Half);
+        s.set_meta(CHAPTER_KEY, "sink-third sink-half").unwrap();
+        assert_eq!(chapter_style_of(&s).unwrap().sink, Sink::Third);
     }
 
     #[test]
@@ -698,6 +827,8 @@ mod tests {
             new_page: true,
             caps_title: true,
             drop_cap: true,
+            ornament_above: true,
+            sink: Sink::Third,
         };
         write_chapter_style(&s, &style).unwrap();
         write_design(&s, &preset(PRESET_NON_FICTION).unwrap()).unwrap();
