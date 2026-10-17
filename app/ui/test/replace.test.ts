@@ -55,13 +55,8 @@ describe("locateMatches", () => {
     expect(locateMatches(doc(["aaaaa"]), "aa").length).toBe(2);
   });
 
-  test("crosses paragraphs the same way the search does", () => {
-    // The projection puts one synthetic space between blocks, so a query
-    // spanning the boundary matches. Pinned because replace-all must agree with
-    // the panel's count, and the panel's count comes from the host using the
-    // same rule.
-    const d = doc(["ends here"], ["here it goes"]);
-    expect(locateMatches(d, "here here").length).toBe(1);
+  test("paragraph fields never join for replacement", () => {
+    expect(locateMatches(doc(["ends here"], ["here it goes"]), "here here")).toEqual([]);
   });
 
   test("is case-insensitive, like the panel", () => {
@@ -202,19 +197,17 @@ describe("nextMatchAfter", () => {
 });
 
 describe("a match spanning a paragraph break is REFUSED, not replaced", () => {
-  // The projection puts a synthetic space between blocks so the phrase matches,
-  // which is right for FIND. Replacing across it merges the two paragraphs, so a
-  // writer who typed a two-word phrase would lose a break they never touched.
+  // Search fields preserve paragraph boundaries.
   const spanning = (): PmNode => doc(["one cat"], ["sat two"]);
 
-  test("locateMatches still finds it — this is a REPLACE rule, not a search one", () => {
-    expect(locateMatches(spanning(), "cat sat").length).toBe(1);
+  test("locateMatches excludes it", () => {
+    expect(locateMatches(spanning(), "cat sat").length).toBe(0);
   });
 
-  test("planReplacements leaves it alone and counts it", () => {
+  test("planReplacements leaves the paragraphs alone", () => {
     const plan = planReplacements(spanning(), "cat sat");
     expect(plan.replacements.length).toBe(0);
-    expect(plan.spanning).toBe(1);
+    expect(plan.spanning).toBe(0);
   });
 
   test("a match inside one paragraph is unaffected by the rule", () => {
@@ -226,10 +219,8 @@ describe("a match spanning a paragraph break is REFUSED, not replaced", () => {
   });
 
   test("planSelected refuses it too", () => {
-    // The panel can put a selection on a spanning match, and replacing THAT
-    // merges the blocks just as surely.
     const d = spanning();
-    const hit = locateMatches(d, "cat sat")[0]!;
+    const hit = { from: 5, to: 14 };
     expect(planSelected(d, "cat sat", hit)).toBeNull();
   });
 

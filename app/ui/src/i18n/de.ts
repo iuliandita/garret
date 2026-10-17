@@ -116,6 +116,13 @@ export const DE = {
   "menu.outline.group.plan": "Szenen und Figuren planen",
   "menu.outline.group.views": "Lesen und vergleichen",
   "menu.outline.group.review": "Buch prüfen",
+  "document.field.prose": "Fließtext",
+  "document.field.note": "Endnoten",
+  "document.field.caption": "Bildunterschrift",
+  "document.field.alt": "Alternativtext",
+  "document.figure-placeholder": "Bildoriginal nicht enthalten",
+  "document.plaintext-loss": "Textkopie: Formatierung, Struktur und Bildoriginale sind nicht enthalten.",
+  "document.clipboard-refused": "Dieser Inhalt konnte nicht sicher eingefügt werden. Bildoriginale müssen zuerst in das Buch kopiert werden.",
   "editor.name": "Manuskripteditor",
   // panel-shell.ts: the Close icon every anchored panel shares.
   "panel.close": "{title} schließen",

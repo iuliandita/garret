@@ -52,18 +52,7 @@ function marksAt(doc: PmNode, from: number): readonly Mark[] {
   return doc.resolve(from + 1).marks();
 }
 
-/** Whether a match sits entirely inside ONE text block.
- *
- *  It need not. `locateMatches` projects the document the way the host does,
- *  with a synthetic separator between blocks, so "cat sat" matches across the
- *  end of one paragraph and the start of the next. That is right for FIND - the
- *  phrase is there, and the panel should say so.
- *
- *  It is wrong for REPLACE. `tr.replaceWith` over a range spanning two blocks
- *  MERGES them, so a writer who typed a two-word phrase into the replace field
- *  would lose a paragraph break they never touched, in prose they had already
- *  written. Search and replace do not get to share a match rule here.
- */
+/** A replacement cannot merge paragraph blocks. */
 function withinOneBlock(doc: PmNode, range: MatchRange): boolean {
   return doc.resolve(range.from).sameParent(doc.resolve(range.to));
 }

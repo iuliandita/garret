@@ -686,6 +686,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // alike, rather than four places that could disagree about it.
   let timelineMount: TimelineMount | null = null;
   const editor = createEditor(editorEl, editorInput, {
+    onClipboardRefused: () => raiseNotice(t("document.clipboard-refused")),
     onChange: (change) => {
       // Once per document-changing transaction, same as the word count
       // above: the module arms once and returns early after, so the
@@ -1730,7 +1731,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       // second opener: everything already true about opening -- the fixed
       // order in session.switchTo, the undo scope, the word-count refresh --
       // stays true and is not restated here.
-      openItem: (itemId, query) => {
+      openItem: (itemId, query, locator) => {
         navigator.selectById(itemId);
         void openDocument?.(itemId)
           .then(() => {
@@ -1742,7 +1743,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
             // The return value is deliberately dropped. A miss is not something
             // to tell the writer about: they asked to go to a scene and they
             // are in that scene, with the caret where it was.
-            editor.revealMatch(query);
+            editor.revealMatch(query, locator);
           })
           .catch((err: unknown) => {
             raiseNotice(t("project.error.open-document", { error: String(err) }));

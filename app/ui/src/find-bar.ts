@@ -27,6 +27,7 @@
 /** One matched item, as the host serializes it. snake_case because these are
  *  plain serde field names: Tauri lower-camels command ARGUMENTS and leaves
  *  returned struct fields alone. */
+import type { FieldLocator } from "./find-locate";
 import { isCompositionKey } from "./composition-key";
 import { formatNumber, plural, t } from "./i18n";
 import { createPanelShell } from "./panel-shell";
@@ -39,6 +40,7 @@ export interface FindHit {
   matches: number;
   title_match: boolean;
   openable: boolean;
+  locators?: FieldLocator[];
 }
 
 export interface FindResults {
@@ -69,7 +71,7 @@ export interface FindBarDeps {
   /** `query` is what this panel searched for, handed over so the page can put
    *  the caret on it once the document has opened. The bar cannot do that
    *  itself: opening is asynchronous and the bar does not hold the promise. */
-  openItem: (itemId: string, query: string) => void;
+  openItem: (itemId: string, query: string, locator?: FieldLocator) => void;
   /** Moves the navigator's selection to an item that cannot be opened -- a part
    *  or a chapter, which holds no document. */
   selectItem: (itemId: string) => void;
@@ -277,9 +279,14 @@ export function createFindBar(deps: FindBarDeps): FindBar {
     status.textContent = plural("find.summary", found.total, { count: total, query });
   }
 
+  const shownLocators = new Map<string, FieldLocator>();
+
   function renderResults(found: FindResults): void {
+    shownLocators.clear();
     const frag = document.createDocumentFragment();
     for (const hit of found.results) {
+      const locator = hit.locators?.[0];
+      if (locator) shownLocators.set(hit.item_id, locator);
       const row = document.createElement("div");
       row.setAttribute("role", "option");
       row.setAttribute("aria-selected", "false");
@@ -306,7 +313,7 @@ export function createFindBar(deps: FindBarDeps): FindBar {
       const titleOnly = hit.snippet === "";
       const snippet = document.createElement("span");
       snippet.className = "find-snippet";
-      snippet.textContent = titleOnly ? hit.kind : hit.snippet;
+      snippet.textContent = titleOnly ? hit.kind : [locator ? t(`document.field.${locator.field}`) : "", hit.snippet].filter(Boolean).join(": ");
 
       // The whole row's accessible name, because WebKitGTK prunes untyped
       // generic containers -- the two spans above are exactly that, and the
@@ -625,7 +632,7 @@ export function createFindBar(deps: FindBarDeps): FindBar {
       // where it was, and the next result is ArrowDown + Return away. Working
       // through several results does not mean searching again.
       setOpen(false);
-      deps.openItem(itemId, shownQuery);
+      deps.openItem(itemId, shownQuery, shownLocators.get(itemId));
     } else {
       // STAYS OPEN here, deliberately. Nothing opened and the editor did not
       // move, so there is nothing behind the panel to look at - and closing it

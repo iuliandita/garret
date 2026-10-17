@@ -41,6 +41,18 @@ a loss without stopping the remaining recovery. The salvage manifest adds
 `figure_assets_recovered` and `figure_originals_recovered` counts, plus `figures`
 for the relative registry filename, or null when no registry was recovered.
 
+Consumers are prepared for endnotes, figures, and scene breaks using isolated
+fixtures. Search keeps paragraph prose, note bodies, captions, and alternative
+text in separate fields. Prose replacement never edits attributes. Word counts
+exclude attribute text and count neither references nor block atoms as words.
+History compares note, caption, and alternative text separately from prose.
+Review proposals retain complete atoms and refuse affected review Word handoffs.
+Clipboard copies remint instance IDs and reject duplicate IDs; figure pastes and
+copied atom drops are refused until original transfer is available. Phone recovery
+copies retain note text, captions, alternative text, and figure placeholders, and
+state that formatting, structure, and originals are omitted. These reader changes
+keep the schema ceiling and disabled production writes described above.
+
 ## Before upgrading
 
 Close every instance of garret. Make a separate copy of each manuscript's

@@ -3,11 +3,11 @@
 // target, but manuscript virtualization is a second independent variable.
 // Holding it out keeps the navigator the only thing that differs between the
 // control and the test.
-import { baseKeymap, toggleMark } from "prosemirror-commands";
+import { baseKeymap, toggleMark as toggleMarkCommand } from "prosemirror-commands";
 import { history, redo, undo } from "prosemirror-history";
 import { keymap } from "prosemirror-keymap";
 import { type MarkType, type Node as PmNode, Schema } from "prosemirror-model";
-import { EditorState, Plugin, TextSelection, type Transaction } from "prosemirror-state";
+import { EditorState, NodeSelection, Plugin, TextSelection, type Command, type Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import type { CorpusBlock } from "./fixture/source";
 import { countWords } from "./words";
@@ -20,12 +20,31 @@ import { isOneWord, wordAround, type WordRange } from "./word-at";
 import { spellRedrawKey, spellRedrawPlugin } from "./spell-redraw";
 import { EditSourceTracker, type EditSourceChange } from "./edit-source";
 import { t } from "./i18n";
-import { validDocument } from "./document-format";
+import { validDocument, validDocumentShape } from "./document-format";
+import { plaintext, positionalText, proseText, type PlaintextLabels } from "./document-projections";
+import { remintClipboard, validateClipboardHtml } from "./document-clipboard";
+import type { FieldLocator } from "./find-locate";
 
 export const schema = new Schema({
   nodes: {
     doc: { content: "block+" },
-    paragraph: { group: "block", content: "text*", toDOM: () => ["p", 0] },
+    paragraph: { group: "block", content: "(text|endnote)*", toDOM: () => ["p", 0] },
+    endnote: {
+      inline: true, group: "inline", atom: true, marks: "",
+      attrs: { id: {}, fmt: {}, body: {} },
+      toDOM: node => ["sup", { class: "document-endnote", "data-garret-endnote": JSON.stringify(node.attrs), contenteditable: "false", "aria-label": t("document.field.note") }, t("document.field.note")],
+      parseDOM: [{ tag: "sup[data-garret-endnote]", getAttrs: dom => clipboardAttrs(dom, "endnote") }],
+    },
+    figure: {
+      group: "block", atom: true, marks: "",
+      attrs: { id: {}, asset_id: {}, width: {}, caption: {}, alt: {} },
+      toDOM: node => ["figure", { class: "document-figure", "data-garret-figure": JSON.stringify(node.attrs), contenteditable: "false" },
+        ["span", {}, t("document.figure-placeholder")], ["figcaption", {}, node.attrs.caption as string],
+        ["span", { class: "document-figure-alt" }, node.attrs.alt as string]],
+      parseDOM: [{ tag: "figure[data-garret-figure]", getAttrs: dom => clipboardAttrs(dom, "figure") }],
+    },
+    scene_break: { group: "block", atom: true, marks: "", toDOM: () => ["div", { class: "document-scene-break", role: "separator", contenteditable: "false" }],
+      parseDOM: [{ tag: "div.document-scene-break" }] },
     text: {},
   },
   // Both the tag forms and the inline-style forms are listed because the two
@@ -75,9 +94,35 @@ export const schema = new Schema({
   },
 });
 
+function clipboardAttrs(dom: HTMLElement, type: "endnote" | "figure"): Record<string, unknown> | false {
+  try {
+    const attrs: unknown = JSON.parse(dom.getAttribute("data-garret-" + type) ?? "null");
+    const node = { type, attrs };
+    const content = type === "endnote" ? [{ type: "paragraph", content: [node] }] : [node];
+    return validDocumentShape({ type: "doc", content }) ? attrs as Record<string, unknown> : false;
+  } catch { return false; }
+}
+
+export function plaintextLabels(): PlaintextLabels {
+  return { note: t("document.field.note"), figure: t("document.figure-placeholder"), caption: t("document.field.caption"),
+    alt: t("document.field.alt"), loss: t("document.plaintext-loss") };
+}
+
+export function toggleMark(type: MarkType): Command {
+  return (state, dispatch) => toggleMarkCommand(type)(state, dispatch && (tr => {
+    for (const range of state.selection.ranges) {
+      tr.doc.nodesBetween(range.$from.pos, range.$to.pos, (node, pos) => {
+        if (node.isAtom && !node.isText) tr.removeMark(pos, pos + node.nodeSize);
+      });
+    }
+    dispatch(tr);
+  }));
+}
+
 export interface PmNodeJson {
   type: string;
   text?: string;
+  attrs?: Record<string, unknown>;
   content?: PmNodeJson[];
 }
 
@@ -87,7 +132,11 @@ export type DocInput =
 
 /** Pure: one schema, two entry formats. Exported so it is testable without a DOM. */
 export function docJsonFrom(input: DocInput): PmNodeJson {
-  if (input.kind === "pmjson") return withoutEmptyText(input.json) as PmNodeJson;
+  if (input.kind === "pmjson") {
+    const json = withoutEmptyText(input.json);
+    if (!validDocumentShape(json)) throw new Error("unsupported document format");
+    return json as PmNodeJson;
+  }
   const paragraphs: PmNodeJson[] = input.blocks
     .filter((b) => b.text.length > 0)
     .map((b) => ({ type: "paragraph", content: [{ type: "text", text: b.text }] }));
@@ -142,7 +191,7 @@ export function readableBody(body: string): PmNodeJson | null {
     return null;
   }
   parsed = withoutEmptyText(parsed);
-  if (!validDocument(parsed)) return null;
+  if (!validDocumentShape(parsed)) return null;
   try {
     schema.nodeFromJSON(parsed as Record<string, unknown>);
   } catch {
@@ -194,35 +243,16 @@ export function caretTr(state: EditorState, n: number): Transaction {
   return state.tr.setSelection(TextSelection.create(state.doc, inside));
 }
 
-/** The word count of a live ProseMirror document, per the spec's rule: every
- *  text node concatenated with a single space between adjacent block nodes,
- *  then counted by the one shared `countWords`. The separator is load-bearing --
- *  without it two paragraphs "one" and "two" concatenate to "onetwo" and count
- *  as one word. Marks are invisible here by construction: `textBetween` reads
- *  text nodes, not their marks. */
+/** Counts prose independently of recovery and clipboard serialization. */
 export function countWordsIn(doc: PmNode): number {
-  return countWords(doc.textBetween(0, doc.content.size, " "));
+  return countWords(proseText(doc));
 }
 
-/** The plain-text projection of a stored body. History supplies paragraph
- *  separators so paragraph-only changes survive comparison; word counts use
- *  the default space.
- *
- *  Through the schema and `textBetween`, NOT through a fresh walk of the JSON.
- *  A fourth restatement of the projection rule is a fourth thing that can drift
- *  from `store::append_node`, and this one has no Rust twin holding it honest:
- *  a diff is only ever read against another diff of the same rule, so a wrong
- *  projection would be self-consistent and invisible. `countWordsIn` above
- *  already rests on this exact equivalence -- one space between block nodes,
- *  marks invisible -- and the word figures beside a diff have to agree with the
- *  ones in the bar.
- *
- *  Throws on a body that is not this schema's JSON. That is the right answer
- *  for a caller who is about to paint it: the alternative is an empty string,
- *  which renders as "the whole scene was deleted". */
+/** Prose only; attribute fields are compared separately in history. */
 export function bodyText(body: string, blockSeparator = " "): string {
-  const doc = schema.nodeFromJSON(JSON.parse(body) as unknown as Record<string, unknown>);
-  return doc.textBetween(0, doc.content.size, blockSeparator);
+  const json = readableBody(body);
+  if (json === null) throw new Error("unsupported document format");
+  return proseText(schema.nodeFromJSON(json), blockSeparator);
 }
 
 /** Which of the three formatting marks the selection carries WHOLE. Pure, so it
@@ -382,7 +412,7 @@ export interface Editor {
    *  therefore enforced by ProseMirror here rather than restated.
    *
    *  False is not an error. See `locateFirstMatch`. */
-  revealMatch(query: string): boolean;
+  revealMatch(query: string, locator?: FieldLocator): boolean;
   /** Tell the editor where this document's notes are, as the store holds them.
    *
    *  Replaces the whole list. Sent as transaction META rather than through a
@@ -519,6 +549,7 @@ export interface EditorOptions {
    *  rule "a caret jump must never mark the document dirty", now enforced by
    *  ProseMirror instead of by a lookup table. */
   onChange?: (change: EditSourceChange) => void;
+  onClipboardRefused?: () => void;
   /** Called after EVERY applied transaction, a selection move included.
    *
    *  A SECOND CALLBACK, deliberately: the flush is armed by onChange, and the
@@ -603,6 +634,23 @@ export function createEditor(
   const view: EditorView = new EditorView(mount, {
     state: EditorState.create({ doc, plugins: editorPlugins() }),
     attributes: { role: "textbox", "aria-multiline": "true", "aria-label": t("editor.name"), lang: "" },
+    clipboardTextSerializer: slice => plaintext(slice.content, plaintextLabels()),
+    handlePaste(_view, event, slice) {
+      try {
+        validateClipboardHtml(event.clipboardData?.getData("text/html") ?? "");
+        const reminted = remintClipboard(slice);
+        const tr = view.state.tr.replaceSelection(reminted).setMeta("uiEvent", "paste").scrollIntoView();
+        if (!validDocumentShape(tr.doc.toJSON())) throw new Error("invalid pasted document");
+        view.dispatch(tr);
+      } catch { opts.onClipboardRefused?.(); }
+      return true;
+    },
+    handleDrop(_view, _event, slice, moved) {
+      let atoms = false;
+      slice.content.descendants(node => { if (node.isAtom && !node.isText) atoms = true; });
+      if (!moved && atoms) { opts.onClipboardRefused?.(); return true; }
+      return false;
+    },
     dispatchTransaction(tr) {
       if (tr.docChanged && !editable) return;
       const before = view.state;
@@ -651,15 +699,15 @@ export function createEditor(
       editable = next;
       view.setProps({ editable: () => editable });
     },
-    revealMatch(query: string): boolean {
-      const at = locateFirstMatch(view.state.doc, query);
+    revealMatch(query: string, locator?: FieldLocator): boolean {
+      const at = locateFirstMatch(view.state.doc, query, locator);
       if (at === null) return false;
       // scrollIntoView on the transaction, not an element scroll: the editor
       // may be inside a scrolling container and ProseMirror knows where the
       // position actually rendered.
       view.dispatch(
         view.state.tr
-          .setSelection(TextSelection.create(view.state.doc, at.from, at.to))
+          .setSelection(locator && locator.field !== "prose" ? NodeSelection.create(view.state.doc, at.from) : TextSelection.create(view.state.doc, at.from, at.to))
           .scrollIntoView(),
       );
       return true;
@@ -750,7 +798,7 @@ export function createEditor(
     wordAtCaret(): WordRange | null {
       const { from, to, $from } = view.state.selection;
       if (to > from) {
-        const selected = view.state.doc.textBetween(from, to, " ");
+        const selected = positionalText(view.state.doc, from, to);
         if (!isOneWord(selected)) return null;
         // The trimmed word's own positions, not the selection's: a
         // double-click in WebKit takes the trailing space along.
@@ -759,7 +807,7 @@ export function createEditor(
         return { from: from + lead, to: from + lead + text.length, text };
       }
       if (!$from.parent.isTextblock) return null;
-      const inBlock = wordAround($from.parent.textContent, $from.parentOffset);
+      const inBlock = wordAround($from.parent.textBetween(0, $from.parent.content.size, "", "\ufffc"), $from.parentOffset);
       if (inBlock === null) return null;
       const start = $from.start();
       return { from: start + inBlock.from, to: start + inBlock.to, text: inBlock.text };
@@ -771,7 +819,7 @@ export function createEditor(
     textIn(from: number, to: number): string {
       const size = view.state.doc.content.size;
       if (from < 0 || to > size || from >= to) return "";
-      return view.state.doc.textBetween(from, to, " ");
+      return positionalText(view.state.doc, from, to);
     },
     selectRange(from: number, to: number): boolean {
       const size = view.state.doc.content.size;

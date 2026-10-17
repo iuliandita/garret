@@ -16,6 +16,7 @@
 // `recompute`). The timer lives in the plugin's own `view()` spec, which is
 // the one place a ProseMirror plugin is handed something to clean up on
 // destroy, and is injectable so a test can fire it without a real clock.
+import { documentFields } from "./document-projections";
 import type { Node as PmNode } from "prosemirror-model";
 import { Plugin, PluginKey } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
@@ -163,43 +164,16 @@ export function matchesInText(
   return out;
 }
 
-/** Every match in the whole document, in document order, as ProseMirror
- *  positions. One walk of the document's TEXTBLOCKS, `MAX_MAPPED_COMMENTS`'s
- *  own reasoning applied to a different ceiling: this runs once per debounce
- *  or per cast change, never per keystroke.
- *
- *  PER TEXTBLOCK, NOT PER TEXT NODE. A mark boundary splits a paragraph's
- *  content into several sibling text nodes with no text of their own beyond
- *  their own run, and matching each in isolation defeats the whole-word
- *  check both ways: "**Kell**ner" (a bold "Kell" followed by a plain "ner")
- *  matched "Kell" as a whole word, because the node holding "Kell" has
- *  nothing after it to see "ner" with; and "Maestro *Kell*" (an italic
- *  "Kell" alone) could never find the longer name "Maestro Kell" at all,
- *  because no single node's own text ever contains both words when a mark
- *  splits between them. Concatenating each textblock's own inline text
- *  first, and mapping the match positions found in it back through the
- *  positions its own child text nodes actually occupy, answers both: the
- *  schema here allows only text as inline content (`content: "text*"`), so
- *  every unit of a block's own text is a text node with a known length and
- *  nothing else to account for. */
+/** Match separate prose runs in manuscript coordinates. */
 export function matchesInDoc(doc: PmNode, names: readonly CastNamePair[]): readonly CastMarkRange[] {
   if (names.length === 0) return [];
   const out: CastMarkRange[] = [];
-  doc.descendants((node, pos) => {
-    if (!node.isTextblock) return true;
-    let text = "";
-    node.forEach((child) => {
-      if (child.isText) text += child.text ?? "";
-    });
-    // The textblock's own content starts one position past its opening
-    // token -- `pos` here is the position of that token, matching the
-    // reasoning `matchesInDoc`'s own test spells out for a second paragraph.
-    const contentStart = pos + 1;
-    for (const m of matchesInText(text, names)) {
-      out.push({ from: contentStart + m.from, to: contentStart + m.to, memberId: m.memberId });
+  for (const field of documentFields(doc)) {
+    if (field.field !== "prose") continue;
+    for (const m of matchesInText(field.text, names)) {
+      out.push({ from: field.from + m.from, to: field.from + m.to, memberId: m.memberId });
     }
-    return false;
-  });
+  }
   return out;
 }
 

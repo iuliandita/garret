@@ -321,45 +321,13 @@ describe("pasted emphasis", () => {
   });
 });
 
-describe("the schema precondition the Rust walks rely on", () => {
-  test("every non-text node in the schema is a block", () => {
-    // NOT a property of this schema worth asserting for its own sake. TWO Rust
-    // walks over the same stored JSON put a separator before EVERY non-text
-    // node, while ProseMirror's textBetween puts one before every BLOCK node.
-    // Both agree with the page only while those sets are the same. Add a
-    // hard_break, an image or any inline leaf and "hello<br>world" is one thing
-    // to the page and another to each walk -- at a fixture of plain paragraphs
-    // no graded run would ever notice.
-    //
-    // This fails the day such a node is added. Read the note on document_text
-    // before changing it: the fix is to split BOTH Rust separator rules by node
-    // type, not to delete this.
-    const inline = Object.values(schema.nodes)
-      .filter((type) => type.name !== "text" && type.isInline)
-      .map((type) => type.name);
-    // The message is the point. A bare `toEqual([])` names the new node and
-    // nothing else, so a reader fixes whichever walk they already know about
-    // and ships the other one broken.
-    expect(inline.length === 0 ? PRECONDITION_HOLDS : brokenPrecondition(inline)).toBe(
-      PRECONDITION_HOLDS,
-    );
-  });
+test("the supported atom roster is explicit", () => {
+  expect(Object.keys(schema.nodes).sort()).toEqual(["doc", "endnote", "figure", "paragraph", "scene_break", "text"]);
+  for (const name of ["endnote", "figure", "scene_break"]) {
+    expect(schema.nodes[name].isLeaf).toBe(true);
+    expect(schema.nodes[name].isAtom).toBe(true);
+  }
 });
-
-const PRECONDITION_HOLDS = "every non-text node in the schema is a block";
-
-function brokenPrecondition(inline: string[]): string {
-  return [
-    `inline non-text node(s) added to the schema: ${inline.join(", ")}.`,
-    "TWO Rust walks separate on every non-text node and BOTH are now wrong:",
-    "store::document_text (app/shell-tauri/src-tauri/src/store/mod.rs) counts",
-    '"hello<br>world" as two words where the page counts one, so a project total',
-    "stops being the sum of its scenes; export::document_markdown",
-    "(app/shell-tauri/src-tauri/src/export.rs) emits a blank line there, so the",
-    "exported manuscript breaks a paragraph mid-sentence.",
-    "Split BOTH separator rules by node type. Do not delete this test.",
-  ].join(" ");
-}
 
 describe("countWordsIn", () => {
   test("two paragraphs count as two words, not one", () => {

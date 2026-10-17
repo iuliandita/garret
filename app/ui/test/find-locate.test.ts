@@ -113,16 +113,10 @@ describe("locateFirstMatch", () => {
     expect(selected(d, locateFirstMatch(d, "crate"))).toBe("crate");
   });
 
-  test("separates paragraphs by ONE space, matching the host's projection", () => {
-    // store::append_node: a text node contributes its text; any other node
-    // contributes one space before its content, unless nothing has been emitted
-    // yet. So "one" and "two" in adjacent paragraphs read as "one two" - and a
-    // module that concatenated them would report a match for "onetwo" that the
-    // host never found.
+  test("search does not join paragraph fields", () => {
     const d = doc(["one"], ["two"]);
-
     expect(locateFirstMatch(d, "onetwo")).toBeNull();
-    expect(locateFirstMatch(d, "one two")).not.toBeNull();
+    expect(locateFirstMatch(d, "one two")).toBeNull();
   });
 
   test("emits NO separator before the first block", () => {
@@ -135,15 +129,10 @@ describe("locateFirstMatch", () => {
     expect(locateFirstMatch(d, "one")).not.toBeNull();
   });
 
-  test("a match beginning at a paragraph boundary starts at a real character", () => {
-    // The separator is synthetic: it is not in the document and holds no
-    // position. Both of its bounds are where the block's content starts, so the
-    // selection begins at the first character a caret can actually sit before.
+  test("paragraph boundaries add no searchable characters", () => {
     const d = doc(["one"], ["two"]);
-    const at = locateFirstMatch(d, " two");
-
-    expect(at).not.toBeNull();
-    expect(selected(d, at)).toBe("two");
+    expect(locateFirstMatch(d, " two")).toBeNull();
+    expect(selected(d, locateFirstMatch(d, "two"))).toBe("two");
   });
 
   test("returns null for a word that is not there", () => {
