@@ -207,6 +207,21 @@ describe("exporting the manuscript", () => {
     );
   });
 
+  test.each([0, 1, 31])("reports replaced or removed control characters: %s", async (count) => {
+    const rig = mount({ exportProject: () => Promise.resolve({
+      path: "/exports/book.epub", underlined: 0, assets_written: false, format: "epub", xml_characters_removed: count,
+    }) });
+    rig.bar.run("epub");
+    await settle();
+    const message = rig.dones()[0];
+    expect(message).toContain("/exports/book.epub");
+    if (count === 0) expect(message).not.toContain("control character");
+    else {
+      expect(message).toContain(`Replaced or removed ${count} invisible control character${count === 1 ? "" : "s"} that EPUB and Word files cannot hold`);
+      expect(message).toContain("your manuscript is unchanged");
+    }
+  });
+
   test.each([false, true])("asset guidance follows the host's publication result: %s", async (assets_written) => {
     for (const underlined of [0, 2]) {
       const rig = mount({

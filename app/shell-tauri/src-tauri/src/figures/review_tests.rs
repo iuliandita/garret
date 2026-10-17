@@ -305,3 +305,65 @@ fn proposed_sql_enforces_registry_integrity_and_immutability() {
     }
     assert_eq!(f.store.figure_assets().unwrap(), f.assets);
 }
+
+#[cfg(unix)]
+#[test]
+fn unsafe_unregistered_figure_directory_is_reported_even_without_registry_rows() {
+    for symlink in [false, true] {
+        let root = tempfile::tempdir().unwrap();
+        let db = root.path().join("book.db");
+        Store::open(&db).unwrap();
+        let dir = pictures::dir_for(&db);
+        if symlink {
+            let originals = root.path().join("originals");
+            fs::create_dir(&originals).unwrap();
+            fs::write(originals.join("fig-019b1234-5678-7abc-8def-123456789abc.png"), tests::PNG).unwrap();
+            std::os::unix::fs::symlink(&originals, &dir).unwrap();
+        } else {
+            fs::write(&dir, b"not a directory").unwrap();
+        }
+        let out = root.path().join("salvage");
+        let result = crate::salvage::salvage(&db, &out).unwrap();
+        assert_eq!(result.figure_originals_recovered, 0);
+        assert!(!result.complete);
+        assert!(result.losses.iter().any(|loss| loss.kind == "unreadable_figure_directory"));
+    }
+}
+
+#[test]
+fn unreadable_registry_originals_enter_the_bundle_under_both_safe_extensions() {
+    let f = fixture();
+    let asset = &f.assets[2];
+    let conn = rusqlite::Connection::open(&f.db).unwrap();
+    crate::store::figure_assets::test_support::allow_corruption(&conn);
+    conn.execute("UPDATE figure_asset SET bytes='unreadable' WHERE id=?1", [&asset.id]).unwrap();
+    let jpg = format!("fig-{}.jpg", asset.id);
+    fs::write(pictures::dir_for(&f.db).join(&jpg), include_bytes!("../../fixtures/two-halves.jpg")).unwrap();
+    let point = f.root.path().join("incomplete.point");
+    let result = backup_bundle::write(&f.db, &f.store, &point).unwrap();
+    assert!(result.database_verified);
+    assert!(!result.verified);
+    assert!(result.errors.iter().any(|e| e.contains("unreadable registry record")));
+    assert_eq!(fs::read(point.join(backup_bundle::PICTURES_NAME).join(&asset.stored_name)).unwrap(), tests::PNG);
+    assert_eq!(fs::read(point.join(backup_bundle::PICTURES_NAME).join(jpg)).unwrap(), include_bytes!("../../fixtures/two-halves.jpg"));
+}
+
+#[test]
+fn tableless_schema_17_figures_in_live_bin_and_history_are_backup_gaps() {
+    for location in ["live", "bin", "history"] {
+        let f = fixture();
+        let conn = rusqlite::Connection::open(&f.db).unwrap();
+        conn.execute_batch(r#"DROP TABLE figure_asset; DELETE FROM doc_version; UPDATE doc SET body='{"type":"doc","content":[]}'"#).unwrap();
+        let id = &f.items[usize::from(location == "bin")];
+        if location == "history" {
+            conn.execute("INSERT INTO doc_version(item_id,blob_key,created_at,words) VALUES(?1,'automatic-figure',100,0)", [id]).unwrap();
+        } else {
+            conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![body(&f.assets[0]),id]).unwrap();
+        }
+        let point = f.root.path().join("incomplete.point");
+        let result = backup_bundle::write(&f.db, &f.store, &point).unwrap();
+        assert!(result.database_verified, "{location}: {:?}", result.errors);
+        assert!(!result.verified, "{location}");
+        assert!(result.errors.iter().any(|e| e.contains("has no readable registry mapping")), "{location}: {:?}", result.errors);
+    }
+}

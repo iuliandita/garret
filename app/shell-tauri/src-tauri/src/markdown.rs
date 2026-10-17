@@ -94,7 +94,8 @@ pub(crate) fn is_dialect(source: &str) -> bool {
     source
         .trim_start_matches('\u{feff}')
         .lines()
-        .any(|line| line.starts_with("<!-- garret-document-format:") || line.starts_with(FIGURE))
+        .next()
+        .is_some_and(|line| line.starts_with("<!-- garret-document-format:"))
 }
 
 fn uuid() -> String {
@@ -261,6 +262,16 @@ pub(crate) fn parse(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn unmarked_garret_comments_import_as_ordinary_prose() {
+        for comment in ["<!-- garret-figure: arbitrary comment -->", "<!-- garret-document-format: 18 -->"] {
+            let source = format!("# Book\n\n## Scene\n\nprose\n{comment}\n");
+            assert!(!is_dialect(&source));
+            assert_eq!(crate::import::parse_package(&source, "book", std::path::Path::new(".")).unwrap(), crate::import::parse(&source, "book"));
+        }
+        assert!(is_dialect("<!-- garret-document-format: 19 -->\n# Book"));
+    }
 
     #[test]
     fn dialect_refuses_unknown_metadata_unresolved_notes_and_unbounded_placements() {

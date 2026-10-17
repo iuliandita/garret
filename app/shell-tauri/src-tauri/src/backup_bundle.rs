@@ -106,7 +106,7 @@ fn references(db: &Path) -> Result<(Vec<String>, Vec<String>), String> {
         }
     }
     let errors = match store.figure_inventory() {
-        Ok(registry) => { names.extend(registry.assets.into_keys()); registry.errors }
+        Ok(registry) => { names.extend(registry.assets.into_keys()); names.extend(registry.uncertain_names); registry.errors }
         Err(error) => vec![format!("figure references unreadable: {error}")],
     };
     Ok((names.into_iter().collect(), errors))

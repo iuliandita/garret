@@ -674,7 +674,7 @@ fn scoped_markdown_uses_the_publication_plan_and_round_trips_its_package() {
     for numbering in ["book", "story", "chapter"] {
         fixture.store.set_meta("notes.numbering", numbering).unwrap();
         for story in [None, Some(fixture.stories[0].as_str())] {
-            let (written, _, _, _) = render_scope_policy(&fixture.db, "Collected", crate::export::Format::Markdown,
+            let (written, _, _, _, _) = render_scope_policy(&fixture.db, "Collected", crate::export::Format::Markdown,
                 &crate::identity::Vault::default(), crate::strings::Strings::english(), None, story, true).unwrap();
             let text = written.text();
             assert!(text.starts_with(crate::markdown::MARKER));
@@ -794,7 +794,7 @@ fn pdf_publication_reuses_scopes_assets_and_refuses_disabled_production() {
         for selected in [false, true] {
             let story = selected.then_some(fixture.stories[0].as_str());
             with_plan(&fixture, story, |book, _, plan| {
-                let (written, _, _, _) = render_scope_policy(&fixture.db, "Collected", crate::export::Format::Pdf,
+                let (written, _, _, _, _) = render_scope_policy(&fixture.db, "Collected", crate::export::Format::Pdf,
                     &crate::identity::Vault::default(), crate::strings::Strings::english(), None, story, true).unwrap();
                 let html = written.text();
                 let flow = html.split("<div id=\"proof-flow\">\n").nth(1).unwrap().split("</div>\n<div id=\"proof-leaves\">").next().unwrap();
@@ -830,4 +830,64 @@ fn pdf_publication_reuses_scopes_assets_and_refuses_disabled_production() {
     assert!(!dest.exists());
     assert_eq!(fixture.store.user_version().unwrap(), 17);
     assert!(!store::document_format::new_nodes_allowed());
+}
+
+fn publishing_fixture<T>(run: impl FnOnce() -> T) -> T {
+    assert!(!PUBLICATION_FIXTURE.replace(true));
+    struct Reset;
+    impl Drop for Reset {
+        fn drop(&mut self) { PUBLICATION_FIXTURE.set(false); }
+    }
+    let _reset = Reset;
+    run()
+}
+
+#[test]
+fn markdown_package_replace_refusal_reaches_save_as_and_export_wiring() {
+    let fixture = fixture();
+    let format = crate::export::Format::Markdown;
+    let vault = crate::identity::Vault::default();
+    let strings = crate::strings::Strings::english();
+    publishing_fixture(|| {
+        let refusal = "cannot use Export as or replace files";
+        assert!(check_save_as(&fixture.db, "Collected", format, &vault, strings, None).unwrap_err().contains(refusal));
+        let dest = fixture.root.path().join("existing.md");
+        std::fs::write(&dest, b"writer's file").unwrap();
+        let error = export_scope_into_with(&fixture.db, "Collected", &dest, Dest::Replace, format,
+            &vault, strings, None, |_| panic!("conversion must not run for a refused replacement")).unwrap_err();
+        assert!(error.contains(refusal), "{error}");
+        assert_eq!(std::fs::read(&dest).unwrap(), b"writer's file");
+        assert!(!fixture.root.path().join("assets").exists());
+        let dest = fixture.root.path().join("fresh.md");
+        let result = export_scope_into_with(&fixture.db, "Collected", &dest, Dest::New, format, &vault, strings, None, Ok).unwrap();
+        assert!(result.assets_written);
+        assert!(dest.is_file());
+    });
+}
+
+#[test]
+fn planned_xml_exports_strip_prose_including_whole_runs_and_count_only_the_selected_story() {
+    let fixture = fixture();
+    let conn = rusqlite::Connection::open(&fixture.db).unwrap();
+    for id in &fixture.scenes {
+        let mut body: serde_json::Value = serde_json::from_str(&fixture.store.load_doc(id).unwrap().body).unwrap();
+        body["content"][0]["content"].as_array_mut().unwrap().push(json!({"type":"text","text":"\u{b}"}));
+        conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![body.to_string(),id]).unwrap();
+    }
+    publishing_fixture(|| {
+        for format in [crate::export::Format::Epub, crate::export::Format::Docx] {
+            for (story, expected) in [(None, 2), (Some(fixture.stories[0].as_str()), 1)] {
+                let dest = fixture.root.path().join(format!("{}-{expected}",format.id()));
+                let result = export_scope_into_with(&fixture.db, "Collected", &dest, Dest::New, format,
+                    &crate::identity::Vault::default(), crate::strings::Strings::english(), story, Ok).unwrap();
+                assert_eq!(result.xml_characters_removed, expected);
+                let entries = crate::epub::read_zip(&std::fs::read(dest).unwrap()).unwrap();
+                for (path, bytes) in entries {
+                    if path.ends_with(".xml") || path.ends_with(".xhtml") {
+                        assert!(!bytes.contains(&11), "{path}");
+                    }
+                }
+            }
+        }
+    });
 }

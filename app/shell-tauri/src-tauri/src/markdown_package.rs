@@ -129,6 +129,16 @@ fn publish_with(
     assets: &BTreeMap<String, Vec<u8>>,
     before_markdown: impl FnOnce() -> Result<(), String>,
 ) -> Result<(), String> {
+    publish_with_link(dest, bytes, assets, before_markdown, |from, to| fs::hard_link(from, to))
+}
+
+fn publish_with_link(
+    dest: &Path,
+    bytes: &[u8],
+    assets: &BTreeMap<String, Vec<u8>>,
+    before_markdown: impl FnOnce() -> Result<(), String>,
+    link: impl Fn(&Path, &Path) -> std::io::Result<()>,
+) -> Result<(), String> {
     let root = dest
         .parent()
         .ok_or("missing Markdown destination directory")?;
@@ -148,6 +158,17 @@ fn publish_with(
     }
     let stage = root.join(format!(".markdown-stage-{}", uuid::Uuid::now_v7()));
     fs::create_dir(&stage).map_err(|e| e.to_string())?;
+    let probe = stage.join("link-probe");
+    let probe_link = stage.join("link-probe-copy");
+    let support = write_new(&probe, b"Markdown package probe")
+        .and_then(|_| link(&probe, &probe_link).map_err(|e| format!(
+            "This filesystem cannot hold a Markdown package because it does not support hard links: {e}"
+        )))
+        .and_then(|_| fs::remove_file(&probe_link).and_then(|_| fs::remove_file(&probe)).map_err(|e| e.to_string()));
+    if let Err(error) = support {
+        fs::remove_dir_all(&stage).map_err(|cleanup| format!("{error}; probe stage could not be removed: {cleanup}"))?;
+        return Err(error);
+    }
     let mut assets_created = false;
     let result: Result<(), String> = (|| {
         fs::create_dir(stage.join("assets")).map_err(|e| e.to_string())?;
@@ -158,11 +179,11 @@ fn publish_with(
         fs::create_dir(root.join("assets")).map_err(|e| e.to_string())?;
         assets_created = true;
         for path in assets.keys() {
-            fs::hard_link(stage.join(path), root.join(path)).map_err(|e| e.to_string())?;
+            link(&stage.join(path), &root.join(path)).map_err(|e| e.to_string())?;
         }
         sync_directory(&root.join("assets"))?;
         before_markdown()?;
-        fs::hard_link(stage.join("manuscript.md"), dest).map_err(|e| e.to_string())?;
+        link(&stage.join("manuscript.md"), dest).map_err(|e| e.to_string())?;
         sync_directory(root)?;
         Ok(())
     })();
@@ -195,6 +216,36 @@ mod tests {
 
     fn read_asset(root: &Path, path: &str) -> Result<Vec<u8>, String> {
         Root::new(root)?.read_asset(path)
+    }
+
+    #[test]
+    fn failed_probe_cleanup_removes_the_empty_stage() {
+        let out = tempfile::tempdir().unwrap();
+        let dest = out.path().join("book.md");
+        let error = publish_with_link(&dest, b"book", &BTreeMap::new(), || panic!("publication reached"), |from, to| {
+            fs::hard_link(from, to)?;
+            fs::remove_file(to)
+        }).unwrap_err();
+        assert!(!error.is_empty());
+        assert_eq!(fs::read_dir(out.path()).unwrap().count(), 0);
+        publish(&dest, b"book", &BTreeMap::new()).unwrap();
+    }
+
+    #[test]
+    fn unsupported_hard_links_refuse_before_assets_and_leave_no_debris() {
+        let out = tempfile::tempdir().unwrap();
+        let dest = out.path().join("book.md");
+        let assets = BTreeMap::from([("assets/image.png".into(), b"original".to_vec())]);
+        let error = publish_with_link(&dest, b"book", &assets, || panic!("publication reached"), |from, to| {
+            assert_eq!(from.parent(), to.parent());
+            assert!(!out.path().join("assets").exists());
+            Err(std::io::Error::from(std::io::ErrorKind::Unsupported))
+        }).unwrap_err();
+        assert!(error.contains("This filesystem cannot hold a Markdown package"), "{error}");
+        assert!(error.contains("hard links"), "{error}");
+        assert_eq!(fs::read_dir(out.path()).unwrap().count(), 0);
+        publish(&dest, b"book", &assets).unwrap();
+        assert_eq!(fs::read(dest).unwrap(), b"book");
     }
 
     #[test]
