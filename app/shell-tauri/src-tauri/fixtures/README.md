@@ -1,5 +1,26 @@
 # Picture fixtures
 
+`partial-cover.png` and `partial-cover.jpg` retain valid 1200x1800 headers and
+only the first 150000/300000 bytes of each file. WebKit paints partial covers
+until an explicit `decode()` rejection makes the image unusable. The PDF test
+requires an image on the cover leaf, rather than merely successful export.
+Generate these fixtures from this directory:
+
+    python3 - <<'PY'
+    from io import BytesIO
+    from pathlib import Path
+    from random import Random
+    from PIL import Image
+
+    image = Image.frombytes("RGB", (1200, 1800), Random(293).randbytes(1200 * 1800 * 3))
+    for extension, format, limit in [("png", "PNG", 150000), ("jpg", "JPEG", 300000)]:
+        output = BytesIO()
+        image.save(output, format=format)
+        data = output.getvalue()
+        assert len(data) > limit
+        Path(f"partial-cover.{extension}").write_bytes(data[:limit])
+    PY
+
 Binary, and therefore not readable in a diff — so the recipe is here, because
 this repo's rule is that fixtures stay REPRODUCIBLE. Each was produced once with
 Pillow and checked in.

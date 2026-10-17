@@ -119,14 +119,29 @@ developer-signed release. Local determinism alone does not establish F-Droid
 reproducibility. Follow the [F-Droid maintainer checklist](../fastlane/fdroid/README.md)
 before submitting or enabling the disabled draft recipe.
 
-The display-gated proof tests have a 90-second watchdog on a separate OS thread,
+The display-gated proof tests have per-test watchdogs on a separate OS thread:
+90 seconds for rich paragraphs and 180 seconds for notes, figures, and plates,
 armed before GTK initialization. It reports the last phase and thread wait
 channels before aborting, even if GTK stops dispatching. Core dumps are disabled
-in these isolated test processes. The paginator CI step retains its 300-second
+in these isolated test processes. The paginator CI step runs both fixtures in
+separate processes under the same X display, with a 420-second
 process timeout and 30-second kill grace, including compilation and startup.
 It uses an isolated X display, software rendering, disabled compositing and
 DMA-BUF rendering, and no accessibility bridge.
 The underlying intermittent hang remains unconfirmed and tracked in #324.
+
+Install Poppler tools for PDF text and image inspection. The publication fixture
+checks delayed, rejected, and stalled figure decoding; damaged PNG/JPEG covers
+remain non-fatal and never enter the decode barrier. Truncated mid-data PNG/JPEG
+covers must retain a cover-page image in the printed PDF; a header-only fixture
+cannot detect lost partial painting. The disabled-production PDF assertion must
+require the explicit build refusal and fail when that gate is removed.
+PNG eXIf and JPEG EXIF fixtures compare decoded dimensions,
+placed aspect ratio, and DPI. Check heading companions on interior plates and
+caption containment at the smaller, spaced caption size. Render and inspect
+representative PDF pages after changing these placement rules. Production stays
+at schema 17 with the write and publication gates closed; these fixtures add no
+migration or activation.
 
 macOS packaging retries the specific hdiutil resource-busy creation failure up
 to three attempts, waiting 10 seconds between attempts. It prints disk-image

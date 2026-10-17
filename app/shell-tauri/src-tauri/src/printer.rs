@@ -42,6 +42,12 @@ struct PaginatorOutcome {
     error: Option<String>,
 }
 
+#[cfg(any(windows, test))]
+pub(crate) fn proof_pending(json: &str) -> bool {
+    serde_json::from_str::<PaginatorOutcome>(json)
+        .is_ok_and(|outcome| outcome.report.is_none() && outcome.error.is_none())
+}
+
 pub(crate) fn proof_report(json: &str) -> Result<ProofReport, String> {
     let outcome: PaginatorOutcome = serde_json::from_str(json)
         .map_err(|e| format!("{e}: the proof reported nothing this build can read"))?;
@@ -221,11 +227,9 @@ fn render_with_timeout(
         let parked = parked.clone();
         let timed_out = timed_out.clone();
         let completed = completed.clone();
-        // The paginator has already run by the time the load finishes -- it is
-        // a classic synchronous script at the end of the body -- so this reads
-        // a result rather than waiting for one.
-        view.evaluate_javascript(
-            "JSON.stringify({report:window.__proof || null,error:window.__proofError || null})",
+        view.call_async_javascript_function(
+            "await window.__proofReady; return JSON.stringify({report:window.__proof || null,error:window.__proofError || null})",
+            None,
             None,
             None,
             None::<&gio::Cancellable>,
@@ -589,10 +593,21 @@ mod tests {
         page_um: (i64, i64),
         watchdog: &TestWatchdog,
     ) -> Result<Printed, String> {
+        render_for_test_with_timeout(html, dest, page_um, watchdog, 15)
+    }
+
+    #[cfg(target_os = "linux")]
+    fn render_for_test_with_timeout(
+        html: &str,
+        dest: Option<&std::path::Path>,
+        page_um: (i64, i64),
+        watchdog: &TestWatchdog,
+        timeout_seconds: u32,
+    ) -> Result<Printed, String> {
         watchdog.phase("setting up WebKit render");
         let result = std::rc::Rc::new(std::cell::RefCell::new(None));
         let done = result.clone();
-        render_with_timeout(html, dest, page_um, 15, move |value| {
+        render_with_timeout(html, dest, page_um, timeout_seconds, move |value| {
             *done.borrow_mut() = Some(value);
             gtk::main_quit();
         });
@@ -601,6 +616,14 @@ mod tests {
         watchdog.phase("checking render result");
         let answer = result.borrow_mut().take().expect("render answered");
         answer
+    }
+
+    #[test]
+    fn only_an_unfinished_paginator_is_retried() {
+        assert!(proof_pending(r#"{"report":null,"error":null}"#));
+        assert!(!proof_pending(r#"{"report":null,"error":"image failed"}"#));
+        assert!(!proof_pending(r#"{"report":{"leaves":1,"truncated":false,"fontResolved":true,"pages":[]},"error":null}"#));
+        assert!(!proof_pending("unreadable"));
     }
 
     #[test]
@@ -842,6 +865,179 @@ mod tests {
         .unwrap();
         assert!(!stacked.report.pages[0].contains("Part"), "{:?}", stacked.report.pages);
         assert!(stacked.report.pages[1].contains("Part"));
+    }
+
+    #[test]
+    #[ignore = "requires an isolated X display, WebKit and Poppler tools"]
+    fn notes_figures_and_plates_decode_before_layout_and_print_intact() {
+        use std::process::Command;
+        let watchdog = TestWatchdog::start(std::time::Duration::from_secs(180));
+        gtk::init().unwrap();
+        let directory = tempfile::tempdir().unwrap();
+        let dest = directory.path().join("notes-figures.pdf");
+        let design = crate::design::default_design();
+        let page = (design.page.width_um, design.page.height_um);
+        let document = crate::pdf::publication_tests::document("Platecaption: the complete survey occupies its own interior leaf.");
+        let delayed = document.replace("<script>function proofFigureDpi", r#"<script>
+            var originalDecode = HTMLImageElement.prototype.decode;
+            var decodeCalls = 0, decoded = 0;
+            HTMLImageElement.prototype.decode = function() {
+                decodeCalls += 1;
+                var image = this;
+                return new Promise(function(resolve) { setTimeout(resolve, 120); })
+                  .then(function() { return originalDecode.call(image); })
+                  .then(function() { decoded += 1; });
+            };
+            function proofFigureDpi"#);
+        let delayed = delayed.replace("  try {\n  var current", "  try {\n  if (decoded !== 3) throw new Error('pagination started before decode');\n  var current");
+        assert_ne!(delayed, document, "decode probe was not installed");
+        let probe = r#"<script>
+          window.__proofReady.then(function() {
+            if (decodeCalls !== 3 || decoded !== 3) throw new Error('decode barrier missing');
+            var geometry = [];
+            document.querySelectorAll('figure').forEach(function(figure) {
+              var box = figure.closest('.proof-text').getBoundingClientRect();
+              var image = figure.querySelector('img').getBoundingClientRect();
+              var caption = figure.querySelector('figcaption').getBoundingClientRect();
+              var page = figure.closest('.proof-leaf');
+              if (image.bottom > caption.top + 1 || caption.bottom > box.bottom + 1 || image.top < box.top - 1 || image.left < box.left - 1 || image.right > box.right + 1) throw new Error('figure containment failed');
+              var captionSize = parseFloat(getComputedStyle(figure.querySelector('figcaption')).fontSize);
+              var bodySize = parseFloat(getComputedStyle(figure).fontSize);
+              if (Math.abs(captionSize / bodySize - 0.9) > 0.01 || caption.top - image.bottom < captionSize * 0.39) throw new Error('caption size or spacing missing');
+              geometry.push({id:figure.getAttribute('data-instance'), page:Number(page.getAttribute('data-folio')), kind:page.getAttribute('data-kind'), image:{x:image.left-box.left,y:image.top-box.top,width:image.width,height:image.height}, caption:{y:caption.top-box.top,height:caption.height}, column:{width:box.width,height:box.height}, decoded:decoded});
+            });
+            window.__proof.pages.push(JSON.stringify(geometry));
+          }).catch(function(error) { window.__proofError = error.message; });
+        </script>"#;
+        let delayed = delayed.replace("</body>", &format!("{probe}</body>"));
+        let mut printed = render_for_test(&delayed, Some(&dest), page, &watchdog).unwrap();
+        let geometry: serde_json::Value = serde_json::from_str(&printed.report.pages.pop().unwrap()).unwrap();
+        assert_eq!(geometry.as_array().unwrap().len(), 3);
+        assert_eq!(printed.report.figures.len(), 3);
+        for check in &printed.report.figures {
+            assert!(check.dpi > 0.0);
+            assert_eq!(check.warning, check.dpi < 300.0);
+            assert_eq!(check.flag, check.dpi < 200.0);
+        }
+        let plate = printed.report.pages.iter().find(|p| p.contains("data-kind=\"interior\"")).unwrap();
+        assert!(plate.contains("Platecaption:"));
+        assert!(!plate.contains("Afterplate:"));
+        assert!(!plate.contains("The river"));
+        assert!(plate.contains("class=\"proof-folio\">"));
+        let last = printed.report.pages.last().unwrap();
+        assert!(last.contains("Crossingnote:"), "book notes must follow the last chapter");
+        assert_eq!(crate::pdf::pdf_page_count(printed.bytes.as_ref().unwrap()), Some(printed.report.leaves));
+        let outside = |program: &str, args: &[&str]| {
+            let output = Command::new(program).args(args).output().unwrap();
+            assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+            String::from_utf8(output.stdout).unwrap()
+        };
+        let text = outside("pdftotext", &["-layout", dest.to_str().unwrap(), "-"]);
+        let pages: Vec<_> = text.split('\u{c}').collect();
+        let plate_page = pages.iter().position(|text| text.contains("Platecaption:")).unwrap() + 1;
+        let images = outside("pdfimages", &["-list", dest.to_str().unwrap()]);
+        assert!(images.lines().skip(2).any(|line| line.split_whitespace().next().and_then(|s| s.parse::<usize>().ok()) == Some(plate_page)));
+        assert!(!pages[plate_page - 1].contains("Afterplate:"));
+        assert!(text.find("Arrivalprose:") < text.find("Crossingnote:"));
+        assert!(text.contains("Second line retained."));
+        if let Some(out) = std::env::var_os("GARRET_PDF_TEST_OUTPUT") {
+            let out = std::path::PathBuf::from(out);
+            std::fs::create_dir_all(&out).unwrap();
+            std::fs::copy(&dest, out.join("notes-figures.pdf")).unwrap();
+            std::fs::write(out.join("geometry.json"), serde_json::to_string_pretty(&geometry).unwrap()).unwrap();
+            std::fs::write(out.join("report.json"), serde_json::to_string_pretty(&printed.report).unwrap()).unwrap();
+            std::fs::write(out.join("images.txt"), images).unwrap();
+            std::fs::write(out.join("text.txt"), &text).unwrap();
+        }
+        assert!(text.contains("***"), "scene separator missing from the PDF");
+        let start = document.find("<figure class=\"proof-figure\"").unwrap();
+        let end = start + document[start..].find("</figure>").unwrap() + "</figure>".len();
+        let flow_start = document.find("<div id=\"proof-flow\">\n").unwrap() + "<div id=\"proof-flow\">\n".len();
+        let flow_end = flow_start + document[flow_start..].find("</div>\n<div id=\"proof-leaves\">").unwrap();
+        let heading_figure = format!("{}<h2>Survey</h2>{}{}", &document[..flow_start], &document[start..end], &document[flow_end..]);
+        let heading_figure = render_for_test(&heading_figure, None, page, &watchdog).unwrap();
+        assert_eq!(heading_figure.report.leaves, 1, "the image must shrink below its heading");
+        assert!(heading_figure.report.pages[0].contains("Fullcaption:"));
+        let plate_start = document.find("<figure class=\"proof-figure\" data-proof-leaf=\"interior\"").unwrap();
+        let plate_end = plate_start + document[plate_start..].find("</figure>").unwrap() + "</figure>".len();
+        for prose in ["", "<p>Beforeplateheading: preceding prose stays behind.</p>"] {
+            let heading_plate = format!("{}{prose}<h2>Platepart</h2><div class=\"ornament\">*</div><h3>Platesurvey</h3>{}{}", &document[..flow_start], &document[plate_start..plate_end], &document[flow_end..]);
+            let heading_plate = render_for_test(&heading_plate, None, page, &watchdog).unwrap();
+            assert_eq!(heading_plate.report.leaves, if prose.is_empty() { 1 } else { 2 });
+            let plate = heading_plate.report.pages.last().unwrap();
+            assert!(plate.contains("Platepart") && plate.contains("Platesurvey") && plate.contains("Platecaption:"));
+            assert!(!plate.contains("Beforeplateheading:"));
+        }
+        let rotated = crate::pdf::publication_tests::exif_document();
+        let rotated = rotated.replace("</body>", r#"<script>
+          window.__proofReady.then(function() {
+            document.querySelectorAll('figure').forEach(function(figure) {
+              var image = figure.querySelector('img').getBoundingClientRect();
+              var width = Number(figure.getAttribute('data-pixels-width'));
+              var height = Number(figure.getAttribute('data-pixels-height'));
+              if (figure.getAttribute('data-orientation') !== '6' || Math.abs(image.width / image.height - height / width) > 0.001) throw new Error('EXIF print geometry is not oriented');
+              var expected = Math.min(height / (image.width / 96), width / (image.height / 96));
+              if (Math.abs(Number(figure.getAttribute('data-dpi')) - expected) > 0.01) throw new Error('EXIF DPI is not oriented');
+            });
+          }).catch(function(error) { window.__proofError = error.message; });
+        </script></body>"#);
+        let rotated = render_for_test(&rotated, None, page, &watchdog).unwrap();
+        assert_eq!(rotated.report.figures.len(), 3);
+        assert!(rotated.report.figures.iter().all(|figure| figure.warning && figure.flag));
+        let png = crate::pdf::publication_tests::png_exif_document();
+        let png = png.replace("</body>", r#"<script>
+          window.__proofReady.then(function() {
+            document.querySelectorAll('figure').forEach(function(figure) {
+              var image = figure.querySelector('img');
+              var box = image.getBoundingClientRect();
+              if (figure.getAttribute('data-orientation') !== '6' || image.naturalWidth !== 300 || image.naturalHeight !== 200) throw new Error('PNG eXIf fixture did not retain raw geometry');
+              if (Math.abs(box.width / box.height - 1.5) > 0.001) throw new Error('PNG eXIf distorted the proof');
+              var expected = Math.min(300 / (box.width / 96), 200 / (box.height / 96));
+              if (Math.abs(Number(figure.getAttribute('data-dpi')) - expected) > 0.01) throw new Error('PNG eXIf DPI does not match displayed pixels');
+            });
+          }).catch(function(error) { window.__proofError = error.message; });
+        </script></body>"#);
+        let png = render_for_test(&png, None, page, &watchdog).unwrap();
+        assert_eq!(png.report.figures.len(), 3);
+        for (bytes, mime) in [
+            (&include_bytes!("../fixtures/black-and-clear.png")[..40], "image/png"),
+            (&include_bytes!("../fixtures/two-halves.jpg")[..40], "image/jpeg"),
+        ] {
+            let legacy = crate::pdf::publication_tests::legacy_cover_document(bytes, mime).replace("</body>", r#"<script>
+              Promise.resolve(window.__proofReady).then(function() {
+                if (document.querySelector('.proof-plate img').naturalWidth !== 0) throw new Error('damaged cover fixture decoded');
+              }).catch(function(error) { window.__proofError = error.message; });
+            </script></body>"#);
+            let legacy = render_for_test(&legacy, Some(&dest), page, &watchdog).unwrap();
+            assert!(legacy.report.figures.is_empty());
+            assert!(legacy.report.pages[0].contains("data-kind=\"plate\""));
+            assert!(outside("pdftotext", &["-layout", dest.to_str().unwrap(), "-"]).contains("Legacycoverprose:"));
+            assert_eq!(crate::pdf::pdf_page_count(legacy.bytes.as_ref().unwrap()), Some(legacy.report.leaves));
+        }
+        for (bytes, mime) in [
+            (include_bytes!("../fixtures/partial-cover.png").as_slice(), "image/png"),
+            (include_bytes!("../fixtures/partial-cover.jpg").as_slice(), "image/jpeg"),
+        ] {
+            let legacy = crate::pdf::publication_tests::legacy_cover_document(bytes, mime);
+            let legacy = render_for_test(&legacy, Some(&dest), page, &watchdog).unwrap();
+            assert!(legacy.report.figures.is_empty());
+            let images = outside("pdfimages", &["-list", dest.to_str().unwrap()]);
+            assert!(images.lines().skip(2).any(|line| {
+                let columns: Vec<_> = line.split_whitespace().collect();
+                columns.first() == Some(&"1") && columns.get(3) == Some(&"1200") && columns.get(4) == Some(&"1800")
+            }), "partial {mime} cover lost its image: {images}");
+            assert!(outside("pdftotext", &["-layout", dest.to_str().unwrap(), "-"]).contains("Legacycoverprose:"));
+        }
+        let refused = crate::pdf::publication_tests::document(&"Caption line\n".repeat(100));
+        let error = match render_for_test(&refused, None, page, &watchdog) { Ok(_) => panic!("unfit caption printed"), Err(error) => error };
+        assert_eq!(error, "proof layout failed: a proof figure caption exceeds the page");
+        let broken = document.replace("<script>function proofFigureDpi", "<script>HTMLImageElement.prototype.decode = function() { return Promise.reject(new Error('broken figure')); }; function proofFigureDpi");
+        assert_ne!(broken, document);
+        let error = match render_for_test(&broken, None, page, &watchdog) { Ok(_) => panic!("undecoded image printed"), Err(error) => error };
+        assert_eq!(error, "proof layout failed: a proof image did not decode");
+        let stalled = document.replace("<script>function proofFigureDpi", "<script>HTMLImageElement.prototype.decode = function() { return new Promise(function() {}); }; function proofFigureDpi");
+        let error = match render_for_test_with_timeout(&stalled, None, page, &watchdog, 2) { Ok(_) => panic!("stalled decode printed"), Err(error) => error };
+        assert_eq!(error, "the proof did not finish within 2 seconds");
     }
 
     #[test]

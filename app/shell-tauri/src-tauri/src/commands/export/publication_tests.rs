@@ -734,7 +734,7 @@ fn markdown_conversion_stays_disabled_before_any_publication_or_import_writes() 
     let dest = fixture.root.path().join("refused.md");
     let before = fixture.store.documents().unwrap();
     assert!(export_as(&fixture.db, "Collected", &dest, crate::export::Format::Markdown,
-        &crate::identity::Vault::default(), crate::strings::Strings::english()).is_err());
+        &crate::identity::Vault::default(), crate::strings::Strings::english()).unwrap_err().contains("cannot be exported by this build"));
     assert!(!dest.exists()); assert!(!fixture.root.path().join("assets").exists());
     assert!(check_save_as(&fixture.db, "Collected", crate::export::Format::Markdown,
         &crate::identity::Vault::default(), crate::strings::Strings::english(), None).is_err());
@@ -784,4 +784,50 @@ fn mirror_fixture_copies_require_the_new_schema_and_use_relative_hashed_assets()
         assert!(crate::mirror::pass(&fixture.db, "book", "Book", &disabled, 0, &Default::default()).is_err());
         assert!(!disabled.exists());
     });
+}
+
+#[test]
+fn pdf_publication_reuses_scopes_assets_and_refuses_disabled_production() {
+    let fixture = fixture();
+    for numbering in ["book", "chapter", "story"] {
+        fixture.store.set_meta("notes.numbering", numbering).unwrap();
+        for selected in [false, true] {
+            let story = selected.then_some(fixture.stories[0].as_str());
+            with_plan(&fixture, story, |book, _, plan| {
+                let (written, _, _, _) = render_scope_policy(&fixture.db, "Collected", crate::export::Format::Pdf,
+                    &crate::identity::Vault::default(), crate::strings::Strings::english(), None, story, true).unwrap();
+                let html = written.text();
+                let flow = html.split("<div id=\"proof-flow\">\n").nth(1).unwrap().split("</div>\n<div id=\"proof-leaves\">").next().unwrap();
+                for note in &plan.notes {
+                    assert!(flow.contains(&format!("<sup class=\"proof-noteref\">{}</sup>", note.number)));
+                    assert!(flow.contains(&format!("<p class=\"proof-note\">{}. {}", note.number, crate::epub::xml_escape(&note.body))));
+                }
+                for (end, groups) in &plan.endnotes {
+                    let rows: Vec<_> = book.front.iter().chain(book.chapters).chain(book.back).collect();
+                    let end_index = rows.iter().position(|row| row.0 == *end).unwrap();
+                    let begin = flow.find(&format!("id=\"{}\"", crate::pdf::anchor_id(end))).unwrap();
+                    let limit = rows.get(end_index + 1).map(|row| flow.find(&format!("id=\"{}\"", crate::pdf::anchor_id(&row.0))).unwrap()).unwrap_or(flow.len());
+                    let after_heading = &flow[begin..limit];
+                    assert_eq!(after_heading.matches("<p class=\"proof-note\">").count(), groups.values().map(Vec::len).sum::<usize>());
+                    for notes in groups.values() { for index in notes {
+                        assert!(after_heading.contains(&format!("<p class=\"proof-note\">{}. {}", plan.notes[*index].number, crate::epub::xml_escape(&plan.notes[*index].body))));
+                    }}
+                }
+                assert!(flow.contains("data-proof-leaf=\"interior\""));
+                assert!(flow.contains("role=\"separator\""));
+                assert!(flow.contains("Mixed legacy prose"));
+                assert!(!flow.contains("<p><figure"));
+                assert!(flow.contains("alt=\"A &quot;quoted&quot; &lt;view&gt; &amp; sky\""));
+                assert_eq!(flow.matches("data:image/png;base64,").count(), 2);
+                assert_eq!(flow.contains("data:image/jpeg;base64,"), !selected);
+                if selected { assert!(!flow.contains("note 1")); assert!(!flow.contains("caption 1")); }
+            });
+        }
+    }
+    let dest = fixture.root.path().join("refused.pdf");
+    assert!(export_as(&fixture.db, "Collected", &dest, crate::export::Format::Pdf,
+        &crate::identity::Vault::default(), crate::strings::Strings::english()).unwrap_err().contains("cannot be exported by this build"));
+    assert!(!dest.exists());
+    assert_eq!(fixture.store.user_version().unwrap(), 17);
+    assert!(!store::document_format::new_nodes_allowed());
 }

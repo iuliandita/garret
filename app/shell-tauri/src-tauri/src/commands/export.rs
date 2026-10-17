@@ -427,7 +427,12 @@ fn render_scope_policy(
                         fit,
                     }))
             };
-            let html = crate::pdf::proof_document(&crate::pdf::Proof {
+            let plan = if has_new {
+                Some(crate::publication_plan::Plan::from_store(
+                    &book, &bodies, publication_scopes(&store)?, &store, path,
+                )?)
+            } else { None };
+            let html = crate::pdf::proof_document_planned(&crate::pdf::Proof {
                 language: strings.tag(),
                 book: &book,
                 bodies: &bodies,
@@ -441,7 +446,7 @@ fn render_scope_policy(
                 back_cover: cover(crate::covers::SIDE_BACK)?,
                 markup_limit,
                 pin: export_pin.as_ref(),
-            });
+            }, plan.as_ref(), &strings.t("book.notes"))?;
             crate::export::Manuscript {
                 assets: Default::default(),
                 bytes: html.into_bytes(),
@@ -833,6 +838,7 @@ pub(crate) struct PdfPreview {
     /// the measurement that closes it.
     pub(crate) font: String,
     pub(crate) font_resolved: bool,
+    pub(crate) figures: Vec<crate::pdf::FigureCheck>,
     /// KDP's gutter minimum for a book of this many pages, and the inner margin
     /// the writer set, both in micrometres. `None` for a page count outside the
     /// range they print. 040 left this open because nothing knew the page
@@ -1095,6 +1101,7 @@ pub(crate) fn proof_preview_of(
         truncated: report.truncated,
         font: design.font.clone(),
         font_resolved: report.font_resolved,
+        figures: report.figures,
         gutter_minimum_um: crate::pdf::gutter_minimum_um(report.leaves),
         inner_um: design.margins.inner_um,
         items,
@@ -2718,6 +2725,7 @@ mod tests {
         let view = proof_preview_of(&db, "N", |html, page| {
             asked = Some((html.to_string(), page));
             Ok(crate::pdf::ProofReport {
+                figures: Vec::new(),
                 leaves: 312,
                 truncated: true,
                 font_resolved: true,
@@ -2749,6 +2757,7 @@ mod tests {
         drop(seeded_project(&db));
         let view = proof_preview_of(&db, "N", |_, _| {
             Ok(crate::pdf::ProofReport {
+                figures: Vec::new(),
                 leaves: 1,
                 truncated: false,
                 font_resolved: true,
@@ -2772,6 +2781,7 @@ mod tests {
         for resolved in [true, false] {
             let view = proof_preview_of(&db, "N", |_, _| {
                 Ok(crate::pdf::ProofReport {
+                figures: Vec::new(),
                     leaves: 1,
                     truncated: false,
                     font_resolved: resolved,
