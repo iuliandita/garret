@@ -1033,6 +1033,9 @@ fn salvage_report(v: &salvage::Salvage, out_dir: &Path) -> String {
         v.research_resources_recovered,
         v.knowledge.as_deref().map(|f| format!(" ({f})")).unwrap_or_default()
     ));
+    out.push_str(&format!("figures    {} record(s), {} original file(s){}\n",
+        v.figure_assets_recovered, v.figure_originals_recovered,
+        v.figures.as_deref().map(|f| format!(" ({f})")).unwrap_or_default()));
     out.push_str(&format!(
         "research   {} original file(s){}\n",
         v.research_originals_recovered,
@@ -3345,6 +3348,9 @@ mod tests {
                 "covers_recovered",
                 "design",
                 "documents_recovered",
+                "figure_assets_recovered",
+                "figure_originals_recovered",
+                "figures",
                 "items_recovered",
                 "knowledge",
                 "knowledge_links_recovered",

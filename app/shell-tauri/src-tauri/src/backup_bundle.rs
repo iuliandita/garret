@@ -105,7 +105,21 @@ fn references(db: &Path) -> Result<Vec<String>, String> {
             names.insert(name);
         }
     }
+    names.extend(store.figure_inventory().map_err(|e| format!("figure references unreadable: {e}"))?.into_keys());
     Ok(names.into_iter().collect())
+}
+
+fn figure_expectations(db: &Path) -> Result<BTreeMap<String, crate::store::figure_assets::FigureAsset>, String> {
+    let store = Store::open_readonly(db).map_err(|_| "database unreadable".to_string())?;
+    store.figure_assets().map(|assets| assets.into_iter().map(|asset| (asset.stored_name.clone(), asset)).collect())
+        .map_err(|e| format!("figure registry unreadable: {e}"))
+}
+
+fn check_figure(path: &Path, figures: &BTreeMap<String, crate::store::figure_assets::FigureAsset>, name: &str) -> Result<(), String> {
+    if let Some(asset) = figures.get(name) {
+        crate::figures::verify_original(path, asset)?;
+    }
+    Ok(())
 }
 
 fn research_expectations(db: &Path) -> Result<BTreeMap<String, u64>, String> {
@@ -534,7 +548,9 @@ pub fn verify(bundle: &Path) -> Result<(), String> {
     if actual != inventory.expected {
         return Err("pictures directory differs from inventory".into());
     }
+    let figures = figure_expectations(&db_path(bundle))?;
     for asset in &inventory.assets {
+        check_figure(&pictures.join(&asset.name), &figures, &asset.name)?;
         if !name_ok(&asset.name) {
             return Err("unsafe asset name".into());
         }
@@ -652,6 +668,10 @@ pub fn write(source: &Path, reader: &Store, final_path: &Path) -> Result<Written
     let pictures_dir = stage.join(PICTURES_NAME);
     fs::create_dir(&pictures_dir).map_err(|e| format!("picture staging failed: {e}"))?;
     let source_dir = pictures::dir_for(source);
+    let figures = match figure_expectations(&db) {
+        Ok(figures) => figures,
+        Err(error) => { errors.push(error); BTreeMap::new() }
+    };
     let mut assets = Vec::new();
     for name in &expected {
         if !real_directory(&source_dir) {
@@ -661,7 +681,10 @@ pub fn write(source: &Path, reader: &Store, final_path: &Path) -> Result<Written
             continue;
         }
         match copy_original(&source_dir.join(name), &pictures_dir.join(name)) {
-            Ok(asset) => assets.push(asset),
+            Ok(asset) => match check_figure(&pictures_dir.join(name), &figures, name) {
+                Ok(()) => assets.push(asset),
+                Err(error) => { errors.push(error); }
+            },
             Err(class) => errors.push(format!("{name}: {class}")),
         }
     }
@@ -785,6 +808,7 @@ pub fn copy_assets_with_gaps(bundle: &Path, dest_db: &Path) -> Result<Vec<String
     if !real_directory(&dest) {
         return Err("restored pictures destination is not a directory".into());
     }
+    let figures = figure_expectations(&db_path(bundle))?;
     let mut gaps = inventory.errors;
     if let Err(error) = verify(bundle) {
         gaps.push(error);
@@ -804,6 +828,10 @@ pub fn copy_assets_with_gaps(bundle: &Path, dest_db: &Path) -> Result<Vec<String
                 continue;
             };
             let source = bundle.join(PICTURES_NAME).join(name);
+            if let Err(error) = check_figure(&source, &figures, name) {
+                gaps.push(error);
+                continue;
+            }
             if !matches!(hash_regular(&source), Ok((bytes, ref hash)) if bytes == asset.bytes && hash == &asset.hash)
             {
                 gaps.push(format!("{name}: original missing or changed"));
@@ -811,7 +839,8 @@ pub fn copy_assets_with_gaps(bundle: &Path, dest_db: &Path) -> Result<Vec<String
             }
             let target = dest.join(name);
             match copy_original(&source, &target) {
-                Ok(copied) if copied.bytes == asset.bytes && copied.hash == asset.hash => {}
+                Ok(copied) if copied.bytes == asset.bytes && copied.hash == asset.hash
+                    && check_figure(&target, &figures, name).is_ok() => {}
                 _ => {
                     let _ = fs::remove_file(&target);
                     gaps.push(format!("{name}: original changed during restore"));
@@ -873,6 +902,32 @@ mod tests {
         let mut content = String::new();
         file.read_to_string(&mut content).unwrap();
         assert_eq!(content, "readable");
+    }
+
+    #[test]
+    fn rewritten_figure_inventory_cannot_override_the_registry_hash() {
+        let f = crate::figures::tests::fixture();
+        let bundle = f.root.path().join("point.point");
+        assert!(write(&f.db, &f.store, &bundle).unwrap().verified);
+        let asset = &f.assets[2];
+        let path = bundle.join(PICTURES_NAME).join(&asset.stored_name);
+        let mut changed = fs::read(&path).unwrap();
+        changed[20] ^= 1;
+        fs::write(&path, changed).unwrap();
+        let mut inventory = read_inventory(&bundle).unwrap();
+        let (_, hash) = hash_regular(&path).unwrap();
+        inventory.assets.iter_mut().find(|a| a.name == asset.stored_name).unwrap().hash = hash;
+        inventory.checksum = inventory_checksum(&inventory).unwrap();
+        fs::write(bundle.join(INVENTORY_NAME), serde_json::to_vec(&inventory).unwrap()).unwrap();
+        assert!(verify(&bundle).unwrap_err().contains("figure"));
+        let dest = f.root.path().join("partial.db");
+        fs::copy(db_path(&bundle), &dest).unwrap();
+        fs::create_dir(pictures::dir_for(&dest)).unwrap();
+        research::private_dir(&research::dir_for(&dest)).unwrap();
+        let gaps = copy_assets_with_gaps(&bundle, &dest).unwrap();
+        assert!(gaps.iter().any(|gap| gap.contains(&asset.id)));
+        assert!(!pictures::dir_for(&dest).join(&asset.stored_name).exists());
+        assert!(pictures::dir_for(&dest).join(&f.assets[0].stored_name).exists());
     }
 
     fn project() -> (tempfile::TempDir, PathBuf, String) {

@@ -23,6 +23,18 @@ ceiling stays at 17; this adds no migration or upgrade. Existing supported
 documents remain compatible. Keep closed-book backups using the steps below;
 rollback uses the previous application and a complete backup copy.
 
+Figure-original retention is prepared without enabling figure authoring or a
+schema upgrade. The proposed registry migration runs only in isolated tests.
+Shared backup checks include every registered original, even when abandoned or
+referenced only by the bin or automatic history, and compare its SHA-256 against
+the copied database. Missing mappings, unreadable references, missing files, and
+hash mismatches make a copy incomplete. Cast and cover deletion cannot remove
+figure-owned originals. The archive envelope remains version 2; legacy archives
+remain readable. Supporting salvage preserves unknown bodies verbatim, writes
+readable notes and figure placeholders with relative original links, and retains
+registered originals even when automatic text versions are omitted. Salvage
+reports those omissions and layout losses; it is not an editable downgrade.
+
 ## Before upgrading
 
 Close every instance of garret. Make a separate copy of each manuscript's

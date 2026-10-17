@@ -48,6 +48,8 @@ mod mirror_identity;
 mod package_format;
 mod pdf;
 mod pictures;
+mod figures;
+mod figure_salvage;
 mod printer;
 #[cfg(windows)]
 mod printer_windows;
