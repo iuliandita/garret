@@ -23,6 +23,16 @@ databases. Keep the production schema ceiling at 17 and new-node writes disabled
 Exercise history-only originals, canonical hashes, independent cast/cover
 ownership, recovery, transfer, and loss-aware salvage before enabling authoring.
 
+DOCX publication fixtures reuse the shared plan and validate native endnote
+parts, settings separator declarations, scoped numbering starts, inline media,
+and unchanged legacy bytes. Include a non-contiguous scope to exercise resumed
+numbering. Validate generated packages and open them through an office reader.
+The note-bearing interoperability fixture is LibreOffice-produced; native Word
+qualification remains external. While conversion is disabled, both import routes
+must retain develop's prose and counted note/picture losses, ignore note-body
+parts, and store no atoms. Test the owned-note path separately with an isolated
+open policy; its formatting, missing-body, and drawing losses count affected notes.
+
 Scoped EPUB tests cover note restarts and placement, reference/backlink targets,
 contents order, escaped figure text, relative PNG/JPEG media, and explicit
 publication refusals. Set `GARRET_EPUB_TEST_OUTPUT` to a disposable directory

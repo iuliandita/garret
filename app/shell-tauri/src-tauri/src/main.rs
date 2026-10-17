@@ -8831,23 +8831,24 @@ mod tests {
     }
 
     #[test]
-    fn note_and_figure_docx_refusal_leaves_both_import_destinations_unchanged() {
-        for element in [r#"<w:footnoteReference w:id="1"/>"#, r#"<w:endnoteReference w:id="1"/>"#, "<w:drawing/>"] {
-            for picked in [false, true] {
-                let (dir, library, drop_dir) = import_fixture("Source remains");
-                let path = drop_dir.join("book.docx");
-                let xml = format!(r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Manuscript</w:t>{element}</w:r></w:p></w:body></w:document>"#);
-                let bytes = crate::epub::zip(&[crate::epub::Entry::text("word/document.xml", &xml)]);
-                std::fs::write(&path, &bytes).unwrap();
-                let settings = crate::projects::settings_path(dir.path());
-                let before = std::fs::read(&settings).ok();
-                let error = if picked { import_path(dir.path(), &library, &path) }
-                    else { import_named(dir.path(), &library, &drop_dir, "book.docx") }.unwrap_err();
-                assert!(error.contains("conversion is disabled"), "{error}");
-                assert_eq!(std::fs::read_dir(&library).unwrap().count(), 0);
-                assert_eq!(std::fs::read(&settings).ok(), before);
-                assert_eq!(std::fs::read(&path).unwrap(), bytes);
+    fn note_and_figure_docx_import_preserves_legacy_prose_and_losses_in_both_destinations() {
+        for picked in [false, true] {
+            let (dir, library, drop_dir) = import_fixture("Source remains");
+            let path = drop_dir.join("book.docx");
+            let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Manuscript</w:t><w:footnoteReference w:id="1"/><w:endnoteReference w:id="2"/><w:footnoteReference w:id="3"/><w:drawing/></w:r></w:p></w:body></w:document>"#;
+            let bytes = crate::epub::zip(&[crate::epub::Entry::text("word/document.xml", xml)]);
+            std::fs::write(&path, &bytes).unwrap();
+            let outcome = if picked { import_path(dir.path(), &library, &path) }
+                else { import_named(dir.path(), &library, &drop_dir, "book.docx") }.unwrap();
+            assert_eq!(outcome.losses, crate::docx_import::Losses { notes: 3, pictures: 1, ..Default::default() });
+            let store = crate::store::Store::open_readonly(Path::new(&outcome.summary.path)).unwrap();
+            let bodies = store.documents().unwrap();
+            assert_eq!(bodies.len(), 1);
+            for body in bodies.values() {
+                assert!(!crate::figure_salvage::has_new_nodes(body));
+                assert_eq!(serde_json::from_str::<serde_json::Value>(body).unwrap(), serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Manuscript"}]}]}));
             }
+            assert_eq!(std::fs::read(&path).unwrap(), bytes);
         }
     }
 

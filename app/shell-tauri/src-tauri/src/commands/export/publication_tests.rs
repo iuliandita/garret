@@ -173,6 +173,10 @@ fn docx_publication_uses_native_notes_scopes_and_inline_media() {
             let types = part("[Content_Types].xml");
             assert!(rels.contains("/endnotes\" Target=\"endnotes.xml\""));
             assert!(types.contains("wordprocessingml.endnotes+xml"));
+            assert!(rels.contains("/settings\" Target=\"settings.xml\""));
+            assert!(types.contains("PartName=\"/word/settings.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml\""));
+            let settings = part("word/settings.xml");
+            assert!(settings.contains("<w:endnotePr><w:endnote w:id=\"-1\"/><w:endnote w:id=\"0\"/></w:endnotePr>"));
             for (index, asset) in plan.assets.values().enumerate() {
                 let name = asset.href.strip_prefix("assets/").unwrap();
                 assert!(rels.contains(&format!("Target=\"media/{name}\"")));
@@ -187,6 +191,31 @@ fn docx_publication_uses_native_notes_scopes_and_inline_media() {
                 std::fs::write(PathBuf::from(out).join(format!("{numbering}-{selected}.docx")), bytes).unwrap();
             }
         });
+    }
+}
+
+#[test]
+fn docx_non_contiguous_note_scope_resumes_its_planned_start() {
+    let chapters: Vec<_> = ["a", "b", "c"].into_iter().map(|id| (id.to_string(), id.to_uppercase(), 0)).collect();
+    let book = crate::export::Book { publication: None, single_scene: false, name: "Notes", contents_title: "Contents", front: &[], chapters: &chapters, back: &[] };
+    let bodies = HashMap::from_iter(chapters.iter().map(|(id, _, _)| (id.clone(), json!({"type":"doc","content":[{"type":"paragraph","content":[
+        {"type":"text","text":"Prose"},
+        {"type":"endnote","attrs":{"id":"0199ed16-8c00-7000-8000-000000000001","fmt":"text","body":"A note"}}
+    ]}]}).to_string())));
+    let scopes = crate::publication_plan::Scopes {
+        by_item: HashMap::from([("a".into(), 0), ("b".into(), 1), ("c".into(), 0)]),
+        rows: vec![crate::publication_plan::Scope { label: "Outer".into(), end: "c".into() }, crate::publication_plan::Scope { label: "Inner".into(), end: "b".into() }],
+    };
+    let plan = crate::publication_plan::Plan::build(&book, &bodies, scopes, |_| unreachable!()).unwrap();
+    assert_eq!(plan.notes.iter().map(|note| note.number).collect::<Vec<_>>(), [1, 1, 2]);
+    let rendered = crate::docx::render_planned(&book, &bodies, "en", Some(&plan)).unwrap();
+    let entries = crate::epub::read_zip(&rendered.bytes).unwrap();
+    let document = String::from_utf8_lossy(&entries.iter().find(|(name, _)| name == "word/document.xml").unwrap().1);
+    let starts: Vec<_> = document.split("<w:numStart w:val=\"").skip(1).map(|tail| tail.split('"').next().unwrap()).collect();
+    assert_eq!(starts, ["1", "1", "2"]);
+    if let Some(out) = std::env::var_os("GARRET_DOCX_TEST_OUTPUT") {
+        std::fs::create_dir_all(&out).unwrap();
+        std::fs::write(PathBuf::from(out).join("non-contiguous.docx"), rendered.bytes).unwrap();
     }
 }
 

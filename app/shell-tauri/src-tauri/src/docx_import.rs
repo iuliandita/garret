@@ -470,14 +470,6 @@ struct NoteBody {
 
 type NoteBodies = HashMap<(String, String), NoteBody>;
 
-fn contains_new_content(nodes: &[Node]) -> bool {
-    nodes.iter().any(|node| match node {
-        Node::Element { name, children, .. } => matches!(name.as_str(),
-            "footnoteReference" | "endnoteReference" | "drawing" | "pict" | "blip" | "imagedata") || contains_new_content(children),
-        Node::Text(_) => false,
-    })
-}
-
 fn flatten_note(nodes: &[Node], result: &mut NoteBody) {
     for node in nodes {
         let Node::Element { name, children, .. } = node else { continue; };
@@ -592,7 +584,7 @@ fn text_of(node: &Node) -> Option<&str> {
 /// content (a drawing, most often) that the fallback restates for an older
 /// reader -- walking both would count one picture, hyperlink or field
 /// twice for the one thing Word actually put on the page.
-fn walk_para_content(nodes: &[Node], out: &mut Vec<RunOut>, losses: &mut Losses, notes: &NoteBodies) {
+fn walk_para_content(nodes: &[Node], out: &mut Vec<RunOut>, losses: &mut Losses, notes: Option<&NoteBodies>) {
     for node in nodes {
         let Node::Element { name, children, .. } = node else {
             continue;
@@ -631,6 +623,10 @@ fn walk_para_content(nodes: &[Node], out: &mut Vec<RunOut>, losses: &mut Losses,
                         }),
                         "drawing" | "pict" => losses.pictures += 1,
                         "footnoteReference" | "endnoteReference" => {
+                            let Some(notes) = notes else {
+                                losses.notes += 1;
+                                continue;
+                            };
                             custom_mark = attr_val(attrs, "customMarkFollows").is_some_and(|value| matches!(value, "1" | "true" | "on"));
                             let key = (n2.clone(), attr_val(attrs, "id").unwrap_or("").to_string());
                             let body = if let Some(note) = notes.get(&key) {
@@ -737,7 +733,7 @@ struct ParaClass {
     list_text: Option<String>,
 }
 
-fn parse_p(children: &[Node], styles: &StyleMap, losses: &mut Losses, notes: &NoteBodies) -> ParaClass {
+fn parse_p(children: &[Node], styles: &StyleMap, losses: &mut Losses, notes: Option<&NoteBodies>) -> ParaClass {
     let mut style_id: Option<String> = None;
     let mut own_outline: Option<u32> = None;
     let mut is_list = false;
@@ -773,7 +769,7 @@ fn parse_p(children: &[Node], styles: &StyleMap, losses: &mut Losses, notes: &No
             // heading back: a run of leading/trailing spaces a writer left
             // around a heading's text is not part of the title.
             heading_text: Some(plain_text(&merged).trim().to_string()),
-            prose: build_pm_paragraph(&merged.iter().filter(|run| run.note.is_some()).cloned().collect::<Vec<_>>()),
+            prose: notes.and_then(|_| build_pm_paragraph(&merged.iter().filter(|run| run.note.is_some()).cloned().collect::<Vec<_>>())),
             list_text: None,
         },
         None => ParaClass {
@@ -790,7 +786,7 @@ fn parse_p(children: &[Node], styles: &StyleMap, losses: &mut Losses, notes: &No
 /// moved paragraphs are kept only at their destination. Every other wrapper --
 /// `w:body` itself, `w:sdt`, `w:sectPr`'s siblings -- is walked through, on
 /// decision 2's rule.
-fn walk_body(nodes: &[Node], styles: &StyleMap, losses: &mut Losses, out: &mut Vec<ParaClass>, notes: &NoteBodies) {
+fn walk_body(nodes: &[Node], styles: &StyleMap, losses: &mut Losses, out: &mut Vec<ParaClass>, notes: Option<&NoteBodies>) {
     for node in nodes {
         let Node::Element { name, children, .. } = node else {
             continue;
@@ -1061,14 +1057,11 @@ fn parse_with_policy(bytes: &[u8], stem: &str, allow_new: bool) -> Result<DocxIm
         .unwrap_or_default();
 
     let tree = build_tree(&document_text)?;
-    let notes = note_bodies(&entries)?;
-    if !allow_new && (contains_new_content(&tree) || !notes.is_empty() || entries.iter().any(|(name, _)| name.starts_with("word/media/"))) {
-        return Err("DOCX contains notes or figures. New-format conversion is disabled in this build; import refused before creating a book. Keep the original DOCX; notes and figures have not been discarded.".into());
-    }
+    let notes = if allow_new { Some(note_bodies(&entries)?) } else { None };
     let mut losses = Losses::default();
     losses.revisions = count_revisions(&tree);
     let mut paras: Vec<ParaClass> = Vec::new();
-    walk_body(&tree, &styles, &mut losses, &mut paras, &notes);
+    walk_body(&tree, &styles, &mut losses, &mut paras, notes.as_ref());
 
     let mut sections = group_sections(paras);
     let derived_contents = drop_generated_contents(&mut sections, &mut losses);
@@ -1117,14 +1110,27 @@ mod tests {
         assert_eq!(parsed.losses.missing_note_bodies, 1);
         assert_eq!(parsed.losses.note_drawings, 1);
         assert_eq!(parsed.losses.notes, 0);
-        assert!(parse(&bytes, "notes").unwrap_err().contains("conversion is disabled"));
+        let legacy = parse(&bytes, "notes").unwrap();
+        assert_eq!(legacy.losses.notes, 4);
+        assert!(owned_notes(&legacy).is_empty());
     }
 
     #[test]
-    fn disabled_conversion_refuses_notes_and_figures_but_accepts_separator_only_parts() {
-        for element in [r#"<w:footnoteReference w:id="1"/>"#, r#"<w:endnoteReference w:id="1"/>"#, "<w:drawing/>", "<w:pict/>"] {
-            let bytes = package(&doc(&format!("<w:p><w:r><w:t>Manuscript</w:t>{element}</w:r></w:p>")), None);
-            assert!(parse(&bytes, "book").unwrap_err().contains("before creating a book"));
+    fn closed_gate_imports_prose_and_counts_notes_and_pictures_without_reading_note_parts() {
+        let document = doc(r#"<w:p><w:pPr><w:outlineLvl w:val="0"/></w:pPr><w:r><w:t>Scene</w:t><w:footnoteReference w:id="1"/></w:r></w:p><w:p><w:r><w:t>Before</w:t><w:footnoteReference w:id="1"/><w:t> after</w:t><w:endnoteReference w:id="2"/><w:drawing/><w:pict/></w:r></w:p>"#);
+        for notes in ["", "<broken", "<w:wrong/>"] {
+            let bytes = crate::epub::zip(&[
+                crate::epub::Entry::text("word/document.xml", &document),
+                crate::epub::Entry::text("word/footnotes.xml", notes),
+                crate::epub::Entry::text("word/endnotes.xml", notes),
+                crate::epub::Entry::text("word/media/unused.png", "unused"),
+            ]);
+            let parsed = parse(&bytes, "book").unwrap();
+            assert_eq!(parsed.losses, Losses { notes: 3, pictures: 2, ..Losses::default() });
+            assert_eq!(parsed.imported.items.len(), 1);
+            assert_eq!(parsed.imported.items[0].title, "Scene");
+            assert_eq!(parsed.imported.items[0].body.as_deref(), Some(r#"{"content":[{"content":[{"text":"Before after","type":"text"}],"type":"paragraph"}],"type":"doc"}"#));
+            assert!(owned_notes(&parsed).is_empty());
         }
         let document = doc("<w:p><w:r><w:t>Ordinary manuscript</w:t></w:r></w:p>");
         let separators = format!(r#"<w:endnotes xmlns:w="{W_NS}"><w:endnote w:type="separator" w:id="-1"><w:p/></w:endnote><w:endnote w:type="continuationSeparator" w:id="0"><w:p/></w:endnote></w:endnotes>"#);
@@ -1145,7 +1151,9 @@ mod tests {
         assert_eq!(parsed.losses.note_drawings, 1);
         assert_eq!(parsed.losses.missing_note_bodies, 0);
         assert_eq!(notes.len(), 3);
-        assert!(parse(bytes, "notes").unwrap_err().contains("conversion is disabled"));
+        let legacy = parse(bytes, "notes").unwrap();
+        assert_eq!(legacy.losses, Losses { notes: 3, ..Losses::default() });
+        assert!(owned_notes(&legacy).is_empty());
     }
 
     #[test]

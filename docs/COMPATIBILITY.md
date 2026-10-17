@@ -2,14 +2,14 @@
 
 SQLite schema: 17.
 
-DOCX import now refuses files containing footnotes, endnotes, or drawings before
-creating or registering a book. Previous builds dropped note references and
-reported their count; manuscripts with footnotes therefore no longer import
-with that loss. Keep the original DOCX, including its notes and pictures. Files
-containing only note separator records still import. No migration runs, and
-existing books remain unchanged. For rollback, retain the closed-book backup
-and use the previous package with a separate copy; importing there still drops
-notes. Removing notes or drawings in an external copy is an explicit lossy choice.
+DOCX import keeps its existing prose-only behavior while new-node conversion is
+disabled. Footnote and endnote references and pictures are omitted with separate
+loss counts in the interface and CLI; no atoms are stored. Note-body parts are
+not parsed in this mode, including malformed parts that previous builds ignored.
+Keep the original DOCX to retain its notes and pictures. No migration runs, and
+existing books remain unchanged. Back up closed books and adjacent originals;
+rollback uses the previous package with a separate complete copy and the same
+counted-loss import behavior.
 
 Prepared DOCX publication uses the shared plan for native endnotes, scoped
 numbering, inline pictures, captions, alternative text, and scene breaks. Legacy
@@ -23,7 +23,8 @@ Microsoft Word placement and editing behavior still need native qualification.
 
 The prepared importer keeps Word footnotes and endnotes as independent owned
 plain-text notes with new IDs. Prepared export/import preserves note-body
-whitespace and line breaks without adding marker text. It reports affected-note counts separately for
+whitespace and line breaks without adding marker text. It reports affected-note
+counts separately for
 flattened formatting, missing bodies (empty notes retained), and dropped note
 drawings. It does not preserve rich-note formatting. The interoperability fixture
 was written by LibreOffice, not Microsoft Word; native Word import qualification
