@@ -23,12 +23,12 @@
     "editor": {
       "breaking": "none",
       "docs": {
-        "README.md": "fba4a00232588464118ecdbc858abf7fdccedbc42b3043e5347a48305fef7f77"
+        "README.md": "6714210555d7018aa09628013620e4989276bc6b4184626be07467574d4e9c6a"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Document chapter openers (ornament, its position, chapter sink) in the book preparation summary; the preview rail gains two option groups and three ornaments.",
-      "source_sha256": "2e93f617cea7068d2b10e29ab9a21aee11547cde58d1d3700f9e70b0f28af773"
+      "note": "Document chapter openers (ornament, its position, chapter sink) in the book preparation summary; the preview rail gains two option groups and three ornaments. Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. The creation menu and README also cover the References back-matter page.",
+      "source_sha256": "3837b3a360d62638f685dfc5aa39f5a17b019df5b5b470aa3648f92212b80985"
     },
     "encryption": {
       "breaking": "none",
@@ -44,9 +44,9 @@
       "breaking": "none",
       "docs": {},
       "migration": "",
-      "no_impact": "Renderer, paginator and test sources changed for chapter openers and CI runs one display-gated paginator test; contributor guidance, documentation checks and native-test exclusions are unchanged.",
-      "note": "No contributor workflow change.",
-      "source_sha256": "4d66c16a67bb05c50e5500bea732cbd5c9af79c0e4e1a4c926460ab19488b76d"
+      "no_impact": "Renderer, paginator and test sources changed for chapter openers and CI runs one display-gated paginator test; contributor guidance, documentation checks and native-test exclusions are unchanged. Harness and test files changed only for the References menu item; contributor guidance, documentation checks and recovery contracts are unchanged.",
+      "note": "No contributor workflow change. Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged.",
+      "source_sha256": "9e116c346e9872cd7fda374129c030c3b6b56a363468f778119f1a672f76c70f"
     },
     "native-packaging": {
       "breaking": "none",
@@ -63,8 +63,8 @@
       },
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Chapter openers add optional words (ornament-above, sink-third, sink-half) and three ornament names to the stored chapter options; older builds ignore them, so back up the closed book before upgrading as above and expect an older package to show the ornament below the title with no sink.",
       "no_impact": "",
-      "note": "Chapter openers add optional words to the stored chapter options and three ornament names; the SQLite schema is unchanged and books without them render as before.",
-      "source_sha256": "1dd163d062098cca9083817e2898afa48399af7dede1898370e8bcdd00bd7b2a"
+      "note": "Chapter openers add optional words to the stored chapter options and three ornament names; the SQLite schema is unchanged and books without them render as before. Document bounded foreign DOCX expansion and unchanged manuscript schema, and require source-bound review for project-format changes. A References page adds no stored format. No stored-format change: a References page is an ordinary matter document at the same SQLite schema, so older builds open such books unchanged; only EPUB export gains a section semantic.",
+      "source_sha256": "ecd9bd4084681bdb7351b8070477cd7e7596836e85862567fea473aa095c5887"
     },
     "schema": {
       "breaking": "none",

@@ -81,7 +81,7 @@ export function createCreationChooser(deps: {
         const heading = document.createElement("h3");
         heading.textContent = t("menu.book-pages");
         pages.append(heading);
-        for (const kind of ["dedication", "foreword", "acknowledgements", "afterword"] as const) {
+        for (const kind of ["dedication", "foreword", "acknowledgements", "afterword", "references"] as const) {
           pages.append(action(`create-${kind}`, t(`menu.new-${kind}`), () => deps.matter(kind)));
         }
         more.append(pages);
