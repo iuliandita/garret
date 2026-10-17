@@ -1,4 +1,4 @@
-import { referenceTitle, type ProjectPreset } from "./project-preset";
+import type { ProjectPreset } from "./project-preset";
 // app/ui/src/outline.ts
 // Neighbour arithmetic for outline moves: the pure half of "move this row up /
 // down / out / in".
@@ -1178,7 +1178,7 @@ export function createOutline(deps: OutlineDeps): Outline {
     createNote(anchorId?: string | null): Promise<OutlineOutcome> {
       return createInSection({
         rootType: BIBLE_TYPE,
-        rootTitle: referenceTitle(deps.preset ?? "novel"),
+        rootTitle: BIBLE_TITLE,
         docType: NOTE_TYPE,
         // Numbered from the WALK, inside the serialized body: a title computed
         // outside it would be numbered against a tree that may already have
@@ -1191,7 +1191,7 @@ export function createOutline(deps: OutlineDeps): Outline {
     createBibleFolder(anchorId?: string | null): Promise<OutlineOutcome> {
       return createInSection({
         rootType: BIBLE_TYPE,
-        rootTitle: referenceTitle(deps.preset ?? "novel"),
+        rootTitle: BIBLE_TITLE,
         docType: BIBLE_FOLDER_TYPE,
         docTitle: (items) => nextNumberedTitle(items, BIBLE_FOLDER_TYPE, numberPattern(BIBLE_FOLDER_TYPE)),
         noSection: () => t("outline.failed.no-bible"),
@@ -1201,7 +1201,7 @@ export function createOutline(deps: OutlineDeps): Outline {
     createTimeline(anchorId?: string | null): Promise<OutlineOutcome> {
       return createInSection({
         rootType: BIBLE_TYPE,
-        rootTitle: referenceTitle(deps.preset ?? "novel"),
+        rootTitle: BIBLE_TITLE,
         docType: TIMELINE_TYPE,
         // NOT NUMBERED, `createMatter`'s reason and not `createNote`'s: the
         // model is one story clock per book, so `timeline.untitled`

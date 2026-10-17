@@ -1046,7 +1046,9 @@ mod tests {
         // satisfy the first alone.
         let dir = tempdir().unwrap();
         let db = dir.path().join("p.db");
-        drop(seeded_project(&db));
+        let store = seeded_project(&db);
+        store.item_create(None, "scene", "Second scene").unwrap();
+        drop(store);
         let dest = dir.path().join("out.md");
         super::export_to(&db, "My Novel", &dest, &no_vault(), pseudo()).unwrap();
         let text = std::fs::read_to_string(&dest).unwrap();
@@ -1066,7 +1068,9 @@ mod tests {
         // can be read without a zip reader.
         let dir = tempdir().unwrap();
         let db = dir.path().join("p.db");
-        drop(seeded_project(&db));
+        let store = seeded_project(&db);
+        store.item_create(None, "scene", "Second scene").unwrap();
+        drop(store);
         let dest = dir.path().join("out.epub");
         super::export_into(
             &db,
@@ -1124,7 +1128,9 @@ mod tests {
         static NOTHING: crate::strings::Locale = crate::strings::Locale::new("zz", EMPTY);
         let dir = tempdir().unwrap();
         let db = dir.path().join("p.db");
-        drop(seeded_project(&db));
+        let store = seeded_project(&db);
+        store.item_create(None, "scene", "Second scene").unwrap();
+        drop(store);
         let dest = dir.path().join("out.md");
         super::export_to(
             &db,
@@ -1267,7 +1273,7 @@ mod tests {
         let bodies = store.documents().unwrap();
         let rendered = crate::export::manuscript(
             &crate::export::Book {
-                single_scene: false,
+                single_scene: true,
                 name: "My Novel",
                 contents_title: &crate::strings::Strings::english().t(CONTENTS_KEY),
                 front: &[],
@@ -1300,7 +1306,7 @@ mod tests {
         let r = export_to(&db, "My Novel", &dest).unwrap();
         let text = std::fs::read_to_string(&dest).unwrap();
         assert!(text.starts_with("# My Novel\n"), "{text}");
-        assert!(text.contains("## Opening"), "{text}");
+        assert!(!text.contains("## Opening"), "{text}");
         assert!(text.contains("two words"), "{text}");
         assert_eq!(r.items, 1);
         assert_eq!(r.words, 2);
@@ -1737,8 +1743,8 @@ mod tests {
         // The dedication prints ABOVE the seeded scene and the acknowledgements
         // below it. Position, not merely presence.
         let at = |needle: &str| written.find(needle).expect(needle);
-        assert!(at("## Dedication") < at("## Only scene"));
-        assert!(at("## Only scene") < at("## Acknowledgements"));
+        assert!(at("## Dedication") < at("four words go here"));
+        assert!(at("four words go here") < at("## Acknowledgements"));
         assert_eq!(
             result.items, 3,
             "the scene, the dedication, the acknowledgements"
@@ -2180,6 +2186,7 @@ mod tests {
         let db = dir.path().join("p.db");
         {
             let store = seeded_project(&db);
+            store.item_create(None, "scene", "Second scene").unwrap();
             crate::design::write_design(&store, &crate::design::preset("non-fiction").unwrap())
                 .unwrap();
             crate::design::write_chapter_style(

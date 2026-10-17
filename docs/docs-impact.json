@@ -29,8 +29,8 @@
       },
       "migration": "",
       "no_impact": "",
-      "note": "Book creation offers three presets; short fiction placement and nonfiction labels and optional fiction tools follow the saved metadata.",
-      "source_sha256": "93b0e8532a9f4abe3fac08395e263ad88b810724510fb46ca6fc2f85cdbf2262"
+      "note": "Book creation offers three presets with themed controls; short fiction placement and nonfiction display labels follow saved metadata without renaming stored reference sections.",
+      "source_sha256": "944f696885174118f3476cf3feedef59169b07a4f40ef86f61542dd0e0ff7c5e"
     },
     "encryption": {
       "breaking": "none",
@@ -47,8 +47,8 @@
       },
       "migration": "",
       "no_impact": "",
-      "note": "Desktop creation commands and export renderers share preset defaults and single-scene behavior; recovery and transfer copying remain unchanged.",
-      "source_sha256": "28e0b3e77d8308daa1374794e8eccbfb1774806f5d2f355d7a40f47fc48a1665"
+      "note": "Desktop creation and export paths implement preset defaults; focused regression fixtures cover single-scene formatting and structured export behavior.",
+      "source_sha256": "081dd3f3aee3c04a89fdcac523829f99741714e1809719c568c00c5b4c7c9c95"
     },
     "native-packaging": {
       "breaking": "none",
@@ -65,8 +65,8 @@
       },
       "migration": "",
       "no_impact": "",
-      "note": "Optional preset metadata preserves unknown values and selects starter structure; single-scene exports omit scaffold headings and contents.",
-      "source_sha256": "28235ebe2ee0b7e67c3a6fee91bb0dbf3effe536c8d88de0c4467f663023e633"
+      "note": "Optional preset metadata preserves unknown values; export fixtures distinguish one-scene output from structured manuscripts with contents and styling.",
+      "source_sha256": "0b1b008484c10fe21da5a4cbf8cdbd9dd8a7a1eb858f30886be52a482f2ba13b"
     },
     "schema": {
       "breaking": "none",
