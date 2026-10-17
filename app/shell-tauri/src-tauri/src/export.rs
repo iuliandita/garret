@@ -127,6 +127,8 @@ pub fn document_markdown(body: &str) -> Option<String> {
 /// Runs inside a block that renders to nothing are not counted -- nothing of
 /// that block reached the file, so nothing of it was lost here.
 pub fn document_markdown_counted(body: &str) -> Option<(String, u64)> {
+    // This renderer cannot yet retain atoms or their attribute text.
+    if crate::figure_salvage::has_new_nodes(body) { return None; }
     let root: serde_json::Value = serde_json::from_str(body).ok()?;
     if root.get("type").and_then(|t| t.as_str()) != Some(ROOT_TYPE) {
         return None;

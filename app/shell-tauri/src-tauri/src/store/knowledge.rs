@@ -159,29 +159,33 @@ pub fn quote_at(body: &str, from: i64, to: i64) -> Option<String> {
     if from < 0 || to <= from {
         return None;
     }
-    let value: serde_json::Value = serde_json::from_str(body).ok()?;
-    if value.get("type")?.as_str()? != "doc" {
-        return None;
-    }
+    let value = super::document_fields::read(body)?;
     let mut paragraph_start = 0i64;
     for block in value.get("content")?.as_array()? {
-        if block.get("type")?.as_str()? != "paragraph" {
-            return None;
+        if block["type"] != "paragraph" {
+            paragraph_start += 1;
+            continue;
         }
-        let mut content = String::new();
-        if let Some(nodes) = block.get("content") {
-            for node in nodes.as_array()? {
-                if node.get("type")?.as_str()? != "text" {
-                    return None;
-                }
-                content.push_str(node.get("text")?.as_str()?);
+        let mut units = Vec::new();
+        let mut atoms = HashSet::new();
+        for node in block.get("content").and_then(serde_json::Value::as_array).into_iter().flatten() {
+            if node["type"] == "text" {
+                units.extend(node["text"].as_str()?.encode_utf16());
+            } else {
+                atoms.insert(units.len());
+                units.push(0xfffc);
             }
         }
-        let units: Vec<u16> = content.encode_utf16().collect();
         let start = paragraph_start + 1;
         let end = start + units.len() as i64;
         if from >= start && to <= end {
-            return String::from_utf16(&units[(from - start) as usize..(to - start) as usize]).ok();
+            let from = (from - start) as usize;
+            let to = (to - start) as usize;
+            // Atom positions survive, but attributes never become quote text.
+            let selected: Vec<_> = units[from..to].iter().enumerate()
+                .filter(|(offset, _)| !atoms.contains(&(from + offset)))
+                .map(|(_, unit)| *unit).collect();
+            return String::from_utf16(&selected).ok();
         }
         paragraph_start = end + 1;
     }

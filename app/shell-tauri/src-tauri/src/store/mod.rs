@@ -11,6 +11,7 @@ pub mod comments;
 pub mod crash_child;
 pub mod dict;
 pub mod document_format;
+pub mod document_fields;
 pub mod figure_assets;
 pub mod history;
 pub mod knowledge;
@@ -1885,11 +1886,10 @@ fn append_node(node: &serde_json::Value, out: &mut String, separator: char) {
         }
         return;
     }
-    // Every non-text node in the page's schema is a block, so its content begins
-    // a new run. That is a PRECONDITION, not a property of this function -- see
-    // the divergence spelled out on document_text. `marks` never gets here: it
-    // is an attribute of a text node, not a child, which is exactly why marks
-    // cannot change the count.
+    // References have no prose width; their attributes never enter counts.
+    if matches!(node.get("type").and_then(|t| t.as_str()), Some("endnote" | "figure" | "scene_break")) {
+        return;
+    }
     if !out.is_empty() {
         out.push(separator);
     }

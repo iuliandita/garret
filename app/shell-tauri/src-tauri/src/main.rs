@@ -2182,7 +2182,7 @@ fn find_in(
     // by item id and read through these items, so a trashed body is unreachable
     // rather than merely unlisted.
     let items = store::without_trashed(store.items().map_err(|e| e.to_string())?);
-    let (texts, scanned, skipped) = store.document_texts().map_err(|e| e.to_string())?;
+    let (fields, scanned, skipped) = store.document_search_fields().map_err(|e| e.to_string())?;
     let search_items: Vec<find::SearchItem<'_>> = items
         .iter()
         .map(|i| find::SearchItem {
@@ -2192,7 +2192,8 @@ fn find_in(
         })
         .collect();
     let corpus = find::Corpus {
-        texts,
+        texts: Default::default(),
+        fields,
         scanned,
         skipped,
     };

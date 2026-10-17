@@ -181,6 +181,7 @@ pub(crate) fn css_string(name: &str) -> String {
 /// delimiters -- one escapes for a line-oriented plain text and the other for a
 /// markup language.
 pub fn document_xhtml(body: &str) -> Option<String> {
+    if crate::figure_salvage::has_new_nodes(body) { return None; }
     let root: serde_json::Value = serde_json::from_str(body).ok()?;
     if root.get("type").and_then(|t| t.as_str()) != Some("doc") {
         return None;

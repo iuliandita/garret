@@ -124,7 +124,7 @@ pub fn validate(path: &Path) -> Result<Validation, String> {
     let mut unreadable: Vec<&String> = bodies
         .iter()
         .filter(|(id, _)| !timeline_ids.contains(id.as_str()))
-        .filter(|(_, body)| store::document_text(body).is_none())
+        .filter(|(_, body)| store::document_format::validate_write(body).is_err())
         .map(|(id, _)| id)
         .collect();
     unreadable.sort();

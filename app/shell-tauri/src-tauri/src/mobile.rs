@@ -791,7 +791,7 @@ fn search_book(
     let store = store::Store::open_readonly(path).map_err(|error| error.to_string())?;
     let mut scenes = scenes(&store)?;
     scenes.sort_by_key(|scene| scene.id != current_scene);
-    let (texts, scanned, skipped) = store.document_texts().map_err(|error| error.to_string())?;
+    let (fields, scanned, skipped) = store.document_search_fields().map_err(|error| error.to_string())?;
     let items: Vec<_> = scenes
         .iter()
         .map(|scene| crate::find::SearchItem {
@@ -803,7 +803,8 @@ fn search_book(
     Ok(crate::find::search(
         &items,
         &crate::find::Corpus {
-            texts,
+            texts: Default::default(),
+            fields,
             scanned,
             skipped,
         },

@@ -361,6 +361,10 @@ fn render_scope_with(
         return Err(crate::identity::blocked_message(&preflight.findings));
     }
 
+    if items.iter().filter_map(|(id, _, _)| bodies.get(id)).any(|body| crate::figure_salvage::has_new_nodes(body)) {
+        return Err("This document format cannot be exported by this build".into());
+    }
+
     let written = match format {
         crate::export::Format::Markdown => crate::export::manuscript(&book, &bodies),
         // A PROOF COPY, and what the render answers with is HTML: the
@@ -644,7 +648,8 @@ fn checked(
             .filter_map(|(id, _)| {
                 bodies
                     .get(*id)
-                    .and_then(|body| crate::store::document_text(body))
+                    .and_then(|body| crate::store::document_fields::fields(body))
+                    .map(|fields| fields.into_iter().map(|field| field.text).collect::<Vec<_>>().join("\n"))
                     .map(|text| (*id, text))
             })
             .collect()
@@ -2796,6 +2801,24 @@ mod tests {
         )
         .unwrap();
         assert_eq!(r.preflight.format, "pdf");
+    }
+
+    #[test]
+    fn atom_consumers_preflight_checks_every_attribute_text() {
+        let vault = vault_with(&[("i1", "Ada Vane"), ("i2", "Bram Kell")]);
+        let pin = crate::identity::pin_of(&vault.identities[0], 10);
+        let item = ("scene".to_string(), "Opening".to_string(), 0);
+        for field in ["note", "caption", "alt"] {
+            let mut value = crate::store::document_fields::tests::mixed();
+            match field {
+                "note" => value["content"][0]["content"][1]["attrs"]["body"] = serde_json::json!("Bram Kell"),
+                "caption" => value["content"][1]["attrs"]["caption"] = serde_json::json!("Bram Kell"),
+                _ => value["content"][1]["attrs"]["alt"] = serde_json::json!("Bram Kell"),
+            }
+            let bodies = std::collections::HashMap::from([("scene".into(), value.to_string())]);
+            let report = checked(crate::export::Format::Markdown, "Book", &vault, Some(&pin), &[&item], &bodies, &[]);
+            assert!(report.blockers > 0, "{field}");
+        }
     }
 
     #[test]

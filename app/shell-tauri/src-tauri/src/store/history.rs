@@ -418,6 +418,13 @@ impl Store {
         version_id: i64,
         base_rev: i64,
     ) -> Result<RestoredDoc> {
+        self.doc_restore_validated(item_id, version_id, base_rev, |body| self.validate_body_write(item_id, body))
+    }
+
+    fn doc_restore_validated(
+        &self, item_id: &str, version_id: i64, base_rev: i64,
+        validate: impl FnOnce(&str) -> Result<()>,
+    ) -> Result<RestoredDoc> {
         let now = now_ms();
         self.conn.execute_batch("BEGIN IMMEDIATE")?;
         let outcome = (|| -> Result<RestoredDoc> {
@@ -445,7 +452,7 @@ impl Store {
                 }
             }
             let body = crate::replace::normalize_legacy_text(&self.version_body(version_id)?);
-            self.validate_body_write(item_id, &body)?;
+            validate(&body)?;
             let current: Option<(String, i64)> = self
                 .conn
                 .query_row(
@@ -1038,6 +1045,31 @@ mod tests {
             .conn
             .query_row("SELECT COUNT(*) FROM blob", [], |r| r.get(0))
             .unwrap()
+    }
+
+    #[test]
+    fn atom_consumers_restore_retains_overwritten_notes_and_refuses_production_writes() {
+        let (_dir, store, id, rev) = seeded("first");
+        let original = crate::store::document_fields::tests::mixed().to_string();
+        // Fixture-only storage; the live flush/restore policy remains disabled.
+        store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![original, id]).unwrap();
+        let comment = store.comment_create(&id, "spanning an atom", 2, 9, "😀bewi").unwrap();
+        let anchors = store.comments(&id).unwrap();
+        assert_eq!((anchors[0].anchor_from, anchors[0].anchor_to, anchors[0].quote.as_str()), (2, 9, "😀bewi"));
+        let target = store.insert_version(&id, &body("replacement"), 0, None).unwrap();
+        let restored = store.doc_restore(&id, target, rev).unwrap();
+        assert!(store.comments(&id).unwrap().iter().find(|saved| saved.id == comment.id).unwrap().orphaned);
+        let retained = store.doc_versions(&id).unwrap().into_iter().find(|version| store.version_body(version.id).unwrap() == original).unwrap();
+        assert_eq!(retained.words, 3);
+        let versions = store.doc_versions(&id).unwrap();
+        assert!(store.doc_restore(&id, retained.id, restored.rev).is_err());
+        assert_eq!(store.load_doc(&id).unwrap().body, body("replacement"));
+        assert_eq!(store.doc_versions(&id).unwrap().len(), versions.len());
+        let back = store.doc_restore_validated(&id, retained.id, restored.rev, |body| {
+            crate::store::document_fields::read(body).ok_or_else(|| StoreError::InvalidDocument("invalid fixture".into())).map(|_| ())
+        }).unwrap();
+        assert_eq!(back.body, original);
+        assert!(store.doc_versions(&id).unwrap().iter().any(|version| store.version_body(version.id).unwrap() == body("replacement")));
     }
 
     // ---- thin: the retention policy, over timestamps alone ----
