@@ -1448,6 +1448,18 @@ export const DE = {
   "preview.save-as": "Sichern unter…",
   "preview.close": "Schließen",
   "preview.options": "Buchgestaltung",
+  "preview.frame.toggle": "Geräterahmen",
+  "preview.auto.toggle": "Automatisch aktualisieren",
+  "preview.divider.name": "Größe der Vorschau ändern",
+  "preview.divider.value": "{width} Pixel breit",
+  "preview.divider.value-half": "{width} Pixel breit, halbe Fensterbreite",
+  "preview.frame.pager": "Seiten",
+  "preview.frame.previous": "Zurück",
+  "preview.frame.next": "Weiter",
+  "preview.frame.page": "Seite {page} von {pages}",
+  "preview.frame.approximate": "Ungefähre Vorschau. Jedes Lesegerät und jedes Tablet setzt eine Seite auf seine Weise.",
+  "preview.frame.screen-epub": "EPUB-Seite in einem allgemeinen E-Reader-Rahmen",
+  "preview.frame.screen-pdf": "Andruckseite in einem allgemeinen Tablet-Rahmen",
   "preview.epub.note":
     "Aus dem Buch im gespeicherten Stand erzeugt. Drücken Sie Aktualisieren, wenn Sie weitergeschrieben haben. Wie ein Lesegerät die Seite setzt, wird abweichen. Das EPUB enthält das vordere Cover, aber nicht das hintere.",
   "preview.pdf.note":
