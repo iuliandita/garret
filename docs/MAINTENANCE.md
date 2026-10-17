@@ -53,6 +53,14 @@ from an existing pre-push hook. Keep existing hook protections; do not replace
 them or change the repository's hook directory just to install this check.
 Local hooks supplement required CI and release checks.
 
+Android packaging and the F-Droid draft share one unsigned build script with
+pinned frontend tools, locked dependencies and deterministic path/time settings.
+After changing tool versions or packaging, compare unsigned APKs from two clean
+directories, then compare the independently rebuilt APK with the published
+developer-signed release. Local determinism alone does not establish F-Droid
+reproducibility. Follow the [F-Droid maintainer checklist](../fastlane/fdroid/README.md)
+before submitting or enabling the disabled draft recipe.
+
 ## Source impact and assessments
 
 The single domain map lives in scripts/check-docs.py. Inspect it with

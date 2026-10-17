@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Shared unsigned build for release packaging and fdroiddata.
+set -euo pipefail
+umask 022
+repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
+export TZ=UTC LC_ALL=C.UTF-8 LANG=C.UTF-8
+export SOURCE_DATE_EPOCH
+SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH:-$(git -C "$repo" log -1 --format=%ct)}
+[[ $(bun --version) == 1.4.2 ]] || { echo 'Bun 1.4.2 required' >&2; exit 1; }
+[[ $(node --version) == v26.11.1 ]] || { echo 'Node 26.11.1 required' >&2; exit 1; }
+[[ $(rustc --version) == 'rustc 1.98.1 '* ]] || { echo 'Rust 1.98.1 required' >&2; exit 1; }
+[[ $(tauri --version) == 'tauri-cli 2.11.5' ]] || { echo 'Tauri CLI 2.11.5 required' >&2; exit 1; }
+# Remap source and registry paths, including file!() strings in release code.
+export CARGO_ENCODED_RUSTFLAGS="${CARGO_ENCODED_RUSTFLAGS:+${CARGO_ENCODED_RUSTFLAGS}$'\x1f'}--remap-path-prefix=$repo=/build/garret"$'\x1f'"--remap-path-prefix=${CARGO_HOME:-$HOME/.cargo}=/build/cargo"
+export CFLAGS="${CFLAGS:-} -ffile-prefix-map=$repo=/build/garret -ffile-prefix-map=${CARGO_HOME:-$HOME/.cargo}=/build/cargo"
+export CXXFLAGS="${CXXFLAGS:-} -ffile-prefix-map=$repo=/build/garret -ffile-prefix-map=${CARGO_HOME:-$HOME/.cargo}=/build/cargo"
+cd "$repo"
+bun install --frozen-lockfile
+(cd app/mobile-ui && bun run build)
+cd app/shell-tauri
+tauri android init --ci --skip-targets-install
+python3 "$repo/scripts/android/prepare.py"
+nice -n 10 tauri android build --ci --apk --target aarch64 x86_64 -- --locked

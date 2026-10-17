@@ -51,8 +51,24 @@ properties.write_text("\n".join([*lines, *(f"{key}={value}" for key, value in se
 task = android / "buildSrc/src/main/java/com/usegarret/app/kotlin/BuildTask.kt"
 task_source = task.read_text()
 generated = 'listOf("tauri", "android", "android-studio-script")'
-container_cli = 'listOf("/usr/local/bin/tauri", "android", "android-studio-script")'
+cli = shutil.which("tauri")
+if cli is None:
+    raise SystemExit("Tauri CLI is missing from PATH")
+container_cli = f'listOf("{cli}", "android", "android-studio-script")'
 if generated not in task_source and container_cli not in task_source:
     raise SystemExit("generated Tauri build command changed")
 task.write_text(task_source.replace(generated, container_cli))
+# Applies to Gradle ZIP/JAR tasks; AGP normalizes APK entry timestamps itself.
+gradle = android / "build.gradle.kts"
+archive_settings = '''
+allprojects {
+    tasks.withType<org.gradle.api.tasks.bundling.AbstractArchiveTask>().configureEach {
+        isPreserveFileTimestamps = false
+        isReproducibleFileOrder = true
+    }
+}
+'''
+if archive_settings not in gradle.read_text():
+    with gradle.open("a") as output:
+        output.write(archive_settings)
 print("Prepared Android preview: local data, bounded builds, lifecycle and keyboard handling")
