@@ -63,7 +63,7 @@ async function open(command: "mobile_open" | "mobile_create", args: Record<strin
       savePosition: position => writeWritingPosition(localStorage, book.id, position),
       loadDoc: itemId => native.core.invoke<MobileDocument>("mobile_document", { generation, itemId }),
       flush: (entries, attribution) => native.core.invoke<FlushAck[]>("mobile_flush", { generation, entries, attribution }),
-      createScene: title => native.core.invoke<{ scenes: MobileScene[]; item_id: string }>("mobile_scene_create", { generation, title }),
+      createScene: (title, currentSceneId) => native.core.invoke<{ scenes: MobileScene[]; item_id: string }>("mobile_scene_create", { generation, title, currentSceneId }),
       textSize: appearanceBridge?.textSize?.() ?? 19,
       saveTextSize: size => appearanceBridge?.setTextSize?.(size) ?? false,
       drafting: {

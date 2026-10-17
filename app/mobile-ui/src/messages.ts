@@ -41,7 +41,7 @@ const en = {
   transferLibraryUnreadable: "Some local books could not be checked for related copies. They stay in your library; this import still creates a separate book.",
   transferIncomplete: "The archive is missing required book data or originals. No book was added. Export a complete archive on desktop.",
   unsupportedSchema: "This book needs a newer version of the Android app. Open it on desktop or update the app. Your books and source file are unchanged.",
-  unsupportedPreset: "This version of the Android app can edit only novels. Open this book on desktop. Short fiction, nonfiction, collections, and unknown project presets are not supported.",
+  unsupportedPreset: "This version of the Android app supports novels, short fiction, and nonfiction. Open collections and books with unknown project presets on desktop.",
 
   books: "Books", outline: "Outline", close: "Close", bold: "Bold", italic: "Italic",
   underline: "Underline", undo: "Undo", redo: "Redo", writing: "Writing tools",
@@ -104,7 +104,7 @@ const de: typeof en = {
   transferLibraryUnreadable: "Einige lokale Bücher konnten nicht auf verwandte Kopien geprüft werden. Sie bleiben in deiner Bibliothek; dieser Import erstellt weiterhin ein separates Buch.",
   transferIncomplete: "Im Archiv fehlen erforderliche Buchdaten oder Originale. Kein Buch wurde hinzugefügt. Exportiere am Desktop ein vollständiges Archiv.",
   unsupportedSchema: "Dieses Buch benötigt eine neuere Version der Android-App. Öffne es am Desktop oder aktualisiere die App. Deine Bücher und die Quelldatei bleiben unverändert.",
-  unsupportedPreset: "Diese Version der Android-App kann nur Romane bearbeiten. Öffne dieses Buch am Desktop. Kurzgeschichten, Sachbücher, Sammlungen und unbekannte Projektvorlagen werden nicht unterstützt.",
+  unsupportedPreset: "Diese Version der Android-App unterstützt Romane, Kurzgeschichten und Sachbücher. Öffne Sammlungen und Bücher mit unbekannten Projektvorlagen am Desktop.",
 
   books: "Bücher", outline: "Gliederung", close: "Schließen", bold: "Fett", italic: "Kursiv",
   underline: "Unterstrichen", undo: "Rückgängig", redo: "Wiederholen", writing: "Schreibwerkzeuge",

@@ -26,7 +26,7 @@ Opening a supported older book can upgrade its SQLite schema. A newer schema
 is refused by an older build; do not edit `PRAGMA user_version` to bypass this.
 Static version checks do not establish that every legacy book upgrades correctly.
 
-Both 0.0.1 and 0.0.2 use SQLite schema 17. The 0.0.2 DOCX importer adds
+0.0.1, 0.0.2 and 0.0.3 use SQLite schema 17. The 0.0.2 DOCX importer adds
 archive expansion limits: 128 entries, 128 MiB combined, and 64 MiB per entry.
 An oversized foreign document can now be refused. Preserve the original and
 split or simplify a copy before retrying; do not bypass the limits. This does
@@ -107,9 +107,8 @@ is not applied during an installer upgrade.
 
 ## Android transfer and updates
 
-The source stays at version 0.0.2 and Android version code 2 until release
-preparation. The release-preparation change must raise both to 0.0.3/code 3
-before distributing an update. The application ID stays `cc.local.app`; install
+The source is at version 0.0.3 and Android version code 3. A later release
+must raise both before distributing an update. The application ID stays `cc.local.app`; install
 updates signed with the same retained key. Do not uninstall or clear app data
 to update: both delete private books. Android normally refuses a lower version
 code; rollback must preserve device data and use complete exported archives
@@ -134,10 +133,15 @@ shared index, or a pending rollback journal, is reported as unavailable rather
 than repaired during a probe; preserve the complete files for desktop recovery.
 An unreadable library neighbor is flagged and skipped during related-copy
 inspection, so it cannot block a separate import. Import checks authenticated archive metadata and the staged database
-before creating any library file, originals directory or catalog entry. Only an absent value or exactly `novel` is supported.
-Empty, short-fiction, nonfiction, collection and unknown values are refused
+before creating any library file, originals directory or catalog entry. Absent values and exactly `novel`, `short`, or `nonfiction` are supported.
+Empty, collection and unknown values are refused
 with an English/German explanation. Desktop leniency for unknown presets does
 not change this Android release's capability. Use desktop for those projects.
+
+New scenes follow the active scene in its current container. Chapterless short
+fiction keeps scenes at the manuscript root without creating chapters or parts.
+Nonfiction uses the same writing and reference data; its preset is preserved.
+This change adds no schema migration or preset conversion for rollback.
 
 Import is bounded while reading and extracting: at most 1 GiB ciphertext and
 512 MiB plaintext payload, plus a free-space allowance for verification and

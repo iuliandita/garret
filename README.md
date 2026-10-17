@@ -23,7 +23,7 @@ or an internet connection to write. Your books stay on your own disk.
 
 > **Early alpha.** garret moves fast; keep backups of your work.
 
-The current published build is [0.0.2 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.2).
+The current published build is [0.0.3 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.3).
 See [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
 
@@ -99,21 +99,21 @@ or [build garret from source](#building-from-source-linux).
 
 Download alpha builds from [GitHub Releases](https://github.com/iuliandita/garret/releases).
 Choose the download for your device and follow the included instructions.
-The next release adds Windows `-setup.exe`, Linux `.deb`, `.rpm` and `.AppImage`,
-and macOS `.dmg` installers alongside the portable archives. See the
+Windows `-setup.exe`, Linux `.deb`, `.rpm` and `.AppImage`,
+and macOS `.dmg` installers are available alongside the portable archives. See the
 [installation guide](docs/INSTALLING.md) for setup, upgrades and removal. Android uses an APK; the phone app has fewer
 features and does not sync books automatically. Keep a backup before trying a
 new build.
 
 ### Verify a download
 
-The next release adds a signed `SHA256SUMS` manifest and GitHub artifact
-attestations. Older releases may have only per-file checksums.
+Releases from 0.0.3 include a signed `SHA256SUMS` manifest and GitHub artifact
+attestations. Older releases have only per-file checksums.
 
-Release signing key fingerprint: not yet published
+Release signing key fingerprint: `8270 74C7 C4A2 9486 FB48  BC00 8B54 EB1A DBE5 8725`
 
-Once the public key is published, import it and compare its full fingerprint
-with this page and [SECURITY.md](SECURITY.md). Download `SHA256SUMS`,
+Import the [public key](docs/release-signing-key.asc) and compare its full
+fingerprint with this page and [SECURITY.md](SECURITY.md). Download `SHA256SUMS`,
 `SHA256SUMS.asc`, and the release files with their `.sha256` sidecars into
 one directory, then run:
 
@@ -145,7 +145,7 @@ release for you:
 
 1. Add `https://github.com/iuliandita/garret` as an app source.
 2. Pick the asset whose name ends in `-android.apk`, for example
-   `garret-0.0.2-android.apk`. The `-android-info.zip` asset holds instructions
+   `garret-0.0.3-android.apk`. The `-android-info.zip` asset holds instructions
    and build details; it is not installable.
 3. Check the signing certificate. Obtainium shows the certificate hash for the
    installed app on its app page; the SHA-256 digest must be
@@ -236,7 +236,7 @@ This is a manual copy, not synchronization or merging.
 
 The phone accepts archives up to 1 GiB and contents up to 512 MiB, with extra
 private storage required for verification and copying. This Android version
-supports only absent or `novel` project presets; other presets are refused
+supports absent, `novel`, `short`, and `nonfiction` project presets; other presets are refused
 before editable opening. See [compatibility and recovery](docs/COMPATIBILITY.md)
 for interrupted transfers, leftover-file disposal, updates, and verification
 limits. Android transfer is not certified on physical devices.
