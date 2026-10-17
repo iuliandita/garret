@@ -1,3 +1,4 @@
+mod daily_target;
 pub mod core_constants;
 pub mod mobile_core;
 mod package_format;
@@ -61,6 +62,10 @@ pub mod identity {
 
 #[cfg(target_os = "android")]
 mod mobile;
+#[cfg(target_os = "android")]
+mod mobile_saf;
+#[cfg(target_os = "android")]
+mod mobile_transfer;
 
 #[cfg(target_os = "android")]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

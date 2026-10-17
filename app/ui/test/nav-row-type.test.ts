@@ -135,9 +135,7 @@ describe("the navigator row declares its own type", () => {
   test("the count changes no height", () => {
     // Same rule the type styles follow, and the same reason: the row is a box of
     // exactly ROW_HEIGHT px whose coordinates five rigs compute. The count
-    // inherits the row's own 14px rather than setting a smaller one
-    // of its own - "dimmed, not smaller" - so what this guards is that it adds
-    // no line-height, padding or height of its own on top of that inheritance.
+    // uses smaller text without adding line-height, padding or height.
     const count = block("#nav .nav-count");
     expect(count).toContain("font-size");
     expect(count).not.toContain("line-height");

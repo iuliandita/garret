@@ -178,22 +178,29 @@ pub(crate) fn open_regular_with_limit(path: &Path, limit: u64) -> Result<File, &
     }
     let mut options = OpenOptions::new();
     options.read(true);
-    #[cfg(target_os = "linux")]
+    #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
-        // O_NOFOLLOW; OpenOptions keeps this safe without a raw syscall.
-        options.custom_flags(0o400000);
+        // NONBLOCK prevents a swapped FIFO from blocking before metadata validation.
+        options.custom_flags((rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::NONBLOCK).bits() as i32);
     }
     #[cfg(windows)]
     {
         use std::os::windows::fs::OpenOptionsExt;
         // FILE_FLAG_OPEN_REPARSE_POINT, so the metadata check sees the link.
-        options.custom_flags(0x0020_0000);
+        options.custom_flags(0x0020_0000).share_mode(0x0000_0003);
     }
     let file = options.open(path).map_err(|_| "missing or unreadable")?;
     let meta = file.metadata().map_err(|_| "metadata unreadable")?;
     if !meta.is_file() {
         return Err("not a regular file");
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        if before.file_attributes() & 0x0000_0400 != 0 || meta.file_attributes() & 0x0000_0400 != 0 {
+            return Err("not a regular file");
+        }
     }
     if meta.len() > limit {
         return Err("too large");
@@ -790,27 +797,25 @@ pub fn copy_assets_with_gaps(bundle: &Path, dest_db: &Path) -> Result<Vec<String
         for name in &inventory.expected {
             gaps.push(format!("{name}: original unavailable"));
         }
-        gaps.sort();
-        gaps.dedup();
-        return Ok(gaps);
-    }
-    for name in &inventory.expected {
-        let Some(asset) = inventory.assets.iter().find(|a| &a.name == name) else {
-            gaps.push(format!("{name}: original unavailable"));
-            continue;
-        };
-        let source = bundle.join(PICTURES_NAME).join(name);
-        if !matches!(hash_regular(&source), Ok((bytes, ref hash)) if bytes == asset.bytes && hash == &asset.hash)
-        {
-            gaps.push(format!("{name}: original missing or changed"));
-            continue;
-        }
-        let target = dest.join(name);
-        match copy_original(&source, &target) {
-            Ok(copied) if copied.bytes == asset.bytes && copied.hash == asset.hash => {}
-            _ => {
-                let _ = fs::remove_file(&target);
-                gaps.push(format!("{name}: original changed during restore"));
+    } else {
+        for name in &inventory.expected {
+            let Some(asset) = inventory.assets.iter().find(|a| &a.name == name) else {
+                gaps.push(format!("{name}: original unavailable"));
+                continue;
+            };
+            let source = bundle.join(PICTURES_NAME).join(name);
+            if !matches!(hash_regular(&source), Ok((bytes, ref hash)) if bytes == asset.bytes && hash == &asset.hash)
+            {
+                gaps.push(format!("{name}: original missing or changed"));
+                continue;
+            }
+            let target = dest.join(name);
+            match copy_original(&source, &target) {
+                Ok(copied) if copied.bytes == asset.bytes && copied.hash == asset.hash => {}
+                _ => {
+                    let _ = fs::remove_file(&target);
+                    gaps.push(format!("{name}: original changed during restore"));
+                }
             }
         }
     }
@@ -847,6 +852,28 @@ pub fn copy_assets_with_gaps(bundle: &Path, dest_db: &Path) -> Result<Vec<String
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn regular_reader_refuses_special_files_and_symlinks() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("source");
+        rustix::fs::mkfifoat(rustix::fs::CWD, &path, rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR).unwrap();
+        assert_eq!(open_regular_with_limit(&path, 100).unwrap_err(), "not a regular file");
+        fs::remove_file(&path).unwrap();
+        let socket = std::os::unix::net::UnixListener::bind(&path).unwrap();
+        assert_eq!(open_regular_with_limit(&path, 100).unwrap_err(), "not a regular file");
+        drop(socket);
+        fs::remove_file(&path).unwrap();
+        let regular = root.path().join("regular");
+        fs::write(&regular, b"readable").unwrap();
+        std::os::unix::fs::symlink(&regular, &path).unwrap();
+        assert_eq!(open_regular_with_limit(&path, 100).unwrap_err(), "not a regular file");
+        let mut file = open_regular_with_limit(&regular, 100).unwrap();
+        let mut content = String::new();
+        file.read_to_string(&mut content).unwrap();
+        assert_eq!(content, "readable");
+    }
 
     fn project() -> (tempfile::TempDir, PathBuf, String) {
         let root = tempfile::tempdir().unwrap();
@@ -1108,11 +1135,19 @@ mod tests {
     #[test]
     fn partial_restore_does_not_follow_a_symlinked_picture_directory() {
         let (root, source, _) = project();
+        let external = root.path().join("notes.txt");
+        fs::write(&external, b"original field notes").unwrap();
+        let writer = Store::open(&source).unwrap();
+        let resource = research::import_copy(&source, &external, |name, bytes, hash|
+            writer.research_resource_add("Notes", name, "text/plain", bytes, hash, "", "")
+        ).unwrap();
+        drop(writer);
         let store = Store::open_readonly(&source).unwrap();
         let bundle = root.path().join("point.point");
         assert!(write(&source, &store, &bundle).unwrap().verified);
         fs::remove_dir_all(bundle.join(PICTURES_NAME)).unwrap();
         std::os::unix::fs::symlink(pictures::dir_for(&source), bundle.join(PICTURES_NAME)).unwrap();
+        assert!(verify(&bundle).is_err());
         let library = root.path().join("library");
         let (restored, gaps) = crate::projects::restore_point_with_picture_gaps(
             &bundle,
@@ -1127,5 +1162,35 @@ mod tests {
         assert!(!pictures::dir_for(Path::new(&restored.path))
             .join("face.png")
             .exists());
+        assert_eq!(fs::read(research::path_for(Path::new(&restored.path), &resource.sha256).unwrap()).unwrap(), b"original field notes");
+        assert!(!gaps.iter().any(|gap| gap.contains(&resource.sha256)));
+        assert_eq!(fs::read(pictures::dir_for(&source).join("face.png")).unwrap(), include_bytes!("../fixtures/two-halves.png"));
+    }
+
+    #[test]
+    fn partial_restore_keeps_research_when_the_picture_directory_is_missing() {
+        let (root, source, _) = project();
+        let external = root.path().join("notes.txt");
+        fs::write(&external, b"original field notes").unwrap();
+        let store = Store::open(&source).unwrap();
+        let resource = research::import_copy(&source, &external, |name, bytes, hash|
+            store.research_resource_add("Notes", name, "text/plain", bytes, hash, "", "")
+        ).unwrap();
+        let bundle = root.path().join("point.point");
+        assert!(write(&source, &store, &bundle).unwrap().verified);
+        fs::remove_dir_all(bundle.join(PICTURES_NAME)).unwrap();
+        verify_database_for_restore(&bundle).unwrap();
+        assert!(verify(&bundle).is_err());
+        let restored = root.path().join("restored.db");
+        fs::copy(db_path(&bundle), &restored).unwrap();
+        fs::create_dir(pictures::dir_for(&restored)).unwrap();
+        research::private_dir(&research::dir_for(&restored)).unwrap();
+        assert!(copy_assets(&bundle, &restored).is_err());
+        let gaps = copy_assets_with_gaps(&bundle, &restored).unwrap();
+        assert!(gaps.iter().any(|gap| gap == "pictures directory missing or unsafe"));
+        assert!(gaps.iter().any(|gap| gap == "face.png: original unavailable"));
+        assert!(!pictures::dir_for(&restored).join("face.png").exists());
+        assert_eq!(fs::read(research::path_for(&restored, &resource.sha256).unwrap()).unwrap(), b"original field notes");
+        assert!(!gaps.iter().any(|gap| gap.contains(&resource.sha256)));
     }
 }

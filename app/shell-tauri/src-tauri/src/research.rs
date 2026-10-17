@@ -69,29 +69,8 @@ pub fn private_dir(path: &Path) -> Result<(), String> {
 }
 
 fn regular_reader(path: &Path) -> Result<File, String> {
-    let meta = fs::symlink_metadata(path).map_err(|e| e.to_string())?;
-    if !meta.is_file() || meta.file_type().is_symlink() {
-        return Err("research source is not a regular file".into());
-    }
-    if meta.len() > knowledge::MAX_RESOURCE_BYTES {
-        return Err(format!(
-            "research file exceeds the {} byte limit",
-            knowledge::MAX_RESOURCE_BYTES
-        ));
-    }
-    let mut options = OpenOptions::new();
-    options.read(true);
-    #[cfg(target_os = "linux")]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        options.custom_flags(0o400000);
-    }
-    let file = options.open(path).map_err(|e| e.to_string())?;
-    let opened = file.metadata().map_err(|e| e.to_string())?;
-    if !opened.is_file() || opened.len() > knowledge::MAX_RESOURCE_BYTES {
-        return Err("research source changed or exceeds its size limit".into());
-    }
-    Ok(file)
+    crate::backup_bundle::open_regular_with_limit(path, knowledge::MAX_RESOURCE_BYTES)
+        .map_err(|error| format!("research source {error}"))
 }
 
 fn digest_file(path: &Path, max: u64) -> Result<(u64, String), String> {
@@ -304,6 +283,21 @@ pub fn save_copy(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn research_reader_refuses_special_files_without_copying_them() {
+        let root = tempfile::tempdir().unwrap();
+        let fifo = root.path().join("fifo");
+        rustix::fs::mkfifoat(rustix::fs::CWD, &fifo, rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR).unwrap();
+        let destination = root.path().join("copy");
+        assert!(copy_checked(&fifo, &destination, None).unwrap_err().contains("not a regular file"));
+        assert!(!destination.exists());
+        let regular = root.path().join("regular");
+        fs::write(&regular, b"original").unwrap();
+        copy_checked(&regular, &destination, None).unwrap();
+        assert_eq!(fs::read(&destination).unwrap(), b"original");
+    }
 
     #[test]
     fn late_publication_refusal_keeps_destination_absent_and_cleans_stage() {

@@ -351,7 +351,7 @@ fn describe(path: PathBuf, opened_at: Option<u64>, modified_at: i64, want_cover:
         .map(|s| s.to_string_lossy().into_owned())
         .unwrap_or_default();
     let key = path.to_string_lossy().into_owned();
-    let missing = !path.exists();
+    let missing = projects::book_is_missing(&path).unwrap_or(false);
 
     let (name, error, identity_id, identity_name, book_id, membership, membership_error, cover) = match Store::open_readonly(&path) {
         Ok(store) => {

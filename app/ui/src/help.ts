@@ -124,6 +124,7 @@ export const SHORTCUTS: readonly ShortcutGroup[] = [
 ];
 
 export interface HelpPanelDeps {
+  onDismiss?: () => void;
   privacyShortcut?: () => import("./privacy").PrivacyShortcut;
   /** Where the panel is appended. The menu bar's own container, so the panel is
    *  inside the element whose click-outside handler closes the menu -- a writer
@@ -163,10 +164,16 @@ export function createHelpPanel(deps: HelpPanelDeps): HelpPanel {
   for (const task of ["structure", "annotate", "export", "protect"] as const) {
     const details = document.createElement("details");
     const summary = document.createElement("summary");
+    summary.setAttribute("role", "button");
+    summary.setAttribute("aria-expanded", "false");
+    details.addEventListener("toggle", () => summary.setAttribute("aria-expanded", String(details.open)));
     summary.textContent = t(`help.guide.${task}.title`);
-    const text = document.createElement("p");
-    text.textContent = t(`help.guide.${task}.body`);
-    details.append(summary, text);
+    details.append(summary);
+    for (const paragraph of t(`help.guide.${task}.body`).split("\n\n")) {
+      const text = document.createElement("p");
+      text.textContent = paragraph;
+      details.append(text);
+    }
     guide.append(details);
   }
   const shortcutsTitle = document.createElement("h3");
@@ -220,7 +227,7 @@ export function createHelpPanel(deps: HelpPanelDeps): HelpPanel {
   // it. Reading a shortcut and then trying it is the whole point of the panel,
   // so that is the ordinary path, not an edge of one. The shell's three
   // dismissals (Close, Escape, a click elsewhere) cover all of it.
-  const shell = createPanelShell({ panel, title: t("help.heading"), titleId: "help-heading", close });
+  const shell = createPanelShell({ panel, title: t("help.heading"), titleId: "help-heading", close, returnFocus: deps.onDismiss });
 
   deps.container.append(panel);
 

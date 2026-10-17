@@ -92,7 +92,7 @@ try {
     // them from the catalog would let a copied English catalog pass.
     ["d", "menu-file", "Datei", "menu-project-new", "Neues Buch…"],
     ["b", "menu-edit", "Bearbeiten", "menu-undo", "Rückgängig"],
-    ["g", "menu-outline", "Gliederung", "menu-new-scene", "Neue Szene"],
+    ["g", "menu-outline", "Gliederung", "menu-new", "Neu…"],
     ["h", "menu-help", "Hilfe", "menu-shortcuts", "Anleitung und Tastenkürzel"],
   ] as const) {
     press(key);

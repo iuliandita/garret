@@ -113,15 +113,15 @@ const projectPath = join(root, "book.db");
 
 function homeWith(label: string, settings: unknown | null): string {
   const dir = join(root, `home-${label}`);
-  mkdirSync(join(dir, "cc.local.app"), { recursive: true });
+  mkdirSync(join(dir, "garret"), { recursive: true });
   if (settings !== null) {
-    writeFileSync(join(dir, "cc.local.app", "settings.json"), JSON.stringify(settings));
+    writeFileSync(join(dir, "garret", "settings.json"), JSON.stringify(settings));
   }
   return dir;
 }
 
 function recordedSize(dataHome: string): Size | null {
-  const path = join(dataHome, "cc.local.app", "settings.json");
+  const path = join(dataHome, "garret", "settings.json");
   if (!existsSync(path)) return null;
   const held = (JSON.parse(readFileSync(path, "utf8")) as { window?: { width?: number; height?: number } })
     .window;

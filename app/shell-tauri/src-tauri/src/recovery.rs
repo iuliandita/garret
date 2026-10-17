@@ -3547,7 +3547,7 @@ mod tests {
             target_dir(Some(Path::new("/lib/open-book.db")), None, None, home),
             Some((
                 "open-book".to_string(),
-                home.join("cc.local.app").join("recovery").join("open-book")
+                home.join("garret").join("recovery").join("open-book")
             ))
         );
     }

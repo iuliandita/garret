@@ -86,6 +86,12 @@ test("save failure keeps prose mounted and blocks departure and same-scene error
   expect(f.workspace.editor.serialize()).toBe(before);
   expect(f.mount.querySelector(".mobile-save")!.textContent).toBe("Not saved");
   expect(f.mount.querySelector<HTMLElement>(".mobile-error")!.hidden).toBe(false);
+  f.mount.querySelector<HTMLButtonElement>(".mobile-error button")!.click();
+  const recovery = f.mount.querySelector<HTMLDialogElement>(".mobile-recovery")!;
+  expect(recovery.open).toBe(true);
+  expect(await f.workspace.openScene("a")).toBe(false);
+  expect(f.mount.querySelector("section > .mobile-error")).not.toBeNull();
+  expect(recovery.querySelector("textarea")!.value).toContain("unsaved");
   // Simulate document destruction only after asserting the refused public close.
   f.workspace.editor.destroy(); f.mount.remove();
 });
@@ -332,4 +338,29 @@ test("opening Outline brings an existing save failure and recovery action into t
   expect(alert.parentElement === f.mount.querySelector("section")).toBe(true);
   expect(f.workspace.editor.serialize()).toBe(before);
   f.workspace.editor.destroy(); f.mount.remove();
+});
+
+test("export waits for the last save acknowledgement and freezes editing until transfer closes", async () => {
+  let acknowledge!: () => void;
+  let closeTransfer!: () => void;
+  let exports = 0;
+  const f = fixture({
+    flush: entries => new Promise(resolve => { acknowledge = () => resolve(entries.map(e => ({ item_id: e.item_id, rev: e.base_rev + 1 }))); }),
+    exportBook: () => { exports++; return new Promise(resolve => { closeTransfer = resolve; }); },
+  });
+  f.workspace.editor.typeChar("last edit");
+  const outline = showOutline(f.mount);
+  const button = Array.from(outline.querySelectorAll("button")).find(node => node.textContent === "Export book")!;
+  button.click(); await nextTask();
+  expect(exports).toBe(0);
+  const before = f.workspace.editor.serialize();
+  f.workspace.editor.typeChar("blocked"); expect(f.workspace.editor.serialize()).toBe(before);
+  acknowledge(); await nextTask();
+  expect(exports).toBe(1); expect(outline.open).toBe(false);
+  expect(await f.workspace.close()).toBe(false);
+  closeTransfer(); await nextTask();
+  f.workspace.editor.typeChar("after transfer");
+  expect(f.workspace.editor.serialize()).not.toBe(before);
+  const close = f.workspace.close(); await nextTask(); acknowledge();
+  expect(await close).toBe(true); f.mount.remove();
 });

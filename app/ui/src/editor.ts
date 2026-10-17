@@ -185,7 +185,9 @@ export function countWordsIn(doc: PmNode): number {
   return countWords(doc.textBetween(0, doc.content.size, " "));
 }
 
-/** The plain-text projection of a STORED body, for comparing two of them.
+/** The plain-text projection of a stored body. History supplies paragraph
+ *  separators so paragraph-only changes survive comparison; word counts use
+ *  the default space.
  *
  *  Through the schema and `textBetween`, NOT through a fresh walk of the JSON.
  *  A fourth restatement of the projection rule is a fourth thing that can drift
@@ -199,9 +201,9 @@ export function countWordsIn(doc: PmNode): number {
  *  Throws on a body that is not this schema's JSON. That is the right answer
  *  for a caller who is about to paint it: the alternative is an empty string,
  *  which renders as "the whole scene was deleted". */
-export function bodyText(body: string): string {
+export function bodyText(body: string, blockSeparator = " "): string {
   const doc = schema.nodeFromJSON(JSON.parse(body) as unknown as Record<string, unknown>);
-  return doc.textBetween(0, doc.content.size, " ");
+  return doc.textBetween(0, doc.content.size, blockSeparator);
 }
 
 /** Which of the three formatting marks the selection carries WHOLE. Pure, so it
@@ -581,7 +583,7 @@ export function createEditor(
   const editSources = new EditSourceTracker();
   const view: EditorView = new EditorView(mount, {
     state: EditorState.create({ doc, plugins: editorPlugins() }),
-    attributes: { role: "textbox", "aria-multiline": "true", "aria-label": t("editor.name") },
+    attributes: { role: "textbox", "aria-multiline": "true", "aria-label": t("editor.name"), lang: "" },
     dispatchTransaction(tr) {
       if (tr.docChanged && !editable) return;
       const before = view.state;

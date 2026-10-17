@@ -102,6 +102,29 @@ describe("the stylesheet's two dark blocks", () => {
     }
   });
 
+  test("text tokens contrast at least 4.5:1 on resting and selected theme surfaces", () => {
+    const luminance = (hex: string): number => {
+      expect(hex).toMatch(/^#[0-9a-f]{6}$/i);
+      const linear = [1, 3, 5].map((at) => {
+        const value = Number.parseInt(hex.slice(at, at + 2), 16) / 255;
+        return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+      });
+      return linear[0]! * 0.2126 + linear[1]! * 0.7152 + linear[2]! * 0.0722;
+    };
+    for (const selector of [":root", ':root[data-theme="dark"]',
+      ':root[data-family="neutral"]', ':root[data-family="neutral"][data-theme="dark"]',
+      ':root[data-family="atmospheric"]', ':root[data-family="atmospheric"][data-theme="dark"]']) {
+      const colors = declarations(selector);
+      for (const text of ["--fg", "--muted", "--accent", "--danger"]) {
+        for (const surface of ["--bg", "--nav-bg", "--chrome-bg", "--control-bg", "--accent-soft"]) {
+          const foreground = luminance(colors[text]!);
+          const background = luminance(colors[surface]!);
+          expect((Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05)).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    }
+  });
+
   test("declare exactly the same tokens with exactly the same values", () => {
     // CSS cannot share a declaration block between a media rule and a plain one
     // without a preprocessor, so the dark palette is stated twice. This is the

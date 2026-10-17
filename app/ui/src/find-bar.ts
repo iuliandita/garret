@@ -151,13 +151,21 @@ export function createFindBar(deps: FindBarDeps): FindBar {
   // Nothing here traps focus, and aria-modal="true" would tell a screen reader
   // the rest of the page is inert when it is not.
   panel.setAttribute("aria-modal", "false");
-  panel.setAttribute("aria-label", t("find.panel.label"));
+  panel.setAttribute("aria-labelledby", "find-heading");
   panel.hidden = true;
 
   const input = document.createElement("input");
   input.id = "find-query";
   input.type = "text";
   input.setAttribute("aria-label", t("find.query.label"));
+  input.setAttribute("role", "combobox");
+  input.setAttribute("aria-controls", "find-results");
+  input.setAttribute("aria-autocomplete", "none");
+  input.setAttribute("aria-expanded", "false");
+
+  const queryLabel = document.createElement("label");
+  queryLabel.htmlFor = input.id;
+  queryLabel.textContent = t("find.query.label");
 
   const run = document.createElement("button");
   run.id = "find-run";
@@ -184,7 +192,10 @@ export function createFindBar(deps: FindBarDeps): FindBar {
   replaceInput.id = "find-replace";
   replaceInput.type = "text";
   replaceInput.setAttribute("aria-label", t("find.replace.label"));
-  replaceInput.placeholder = t("find.replace.label");
+
+  const replaceLabel = document.createElement("label");
+  replaceLabel.htmlFor = replaceInput.id;
+  replaceLabel.textContent = t("find.replace.label");
 
   const replaceOne = document.createElement("button");
   replaceOne.id = "find-replace-one";
@@ -222,7 +233,7 @@ export function createFindBar(deps: FindBarDeps): FindBar {
   replaceBook.dataset.weight = "quiet";
   replaceBook.hidden = true;
 
-  panel.append(input, run, replaceInput, replaceOne, replaceAll, replaceBook, status, results);
+  panel.append(queryLabel, input, run, replaceLabel, replaceInput, replaceOne, replaceAll, replaceBook, status, results);
   container.append(panel);
 
   let destroyed = false;
@@ -238,6 +249,7 @@ export function createFindBar(deps: FindBarDeps): FindBar {
 
   function setOpen(open: boolean): void {
     panel.hidden = !open;
+    input.setAttribute("aria-expanded", String(open && results.childElementCount > 0));
     // A confirmation that survives the panel closing is not a confirmation: the
     // next press on a reopened panel would rewrite the book having asked
     // nothing. `disarmBook` is declared below and only ever CALLED from here
@@ -317,7 +329,8 @@ export function createFindBar(deps: FindBarDeps): FindBar {
     // different scene. Enter then falls back to searching, which is what the
     // writer means by pressing it with nothing arrowed onto.
     highlighted = null;
-    results.removeAttribute("aria-activedescendant");
+    input.removeAttribute("aria-activedescendant");
+    input.setAttribute("aria-expanded", String(!panel.hidden && found.results.length > 0));
   }
 
   // What the rows on screen are about. Empty until a search has rendered.
@@ -326,6 +339,12 @@ export function createFindBar(deps: FindBarDeps): FindBar {
   async function search(): Promise<void> {
     const query = input.value.trim();
     const mine = ++generation;
+    highlighted = null;
+    input.removeAttribute("aria-activedescendant");
+    input.setAttribute("aria-expanded", "false");
+    for (const row of results.querySelectorAll('[aria-selected="true"]')) {
+      row.setAttribute("aria-selected", "false");
+    }
     if (query === "") {
       // Not an error. Matching the empty string would return the whole book;
       // the host declines it too, and this avoids the round trip.
@@ -474,6 +493,8 @@ export function createFindBar(deps: FindBarDeps): FindBar {
     if (!bookArmed) return;
     bookArmed = false;
     replaceBook.textContent = t("find.replace-book");
+    replaceBook.setAttribute("aria-label", t("find.replace-book.label"));
+    status.textContent = shownSummary;
     replaceBook.removeAttribute("data-armed");
     // Back to quiet: at rest this is one of three replace buttons and must not
     // shout, and a danger tint outliving the confirmation it belonged to is a
@@ -487,7 +508,10 @@ export function createFindBar(deps: FindBarDeps): FindBar {
     if (refuseWithoutQuery(query)) return;
     if (!bookArmed) {
       bookArmed = true;
-      replaceBook.textContent = t("find.replace-book.armed");
+      const confirmation = t("find.replace-book.armed");
+      replaceBook.textContent = confirmation;
+      replaceBook.setAttribute("aria-label", confirmation);
+      status.textContent = [shownSummary, confirmation].filter(Boolean).join(" ");
       replaceBook.setAttribute("data-armed", "true");
       // ARMED ONLY. This is the one chrome action with no inverse short of the
       // history, and the press that follows is the one that cannot be taken
@@ -573,9 +597,8 @@ export function createFindBar(deps: FindBarDeps): FindBar {
     row.setAttribute("aria-selected", "true");
     highlighted = row.dataset.itemId ?? null;
     // Focus stays in the query field - the writer is still typing - so the
-    // listbox has to say which option is current by reference. Without this a
-    // screen reader announces nothing as the arrow keys move.
-    results.setAttribute("aria-activedescendant", row.id);
+    // focused combobox owns the current option in its controlled listbox.
+    input.setAttribute("aria-activedescendant", row.id);
   }
 
   /** Open or select the row for `itemId`. The one path a click and Enter share:
@@ -653,6 +676,7 @@ export function createFindBar(deps: FindBarDeps): FindBar {
   const shell = createPanelShell({
     panel,
     title: t("find.title"),
+    titleId: "find-heading",
     close: () => setOpen(false),
     returnFocus: deps.onDismiss,
   });

@@ -1631,6 +1631,7 @@ fn extract(
             let contents_title = strings.t(crate::commands::export::CONTENTS_KEY);
             let written = export::manuscript(
                 &export::Book {
+                    single_scene: false,
                     name: &name,
                     contents_title: &contents_title,
                     front: &[],
@@ -5709,6 +5710,7 @@ pub(crate) mod tests {
                 new_page: true,
                 caps_title: false,
                 drop_cap: true,
+                ..Default::default()
             },
         )
         .unwrap();

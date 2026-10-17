@@ -457,10 +457,10 @@ for (const p of [BIN, DIST, FIXTURE]) {
 const root = mkdtempSync(join(tmpdir(), "app-goals-"));
 const homeFor = (label: string): string => {
   const dir = join(root, `home-${label}`);
-  mkdirSync(join(dir, "cc.local.app"), { recursive: true });
+  mkdirSync(join(dir, "garret"), { recursive: true });
   return dir;
 };
-const settingsPath = (dataHome: string): string => join(dataHome, "cc.local.app", "settings.json");
+const settingsPath = (dataHome: string): string => join(dataHome, "garret", "settings.json");
 
 function seed(label: string): string {
   const path = join(root, `${label}.db`);

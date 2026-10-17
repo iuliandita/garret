@@ -199,7 +199,7 @@ export async function captureMirrorChanges({ theme: scheme, out }: MirrorChanges
     const dataHome = join(work, "data");
     const mirrorRoot = join(work, "mirror");
     const configHome = join(work, "config");
-    mkdirSync(join(dataHome, "cc.local.app"), { recursive: true });
+    mkdirSync(join(dataHome, "garret"), { recursive: true });
     mkdirSync(mirrorRoot, { recursive: true });
     mkdirSync(join(configHome, "gtk-3.0"), { recursive: true });
     const seeded = Bun.spawnSync([BIN, "--seed", FIXTURE, project], {
@@ -208,7 +208,7 @@ export async function captureMirrorChanges({ theme: scheme, out }: MirrorChanges
     });
     if (seeded.exitCode !== 0) throw new Error("seeding the project failed");
     writeFileSync(
-      join(dataHome, "cc.local.app", "settings.json"),
+      join(dataHome, "garret", "settings.json"),
       JSON.stringify({ theme: scheme, mirrored_book_ids: [readBookId(project)] }),
     );
     writeFileSync(

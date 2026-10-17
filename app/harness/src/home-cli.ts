@@ -76,7 +76,7 @@ const DIST = "app/ui/dist";
 const TINY_FIXTURE = "lab/fixtures/out/tiny";
 const STRESS_FIXTURE = "lab/fixtures/out/stress";
 const RESULTS = "app/results";
-const APP_DIR = "cc.local.app";
+const APP_DIR = "garret";
 const PROJECTS_DIR = "projects";
 
 /** A figure this rig could not read at all -- large enough to fail either
@@ -343,7 +343,7 @@ async function boot(
     mode: "virtual",
     soakMs: 0,
     staged: DIST,
-    env: { APP_RUN: "interactive", XDG_DATA_HOME: dataHome, GDK_BACKEND: "x11" },
+    env: { APP_RUN: "interactive", APP_LIBRARY_DIAGNOSTICS: "1", XDG_DATA_HOME: dataHome, GDK_BACKEND: "x11" },
     probeA11y: false,
     onReady: async ({ displayNum, rootPid }) => {
       const before = readNodeTexts(rootPid, ["library-new-pen-name", "library-desk-title"]);

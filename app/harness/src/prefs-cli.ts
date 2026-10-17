@@ -257,11 +257,11 @@ async function settledBox(label: string, rootPid: number): Promise<ProseBox> {
 }
 
 function settingsPath(dataHome: string): string {
-  return join(dataHome, "cc.local.app", "settings.json");
+  return join(dataHome, "garret", "settings.json");
 }
 
 function writePreference(dataHome: string, preference: Preference): void {
-  mkdirSync(join(dataHome, "cc.local.app"), { recursive: true });
+  mkdirSync(join(dataHome, "garret"), { recursive: true });
   writeFileSync(settingsPath(dataHome), JSON.stringify({ typography: preference }));
 }
 
@@ -397,6 +397,10 @@ await runShell({
     // item did.
     const driver = menuDriver(display, wid, xdo);
     await driver.activate("menu-preferences");
+    await Bun.sleep(SETTLE_MS);
+    // Preferences remembers its category; all three typography controls are in Writing.
+    driver.key("Tab");
+    driver.key("Home");
     await Bun.sleep(SETTLE_MS);
 
     // The one and only walk in this window, once the panel's buttons exist.

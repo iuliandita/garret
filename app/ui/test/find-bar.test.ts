@@ -1,5 +1,6 @@
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { afterEach, describe, expect, test } from "bun:test";
+import { t } from "../src/i18n";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
@@ -328,7 +329,7 @@ describe("searching", () => {
     await settle();
 
     // Matching the empty string would return the whole book. The host declines
-    // it too; this avoids the round trip and the momentary "Searching...".
+    // it too; this avoids the round trip and the momentary searching status.
     expect(rig.calls()).toEqual([]);
     expect(rig.status()).toBe("");
     expect(rig.rows()).toHaveLength(0);
@@ -888,15 +889,22 @@ describe("driving the results from the keyboard", () => {
     return rig;
   }
 
-  test("ArrowDown highlights the first row and says so on the listbox", async () => {
+  test("ArrowDown exposes the active option through the focused query combobox", async () => {
     // Focus stays in the query field, so aria-activedescendant is the only
     // channel that tells a screen reader which option is current.
     const rig = await searched();
+    rig.bar.open();
+    rig.input().focus();
 
     pressInput(rig, "ArrowDown");
 
+    expect(document.activeElement === rig.input()).toBe(true);
+    expect(rig.input().getAttribute("role")).toBe("combobox");
+    expect(rig.input().getAttribute("aria-controls")).toBe("find-results");
+    expect(rig.input().getAttribute("aria-expanded")).toBe("true");
     expect(rig.rows()[0]?.getAttribute("aria-selected")).toBe("true");
-    expect(rig.el("#find-results").getAttribute("aria-activedescendant")).toBe("find-row-s1");
+    expect(rig.input().getAttribute("aria-activedescendant")).toBe("find-row-s1");
+    expect(rig.el("#find-results").hasAttribute("aria-activedescendant")).toBe(false);
   });
 
   test("Enter opens the highlighted row instead of searching again", async () => {
@@ -1033,14 +1041,23 @@ describe("replacing in the open scene", () => {
     const rig = mount();
 
     expect(rig.replaceField().id).toBe("find-replace");
-    expect(rig.replaceField().getAttribute("aria-label")).toBe("replace with");
+    expect(rig.replaceField().getAttribute("aria-label")).toBe(t("find.replace.label"));
+    expect(rig.replaceField().placeholder).toBe("");
+    expect(rig.input().labels?.[0]?.textContent).toBe(t("find.query.label"));
+    rig.replaceField().value = "Dracula";
+    expect(rig.replaceField().labels?.[0]?.textContent).toBe(t("find.replace.label"));
 
     const one = rig.el<HTMLButtonElement>("#find-replace-one");
     const all = rig.el<HTMLButtonElement>("#find-replace-all");
     expect(one.textContent).toBe("Replace");
     expect(all.textContent).toBe("All in scene");
-    expect(one.getAttribute("aria-label")).toBe("replace this occurrence in the open scene");
-    expect(all.getAttribute("aria-label")).toBe("replace every occurrence in the open scene");
+    expect(one.getAttribute("aria-label")).toBe("Replace this occurrence in the open scene");
+    expect(all.getAttribute("aria-label")).toBe("All in scene: replace every occurrence in the open scene");
+    const panel = rig.el<HTMLElement>("#find-panel");
+    const heading = rig.el<HTMLElement>("#find-heading");
+    expect(panel.getAttribute("aria-labelledby")).toBe(heading.id);
+    expect(panel.hasAttribute("aria-label")).toBe(false);
+    expect(heading.textContent).toBe(t("find.title"));
 
     // The claim above, stated as the thing that must not be lost: both names
     // name the scene, and neither says "manuscript".
@@ -1119,12 +1136,13 @@ describe("replacing in the open scene", () => {
 
     rig.clickReplaceAll();
 
-    // THE STATUS LINE NEVER SHOWS THE COUNT. `search()` writes "Searching..."
+    // THE STATUS LINE NEVER SHOWS THE COUNT. `search()` writes the catalog
+    // searching status, including its ellipsis,
     // synchronously, before its first await, so the count is gone in the same
     // tick it was written -- no writer ever sees it there. That is what the
     // notice is for, and it is the only channel that reports the one number
     // this action produces.
-    expect(rig.status()).toBe("Searching...");
+    expect(rig.status()).toBe(t("find.searching"));
     // GOOD NEWS, so it goes down onDone. It used to go down onNotice, which
     // raised the same undismissable red alert bar as a failed save.
     expect(rig.dones()).toEqual(["Replaced 3 occurrences in this scene."]);
@@ -1196,7 +1214,7 @@ describe("replacing in the open scene", () => {
     // AND the search summary is restated rather than written over. That line is
     // the only channel reporting the 200-result cap, so a replace that destroyed
     // it would leave a truncated list on screen reading as a complete one.
-    expect(rig.status()).toContain('for "alpha"');
+    expect(rig.status()).toContain('for “alpha”');
   });
 
   test("a press that only selected a match tells the writer to press again", async () => {
@@ -1213,7 +1231,7 @@ describe("replacing in the open scene", () => {
     // The search summary is restated rather than written over, for the same
     // reason it is after a successful press: that line is the only channel
     // reporting the 200-result cap.
-    expect(rig.status()).toContain("for \"alpha\"");
+    expect(rig.status()).toContain("for “alpha”");
   });
 
   test("neither button replaces with an empty query, and BOTH say why", () => {
@@ -1350,6 +1368,29 @@ describe("replacing throughout the manuscript", () => {
     await settle();
     expect(rig.calls()).not.toContain("replaceEverywhere");
     expect(rig.bookButton().textContent).toContain("Really");
+    expect(rig.bookButton().getAttribute("aria-label")).toBe(rig.bookButton().textContent);
+    expect(rig.el("#find-status").getAttribute("role")).toBe("status");
+    expect(rig.status()).toContain(rig.bookButton().textContent!);
+  });
+
+  test("disarming restores the accessible name and the search summary", async () => {
+    const rig = mount();
+    open(rig);
+    rig.runSearch();
+    await settle();
+    const summary = rig.status();
+    const label = rig.bookButton().getAttribute("aria-label");
+    rig.clickReplaceBook();
+    expect(rig.status()).toContain(summary);
+    expect(rig.status()).toContain("Really");
+    rig.input().dispatchEvent(new Event("input", { bubbles: true }));
+    expect(rig.bookButton().getAttribute("aria-label")).toBe(label);
+    expect(rig.status()).toBe(summary);
+    rig.clickReplaceBook();
+    rig.replaceField().dispatchEvent(new Event("input", { bubbles: true }));
+    expect(rig.bookButton().getAttribute("aria-label")).toBe(label);
+    expect(rig.status()).toBe(summary);
+    expect(rig.calls()).not.toContain("replaceEverywhere");
   });
 
   test("the second press replaces, and the report names the snapshot", async () => {

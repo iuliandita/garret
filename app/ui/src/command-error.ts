@@ -34,21 +34,32 @@ const CLASSES: ReadonlyArray<readonly [string, RegExp]> = [
   ["host-error.picture-format", /is not a png or a jpeg/],
   ["host-error.picture-pixels", /the largest this book will read is/],
   ["host-error.picture-unreadable", /^that picture could not be read/],
+  ["host-error.archive-stage", /^unfinished encrypted archive staging /],
   ["host-error.corrupt", /database disk image is malformed|file is not a database|sqlite_corrupt|sqlite_notadb/],
   ["host-error.disk-full", /database or disk is full|no space left on device|\(os error 28\)|disk quota exceeded|\(os error 122\)|^disk full|sqlite_full/],
   ["host-error.read-only", /readonly database|read-only file system|\(os error 30\)|sqlite_readonly/],
   ["host-error.busy", /database is locked|database table is locked|database is busy|sqlite_busy|sqlite_locked/],
   ["host-error.io", /disk i\/o error|input\/output error|\(os error 5\)|sqlite_ioerr/],
+  ["host-error.unavailable", /no such file or directory|permission denied|access (?:is )?denied|\(os error (?:2|3|13)\)|unable to open database file|cannot open database|sqlite_cantopen/],
 ];
 
 /** The one plain sentence for a host failure: what went wrong and what to do.
  *  Never the raw diagnostic; that is `failureDetail`'s. */
-export function failureProblem(value: unknown): string {
+export function failureProblem(value: unknown, operation?: string): string {
   if (value instanceof HostCommandError) return value.problem;
   const failure = failureOf(value);
   if (failure?.code === "application_locked" || value === "application locked") return t("host-error.locked");
   const detail = (failure?.detail ?? diagnostic(value)).toLowerCase();
+  if ((failure?.operation ?? operation) === "project_move"
+      && /^the book moved to [\s\S]+, but its saved location could not be updated:/.test(detail)) {
+    return t(/keep the book open and retry adding its new location to library in books(?![\s\S])/.test(detail)
+      ? "host-error.move-registration" : "host-error.move-registration-unavailable");
+  }
   const known = CLASSES.find(([, pattern]) => pattern.test(detail));
+  if ((known?.[0] === "host-error.unavailable" || known?.[0] === "host-error.io") && (failure?.operation ?? operation)?.startsWith("settings_set_") &&
+      /permission denied|access (?:is )?denied|\(os error 13\)/.test(detail)) {
+    return t("host-error.settings-permission");
+  }
   return t(known?.[0] ?? "host-error.failed");
 }
 
@@ -73,9 +84,11 @@ function remember(detail: string): void {
   if (recentDetails.length > RECENT_LIMIT) recentDetails.shift();
 }
 
-export function commandFailureMessage(value: unknown): string {
-  const primary = failureProblem(value);
-  const detail = failureDetail(value);
+export function commandFailureMessage(value: unknown, detailOverride?: string, operation?: string): string {
+  const primary = failureProblem(value, operation);
+  const raw = detailOverride ?? failureDetail(value);
+  const detail = /^unfinished encrypted archive staging /i.test(raw)
+    ? `${raw}\n\n${t("host-error.archive-stage.steps")}` : raw;
   if (detail === "" || isApplicationLocked(value)) return primary;
   remember(detail);
   return t("host-error.with-detail", { primary, detail });
@@ -107,12 +120,12 @@ export class HostCommandError extends Error {
   readonly problem: string;
   override toString(): string { return this.message; }
   constructor(command: string, value: unknown) {
-    super(commandFailureMessage(value));
+    super(commandFailureMessage(value, undefined, command));
     const failure = failureOf(value);
     this.code = failure?.code ?? (value === "application locked" ? "application_locked" : null);
     this.operation = failure?.operation ?? command;
     this.detail = failureDetail(value);
-    this.problem = failureProblem(value);
+    this.problem = failureProblem(value, command);
   }
 }
 

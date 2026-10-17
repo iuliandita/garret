@@ -2,10 +2,8 @@
 // How many words a day the writer is aiming for, and what today's figure reads
 // as against it.
 //
-// NOTHING HERE IS A STYLE, so unlike `typography.ts` this list is stated TWICE
-// rather than three times: here and in the host's `DailyTarget`. index.html's
-// head script does not restate it, because a target cannot flash - it is not on
-// the root before first paint and nothing about the page's layout depends on it.
+// Presets are the panel's shortcuts; custom values share the host's canonical
+// decimal-string contract. No root attribute or first-paint script is involved.
 //
 // The spellings ARE the numbers ("500" -> 500), which is why no table maps one to
 // the other. A third statement listing `{ "500": 500 }` would be a place for the
@@ -14,17 +12,21 @@
 
 import { formatNumber, plural, t } from "./i18n";
 
-export type DailyTarget = "off" | "250" | "500" | "1000" | "2000";
+export type DailyTarget = "off" | `${number}`;
 
 /** In control order, which is the order the panel paints. `off` first because it
  *  is the default and because a writer turning the goal off looks for it where a
  *  list starts. */
-export const DAILY_TARGETS: readonly DailyTarget[] = ["off", "250", "500", "1000", "2000"];
+export const DAILY_TARGETS = ["off", "250", "500", "1000", "2000"] as const;
+export type DailyTargetPreset = (typeof DAILY_TARGETS)[number];
 
 export const DEFAULT_DAILY_TARGET: DailyTarget = "off";
 
 export function isDailyTarget(value: unknown): value is DailyTarget {
-  return typeof value === "string" && (DAILY_TARGETS as readonly string[]).includes(value);
+  if (typeof value !== "string") return false;
+  if (value === "off") return true;
+  const words = Number(value);
+  return Number.isInteger(words) && words >= 1 && words <= 1_000_000 && String(words) === value;
 }
 
 /** Narrow whatever the host injected. Anything else is `off`: a page that cannot

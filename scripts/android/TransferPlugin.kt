@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Process
+import android.provider.DocumentsContract
 import android.system.Os
 import android.system.OsConstants
 import androidx.activity.result.ActivityResult
@@ -22,7 +23,9 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.security.MessageDigest
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import org.json.JSONObject
 
@@ -37,15 +40,19 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
         val ticket = UUID.randomUUID().toString()
         val canceled = AtomicBoolean(false)
         val closing = AtomicBoolean(false)
+        val closeDrained = CountDownLatch(1)
         var phase = "picker"
+        var streamReply: Reply? = null
         var uri: Uri? = null
         val streams = mutableListOf<Closeable>()
     }
     private val monitor = Any()
     private var slot: Slot? = null
     private var destroyed = false
+    private val canceledOperations = linkedSetOf<String>()
     private val io = Executors.newSingleThreadExecutor()
     private val closer = Executors.newSingleThreadExecutor()
+    private val watchdog = Executors.newSingleThreadScheduledExecutor()
     private val closingStreams = AtomicBoolean(false)
 
     private fun fields(invoke: Invoke, expected: Set<String>): JSONObject {
@@ -70,14 +77,33 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
     private fun canceled(s: Slot): JSObject = JSObject().put("operation", s.operation).put("cancelled", true)
     private fun stop(s: Slot) {
         s.canceled.set(true)
-        // Keep the original reply pending until its callback or stream actually drains.
-        // A blocked provider must not block the Activity thread or create unbounded cancellation threads.
-        if (s.closing.compareAndSet(false, true) && closingStreams.compareAndSet(false, true)) closer.execute {
-            try {
-                val streams = synchronized(monitor) { s.streams.toList() }
-                for (stream in streams) try { stream.close() } catch (_: Exception) { }
-            } finally { closingStreams.set(false) }
+        if (s.phase != "streaming") return
+        if (s.closing.compareAndSet(false, true)) {
+            closingStreams.set(true)
+            watchdog.schedule({
+                synchronized(monitor) {
+                    if (slot === s && (s.phase == "streaming" || s.phase == "draining")) {
+                        destroyed = true
+                        s.streamReply?.reject("transfer_restart")
+                    }
+                }
+            }, 15, TimeUnit.SECONDS)
+            closer.execute {
+                try {
+                    val streams = synchronized(monitor) { s.streams.toList() }
+                    for (stream in streams) try { stream.close() } catch (_: Exception) { }
+                } finally {
+                    closingStreams.set(false)
+                    s.closeDrained.countDown()
+                }
+            }
         }
+    }
+    private fun deleteCreated(mode: String, uri: Uri?) {
+        if (mode != "create" || uri == null) return
+        try {
+            closer.execute { try { DocumentsContract.deleteDocument(activity.contentResolver, uri) } catch (_: Exception) { } }
+        } catch (_: Exception) { }
     }
     private fun check(s: Slot) { check(!s.canceled.get()) }
     private fun <T : Closeable> tracked(s: Slot, stream: T): T {
@@ -101,18 +127,18 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
             require(name.length in 1..120 && name.none { it.isISOControl() || it == '/' || it == '\\' })
             val next = Slot(operation, kind, mode, reply)
             synchronized(monitor) {
-                check(!destroyed && slot == null && !closingStreams.get() && !activity.isFinishing)
+                check(!destroyed && slot == null && !closingStreams.get() && !activity.isFinishing && operation !in canceledOperations)
                 slot = next; admitted = next
             }
             val intent = Intent(if (mode == "open") Intent.ACTION_OPEN_DOCUMENT else Intent.ACTION_CREATE_DOCUMENT)
                 .addCategory(Intent.CATEGORY_OPENABLE)
-                .setType(if (kind == "key") "text/plain" else "application/octet-stream")
+                .setType(if (mode == "open") "*/*" else if (kind == "key") "text/plain" else "application/octet-stream")
             intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
             if (mode == "create") intent.putExtra(Intent.EXTRA_TITLE, name)
             startActivityForResult(invoke, intent, "picked")
         } catch (_: Exception) {
             synchronized(monitor) { if (admitted != null && slot === admitted) slot = null }
-            reply.reject("saf_picker_unavailable")
+            reply.reject(if (destroyed) "transfer_restart" else "saf_picker_unavailable")
         }
     }
 
@@ -123,10 +149,14 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
         if (s.phase != "picker") return
         try {
             val original = invoke.getArgs().getString("operation")
-            if (original != s.operation) return
+            if (original != s.operation) {
+                if (result.resultCode == Activity.RESULT_OK) deleteCreated(invoke.getArgs().optString("mode"), result.data?.data)
+                return
+            }
             if (result.resultCode == Activity.RESULT_CANCELED || s.canceled.get()) {
-                s.picker.resolve(canceled(s))
                 synchronized(monitor) { if (slot === s) slot = null }
+                if (result.resultCode == Activity.RESULT_OK) deleteCreated(s.mode, result.data?.data)
+                s.picker.resolve(canceled(s))
                 return
             }
             require(result.resultCode == Activity.RESULT_OK && result.data?.clipData == null)
@@ -138,8 +168,9 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
             }
             s.picker.resolve(JSObject().put("operation", s.operation).put("cancelled", false).put("ticket", s.ticket))
         } catch (_: Exception) {
-            s.picker.reject("saf_picker_failed")
             synchronized(monitor) { if (slot === s) slot = null }
+            if (result.resultCode == Activity.RESULT_OK) deleteCreated(s.mode, result.data?.data)
+            s.picker.reject("saf_picker_failed")
         }
     }
 
@@ -166,6 +197,7 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
         val fd = Os.open(file.path, OsConstants.O_WRONLY or OsConstants.O_CREAT or OsConstants.O_EXCL or OsConstants.O_NOFOLLOW, 384)
         return FileOutputStream(fd)
     }
+    private class TransferTooLarge : Exception()
     private data class Digest(val bytes: Long, val sha256: String)
     private fun copy(s: Slot, input: InputStream, output: OutputStream?, limit: Long): Digest {
         val hash = MessageDigest.getInstance("SHA-256")
@@ -176,7 +208,8 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
                 check(s)
                 val n = input.read(buffer, 0, minOf(buffer.size.toLong(), limit - total + 1).toInt())
                 if (n == -1) break
-                require(n > 0 && n.toLong() <= limit - total)
+                if (n.toLong() > limit - total) throw TransferTooLarge()
+                require(n > 0)
                 output?.write(buffer, 0, n)
                 hash.update(buffer, 0, n); total += n
             }
@@ -205,9 +238,12 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
                 check(!current.canceled.get() && current.mode == if (writing) "create" else "open")
                 require(limit in 1..cap(current.kind))
                 if (writing) require(expectedBytes in 0..limit && expectedHash.matches(Regex("[0-9a-f]{64}")))
-                current.phase = "streaming"; admitted = current; current
+                current.phase = "streaming"; current.streamReply = reply; admitted = current; current
             }
             io.execute {
+                var result: JSObject? = null
+                var writeBegan = false
+                var failure = if (writing) "saf_export_unverified" else "saf_import_unverified"
                 try {
                     val file = stage(stageId, s.kind, s.mode)
                     val uri = s.uri ?: throw IllegalStateException()
@@ -227,7 +263,8 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
                             require(before.bytes == expectedBytes && before.sha256 == expectedHash)
                             input.channel.position(0)
                             check(s)
-                            tracked(s, resolver.openOutputStream(uri, "w") ?: throw IllegalStateException()).use { output ->
+                            writeBegan = true
+                            tracked(s, resolver.openOutputStream(uri, "wt") ?: throw IllegalStateException()).use { output ->
                                 val sent = copy(s, input, output, expectedBytes)
                                 require(sent.bytes == expectedBytes && sent.sha256 == expectedHash)
                             }
@@ -239,17 +276,38 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
                     }
                     synchronized(monitor) {
                         check(s); check(!destroyed && slot === s)
-                        reply.resolve(receipt(s, stageId, digest, writing))
+                        result = receipt(s, stageId, digest, writing)
                     }
-                } catch (_: Exception) {
-                    reply.reject(if (writing) "saf_export_unverified" else "saf_import_unverified")
+                } catch (error: Exception) {
+                    result = null
+                    if (writing && !writeBegan) failure = "transfer_not_started"
+                    if (!writing && error is TransferTooLarge) failure = "transfer_too_large"
+                    var cause: Throwable? = error
+                    while (cause != null) {
+                        if (cause is android.system.ErrnoException && cause.errno == OsConstants.ENOSPC) failure = "transfer_storage"
+                        cause = cause.cause
+                    }
                 } finally {
-                    synchronized(monitor) { s.streams.clear(); s.uri = null; if (slot === s) slot = null }
+                    // The original reply is the admission boundary, including a cancellation closer.
+                    synchronized(monitor) { s.phase = "draining" }
+                    val drained = !s.closing.get() || try { s.closeDrained.await(15, TimeUnit.SECONDS) } catch (_: InterruptedException) { false }
+                    synchronized(monitor) {
+                        if (!drained) { destroyed = true; failure = "transfer_restart"; result = null }
+                        if (s.canceled.get() || destroyed) result = null
+                        if (result == null) deleteCreated(s.mode, s.uri)
+                        if (drained) {
+                            s.streams.clear(); s.uri = null
+                            if (slot === s) slot = null
+                        }
+                    }
                 }
+                val completed = result
+                if (completed != null) reply.resolve(completed)
+                else reply.reject(failure)
             }
         } catch (_: Exception) {
             synchronized(monitor) { if (admitted != null && slot === admitted) slot = null }
-            reply.reject(if (writing) "saf_export_unverified" else "saf_read_refused")
+            reply.reject(if (destroyed) "transfer_restart" else if (writing) "transfer_not_started" else "saf_read_refused")
         }
     }
     @Command fun readPicked(invoke: Invoke) = transfer(invoke, false)
@@ -261,9 +319,12 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
         try {
             val operation = uuid(fields(invoke, setOf("operation")).getString("operation"))
             synchronized(monitor) {
+                // A cancellation may reach native code just before its picker call.
+                canceledOperations.add(operation)
+                if (canceledOperations.size > 128) canceledOperations.remove(canceledOperations.first())
                 slot?.takeIf { it.operation == operation }?.let { s ->
                     stop(s)
-                    if (s.phase == "ready") slot = null
+                    if (s.phase == "ready") { deleteCreated(s.mode, s.uri); slot = null }
                 }
             }
             reply.resolve(JSObject().put("operation", operation))
@@ -274,10 +335,12 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
             destroyed = true
             slot?.let { s ->
                 stop(s)
+                if (s.phase == "ready") deleteCreated(s.mode, s.uri)
                 if (s.phase == "picker") { s.picker.resolve(canceled(s)); slot = null }
             }
         }
         io.shutdown()
         closer.shutdown()
+        watchdog.shutdown()
     }
 }

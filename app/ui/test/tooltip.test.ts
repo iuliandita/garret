@@ -127,6 +127,33 @@ describe("when it appears", () => {
     }
   });
 
+  test("the pointer can enter the explanation and leave it again", () => {
+    const { control, tip } = mount("A longer explanation.");
+    try {
+      control.dispatchEvent(new MouseEvent("mouseenter"));
+      control.dispatchEvent(new MouseEvent("mouseleave", { relatedTarget: tip.tip }));
+      tip.tip.dispatchEvent(new MouseEvent("mouseenter"));
+      expect(shown(tip)).toBe(true);
+      tip.tip.dispatchEvent(new MouseEvent("mouseleave", { relatedTarget: document.body }));
+      expect(shown(tip)).toBe(false);
+    } finally { tip.destroy(); }
+  });
+
+  test("focus retains help after the pointer leaves, and hover retains it after blur", () => {
+    const { control, tip } = mount();
+    try {
+      control.dispatchEvent(new FocusEvent("focus"));
+      control.dispatchEvent(new MouseEvent("mouseenter"));
+      control.dispatchEvent(new MouseEvent("mouseleave"));
+      expect(shown(tip)).toBe(true);
+      control.dispatchEvent(new MouseEvent("mouseenter"));
+      control.dispatchEvent(new FocusEvent("blur"));
+      expect(shown(tip)).toBe(true);
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      expect(shown(tip)).toBe(false);
+    } finally { tip.destroy(); }
+  });
+
   test("Escape dismisses it while the control still has focus", () => {
     // A tip that can only be dismissed by leaving the control covers whatever
     // is under it for as long as the writer stays there.
@@ -180,4 +207,26 @@ describe("teardown", () => {
     control.dispatchEvent(new FocusEvent("focus"));
     expect(shown(tip)).toBe(false);
   });
+});
+
+
+test("the first Escape dismisses help and the second reaches its panel", () => {
+  const { control, tip } = mount();
+  const panel = document.createElement("div");
+  document.body.append(panel);
+  panel.append(tip.anchor);
+  let closes = 0;
+  panel.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !event.defaultPrevented) closes++;
+  });
+  control.focus();
+  const first = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+  control.dispatchEvent(first);
+  expect(first.defaultPrevented).toBe(true);
+  expect(shown(tip)).toBe(false);
+  expect(closes).toBe(0);
+  expect(document.activeElement === control).toBe(true);
+  control.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+  expect(closes).toBe(1);
+  tip.destroy();
 });

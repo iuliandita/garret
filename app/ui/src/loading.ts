@@ -38,6 +38,12 @@ export function showProjectLoading(busy: boolean, doc: Document = document): voi
     existing?.remove();
     return;
   }
+  const library = doc.getElementById("library");
+  const libraryStatus = library?.querySelector<HTMLElement>("#library-busy-status");
+  if (libraryStatus?.textContent?.trim() && !libraryStatus.closest("[hidden], [inert]")) {
+    existing?.remove();
+    return;
+  }
   if (existing !== null) return;
   const el = doc.createElement("div");
   el.id = LOADING_ID;

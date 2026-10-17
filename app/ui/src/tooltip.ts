@@ -27,9 +27,8 @@ import { isCompositionKey } from "./composition-key";
 // as the control it wraps. No length is written here.
 
 export interface TooltipSpec {
-  /** The control the tip describes. Listeners are bound to this element, not
-   *  to the document: a document-level handler is a live closure that outlives
-   *  the control, which is a defect this repo has already shipped once. */
+  /** The control the tip describes. Escape listens on the document only while
+   *  the tip is shown, and is removed on hiding or destruction. */
   control: HTMLElement;
   /** What the control is called -- the same catalog string its `aria-label`
    *  carries, so the two cannot say different things. */
@@ -83,24 +82,50 @@ export function createTooltip(spec: TooltipSpec): Tooltip {
   // while the pointer is on a control. Single-variable runs against the
   // pre-slice build in the same session are what separated the two; the icons
   // themselves cost nothing measurable.
+  let focused = false;
+  let hovered = false;
+  let listening = false;
   const show = (): void => {
     tip.hidden = false;
     if (tip.parentNode === null) anchor.append(tip);
+    if (!listening) {
+      document.addEventListener("keydown", onKeyDown, true);
+      listening = true;
+    }
   };
   const hide = (): void => {
     tip.hidden = true;
     tip.remove();
+    if (listening) {
+      document.removeEventListener("keydown", onKeyDown, true);
+      listening = false;
+    }
   };
+  const enter = (): void => { hovered = true; show(); };
+  const leave = (event: MouseEvent): void => {
+    if (event.relatedTarget instanceof Node && anchor.contains(event.relatedTarget)) return;
+    hovered = false;
+    if (!focused) hide();
+  };
+  const focus = (): void => { focused = true; show(); };
+  const blur = (): void => { focused = false; if (!hovered) hide(); };
   const onKeyDown = (event: KeyboardEvent): void => {
     if (isCompositionKey(event)) return;
-    if (event.key === "Escape") hide();
+    if (event.key === "Escape" && !tip.hidden) {
+      hide();
+      // The expanded control also owns the Escape that dismisses its popup.
+      if (event.target instanceof Node && control.contains(event.target) && control.getAttribute("aria-expanded") === "true") return;
+      event.preventDefault();
+      event.stopPropagation();
+    }
   };
 
-  control.addEventListener("mouseenter", show);
-  control.addEventListener("mouseleave", hide);
-  control.addEventListener("focus", show);
-  control.addEventListener("blur", hide);
-  control.addEventListener("keydown", onKeyDown);
+  control.addEventListener("mouseenter", enter);
+  control.addEventListener("mouseleave", leave);
+  tip.addEventListener("mouseenter", enter);
+  tip.addEventListener("mouseleave", leave);
+  control.addEventListener("focus", focus);
+  control.addEventListener("blur", blur);
 
   return {
     anchor,
@@ -109,11 +134,12 @@ export function createTooltip(spec: TooltipSpec): Tooltip {
       nameLine.textContent = name;
     },
     destroy(): void {
-      control.removeEventListener("mouseenter", show);
-      control.removeEventListener("mouseleave", hide);
-      control.removeEventListener("focus", show);
-      control.removeEventListener("blur", hide);
-      control.removeEventListener("keydown", onKeyDown);
+      control.removeEventListener("mouseenter", enter);
+      control.removeEventListener("mouseleave", leave);
+      tip.removeEventListener("mouseenter", enter);
+      tip.removeEventListener("mouseleave", leave);
+      control.removeEventListener("focus", focus);
+      control.removeEventListener("blur", blur);
       hide();
     },
   };

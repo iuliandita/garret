@@ -432,7 +432,7 @@ const outcome = await runShell({
 });
 
 console.log("[4/4] reading the imported project back out of SQLite");
-const library = join(dataHome, "cc.local.app", "projects");
+const library = join(dataHome, "garret", "projects");
 const created = existsSync(library)
   ? readdirSync(library).filter((f) => f.endsWith(".db"))
   : [];
@@ -619,7 +619,7 @@ if (importedPath === null) {
     // banner, error or loss alike, which is the honest reading.
     const dataHomeB = join(root, "data-b");
     mkdirSync(dataHomeB, { recursive: true });
-    const libraryB = join(dataHomeB, "cc.local.app", "projects");
+    const libraryB = join(dataHomeB, "garret", "projects");
 
     await runShell({
       mode: "virtual",

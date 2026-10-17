@@ -169,3 +169,82 @@ describe("the German catalog against the English one", () => {
     expect(dead).toEqual([]);
   });
 });
+
+
+describe("catalog wording conventions", () => {
+  test("Library and Books use the same creation action", () => {
+    for (const catalog of [en, de]) {
+      expect(catalog["switcher.create"]).toBe(catalog["library.new-book.create"]);
+      expect(catalog["switcher.refuse.no-name"]).toContain(catalog["switcher.create"]!);
+    }
+  });
+
+  test("catalog ellipses use the typographic character", () => {
+    for (const catalog of [en, de]) {
+      const offenders = Object.entries(catalog)
+        .filter(([, value]) => value.includes("..."))
+        .map(([key]) => key);
+      expect(offenders).toEqual([]);
+    }
+  });
+
+  test("German catalog prose avoids informal address", () => {
+    const informalAddress = (value: string): boolean => {
+      const prose = value.replace(PLACEHOLDER, "").replace(/`[^`]*`/g, "");
+      return /(?:^|[^\p{L}])(?:du|dich|dir|dein(?:e|en|em|er|es|s)?|schließe|öffne|warte|gib)(?=$|[^\p{L}])/iu.test(prose);
+    };
+    for (const address of ["du", "dich", "dir", "dein", "deine", "deinen", "deinem", "deiner", "deines", "Schließe", "Öffne", "warte", "Gib"]) {
+      expect(informalAddress(address)).toBe(true);
+    }
+    expect(informalAddress("Öffnen Sie {dir}. Bitte warten Sie.")).toBe(false);
+    expect(informalAddress("`garret salvage <out-dir>`")).toBe(false);
+    const offenders = Object.entries(de)
+      .filter(([, value]) => informalAddress(value))
+      .map(([key]) => key);
+    expect(offenders).toEqual([]);
+  });
+
+  test("manuscript scope labels use the established Bible section name", () => {
+    for (const catalog of [en, de]) {
+      for (const key of ["reading.scope", "outline-view.scope"]) {
+        expect(catalog[key]).toContain(catalog["outline.bible-title"]!);
+      }
+    }
+  });
+
+  test("protection guidance names the current recovery and encrypted backup commands", () => {
+    for (const catalog of [en, de]) {
+      const guide = catalog["help.guide.protect.body"]!;
+      for (const key of ["menu.backup-now", "menu.encrypted-backups"]) {
+        const label = catalog[key]!.replace(/(?:\.\.\.|…)$/, "");
+        const copies = catalog["menu.copies"]!.replace(/(?:\.\.\.|…)$/, "");
+        expect(guide).toContain(`${catalog["menu.file"]} > ${copies} > ${label}`);
+      }
+      const planning = catalog["menu.planning"]!.replace(/(?:\.\.\.|…)$/, "");
+      const synopsis = catalog["menu.synopsis"]!.replace(/(?:\.\.\.|…)$/, "");
+      expect(catalog["help.guide.annotate.body"]).toContain(`${catalog["menu.outline"]} > ${planning} > ${synopsis}`);
+      const publishing = catalog["menu.publishing"]!.replace(/(?:\.\.\.|…)$/, "");
+      expect(catalog["help.guide.export.body"]).toContain(`${catalog["menu.file"]} > ${publishing}`);
+    }
+    expect(en["help.guide.protect.body"]).not.toContain("Back up now");
+    expect(de["help.guide.protect.body"]).not.toContain("Jetzt sichern");
+  });
+});
+
+test("Find summaries use the locale's quotation marks", () => {
+  for (const suffix of ["none", "truncated", "one", "other"]) {
+    expect(en[`find.summary.${suffix}`]).toContain("“{query}”");
+    expect(de[`find.summary.${suffix}`]).toContain("„{query}“");
+  }
+});
+
+
+test("replacement names include visible labels in both languages", () => {
+  for (const catalog of [en, de]) {
+    for (const key of ["find.replace-all", "find.replace-book"]) {
+      expect(catalog[`${key}.label`]?.startsWith(`${catalog[key]}:`)).toBe(true);
+    }
+  }
+  expect(de["help.guide.protect.body"]).toContain("Privatsphärensperre");
+  expect(de["help.guide.protect.body"]).not.toContain("Datenschutzsperre");
+});

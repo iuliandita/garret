@@ -34,3 +34,25 @@ pub fn flush(
     }
     Ok(acks)
 }
+
+/// Check raw metadata before any writable open or migration. Unknown layouts
+/// must stay closed even when a newer desktop build treats them leniently.
+pub fn supported(store: &store::Store) -> Result<(), String> {
+    match store
+        .get_meta("project.preset")
+        .map_err(|error| error.to_string())?
+        .as_deref()
+    {
+        None | Some("novel") => Ok(()),
+        _ => Err("unsupported_project_preset".into()),
+    }
+}
+
+pub fn open_supported(path: &std::path::Path) -> Result<store::Store, String> {
+    let reader = store::Store::open_readonly(path).map_err(|error| match error {
+        store::StoreError::NewerSchema { .. } => "unsupported_schema".to_string(),
+        _ => "transfer_invalid".to_string(),
+    })?;
+    supported(&reader)?;
+    Ok(reader)
+}

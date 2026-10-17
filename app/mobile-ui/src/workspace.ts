@@ -1,3 +1,4 @@
+import { createDraftingTools, type MobileDrafting } from "./drafting";
 import { createEditor, schema, countWordsIn, type Editor } from "../../ui/src/editor";
 import { flushAnchorsFor, MAX_MAPPED_COMMENTS, type CommentAnchor } from "../../ui/src/comments";
 import { parseReviewBody } from "../../ui/src/review-fragments";
@@ -28,7 +29,11 @@ export interface MobileWorkspaceOptions {
   loadDoc(itemId: string): Promise<MobileDocument>;
   flush(entries: FlushEntry[], attribution?: FlushAttribution[]): Promise<FlushAck[]>;
   createScene?(title: string): Promise<{ scenes: MobileScene[]; item_id: string }>;
+  drafting?: MobileDrafting;
+  textSize?: number;
+  saveTextSize?(size: number): boolean;
   localDay(): string;
+  exportBook?(): Promise<void>;
   beforeLeave?(): Promise<void>;
   onLeave(): void;
 }
@@ -122,9 +127,10 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
   page.addEventListener("scroll", schedulePosition, { passive: true });
   const markButtons = new Map<string, HTMLButtonElement>();
   const showError = (message: string) => {
-    const target = outline.open ? outline : root;
+    const modal = [...root.querySelectorAll<HTMLDialogElement>("dialog[open]")].find(dialog => dialog.querySelector("header"));
+    const target = modal ?? root;
     if (error.parentElement !== target) {
-      if (outline.open) outline.querySelector("header")!.after(error);
+      if (modal) modal.querySelector("header")!.after(error);
       else root.querySelector("header")!.after(error);
     }
     error.textContent = message;
@@ -270,6 +276,29 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
       })();
     });
   }
+  if (opts.exportBook) {
+    const transfer = document.createElement("button"); transfer.type = "button"; transfer.textContent = m.exportBook;
+    transfer.addEventListener("click", () => {
+      if (busy || closed) return;
+      setBusy(true);
+      void (async () => {
+        if (!await drain()) { showError(m.saveError); return; }
+        if (outline.open) outline.close();
+        await opts.exportBook!();
+      })().catch(() => showError(m.operationError)).finally(() => setBusy(false));
+    });
+    outline.append(transfer);
+  }
+  const draftingActions = document.createElement("div");
+  draftingActions.className = "mobile-drafting-actions";
+  outline.querySelector("header")!.after(draftingActions);
+  const drafting = opts.drafting ? createDraftingTools({
+    root, actions: draftingActions, locale: opts.locale, host: opts.drafting, editor,
+    activeId: () => session.activeDocId(), drain, localDay: opts.localDay,
+    lock: setBusy, available: () => !busy && !closed,
+    reload: updated => { scenes = updated; drawScenes(); sceneChanged(); }, openScene,
+    textSize: opts.textSize ?? 19, saveTextSize: opts.saveTextSize ?? (() => false),
+  }) : undefined;
   function sceneChanged() {
     const id = session.activeDocId();
     heading.textContent = scenes.find(scene => scene.id === id)?.title || m.untitled;
@@ -362,6 +391,7 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
   });
   return { editor, openScene, drain, close, back() {
     if (recovery?.open) recovery.close();
+    else if (drafting?.back()) return;
     else if (outline.open) outline.close();
     else books.click();
   } };

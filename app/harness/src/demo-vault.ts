@@ -69,7 +69,7 @@ export function plantDemoIdentities(dataHomeDir: string, path: string, stale = f
       bio: "Now writes about new shores and old promises.",
     } }, DEMO_VAULT.identities[1]],
   } : DEMO_VAULT;
-  writeFileSync(join(dataHomeDir, "cc.local.app", "identities.json"), JSON.stringify(vault));
+  writeFileSync(join(dataHomeDir, "garret", "identities.json"), JSON.stringify(vault));
   // THE PIN IS THE PUBLIC AND PUBLISHING TIERS ONLY, which is what the host's
   // `identity::pin_of` builds -- restated here rather than imported, the same
   // rule every rig follows for a stored value: a rig that read the

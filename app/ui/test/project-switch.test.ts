@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import {
   createProjectSwitcher,
+  performProjectMove,
   type ProjectSwitchDeps,
   type ProjectSwitchOutcome,
   type ProjectOpenDecision,
   type SwitchableProject,
 } from "../src/project-switch";
+import { splitHostDetail } from "../src/command-error";
 import { CLOSE_EVENT, wireLifecycle, type LifecycleDeps } from "../src/lifecycle";
 
 /** The minimum the switcher is allowed to read. Typing the fakes as this rather
@@ -24,9 +26,10 @@ interface Rig {
   mountResult: { value: Promise<FakeProject> | null };
   setCurrentCalls: FakeProject[];
   failures: string[];
+  closedFailures: boolean[];
   flushRejects: { value: boolean };
   currentProject(): FakeProject;
-  switchTo(path: string): Promise<ProjectSwitchOutcome>;
+  switchTo(path: string, name?: string): Promise<ProjectSwitchOutcome>;
 }
 
 function rig(opts: {
@@ -40,6 +43,7 @@ function rig(opts: {
   const mountResult: Rig["mountResult"] = { value: null };
   const setCurrentCalls: FakeProject[] = [];
   const failures: string[] = [];
+  const closedFailures: boolean[] = [];
 
   let path = opts.startPath ?? "/p/a.db";
   const flushRejects = { value: false };
@@ -85,8 +89,9 @@ function rig(opts: {
     onSwitched: (opened) => {
       log.push(`onSwitched:${opened.path}`);
     },
-    onFailure: (message) => {
+    onFailure: (message, closed) => {
       failures.push(message);
+      closedFailures.push(closed);
     },
   };
 
@@ -98,6 +103,7 @@ function rig(opts: {
     mountResult,
     setCurrentCalls,
     failures,
+    closedFailures,
     flushRejects,
     currentProject: () => current,
     switchTo,
@@ -203,6 +209,7 @@ describe("createProjectSwitcher", () => {
     expect(await r.switchTo("/p/copy.db")).toBe("failed");
     expect(r.log).toEqual([]);
     expect(r.failures[0]).toContain("still open");
+    expect(r.closedFailures).toEqual([false]);
     fail = false;
     expect(await r.switchTo("/p/copy.db")).toBe("switched");
   });
@@ -264,7 +271,8 @@ describe("createProjectSwitcher", () => {
     expect(await r.switchTo("/p/b.db")).toBe("failed");
     expect(r.setCurrentCalls).toEqual([]);
     expect(r.failures).toHaveLength(1);
-    expect(r.failures[0]).toContain("nothing is open");
+    expect(r.failures[0]).toMatch(/nothing is open/i);
+    expect(r.closedFailures).toEqual([true]);
   });
 
   test("a rejecting mount fails loudly", async () => {
@@ -273,7 +281,8 @@ describe("createProjectSwitcher", () => {
     expect(await r.switchTo("/p/b.db")).toBe("failed");
     expect(r.setCurrentCalls).toEqual([]);
     expect(r.failures).toHaveLength(1);
-    expect(r.failures[0]).toContain("nothing is open");
+    expect(r.failures[0]).toMatch(/nothing is open/i);
+    expect(r.closedFailures).toEqual([true]);
   });
 
   test("a failed switch releases the busy guard", async () => {
@@ -304,6 +313,7 @@ describe("createProjectSwitcher failure messages", () => {
     expect(r.log).toEqual(["flushPending"]);
     expect(r.failures).toHaveLength(1);
     expect(r.failures[0]).toContain("still open");
+    expect(r.closedFailures).toEqual([false]);
   });
 
   test("a rejection after the teardown says nothing is open", async () => {
@@ -311,7 +321,12 @@ describe("createProjectSwitcher failure messages", () => {
     r.openResult.value = Promise.reject(new Error("no such project"));
     expect(await r.switchTo("/p/b.db")).toBe("failed");
     expect(r.log).toEqual(["flushPending", "destroy", "openProject:/p/b.db"]);
-    expect(r.failures[0]).toContain("nothing is open");
+    expect(r.failures[0]).toMatch(/nothing is open/i);
+    const message = splitHostDetail(r.failures[0]!);
+    expect(message.headline).toContain("the selected book");
+    expect(message.headline).not.toContain("/p/b.db");
+    expect(message.detail).toContain("/p/b.db");
+    expect(r.closedFailures).toEqual([true]);
   });
 });
 
@@ -337,5 +352,92 @@ describe("createProjectSwitcher onSwitched", () => {
     r.mountResult.value = Promise.reject(new Error("no scene"));
     expect(await r.switchTo("/p/b.db")).toBe("failed");
     expect(r.log.some((l) => l.startsWith("onSwitched"))).toBe(false);
+  });
+});
+
+test("a failed named book keeps its path behind Details", async () => {
+  const r = rig();
+  const path = "/a/very/long/books/folder/manuscript.db";
+  r.flushRejects.value = true;
+  expect(await r.switchTo(path, "Pride and Prejudice")).toBe("failed");
+  const message = splitHostDetail(r.failures[0]!);
+  expect(message.headline).toContain("Pride and Prejudice");
+  expect(message.headline).not.toContain(path);
+  expect(message.detail).toContain(path);
+  expect(message.detail).toContain("the store stopped answering");
+});
+
+describe("move location recovery", () => {
+  test("a move error reconciles the actual retained book and preserves the original error", async () => {
+    const failure = new Error("saved location could not be updated");
+    let path = "/old/book.db";
+    const retained = { path: "/new/book.db" };
+    let reads = 0;
+    await expect(performProjectMove({
+      move: async () => { throw failure; },
+      current: async () => { reads++; return retained; },
+      isCurrent: () => true,
+      accept: (project) => { path = project.path; },
+    })).rejects.toBe(failure);
+    expect(reads).toBe(1);
+    expect(path).toBe(retained.path);
+  });
+});
+
+
+describe("move location recovery boundaries", () => {
+  test("success and cancellation do not read the host again", async () => {
+    for (const moved of [{ path: "/new/book.db" }, null]) {
+      const accepted: { path: string }[] = [];
+      let reads = 0;
+      expect(await performProjectMove({
+        move: async () => moved,
+        current: async () => { reads++; return null; },
+        isCurrent: () => true,
+        accept: (project) => { accepted.push(project); },
+      })).toBe(moved);
+      expect(reads).toBe(0);
+      expect(accepted).toEqual(moved === null ? [] : [moved]);
+    }
+  });
+
+  test("a closed host or failed recovery read preserves the original failure", async () => {
+    const failure = new Error("move failed");
+    for (const current of [async () => null, async () => { throw new Error("read failed"); }]) {
+      let accepted = false;
+      await expect(performProjectMove({
+        move: async () => { throw failure; }, current,
+        isCurrent: () => true,
+        accept: () => { accepted = true; },
+      })).rejects.toBe(failure);
+      expect(accepted).toBe(false);
+    }
+  });
+
+  test("a departed book is not queried or updated", async () => {
+    const failure = new Error("move failed");
+    let reads = 0;
+    let accepted = false;
+    await expect(performProjectMove({
+      move: async () => { throw failure; },
+      current: async () => { reads++; return { path: "/new/book.db" }; },
+      isCurrent: () => false,
+      accept: () => { accepted = true; },
+    })).rejects.toBe(failure);
+    expect(reads).toBe(0);
+    expect(accepted).toBe(false);
+  });
+
+  test("a switch during recovery cannot overwrite the next book's location", async () => {
+    const failure = new Error("move failed");
+    let active = true;
+    let path = "/next/book.db";
+    await expect(performProjectMove({
+      move: async () => { throw failure; },
+      current: async () => { active = false; return { path: "/new/book.db" }; },
+      isCurrent: () => active,
+      accept: (project) => { path = project.path; },
+    })).rejects.toBe(failure);
+    expect(path).toBe("/next/book.db");
   });
 });

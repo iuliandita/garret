@@ -12,7 +12,7 @@
 // why restoring captures what it overwrites first. Undo is not the way back
 // from a restore; the version the restore just made is.
 import { isCompositionKey } from "./composition-key";
-import { formatNumber, plural, t } from "./i18n";
+import { formatDate, formatNumber, plural, t } from "./i18n";
 import { createPanelShell } from "./panel-shell";
 import { diffWords, summarize } from "./diff";
 import { renderPieces } from "./diff-view";
@@ -60,7 +60,7 @@ export function formatWhen(createdAt: number, now: number): string {
   if (diff < 90 * MINUTE) return plural("history.when.minutes", Math.round(diff / MINUTE));
   if (diff < 22 * HOUR) return plural("history.when.hours", Math.round(diff / HOUR));
   if (diff < 6 * DAY) return plural("history.when.days", Math.round(diff / DAY));
-  return new Date(createdAt).toLocaleDateString();
+  return formatDate(createdAt);
 }
 
 /** How much longer or shorter this version is than the one before it.
@@ -112,7 +112,9 @@ export function versionLabel(row: VersionRow, previous: number | undefined, now:
  *  ago" against a row reading "before the second act" is two names for one
  *  thing, and the reader has to work out that it is one thing. */
 export function whenText(row: VersionRow, now: number): string {
-  return row.snapshot_label !== null ? `“${row.snapshot_label}”` : formatWhen(row.created_at, now);
+  return row.snapshot_label !== null
+    ? t("history.version.snapshot-label", { label: row.snapshot_label })
+    : formatWhen(row.created_at, now);
 }
 
 /** The one sentence a comparison is read for, and the figure the row's delta
@@ -163,6 +165,8 @@ export interface HistoryDeps {
    *  against a document with an unflushed keystroke would refuse on the rev, or
    *  worse, be overwritten by the flush that lands after it. */
   drain(): Promise<void>;
+  /** Own editor writes and departure until the stored result is reconciled. */
+  withOperation(operation: () => Promise<void>): Promise<void>;
   activeDocId(): string;
   /** The revision the page believes the open document is at. `undefined` means
    *  the page does not know, and a restore is refused rather than sent with a
@@ -188,7 +192,7 @@ export interface HistoryDeps {
    *  panel does not touch the editor itself: the page owns the session, and a
    *  unit that swapped the document without telling the flush scheduler its new
    *  rev would make the writer's next keystroke a conflict. */
-  applyRestored(body: string, rev: number): void;
+  applyRestored(itemId: string, body: string, rev: number): void | Promise<void>;
   /** After a snapshot restore, every open figure is stale. */
   reloadProject(): Promise<void>;
   onDone(message: string): void;
@@ -216,19 +220,17 @@ export function createHistory(deps: HistoryDeps): History {
 
   const heading = document.createElement("div");
   heading.id = "history-heading";
+  heading.setAttribute("role", "heading");
+  heading.setAttribute("aria-level", "3");
   heading.textContent = t("history.heading");
 
   const list = document.createElement("div");
   list.id = "history-list";
-  list.setAttribute("role", "listbox");
+  list.setAttribute("role", "list");
   list.setAttribute("aria-label", t("history.list.label"));
 
-  // BELOW THE LIST, not inside a row, and that is an ARIA decision before it is
-  // a layout one. `list` is a `listbox` and its children are `option`s; a diff
-  // nested in one would put a paragraph of prose inside a thing whose whole
-  // contract is to be one selectable name. It is also what makes "only one diff
-  // at a time" structural rather than bookkeeping: there is one region, and
-  // comparing another version rewrites it.
+  // Keep the comparison outside the action rows. It moves beside the chosen
+  // row, within a list item whose explicit name never includes the diff prose.
   const diff = document.createElement("div");
   diff.id = "history-diff";
   diff.setAttribute("role", "region");
@@ -264,13 +266,21 @@ export function createHistory(deps: HistoryDeps): History {
 
   const snapHeading = document.createElement("div");
   snapHeading.id = "snapshot-heading";
+  snapHeading.setAttribute("role", "heading");
+  snapHeading.setAttribute("aria-level", "3");
   snapHeading.textContent = t("history.snapshots.heading");
+
+  const snapNameField = document.createElement("div");
+  snapNameField.className = "field-with-label";
+  const snapNameLabel = document.createElement("label");
+  snapNameLabel.htmlFor = "snapshot-name";
+  snapNameLabel.textContent = t("history.snapshots.name.label");
 
   const snapName = document.createElement("input");
   snapName.id = "snapshot-name";
   snapName.type = "text";
   snapName.placeholder = t("history.snapshots.name.placeholder");
-  snapName.setAttribute("aria-label", t("history.snapshots.name.label"));
+  snapNameField.append(snapNameLabel, snapName);
 
   const snapTake = document.createElement("button");
   snapTake.id = "snapshot-take";
@@ -282,10 +292,16 @@ export function createHistory(deps: HistoryDeps): History {
 
   const snapList = document.createElement("div");
   snapList.id = "snapshot-list";
-  snapList.setAttribute("role", "listbox");
+  snapList.setAttribute("role", "list");
   snapList.setAttribute("aria-label", t("history.snapshots.list.label"));
 
-  panel.append(heading, list, diff, status, snapHeading, snapName, snapTake, snapList);
+  const snapConfirmation = document.createElement("div");
+  snapConfirmation.id = "snapshot-confirmation";
+  snapConfirmation.className = "sr-only";
+  snapConfirmation.setAttribute("role", "status");
+  snapConfirmation.setAttribute("aria-live", "polite");
+
+  panel.append(heading, list, diff, status, snapHeading, snapNameField, snapTake, snapList, snapConfirmation);
   container.append(panel);
 
   let destroyed = false;
@@ -294,6 +310,56 @@ export function createHistory(deps: HistoryDeps): History {
    *  longer open. */
   let generation = 0;
   let rows: VersionRow[] = [];
+  let listedItemId: string | null = null;
+  let busy = false;
+
+  function setBusy(value: boolean): void {
+    busy = value;
+    if (value) panel.setAttribute("aria-busy", "true");
+    else panel.removeAttribute("aria-busy");
+    snapName.disabled = value;
+    snapTake.disabled = value;
+    for (const button of panel.querySelectorAll<HTMLButtonElement>(".history-row button, .snapshot-row")) button.disabled = value;
+  }
+
+  async function withOperation(operation: (refreshOwned: () => Promise<void>) => Promise<void>): Promise<void> {
+    if (busy || destroyed) return;
+    const focused = document.activeElement;
+    const owner = focused instanceof HTMLElement && panel.contains(focused) ? focused : null;
+    const itemId = deps.activeDocId();
+    let ownedGeneration = generation;
+    let ownsFocus = owner !== null;
+    // WebKit can defer the blur caused by disabling. Blur first so that event
+    // cannot be mistaken for the writer leaving during the operation.
+    owner?.blur();
+    setBusy(true);
+    const cancelFocus = (): void => { ownsFocus = false; };
+    const onFocus = (event: FocusEvent): void => {
+      if (event.target !== owner) cancelFocus();
+    };
+    const onBlur = (): void => {
+      if (owner?.isConnected) cancelFocus();
+    };
+    document.addEventListener("focusin", onFocus);
+    owner?.addEventListener("blur", onBlur);
+    window.addEventListener("blur", cancelFocus);
+    try {
+      await deps.withOperation(() => operation(async () => {
+        if (generation !== ownedGeneration) cancelFocus();
+        ownedGeneration = generation + 1;
+        await refresh();
+      }));
+    } finally {
+      document.removeEventListener("focusin", onFocus);
+      owner?.removeEventListener("blur", onBlur);
+      window.removeEventListener("blur", cancelFocus);
+      setBusy(false);
+      if (ownsFocus && !destroyed && !panel.hidden && ownedGeneration === generation && itemId === deps.activeDocId()
+        && (document.activeElement === owner || document.activeElement === document.body)) {
+        (owner?.isConnected ? owner : snapName).focus();
+      }
+    }
+  }
   /** The snapshot whose restore has been ASKED FOR but not confirmed. One press
    *  is not enough for an operation whose blast radius is the whole book, and a
    *  latch is how the second press knows it is the second. */
@@ -318,8 +384,10 @@ export function createHistory(deps: HistoryDeps): History {
 
   function disarm(): void {
     armed = null;
+    snapConfirmation.textContent = "";
     for (const el of snapList.querySelectorAll("[data-armed]")) {
       el.removeAttribute("data-armed");
+      el.setAttribute("aria-label", el.getAttribute("data-restore-label") ?? "");
       const label = el.getAttribute("data-label") ?? "";
       const count = Number(el.getAttribute("data-documents") ?? "0");
       el.textContent = t("history.snapshots.row", { label, documents: documentsLabel(count) });
@@ -333,6 +401,7 @@ export function createHistory(deps: HistoryDeps): History {
     compareGeneration += 1;
     comparing = null;
     diff.hidden = true;
+    list.after(diff);
     diffBody.replaceChildren();
     diffLegend.hidden = false;
     diffOf.textContent = "";
@@ -350,12 +419,12 @@ export function createHistory(deps: HistoryDeps): History {
       // rows are newest first, so the version BEFORE this one is the next
       // element, not the previous.
       const previous = rows[i + 1]?.words;
+      const item = document.createElement("div");
+      item.setAttribute("role", "listitem");
+      item.setAttribute("aria-label", versionLabel(row, previous, at));
       const el = document.createElement("div");
       el.className = "history-row";
-      el.setAttribute("role", "option");
-      el.setAttribute("aria-selected", "false");
       el.dataset.versionId = String(row.id);
-      el.setAttribute("aria-label", versionLabel(row, previous, at));
 
       const when = document.createElement("span");
       when.className = "history-when";
@@ -371,6 +440,7 @@ export function createHistory(deps: HistoryDeps): History {
 
       const restore = document.createElement("button");
       restore.type = "button";
+      restore.disabled = busy;
       restore.className = "history-restore";
       restore.dataset.weight = "quiet";
       restore.dataset.versionId = String(row.id);
@@ -382,6 +452,7 @@ export function createHistory(deps: HistoryDeps): History {
 
       const compare = document.createElement("button");
       compare.type = "button";
+      compare.disabled = busy;
       compare.className = "history-compare";
       compare.dataset.weight = "quiet";
       compare.dataset.versionId = String(row.id);
@@ -398,7 +469,8 @@ export function createHistory(deps: HistoryDeps): History {
       );
 
       el.append(when, words, delta, restore, compare);
-      frag.append(el);
+      item.append(el);
+      frag.append(item);
     }
     list.replaceChildren(frag);
     // The buttons that owned the open diff have just been destroyed, so the
@@ -422,6 +494,7 @@ export function createHistory(deps: HistoryDeps): History {
       const el = document.createElement("button");
       el.type = "button";
       el.className = "snapshot-row";
+      el.disabled = busy;
       el.dataset.snapshotId = String(snap.id);
       el.dataset.label = snap.label;
       el.dataset.documents = String(snap.documents);
@@ -437,12 +510,17 @@ export function createHistory(deps: HistoryDeps): History {
           documents: documentsLabel(snap.documents),
         }),
       );
-      frag.append(el);
+      el.dataset.restoreLabel = el.getAttribute("aria-label") ?? "";
+      const item = document.createElement("div");
+      item.setAttribute("role", "listitem");
+      item.append(el);
+      frag.append(item);
     }
     snapList.replaceChildren(frag);
   }
 
   async function refresh(): Promise<void> {
+    disarm();
     const mine = ++generation;
     const itemId = deps.activeDocId();
     status.textContent = t("history.reading");
@@ -457,6 +535,7 @@ export function createHistory(deps: HistoryDeps): History {
       return;
     }
     if (destroyed || mine !== generation) return;
+    listedItemId = itemId;
     rows = versions;
     renderVersions();
     renderSnapshots(snaps);
@@ -480,8 +559,12 @@ export function createHistory(deps: HistoryDeps): History {
     const mine = ++compareGeneration;
     comparing = versionId;
     const at = now();
-    const button = list.querySelector(`.history-compare[data-version-id="${versionId}"]`);
+    const button = list.querySelector<HTMLButtonElement>(`.history-compare[data-version-id="${versionId}"]`);
+    let reveal = document.activeElement === button;
+    const cancelReveal = (): void => { reveal = false; };
+    button?.addEventListener("blur", cancelReveal, { once: true });
     button?.setAttribute("aria-expanded", "true");
+    button?.closest(".history-row")?.after(diff);
     diff.hidden = false;
     diffOf.textContent = t("history.diff.of", { when: whenText(row, at) });
     diffSummary.textContent = t("history.diff.comparing");
@@ -490,22 +573,25 @@ export function createHistory(deps: HistoryDeps): History {
       t("history.diff.region.label", { version: versionLabel(row, previous, at) }),
     );
 
-    const itemId = deps.activeDocId();
+    const itemId = listedItemId;
     // DRAIN, THEN READ, and in that order for the reason the dep records: the
     // "now" side is the store's, and until the pending keystrokes are in it the
     // store's answer is not the scene the writer is looking at.
-    await deps.drain();
-    if (destroyed || mine !== compareGeneration) return;
     let before: string;
     let after: string;
     try {
+      if (itemId === null || itemId !== deps.activeDocId()) throw new Error(t("history.error.changed"));
+      await deps.drain();
+      if (destroyed || mine !== compareGeneration) return;
+      if (itemId !== deps.activeDocId()) throw new Error(t("history.error.changed"));
       const [oldBody, newBody] = await Promise.all([
         deps.versionBody(versionId),
         deps.currentBody(itemId),
       ]);
       if (destroyed || mine !== compareGeneration) return;
-      before = bodyText(oldBody);
-      after = bodyText(newBody);
+      if (itemId !== deps.activeDocId()) throw new Error(t("history.error.changed"));
+      before = bodyText(oldBody, "\n\n");
+      after = bodyText(newBody, "\n\n");
     } catch (err) {
       if (destroyed || mine !== compareGeneration) return;
       // NOT the "no difference" line, which is the designed empty state: a
@@ -516,6 +602,8 @@ export function createHistory(deps: HistoryDeps): History {
       button?.setAttribute("aria-expanded", "false");
       deps.onNotice(t("history.error.compare", { error: String(err) }));
       return;
+    } finally {
+      button?.removeEventListener("blur", cancelReveal);
     }
 
     const pieces = diffWords(before, after);
@@ -540,39 +628,39 @@ export function createHistory(deps: HistoryDeps): History {
       // scene under a line that says nothing changed is a screenful of prose
       // asking to be read for a difference that is not there.
       diffBody.replaceChildren();
-      return;
+    } else {
+      renderPieces(diffBody, pieces);
     }
-    renderPieces(diffBody, pieces);
+    // Reveal the summary, then keep its adjacent control fully visible. The
+    // whole diff may be taller than the available pane. A writer who moved
+    // focus while it loaded has already moved on from this request.
+    if (reveal && document.activeElement === button && !panel.hidden) {
+      diffSummary.scrollIntoView({ block: "nearest", inline: "nearest" });
+      button?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
   }
 
   async function doRestore(versionId: number): Promise<void> {
-    const itemId = deps.activeDocId();
-    await deps.drain();
-    if (destroyed) return;
-    const baseRev = deps.revOf(itemId);
-    if (baseRev === undefined) {
-      // Sending a guess would make the base_rev discipline decorative, and the
-      // thing it guards is the writer's most recent keystrokes.
-      deps.onNotice(t("history.error.unknown-rev"));
-      return;
-    }
+    const itemId = listedItemId;
     try {
-      const restored = await deps.restore(itemId, versionId, baseRev);
-      if (destroyed) return;
-      deps.applyRestored(restored.body, restored.rev);
-      // CLOSE, AND HAND FOCUS BACK. Restoring is the destination action of this
-      // panel: a writer who came here to get their words back wants to look at
-      // them, in the editor. The find panel set the same precedent when
-      // activating a result started taking the writer to the word.
-      //
-      // It is also not optional. `refresh()` replaces the list's children, so
-      // the button that was just pressed is DESTROYED and focus falls to
-      // <body> - the recorded retirement defect, where a writer who then typed
-      // reached nothing at all, anywhere. Leaving the panel open would mean
-      // re-focusing a row that no longer exists.
-      setOpen(false);
-      deps.onDismiss();
-      deps.onDone(t("history.done.restored"));
+      await withOperation(async () => {
+        if (itemId === null || itemId !== deps.activeDocId()) throw new Error(t("history.error.changed"));
+        await deps.drain();
+        if (destroyed) return;
+        if (itemId !== deps.activeDocId()) throw new Error(t("history.error.changed"));
+        const baseRev = deps.revOf(itemId);
+        if (baseRev === undefined) {
+          deps.onNotice(t("history.error.unknown-rev"));
+          return;
+        }
+        const restored = await deps.restore(itemId, versionId, baseRev);
+        if (destroyed) return;
+        await deps.applyRestored(itemId, restored.body, restored.rev);
+        if (destroyed) return;
+        setOpen(false);
+        deps.onDismiss();
+        deps.onDone(t("history.done.restored"));
+      });
     } catch (err) {
       if (destroyed) return;
       deps.onNotice(t("history.error.restore", { error: String(err) }));
@@ -588,19 +676,21 @@ export function createHistory(deps: HistoryDeps): History {
       snapName.focus();
       return;
     }
-    await deps.drain();
-    if (destroyed) return;
     try {
-      const snap = await deps.takeSnapshot(label);
-      if (destroyed) return;
-      snapName.value = "";
-      deps.onDone(
-        t("history.snapshots.done.taken", {
-          label: snap.label,
-          documents: documentsLabel(snap.documents),
-        }),
-      );
-      await refresh();
+      await withOperation(async (refreshOwned) => {
+        await deps.drain();
+        if (destroyed) return;
+        const snap = await deps.takeSnapshot(label);
+        if (destroyed) return;
+        snapName.value = "";
+        deps.onDone(
+          t("history.snapshots.done.taken", {
+            label: snap.label,
+            documents: documentsLabel(snap.documents),
+          }),
+        );
+        await refreshOwned();
+      });
     } catch (err) {
       if (destroyed) return;
       deps.onNotice(t("history.snapshots.error.take", { error: String(err) }));
@@ -608,38 +698,45 @@ export function createHistory(deps: HistoryDeps): History {
   }
 
   async function restoreSnapshot(snapshotId: number, el: HTMLElement): Promise<void> {
+    if (busy) return;
     if (armed !== snapshotId) {
       disarm();
+      el.focus();
       armed = snapshotId;
       el.setAttribute("data-armed", "true");
       const label = el.dataset.label ?? "";
-      el.textContent = t("history.snapshots.confirm", {
+      const confirmation = t("history.snapshots.confirm", {
         label,
         documents: documentsLabel(Number(el.dataset.documents ?? "0")),
       });
+      el.textContent = confirmation;
+      el.setAttribute("aria-label", confirmation);
+      snapConfirmation.textContent = confirmation;
       return;
     }
     disarm();
-    await deps.drain();
-    if (destroyed) return;
     try {
-      const out = await deps.restoreSnapshot(snapshotId);
-      if (destroyed) return;
-      await deps.reloadProject();
-      if (destroyed) return;
-      // Same reason as a single restore, with more of it: every row in both
-      // lists is stale and the writer's manuscript has just moved underneath
-      // them.
-      setOpen(false);
-      deps.onDismiss();
-      deps.onDone(
-        out.documents === 0
-          ? t("history.snapshots.done.no-change")
-          : t("history.snapshots.done.restored", {
-              documents: formatNumber(out.documents),
-              covered: documentsLabel(out.covered),
-            }),
-      );
+      await withOperation(async () => {
+        await deps.drain();
+        if (destroyed) return;
+        const out = await deps.restoreSnapshot(snapshotId);
+        if (destroyed) return;
+        await deps.reloadProject();
+        if (destroyed) return;
+        // Same reason as a single restore, with more of it: every row in both
+        // lists is stale and the writer's manuscript has just moved underneath
+        // them.
+        setOpen(false);
+        deps.onDismiss();
+        deps.onDone(
+          out.documents === 0
+            ? t("history.snapshots.done.no-change")
+            : t("history.snapshots.done.restored", {
+                documents: formatNumber(out.documents),
+                covered: documentsLabel(out.covered),
+              }),
+        );
+      });
     } catch (err) {
       if (destroyed) return;
       deps.onNotice(t("history.snapshots.error.restore", { error: String(err) }));
@@ -647,6 +744,7 @@ export function createHistory(deps: HistoryDeps): History {
   }
 
   function onListClick(event: Event): void {
+    if (busy) return;
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
     const compare = target.closest(".history-compare");
@@ -680,8 +778,19 @@ export function createHistory(deps: HistoryDeps): History {
     void restoreSnapshot(id, row);
   }
 
+  const onSnapshotBlur = (event: FocusEvent): void => {
+    if (event.target instanceof HTMLElement && event.target.hasAttribute("data-armed")) disarm();
+  };
+  const onSnapshotEscape = (event: KeyboardEvent): void => {
+    if (isCompositionKey(event) || event.key !== "Escape" || armed === null) return;
+    event.preventDefault();
+    disarm();
+  };
   list.addEventListener("click", onListClick);
   snapList.addEventListener("click", onSnapListClick);
+  snapList.addEventListener("blur", onSnapshotBlur, true);
+  panel.addEventListener("keydown", onSnapshotEscape);
+  window.addEventListener("blur", disarm);
   snapName.addEventListener("keydown", (event) => {
     if (isCompositionKey(event)) return;
     if (event.key === "Enter") {
@@ -703,6 +812,7 @@ export function createHistory(deps: HistoryDeps): History {
 
   return {
     async open(): Promise<void> {
+      if (busy || destroyed) return;
       setOpen(true);
       snapName.focus();
       await refresh();
@@ -715,6 +825,9 @@ export function createHistory(deps: HistoryDeps): History {
       shell.destroy();
       list.removeEventListener("click", onListClick);
       snapList.removeEventListener("click", onSnapListClick);
+      snapList.removeEventListener("blur", onSnapshotBlur, true);
+      panel.removeEventListener("keydown", onSnapshotEscape);
+      window.removeEventListener("blur", disarm);
       panel.remove();
     },
   };

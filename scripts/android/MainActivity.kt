@@ -35,6 +35,13 @@ class MainActivity : TauriActivity() {
     private inner class AppearanceBridge {
         @JavascriptInterface fun current(): String = appearance.getString("theme", "system") ?: "system"
 
+        @JavascriptInterface fun textSize(): Int = appearance.getInt("text_size", 19).coerceIn(16, 28)
+
+        @JavascriptInterface fun setTextSize(value: Int): Boolean {
+            if (value !in 16..28) return false
+            return appearance.edit().putInt("text_size", value).commit()
+        }
+
         @JavascriptInterface fun set(value: String) {
             if (value != "light" && value != "dark") return
             appearance.edit().putString("theme", value).apply()
@@ -63,7 +70,7 @@ class MainActivity : TauriActivity() {
                     moveTaskToBack(true)
                     return
                 }
-                view.evaluateJavascript("window.__mobileWriting === true") { writing ->
+                view.evaluateJavascript("window.__mobileWriting === true || window.__mobileTransfer === true") { writing ->
                     if (writing == "true") {
                         view.evaluateJavascript("window.dispatchEvent(new Event('mobile-back'))", null)
                     } else {

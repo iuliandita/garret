@@ -27,7 +27,7 @@ Extract the complete ZIP. Keep the README, BUILD.txt and checksums. Move
 garret.app to a writable location if desired and double-click it.
 Use the architecture named in BUILD.txt: arm64 for Apple Silicon or x86_64
 for Intel. This is not a universal binary. Keep the application bundle
-intact; the interface lives beside the executable inside its Contents folder.
+intact; the interface lives in Contents/Resources/dist.
 No Rust, Bun or development tools are required just to run a supplied app.
 
 The bundle has an ad-hoc integrity signature only. It has no trusted signing
@@ -71,7 +71,12 @@ under your home directory.
 This preview currently uses the non-Windows data layout for settings and
 recovery, not the usual Mac Application Support folder:
 
-    ~/.local/share/cc.local.app/
+    ~/.local/share/garret/
+
+The first launch moves the previous application-data folder here and keeps
+a compatibility link. Close older versions first. Keep that link when backing
+up or managing the application data. Older encrypted-archive CLI commands
+may refuse the compatibility link; use the current build.
 
 An absolute XDG_DATA_HOME override changes the data base directory. Older
 books may also remain under that data directory. Manuscript .db files can

@@ -27,6 +27,7 @@ bin="$repo/app/shell-tauri/src-tauri/target/release/garret"
 (cd "$repo/app/ui" && bun run build)
 # Tauri requires frontendDist to exist; appdist serves the real UI separately.
 mkdir -p "$repo/app/shell-tauri/dist"
+cp -R "$repo/app/ui/dist/." "$repo/app/shell-tauri/dist/"
 (cd "$repo/app/shell-tauri/src-tauri" && cargo build --locked --release -j8 --target-dir "$repo/app/shell-tauri/src-tauri/target")
 
 [ -x "$bin" ] || { echo "no binary at $bin" >&2; exit 1; }
@@ -52,6 +53,7 @@ cp "$here/linux/README.txt" "$stage/README.txt"
 cp "$repo/COPYING" "$repo/THIRD-PARTY-NOTICES.md" "$stage/"
 {
   printf 'Source revision: %s\n' "$revision"
+  printf 'Application version: %s\n' "$(python3 "$here/release.py" check)"
   printf 'Architecture: Linux x86_64\nMinimum glibc: %s\n' "${floor#GLIBC_}"
   printf 'Built UTC: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   printf 'Runtime: system WebKitGTK 4.1 and GTK 3\n'
@@ -62,6 +64,14 @@ tar="$out/garret-linux-x86_64.tar.gz"
 tar -C "$out" -czf "$tar" app
 
 (cd "$out" && sha256sum "$(basename "$tar")" > "$(basename "$tar").sha256")
+
+rm -rf "$repo/app/shell-tauri/src-tauri/target/release/bundle"
+(cd "$repo/app/shell-tauri" && CARGO_TARGET_DIR="$repo/app/shell-tauri/src-tauri/target" bun "$repo/node_modules/@tauri-apps/cli/tauri.js" bundle --ci --no-binary-patching --bundles deb,rpm,appimage)
+python3 "$here/collect-installers.py" linux "$repo/app/shell-tauri/src-tauri/target/release/bundle" "$out"
+if [[ $(git -C "$repo" rev-parse HEAD) != "$revision" || -n $(git -C "$repo" status --porcelain) ]]; then
+  echo "source changed during bundling; refusing to label this package" >&2
+  exit 1
+fi
 
 echo
 echo "wrote $tar"

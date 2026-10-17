@@ -32,7 +32,8 @@ export function closeOnOutsideClick(
   doc: Document = document,
 ): () => void {
   const onDocumentClick = (event: Event): void => {
-    if (!isOpen()) return;
+    // A modal isolates the background before its own buttons receive clicks.
+    if (!isOpen() || panel.closest("[inert]")) return;
     const target = event.target;
     // NO isConnected CHECK. The first draft had one, on the theory that a row
     // removed by the click that selected it reports a target the panel can no

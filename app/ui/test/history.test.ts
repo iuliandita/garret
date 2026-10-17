@@ -1,3 +1,4 @@
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { describe, expect, test } from "bun:test";
 import {
   createHistory,
@@ -10,6 +11,8 @@ import {
   type SnapshotRow,
   type VersionRow,
 } from "../src/history";
+
+if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -56,6 +59,21 @@ describe("formatWhen", () => {
   });
 });
 
+test("older History dates follow German UI on an English runtime", () => {
+  const modulePath = new URL("../src/history.ts", import.meta.url).href;
+  const result = Bun.spawnSync([process.execPath, "-e", `
+    globalThis.__appLocale = "de";
+    const { formatWhen } = await import(${JSON.stringify(modulePath)});
+    const at = Date.UTC(2026, 5, 15, 12);
+    console.log(JSON.stringify({ actual: formatWhen(at, at + 40 * 86400000),
+      expected: new Date(at).toLocaleDateString("de"), runtime: new Date(at).toLocaleDateString() }));
+  `], { env: { ...process.env, LANG: "en_US.UTF-8", LC_ALL: "en_US.UTF-8" } });
+  expect(result.exitCode).toBe(0);
+  const dates = JSON.parse(new TextDecoder().decode(result.stdout)) as { actual: string; expected: string; runtime: string };
+  expect(dates.expected).not.toBe(dates.runtime);
+  expect(dates.actual).toBe(dates.expected);
+});
+
 describe("formatDelta", () => {
   test("no previous version and no change are different answers", () => {
     // A writer looking for the version before they cut a chapter has to be able
@@ -94,7 +112,7 @@ describe("versionLabel", () => {
       undefined,
       NOW,
     );
-    expect(label).toContain('snapshot "before the cut"');
+    expect(label).toContain('snapshot “before the cut”');
   });
 });
 
@@ -138,6 +156,7 @@ function mount(
   const applied: { body: string; rev: number }[] = [];
   const history = createHistory({
     container,
+    withOperation: async (operation) => operation(),
     drain: async () => {
       calls.push("drain");
     },
@@ -171,7 +190,7 @@ function mount(
       calls.push(`restoreSnapshot:${id}`);
       return { documents: 4, covered: 12 };
     },
-    applyRestored: (body, rev) => {
+    applyRestored: (_itemId, body, rev) => {
       applied.push({ body, rev });
     },
     reloadProject: async () => {
@@ -238,6 +257,33 @@ describe("diffSummaryLabel", () => {
 });
 
 describe("the panel", () => {
+  test("scene history and snapshots expose named level-three section headings", async () => {
+    const rig = mount();
+    try {
+      await rig.history.open();
+      for (const [id, name] of [["history-heading", "This scene"], ["snapshot-heading", "Snapshots"]]) {
+        const heading = rig.container.querySelector(`#${id}`);
+        expect(heading?.getAttribute("role")).toBe("heading");
+        expect(heading?.getAttribute("aria-level")).toBe("3");
+        expect(heading?.textContent).toBe(name);
+      }
+    } finally { rig.destroy(); }
+  });
+
+  test("version and snapshot actions remain buttons inside ordinary list items", async () => {
+    const rig = mount({}, { versions: rows(), snapshots: [{ id: 5, label: "act one", created_at: NOW, documents: 2 }] });
+    try {
+      await rig.history.open();
+      expect(rig.container.querySelector("#history-list")?.getAttribute("role")).toBe("list");
+      expect(rig.container.querySelector(".history-restore")?.closest('[role="listitem"]')?.parentElement?.id).toBe("history-list");
+      expect(rig.container.querySelector(".history-compare")?.tagName).toBe("BUTTON");
+      expect(rig.container.querySelector("#snapshot-list")?.getAttribute("role")).toBe("list");
+      expect(rig.container.querySelector(".snapshot-row")?.parentElement?.getAttribute("role")).toBe("listitem");
+      expect(rig.container.querySelector(".snapshot-row")?.tagName).toBe("BUTTON");
+      expect(rig.container.querySelectorAll('[role="option"], [aria-selected]').length).toBe(0);
+    } finally { rig.destroy(); }
+  });
+
   test("a delta compares against the version BELOW, because the list is newest first", async () => {
     // Getting this backwards renders every figure as its own negation, which
     // reads perfectly plausibly and is wrong for every row.
@@ -352,7 +398,11 @@ describe("the panel", () => {
       await rig.history.open();
       const input = rig.container.querySelector<HTMLInputElement>("#snapshot-name");
       if (input === null) throw new Error("no name field");
+      const label = rig.container.querySelector<HTMLLabelElement>('label[for="snapshot-name"]');
+      expect(label?.textContent).toBe("Snapshot name");
+      expect(input.parentElement?.className).toBe("field-with-label");
       input.value = "before the cut";
+      expect(label?.textContent).toBe("Snapshot name");
       rig.container.querySelector<HTMLButtonElement>("#snapshot-take")?.click();
       await settle();
       expect(rig.calls).toContain("take:before the cut");
@@ -375,13 +425,70 @@ describe("the panel", () => {
       row?.click();
       await settle();
       expect(rig.calls.some((c) => c.startsWith("restoreSnapshot:"))).toBe(false);
+      expect(document.activeElement?.className).toBe("snapshot-row");
       expect(row?.textContent).toContain("Really restore");
+      expect(row?.getAttribute("aria-label")).toBe(row?.textContent ?? "");
+      const confirmation = rig.container.querySelector("#snapshot-confirmation");
+      expect(confirmation?.getAttribute("role")).toBe("status");
+      expect(confirmation?.getAttribute("aria-live")).toBe("polite");
+      expect(confirmation?.textContent).toBe(row?.textContent ?? "");
 
       row?.click();
       await settle(12);
       expect(rig.calls).toContain("restoreSnapshot:5");
+      expect(confirmation?.textContent).toBe("");
       expect(rig.calls).toContain("reload");
       expect(rig.done.join(" ")).toContain("4 of 12");
+    } finally {
+      rig.destroy();
+    }
+  });
+
+  for (const departure of ["blur", "window", "escape"] as const) {
+    test(`${departure} disarms a snapshot so another press cannot restore`, async () => {
+      const rig = mount({}, { snapshots: [{ id: 5, label: "act one", created_at: NOW, documents: 12 }] });
+      try {
+        await rig.history.open();
+        const row = rig.container.querySelector<HTMLButtonElement>(".snapshot-row")!;
+        row.click();
+        if (departure === "blur") row.blur();
+        if (departure === "window") window.dispatchEvent(new Event("blur"));
+        if (departure === "escape") {
+          const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+          row.dispatchEvent(event);
+          expect(event.defaultPrevented).toBe(true);
+          expect(rig.history.isOpen()).toBe(true);
+        }
+        expect(row.hasAttribute("data-armed")).toBe(false);
+        expect(rig.container.querySelector("#snapshot-confirmation")?.textContent).toBe("");
+        row.click();
+        await settle();
+        expect(rig.calls.some((call) => call.startsWith("restoreSnapshot:"))).toBe(false);
+        expect(row.hasAttribute("data-armed")).toBe(true);
+      } finally { rig.destroy(); }
+    });
+  }
+
+  test("a failed snapshot restore leaves its original name and no stale confirmation", async () => {
+    const rig = mount({ restoreSnapshot: async () => { throw new Error("restore refused"); } }, {
+      snapshots: [{ id: 5, label: "act one", created_at: NOW - DAY, documents: 12 }],
+    });
+    try {
+      await rig.history.open();
+      const row = rig.container.querySelector<HTMLButtonElement>(".snapshot-row")!;
+      const originalName = row.getAttribute("aria-label");
+      const originalText = row.textContent;
+      row.click();
+      row.click();
+      await settle(12);
+      expect(rig.notices.join(" ")).toContain("restore refused");
+      expect(rig.history.isOpen()).toBe(true);
+      expect(row.getAttribute("aria-label")).toBe(originalName ?? "");
+      expect(row.textContent).toBe(originalText ?? "");
+      expect(row.hasAttribute("data-armed")).toBe(false);
+      expect(rig.container.querySelector("#snapshot-confirmation")?.textContent).toBe("");
+      row.click();
+      expect(row.textContent).toContain("Really restore");
     } finally {
       rig.destroy();
     }
@@ -463,11 +570,16 @@ describe("the panel", () => {
     try {
       await rig.history.open();
       let row = rig.container.querySelector<HTMLButtonElement>(".snapshot-row");
+      const originalName = row?.getAttribute("aria-label");
+      const originalText = row?.textContent;
       row?.click();
       await settle();
       rig.container
         .querySelector("#history-panel")
         ?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      expect(row?.getAttribute("aria-label")).toBe(originalName ?? "");
+      expect(row?.textContent).toBe(originalText ?? "");
+      expect(rig.container.querySelector("#snapshot-confirmation")?.textContent).toBe("");
       await rig.history.open();
       row = rig.container.querySelector<HTMLButtonElement>(".snapshot-row");
       row?.click();
@@ -487,11 +599,16 @@ describe("the panel", () => {
     try {
       await rig.history.open();
       const all = [...rig.container.querySelectorAll<HTMLButtonElement>(".snapshot-row")];
+      const firstName = all[0]?.getAttribute("aria-label");
+      const firstText = all[0]?.textContent;
       all[0]?.click();
       await settle();
       all[1]?.click();
       await settle();
       expect(all[0]?.hasAttribute("data-armed")).toBe(false);
+      expect(all[0]?.getAttribute("aria-label")).toBe(firstName ?? "");
+      expect(all[0]?.textContent).toBe(firstText ?? "");
+      expect(rig.container.querySelector("#snapshot-confirmation")?.textContent).toBe(all[1]?.textContent ?? "");
       // And the first row is now a single press away from nothing, not from a
       // restore.
       all[0]?.click();
@@ -560,15 +677,32 @@ describe("the panel", () => {
     const rig = mount({}, { versions: rows() });
     try {
       await rig.history.open();
-      const names = [...rig.container.querySelectorAll(".history-row")].map((el) =>
+      const names = [...rig.container.querySelectorAll('#history-list > [role="listitem"]')].map((el) =>
         el.getAttribute("aria-label"),
       );
       expect(names[0]).toContain("1,200 words");
       expect(names[0]).toContain("200 more");
-      expect(names[1]).toContain('snapshot "act one"');
+      expect(names[1]).toContain('snapshot “act one”');
     } finally {
       rig.destroy();
     }
+  });
+
+  test("comparing preserves paragraph boundaries even when the words are unchanged", async () => {
+    const rig = mount({}, {
+      versions: rows(),
+      versionBody: body("alpha beta"),
+      currentBody: body("alpha", "beta"),
+    });
+    try {
+      await rig.history.open();
+      rig.container.querySelector<HTMLButtonElement>(".history-compare")?.click();
+      await settle(12);
+      const diff = rig.container.querySelector("#history-diff-body");
+      expect(diff?.querySelector("ins")?.textContent).toContain("\n\n");
+      expect(diff?.querySelector("del")?.textContent).toBe("alpha ");
+      expect(rig.container.querySelector("#history-diff-summary")?.textContent).not.toContain("No change");
+    } finally { rig.destroy(); }
   });
 
   test("comparing reports both figures, which the row's net delta cannot", async () => {
@@ -859,5 +993,290 @@ describe("the panel", () => {
       document.addEventListener = realAdd;
       document.removeEventListener = realRemove;
     }
+  });
+});
+
+
+describe("operation focus ownership", () => {
+  function deferredDrain() {
+    let release!: () => void;
+    const promise = new Promise<void>((resolve) => { release = resolve; });
+    return { promise, release };
+  }
+
+  function nativeDisableBlur(control: HTMLButtonElement | HTMLInputElement, deferred = false): void {
+    // HappyDOM leaves disabled controls focused; browsers drop them to body.
+    const disabled = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(control), "disabled")!;
+    Object.defineProperty(control, "disabled", {
+      configurable: true,
+      get() { return disabled.get!.call(control); },
+      set(value: boolean) {
+        disabled.set!.call(control, value);
+        if (value && document.activeElement === control) {
+          if (deferred) queueMicrotask(() => control.blur());
+          else document.body.focus();
+        }
+      },
+    });
+  }
+
+  for (const selector of ["#snapshot-name", "#snapshot-take"]) {
+    test(`snapshot success retains ${selector} through deferred browser disable blur`, async () => {
+      const drain = deferredDrain();
+      const rig = mount({ drain: () => drain.promise });
+      try {
+        await rig.history.open();
+        const owner = rig.container.querySelector<HTMLInputElement | HTMLButtonElement>(selector)!;
+        rig.container.querySelector<HTMLInputElement>("#snapshot-name")!.value = "before the cut";
+        nativeDisableBlur(owner, true); owner.focus();
+        rig.container.querySelector<HTMLButtonElement>("#snapshot-take")!.click();
+        await settle(4);
+        expect(owner.disabled).toBe(true);
+        drain.release(); await settle(16);
+        expect(rig.done.join(" ")).toContain("before the cut");
+        expect(owner.disabled).toBe(false);
+        expect(document.activeElement === owner).toBe(true);
+      } finally { drain.release(); rig.destroy(); }
+    });
+
+    test(`snapshot success restores ${selector} after disabling loses focus`, async () => {
+      const drain = deferredDrain();
+      const rig = mount({ drain: () => drain.promise });
+      try {
+        await rig.history.open();
+        const owner = rig.container.querySelector<HTMLInputElement | HTMLButtonElement>(selector)!;
+        rig.container.querySelector<HTMLInputElement>("#snapshot-name")!.value = "before the cut";
+        nativeDisableBlur(owner); owner.focus();
+        rig.container.querySelector<HTMLButtonElement>("#snapshot-take")!.click();
+        expect(owner.disabled).toBe(true);
+        expect(document.activeElement === document.body).toBe(true);
+        drain.release(); await settle(16);
+        expect(rig.done.join(" ")).toContain("before the cut");
+        expect(owner.disabled).toBe(false);
+        expect(document.activeElement?.id).toBe(owner.id);
+      } finally { drain.release(); rig.destroy(); }
+    });
+  }
+
+  for (const selector of [".history-restore", ".snapshot-row"]) {
+    test(`a failed ${selector} restore returns focus to its enabled control`, async () => {
+      const drain = deferredDrain();
+      const rig = mount({ drain: () => drain.promise, restore: async () => { throw new Error("refused"); },
+        restoreSnapshot: async () => { throw new Error("refused"); } },
+        { versions: rows(), snapshots: [{ id: 5, label: "act one", created_at: NOW, documents: 2 }] });
+      try {
+        await rig.history.open();
+        const owner = rig.container.querySelector<HTMLButtonElement>(selector)!;
+        nativeDisableBlur(owner); owner.focus(); owner.click();
+        if (selector === ".snapshot-row") owner.click();
+        expect(document.activeElement === document.body).toBe(true);
+        drain.release(); await settle(16);
+        expect(rig.notices.join(" ")).toContain("refused");
+        expect(rig.history.isOpen()).toBe(true);
+        expect(owner.disabled).toBe(false);
+        expect(document.activeElement === owner).toBe(true);
+      } finally { drain.release(); rig.destroy(); }
+    });
+  }
+
+  test("snapshot refresh falls back to the name field when the focused row was replaced", async () => {
+    const drain = deferredDrain();
+    const rig = mount({ drain: () => drain.promise }, { versions: rows() });
+    try {
+      await rig.history.open();
+      const owner = rig.container.querySelector<HTMLButtonElement>(".history-restore")!;
+      nativeDisableBlur(owner); owner.focus();
+      rig.container.querySelector<HTMLInputElement>("#snapshot-name")!.value = "before the cut";
+      rig.container.querySelector<HTMLButtonElement>("#snapshot-take")!.click();
+      expect(document.activeElement === document.body).toBe(true);
+      drain.release(); await settle(16);
+      expect(owner.isConnected).toBe(false);
+      expect(document.activeElement?.id).toBe("snapshot-name");
+    } finally { drain.release(); rig.destroy(); }
+  });
+
+  for (const departure of ["focus", "blur", "window", "close", "destroy", "scene"] as const) {
+    test(`${departure} during an operation cancels its focus restoration`, async () => {
+      const drain = deferredDrain(); let active = "scene-1";
+      const rig = mount({ drain: () => drain.promise, activeDocId: () => active });
+      const outside = document.createElement("button"); outside.id = "outside-history"; document.body.append(outside);
+      try {
+        await rig.history.open();
+        const owner = rig.container.querySelector<HTMLButtonElement>("#snapshot-take")!;
+        rig.container.querySelector<HTMLInputElement>("#snapshot-name")!.value = "before the cut";
+        nativeDisableBlur(owner); owner.focus(); owner.click();
+        expect(document.activeElement === document.body).toBe(true);
+        if (departure === "focus") { outside.focus(); outside.blur(); }
+        else if (departure === "blur") owner.dispatchEvent(new FocusEvent("blur"));
+        else if (departure === "window") window.dispatchEvent(new Event("blur"));
+        else if (departure === "close") rig.container.querySelector("#history-panel")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        else if (departure === "destroy") rig.history.destroy();
+        else active = "scene-2";
+        drain.release(); await settle(16);
+        expect(document.activeElement === owner).toBe(false);
+        expect(document.activeElement?.id).not.toBe("snapshot-name");
+      } finally { drain.release(); rig.destroy(); outside.remove(); }
+    });
+  }
+
+  test("closing during snapshot refresh prevents reopening and delayed focus restoration", async () => {
+    let release!: (versions: VersionRow[]) => void;
+    const pending = new Promise<VersionRow[]>((resolve) => { release = resolve; });
+    let listings = 0;
+    const rig = mount({ versions: () => ++listings === 1 ? Promise.resolve(rows()) : pending });
+    try {
+      await rig.history.open();
+      const owner = rig.container.querySelector<HTMLButtonElement>("#snapshot-take")!;
+      rig.container.querySelector<HTMLInputElement>("#snapshot-name")!.value = "before the cut";
+      nativeDisableBlur(owner); owner.focus(); owner.click(); await settle(8);
+      expect(listings).toBe(2);
+      expect(owner.disabled).toBe(true);
+      rig.container.querySelector("#history-panel")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      await rig.history.open();
+      expect(rig.history.isOpen()).toBe(false);
+      expect(listings).toBe(2);
+      release(rows()); await settle(16);
+      expect(rig.history.isOpen()).toBe(false);
+      expect(document.activeElement === owner).toBe(false);
+      expect(document.activeElement?.id).not.toBe("snapshot-name");
+    } finally { release(rows()); rig.destroy(); }
+  });
+
+  test("a successful restore leaves focus with dismissal after disabling loses it", async () => {
+    const drain = deferredDrain();
+    const outside = document.createElement("button"); outside.id = "restored-editor"; document.body.append(outside);
+    const rig = mount({ drain: () => drain.promise, onDismiss: () => outside.focus() }, { versions: rows() });
+    try {
+      await rig.history.open();
+      const owner = rig.container.querySelector<HTMLButtonElement>(".history-restore")!;
+      nativeDisableBlur(owner); owner.focus(); owner.click();
+      expect(document.activeElement === document.body).toBe(true);
+      drain.release(); await settle(16);
+      expect(rig.history.isOpen()).toBe(false);
+      expect(document.activeElement?.id).toBe("restored-editor");
+    } finally { drain.release(); rig.destroy(); outside.remove(); }
+  });
+});
+
+describe("comparison result visibility", () => {
+  function deferredBody() {
+    let release!: (value: string) => void;
+    const promise = new Promise<string>((resolve) => { release = resolve; });
+    return { promise, release };
+  }
+  function controls(rig: Rig) {
+    const button = rig.container.querySelector<HTMLButtonElement>(".history-compare")!;
+    const diff = rig.container.querySelector<HTMLElement>("#history-diff")!;
+    const scrolls: { options: ScrollIntoViewOptions | boolean | undefined; summary: string }[] = [];
+    const focusScrolls: string[] = [];
+    rig.container.querySelector<HTMLElement>("#history-diff-summary")!.scrollIntoView = (options) => {
+      scrolls.push({ options, summary: diff.textContent ?? "" });
+    };
+    for (const control of rig.container.querySelectorAll<HTMLButtonElement>(".history-compare")) {
+      control.scrollIntoView = (options) => {
+        expect(options).toEqual({ block: "nearest", inline: "nearest" });
+        focusScrolls.push(control.dataset.versionId!);
+      };
+    }
+    return { button, diff, scrolls, focusScrolls };
+  }
+
+  for (const same of [false, true]) {
+    test(`a completed ${same ? "unchanged" : "changed"} comparison scrolls its rendered result while keeping Compare focus`, async () => {
+      const reply = deferredBody();
+      const rig = mount({ versionBody: () => reply.promise }, { versions: rows(), currentBody: body("current words") });
+      try {
+        await rig.history.open(); const { button, diff, scrolls, focusScrolls } = controls(rig);
+        button.focus(); button.click(); await settle(4);
+        expect(scrolls).toEqual([]);
+        reply.release(body(same ? "current words" : "earlier words")); await settle(12);
+        expect(scrolls).toHaveLength(1);
+        expect(scrolls[0]?.options).toEqual({ block: "nearest", inline: "nearest" });
+        expect(scrolls[0]?.summary).not.toContain("Comparing");
+        expect(diff.hidden).toBe(false); expect(document.activeElement === button).toBe(true);
+        expect(focusScrolls).toEqual([button.dataset.versionId!]);
+        if (same) expect(scrolls[0]?.summary).toContain("No difference");
+        else expect(diff.querySelectorAll("del, ins").length).toBeGreaterThan(0);
+      } finally { reply.release(body("earlier words")); rig.destroy(); }
+    });
+  }
+
+  for (const index of [0, 2]) {
+    test(`the ${index === 0 ? "first" : "last"} version keeps its comparison adjacent and its list-item name unchanged`, async () => {
+      const rig = mount({}, { versions: rows(), versionBody: body("earlier unique prose"), currentBody: body("newer unique prose") });
+      try {
+        await rig.history.open();
+        const { diff, scrolls, focusScrolls } = controls(rig);
+        const buttons = rig.container.querySelectorAll<HTMLButtonElement>(".history-compare");
+        const button = buttons[index]!;
+        const actionRow = button.closest(".history-row")!;
+        const item = actionRow.parentElement!;
+        const name = item.getAttribute("aria-label");
+        expect(name).toBe(versionLabel(rows()[index]!, rows()[index + 1]?.words, NOW));
+        button.focus(); button.click(); await settle(12);
+        expect(item.getAttribute("role")).toBe("listitem");
+        expect(item.getAttribute("aria-label")).toBe(name);
+        expect(item.getAttribute("aria-label")).not.toContain("unique prose");
+        expect(actionRow.nextElementSibling === diff).toBe(true);
+        expect(diff.querySelector("#history-diff-of")?.nextElementSibling?.id).toBe("history-diff-summary");
+        expect(actionRow.contains(diff)).toBe(false);
+        expect(diff.parentElement === item).toBe(true);
+        expect(diff.getAttribute("role")).toBe("region");
+        expect(diff.getAttribute("aria-label")).toContain("as it is now");
+        expect(rig.container.querySelectorAll('#history-list > [role="listitem"]')).toHaveLength(3);
+        expect(scrolls).toHaveLength(1);
+        expect(focusScrolls).toEqual([button.dataset.versionId!]);
+        expect(document.activeElement === button).toBe(true);
+        button.click(); await settle(12);
+        expect(diff.hidden).toBe(true);
+        expect(diff.parentElement === item).toBe(false);
+      } finally { rig.destroy(); }
+    });
+  }
+
+  test("moving focus away and back while a comparison loads cancels its later scroll", async () => {
+    const reply = deferredBody(); const rig = mount({ versionBody: () => reply.promise }, { versions: rows() });
+    try {
+      await rig.history.open(); const { button, scrolls, focusScrolls } = controls(rig);
+      button.focus(); button.click(); await settle(4);
+      rig.container.querySelector<HTMLInputElement>("#snapshot-name")!.focus(); button.focus();
+      reply.release(body("earlier words")); await settle(12);
+      expect(scrolls).toEqual([]); expect(focusScrolls).toEqual([]);
+      expect(document.activeElement === button).toBe(true);
+    } finally { reply.release(body("earlier words")); rig.destroy(); }
+  });
+
+  for (const navigation of ["close", "destroy", "refresh", "scene"] as const) {
+    test(`${navigation} during comparison prevents a delayed scroll`, async () => {
+      const reply = deferredBody(); let active = "scene-1";
+      const rig = mount({ versionBody: () => reply.promise, activeDocId: () => active }, { versions: rows() });
+      try {
+        await rig.history.open(); const { button, scrolls, focusScrolls } = controls(rig);
+        button.focus(); button.click(); await settle(4);
+        if (navigation === "close") rig.container.querySelector("#history-panel")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        else if (navigation === "destroy") rig.history.destroy();
+        else if (navigation === "refresh") await rig.history.open();
+        else active = "scene-2";
+        reply.release(body("earlier words")); await settle(12);
+        expect(scrolls).toEqual([]); expect(focusScrolls).toEqual([]);
+      } finally { reply.release(body("earlier words")); rig.destroy(); }
+    });
+  }
+
+  test("a newer comparison owns the scroll when an older reply arrives last", async () => {
+    const reply = deferredBody();
+    const rig = mount({ versionBody: (id) => id === 3 ? reply.promise : Promise.resolve(body("second version")) }, { versions: rows() });
+    try {
+      await rig.history.open(); const { button, diff, scrolls, focusScrolls } = controls(rig);
+      button.focus(); button.click(); await settle(4);
+      const next = rig.container.querySelectorAll<HTMLButtonElement>(".history-compare")[1]!;
+      next.focus(); next.click(); await settle(12);
+      expect(scrolls).toHaveLength(1);
+      reply.release(body("late first version")); await settle(12);
+      expect(scrolls).toHaveLength(1); expect(document.activeElement === next).toBe(true);
+      expect(focusScrolls).toEqual([next.dataset.versionId!]);
+      expect(next.closest(".history-row")?.nextElementSibling === diff).toBe(true);
+      expect(button.closest(".history-row")?.nextElementSibling).toBe(null);
+    } finally { reply.release(body("late first version")); rig.destroy(); }
   });
 });

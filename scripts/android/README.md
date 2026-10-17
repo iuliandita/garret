@@ -7,8 +7,42 @@ The preview creates books and scenes, edits prose with basic formatting, and
 saves locally. It includes light/dark appearances and English/German labels
 selected from the device language. No account is needed.
 
-Use sample writing. This preview has no import/export, sync, or desktop
-review/publishing tools. Uninstalling or clearing app data deletes local books;
+Outline also offers scene rename and move/reorder, search in the current scene
+or book, daily word goals, Synopsis, Bible/cast lookup, comments, and text size.
+Move changes only a scene (including any existing children); parts and chapters
+have no editing actions. Choose an existing destination and the preceding item,
+or First. Search results open the scene and select a matching passage.
+
+Synopsis edits the same field as the desktop synopsis panel and uses explicit Save;
+closing discards an unsaved synopsis draft. Comments retain their quoted passages and
+can be resolved. Bible/cast lookup is read-only. Daily progress uses the desktop
+saved-typing ledger, including negative progress and its paused/unavailable states;
+pasted/imported words do not count as typing. The daily target is an application
+preference, separate from book transfer. Text size persists beside the device's
+theme preference. Android uses the system lock screen rather than an app privacy
+lock.
+
+Use sample writing. In a book, **Outline > Export book** saves a complete
+encrypted desktop-compatible archive through the system picker. Save a new
+recovery key first or choose an existing key, and keep it separately. In the
+library, **Import archive** reads the archive and key, previews its title and
+related copies, then adds a separate book after confirmation. Existing copies
+are never replaced. There is no sync or desktop review/publishing toolset.
+Only novel projects are editable; unsupported presets are refused before opening.
+The phone accepts at most 1 GiB archives and 512 MiB contents, with extra free
+space needed for verification and a separate owned copy.
+
+Cancellation waits for the original native operation. Close an open system
+picker to let cancellation finish. Provider write, close or readback failures
+leave the destination unverified. The app attempts to delete documents it created
+on failure. Terminal cleanup removes keys and plaintext; only ciphertext from an
+uncertain provider write is retained. Startup sweeps disposable stages, and the
+library offers **Discard leftover transfer files** without deleting books. A
+blocked provider close requires restarting the app before another transfer.
+Android transfer is not certified on physical devices.
+See [compatibility and recovery](../../docs/COMPATIBILITY.md) for limits.
+
+Uninstalling or clearing app data deletes local books;
 platform backup is disabled. Installation requires API 24 or newer, but this
 does not certify every such device. Book publication requires kernel support
 for atomic no-replace rename; older unsupported kernels refuse creation.
@@ -17,6 +51,15 @@ The exact tested APK and emulator version are recorded in
 `app/results/227-android-preview.json`. Physical-phone keyboard, composition,
 Back navigation and lifecycle behavior still require testing. Try two scenes,
 wait for "Saved on this device", then close and reopen the app.
+
+## Updates
+
+[Obtainium](https://github.com/ImranR98/Obtainium) can install each published
+release as an update; the source URL, asset name and signing certificate
+fingerprint are in the
+[README update notes](../../README.md#android-updates-with-obtainium). An
+installed copy updates in place only while the package name and the signing key
+stay the same.
 
 ## Build
 
@@ -44,8 +87,13 @@ builds both native architectures, signs with a retained private local key,
 checks signature/alignment, and writes a source-bound directory under
 `app/dist-android/`. The key and its password live in `$ANDROID_SIGNING_DIR`
 (default `~/.config/garret/android-signing`), outside the checkout; a missing
-key is generated on first use. Keep the signing key and password private and backed up;
+key is generated on first local use. CI release builds refuse missing signing
+material; build-only CI runs explicitly use a disposable key. Keep the signing key and password private and backed up;
 losing them prevents in-place updates. Do not share generated signing material.
+This source stays at 0.0.2/version code 2 with the existing `cc.local.app`
+identifier. Release preparation must raise both to 0.0.3/code 3 for an in-place
+update with the same signing key. Native update and file-provider round trips
+require their own runtime checks.
 
 ## Isolated runtime check
 

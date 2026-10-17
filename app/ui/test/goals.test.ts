@@ -28,14 +28,24 @@ describe("the daily target", () => {
     expect(targetWords("off")).toBeNull();
   });
 
-  test("a value the application does not offer reads as off", () => {
-    for (const bad of ["750", "", "500 ", "OFF", 500, null, undefined, {}]) {
+  test("noncanonical or out-of-range values read as off", () => {
+    for (const bad of ["", "500 ", " 500", "500\n", "0500", "+500", "0", "-1", "1.5", "1e3", "1000001", "Infinity", "OFF", 500, null, undefined, {}]) {
       expect(isDailyTarget(bad)).toBe(false);
       expect(dailyTargetFrom(bad)).toBe(DEFAULT_DAILY_TARGET);
     }
     // The control: without this, a narrowing that refused EVERYTHING would
     // satisfy the loop above.
     expect(dailyTargetFrom("1000")).toBe("1000");
+  });
+
+  test("custom goals accept canonical integer strings including both boundaries", () => {
+    for (const target of ["1", "750", "999999", "1000000"] as const) {
+      expect(isDailyTarget(target)).toBe(true);
+      expect(dailyTargetFrom(target)).toBe(target);
+      expect(targetWords(target)).toBe(Number(target));
+    }
+    expect(progressDisplay(320, "750")).toBe("320 of 750 typed today");
+    expect(progressSpoken(320, "750")).toBe("320 words typed today of a 750 word target");
   });
 });
 

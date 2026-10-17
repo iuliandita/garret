@@ -28,14 +28,27 @@
 // is the publishing track's constraint (c), and it means the rail can only
 // disagree with the file when the file is wrong.
 //
-// NOTHING REPAINTS ON ITS OWN. A render is O(the manuscript) -- 240-300 ms at
-// the `stress` fixture -- and this application's keystroke path is measured and
-// gated. The rail renders when it is opened, when Refresh is pressed and when
-// an option is changed, and it DRAINS the flush scheduler first, so what it
-// shows is the book as saved. That is what an export is.
+// NOTHING REPAINTS ON ITS OWN UNLESS THE WRITER ASKS. A render is O(the
+// manuscript) -- 240-300 ms at the `stress` fixture -- and this application's
+// keystroke path is measured and gated. The rail renders when it is opened,
+// when Refresh is pressed and when an option is changed, and it DRAINS the
+// flush scheduler first, so what it shows is the book as saved. That is what an
+// export is. The one addition is the opt-in refresh after a pause (off by
+// default): it rides the save scheduler's state TRANSITIONS, never an edit, and
+// fires only after a quiet spell with the rail open.
+//
+// THE WIDTH IS THE WRITER'S, within bounds: a divider in the rail's own grid
+// cell resizes it from 420px to about half the window, and the request is kept
+// per device. The rail stays the third column and a closed rail still measures
+// zero; under 900px it is still the overlay and has no divider.
+//
+// THE FRAMES ARE COSMETIC. With the device frame on, the same painted bytes sit
+// in a generic e-reader (paged by CSS columns) or tablet (one whole leaf); the
+// host's EPUB documents and proof leaves are never recomposed for it.
 import { isCompositionKey } from "./composition-key";
-import { plural, t } from "./i18n";
+import { formatNumber, plural, t } from "./i18n";
 import {
+  SINKS,
   STYLE_FLAGS,
   gutterVerdict,
   parseDocumentBody,
@@ -50,6 +63,27 @@ import {
 } from "./preview";
 import { createProofPageSetup, type ProofPageSetup } from "./proof-page-setup";
 import type { BookDesign, BookDesignView } from "./book-design";
+import type { SaveState } from "./store/flush";
+import {
+  canSnapHalf,
+  clampPage,
+  clampWidth,
+  defaultStorage,
+  halfWidth,
+  isOverlay,
+  keyWidth,
+  maxWidth,
+  pageCount,
+  parsePref,
+  readDevice,
+  resolveWidth,
+  serializePref,
+  snapWidth,
+  writeDevice,
+  RAIL_MIN_WIDTH,
+  type DeviceStorage,
+  type RailPref,
+} from "./preview-rail-layout";
 
 /** Which book the rail is showing. The ids are the host\u2019s
  *  (`export::Format::id`), exactly as `export-formats.ts` restates them. */
@@ -59,6 +93,15 @@ export type PreviewFormat = (typeof PREVIEW_FORMATS)[number];
 /** The id the stylesheet is scoped to, and the element the documents land in.
  *  One constant, because the scoping and the painting must name one element. */
 const PAGES_ID = "preview-pages";
+
+/** Device-local keys: how wide the rail is, whether the book is shown inside a
+ *  device frame, and whether the preview refreshes itself after a pause. */
+export const RAIL_WIDTH_KEY = "garret.preview.rail-width";
+export const RAIL_FRAME_KEY = "garret.preview.frame";
+export const RAIL_AUTO_KEY = "garret.preview.auto-refresh";
+
+/** The pause after the last edit before an enabled auto-refresh renders. */
+export const IDLE_REFRESH_MS = 3000;
 
 export interface PreviewRailDeps {
   /** The rail's own grid column from index.html. */
@@ -83,8 +126,16 @@ export interface PreviewRailDeps {
    *  happened. */
   saveAs(format: PreviewFormat): void;
   onNotice(message: string): void;
-  /** Where focus goes when the rail is dismissed with Escape. */
+  /** Where focus goes when the writer dismisses the rail. */
   onDismiss(): void;
+  /** Device-local storage for the three preferences above. Absent means the
+   *  webview's own; null means none, and the preferences last the session. */
+  storage?: DeviceStorage | null;
+  /** The window's width, read when the rail opens and when the window resizes. */
+  windowWidth?: () => number;
+  idleMs?: number;
+  setTimer?: (fn: () => void, ms: number) => unknown;
+  clearTimer?: (handle: unknown) => void;
 }
 
 export interface PreviewRail {
@@ -93,6 +144,9 @@ export interface PreviewRail {
   format(): PreviewFormat | null;
   close(): void;
   isOpen(): boolean;
+  /** The save scheduler's transitions, for the optional refresh after a pause.
+   *  Transitions only: this must never be wired to a keystroke. */
+  saveStateChanged(state: SaveState): void;
   destroy(): void;
 }
 
@@ -159,6 +213,44 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   }
   flagGroup.append(flagLegend, flagChoices);
 
+  /** A named group of mutually exclusive toggles, painted by aria-pressed like
+   *  every other option here. `attribute` is the data attribute the click
+   *  handler reads. */
+  function choiceGroup(
+    id: string,
+    legendKey: string,
+    nameKey: string,
+    attribute: "previewPosition" | "previewSink",
+    values: readonly string[],
+    labelKey: string,
+  ): HTMLDivElement {
+    const group = document.createElement("div");
+    group.id = id;
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", t(nameKey));
+    const legend = document.createElement("span");
+    legend.className = "preview-legend";
+    legend.setAttribute("aria-hidden", "true");
+    legend.textContent = t(legendKey);
+    const choices = document.createElement("div");
+    choices.className = "preview-choices";
+    for (const value of values) {
+      const control = button(`${id}-${value}`, t(`${labelKey}.${value}`));
+      control.dataset[attribute] = value;
+      choices.append(control);
+    }
+    group.append(legend, choices);
+    return group;
+  }
+  const positionGroup = choiceGroup(
+    "preview-position", "preview.legend.position", "preview.name.position",
+    "previewPosition", ["below", "above"], "preview.position",
+  );
+  const sinkGroup = choiceGroup(
+    "preview-sink", "preview.legend.sink", "preview.name.sink",
+    "previewSink", SINKS, "preview.sink",
+  );
+
   const note = document.createElement("p");
   note.id = "preview-note";
   note.textContent = t("preview.epub.note");
@@ -170,7 +262,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   const options = document.createElement("div");
   options.id = "preview-options";
   options.hidden = true;
-  options.append(ornamentGroup, flagGroup);
+  options.append(ornamentGroup, positionGroup, sinkGroup, flagGroup);
   const optionsToggle = button("preview-options-toggle", t("preview.options"));
   optionsToggle.setAttribute("aria-label", t("preview.options"));
   optionsToggle.setAttribute("aria-expanded", "false");
@@ -180,14 +272,57 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     optionsToggle.setAttribute("aria-expanded", String(!options.hidden));
   });
 
+  // HOW THE BOOK IS SHOWN, which is not what the book is. Both are toggles on
+  // the rail and neither touches the options or the host.
+  const frameToggle = button("preview-frame-toggle", t("preview.frame.toggle"));
+  const autoToggle = button("preview-auto-toggle", t("preview.auto.toggle"));
+  const toolbar = document.createElement("div");
+  toolbar.id = "preview-toolbar";
+  toolbar.append(optionsToggle, frameToggle, autoToggle);
+
   const styleElement = document.createElement("style");
   styleElement.id = "preview-style";
 
   const pages = document.createElement("div");
   pages.id = PAGES_ID;
 
-  rail.append(head, optionsToggle, options, note, summary, styleElement, pages);
-  container.append(rail);
+  // THE DIVIDER IS A SIBLING OF THE RAIL, in the rail's own grid cell. It rides
+  // the rail's left edge without being a child of a scroller, so it does not
+  // scroll away with the options, and it adds no column: a closed rail still
+  // measures 0.
+  const divider = document.createElement("div");
+  divider.id = "preview-divider";
+  divider.setAttribute("role", "separator");
+  divider.setAttribute("aria-orientation", "vertical");
+  divider.setAttribute("aria-controls", rail.id);
+  divider.setAttribute("aria-label", t("preview.divider.name"));
+  divider.tabIndex = 0;
+  divider.hidden = true;
+
+  // THE DEVICE FRAME, assembled once and mounted only while it is on. With the
+  // frame off `pages` is a direct child of the rail exactly as it was before
+  // frames existed. The frame is cosmetic: what is inside is the same painted
+  // bytes, laid out in columns (EPUB) or one leaf at a time (proof).
+  const bezel = document.createElement("div");
+  bezel.id = "preview-frame";
+  const screen = document.createElement("div");
+  screen.id = "preview-screen";
+  const pager = document.createElement("div");
+  pager.id = "preview-pager";
+  pager.setAttribute("role", "group");
+  pager.setAttribute("aria-label", t("preview.frame.pager"));
+  const previousPage = button("preview-page-previous", t("preview.frame.previous"));
+  const nextPage = button("preview-page-next", t("preview.frame.next"));
+  const pageLabel = document.createElement("span");
+  pageLabel.id = "preview-page-label";
+  pager.append(previousPage, pageLabel, nextPage);
+  const approximate = document.createElement("p");
+  approximate.id = "preview-frame-label";
+  approximate.textContent = t("preview.frame.approximate");
+  bezel.append(screen, pager, approximate);
+
+  rail.append(head, toolbar, options, note, summary, styleElement, pages);
+  container.append(divider, rail);
   let pageSetup: ProofPageSetup | null = null;
 
   let destroyed = false;
@@ -203,6 +338,289 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   /** An answer resolving after a newer render, after a close, or after teardown
    *  must not paint: the writer would be shown a book they have left. */
   let generation = 0;
+  let lifecycle = 0;
+  let styleWrite: Promise<void> | null = null;
+
+  const storage = deps.storage === undefined ? defaultStorage() : deps.storage;
+  const windowWidth = deps.windowWidth ?? ((): number => window.innerWidth);
+  const setTimer = deps.setTimer ?? ((fn: () => void, ms: number): unknown => setTimeout(fn, ms));
+  const clearTimer = deps.clearTimer ?? ((handle: unknown): void => clearTimeout(handle as number));
+  const idleMs = deps.idleMs ?? IDLE_REFRESH_MS;
+
+  // ---- width ---------------------------------------------------------------
+  // What the writer asked for, not what is on screen: the request is clamped
+  // against the window as it is now (see preview-rail-layout.ts).
+  let widthPref: RailPref | null = parsePref(readDevice(storage, RAIL_WIDTH_KEY));
+  let appliedWidth = RAIL_MIN_WIDTH;
+  let drag: { pointerId: number; right: number } | null = null;
+
+  function paintDivider(): void {
+    const w = windowWidth();
+    divider.hidden = rail.hidden || isOverlay(w);
+    divider.setAttribute("aria-valuemin", String(RAIL_MIN_WIDTH));
+    divider.setAttribute("aria-valuemax", String(maxWidth(w)));
+    divider.setAttribute("aria-valuenow", String(appliedWidth));
+    const half = canSnapHalf(w) && appliedWidth === halfWidth(w);
+    divider.setAttribute(
+      "aria-valuetext",
+      t(half ? "preview.divider.value-half" : "preview.divider.value", {
+        width: formatNumber(appliedWidth),
+      }),
+    );
+  }
+
+  function setWidth(px: number): void {
+    appliedWidth = px;
+    rail.style.setProperty("--preview-rail-width", `${px}px`);
+    paintDivider();
+    relayout();
+  }
+
+  /** Re-apply the stored request to the current window. */
+  function applyWidth(): void {
+    setWidth(resolveWidth(widthPref, windowWidth()));
+  }
+
+  function remember(pref: RailPref): void {
+    widthPref = pref;
+    writeDevice(storage, RAIL_WIDTH_KEY, serializePref(pref));
+  }
+
+  function chooseWidth(px: number): void {
+    const w = windowWidth();
+    const next = clampWidth(px, w);
+    setWidth(next);
+    remember(canSnapHalf(w) && next === halfWidth(w) ? { kind: "half" } : { kind: "width", px: next });
+  }
+
+  function toggleHalf(): void {
+    const w = windowWidth();
+    if (!canSnapHalf(w)) return;
+    if (appliedWidth === halfWidth(w)) {
+      setWidth(RAIL_MIN_WIDTH);
+      remember({ kind: "width", px: RAIL_MIN_WIDTH });
+    } else {
+      setWidth(halfWidth(w));
+      remember({ kind: "half" });
+    }
+  }
+
+  const onDividerKeyDown = (event: Event): void => {
+    if (!(event instanceof KeyboardEvent) || isCompositionKey(event)) return;
+    if (event.key === "Enter") {
+      event.preventDefault();
+      toggleHalf();
+      return;
+    }
+    const next = keyWidth(event.key, appliedWidth, event.shiftKey, windowWidth());
+    if (next === null) return;
+    event.preventDefault();
+    chooseWidth(next);
+  };
+
+  const onDividerPointerDown = (event: Event): void => {
+    if (!(event instanceof PointerEvent) || event.button !== 0 || rail.hidden) return;
+    // No selection starts in the prose behind the handle, and focus stays where
+    // it was: a writer who drags the divider keeps their caret, and the arrow
+    // keys keep moving it. The divider is still a tab stop for keyboard users.
+    event.preventDefault();
+    drag = { pointerId: event.pointerId, right: rail.getBoundingClientRect().right };
+    divider.dataset.dragging = "true";
+    divider.setPointerCapture?.(event.pointerId);
+  };
+
+  const onDividerPointerMove = (event: Event): void => {
+    if (!(event instanceof PointerEvent) || drag === null || event.pointerId !== drag.pointerId) return;
+    setWidth(clampWidth(drag.right - event.clientX, windowWidth()));
+  };
+
+  const endDrag = (event: Event): void => {
+    if (!(event instanceof PointerEvent) || drag === null || event.pointerId !== drag.pointerId) return;
+    const right = drag.right;
+    drag = null;
+    delete divider.dataset.dragging;
+    divider.releasePointerCapture?.(event.pointerId);
+    // A cancel keeps what the last move showed; only a release can snap.
+    if (event.type === "pointerup") chooseWidth(snapWidth(right - event.clientX, windowWidth()));
+  };
+
+  const onWindowResize = (): void => {
+    if (rail.hidden) return;
+    applyWidth();
+  };
+
+  divider.addEventListener("keydown", onDividerKeyDown);
+  divider.addEventListener("pointerdown", onDividerPointerDown);
+  divider.addEventListener("pointermove", onDividerPointerMove);
+  divider.addEventListener("pointerup", endDrag);
+  divider.addEventListener("pointercancel", endDrag);
+  divider.addEventListener("dblclick", toggleHalf);
+
+  // ---- device frame and paging --------------------------------------------
+  let frameOn = readDevice(storage, RAIL_FRAME_KEY) === "1";
+  let pageIndex = 0;
+  let observer: ResizeObserver | null = null;
+
+  const framed = (): boolean => frameOn && showing !== null && !rail.hidden;
+
+  function leaves(): HTMLElement[] {
+    return [...pages.children].filter(
+      (child): child is HTMLElement => child instanceof HTMLElement && child.classList.contains("proof-leaf"),
+    );
+  }
+
+  function pageTotal(): number {
+    if (showing === "pdf") return Math.max(1, leaves().length);
+    return pageCount(pages.scrollWidth, pages.clientWidth);
+  }
+
+  function paintToggle(control: HTMLButtonElement, on: boolean): void {
+    control.setAttribute("aria-pressed", String(on));
+  }
+
+  /** Mount or unmount the frame around `pages` and bring the paging up to date. */
+  function placeFrame(): void {
+    const on = framed();
+    bezel.dataset.device = showing === "pdf" ? "tablet" : "ereader";
+    if (on && pages.parentElement !== screen) {
+      screen.append(pages);
+      rail.append(bezel);
+    } else if (!on && pages.parentElement !== rail) {
+      rail.append(pages);
+      bezel.remove();
+    }
+    if (on) {
+      pages.dataset.framed = "true";
+      pages.tabIndex = 0;
+      pages.setAttribute("role", "group");
+      pages.setAttribute("aria-label", t(showing === "pdf" ? "preview.frame.screen-pdf" : "preview.frame.screen-epub"));
+    } else {
+      delete pages.dataset.framed;
+      pages.removeAttribute("tabindex");
+      pages.removeAttribute("role");
+      pages.removeAttribute("aria-label");
+    }
+    relayout();
+  }
+
+  function paintPager(count: number): void {
+    const empty = pages.childElementCount === 0;
+    pageLabel.textContent = empty
+      ? ""
+      : t("preview.frame.page", { page: formatNumber(pageIndex + 1), pages: formatNumber(count) });
+    previousPage.disabled = empty || pageIndex <= 0;
+    nextPage.disabled = empty || pageIndex >= count - 1;
+  }
+
+  /** Re-measure after anything that can change a layout: a paint, a resize, a
+   *  width change, an image arriving. One layout read per call. */
+  function relayout(): void {
+    if (destroyed || rail.hidden || showing === null) return;
+    if (!framed()) {
+      if (showing === "pdf" && pages.dataset.proof !== undefined) fit();
+      return;
+    }
+    const count = pageTotal();
+    pageIndex = clampPage(pageIndex, count);
+    if (showing === "pdf") {
+      leaves().forEach((leaf, index) => leaf.classList.toggle("is-current", index === pageIndex));
+      fit();
+    } else {
+      // The columns are one page wide, so a page is one clientWidth.
+      pages.scrollLeft = pageIndex * pages.clientWidth;
+    }
+    paintPager(count);
+  }
+
+  function turn(delta: number): void {
+    if (!framed()) return;
+    const count = pageTotal();
+    const next = clampPage(pageIndex + delta, count);
+    if (next === pageIndex) return;
+    pageIndex = next;
+    relayout();
+  }
+
+  const onPagesKeyDown = (event: Event): void => {
+    if (!(event instanceof KeyboardEvent) || isCompositionKey(event) || !framed()) return;
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    switch (event.key) {
+      case "ArrowRight":
+      case "PageDown":
+        event.preventDefault();
+        turn(1);
+        return;
+      case "ArrowLeft":
+      case "PageUp":
+        event.preventDefault();
+        turn(-1);
+        return;
+      case "Home":
+        event.preventDefault();
+        turn(-pageIndex);
+        return;
+      case "End":
+        event.preventDefault();
+        turn(pageTotal());
+        return;
+    }
+  };
+  pages.addEventListener("keydown", onPagesKeyDown);
+  // Cover and ornament images arrive after the paint and change the page count.
+  pages.addEventListener("load", relayout, true);
+
+  function setFrame(on: boolean): void {
+    frameOn = on;
+    writeDevice(storage, RAIL_FRAME_KEY, on ? "1" : "0");
+    paintToggle(frameToggle, on);
+    pageIndex = 0;
+    placeFrame();
+  }
+
+  // ---- refresh after a pause ----------------------------------------------
+  // OFF BY DEFAULT, and driven by the save scheduler's TRANSITIONS rather than
+  // by any edit: the scheduler flushes about once a second while someone types
+  // and announces "pending" on the first unflushed edit, so a timer armed on
+  // "saved" and cleared on "pending" only ever fires after a real pause. Nothing
+  // here runs per keystroke, and with the rail closed nothing runs at all.
+  let autoOn = readDevice(storage, RAIL_AUTO_KEY) === "1";
+  let idleTimer: unknown = null;
+  /** The book has been edited since the last paint. */
+  let stale = false;
+  /** The scheduler's last announcement: saved, as opposed to pending or failed. */
+  let saveIdle = true;
+
+  function cancelIdle(): void {
+    if (idleTimer === null) return;
+    clearTimer(idleTimer);
+    idleTimer = null;
+  }
+
+  function armIdle(): void {
+    cancelIdle();
+    idleTimer = setTimer(() => {
+      idleTimer = null;
+      void render();
+    }, idleMs);
+  }
+
+  function setAuto(on: boolean): void {
+    autoOn = on;
+    writeDevice(storage, RAIL_AUTO_KEY, on ? "1" : "0");
+    paintToggle(autoToggle, on);
+    if (!on) cancelIdle();
+    // Turned on over a book that has changed since it was painted: catch up
+    // after the same pause rather than waiting for another edit.
+    else if (stale && !rail.hidden && saveIdle) armIdle();
+  }
+  paintToggle(frameToggle, frameOn);
+  paintToggle(autoToggle, autoOn);
+
+  function updateStyleControls(): void {
+    const disabled = destroyed || rail.hidden || style === null || styleWrite !== null;
+    for (const control of options.querySelectorAll<HTMLButtonElement>("button")) control.disabled = disabled;
+  }
+  updateStyleControls();
 
   function button(id: string, label: string): HTMLButtonElement {
     const control = document.createElement("button");
@@ -223,6 +641,15 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     }
     for (const [flag, control] of flagButtons) {
       control.setAttribute("aria-pressed", String(style[flag]));
+    }
+    for (const control of positionGroup.querySelectorAll<HTMLButtonElement>("button")) {
+      control.setAttribute(
+        "aria-pressed",
+        String((control.dataset.previewPosition === "above") === style.ornament_above),
+      );
+    }
+    for (const control of sinkGroup.querySelectorAll<HTMLButtonElement>("button")) {
+      control.setAttribute("aria-pressed", String(control.dataset.previewSink === style.sink));
     }
   }
 
@@ -254,8 +681,8 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   function paintPreview(view: EpubPreview): void {
     saySummary([
       plural("preview.epub.summary", view.items, {
-        items: String(view.items),
-        words: String(view.words),
+        items: formatNumber(view.items),
+        words: formatNumber(view.words),
       }),
     ]);
     // THE BOOK'S OWN STYLESHEET, scoped. A stylesheet this page cannot scope is
@@ -293,6 +720,11 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     // for the wrong surface works by accident until a rule is added for it.
     delete pages.dataset.proof;
     pages.replaceChildren(...painted);
+    for (const link of pages.querySelectorAll<HTMLAnchorElement>("a[href]")) {
+      link.tabIndex = -1;
+      link.setAttribute("aria-disabled", "true");
+    }
+    placeFrame();
   }
 
   /** Paint the leaves the printer was handed.
@@ -304,9 +736,9 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   function paintProof(view: PdfPreview): void {
     const lines: string[] = [
       plural("preview.pdf.summary", view.leaves, {
-        leaves: String(view.leaves),
-        items: String(view.items),
-        words: String(view.words),
+        leaves: formatNumber(view.leaves),
+        items: formatNumber(view.items),
+        words: formatNumber(view.words),
       }),
     ];
     // WHAT WAS MEASURED, NOT WHAT WAS ASKED FOR. This
@@ -320,7 +752,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     const verdict = gutterVerdict(view.gutter_minimum_um, view.inner_um);
     if (verdict !== "unknown") {
       lines.push(t(`preview.pdf.gutter.${verdict}`, {
-        pages: String(view.leaves),
+        pages: formatNumber(view.leaves),
         minimum: millimetres(view.gutter_minimum_um ?? 0),
         inner: millimetres(view.inner_um),
       }));
@@ -328,8 +760,8 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     if (view.truncated) {
       lines.push(
         t("preview.pdf.truncated", {
-          shown: String(view.pages.length),
-          leaves: String(view.leaves),
+          shown: formatNumber(view.pages.length),
+          leaves: formatNumber(view.leaves),
         }),
       );
     }
@@ -350,7 +782,11 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     // sets, because a `getComputedStyle` assertion under happy-dom is vacuous.
     pages.dataset.proof = "true";
     pages.replaceChildren(...painted);
-    fit();
+    for (const link of pages.querySelectorAll<HTMLAnchorElement>("a[href]")) {
+      link.tabIndex = -1;
+      link.setAttribute("aria-disabled", "true");
+    }
+    placeFrame();
   }
 
   /** Shrink the leaves so a whole page fits the rail.
@@ -360,21 +796,32 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
    *  writer is checking -- is off the edge of the column. The rule itself is
    *  `scaleFor`, out in `preview.ts` where a mutation can reach it. */
   function fit(): void {
-    const first = pages.firstElementChild;
-    if (!(first instanceof HTMLElement)) return;
+    const on = framed();
+    const leaf = on ? leaves().find((candidate) => candidate.classList.contains("is-current")) : pages.firstElementChild;
+    if (!(leaf instanceof HTMLElement)) return;
     // `clientWidth` INCLUDES THE PADDING and the leaf sits inside it, so
     // scaling against it makes every leaf exactly the padding too wide -- which
     // is a horizontal scrollbar under the book and the outer margin of every
     // page off the edge. Found by looking at the first capture.
     const box = window.getComputedStyle(pages);
     const inset = parseFloat(box.paddingLeft) + parseFloat(box.paddingRight);
-    const scale = scaleFor(pages.clientWidth - (Number.isFinite(inset) ? inset : 0), first.offsetWidth);
+    const width = pages.clientWidth - (Number.isFinite(inset) ? inset : 0);
+    let scale = scaleFor(width, leaf.offsetWidth);
+    if (on) {
+      // A TABLET SHOWS THE WHOLE PAGE: the scale answers to the height as well,
+      // and the leaf is centred by a translate because a transform does not
+      // move the box it leaves behind.
+      const height = pages.clientHeight - (Number.isFinite(inset) ? inset : 0);
+      scale = Math.min(scale, scaleFor(height, leaf.offsetHeight));
+      pages.style.setProperty("--proof-x", [String(Math.max(0, (pages.clientWidth - leaf.offsetWidth * scale) / 2)), "px"].join(""));
+      pages.style.setProperty("--proof-y", [String(Math.max(0, (pages.clientHeight - leaf.offsetHeight * scale) / 2)), "px"].join(""));
+    }
     pages.style.setProperty("--proof-scale", String(scale));
     // The height the transform stops using. Without it the rail scrolls a
     // page-sized column of blank paper after every leaf.
     pages.style.setProperty(
       "--proof-shrink",
-      [String(shrinkFor(first.offsetHeight, scale)), "px"].join(""),
+      [String(shrinkFor(leaf.offsetHeight, scale)), "px"].join(""),
     );
   }
 
@@ -433,7 +880,38 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     return element;
   }
 
-  async function render(): Promise<void> {
+  /** ONE RENDER AT A TIME. A render is O(the manuscript); the generation
+   *  checks below discard a stale answer but cannot stop its work, so a request
+   *  made while one is running (Refresh, an option, the idle timer) only marks
+   *  that another is owed, and exactly one follow-up runs after it finishes. */
+  let rendering: Promise<void> | null = null;
+  let renderOwed = false;
+
+  function render(): Promise<void> {
+    if (rendering !== null) {
+      renderOwed = true;
+      return rendering;
+    }
+    rendering = (async (): Promise<void> => {
+      try {
+        do {
+          renderOwed = false;
+          await renderOnce();
+        } while (renderOwed && !destroyed && !rail.hidden);
+      } finally {
+        rendering = null;
+        renderOwed = false;
+      }
+    })();
+    return rendering;
+  }
+
+  async function renderOnce(): Promise<void> {
+    if (destroyed || rail.hidden || showing === null) return;
+    const wanted = showing;
+    // Whatever was pending is being answered now.
+    stale = false;
+    cancelIdle();
     generation += 1;
     const mine = generation;
     try {
@@ -444,7 +922,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       // THE FORMAT IS READ BEFORE THE AWAIT AND CHECKED AFTER IT, on the
       // generation's own rule: a Refresh pressed for a proof must not paint an
       // archive because the rail was reopened as an EPUB while it ran.
-      const wanted = showing;
+      if (destroyed || rail.hidden || mine !== generation || showing !== wanted) return;
       if (wanted === "pdf") {
         const view = await deps.readProof();
         if (destroyed || mine !== generation || showing !== wanted) return;
@@ -455,7 +933,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       if (destroyed || mine !== generation || showing !== wanted) return;
       paintPreview(view);
     } catch (error: unknown) {
-      if (destroyed || mine !== generation) return;
+      if (destroyed || rail.hidden || mine !== generation) return;
       // NOT AN EMPTY RAIL. A catch that painted the no-documents state would
       // report a host that could not answer as a book with nothing in it --
       // the recorded `renderImports([])` defect.
@@ -464,28 +942,27 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     }
   }
 
-  async function commit(next: ChapterStyle): Promise<void> {
-    const mine = generation;
-    try {
-      const landed = await deps.writeStyle(next);
-      if (destroyed) return;
-      style = landed;
-      paintOptions();
-      await render();
-    } catch (error: unknown) {
-      if (destroyed || mine !== generation) return;
-      // NO REPAINT HERE, AND THAT IS DELIBERATE RATHER THAN AN OMISSION.
-      // The design panel repaints in its catch because it can be showing a
-      // value the writer typed; this rail paints ONLY from the host's answer,
-      // so on a refusal the pressed states already say exactly what the file
-      // holds. A `paintOptions()` here was written first and a mutation
-      // DELETING it survived the whole suite -- no input can tell it from its
-      // absence, which is the `import_name_ok` shape, and a guard nothing can
-      // reach is worse than none because a reader credits it. Do not add it
-      // back: what makes the rail truthful is that nothing is painted before
-      // the answer arrives.
-      deps.onNotice(t("preview.error.style", { error: messageOf(error) }));
-    }
+  function commit(next: ChapterStyle): void {
+    if (destroyed || rail.hidden || style === null || styleWrite !== null) return;
+    const owner = lifecycle;
+    const pending = (async (): Promise<void> => {
+      try {
+        const landed = await deps.writeStyle(next);
+        if (destroyed || rail.hidden || owner !== lifecycle) return;
+        style = landed;
+        paintOptions();
+        void render();
+      } catch (error: unknown) {
+        if (destroyed || rail.hidden || owner !== lifecycle) return;
+        // Pressed states still describe the last acknowledged style.
+        deps.onNotice(t("preview.error.style", { error: messageOf(error) }));
+      }
+    })().finally(() => {
+      if (styleWrite === pending) styleWrite = null;
+      updateStyleControls();
+    });
+    styleWrite = pending;
+    updateStyleControls();
   }
 
   const onClick = (event: Event): void => {
@@ -509,6 +986,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     }
     if (target.closest("#preview-close") !== null) {
       close();
+      deps.onDismiss();
       return;
     }
     if (target.closest("#preview-save-as") !== null) {
@@ -519,8 +997,24 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       void render();
       return;
     }
+    if (target.closest("#preview-frame-toggle") !== null) {
+      setFrame(!frameOn);
+      return;
+    }
+    if (target.closest("#preview-auto-toggle") !== null) {
+      setAuto(!autoOn);
+      return;
+    }
+    if (target.closest("#preview-page-previous") !== null) {
+      turn(-1);
+      return;
+    }
+    if (target.closest("#preview-page-next") !== null) {
+      turn(1);
+      return;
+    }
     const current = style;
-    if (current === null) return;
+    if (destroyed || rail.hidden || current === null || styleWrite !== null) return;
     const ornament = target.closest<HTMLElement>("[data-preview-glyph]");
     if (ornament !== null) {
       const value = ornament.dataset.previewGlyph ?? "";
@@ -528,6 +1022,16 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       // DOM by any other route cannot be stored. `design-panel.ts`'s rule.
       if (value !== "" && !glyphs.some((g) => g.id === value)) return;
       void commit({ ...current, glyph: value === "" ? null : value });
+      return;
+    }
+    const position = target.closest<HTMLElement>("[data-preview-position]")?.dataset.previewPosition;
+    if (position === "above" || position === "below") {
+      void commit({ ...current, ornament_above: position === "above" });
+      return;
+    }
+    const sink = target.closest<HTMLElement>("[data-preview-sink]")?.dataset.previewSink;
+    if (sink !== undefined && (SINKS as readonly string[]).includes(sink)) {
+      void commit({ ...current, sink: sink as ChapterStyle["sink"] });
       return;
     }
     const flag = target.closest<HTMLElement>("[data-preview-flag]")?.dataset.previewFlag;
@@ -549,8 +1053,17 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     // A CLOSE BUMPS THE GENERATION, so a render still in flight cannot paint
     // into a rail the writer has already dismissed.
     generation += 1;
+    lifecycle += 1;
     pageSetup?.hide();
     rail.hidden = true;
+    divider.hidden = true;
+    drag = null;
+    stale = false;
+    cancelIdle();
+    window.removeEventListener("resize", onWindowResize);
+    observer?.disconnect();
+    style = null;
+    updateStyleControls();
   }
 
   rail.addEventListener("click", onClick);
@@ -558,11 +1071,14 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
 
   return {
     async open(format: PreviewFormat): Promise<void> {
+      if (destroyed) return;
       // A REOPEN IN ANOTHER FORMAT BUMPS THE GENERATION, so a render still in
       // flight for the book the writer has left cannot paint over the one they
       // asked for.
       generation += 1;
-      const opening = generation;
+      const opening = ++lifecycle;
+      style = null;
+      updateStyleControls();
       showing = format;
       if (format !== "pdf") pageSetup?.hide();
       rail.setAttribute("aria-label", t(`preview.${format}.label`));
@@ -575,6 +1091,17 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       pages.replaceChildren();
       styleElement.textContent = "";
       rail.hidden = false;
+      stale = false;
+      saveIdle = true;
+      cancelIdle();
+      pageIndex = 0;
+      applyWidth();
+      placeFrame();
+      window.addEventListener("resize", onWindowResize);
+      if (observer === null && typeof ResizeObserver !== "undefined") {
+        observer = new ResizeObserver(() => relayout());
+      }
+      observer?.observe(pages);
       // THE RAIL, not a control inside it: landing on an option would look like
       // a setting had been reached for.
       rail.focus();
@@ -588,15 +1115,17 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
         : Promise.resolve();
       try {
         await setupReady;
-        if (destroyed || rail.hidden || opening !== generation) return;
+        await styleWrite;
+        if (destroyed || rail.hidden || opening !== lifecycle) return;
         const answer = await deps.readStyle();
-        if (destroyed || rail.hidden || opening !== generation) return;
+        if (destroyed || rail.hidden || opening !== lifecycle) return;
         style = answer.style;
         glyphs = answer.glyphs;
         buildOrnaments();
         paintOptions();
+        updateStyleControls();
       } catch (error: unknown) {
-        if (destroyed) return;
+        if (destroyed || rail.hidden || opening !== lifecycle) return;
         deps.onNotice(t("preview.error.style", { error: messageOf(error) }));
       }
       await render();
@@ -605,13 +1134,30 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     isOpen(): boolean {
       return !rail.hidden;
     },
+    saveStateChanged(state: SaveState): void {
+      if (destroyed || rail.hidden) return;
+      if (state === "saved") {
+        saveIdle = true;
+        if (stale && autoOn) armIdle();
+        return;
+      }
+      saveIdle = false;
+      cancelIdle();
+      if (state === "pending") stale = true;
+    },
     format(): PreviewFormat | null {
       return rail.hidden ? null : showing;
     },
     destroy(): void {
       if (destroyed) return;
       destroyed = true;
+      lifecycle += 1;
       pageSetup?.destroy();
+      cancelIdle();
+      window.removeEventListener("resize", onWindowResize);
+      observer?.disconnect();
+      pages.removeEventListener("keydown", onPagesKeyDown);
+      pages.removeEventListener("load", relayout, true);
       rail.removeEventListener("click", onClick);
       rail.removeEventListener("keydown", onKeyDown);
       container.replaceChildren();

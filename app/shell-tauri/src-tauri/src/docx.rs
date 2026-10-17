@@ -65,10 +65,13 @@ fn run_xml(text: &str, node: &serde_json::Value) -> String {
     } else {
         format!("<w:rPr>{rpr}</w:rPr>")
     };
-    format!(
-        "<w:r>{rpr}<w:t xml:space=\"preserve\">{}</w:t></w:r>",
-        xml_escape(text)
-    )
+    // Newlines are the editor's manual breaks. Keep them inside this marked
+    // run so Word receives the same leading, trailing and repeated breaks.
+    let content = text.split('\n')
+        .map(|part| format!("<w:t xml:space=\"preserve\">{}</w:t>", xml_escape(part)))
+        .collect::<Vec<_>>()
+        .join("<w:br/>");
+    format!("<w:r>{rpr}{content}</w:r>")
 }
 
 /// One block's run sequence, and whether it carries any real content.
@@ -92,7 +95,7 @@ fn append_inline(node: &serde_json::Value, out: &mut String, has_content: &mut b
     match node.get("type").and_then(|t| t.as_str()) {
         Some("text") => {
             if let Some(text) = node.get("text").and_then(|t| t.as_str()) {
-                if !text.trim().is_empty() {
+                if !text.trim().is_empty() || text.contains('\n') {
                     *has_content = true;
                 }
                 out.push_str(&run_xml(text, node));
@@ -276,9 +279,11 @@ fn document_rels_xml() -> String {
 /// Word document opens at their own default and this only has to be valid.
 fn document_xml(book: &Book, bodies: &HashMap<String, String>) -> String {
     let mut body = styled_paragraph("Title", &heading_text(book.name));
-    for run in [book.front, book.chapters, book.back] {
+    for (run_index, run) in [book.front, book.chapters, book.back].into_iter().enumerate() {
         for (id, title, depth) in run {
-            body.push_str(&styled_paragraph(&heading_style(*depth), &heading_text(title)));
+            if !book.suppresses_heading(run_index, title) {
+                body.push_str(&styled_paragraph(&heading_style(*depth), &heading_text(title)));
+            }
             // An item with no body, and an item whose body this build cannot
             // read, contribute a heading only -- `export::manuscript`'s
             // rule: losing a chapter silently is the worst thing either
@@ -376,6 +381,7 @@ mod tests {
         back: &'a [(String, String, i64)],
     ) -> Book<'a> {
         Book {
+            single_scene: false,
             name,
             contents_title: "Contents",
             front,
@@ -548,6 +554,26 @@ mod tests {
         );
     }
 
+    #[test]
+    fn marked_text_newlines_and_break_only_paragraphs_become_word_breaks() {
+        let doc = serde_json::json!({"type":"doc","content":[
+            {"type":"paragraph","content":[text_node("\none\n\ntwo\n", &["strong", "em", "underline"])]},
+            {"type":"paragraph","content":[text_node("\n\n", &["underline"])]}
+        ]});
+        let paragraphs = document_paragraphs(&doc.to_string()).unwrap();
+        assert_eq!(paragraphs.len(), 2);
+        assert_eq!(paragraphs[0], concat!(
+            "<w:p><w:r><w:rPr><w:b/><w:i/><w:u w:val=\"single\"/></w:rPr>",
+            "<w:t xml:space=\"preserve\"></w:t><w:br/>",
+            "<w:t xml:space=\"preserve\">one</w:t><w:br/>",
+            "<w:t xml:space=\"preserve\"></w:t><w:br/>",
+            "<w:t xml:space=\"preserve\">two</w:t><w:br/>",
+            "<w:t xml:space=\"preserve\"></w:t></w:r></w:p>"
+        ));
+        assert_eq!(paragraphs[1].matches("<w:br/>").count(), 2);
+        assert!(paragraphs[1].contains("<w:u w:val=\"single\"/>"));
+    }
+
     /// NO `docProps/` ENTRY AND NO `creator` BYTES ANYWHERE IN THE ZIP. A
     /// real name or an OS user name has exactly one door into an EPUB
     /// (`identity_metadata`'s `dc:creator`) and this format opens none at
@@ -651,5 +677,37 @@ mod tests {
             .find(|(n, _)| n == "word/document.xml")
             .unwrap();
         assert!(String::from_utf8_lossy(&doc.1).contains("Chapter One"));
+    }
+
+    fn references_body() -> String {
+        serde_json::json!({"type":"doc","content":[
+            {"type":"paragraph","content":[{"type":"text","text":"Austen, J. Emma. 1815."}]},
+            {"type":"paragraph","content":[{"type":"text","text":"Woolf, V. The Waves. 1931."}]},
+        ]})
+        .to_string()
+    }
+
+    #[test]
+    fn a_references_page_is_a_heading_followed_by_one_paragraph_per_entry() {
+        let back = [("r".to_string(), "References".to_string(), 0i64)];
+        let mut bodies = HashMap::new();
+        bodies.insert("r".to_string(), references_body());
+        let out = render(&book("N", &[], &[], &back), &bodies, "en");
+        let entries = crate::epub::read_zip(&out.bytes).unwrap();
+        let doc = entries.iter().find(|(n, _)| n == "word/document.xml").unwrap();
+        let xml = String::from_utf8_lossy(&doc.1);
+        assert!(
+            heading_walk(&xml).contains(&("Heading1".to_string(), "References".to_string())),
+            "{xml}"
+        );
+        let heading = xml.find("References").unwrap();
+        let after = &xml[heading..];
+        let first = after.find("Austen, J. Emma. 1815.").expect("first entry");
+        let second = after.find("Woolf, V. The Waves. 1931.").expect("second entry");
+        assert!(first < second);
+        assert!(
+            after[first..second].contains("</w:p><w:p>"),
+            "entries share a paragraph: {xml}"
+        );
     }
 }

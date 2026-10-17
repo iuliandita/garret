@@ -12,6 +12,12 @@ fi
 
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/garret-android-build"
 keys="${ANDROID_SIGNING_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/garret/android-signing}"
+if [[ ${CI:-} == true && ${ANDROID_ALLOW_NEW_KEY:-0} != 1 ]]; then
+  [[ -s "$keys/preview.jks" && -s "$keys/password" ]] || {
+    echo "release signing key/password missing; refusing to generate a replacement" >&2
+    exit 1
+  }
+fi
 out="$repo/app/dist-android/$revision"
 mkdir -p "$cache/cargo" "$cache/builder" "$keys" "$out"
 chmod 700 "$keys"
@@ -22,11 +28,14 @@ fi
 export APK_SIGNING_PASSWORD
 APK_SIGNING_PASSWORD=$(cat "$keys/password")
 
-container=(docker run --rm --cpus 8 --user "$(id -u):$(id -g)"
+cpus=$(getconf _NPROCESSORS_ONLN)
+if (( cpus > 8 )); then cpus=8; fi
+container=(docker run --rm --cpus "$cpus" --user "$(id -u):$(id -g)"
   --mount "type=bind,src=$repo,dst=/src"
   --mount "type=bind,src=$cache/cargo,dst=/cargo"
   --mount "type=bind,src=$cache/builder,dst=/home/builder"
-  --env CARGO_HOME=/cargo --env CARGO_BUILD_JOBS=8
+  --env HOME=/home/builder --env CARGO_HOME=/cargo --env "CARGO_BUILD_JOBS=$cpus"
+  --env "JAVA_TOOL_OPTIONS=-XX:ActiveProcessorCount=$cpus -Duser.home=/home/builder"
   --workdir /src/app/shell-tauri)
 # Untracked local notes stay out of the build container.
 if [[ -d "$repo/docs/local" ]]; then
@@ -36,10 +45,12 @@ fi
 (cd "$repo/app/mobile-ui" && bun run build)
 "${container[@]}" garret-android tauri android init --ci --skip-targets-install
 python3 "$here/android/prepare.py"
-"${container[@]}" garret-android nice -n 10 tauri android build --ci --apk --target aarch64 x86_64
+"${container[@]}" garret-android nice -n 10 tauri android build --ci --apk --target aarch64 x86_64 -- --locked
 
 if [[ $(git -C "$repo" rev-parse HEAD) != "$revision" || -n $(git -C "$repo" status --porcelain) ]]; then
   echo "source changed during the build; refusing to label this package" >&2
+  git -C "$repo" status --short >&2
+  git -C "$repo" diff --stat >&2
   exit 1
 fi
 unsigned=$(python3 - "$repo" <<'PY'
@@ -70,6 +81,7 @@ cp "$unsigned" "$out/unsigned.apk"
 unset APK_SIGNING_PASSWORD
 {
   printf 'Source revision: %s\n' "$revision"
+  printf 'Application version: %s\n' "$(python3 "$here/release.py" check)"
   printf 'Architectures: Android arm64-v8a and x86_64\n'
   printf 'Minimum Android API: 24\n'
   printf 'Built UTC: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"

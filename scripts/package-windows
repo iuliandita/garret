@@ -44,6 +44,7 @@ docker run --rm \
   --cpus 8 \
   -u "$(id -u):$(id -g)" \
   -v "$repo/app/shell-tauri:/src" \
+  -v "$repo/app/ui:/ui:ro" \
   -v "$cache/cargo:/cargo" \
   -v "$cache/xwin:/xwin" \
   -e CARGO_HOME=/cargo -e XWIN_CACHE_DIR=/xwin -e XWIN_ARCH=x86_64 -e CARGO_BUILD_JOBS=8 \
@@ -87,4 +88,4 @@ echo "  $(du -h "$zip" | cut -f1), contents:"
 (cd "$out" && unzip -l "$(basename "$zip")" | tail -n +4 | head -8)
 echo
 echo "NOT verified: that the window renders. This binary has never run on real"
-echo "Windows. A reported startup failure writes %APPDATA%\\cc.local.app\\startup-error.txt."
+echo "Windows. A reported startup failure writes %APPDATA%\\garret\\startup-error.txt."

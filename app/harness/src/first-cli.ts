@@ -251,15 +251,15 @@ async function main(): Promise<void> {
   // before the boot it creates it in. `start: "last"` is the one line that
   // keeps this rig testing the same path it always has; nothing else about
   // "first run" changes.
-  mkdirSync(join(dataHome, "cc.local.app"), { recursive: true });
+  mkdirSync(join(dataHome, "garret"), { recursive: true });
   writeFileSync(
-    join(dataHome, "cc.local.app", "settings.json"),
+    join(dataHome, "garret", "settings.json"),
     JSON.stringify({ start: "last", locale: "de" }),
   );
   // Through the harness's own picker, reserving an unused private display for
   // the Xvfb process this rig starts and owns below.
   const display = `:${freeDisplayNumber()}`;
-  const projectPath = join(dataHome, "cc.local.app", "projects", DEFAULT_PROJECT_FILE);
+  const projectPath = join(dataHome, "garret", "projects", DEFAULT_PROJECT_FILE);
 
   const observed = {
     window_opened: false,

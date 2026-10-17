@@ -7,6 +7,21 @@ use crate::{projects, DataHome, PendingWindow, StoreState};
 use std::path::Path;
 use tauri::{Manager, State};
 
+#[command_boundary::command]
+pub(crate) fn settings_set_sidebar_word_counts(
+    data_home: State<'_, DataHome>,
+    scene: bool,
+    chapter: bool,
+    part: bool,
+) -> std::result::Result<(), String> {
+    set_sidebar_word_counts(&data_home.0, projects::SidebarWordCounts { scene, chapter, part })
+}
+
+fn set_sidebar_word_counts(data_home: &Path, counts: projects::SidebarWordCounts) -> std::result::Result<(), String> {
+    projects::update_settings(data_home, |settings| settings.sidebar_word_counts = counts)
+}
+
+
 /// Record which palette the writer chose. `system`, `light` or `dark`; anything
 /// else is an error rather than a default.
 ///
@@ -641,28 +656,76 @@ mod tests {
     }
 
     #[test]
-    fn a_target_the_application_does_not_offer_is_refused_and_written_nowhere() {
+    fn an_invalid_daily_target_is_refused_and_written_nowhere() {
         let dir = tempdir().unwrap();
-        set_daily_target(dir.path(), "500").expect("a target it does offer");
-        let err = set_daily_target(dir.path(), "750").unwrap_err();
-        assert!(err.contains("750"), "{err}");
-        assert_eq!(
-            crate::projects::read_settings(dir.path()).daily_target,
-            crate::projects::DailyTarget::W500,
-            "a refused target must leave the recorded one alone"
-        );
+        set_daily_target(dir.path(), "500").unwrap();
+        let path = crate::projects::settings_path(dir.path());
+        let before = std::fs::read(&path).unwrap();
+        for bad in [
+            "",
+            "0",
+            "00",
+            "0750",
+            " 750",
+            "750 ",
+            "750\n",
+            "+750",
+            "-750",
+            "7.5",
+            "1e3",
+            "１００",
+            "1000001",
+            "4294967296",
+            "999999999999999999999999999999999999",
+        ] {
+            let err = set_daily_target(dir.path(), bad).unwrap_err();
+            assert!(err.contains(&format!("{bad:?}")), "{err}");
+            assert_eq!(std::fs::read(&path).unwrap(), before, "{bad:?}");
+            assert_eq!(
+                crate::projects::read_settings(dir.path()).daily_target,
+                crate::projects::DailyTarget::W500,
+                "{bad:?}"
+            );
+        }
     }
 
     #[test]
-    fn every_offered_target_round_trips_through_the_file() {
+    fn every_daily_target_round_trips_through_the_file_as_a_string() {
         let dir = tempdir().unwrap();
-        for name in ["off", "250", "500", "1000", "2000"] {
+        crate::projects::update_settings(dir.path(), |settings| {
+            settings.last_project = Some("/x/y.db".into());
+        })
+        .unwrap();
+        use crate::projects::DailyTarget;
+        for (name, expected) in [
+            ("off", DailyTarget::Off),
+            ("250", DailyTarget::W250),
+            ("500", DailyTarget::W500),
+            ("1000", DailyTarget::W1000),
+            ("2000", DailyTarget::W2000),
+            ("750", DailyTarget::Custom(750)),
+            ("1", DailyTarget::Custom(1)),
+            ("999999", DailyTarget::Custom(999_999)),
+            ("1000000", DailyTarget::Custom(1_000_000)),
+        ] {
             set_daily_target(dir.path(), name).expect(name);
+            let reopened = crate::projects::read_settings(dir.path());
+            assert_eq!(reopened.daily_target.as_str(), name);
+            assert_eq!(reopened.daily_target, expected);
+            assert_eq!(reopened.last_project.as_deref(), Some("/x/y.db"));
+            let raw: serde_json::Value = serde_json::from_slice(
+                &std::fs::read(crate::projects::settings_path(dir.path())).unwrap(),
+            )
+            .unwrap();
+            assert_eq!(raw["daily_target"], serde_json::json!(name));
             assert_eq!(
-                crate::projects::read_settings(dir.path())
-                    .daily_target
-                    .as_str(),
-                name
+                serde_json::to_string(&reopened.daily_target).unwrap(),
+                format!("\"{name}\"")
+            );
+            assert_eq!(
+                serde_json::from_value::<crate::projects::DailyTarget>(raw["daily_target"].clone())
+                    .unwrap(),
+                reopened.daily_target
             );
         }
     }
@@ -693,9 +756,9 @@ mod tests {
     #[test]
     fn setting_a_zoom_records_it_without_disturbing_the_open_project() {
         let dir = tempdir().unwrap();
-        std::fs::create_dir_all(dir.path().join("cc.local.app")).unwrap();
+        std::fs::create_dir_all(dir.path().join("garret")).unwrap();
         std::fs::write(
-            dir.path().join("cc.local.app/settings.json"),
+            dir.path().join("garret/settings.json"),
             br#"{"last_project":"/x/y.db"}"#,
         )
         .unwrap();
@@ -711,7 +774,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let err = set_zoom(dir.path(), "110").unwrap_err();
         assert!(err.contains("110"), "{err}");
-        assert!(!dir.path().join("cc.local.app/settings.json").exists());
+        assert!(!dir.path().join("garret/settings.json").exists());
     }
 
     #[test]
@@ -757,5 +820,31 @@ mod tests {
         set_home_identity(dir.path(), Some("i1".into())).unwrap();
         set_home_identity(dir.path(), None).unwrap();
         assert_eq!(crate::projects::read_settings(dir.path()).home_identity, None);
+    }
+}
+
+#[cfg(test)]
+mod sidebar_word_counts_tests {
+    use super::*;
+
+    #[test]
+    fn sidebar_word_counts_roundtrip_and_legacy_defaults() {
+        let dir = tempfile::tempdir().unwrap();
+        projects::update_settings(dir.path(), |s| s.last_project = Some("book.db".into())).unwrap();
+        assert_eq!(projects::read_settings(dir.path()).sidebar_word_counts, projects::SidebarWordCounts::default());
+        for mask in 0..8 {
+            let counts = projects::SidebarWordCounts {
+                scene: mask & 1 != 0, chapter: mask & 2 != 0, part: mask & 4 != 0,
+            };
+            set_sidebar_word_counts(dir.path(), counts).unwrap();
+            let saved = projects::read_settings(dir.path());
+            assert_eq!(saved.sidebar_word_counts, counts);
+            assert_eq!(saved.last_project.as_deref(), Some("book.db"));
+        }
+        for json in [r#"{"last_project":null}"#, r#"{"last_project":null,"sidebar_word_counts":null}"#,
+            r#"{"last_project":null,"sidebar_word_counts":{"scene":"bad","chapter":null}}"#] {
+            let settings: projects::Settings = serde_json::from_str(json).unwrap();
+            assert_eq!(settings.sidebar_word_counts, projects::SidebarWordCounts::default());
+        }
     }
 }

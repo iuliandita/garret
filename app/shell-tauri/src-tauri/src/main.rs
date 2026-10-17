@@ -6,6 +6,7 @@
 // WebKitGTK webview => no CDP, matching the measured scope.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod daily_target;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
@@ -16,9 +17,11 @@ use std::sync::Mutex;
 use tauri::Emitter;
 use tauri::{Manager, State, WebviewUrl, WebviewWindowBuilder};
 
+mod data_migration;
 mod command_error;
 mod core_constants;
 mod book_open;
+mod book_registration;
 mod backup_bundle;
 mod cli;
 mod close_state;
@@ -71,6 +74,14 @@ mod salvage;
 mod store;
 mod strings;
 mod validation;
+#[cfg(test)]
+mod mobile;
+#[cfg(test)]
+mod mobile_saf;
+#[cfg(test)]
+mod mobile_core;
+#[cfg(test)]
+mod mobile_transfer;
 mod transfer_copy;
 mod transfer_publish;
 #[cfg(test)]
@@ -79,17 +90,32 @@ mod words;
 mod warning_history;
 mod zoom;
 
+#[cfg(windows)]
+fn legacy_webview_data_dir(app: &tauri::AppHandle) -> tauri::Result<PathBuf> {
+    app.path().resolve(data_migration::LEGACY_DIR, tauri::path::BaseDirectory::LocalData)
+}
+
+fn write_measurement_sink(
+    payload: &serde_json::Value,
+    destination: Option<&std::ffi::OsStr>,
+) -> Result<(), String> {
+    let path = destination
+        .filter(|path| !path.is_empty())
+        .ok_or_else(|| "measurement output is unavailable in this launch".to_string())?;
+    let body = serde_json::to_vec(payload).map_err(|error| error.to_string())?;
+    fs::write(path, body).map_err(|error| format!("cannot write measurement output: {error}"))
+}
+
 #[command_boundary::command]
-fn sink(payload: serde_json::Value) {
-    let path = std::env::var("APP_SINK").unwrap_or_else(|_| "sink.json".into());
-    let _ = fs::write(&path, serde_json::to_string(&payload).unwrap_or_default());
-    // Stay alive so the harness can snapshot the AT-SPI tree while the window
-    // is up; the harness kills us once it has the snapshot. Self-exit is a
-    // safety net if it never does.
+fn sink(payload: serde_json::Value) -> Result<(), String> {
+    let destination = std::env::var_os("APP_SINK");
+    write_measurement_sink(&payload, destination.as_deref())?;
+    // Keep the measured window available for the harness's accessibility snapshot.
     std::thread::spawn(|| {
         std::thread::sleep(std::time::Duration::from_secs(120));
         process::exit(0);
     });
+    Ok(())
 }
 
 struct OpenProject {
@@ -885,9 +911,21 @@ fn create_into_after(
     Ok(created)
 }
 
+fn with_outline_generation<T>(
+    project: &mut OpenProject,
+    generation: u64,
+    mutate: impl FnOnce(&mut OpenProject) -> std::result::Result<T, String>,
+) -> std::result::Result<T, String> {
+    if !accepts_generation(project.generation, generation) {
+        return Err("the open book changed before the outline could be updated".to_string());
+    }
+    mutate(project)
+}
+
 #[command_boundary::command]
 fn item_create(
     state: State<'_, StoreState>,
+    generation: u64,
     parent_id: Option<String>,
     item_type: String,
     title: String,
@@ -897,27 +935,32 @@ fn item_create(
     after_id: Option<String>,
 ) -> std::result::Result<store::ItemCreated, String> {
     let mut guard = locked(&state);
-    create_into_after(
-        open_project_mut(&mut guard)?,
-        parent_id.as_deref(),
-        &item_type,
-        &title,
-        after_id.as_deref(),
-    )
+    with_outline_generation(open_project_mut(&mut guard)?, generation, |project| {
+        create_into_after(
+            project,
+            parent_id.as_deref(),
+            &item_type,
+            &title,
+            after_id.as_deref(),
+        )
+    })
 }
 
 #[command_boundary::command]
 fn item_rename(
     state: State<'_, StoreState>,
+    generation: u64,
     id: String,
     title: String,
     base_rev: i64,
 ) -> std::result::Result<i64, String> {
-    let guard = locked(&state);
-    open_project(&guard)?
-        .store
-        .item_rename(&id, &title, base_rev)
-        .map_err(|e| e.to_string())
+    let mut guard = locked(&state);
+    with_outline_generation(open_project_mut(&mut guard)?, generation, |project| {
+        project
+            .store
+            .item_rename(&id, &title, base_rev)
+            .map_err(|e| e.to_string())
+    })
 }
 
 /// Set or clear the selected item's revision state.
@@ -930,33 +973,39 @@ fn item_rename(
 #[command_boundary::command]
 fn item_set_state(
     store: State<'_, StoreState>,
+    generation: u64,
     id: String,
     state: Option<String>,
     base_rev: i64,
 ) -> std::result::Result<i64, String> {
-    let guard = locked(&store);
-    open_project(&guard)?
-        .store
-        .item_set_state(&id, state.as_deref(), base_rev)
-        .map_err(|e| e.to_string())
+    let mut guard = locked(&store);
+    with_outline_generation(open_project_mut(&mut guard)?, generation, |project| {
+        project
+            .store
+            .item_set_state(&id, state.as_deref(), base_rev)
+            .map_err(|e| e.to_string())
+    })
 }
 
 #[command_boundary::command]
 fn item_move(
     state: State<'_, StoreState>,
+    generation: u64,
     id: String,
     new_parent_id: Option<String>,
     after_id: Option<String>,
     base_rev: i64,
 ) -> std::result::Result<store::ItemMoved, String> {
     let mut guard = locked(&state);
-    move_within(
-        open_project_mut(&mut guard)?,
-        &id,
-        new_parent_id.as_deref(),
-        after_id.as_deref(),
-        base_rev,
-    )
+    with_outline_generation(open_project_mut(&mut guard)?, generation, |project| {
+        move_within(
+            project,
+            &id,
+            new_parent_id.as_deref(),
+            after_id.as_deref(),
+            base_rev,
+        )
+    })
 }
 
 /// A move against one open project, with the cached bin contents brought back
@@ -1035,6 +1084,7 @@ fn summary_of(project: &OpenProject) -> projects::ProjectSummary {
             .unwrap_or(0),
         error: None,
         missing: false,
+        registration_warning: None,
     }
 }
 
@@ -1100,37 +1150,33 @@ fn new_book_dir_with(
 ///
 /// The recording is best effort and its failure does NOT fail the create: the
 /// manuscript exists on disk and telling the writer their book was not made
-/// would be a lie. What they lose is the book being listed, which the next
-/// create in the same folder repairs.
+/// would be a lie. A partial result retains the saved path and offers a
+/// session-scoped Library registration retry.
 pub(crate) fn create_into_dir(
     data_home: &Path,
     dir: &Path,
     name: &str,
     strings: &strings::Strings,
+    preset: Option<&str>,
 ) -> std::result::Result<projects::ProjectSummary, String> {
-    let made = projects::create_in(dir, name, strings)?;
-    remember_created_in(data_home, dir, &made.path);
-    Ok(made)
+    let made = projects::create_in_preset(dir, name, strings, preset)?;
+    Ok(book_registration::remember(data_home, dir, made))
 }
 
-/// `create_into_dir`'s registration, on its own: an outside-the-library path
-/// is added to `Settings.books` (once), and `dir` becomes the remembered
-/// `new_book_dir`. Shared with `create_imported_into_dir` so an import
-/// or a restore that lands outside the hidden library is exactly as openable
-/// afterwards as a book created there through a folder dialog.
-///
-/// Best effort, `create_into_dir`'s own reason: the manuscript already exists
-/// on disk, and telling the writer their book was not made would be a lie.
-fn remember_created_in(data_home: &Path, dir: &Path, made_path: &str) {
-    let path = PathBuf::from(made_path);
-    let library = projects::library_dir(data_home);
-    let outside = !projects::in_library(&library, &path);
-    let _ = projects::update_settings(data_home, |s| {
-        if outside && !s.books.iter().any(|b| b == made_path) {
-            s.books.push(made_path.to_string());
-        }
-        s.new_book_dir = Some(dir.to_string_lossy().into_owned());
-    });
+#[command_boundary::command]
+fn project_preset(state: State<'_, StoreState>) -> Result<String, String> {
+    let guard = locked(&state);
+    open_project(&guard)?.store.project_preset().map(str::to_owned).map_err(|e| e.to_string())
+}
+
+#[command_boundary::command]
+fn project_pending_registrations(data_home: State<'_, DataHome>) -> Vec<book_registration::PendingSummary> {
+    book_registration::list(&data_home.0)
+}
+
+#[command_boundary::command]
+fn project_retry_registration(data_home: State<'_, DataHome>, token: String) -> Result<projects::ProjectSummary, String> {
+    book_registration::retry(&data_home.0, &token)
 }
 
 #[command_boundary::command]
@@ -1138,6 +1184,7 @@ fn project_create(
     data_home: State<'_, DataHome>,
     strings: State<'_, HostStrings>,
     name: String,
+    preset: Option<String>,
 ) -> std::result::Result<projects::ProjectSummary, String> {
     // Deliberately does not switch to it: creation and opening are separate
     // acts, so a failed open cannot lose a just-created manuscript.
@@ -1145,8 +1192,9 @@ fn project_create(
     // INTO THE REMEMBERED FOLDER, which is `<Documents>/Books` until a writer
     // chooses otherwise. The plain create is still one act with no
     // dialog.
+    projects::validate_preset(preset.as_deref())?;
     let dir = new_book_dir(&data_home.0)?;
-    create_into_dir(&data_home.0, &dir, &name, &strings.0)
+    create_into_dir(&data_home.0, &dir, &name, &strings.0, preset.as_deref())
 }
 
 /// Where the next new book would go, so the panel can show it before the writer
@@ -1357,19 +1405,21 @@ fn import_path(
         .file_name()
         .and_then(|s| s.to_str())
         .unwrap_or("that file");
-    // Size before contents. A refusal that has already read the file has not
-    // refused anything, and this is the only bound on what the parse holds.
-    let size = fs::metadata(path)
-        .map_err(|e| format!("cannot read {}: {e}", path.display()))?
-        .len();
-    if size > MAX_IMPORT_BYTES {
-        return Err(format!(
-            "{shown} is {} MB; the limit is {} MB",
-            size / 1_000_000,
-            MAX_IMPORT_BYTES / 1_000_000
-        ));
-    }
-    let bytes = fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+    let read_error = |reason: &str| {
+        if reason == "too large" {
+            format!(
+                "{shown} exceeds the import size limit; the limit is {} MB",
+                MAX_IMPORT_BYTES / 1_000_000
+            )
+        } else {
+            format!("cannot read {}: {reason}", path.display())
+        }
+    };
+    let source =
+        backup_bundle::open_regular_with_limit(path, MAX_IMPORT_BYTES).map_err(read_error)?;
+    // Keep the checked handle and enforce the bound again if its file grows.
+    let bytes =
+        read_import_bounded(source, MAX_IMPORT_BYTES).map_err(|reason| read_error(&reason))?;
     // The `.docx` extension's own promise, kept: a file named `.docx` that
     // is not a zip at all is refused here rather than falling through to
     // the Markdown branch below and being misread as prose, exactly as the
@@ -1382,13 +1432,16 @@ fn import_path(
         .and_then(|e| e.to_str())
         .is_some_and(|e| e.eq_ignore_ascii_case("docx"));
     if named_docx && !bytes.starts_with(ZIP_SIGNATURE) {
-        return Err(format!("{shown} is not a DOCX: it does not start with a zip header"));
+        return Err(format!(
+            "{shown} is not a DOCX: it does not start with a zip header"
+        ));
     }
     // The stem, for a file that does not name itself. `file_stem` and not a
     // split on '.', so "part 2.md" keeps its space and "a.b.md" keeps "a.b".
     let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or(shown);
     let (imported, losses) = if bytes.starts_with(ZIP_SIGNATURE) {
-        let parsed = docx_import::parse(&bytes, stem).map_err(|e| format!("{}: {e}", path.display()))?;
+        let parsed =
+            docx_import::parse(&bytes, stem).map_err(|e| format!("{}: {e}", path.display()))?;
         (parsed.imported, parsed.losses)
     } else {
         let source = String::from_utf8(bytes)
@@ -1400,8 +1453,13 @@ fn import_path(
         .iter()
         .map(|i| (i.parent, i.item_type, i.title.as_str(), i.body.as_deref()))
         .collect();
-    create_imported_into_dir(data_home, dest_dir, &imported.name, &rows, strings)
-        .map(|summary| ImportOutcome { summary, losses, derived_contents: imported.derived_contents })
+    create_imported_into_dir(data_home, dest_dir, &imported.name, &rows, strings).map(|summary| {
+        ImportOutcome {
+            summary,
+            losses,
+            derived_contents: imported.derived_contents,
+        }
+    })
 }
 
 /// `create_into_dir`'s counterpart for an import: create in `dir` and
@@ -1417,14 +1475,26 @@ fn create_imported_into_dir(
     strings: &strings::Strings,
 ) -> std::result::Result<projects::ProjectSummary, String> {
     let made = projects::create_imported(dir, name, rows, strings)?;
-    remember_created_in(data_home, dir, &made.path);
-    Ok(made)
+    Ok(book_registration::remember(data_home, dir, made))
 }
 
 /// Refused by size before the file is read. The `stress` fixture exports to
 /// 10.5 MB, so this is roughly six manuscripts — far above anything a writer
 /// arrives with and far below the point where one parse costs the process.
 const MAX_IMPORT_BYTES: u64 = 64 * 1024 * 1024;
+
+fn read_import_bounded(source: impl std::io::Read, limit: u64) -> Result<Vec<u8>, String> {
+    use std::io::Read;
+    let mut bytes = Vec::new();
+    source
+        .take(limit.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .map_err(|e| e.to_string())?;
+    if bytes.len() as u64 > limit {
+        return Err("too large".to_string());
+    }
+    Ok(bytes)
+}
 
 /// The one place the openability restriction is decided. Without it a page bug
 /// could open an arbitrary file as a manuscript.
@@ -2014,13 +2084,14 @@ fn preferences_js(settings: &projects::Settings) -> String {
          window.__appLocale={};\
          window.__appTimeTracking={};\
          window.__appZoom={};\
+         window.__appSidebarWordCounts={};\
          window.__appMarkCastNames={};\
          window.__appStart={};",
         js_string(settings.theme.as_str()),
         js_string(settings.typography.family.as_str()),
         js_string(settings.typography.size.as_str()),
         js_string(settings.typography.measure.as_str()),
-        js_string(settings.daily_target.as_str()),
+        js_string(settings.daily_target.as_str().as_ref()),
         settings.bible_rows,
         js_string(settings.writing_modes.focus.as_str()),
         js_string(settings.writing_modes.typewriter.as_str()),
@@ -2029,6 +2100,7 @@ fn preferences_js(settings: &projects::Settings) -> String {
         js_string(settings.locale.as_str()),
         js_string(settings.time_tracking.as_str()),
         js_string(settings.zoom.as_str()),
+        serde_json::to_string(&settings.sidebar_word_counts).expect("sidebar counts serialize"),
         settings.mark_cast_names,
         js_string(settings.start.as_str()),
     )
@@ -2891,8 +2963,7 @@ fn project_restore_point(
     } else {
         projects::restore_point_into(&point, &dest, &slug, store::now_ms())?
     };
-    remember_created_in(&data_home.0, &dest, &restored.path);
-    Ok(restored)
+    Ok(book_registration::remember(&data_home.0, &dest, restored))
 }
 
 /// The writer asked for a recovery point now.
@@ -3359,6 +3430,87 @@ fn mime_for(path: &Path) -> &'static str {
     }
 }
 
+// This source is compiled into the host; a replaced APP_DIST document cannot
+// authorize its own scripts. The UI build copies index.html without rewriting it.
+const APPDIST_INDEX: &str = include_str!("../../../ui/index.html");
+const APPDIST_DENY_CSP: &str = "default-src 'none'; script-src 'none'; style-src 'none'";
+
+fn appdist_theme_hash() -> String {
+    use sha2::{Digest, Sha256};
+    let head = APPDIST_INDEX.split_once("</head>").expect("interface head").0;
+    let script = head.split_once("<script>").expect("theme boot script").1
+        .split_once("</script>").expect("theme boot script end").0;
+    format!("'sha256-{}'", pictures::base64(&Sha256::digest(script.as_bytes())))
+}
+
+fn appdist_csp(configured: Option<&tauri::utils::config::Csp>) -> Option<tauri::http::HeaderValue> {
+    use tauri::utils::config::{Csp, CspDirectiveSources};
+    let mut directives: std::collections::HashMap<String, CspDirectiveSources> =
+        configured?.clone().into();
+    let fallback = directives.get("default-src")?.clone();
+    let script = directives.entry("script-src".into()).or_insert(fallback);
+    // Never silently turn an unrestricted inline policy into a trusted one.
+    let sources: Vec<String> = script.clone().into();
+    if sources.iter().any(|source| source == "'unsafe-inline'") {
+        return None;
+    }
+    let hash = appdist_theme_hash();
+    script.push(&hash);
+    if let Some(elements) = directives.get_mut("script-src-elem") {
+        let sources: Vec<String> = elements.clone().into();
+        if sources.iter().any(|source| source == "'unsafe-inline'") {
+            return None;
+        }
+        elements.push(&hash);
+    }
+    tauri::http::HeaderValue::from_str(&Csp::from(directives).to_string()).ok()
+}
+
+fn appdist_response(
+    assets: &AssetRoot,
+    path: &str,
+    configured: Option<&tauri::utils::config::Csp>,
+) -> tauri::http::Response<Vec<u8>> {
+    let policy = appdist_csp(configured);
+    let rel = if path == "/" { "index.html" } else { path.strip_prefix('/').unwrap_or(path) };
+    let (status, mime, body) = match assets {
+        AssetRoot::Found(dir) => match appdist_asset_path(dir, rel)
+            .and_then(|full| fs::read(&full).ok().map(|bytes| (full, bytes))) {
+            Some((full, bytes)) => (200, Some(mime_for(&full)), bytes),
+            None => (404, None, Vec::new()),
+        },
+        AssetRoot::Missing(tried) if rel == "index.html" =>
+            (200, Some("text/html"), missing_assets_page(tried).into_bytes()),
+        AssetRoot::Missing(_) => (404, None, Vec::new()),
+    };
+    // A missing or malformed configured policy must never serve an HTML page
+    // without protection. Empty failures also deny all document content.
+    let (status, mime, body) = if mime == Some("text/html") && policy.is_none() {
+        (500, None, Vec::new())
+    } else {
+        (status, mime, body)
+    };
+    let mut response = tauri::http::Response::builder().status(status)
+        .header("Content-Security-Policy", policy.unwrap_or_else(||
+            tauri::http::HeaderValue::from_static(APPDIST_DENY_CSP)));
+    if let Some(mime) = mime {
+        response = response.header("Content-Type", mime);
+    }
+    response.body(body).expect("valid appdist response")
+}
+
+fn appdist_asset_path(root: &Path, relative: &str) -> Option<PathBuf> {
+    let path = Path::new(relative);
+    if relative.is_empty() || relative.contains('\\') || relative.contains(':')
+        || path.components().any(|part| !matches!(part, std::path::Component::Normal(_)))
+    {
+        return None;
+    }
+    let root = root.canonicalize().ok()?;
+    let full = root.join(path).canonicalize().ok()?;
+    (full.starts_with(&root) && full.is_file()).then_some(full)
+}
+
 #[derive(Debug, PartialEq, Eq)]
 enum AssetRoot {
     Found(PathBuf),
@@ -3381,7 +3533,11 @@ enum AssetRoot {
 /// harness names a per-run staged copy; answering from a different build that
 /// happens to lie beside the binary would mean a graded run measuring something
 /// other than what it staged.
-fn resolve_asset_root(env_dist: Option<&Path>, exe: Option<&Path>) -> AssetRoot {
+fn resolve_asset_root(
+    env_dist: Option<&Path>,
+    exe: Option<&Path>,
+    resource_dir: Option<&Path>,
+) -> AssetRoot {
     let is_build = |dir: &Path| dir.join("index.html").is_file();
 
     if let Some(dir) = env_dist {
@@ -3395,7 +3551,7 @@ fn resolve_asset_root(env_dist: Option<&Path>, exe: Option<&Path>) -> AssetRoot 
     let Some(exe_dir) = exe.and_then(Path::parent) else {
         return AssetRoot::Missing(Vec::new());
     };
-    let candidates = [
+    let mut candidates = vec![
         exe_dir.join("dist"),
         // The repo layout, so a `cargo build` binary at
         // app/shell-tauri/src-tauri/target/release/ finds app/ui/dist with no
@@ -3403,6 +3559,9 @@ fn resolve_asset_root(env_dist: Option<&Path>, exe: Option<&Path>) -> AssetRoot 
         // shell-tauri -> app. A development convenience, and only that.
         exe_dir.join("../../../../ui/dist"),
     ];
+    if let Some(resources) = resource_dir {
+        candidates.insert(1, resources.join("dist"));
+    }
     match candidates.iter().find(|c| is_build(c)) {
         Some(found) => AssetRoot::Found(found.clone()),
         None => AssetRoot::Missing(candidates.to_vec()),
@@ -3450,9 +3609,8 @@ fn missing_assets_page(tried: &[PathBuf]) -> String {
     )
 }
 
-/// The application's identifier, used as the data directory name. There is no
-/// product name yet; when there is one, this is the thing to revisit.
-const APP_DIR: &str = "cc.local.app";
+/// Desktop application storage, separate from the stable application identifier.
+const APP_DIR: &str = "garret";
 
 /// Must match CLOSE_EVENT in app/ui/src/lifecycle.ts.
 const CLOSE_EVENT: &str = "app://close-requested";
@@ -3858,6 +4016,13 @@ fn main() {
     // opened only when NO subcommand was given, which is this one condition.
     if let Some(command) = argv.get(1) {
         if cli::is_subcommand(command) {
+            if cli::uses_profile(command) {
+                let home = data_home();
+                if let Err(error) = data_migration::check_cli(&home) {
+                    eprintln!("{}", data_migration::refusal(&home, &error));
+                    process::exit(1);
+                }
+            }
             process::exit(cli::run(&argv[1..]));
         }
     }
@@ -3929,10 +4094,25 @@ fn main() {
             process::exit(0);
         }
         instance_file::Claim::Unavailable(why) => {
-            report_startup_failure(&data_home, &format!("cannot guard this library: {why}"));
+            report_migration_failure(&data_home, &format!("cannot guard this library: {why}"));
             process::exit(1);
         }
     };
+    #[cfg(unix)]
+    let migration = if owned_socket.is_some() {
+        data_migration::prepare(&data_home)
+    } else {
+        data_migration::check_cli(&data_home)
+    };
+    #[cfg(windows)]
+    let migration = data_migration::prepare(&data_home, &owned_file);
+    if let Err(error) = migration {
+        // Reporting must not create a destination that would block a retry.
+        report_migration_failure(&data_home, &error);
+        #[cfg(unix)]
+        if let Some((_, path)) = &owned_socket { instance::release(path); }
+        process::exit(1);
+    }
     let library = projects::library_dir(&data_home);
 
     // MUST be set before the window (and its webview's web process) exists.
@@ -4068,9 +4248,13 @@ fn main() {
     let mode_js = js_string(&mode);
     let run_js = js_string(&run);
     let persist_mode_js = js_string(&persist_mode);
+    let library_diagnostics = std::env::var("APP_LIBRARY_DIAGNOSTICS").as_deref() == Ok("1");
+    let timeline_diagnostics = std::env::var("APP_TIMELINE_DIAGNOSTICS").as_deref() == Ok("1");
 
     let init = format!(
         "window.__appPrivacyLocked={privacy_locked};\
+         window.__appLibraryDiagnostics={library_diagnostics};\
+         window.__appTimelineDiagnostics={timeline_diagnostics};\
          window.__appCandidate='tauri';\
          window.__appSeed={seed_js};\
          window.__appMode={mode_js};\
@@ -4091,9 +4275,12 @@ fn main() {
 
     // Resolved once, here, so every request answers from the same directory and
     // a failure is reported at startup instead of as a silent 404 per asset.
+    let context = tauri::generate_context!();
+    let resources = tauri::utils::platform::resource_dir(context.package_info(), &Default::default()).ok();
     let assets = resolve_asset_root(
         std::env::var_os("APP_DIST").map(PathBuf::from).as_deref(),
         std::env::current_exe().ok().as_deref(),
+        resources.as_deref(),
     );
     if let AssetRoot::Missing(tried) = &assets {
         eprintln!("no interface assets found; tried:");
@@ -4117,44 +4304,12 @@ fn main() {
 
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .register_uri_scheme_protocol("appdist", move |_ctx, request| {
-            let uri = request.uri();
-            let path = uri.path();
-            let rel = if path == "/" {
-                "index.html"
-            } else {
-                path.trim_start_matches('/')
-            };
-            let dir = match &assets {
-                AssetRoot::Found(dir) => dir,
-                // The window comes up carrying the diagnosis. Only for the
-                // document itself: answering an asset request with an HTML error
-                // page would be a lie about what was served.
-                AssetRoot::Missing(tried) => {
-                    return if rel == "index.html" {
-                        tauri::http::Response::builder()
-                            .header("Content-Type", "text/html")
-                            .body(missing_assets_page(tried).into_bytes())
-                            .unwrap()
-                    } else {
-                        tauri::http::Response::builder()
-                            .status(404)
-                            .body(Vec::new())
-                            .unwrap()
-                    };
-                }
-            };
-            let full = dir.join(rel);
-            match fs::read(&full) {
-                Ok(bytes) => tauri::http::Response::builder()
-                    .header("Content-Type", mime_for(&full))
-                    .body(bytes)
-                    .unwrap(),
-                Err(_) => tauri::http::Response::builder()
-                    .status(404)
-                    .body(Vec::new())
-                    .unwrap(),
-            }
+        .register_uri_scheme_protocol("appdist", move |ctx, request| {
+            appdist_response(
+                &assets,
+                request.uri().path(),
+                ctx.app_handle().config().app.security.csp.as_ref(),
+            )
         });
     #[cfg(windows)]
     let builder = builder.register_uri_scheme_protocol("proof", |ctx, request| {
@@ -4281,6 +4436,9 @@ fn main() {
             __wire_project_forget,
             __wire_project_new_dir,
             __wire_project_create,
+            __wire_project_preset,
+            __wire_project_pending_registrations,
+            __wire_project_retry_registration,
             __wire_project_open,
             __wire_project_open_check,
             __wire_project_current,
@@ -4306,6 +4464,7 @@ fn main() {
             commands::spell::__wire_settings_set_spelling,
             commands::settings::__wire_settings_set_time_tracking,
             commands::settings::__wire_settings_set_zoom,
+            commands::settings::__wire_settings_set_sidebar_word_counts,
             __wire_writing_time_note,
             __wire_writing_time_today,
             commands::settings::__wire_settings_set_theme_family,
@@ -4436,6 +4595,9 @@ fn main() {
             }
         })
         .setup(move |app| {
+            // X11 keeps a separate class from the GTK application ID.
+            #[cfg(target_os = "linux")]
+            gtk::gdk::set_program_class(&app.config().identifier);
             #[cfg(unix)]
             if let Some(listener) = owned_socket {
                 let handle = app.handle().clone();
@@ -4601,7 +4763,7 @@ fn main() {
                     }
                 });
             }
-            WebviewWindowBuilder::new(
+            let window = WebviewWindowBuilder::new(
                 app,
                 "main",
                 WebviewUrl::CustomProtocol(
@@ -4616,8 +4778,15 @@ fn main() {
                 f64::from(recorded_window.fit(None).width),
                 f64::from(recorded_window.fit(None).height),
             )
-            .initialization_script(init.as_str())
-            .build()?;
+            .initialization_script(init.as_str());
+            // Tauri's identifier-based default would recreate the legacy profile
+            // after migration, blocking the next launch on a fresh installation.
+            #[cfg(target_os = "linux")]
+            let window = window.data_directory(app.state::<DataHome>().0.join(APP_DIR));
+            // WebView2's default follows the identifier, independently of books and settings.
+            #[cfg(windows)]
+            let window = window.data_directory(legacy_webview_data_dir(app.handle())?);
+            window.build()?;
 
             #[cfg(target_os = "linux")]
             privacy_native::install(app.handle())?;
@@ -4678,7 +4847,7 @@ fn main() {
             }
             Ok(())
         })
-        .build(tauri::generate_context!());
+        .build(context);
 
     let run = run.map(|app| {
         // `App::run` never returns; the process exits from inside it. So the
@@ -4714,6 +4883,37 @@ fn main() {
 /// Every step is best-effort and NOTHING here panics: this runs on the path
 /// where startup has already failed, and a panic while reporting a failure
 /// replaces a diagnosable problem with an undiagnosable one.
+fn report_migration_failure(data_home: &Path, error: &str) {
+    let body = data_migration::refusal(data_home, error);
+    eprintln!("{body}");
+    #[cfg(target_os = "linux")]
+    {
+        use gtk::prelude::*;
+
+        if let Err(error) = gtk::init() {
+            eprintln!("Could not show the startup error: {error}");
+            return;
+        }
+        let dialog = gtk::MessageDialog::new(
+            None::<&gtk::Window>,
+            gtk::DialogFlags::MODAL,
+            gtk::MessageType::Error,
+            gtk::ButtonsType::Ok,
+            &body,
+        );
+        dialog.set_title("garret");
+        dialog.run();
+        dialog.close();
+    }
+    #[cfg(any(windows, target_os = "macos"))]
+    let _ = rfd::MessageDialog::new()
+        .set_title("garret")
+        .set_description(body)
+        .set_level(rfd::MessageLevel::Error)
+        .set_buttons(rfd::MessageButtons::Ok)
+        .show();
+}
+
 fn report_startup_failure(data_home: &Path, error: &str) {
     let strings = projects::read_settings(data_home).locale.strings();
     let body = format!("{}\n\n{}\n{error}\n", strings.t("startup.help"), strings.t("startup.detail"));
@@ -4833,7 +5033,7 @@ mod tests {
         dir: &Path,
         name: &str,
     ) -> std::result::Result<crate::projects::ProjectSummary, String> {
-        super::create_into_dir(data_home, dir, name, &english())
+        super::create_into_dir(data_home, dir, name, &english(), None)
     }
 
     fn import_named(
@@ -7554,6 +7754,7 @@ mod tests {
                 typewriter: crate::projects::TypewriterMode::On,
             },
             zoom: crate::zoom::Zoom::Z150,
+            sidebar_word_counts: crate::projects::SidebarWordCounts { scene: false, chapter: true, part: true },
             spelling: crate::projects::Spelling::Off,
             time_tracking: crate::projects::TimeTracking::On,
             theme_family: crate::projects::ThemeFamily::Atmospheric,
@@ -7565,6 +7766,7 @@ mod tests {
         };
         let js = preferences_js(&settings);
         assert!(js.contains("window.__appZoom='150'"), "{js}");
+        assert!(js.contains("window.__appSidebarWordCounts={\"scene\":false,\"chapter\":true,\"part\":true}"), "{js}");
         assert!(js.contains("window.__appBibleRows=13"), "{js}");
         assert!(js.contains("window.__appStart='blank'"), "{js}");
         assert!(js.contains("window.__appTheme='dark'"), "{js}");
@@ -7634,6 +7836,55 @@ mod tests {
     ) -> PathBuf {
         crate::projects::library_dir(&windows_data_home_from(appdata, userprofile))
             .join(DEFAULT_PROJECT)
+    }
+
+    #[test]
+    fn measurement_sink_requires_an_explicit_writable_destination() {
+        let payload = serde_json::json!({"sample": 1});
+        assert!(super::write_measurement_sink(&payload, None).is_err());
+        assert!(super::write_measurement_sink(&payload, Some(std::ffi::OsStr::new(""))).is_err());
+        let root = tempdir().unwrap();
+        let output = root.path().join("measurement.json");
+        super::write_measurement_sink(&payload, Some(output.as_os_str())).unwrap();
+        assert_eq!(
+            serde_json::from_slice::<serde_json::Value>(&std::fs::read(output).unwrap()).unwrap(),
+            payload
+        );
+        assert!(super::write_measurement_sink(&payload, Some(root.path().as_os_str())).is_err());
+    }
+
+    #[test]
+    fn outline_generation_refuses_a_copied_book_with_the_same_item_ids() {
+        let root = tempdir().unwrap();
+        let original = root.path().join("original.db");
+        let copy = root.path().join("copy.db");
+        let store = seeded_project(&original);
+        let row = store.items().unwrap().remove(0);
+        store.checkpoint().unwrap();
+        std::fs::copy(&original, &copy).unwrap();
+        let mut project = opened(&copy);
+        project.generation = 2;
+        assert_eq!(project.store.items().unwrap()[0].id, row.id);
+        for generation in [1, 3] {
+            assert!(
+                super::with_outline_generation(&mut project, generation, |project| {
+                    project
+                        .store
+                        .item_rename(&row.id, "Wrong book", row.rev)
+                        .map_err(|e| e.to_string())
+                })
+                .is_err()
+            );
+        }
+        let unchanged = project.store.items().unwrap().remove(0);
+        assert_eq!((unchanged.title, unchanged.rev), (row.title, row.rev));
+        assert!(super::with_outline_generation(&mut project, 2, |project| {
+            project
+                .store
+                .item_rename(&row.id, "Current book", row.rev)
+                .map_err(|e| e.to_string())
+        })
+        .is_ok());
     }
 
     #[test]
@@ -7715,6 +7966,28 @@ mod tests {
     }
 
     #[test]
+    fn created_and_imported_books_report_registration_failure_without_losing_manuscripts() {
+        let home = tempdir().unwrap();
+        let dest = tempdir().unwrap();
+        let settings = crate::projects::settings_path(home.path());
+        std::fs::create_dir_all(settings.parent().unwrap()).unwrap();
+        std::fs::create_dir(settings.with_extension("json.tmp")).unwrap();
+        let made = create_into_dir(home.path(), dest.path(), "Retained creation").unwrap();
+        assert!(made.registration_warning.is_some());
+        let source = home.path().join("source.md");
+        std::fs::write(&source, "# Imported manuscript\n\nRetained import prose.\n").unwrap();
+        let imported = import_path(home.path(), dest.path(), &source).unwrap();
+        assert!(imported.summary.registration_warning.is_some());
+        for summary in [&made, &imported.summary] {
+            let store = crate::store::Store::open_readonly(Path::new(&summary.path)).unwrap();
+            assert!(store.book_id().unwrap().is_some());
+            assert!(!store.items().unwrap().is_empty());
+        }
+        assert_eq!(crate::book_registration::list(home.path()).len(), 2);
+        assert!(crate::projects::read_settings(home.path()).books.is_empty());
+    }
+
+    #[test]
     fn creation_keeps_the_startups_locale_after_settings_change_until_restart() {
         let home = tempdir().unwrap();
         crate::projects::update_settings(home.path(), |settings| {
@@ -7732,6 +8005,7 @@ mod tests {
             &crate::projects::library_dir(home.path()),
             "Deutsch",
             &captured,
+            None,
         )
         .unwrap();
         let store = crate::store::Store::open_readonly(Path::new(&made.path)).unwrap();
@@ -7993,7 +8267,7 @@ mod tests {
             default_project_path_from(Some(OsStr::new("/x/data")), Some(OsStr::new("/home/u")));
         assert_eq!(
             got,
-            PathBuf::from("/x/data/cc.local.app/projects/default.db")
+            PathBuf::from("/x/data/garret/projects/default.db")
         );
     }
 
@@ -8002,7 +8276,7 @@ mod tests {
         let got = default_project_path_from(None, Some(OsStr::new("/home/u")));
         assert_eq!(
             got,
-            PathBuf::from("/home/u/.local/share/cc.local.app/projects/default.db")
+            PathBuf::from("/home/u/.local/share/garret/projects/default.db")
         );
     }
 
@@ -8017,7 +8291,7 @@ mod tests {
         );
         assert_eq!(
             got,
-            PathBuf::from("/home/u/.local/share/cc.local.app/projects/default.db")
+            PathBuf::from("/home/u/.local/share/garret/projects/default.db")
         );
     }
 
@@ -8026,7 +8300,7 @@ mod tests {
         let got = default_project_path_from(None, None);
         assert_eq!(
             got,
-            PathBuf::from("./.local/share/cc.local.app/projects/default.db")
+            PathBuf::from("./.local/share/garret/projects/default.db")
         );
     }
 
@@ -8086,7 +8360,7 @@ mod tests {
         assert_eq!(
             got,
             PathBuf::from(r"C:\Users\u\AppData\Roaming")
-                .join("cc.local.app")
+                .join("garret")
                 .join("projects")
                 .join(DEFAULT_PROJECT)
         );
@@ -8100,7 +8374,7 @@ mod tests {
             PathBuf::from(r"C:\Users\u")
                 .join("AppData")
                 .join("Roaming")
-                .join("cc.local.app")
+                .join("garret")
                 .join("projects")
                 .join(DEFAULT_PROJECT)
         );
@@ -8121,7 +8395,7 @@ mod tests {
             PathBuf::from(r"C:\Users\u")
                 .join("AppData")
                 .join("Roaming")
-                .join("cc.local.app")
+                .join("garret")
                 .join("projects")
                 .join(DEFAULT_PROJECT)
         );
@@ -8188,6 +8462,177 @@ mod tests {
         assert_eq!(mime_for(Path::new("dist/garret-favicon.png")), "image/png");
     }
 
+    fn configured_appdist_csp() -> tauri::utils::config::Csp {
+        let config: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
+        serde_json::from_value(config["app"]["security"]["csp"].clone()).unwrap()
+    }
+
+    fn appdist_csp_directives(
+        response: &tauri::http::Response<Vec<u8>>,
+    ) -> std::collections::HashMap<String, tauri::utils::config::CspDirectiveSources> {
+        tauri::utils::config::Csp::Policy(
+            response.headers()["Content-Security-Policy"].to_str().unwrap().to_owned(),
+        ).into()
+    }
+
+    #[test]
+    fn appdist_csp_html_preserves_config_and_adds_only_trusted_theme_hash() {
+        use sha2::{Digest, Sha256};
+        let dir = tempdir().unwrap();
+        let root = built_dist(dir.path().join("dist"));
+        std::fs::write(root.join("index.html"), super::APPDIST_INDEX).unwrap();
+        let configured = configured_appdist_csp();
+        let response = super::appdist_response(&AssetRoot::Found(root), "/", Some(&configured));
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.headers()["Content-Type"], "text/html");
+        assert_eq!(response.body(), super::APPDIST_INDEX.as_bytes());
+        let html = std::str::from_utf8(response.body()).unwrap();
+        let theme = html.split_once("<script>").unwrap().1.split_once("</script>").unwrap().0;
+        let trusted_hash = format!("'sha256-{}'", crate::pictures::base64(&Sha256::digest(theme.as_bytes())));
+        assert_eq!(super::appdist_theme_hash(), trusted_hash);
+        let mut expected: std::collections::HashMap<_, _> = configured.into();
+        expected.get_mut("script-src").unwrap().push(super::appdist_theme_hash());
+        let actual = appdist_csp_directives(&response);
+        assert_eq!(actual, expected);
+        let sources: Vec<String> = actual["script-src"].clone().into();
+        assert_eq!(sources.iter().filter(|source| source.starts_with("'sha256-")).count(), 1);
+        assert!(!sources.iter().any(|source| source == "'unsafe-inline'"));
+        let connect: Vec<String> = actual["connect-src"].clone().into();
+        assert!(connect.iter().any(|source| source == "ipc:"));
+        assert!(connect.iter().any(|source| source == "http://ipc.localhost"));
+    }
+
+    #[test]
+    fn appdist_csp_replaced_html_cannot_authorize_changed_or_injected_scripts() {
+        use sha2::{Digest, Sha256};
+        let dir = tempdir().unwrap();
+        let root = built_dist(dir.path().join("dist"));
+        let assets = AssetRoot::Found(root.clone());
+        let configured = configured_appdist_csp();
+        std::fs::write(root.join("index.html"), super::APPDIST_INDEX).unwrap();
+        let original = super::appdist_response(&assets, "/index.html", Some(&configured));
+        let script = super::APPDIST_INDEX.split_once("<script>").unwrap().1
+            .split_once("</script>").unwrap().0;
+        let altered = script.replace("var t = window.__appTheme;", "window.injected = true;");
+        let injected = "window.additionalScript = true;";
+        let document = super::APPDIST_INDEX.replace(script, &altered)
+            .replace("</head>", &format!("<script>{injected}</script></head>"));
+        std::fs::write(root.join("index.html"), &document).unwrap();
+        let response = super::appdist_response(&assets, "/index.html", Some(&configured));
+        assert_eq!(response.body(), document.as_bytes());
+        assert_eq!(appdist_csp_directives(&response), appdist_csp_directives(&original));
+        let sources: Vec<String> = appdist_csp_directives(&response)["script-src"].clone().into();
+        assert!(sources.contains(&super::appdist_theme_hash()));
+        for unauthorized in [altered.as_str(), injected] {
+            let hash = format!("'sha256-{}'", crate::pictures::base64(&Sha256::digest(unauthorized.as_bytes())));
+            assert!(!sources.contains(&hash));
+        }
+    }
+
+    #[test]
+    fn appdist_csp_diagnosis_and_failures_remain_protected() {
+        let configured = configured_appdist_csp();
+        let missing = AssetRoot::Missing(vec![PathBuf::from("missing<&>")]);
+        let response = super::appdist_response(&missing, "/", Some(&configured));
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.headers()["Content-Type"], "text/html");
+        assert!(String::from_utf8(response.body().clone()).unwrap().contains("missing&lt;&amp;&gt;"));
+        assert!(appdist_csp_directives(&response).contains_key("script-src"));
+        for configured in [
+            None,
+            Some(tauri::utils::config::Csp::Policy("default-src 'self'; script-src 'self'\ninvalid".into())),
+            Some(tauri::utils::config::Csp::Policy("default-src 'self'; script-src 'unsafe-inline'".into())),
+        ] {
+            let response = super::appdist_response(&missing, "/", configured.as_ref());
+            assert_eq!(response.status(), 500);
+            assert!(response.body().is_empty());
+            assert!(!response.headers().contains_key("Content-Type"));
+            assert_eq!(response.headers()["Content-Security-Policy"], super::APPDIST_DENY_CSP);
+        }
+        let response = super::appdist_response(&missing, "/missing.js", None);
+        assert_eq!(response.status(), 404);
+        assert!(response.body().is_empty());
+        assert_eq!(response.headers()["Content-Security-Policy"], super::APPDIST_DENY_CSP);
+    }
+
+    #[test]
+    fn appdist_csp_assets_keep_mime_bytes_and_path_refusals() {
+        let dir = tempdir().unwrap();
+        let root = built_dist(dir.path().join("dist"));
+        std::fs::write(root.join("page.js"), b"window.external = true;").unwrap();
+        std::fs::write(dir.path().join("outside.html"), "outside").unwrap();
+        let assets = AssetRoot::Found(root);
+        let configured = configured_appdist_csp();
+        let response = super::appdist_response(&assets, "/page.js", Some(&configured));
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.headers()["Content-Type"], "text/javascript");
+        assert_eq!(response.body(), b"window.external = true;");
+        for path in ["/absent.js", "/../outside.html", "/C:/outside.html"] {
+            let response = super::appdist_response(&assets, path, Some(&configured));
+            assert_eq!(response.status(), 404);
+            assert!(response.body().is_empty());
+            assert!(!response.headers().contains_key("Content-Type"));
+            assert!(response.headers().contains_key("Content-Security-Policy"));
+        }
+    }
+
+    #[test]
+    fn appdist_asset_paths_accept_index_nested_files_and_root_search_paths() {
+        let dir = tempdir().unwrap();
+        let root = built_dist(dir.path().join("dist"));
+        std::fs::create_dir(root.join("assets")).unwrap();
+        std::fs::write(root.join("assets/page.js"), "page").unwrap();
+        for name in ["index.html", "assets/page.js"] {
+            assert_eq!(
+                super::appdist_asset_path(&root.join("../dist"), name),
+                Some(root.join(name).canonicalize().unwrap())
+            );
+        }
+        assert_eq!(super::appdist_asset_path(&root, "absent.js"), None);
+        assert_eq!(super::appdist_asset_path(&root, "assets"), None);
+    }
+
+    #[test]
+    fn appdist_asset_paths_refuse_traversal_roots_and_platform_prefixes() {
+        let dir = tempdir().unwrap();
+        let root = built_dist(dir.path().join("dist"));
+        std::fs::write(dir.path().join("outside.js"), "outside").unwrap();
+        std::fs::create_dir(root.join("assets")).unwrap();
+        let refused = [
+            "", "../outside.js", "assets/../../outside.js", "/index.html",
+            "//index.html", "C:/index.html", "C:index.html", "index.html:stream",
+            "..\\outside.js", "assets\\..\\index.html", "\\\\server\\share\\index.html",
+        ];
+        #[cfg(unix)]
+        for name in refused.iter().filter(|name| name.contains(':') || name.contains('\\')) {
+            let file = root.join(name);
+            std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+            std::fs::write(file, "platform-sensitive name").unwrap();
+        }
+        for name in refused {
+            assert_eq!(super::appdist_asset_path(&root, name), None, "{name:?}");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn appdist_asset_paths_refuse_symlinks_that_escape_the_root() {
+        use std::os::unix::fs::symlink;
+        let dir = tempdir().unwrap();
+        let root = built_dist(dir.path().join("dist"));
+        let sibling = built_dist(dir.path().join("dist-sibling"));
+        symlink(sibling.join("index.html"), root.join("outside.html")).unwrap();
+        symlink(&sibling, root.join("outside")).unwrap();
+        symlink(root.join("index.html"), root.join("inside.html")).unwrap();
+        assert_eq!(super::appdist_asset_path(&root, "outside.html"), None);
+        assert_eq!(super::appdist_asset_path(&root, "outside/index.html"), None);
+        assert_eq!(
+            super::appdist_asset_path(&root, "inside.html"),
+            Some(root.join("index.html").canonicalize().unwrap())
+        );
+    }
+
     #[test]
     fn app_dist_wins_over_both_fallbacks() {
         let dir = tempdir().unwrap();
@@ -8200,7 +8645,7 @@ mod tests {
         // fallback could win, a run would silently measure whichever build
         // happened to be lying beside the binary.
         assert_eq!(
-            resolve_asset_root(Some(&staged), Some(&exe)),
+            resolve_asset_root(Some(&staged), Some(&exe), None),
             AssetRoot::Found(staged)
         );
     }
@@ -8218,7 +8663,7 @@ mod tests {
         // than the one the operator named, which is the failure this project
         // has already paid for twice with a stale app/ui/dist.
         assert_eq!(
-            resolve_asset_root(Some(&empty), Some(&exe)),
+            resolve_asset_root(Some(&empty), Some(&exe), None),
             AssetRoot::Missing(vec![empty])
         );
     }
@@ -8231,7 +8676,42 @@ mod tests {
         built_dist(dir.path().join("app/ui/dist"));
 
         assert_eq!(
-            resolve_asset_root(None, Some(&exe)),
+            resolve_asset_root(None, Some(&exe), None),
+            AssetRoot::Found(beside)
+        );
+    }
+
+    #[test]
+    fn installed_interface_uses_platform_resources() {
+        let dir = tempdir().unwrap();
+        for (executable, resource) in [
+            ("usr/bin/garret", "usr/lib/garret"),
+            ("appimage/usr/bin/garret", "appimage/usr/lib/garret"),
+            ("garret.app/Contents/MacOS/garret", "garret.app/Contents/Resources"),
+            ("installed/garret.exe", "installed"),
+        ] {
+            let exe = dir.path().join(executable);
+            std::fs::create_dir_all(exe.parent().unwrap()).unwrap();
+            let resources = dir.path().join(resource);
+            let dist = built_dist(resources.join("dist"));
+            let found = resolve_asset_root(None, Some(&exe), Some(&resources));
+            assert_eq!(found, AssetRoot::Found(dist.clone()), "{executable}");
+            let missing = dir.path().join("explicit-missing");
+            assert_eq!(resolve_asset_root(Some(&missing), Some(&exe), Some(&resources)),
+                AssetRoot::Missing(vec![missing]));
+            std::fs::remove_dir_all(dist).unwrap();
+        }
+    }
+
+    #[test]
+    fn executable_dist_precedes_platform_resources() {
+        let dir = tempdir().unwrap();
+        let exe = release_exe(dir.path());
+        let beside = built_dist(exe.parent().unwrap().join("dist"));
+        let resources = dir.path().join("resources");
+        built_dist(resources.join("dist"));
+        assert_eq!(
+            resolve_asset_root(None, Some(&exe), Some(&resources)),
             AssetRoot::Found(beside)
         );
     }
@@ -8246,7 +8726,7 @@ mod tests {
         // Four levels up from target/release reaches app/: release -> target ->
         // src-tauri -> shell-tauri -> app. The design document says three, which
         // lands in app/shell-tauri and finds nothing.
-        match resolve_asset_root(None, Some(&exe)) {
+        match resolve_asset_root(None, Some(&exe), None) {
             AssetRoot::Found(p) => {
                 assert_eq!(p.canonicalize().unwrap(), ui.canonicalize().unwrap())
             }
@@ -8263,7 +8743,7 @@ mod tests {
         std::fs::create_dir_all(exe.parent().unwrap().join("dist")).unwrap();
         let ui = built_dist(dir.path().join("app/ui/dist"));
 
-        match resolve_asset_root(None, Some(&exe)) {
+        match resolve_asset_root(None, Some(&exe), None) {
             AssetRoot::Found(p) => {
                 assert_eq!(p.canonicalize().unwrap(), ui.canonicalize().unwrap())
             }
@@ -8276,7 +8756,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let exe = release_exe(dir.path());
 
-        let tried = match resolve_asset_root(None, Some(&exe)) {
+        let tried = match resolve_asset_root(None, Some(&exe), None) {
             AssetRoot::Missing(paths) => paths,
             other => panic!("expected no asset root, got {other:?}"),
         };
@@ -8293,7 +8773,7 @@ mod tests {
         // std::env::current_exe can fail. Without it there is no candidate at
         // all, and the window must say so rather than serve a blank page.
         assert_eq!(
-            resolve_asset_root(None, None),
+            resolve_asset_root(None, None, None),
             AssetRoot::Missing(Vec::new())
         );
     }
@@ -8430,22 +8910,12 @@ mod tests {
 
     #[test]
     fn a_rename_accepts_a_title_no_filename_could_carry() {
-        // NOT `projects::create_in`'s rule, and this is the reason. `slugify`
-        // answers None for Hebrew and Arabic titles (which is why the mirror
-        // has a segment rule of its own), and a rename
-        // CREATES NO FILE -- so sharing that rule would refuse a legitimate book
-        // title for an operation that has no filename to protect.
+        // A rename creates no file, so punctuation-only titles remain valid
+        // even though creating a book requires a usable filename basename.
         let dir = tempdir().expect("a temp dir");
         let store = crate::store::Store::open(&dir.path().join("default.db")).expect("a store");
-        assert_eq!(
-            crate::projects::slugify("\u{5e1}\u{5e4}\u{5e8}"),
-            None,
-            "the premise of this test"
-        );
-        assert_eq!(
-            rename_open(&store, "\u{5e1}\u{5e4}\u{5e8}"),
-            Ok("\u{5e1}\u{5e4}\u{5e8}".to_string())
-        );
+        assert_eq!(crate::projects::slugify("?!"), None, "the premise of this test");
+        assert_eq!(rename_open(&store, "?!"), Ok("?!".to_string()));
     }
 
     #[test]
@@ -8619,6 +9089,53 @@ mod tests {
         assert!(err.contains("import folder"), "{err}");
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn manuscript_import_refuses_a_link_outside_the_drop_folder() {
+        let (dir, library, drop_dir) = import_fixture("# Book\n\n## One\n\nprose\n");
+        let outside = dir.path().join("outside.md");
+        let content = "# Outside\n\n## One\n\nPrivate prose.\n";
+        std::fs::write(&outside, content).unwrap();
+        std::os::unix::fs::symlink(&outside, drop_dir.join("linked.md")).unwrap();
+        let error = import_named(dir.path(), &library, &drop_dir, "linked.md").unwrap_err();
+        assert!(error.contains("not a regular file"), "{error}");
+        assert!(crate::projects::list(&library).is_empty());
+        assert_eq!(std::fs::read_to_string(outside).unwrap(), content);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn manuscript_import_refuses_nonregular_sources() {
+        let (dir, library, drop_dir) = import_fixture("# Book\n\n## One\n\nprose\n");
+        std::fs::create_dir(drop_dir.join("directory.md")).unwrap();
+        let fifo = drop_dir.join("pipe.md");
+        rustix::fs::mkfifoat(
+            rustix::fs::CWD,
+            &fifo,
+            rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+        )
+        .unwrap();
+        for filename in ["directory.md", "pipe.md"] {
+            let error = import_named(dir.path(), &library, &drop_dir, filename).unwrap_err();
+            assert!(error.contains("not a regular file"), "{error}");
+        }
+        assert!(crate::projects::list(&library).is_empty());
+    }
+
+    #[test]
+    fn bounded_import_read_refuses_growth_and_stops_at_the_sentinel() {
+        let mut source = std::io::Cursor::new(b"0123456789");
+        assert_eq!(
+            super::read_import_bounded(&mut source, 4).unwrap_err(),
+            "too large"
+        );
+        assert_eq!(source.position(), 5);
+        assert_eq!(
+            super::read_import_bounded(std::io::Cursor::new(b"0123"), 4).unwrap(),
+            b"0123"
+        );
+    }
+
     #[test]
     fn the_dialog_route_imports_a_file_from_outside_the_drop_directory() {
         // The whole point of the dialog: a path the WRITER chose, which
@@ -8744,6 +9261,7 @@ mod tests {
     fn docx_bytes_under_an_md_name_import_as_docx() {
         let (dir, library, _drop) = import_fixture("# Ignored\n\n## X\n\np\n");
         let book = crate::export::Book {
+            single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
             front: &[],
@@ -8982,10 +9500,15 @@ mod tests {
 
     #[test]
     fn the_target_reaches_the_page_as_a_startup_global() {
-        let mut settings = crate::projects::Settings::default();
-        settings.daily_target = crate::projects::DailyTarget::W1000;
-        let js = preferences_js(&settings);
-        assert!(js.contains("window.__appDailyTarget='1000'"), "{js}");
+        for name in ["off", "250", "500", "1000", "2000", "750", "1", "1000000"] {
+            let mut settings = crate::projects::Settings::default();
+            settings.daily_target = crate::projects::DailyTarget::parse(name).unwrap();
+            let js = preferences_js(&settings);
+            assert!(
+                js.contains(&format!("window.__appDailyTarget='{name}'")),
+                "{js}"
+            );
+        }
     }
 
     #[test]

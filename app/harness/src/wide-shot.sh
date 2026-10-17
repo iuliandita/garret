@@ -41,11 +41,11 @@ zoom="${3:-100}"
 BIN=app/shell-tauri/src-tauri/target/release/garret
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-mkdir -p "$work/data/cc.local.app"
+mkdir -p "$work/data/garret"
 # 3800x2100 asks for most of a 3840x2160 screen; the host fits it to the
 # work area on launch.
 if [[ "${WIDE_SCREEN:-}" == "library" ]]; then
-  lib="$work/data/cc.local.app/projects"
+  lib="$work/data/garret/projects"
   mkdir -p "$lib"
   "$BIN" --seed app/fixtures/sample "$lib/the-salt-cartographer.db" >/dev/null
   "$BIN" --seed lab/fixtures/out/stress "$lib/second-book.db" >/dev/null
@@ -59,17 +59,17 @@ if [[ "${WIDE_SCREEN:-}" == "library" ]]; then
   bram='{"name":"Bram Kell","sort_name":"Kell, Bram","bio":"","links":[]}'
   bram_pub='{"imprint":"","rights":""}'
   printf '{"version":1,"identities":[{"id":"i1","rev":1,"public":%s,"publishing":%s,"private":{"legal_name":"Margaret Hollis","contact":"margaret@example.invalid","admin":"Registered 2019."}},{"id":"i2","rev":1,"public":%s,"publishing":%s,"private":{"legal_name":"","contact":"","admin":""}}]}' \
-    "$ada" "$ada_pub" "$bram" "$bram_pub" >"$work/data/cc.local.app/identities.json"
+    "$ada" "$ada_pub" "$bram" "$bram_pub" >"$work/data/garret/identities.json"
   sqlite3 "$lib/the-salt-cartographer.db" "INSERT INTO meta (key, value) VALUES ('identity.pin', '{\"identity_id\":\"i1\",\"rev\":1,\"pinned_at\":1756400000,\"public\":$ada,\"publishing\":$ada_pub}') ON CONFLICT(key) DO UPDATE SET value = excluded.value;"
   sqlite3 "$lib/second-book.db" "INSERT INTO meta (key, value) VALUES ('identity.pin', '{\"identity_id\":\"i2\",\"rev\":1,\"pinned_at\":1756400000,\"public\":$bram,\"publishing\":$bram_pub}') ON CONFLICT(key) DO UPDATE SET value = excluded.value;"
   printf '{"theme":"%s","zoom":"%s","start":"home","window":{"width":3800,"height":2100}}' "$theme" "$zoom" \
-    >"$work/data/cc.local.app/settings.json"
+    >"$work/data/garret/settings.json"
   APP_RUN=interactive APP_DIST=app/ui/dist \
     XDG_DATA_HOME="$work/data" APP_RECOVERY_MODE=off "$BIN" >"$work/log" 2>&1 &
 else
   "$BIN" --seed "${WIDE_FIXTURE:-lab/fixtures/out/stress}" "$work/project.db" >/dev/null
   printf '{"theme":"%s","zoom":"%s","window":{"width":3800,"height":2100}}' "$theme" "$zoom" \
-    >"$work/data/cc.local.app/settings.json"
+    >"$work/data/garret/settings.json"
   APP_RUN=interactive APP_DIST=app/ui/dist APP_PROJECT="$work/project.db" \
     XDG_DATA_HOME="$work/data" APP_RECOVERY_MODE=off "$BIN" >"$work/log" 2>&1 &
 fi

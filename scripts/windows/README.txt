@@ -2,8 +2,9 @@ garret - Windows test preview
 =============================
 
 This is garret, an unfinished writing studio, shared for testing. This build
-is unsigned and has NOT been verified on a real Windows machine. Please use
-a sample manuscript or a copy of your work, and keep your original backup.
+is unsigned. Testers have run garret successfully on Windows with no issues
+reported. Please use a sample manuscript or a copy of your work, and keep
+your original backup.
 
 Running it
 ----------
@@ -27,7 +28,7 @@ The app itself keeps writing locally: no account or manuscript uploads.
 Installing WebView2 may require a download.
 
 If startup fails, look for:
-    %APPDATA%\cc.local.app\startup-error.txt
+    %APPDATA%\garret\startup-error.txt
 Send that file back if it exists. Review diagnostic files for personal paths
 before sharing them. Do not send your manuscript unless you intend to.
 
@@ -55,7 +56,8 @@ key separately, create an archive, and restore it into a new location. Losing
 all copies of the key makes the encrypted archive unreadable. This does not
 encrypt the live manuscript, its ordinary recovery copies or readable mirror.
 
-These features are implemented; their Windows behavior still needs testing.
+These features are implemented. Further Windows testing and feedback help
+cover different machines and workflows.
 
 Known Windows limitations
 -------------------------
@@ -67,8 +69,8 @@ Known Windows limitations
 - A per-user single-instance guard is implemented, but its native Windows
   behavior remains unverified. Check that a second launch does not create a
   second running editor; use only one copy at a time.
-- Window rendering, scaling, accessibility, printing and sleep/resume have
-  not been verified on a real Windows machine.
+- Scaling, accessibility, printing and sleep/resume have not been separately
+  certified across Windows configurations.
 
 Where your work lives
 ---------------------
@@ -76,7 +78,10 @@ New books default to Documents\Books until you choose another folder, which
 the app remembers. Existing books stay where they were created. If the
 Documents folder cannot be resolved, the fallback is Books under your home.
 Settings and recovery use this location in Explorer:
-    %APPDATA%\cc.local.app\
+    %APPDATA%\garret\
+The first launch copies and verifies the previous application data here.
+Close older versions first. The previous folder is retained for recovery and
+application ownership; do not delete it or run older builds after the move.
 Older books may also remain there. Project-associated pictures
 and covers can live in adjacent .pictures folders. Imported research originals
 live in an adjacent .research folder. A .db alone is not a complete asset

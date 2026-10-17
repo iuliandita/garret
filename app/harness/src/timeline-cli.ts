@@ -315,7 +315,7 @@ try {
     mode: "virtual",
     soakMs: 0,
     staged: DIST,
-    env: { APP_RUN: "interactive", APP_PROJECT: projectPath, GDK_BACKEND: "x11" },
+    env: { APP_RUN: "interactive", APP_TIMELINE_DIAGNOSTICS: "1", APP_PROJECT: projectPath, GDK_BACKEND: "x11" },
     probeA11y: false,
     onReady: async ({ displayNum, rootPid }) => {
       if (displayNum === null) throw new Error("timeline-cli requires a fixed X display");

@@ -21,7 +21,7 @@
 // stronger than "callable without writing a file" -- the preview renders the
 // archive and then UNZIPS it, so it cannot be right while the file is wrong.
 
-use crate::design::{glyph_ornament, ChapterStyle};
+use crate::design::{glyph_ornament, ChapterStyle, Sink};
 use crate::export::{Book, ChapterOpenings};
 use std::collections::HashMap;
 
@@ -61,6 +61,11 @@ pub const COVER_HREF: &str = "cover.xhtml";
 pub const UNDERLINE_CLASS: &str = "u";
 /// The class the chapter ornament is drawn as.
 pub const ORNAMENT_CLASS: &str = "ornament";
+/// Added to the ornament when it sits above the title.
+pub const ORNAMENT_ABOVE_CLASS: &str = "ornament-above";
+/// The classes a sunk chapter opening carries on its first block.
+pub const SINK_THIRD_CLASS: &str = "sink-third";
+pub const SINK_HALF_CLASS: &str = "sink-half";
 /// A typed part or chapter heading that starts a new page within its document.
 /// The first heading of a spine document already begins on a new page.
 pub const START_CLASS: &str = "start";
@@ -247,17 +252,36 @@ fn wrap_marks(text: &str, node: &serde_json::Value) -> String {
 /// The documents of the reading order, in it, out of a read-back archive.
 ///
 /// THE PREVIEW'S OWN RULE, and it is a prefix test rather than a parse of the
-/// package document. Every spine document lives under `OEBPS/text/` and nothing
-/// else does, so archive order IS spine order by construction -- and the
-/// preview is then the file, read back, with no second statement of what the
-/// book opens to.
+/// package document. Archive order is spine order, except that a single-scene
+/// book keeps its required navigation document outside the spine.
 pub fn reading_order(entries: &[(String, Vec<u8>)]) -> Vec<(String, String)> {
     let prefix = format!("{OEBPS}/{TEXT_DIR}/");
+    let nav = format!("{OEBPS}/{NAV_HREF}");
+    let nav_in_spine = entries.iter().find(|(name, _)| name == OPF_PATH)
+        .is_some_and(|(_, bytes)| String::from_utf8_lossy(bytes).contains("<itemref idref=\"nav\"/>"));
     entries
         .iter()
-        .filter(|(name, _)| name.starts_with(&prefix) && name.ends_with(".xhtml"))
+        .filter(|(name, _)| name.starts_with(&prefix) && name.ends_with(".xhtml")
+            && (name != &nav || nav_in_spine))
         .map(|(name, bytes)| (name.clone(), String::from_utf8_lossy(bytes).into_owned()))
         .collect()
+}
+
+/// The EPUB structural semantic for a references page. It is set on the
+/// section, inside a body that stays `backmatter`.
+const BIBLIOGRAPHY_TYPE: &str = "bibliography";
+
+/// The titles the page gives a References back-matter page in each shipped
+/// language. A matter page has no kind of its own in the store, so the title
+/// is what says it is a references page; a writer who renames it gets a
+/// plain back-matter section.
+const REFERENCES_TITLES: [&str; 2] = ["References", "Literaturverzeichnis"];
+
+fn is_references_title(title: &str) -> bool {
+    let title = title.trim();
+    REFERENCES_TITLES
+        .iter()
+        .any(|known| known.eq_ignore_ascii_case(title))
 }
 
 /// `xhtml` with the language taken off the render's own input, so no call site
@@ -295,7 +319,7 @@ fn stylesheet(font: &str, style: &ChapterStyle) -> String {
          h1, h2, h3, h4, h5, h6 {{ font-weight: normal; text-align: center; \
          margin: 2em 0 1em; page-break-after: avoid; break-after: avoid; }}\n\
          p {{ margin: 0; text-indent: 1.2em; text-align: justify; }}\n\
-         h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p, .{ORNAMENT_CLASS} + p \
+         p.{OPENING_CLASS}, h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p, .{ORNAMENT_CLASS} + p \
          {{ text-indent: 0; }}\n\
          .{ORNAMENT_CLASS} {{ text-align: center; text-indent: 0; margin: 1.5em 0; }}\n\
          .{UNDERLINE_CLASS} {{ text-decoration: underline; }}\n\
@@ -319,6 +343,25 @@ fn stylesheet(font: &str, style: &ChapterStyle) -> String {
             ".{OPENING_CLASS}::first-letter {{ float: left; font-size: 3.2em; \
              line-height: 0.82; padding: 0.02em 0.08em 0 0; }}\n"
         ));
+    }
+    if style.ornament_above {
+        css.push_str(&format!(
+            ".{ORNAMENT_ABOVE_CLASS} {{ margin: 2em 0 0; page-break-after: avoid; \
+             break-after: avoid; }}\n\
+             .{ORNAMENT_ABOVE_CLASS} + h1, .{ORNAMENT_ABOVE_CLASS} + h2, \
+             .{ORNAMENT_ABOVE_CLASS} + h3, .{ORNAMENT_ABOVE_CLASS} + h4, \
+             .{ORNAMENT_ABOVE_CLASS} + h5, .{ORNAMENT_ABOVE_CLASS} + h6 \
+             {{ margin-top: 0.6em; }}\n"
+        ));
+    }
+    // RELATIVE TO THE TYPE, not to a page: a reflowable book has no page
+    // height to take a third of, so the sink is padding in ems, which scales
+    // with the reader's type size. Padding rather than margin because a
+    // reading system may drop a margin at the top of a page.
+    match style.sink {
+        Sink::None => {}
+        Sink::Third => css.push_str(&format!(".{SINK_THIRD_CLASS} {{ padding-top: 6em; }}\n")),
+        Sink::Half => css.push_str(&format!(".{SINK_HALF_CLASS} {{ padding-top: 10em; }}\n")),
     }
     css
 }
@@ -352,6 +395,7 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
         href: String,
         title: String,
         epub_type: &'static str,
+        section_type: &'static str,
         body: String,
     }
     let mut docs: Vec<Doc> = Vec::new();
@@ -370,36 +414,73 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
             anchor += 1;
             let level = crate::export::heading_level(*depth);
             let opens = *depth <= 0 || docs.is_empty();
-            let styled = run_index == 1 && epub.openings.styled.contains(id);
-            let page = run_index == 1 && epub.openings.page.contains(id);
+            let scaffold_free = epub.book.suppresses_heading(run_index, title);
+            let styled = !scaffold_free && run_index == 1 && epub.openings.styled.contains(id);
+            let page = !scaffold_free && run_index == 1 && epub.openings.page.contains(id);
             if opens {
                 docs.push(Doc {
                     href: format!("{:04}.xhtml", docs.len() + 1),
-                    title: title.clone(),
+                    title: if scaffold_free { epub.book.name.to_string() } else { title.clone() },
                     epub_type,
+                    section_type: if run_index == 2 && is_references_title(title) {
+                        BIBLIOGRAPHY_TYPE
+                    } else {
+                        epub_type
+                    },
                     body: String::new(),
                 });
             }
-            if opens || styled || page { opening_pending = styled; }
+            if epub.book.single_scene && run_index == 1 {
+                opening_pending = run.last().is_some_and(|(last, _, _)| last == id);
+            } else if opens || styled || page { opening_pending = styled; }
             let doc = docs.last_mut().expect("a document was opened above");
             let fragment = format!("h{anchor}");
             targets.insert(id.clone(), format!("{}#{fragment}", doc.href));
             // A spine document already begins on a new page, so only a typed
             // part or chapter within that document needs the break class.
-            let mut classes = Vec::new();
-            if page && !opens { classes.push(START_CLASS); }
-            if run_index == 1 { classes.push("book-body-heading"); }
-            let class = if classes.is_empty() { String::new() }
-                else { format!(" class=\"{}\"", classes.join(" ")) };
-            doc.body.push_str(&format!(
-                "<h{level} id=\"{fragment}\"{class}>{}</h{level}>\n",
-                xml_escape(title)
-            ));
+            // The first block of the opening carries the break and the sink:
+            // the ornament when it sits above the title, else the heading.
+            let ornament_here = styled.then_some(ornament).flatten();
+            let above = ornament_here.is_some() && epub.style.ornament_above;
+            let mut lead = Vec::new();
+            if page && !opens { lead.push(START_CLASS); }
+            if styled {
+                match epub.style.sink {
+                    Sink::None => {}
+                    Sink::Third => lead.push(SINK_THIRD_CLASS),
+                    Sink::Half => lead.push(SINK_HALF_CLASS),
+                }
+            }
+            let mut heading_classes = Vec::new();
+            if run_index == 1 { heading_classes.push("book-body-heading"); }
+            let class_attr = |classes: &[&str]| if classes.is_empty() {
+                String::new()
+            } else {
+                format!(" class=\"{}\"", classes.join(" "))
+            };
             // THE ORNAMENT MARKS A CHAPTER, not every heading under it. A
             // dinkus under every scene title is a page of dinkuses, and the
             // the design calls for a glyph at the chapter break.
-            if styled {
-                if let Some(ornament) = ornament {
+            if above {
+                let mut classes = vec![ORNAMENT_CLASS, ORNAMENT_ABOVE_CLASS];
+                classes.extend(&lead);
+                doc.body.push_str(&format!(
+                    "<p{}>{}</p>\n",
+                    class_attr(&classes),
+                    xml_escape(ornament_here.expect("above implies an ornament"))
+                ));
+            } else {
+                heading_classes.splice(0..0, lead);
+            }
+            if !scaffold_free {
+                doc.body.push_str(&format!(
+                    "<h{level} id=\"{fragment}\"{}>{}</h{level}>\n",
+                    class_attr(&heading_classes),
+                    xml_escape(title)
+                ));
+            }
+            if !above {
+                if let Some(ornament) = ornament_here {
                     doc.body.push_str(&format!(
                         "<p class=\"{ORNAMENT_CLASS}\">{}</p>\n",
                         xml_escape(ornament)
@@ -511,9 +592,10 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
     // thing that book has. It also keeps 041's rule that a heading over nothing
     // is a section nobody asked for: there is never a heading here over an
     // empty list.
+    let nav_heading = if epub.book.single_scene { String::new() }
+        else { format!("<h1>{}</h1>\n", xml_escape(epub.book.contents_title)) };
     let mut nav = format!(
-        "<nav epub:type=\"toc\" id=\"toc\"><h1>{}</h1>\n<ol>\n<li><a href=\"{TITLE_HREF}\">{}</a>",
-        xml_escape(epub.book.contents_title),
+        "<nav epub:type=\"toc\" id=\"toc\">{nav_heading}<ol>\n<li><a href=\"{TITLE_HREF}\">{}</a>",
         xml_escape(epub.book.name),
     );
     // THE NESTING, and it is the one piece of this file with a state machine in
@@ -556,10 +638,10 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
         "<item id=\"nav\" href=\"{NAV_HREF}\" media-type=\"application/xhtml+xml\" \
          properties=\"nav\"/>"
     ));
-    spine.push_str("<itemref idref=\"nav\"/>");
+    if !epub.book.single_scene { spine.push_str("<itemref idref=\"nav\"/>"); }
     later.push(Entry::text(
         &format!("{OEBPS}/{NAV_HREF}"),
-        &xhtml_of(epub, epub.book.contents_title, "frontmatter", &nav),
+        &xhtml_of(epub, if epub.book.single_scene { epub.book.name } else { epub.book.contents_title }, "frontmatter", &nav),
     ));
 
     for (n, doc) in docs.iter().enumerate() {
@@ -577,7 +659,7 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
                 doc.epub_type,
                 &format!(
                     "<section epub:type=\"{}\">\n{}</section>",
-                    doc.epub_type, doc.body
+                    doc.section_type, doc.body
                 ),
             ),
         ));
@@ -894,6 +976,7 @@ mod tests {
 
     fn plain<'a>(name: &'a str, runs: &'a [(String, String, i64)]) -> Book<'a> {
         Book {
+            single_scene: false,
             name,
             contents_title: "Contents",
             front: &[],
@@ -1055,6 +1138,7 @@ mod tests {
         let rows = chapters(&[("a", "One", 0), ("c", "A scene", 1)]);
         let front = chapters(&[("d", "Dedication", 0)]);
         let book = Book {
+            single_scene: false,
             name: "My Novel",
             contents_title: "Contents",
             front: &front,
@@ -1353,6 +1437,7 @@ mod tests {
             drop_cap: true,
             new_page: true,
             caps_title: true,
+            ..ChapterStyle::default()
         };
         let archive = render(&e);
         let doc = named(&archive, &format!("{OEBPS}/{TEXT_DIR}/0001.xhtml"));
@@ -1362,6 +1447,115 @@ mod tests {
         assert!(doc.contains("<p class=\"opening\">first</p>"), "{doc}");
         assert!(css.contains(".book-body-heading { text-transform"), "{css}");
         assert!(!css.contains("h1, h2, h3, h4, h5, h6 { text-transform"), "{css}");
+    }
+
+    #[test]
+    fn the_ornament_can_sit_above_the_title_and_leads_the_opening() {
+        let rows = chapters(&[("a", "One", 0), ("b", "A scene", 1)]);
+        let book = plain("N", &rows);
+        let bodies = bodies(&[("a", "alpha")]);
+        let render_with = |style: ChapterStyle| {
+            let mut e = input(&book, &bodies);
+            e.style = style;
+            let archive = render(&e);
+            (
+                named(&archive, &format!("{OEBPS}/{TEXT_DIR}/0001.xhtml")),
+                named(&archive, &format!("{OEBPS}/{CSS_HREF}")),
+            )
+        };
+        let below = ChapterStyle {
+            glyph: Some("hedera".to_string()),
+            ..ChapterStyle::default()
+        };
+        let (doc, css) = render_with(below.clone());
+        assert!(doc.find("<h2").unwrap() < doc.find(ORNAMENT_CLASS).unwrap(), "{doc}");
+        assert!(!doc.contains(ORNAMENT_ABOVE_CLASS) && !css.contains(ORNAMENT_ABOVE_CLASS));
+
+        let (doc, css) = render_with(ChapterStyle {
+            ornament_above: true,
+            ..below.clone()
+        });
+        assert!(
+            doc.contains("<p class=\"ornament ornament-above\">\u{2767}</p>\n<h2 id=\"h1\" class=\"book-body-heading\">One</h2>"),
+            "{doc}"
+        );
+        // Only the chapter's division: the scene under it has no ornament.
+        assert_eq!(doc.matches("<p class=\"ornament").count(), 1, "{doc}");
+        assert!(css.contains(".ornament-above + h2"), "{css}");
+        // The ornament must not be left at the foot of a page without its title.
+        assert!(
+            css.contains(".ornament-above { margin: 2em 0 0; page-break-after: avoid; break-after: avoid; }"),
+            "{css}"
+        );
+
+        // Without an ornament the position has nothing to move.
+        let (doc, _) = render_with(ChapterStyle {
+            ornament_above: true,
+            ..ChapterStyle::default()
+        });
+        assert!(!doc.contains(ORNAMENT_CLASS), "{doc}");
+    }
+
+    #[test]
+    fn the_sink_is_a_relative_padding_on_the_first_block_of_the_opening() {
+        let rows = chapters(&[("part", "Part", 0), ("chapter", "Chapter", 1), ("scene", "Scene", 2)]);
+        let book = plain("N", &rows);
+        let body = bodies(&[("scene", "first")]);
+        let render_with = |style: ChapterStyle| {
+            let mut e = input(&book, &body);
+            e.openings = ChapterOpenings {
+                styled: ["chapter".to_string()].into(),
+                page: ["part".to_string(), "chapter".to_string()].into(),
+            };
+            e.style = style;
+            let archive = render(&e);
+            (
+                named(&archive, &format!("{OEBPS}/{TEXT_DIR}/0001.xhtml")),
+                named(&archive, &format!("{OEBPS}/{CSS_HREF}")),
+            )
+        };
+
+        let (doc, css) = render_with(ChapterStyle::default());
+        assert!(!doc.contains("sink-") && !css.contains("padding-top"), "{doc}{css}");
+
+        let (doc, css) = render_with(ChapterStyle {
+            sink: Sink::Third,
+            ..ChapterStyle::default()
+        });
+        assert!(
+            doc.contains("<h3 id=\"h2\" class=\"start sink-third book-body-heading\">Chapter</h3>"),
+            "{doc}"
+        );
+        // The part and the scene are not chapter openings.
+        assert_eq!(doc.matches("sink-third").count(), 1, "{doc}");
+        assert!(css.contains(".sink-third { padding-top: 6em; }"), "{css}");
+        assert!(!css.contains("sink-half"), "{css}");
+
+        let (doc, css) = render_with(ChapterStyle {
+            sink: Sink::Half,
+            ..ChapterStyle::default()
+        });
+        assert!(doc.contains("class=\"start sink-half book-body-heading\""), "{doc}");
+        assert!(css.contains(".sink-half { padding-top: 10em; }"), "{css}");
+        assert!(!css.contains("sink-third"), "{css}");
+
+        // With the ornament above, the ornament leads: it carries the page
+        // break and the sink, and the heading keeps only its own class.
+        let (doc, _) = render_with(ChapterStyle {
+            glyph: Some("asterisks".to_string()),
+            ornament_above: true,
+            new_page: true,
+            caps_title: true,
+            sink: Sink::Half,
+            ..ChapterStyle::default()
+        });
+        assert!(
+            doc.contains(
+                "<p class=\"ornament ornament-above start sink-half\">* * *</p>\n\
+                 <h3 id=\"h2\" class=\"book-body-heading\">Chapter</h3>"
+            ),
+            "{doc}"
+        );
     }
 
     #[test]
@@ -1445,6 +1639,7 @@ mod tests {
         let body = chapters(&[("a", "One", 0)]);
         let back = chapters(&[("z", "Afterword", 0)]);
         let book = Book {
+            single_scene: false,
             name: "N",
             contents_title: "Contents",
             front: &front,
@@ -1776,6 +1971,7 @@ mod tests {
                 new_page: true,
                 caps_title: true,
                 drop_cap: true,
+                ..Default::default()
             },
         ] {
             assert!(!stylesheet("Crimson Text", &style).contains('@'));
@@ -1834,6 +2030,7 @@ mod tests {
         // `identity_metadata` fails HERE, which is the only thing that stops the
         // check becoming a list of promises.
         let book = Book {
+            single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
             front: &[],
@@ -1870,6 +2067,7 @@ mod tests {
         // exactly what it was before this slice, or the graded EPUB evidence is
         // about a file nobody had.
         let book = Book {
+            single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
             front: &[],
@@ -1887,6 +2085,7 @@ mod tests {
     fn a_name_with_markup_in_it_is_escaped_into_the_package_document() {
         // A pen name is the writer's own text and the package document is XML.
         let book = Book {
+            single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
             front: &[],
@@ -1902,5 +2101,51 @@ mod tests {
         let text = opf(&render(&epub));
         assert!(text.contains("A &amp; &lt;B&gt;"), "{text}");
         assert!(!text.contains("<B>"), "{text}");
+    }
+
+    fn references_body() -> String {
+        serde_json::json!({"type":"doc","content":[
+            {"type":"paragraph","content":[{"type":"text","text":"Austen, J. Emma. 1815."}]},
+            {"type":"paragraph","content":[{"type":"text","text":"Woolf, V. The Waves. 1931."}]},
+        ]})
+        .to_string()
+    }
+
+    fn back_section(title: &str) -> String {
+        let body = chapters(&[("a", "One", 0)]);
+        let back = chapters(&[("r", title, 0)]);
+        let book = Book {
+            name: "N",
+            contents_title: "Contents",
+            front: &[],
+            chapters: &body,
+            back: &back,
+            single_scene: false,
+        };
+        let mut texts = bodies(&[]);
+        texts.insert("r".to_string(), references_body());
+        let archive = render(&input(&book, &texts));
+        let read = reading_order(&read_zip(&archive).unwrap());
+        read.last().unwrap().1.clone()
+    }
+
+    #[test]
+    fn a_references_page_is_a_bibliography_section_with_one_paragraph_per_entry() {
+        for title in ["References", "  references ", "Literaturverzeichnis"] {
+            let page = back_section(title);
+            assert!(page.contains("<body epub:type=\"backmatter\">"), "{page}");
+            assert!(page.contains("<section epub:type=\"bibliography\">"), "{page}");
+            assert!(page.contains("<p>Austen, J. Emma. 1815.</p>"), "{page}");
+            assert!(page.contains("<p>Woolf, V. The Waves. 1931.</p>"), "{page}");
+        }
+    }
+
+    #[test]
+    fn a_renamed_or_other_back_page_stays_plain_back_matter() {
+        for title in ["Sources", "Afterword"] {
+            let page = back_section(title);
+            assert!(page.contains("<section epub:type=\"backmatter\">"), "{page}");
+            assert!(!page.contains("bibliography"), "{page}");
+        }
     }
 }

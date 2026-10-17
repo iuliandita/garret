@@ -43,6 +43,47 @@ describe("the loading surface", () => {
     expect(document.querySelectorAll(`#${LOADING_ID}`).length).toBe(1);
   });
 
+  test("the visible Library owns opening feedback and removes an existing global status", () => {
+    const doc = document.implementation.createHTMLDocument();
+    showProjectLoading(true, doc);
+    const library = doc.createElement("div");
+    library.id = "library";
+    const status = doc.createElement("p");
+    status.id = "library-busy-status";
+    status.textContent = "Opening book...";
+    library.append(status);
+    doc.body.append(library);
+    showProjectLoading(true, doc);
+    expect(doc.getElementById(LOADING_ID)).toBeNull();
+    expect(status.textContent).toBe("Opening book...");
+    showProjectLoading(true, doc);
+    expect(doc.getElementById(LOADING_ID)).toBeNull();
+    library.hidden = true;
+    showProjectLoading(true, doc);
+    expect(doc.getElementById(LOADING_ID)?.textContent).toMatch(/Opening the book/);
+    showProjectLoading(false, doc);
+    showProjectLoading(false, doc);
+    expect(doc.getElementById(LOADING_ID)).toBeNull();
+  });
+
+  for (const state of ["hidden Library", "idle Library", "hidden status", "status elsewhere"] as const) {
+    test(`the global status remains available with ${state}`, () => {
+      const doc = document.implementation.createHTMLDocument();
+      const library = doc.createElement("div");
+      library.id = "library";
+      library.hidden = state === "hidden Library";
+      const status = doc.createElement("p");
+      status.id = "library-busy-status";
+      status.hidden = state === "hidden status";
+      status.textContent = state === "idle Library" ? "  " : "Opening book...";
+      if (state === "status elsewhere") doc.body.append(status);
+      else library.append(status);
+      doc.body.append(library);
+      showProjectLoading(true, doc);
+      expect(doc.getElementById(LOADING_ID)?.getAttribute("role")).toBe("status");
+    });
+  }
+
   test("hiding when nothing is shown does not throw", () => {
     // A boot that never showed one still runs the `finally`.
     expect(() => showProjectLoading(false)).not.toThrow();
@@ -72,6 +113,26 @@ describe("both callers use it", () => {
   test("the project switch hands it its busy signal", async () => {
     const src = await Bun.file("app/ui/src/main.ts").text();
     expect(src).toContain("onBusy: showProjectLoading");
+  });
+
+  test("main invalidates dictionary ownership before checking a switch and reads through the panel", async () => {
+    const src = await Bun.file("app/ui/src/main.ts").text();
+    const prepare = src.indexOf("prepareOpen: async (path) => {");
+    const invalidate = src.indexOf("preferences?.invalidateDictionary();", prepare);
+    const drain = src.indexOf("await preferences?.drainDictionary();", prepare);
+    const check = src.indexOf('await invoke("project_open_check", { path })', prepare);
+    expect(prepare).toBeGreaterThan(-1);
+    expect(invalidate).toBeGreaterThan(prepare);
+    expect(drain).toBeGreaterThan(invalidate);
+    expect(check).toBeGreaterThan(drain);
+    expect(src).toContain('if (currentPath === "") preferences?.setDictionary(null);');
+    expect(src).toContain("preferences?.refreshDictionary(async () =>");
+    expect(src.match(/invoke\("dict_list"\)/g)).toHaveLength(1);
+    expect(src).toContain("attempt === dictionarySwitch &&");
+    expect(src).toContain('outcome === "cancelled" || (outcome === "failed" && currentPath !== "")');
+    const mount = src.indexOf("preferences = createPreferences({");
+    const initialRead = src.indexOf("refreshDictionary();", mount);
+    expect(initialRead).toBeGreaterThan(mount);
   });
 
   test("the switch fires it AFTER the teardown and in a finally", async () => {

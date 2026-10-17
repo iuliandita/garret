@@ -258,11 +258,11 @@ describe("mountTimeline", () => {
       { id: "v2", title: "B", at: 101, until: null, tracks: ["t1"], branch: null, scene: null, cast: [], note: "" },
     ] }));
     // Fit clamps at MAX_PX_PER_UNIT = 64, so the two sit 64px apart: over
-    // collapse's 24px gap (two boxes, not a dot), under a label's width.
+    // collapse's minimum footprint (two boxes, not a dot), under a label's width.
     expect(m.view().pxPerUnit).toBe(64);
     const first = container.querySelector<HTMLElement>('[data-event-id="v1"]')!;
     const second = container.querySelector<HTMLElement>('[data-event-id="v2"]')!;
-    expect(first.style.maxWidth).toBe("60px");
+    expect(first.style.maxWidth).toBe("58px");
     expect(second.style.maxWidth).toBe("220px");
     m.destroy();
   });
@@ -335,6 +335,34 @@ describe("mountTimeline", () => {
     m.destroy();
   });
 
+  test.each(["mount", "setBody"])("%s Fit measures mounted lanes and reserves the complete rightmost button", (route) => {
+    const original = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function (): DOMRect {
+      if (this === container) return rect(1200, 800);
+      if (this.isConnected && this.classList.contains("timeline-lane-header")) return rect(140, 44);
+      if (this.isConnected && this.classList.contains("timeline-lane-events")) return rect(1060, 44, 140);
+      return original.call(this);
+    };
+    try {
+      const body = baseBody({ events: [
+        { id: "v1", title: "Start", at: 0, until: null, tracks: ["t1"], branch: null, scene: null, cast: [], note: "" },
+        { id: "v2", title: "Rightmost event with a long label", at: 1000, until: null, tracks: ["t1"], branch: null, scene: null, cast: [], note: "" },
+      ] });
+      const { mount: m, dirty } = mount(route === "mount" ? body : baseBody({ tracks: [], events: [] }));
+      if (route === "setBody") m.setBody(body);
+      expect(m.view().widthPx).toBe(1060);
+      const last = container.querySelector<HTMLElement>('[data-event-id="v2"]')!;
+      expect(Number.parseFloat(last.style.left) + Number.parseFloat(last.style.maxWidth)).toBeLessThanOrEqual(1060);
+      const initialScale = m.view().pxPerUnit;
+      [...container.querySelectorAll("button")].find(b => b.textContent === "Fit")!.click();
+      expect(m.view().pxPerUnit).toBe(initialScale);
+      expect(dirty).toEqual([]);
+      m.destroy();
+    } finally {
+      Element.prototype.getBoundingClientRect = original;
+    }
+  });
+
   // RIG-FOUND (review): the scale strip positioned ticks from the pane's
   // own x=0 while events start 140px later, so every tick sat 140px left
   // of the unit it labelled.
@@ -359,8 +387,14 @@ describe("mountTimeline", () => {
     m.destroy();
   });
 
-  test("the status node reports zoom p95 and a visible count", () => {
+  test("normal writing does not expose diagnostic status", () => {
     const { mount: m } = mount(baseBody());
+    expect(container.querySelector("#timeline-status")).toBeNull();
+    m.destroy();
+  });
+
+  test("explicit diagnostics reports zoom p95 and a visible count", () => {
+    const { mount: m } = mount(baseBody(), { diagnostics: true });
     const status = container.querySelector<HTMLElement>("#timeline-status")!;
     expect(status.textContent).toMatch(/zoom p95 \d+ ms, visible \d+/);
     expect(status.getAttribute("aria-label")).toBe(status.textContent);
@@ -410,6 +444,17 @@ describe("mountTimeline", () => {
     m.destroy();
   });
 
+  test("deleting the last event returns focus to the programmatically focusable lanes", () => {
+    const { mount: m } = mount(baseBody());
+    container.querySelector<HTMLButtonElement>(".tl-event")!.focus();
+    const root = container.querySelector<HTMLElement>("#timeline-view")!;
+    for (let i = 0; i < 2; i++) root.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete", bubbles: true }));
+    expect(container.querySelectorAll(".tl-event, .tl-dot")).toHaveLength(0);
+    expect(container.querySelector<HTMLElement>("#timeline-lanes")!.tabIndex).toBe(-1);
+    expect(document.activeElement?.id).toBe("timeline-lanes");
+    m.destroy();
+  });
+
   // Mutation target 5: Delete must not delete on the first press.
   test("a single Delete press never removes the event", () => {
     const { mount: m, dirty } = mount(baseBody());
@@ -433,6 +478,46 @@ describe("mountTimeline", () => {
     root.dispatchEvent(new KeyboardEvent("keydown", { key: "Z", ctrlKey: true, shiftKey: true, bubbles: true }));
     expect(JSON.parse(dirty[dirty.length - 1]!).tracks).toHaveLength(1);
     m.destroy();
+  });
+
+  test("an operation lock refuses floating scale commits and undo without losing the undo entry", () => {
+    let allowed = true;
+    const { mount: m, dirty } = mount(baseBody({ tracks: [], events: [] }), { canEdit: () => allowed });
+    try {
+      container.querySelector<HTMLButtonElement>("#timeline-empty button")!.click();
+      (document.getElementById("timeline-track-kind-thread") as HTMLButtonElement).click();
+      expect(dirty.length).toBe(1);
+      const editScale = container.querySelector<HTMLButtonElement>("#timeline-toolbar button")!;
+      editScale.click();
+      const input = document.querySelector<HTMLInputElement>("#timeline-scale-panel input")!;
+      input.value = "hour"; input.dispatchEvent(new Event("input"));
+      const save = document.querySelector<HTMLButtonElement>(".timeline-scale-buttons button")!;
+      allowed = false; save.click();
+      const root = container.querySelector<HTMLElement>("#timeline-view")!;
+      root.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true }));
+      expect(dirty.length).toBe(1);
+      expect(container.querySelector("#timeline-scale-label")?.textContent).toBe("Scale: day");
+      allowed = true;
+      root.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true }));
+      expect(JSON.parse(dirty.at(-1)!).tracks.length).toBe(0);
+    } finally { m.destroy(); }
+  });
+
+  test("replacing a timeline retires the old body's undo and floating forms", () => {
+    const { mount: m, dirty } = mount(baseBody({ tracks: [], events: [] }));
+    try {
+      container.querySelector<HTMLButtonElement>("#timeline-empty button")!.click();
+      (document.getElementById("timeline-track-kind-thread") as HTMLButtonElement).click();
+      container.querySelector<HTMLButtonElement>("#timeline-toolbar button")!.click();
+      const scale = document.getElementById("timeline-scale-panel")!;
+      expect(scale.hidden).toBe(false);
+      m.setBody(baseBody());
+      expect(scale.hidden).toBe(true);
+      const count = dirty.length;
+      container.querySelector<HTMLElement>("#timeline-view")!.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true }));
+      expect(dirty.length).toBe(count);
+      expect(container.querySelectorAll(".tl-event").length).toBe(1);
+    } finally { m.destroy(); }
   });
 
   test("setBody re-parses and repaints from a fresh body", () => {
@@ -459,6 +544,132 @@ describe("mountTimeline", () => {
     openSceneBtn.click();
     expect(opened).toEqual(["it-1"]);
     m.destroy();
+  });
+
+  describe("branch keyboard navigation", () => {
+    function branchKeyboardBody(): string {
+      const event = (id: string, at: number, tracks: string[], branch: string | null) => ({
+        id, title: id, at, until: null, tracks, branch, scene: null, cast: [], note: "",
+      });
+      return baseBody({
+        tracks: [
+          { id: "t1", name: "First", kind: "thread", colour: 1 },
+          { id: "t2", name: "Second", kind: "thread", colour: 2 },
+        ],
+        branches: [
+          { id: "b1", name: "One", forkAt: 0, forkTrack: "t1", writing: false },
+          { id: "b2", name: "Two", forkAt: 0, forkTrack: "t1", writing: false },
+        ],
+        events: [event("main", 0, ["t1"], null), event("main2", 1000, ["t2"], null),
+          event("meeting", 200, ["t1", "t2"], "b1"), event("next", 400, ["t1"], "b1"),
+          event("other", 200, ["t1", "t2"], "b2")],
+      });
+    }
+
+    function press(key: string): void {
+      container.querySelector<HTMLElement>("#timeline-view")!
+        .dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    }
+
+    function button(eventId: string, trackId: string, branchId: string): HTMLButtonElement {
+      return [...container.querySelectorAll<HTMLButtonElement>(".tl-event")].find((el) =>
+        el.dataset.eventId === eventId && el.dataset.trackId === trackId && el.dataset.branchId === branchId)!;
+    }
+
+    test("main and every branch retain their own Tab entry while arrows stay inside the group", () => {
+      const { mount: m, dirty } = mount(branchKeyboardBody());
+      const entries = () => [...container.querySelectorAll<HTMLButtonElement>(".tl-event, .tl-dot")]
+        .filter((el) => el.tabIndex === 0).map((el) => el.dataset.branchId).sort();
+      expect(entries()).toEqual(["", "b1", "b2"]);
+      button("meeting", "t1", "b1").focus();
+      press("ArrowRight");
+      expect((document.activeElement as HTMLElement).dataset.eventId).toBe("next");
+      press("ArrowDown");
+      expect((document.activeElement as HTMLElement).dataset.eventId).toBe("meeting");
+      expect((document.activeElement as HTMLElement).dataset.trackId).toBe("t2");
+      press("ArrowDown");
+      expect((document.activeElement as HTMLElement).dataset.branchId).toBe("b1");
+      expect(entries()).toEqual(["", "b1", "b2"]);
+      button("main", "t1", "").focus();
+      press("ArrowDown");
+      expect((document.activeElement as HTMLElement).dataset.eventId).toBe("main2");
+      expect(dirty).toEqual([]);
+      m.destroy();
+    });
+
+    test("Enter anchors a meeting card to the focused track copy", () => {
+      const { mount: m } = mount(branchKeyboardBody());
+      let firstReads = 0;
+      let secondReads = 0;
+      button("meeting", "t1", "b1").getBoundingClientRect = () => { firstReads++; return rect(100, 30); };
+      const second = button("meeting", "t2", "b1");
+      second.getBoundingClientRect = () => { secondReads++; return rect(100, 30, 200, 300); };
+      second.focus();
+      press("Enter");
+      expect(secondReads).toBeGreaterThan(0);
+      expect(firstReads).toBe(0);
+      expect(document.getElementById("timeline-card")?.hidden).toBe(false);
+      m.destroy();
+    });
+
+    test("delete arming, disarming, repaint and removal preserve the branch and track copy", () => {
+      const { mount: m, dirty } = mount(branchKeyboardBody());
+      button("meeting", "t2", "b1").focus();
+      press("Delete");
+      expect((document.activeElement as HTMLElement).dataset.trackId).toBe("t2");
+      expect((document.activeElement as HTMLElement).dataset.branchId).toBe("b1");
+      press("ArrowUp");
+      expect((document.activeElement as HTMLElement).dataset.trackId).toBe("t1");
+      press("+");
+      expect((document.activeElement as HTMLElement).dataset.eventId).toBe("meeting");
+      expect((document.activeElement as HTMLElement).dataset.branchId).toBe("b1");
+      press("Delete");
+      press("Delete");
+      expect((document.activeElement as HTMLElement).dataset.eventId).toBe("next");
+      expect((document.activeElement as HTMLElement).dataset.branchId).toBe("b1");
+      expect(JSON.parse(dirty.at(-1)!).branches.map((b: { writing: boolean }) => b.writing)).toEqual([false, false]);
+      m.destroy();
+    });
+
+    test("zooming an event into a dot preserves its branch and track focus", () => {
+      const { mount: m, dirty } = mount(branchKeyboardBody());
+      button("next", "t1", "b1").focus();
+      for (let i = 0; i < 16; i++) press("-");
+      const active = document.activeElement as HTMLElement;
+      expect(active.classList.contains("tl-dot")).toBe(true);
+      expect(active.dataset.eventIds?.split(",")).toContain("next");
+      expect(active.dataset.branchId).toBe("b1");
+      expect(active.dataset.trackId).toBe("t1");
+      press("ArrowDown");
+      expect((document.activeElement as HTMLElement).dataset.branchId).toBe("b1");
+      expect((document.activeElement as HTMLElement).dataset.trackId).toBe("t2");
+      expect(dirty).toEqual([]);
+      m.destroy();
+    });
+
+    test("collapsed branch dots get a Tab entry and keep focus in the same track when separated", () => {
+      const body = JSON.parse(branchKeyboardBody());
+      body.events.find((e: { id: string }) => e.id === "main2").at = 100000;
+      body.events.find((e: { id: string }) => e.id === "next").at = 201;
+      const { mount: m } = mount(JSON.stringify(body));
+      const dot = [...container.querySelectorAll<HTMLButtonElement>(".tl-dot")]
+        .find((el) => el.dataset.branchId === "b1")!;
+      expect(dot.tabIndex).toBe(0);
+      expect(dot.dataset.trackId).toBe("t1");
+      dot.closest<HTMLElement>(".timeline-lane-events")!.getBoundingClientRect = () => rect(800, 32);
+      const anchor = dot.closest<HTMLElement>(".tl-dot-anchor")!;
+      anchor.getBoundingClientRect = () => rect(20, 20, Number.parseFloat(anchor.style.left), 12);
+      dot.focus();
+      press("Enter");
+      expect((document.activeElement as HTMLElement).dataset.branchId).toBe("b1");
+      expect((document.activeElement as HTMLElement).dataset.trackId).toBe("t1");
+      expect((document.activeElement as HTMLElement).dataset.eventId).toBe("meeting");
+      const first = button("meeting", "t1", "b1");
+      const second = button("next", "t1", "b1");
+      expect(Math.floor(Number.parseFloat(second.style.left))
+        - Math.ceil(Number.parseFloat(first.style.left) + Number.parseFloat(first.style.maxWidth))).toBeGreaterThanOrEqual(4);
+      m.destroy();
+    });
   });
 
   // ------------------------------------------------------- branches
@@ -612,6 +823,50 @@ describe("mountTimeline", () => {
   // ------------------------------------------------------- track rename
 
   describe("track rename", () => {
+    test("rename typing keeps zoom and undo keys native without changing the timeline", async () => {
+      const { mount: m, dirty } = mount(baseBody());
+      try {
+        const rename = () => {
+          container.querySelector<HTMLElement>(".timeline-lane .timeline-lane-header")!
+            .dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+          return container.querySelector<HTMLInputElement>(".timeline-lane-rename")!;
+        };
+        const first = rename();
+        await Promise.resolve();
+        first.value = "Renamed";
+        first.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+        expect(dirty).toHaveLength(1);
+        const input = rename();
+        await Promise.resolve();
+        input.value = "Draft + 0 - =";
+        const before = m.view();
+        for (const chord of [
+          { key: "-" }, { key: "=" }, { key: "+" }, { key: "0" },
+          { key: "z", ctrlKey: true }, { key: "Z", ctrlKey: true, shiftKey: true },
+          { key: "z", metaKey: true }, { key: "Z", metaKey: true, shiftKey: true },
+        ]) {
+          const event = new KeyboardEvent("keydown", { ...chord, bubbles: true, cancelable: true });
+          input.dispatchEvent(event);
+          expect(event.defaultPrevented).toBe(false);
+          expect(m.view()).toEqual(before);
+          expect(document.activeElement?.className).toBe("timeline-lane-rename");
+          expect(input.value).toBe("Draft + 0 - =");
+          expect(dirty).toHaveLength(1);
+        }
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        const root = container.querySelector<HTMLElement>("#timeline-view")!;
+        const zoom = new KeyboardEvent("keydown", { key: "-", bubbles: true, cancelable: true });
+        root.dispatchEvent(zoom);
+        expect(zoom.defaultPrevented).toBe(true);
+        expect(m.view().pxPerUnit).toBeLessThan(before.pxPerUnit);
+        root.dispatchEvent(new KeyboardEvent("keydown", { key: "z", metaKey: true, bubbles: true }));
+        expect(dirty).toHaveLength(2);
+        expect(JSON.parse(dirty[1]!).tracks[0].name).toBe("Ines");
+      } finally {
+        m.destroy();
+      }
+    });
+
     test("double-click on a thread track's header opens an inline field; Enter commits", () => {
       const { mount: m, dirty } = mount(baseBody());
       const header = container.querySelector<HTMLElement>(".timeline-lane .timeline-lane-header")!;
@@ -624,6 +879,76 @@ describe("mountTimeline", () => {
       const parsed = JSON.parse(dirty[0]!);
       expect(parsed.tracks[0].name).toBe("The harbour");
       m.destroy();
+    });
+
+    test.each(["Enter", "Escape"])("%s from a focused rename returns to the recreated track button", async (key) => {
+      const { mount: m, dirty } = mount(baseBody({ tracks: [
+        { id: "t1", name: "Ines", kind: "thread", colour: 1 },
+        { id: "t2", name: "Mira", kind: "thread", colour: 2 },
+      ] }));
+      const selector = '.timeline-lane[data-track-id="t2"] .timeline-lane-action';
+      try {
+        container.querySelector<HTMLButtonElement>(selector)!.click();
+        document.getElementById("timeline-track-rename")!.click();
+        await Promise.resolve();
+        const input = container.querySelector<HTMLInputElement>(".timeline-lane-rename")!;
+        expect(document.activeElement === input).toBe(true);
+        input.value = "Harbour";
+        const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+        input.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(true);
+        expect(container.querySelector(".timeline-lane-rename") === null).toBe(true);
+        const button = container.querySelector<HTMLButtonElement>(selector)!;
+        expect(document.activeElement === button).toBe(true);
+        expect(button.getAttribute("aria-label")).toBe(key === "Enter" ? "Harbour" : "Mira");
+        expect(dirty).toHaveLength(key === "Enter" ? 1 : 0);
+      } finally {
+        m.destroy();
+      }
+    });
+
+    test("committing a rename by blur preserves focus on the next control", async () => {
+      const { mount: m, dirty } = mount(baseBody());
+      try {
+        container.querySelector<HTMLButtonElement>(".timeline-lane-action")!.click();
+        document.getElementById("timeline-track-rename")!.click();
+        await Promise.resolve();
+        const input = container.querySelector<HTMLInputElement>(".timeline-lane-rename")!;
+        input.value = "Harbour";
+        const next = container.querySelector<HTMLButtonElement>("#timeline-toolbar button")!;
+        next.focus();
+        expect(document.activeElement === next).toBe(true);
+        expect(container.querySelector(".timeline-lane-rename") === null).toBe(true);
+        expect(dirty).toHaveLength(1);
+        expect(JSON.parse(dirty[0]!).tracks[0].name).toBe("Harbour");
+      } finally {
+        m.destroy();
+      }
+    });
+
+    test.each([
+      '.timeline-lane[data-track-id="t2"] .timeline-lane-action',
+      '.tl-event[data-event-id="v1"]',
+    ])("committing a rename by blur keeps %s focused after repaint", async (selector) => {
+      const { mount: m, dirty } = mount(baseBody({ tracks: [
+        { id: "t1", name: "Ines", kind: "thread", colour: 1 },
+        { id: "t2", name: "Mira", kind: "thread", colour: 2 },
+      ] }));
+      try {
+        container.querySelector<HTMLButtonElement>('.timeline-lane[data-track-id="t1"] .timeline-lane-action')!.click();
+        document.getElementById("timeline-track-rename")!.click();
+        await Promise.resolve();
+        const input = container.querySelector<HTMLInputElement>(".timeline-lane-rename")!;
+        input.value = "Harbour";
+        const next = container.querySelector<HTMLButtonElement>(selector)!;
+        next.focus();
+        await Promise.resolve();
+        expect(next.isConnected).toBe(false);
+        expect(document.activeElement === container.querySelector(selector)).toBe(true);
+        expect(dirty).toHaveLength(1);
+      } finally {
+        m.destroy();
+      }
     });
 
     // Mutation target 8: a track rename with an empty name is accepted.
@@ -651,21 +976,107 @@ describe("mountTimeline", () => {
       m.destroy();
     });
 
-    // MAJOR (review): a plain div with no tabIndex had no keyboard route to
-    // the context menu at all.
     test("a lane header is a keyboard-reachable button with the track's name", () => {
       const { mount: m } = mount(baseBody());
       const header = container.querySelector<HTMLElement>(".timeline-lane .timeline-lane-header")!;
-      expect(header.tabIndex).toBe(0);
-      expect(header.getAttribute("role")).toBe("button");
-      expect(header.getAttribute("aria-label")).toBe("Ines");
+      const button = header.querySelector<HTMLButtonElement>("button")!;
+      expect(button instanceof HTMLButtonElement).toBe(true);
+      expect(button.type).toBe("button");
+      expect(button.tabIndex).toBe(0);
+      expect(button.getAttribute("aria-label")).toBe("Ines");
+      expect(button.getAttribute("aria-haspopup")).toBe("menu");
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+      expect(header.getAttribute("role")).toBeNull();
+      expect(header.hasAttribute("tabindex")).toBe(false);
+      m.destroy();
+    });
+
+    test("clicking a lane button opens and anchors its track menu without changing the timeline", () => {
+      const { mount: m, dirty } = mount(baseBody());
+      const header = container.querySelector<HTMLElement>(".timeline-lane .timeline-lane-header")!;
+      header.getBoundingClientRect = () => rect(140, 44, 20, 50);
+      header.querySelector<HTMLButtonElement>("button")!.click();
+      const menu = document.getElementById("timeline-track-context-menu")!;
+      expect(menu.hidden).toBe(false);
+      expect(menu.style.left).toBe("20px");
+      expect(menu.style.top).toBe("94px");
+      expect(document.activeElement?.id).toBe("timeline-track-rename");
+      expect(header.querySelector("button")?.getAttribute("aria-expanded")).toBe("true");
+      expect(dirty).toEqual([]);
+      m.destroy();
+    });
+
+    test.each(["Enter", " "])("%s at the lane button keeps native activation available", (key) => {
+      const { mount: m } = mount(baseBody());
+      const button = container.querySelector<HTMLButtonElement>(".timeline-lane-action")!;
+      button.focus();
+      const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+      button.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(false);
+      expect(document.activeElement === button).toBe(true);
+      expect(document.getElementById("timeline-card")!.hidden).toBe(true);
+      // happy-dom does not synthesize native keyboard clicks.
+      button.click();
+      expect(document.getElementById("timeline-track-context-menu")!.hidden).toBe(false);
+      m.destroy();
+    });
+
+    test("a full double-click sequence closes the click menu and opens a separate rename field", async () => {
+      const { mount: m, dirty } = mount(baseBody());
+      const button = container.querySelector<HTMLButtonElement>(".timeline-lane-action")!;
+      button.click();
+      expect(document.getElementById("timeline-track-context-menu")!.hidden).toBe(false);
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 2 }));
+      button.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, detail: 2 }));
+      await Promise.resolve();
+      const input = container.querySelector<HTMLInputElement>(".timeline-lane-rename")!;
+      expect(input !== null).toBe(true);
+      expect(input.closest("button") === null).toBe(true);
+      expect(document.activeElement === input).toBe(true);
+      expect(document.getElementById("timeline-track-context-menu")!.hidden).toBe(true);
+      input.value = "Harbour";
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      expect(dirty).toHaveLength(1);
+      expect(JSON.parse(dirty[0]!).tracks[0].name).toBe("Harbour");
+      m.destroy();
+    });
+
+    test("Escape from the track menu returns focus to its lane button", () => {
+      const { mount: m } = mount(baseBody());
+      const button = container.querySelector<HTMLButtonElement>(".timeline-lane-action")!;
+      button.click();
+      const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+      document.activeElement!.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.getElementById("timeline-track-context-menu")!.hidden).toBe(true);
+      expect(document.activeElement === button).toBe(true);
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+      m.destroy();
+    });
+
+    test("a cast lane button opens relink rather than rename, including by right-click", () => {
+      const body = baseBody({ tracks: [{ id: "t1", name: "Thren", kind: "cast", memberId: "c1", colour: 1 }] });
+      const { mount: m } = mount(body, { cast: () => [{ id: "c1", name: "Thren" } as CastMemberRow] });
+      const button = container.querySelector<HTMLButtonElement>(".timeline-lane-action")!;
+      button.click();
+      expect(document.getElementById("timeline-track-relink") !== null).toBe(true);
+      expect(document.getElementById("timeline-track-rename") === null).toBe(true);
+      const event = new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 40, clientY: 60 });
+      button.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+      const menu = document.getElementById("timeline-track-context-menu")!;
+      expect(menu.style.left).toBe("40px");
+      expect(menu.style.top).toBe("60px");
+      expect(document.activeElement?.id).toBe("timeline-track-relink");
       m.destroy();
     });
 
     test("the ContextMenu key at a focused header opens the same menu as a right-click", () => {
       const { mount: m } = mount(baseBody());
       const header = container.querySelector<HTMLElement>(".timeline-lane .timeline-lane-header")!;
-      header.dispatchEvent(new KeyboardEvent("keydown", { key: "ContextMenu", bubbles: true }));
+      const button = header.querySelector<HTMLButtonElement>("button")!;
+      button.focus();
+      button.dispatchEvent(new KeyboardEvent("keydown", { key: "ContextMenu", bubbles: true }));
       expect(document.getElementById("timeline-track-rename")).not.toBeNull();
       m.destroy();
     });
@@ -673,7 +1084,9 @@ describe("mountTimeline", () => {
     test("Shift+F10 at a focused header opens the same menu", () => {
       const { mount: m } = mount(baseBody());
       const header = container.querySelector<HTMLElement>(".timeline-lane .timeline-lane-header")!;
-      header.dispatchEvent(new KeyboardEvent("keydown", { key: "F10", shiftKey: true, bubbles: true }));
+      const button = header.querySelector<HTMLButtonElement>("button")!;
+      button.focus();
+      button.dispatchEvent(new KeyboardEvent("keydown", { key: "F10", shiftKey: true, bubbles: true }));
       expect(document.getElementById("timeline-track-rename")).not.toBeNull();
       m.destroy();
     });
@@ -936,7 +1349,7 @@ describe("mountTimeline", () => {
           { id: "v1", title: "A", at: 100, until: null, tracks: ["t1"], branch: null, scene: null, cast: [], note: "" },
           { id: "v2", title: "B", at: 101, until: null, tracks: ["t1"], branch: null, scene: null, cast: [], note: "" },
           // FAR AWAY, on the same lane: forces Fit's own pxPerUnit down so
-          // far that v1 and v2 (one unit apart) land well under the 24px
+          // far that v1 and v2 (one unit apart) land well under the minimum
           // collapse gap -- fitting to v1/v2 alone would instead SPREAD
           // them (a tiny span fills the whole pane), which is what made
           // this fixture's first draft never produce a dot at all.
@@ -944,6 +1357,27 @@ describe("mountTimeline", () => {
         ],
       });
     }
+
+    test("points closer than a complete button footprint remain collapsed", () => {
+      const { mount: m, dirty } = mount(crowdedBody());
+      const root = container.querySelector<HTMLElement>("#timeline-view")!;
+      // Keep the crowded pair under the pointer while zooming into the old
+      // 24px threshold, but below the 28px button plus its gap and rounding.
+      for (let i = 0; i < 64 && m.view().pxPerUnit < 28; i++) {
+        const pointerPx = (100 - m.view().originUnit) * m.view().pxPerUnit;
+        const wheel = new WheelEvent("wheel", { deltaY: -1, bubbles: true, cancelable: true });
+        // happy-dom's WheelEvent omits inherited mouse/modifier fields.
+        Object.defineProperties(wheel, { ctrlKey: { value: true }, clientX: { value: pointerPx } });
+        root.dispatchEvent(wheel);
+      }
+      expect(m.view().pxPerUnit).toBeGreaterThan(24);
+      expect(m.view().pxPerUnit).toBeLessThan(34);
+      const dot = container.querySelector<HTMLButtonElement>(".tl-dot")!;
+      expect(dot !== null).toBe(true);
+      expect(dot.dataset.eventIds?.split(",")).toEqual(["v1", "v2"]);
+      expect(dirty).toEqual([]);
+      m.destroy();
+    });
 
     test("two events under the gap collapse into one dot with a tooltip anchor", () => {
       const { mount: m } = mount(crowdedBody());
@@ -980,6 +1414,12 @@ describe("mountTimeline", () => {
       // no-op, and not zoomed around the viewport centre (mutation target 6).
       expect(m.view().pxPerUnit).toBeGreaterThan(before);
       expect(container.querySelectorAll(".tl-event").length + container.querySelectorAll(".tl-dot").length).toBeGreaterThan(0);
+      const first = container.querySelector<HTMLElement>('[data-event-id="v1"]')!;
+      const second = container.querySelector<HTMLElement>('[data-event-id="v2"]')!;
+      expect(first !== null && second !== null).toBe(true);
+      // Native boxes can round their left down and their right up.
+      expect(Math.floor(Number.parseFloat(second.style.left))
+        - Math.ceil(Number.parseFloat(first.style.left) + Number.parseFloat(first.style.maxWidth))).toBeGreaterThanOrEqual(4);
       m.destroy();
     });
 

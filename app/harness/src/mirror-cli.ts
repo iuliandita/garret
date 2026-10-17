@@ -157,7 +157,7 @@ const work = mkdtempSync(join(tmpdir(), "mirror-cli-"));
 const project = join(work, "project.db");
 const dataHome = join(work, "data");
 const mirrorRoot = join(work, "mirror");
-mkdirSync(join(dataHome, "cc.local.app"), { recursive: true });
+mkdirSync(join(dataHome, "garret"), { recursive: true });
 mkdirSync(mirrorRoot, { recursive: true });
 
 const display = `:${freeDisplayNumber()}`;
@@ -365,7 +365,7 @@ function plantNoteOn(itemId: string): void {
 // preference: the enable act is a panel click, and driving it would make this
 // run about the project panel rather than about the folder.
 writeFileSync(
-  join(dataHome, "cc.local.app", "settings.json"),
+  join(dataHome, "garret", "settings.json"),
   JSON.stringify({ theme: "system", mirrored_book_ids: [readBookId(project)] }),
 );
 

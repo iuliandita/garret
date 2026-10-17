@@ -640,3 +640,13 @@ describe("automatic adoption preserves the existing root order", () => {
     expect(adoptionPreservesOrder(items, [], { holders: [], parentId: "0", afterId: null })).toBe(true);
   });
 });
+
+test("short fiction first presses keep scenes ordered and never invent a part", () => {
+  const rows = [item("s1", null, 0, "scene")];
+  expect(planPlacement(rows, "s1", "scene", "short")).toEqual({ holders: [], parentId: null, afterId: "s1" });
+  rows.push(item("s2", null, 0, "scene"));
+  expect(planPlacement(rows, "s2", "chapter", "short")).toEqual({ holders: [], parentId: null, afterId: "s2" });
+  rows.push(item("c1", null, 0, "chapter"));
+  expect(planPlacement(rows, "c1", "scene", "short")).toEqual({ holders: [], parentId: "c1", afterId: null });
+  expect(planPlacement(rows, null, "chapter", "short").holders).toEqual([]);
+});

@@ -70,6 +70,7 @@ test("the shared editor is a named multiline text box, including an empty scene"
   expect(dom.getAttribute("role")).toBe("textbox");
   expect(dom.getAttribute("aria-label")).toBe("Manuscript editor");
   expect(dom.getAttribute("aria-multiline")).toBe("true");
+  expect(dom.getAttribute("lang")).toBe("");
   editor.destroy();
 });
 

@@ -187,7 +187,7 @@ const home = mkdtempSync(join(tmpdir(), "app-hand-"));
 // `projects/` since the project-lifecycle change: the default project moved into
 // the library so it is listed like any other manuscript. An older-layout file at
 // `cc.local.app/default.db` is not migrated and is invisible to the app.
-const projectPath = join(home, "cc.local.app", "projects", "default.db");
+const projectPath = join(home, "garret", "projects", "default.db");
 
 // GDK_BACKEND=x11 is load-bearing on BOTH rigs, not cosmetic. On the Xvfb rig:
 // a developer's ambient session sets WAYLAND_DISPLAY and

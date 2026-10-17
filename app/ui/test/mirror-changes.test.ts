@@ -491,13 +491,10 @@ describe("the change set panel", () => {
     await rig.unit.setOpen(true);
     rig.order.length = 0;
     items(rig)[0]?.querySelector<HTMLButtonElement>("button.mirror-change-accept")?.click();
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(rig.landed.length).toBe(1);
     expect(rig.landed[0]?.report.documents[0]?.item_id).toBe("it-1");
-    expect(rig.order).toEqual(["accept", "drain", "changes"]);
+    expect(rig.order).toEqual(["drain", "accept", "drain", "changes"]);
     rig.unit.destroy();
   });
 
@@ -505,9 +502,7 @@ describe("the change set panel", () => {
     const rig = mount([row()]);
     await rig.unit.setOpen(true);
     items(rig)[0]?.querySelector<HTMLButtonElement>("button.mirror-change-accept")?.click();
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(rig.panel.querySelectorAll("button.mirror-change-undo")).toHaveLength(1);
 
     await rig.unit.setOpen(false);

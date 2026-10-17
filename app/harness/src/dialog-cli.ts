@@ -32,7 +32,7 @@ import { join } from "node:path";
 import { captureEnv } from "./env";
 import { evaluateDialogGates, type DialogMetrics } from "./gates";
 import { readManuscript } from "./markdown-read";
-import { menuChord, menuRoute } from "./menu-drive";
+import { menuDriver } from "./menu-drive";
 import { centreOf, locateNodes, type Node } from "./nodes";
 import { buildResult, writeResult } from "./results";
 import {
@@ -57,27 +57,6 @@ const RESULTS = "app/results";
 const EXPORT_DIALOG_TITLE = "Export manuscript";
 const IMPORT_DIALOG_TITLE = "Import manuscript";
 const FOLDER_DIALOG_TITLE = "Where to keep this book";
-
-/** How many ArrowDowns from the top of the File menu to each item, READ FROM
- *  `menu-bar.ts` rather than restated here.
- *
- *  These were literals -- 4 and 2 -- until 2026-08-26, and this was the LAST rig
- *  holding its own copy of the File menu's order; every other one already goes
- *  through `menuRoute`, whose header names this exact failure. An earlier
- *  change put `Rename project...` at File index 2 and both literals went stale in one
- *  commit: 4 became Export manuscript, which opens no dialog, and 2 became
- *  Rename project..., which opens the panel.
- *
- *  The rig FAILED LOUDLY rather than grading the wrong thing, because the dialog
- *  is matched by title and neither item produces one. That is the design working,
- *  and it is still one avoidable failed measurement -- the order is decided in `menu-bar.ts`
- *  and nowhere else, so this reads it from there.
- *
- *  Called at USE rather than evaluated at module scope, so the parse happens
- *  inside the run like every other rig's does. */
-const exportAsIndex = (): number => menuRoute("menu-export-as").index;
-const importIndex = (): number => menuRoute("menu-import").index;
-const newProjectRoute = () => menuRoute("menu-project-new");
 
 /** A sentence that exists nowhere in the fixture, typed immediately before the
  *  export is asked for. It is in the file only if the export drained first. */
@@ -352,15 +331,7 @@ async function boot(
       xdo(display, ["type", "--window", wid, "--delay", "20", NONCE]);
       await Bun.sleep(400);
 
-      // Alt+F opens the File menu and focuses its first item; the arrows walk
-      // down it. No coordinates, so no second walk.
-      xdo(display, ["key", "--window", wid, menuChord("menu-file")]);
-      await Bun.sleep(600);
-      for (let i = 0, n = exportAsIndex(); i < n; i++) {
-        xdo(display, ["key", "--window", wid, "Down"]);
-        await Bun.sleep(120);
-      }
-      xdo(display, ["key", "--window", wid, "Return"]);
+      await menuDriver(display, wid, xdo).activate("menu-export-as");
 
       const dialog = await waitForDialog(display, EXPORT_DIALOG_TITLE);
       if (dialog === null) {
@@ -436,14 +407,7 @@ async function folderBoot(
         throw new Error("refusing to type: keyboard focus is not the app window");
       }
 
-      const route = newProjectRoute();
-      xdo(display, ["key", "--window", wid, route.chord]);
-      await Bun.sleep(600);
-      for (let i = 0; i < route.index; i++) {
-        xdo(display, ["key", "--window", wid, "Down"]);
-        await Bun.sleep(120);
-      }
-      xdo(display, ["key", "--window", wid, "Return"]);
+      await menuDriver(display, wid, xdo).activate("menu-project-new");
       await Bun.sleep(SETTLE_MS);
       xdo(display, ["type", "--window", wid, "--delay", "20", name]);
       xdo(display, ["key", "--window", wid, "Tab"]);
@@ -482,13 +446,7 @@ async function folderBoot(
           await Bun.sleep(SETTLE_MS);
           xdo(display, ["windowfocus", wid]);
           captureDialogWindow(display, wid, "folder-cancel-return");
-          xdo(display, ["key", "--window", wid, route.chord]);
-          await Bun.sleep(600);
-          for (let i = 0; i < route.index; i++) {
-            xdo(display, ["key", "--window", wid, "Down"]);
-            await Bun.sleep(120);
-          }
-          xdo(display, ["key", "--window", wid, "Return"]);
+          await menuDriver(display, wid, xdo).activate("menu-project-new");
           await Bun.sleep(SETTLE_MS);
           xdo(display, ["key", "--window", wid, "ctrl+a"]);
           xdo(display, ["type", "--window", wid, "--delay", "20", name]);
@@ -556,13 +514,7 @@ async function importBoot(
       }
       // NO AT-SPI WALK AT ALL in this boot. It needs no widget geometry: the
       // menu is keystrokes and the dialog is found by title.
-      xdo(display, ["key", "--window", wid, menuChord("menu-file")]);
-      await Bun.sleep(600);
-      for (let i = 0, n = importIndex(); i < n; i++) {
-        xdo(display, ["key", "--window", wid, "Down"]);
-        await Bun.sleep(120);
-      }
-      xdo(display, ["key", "--window", wid, "Return"]);
+      await menuDriver(display, wid, xdo).activate("menu-import");
 
       const dialog = await waitForDialog(display, IMPORT_DIALOG_TITLE);
       if (dialog === null) return;
@@ -589,7 +541,7 @@ async function importBoot(
 
 /** The projects the library holds, which is where an import lands. */
 function libraryProjects(dataHome: string): string[] {
-  const dir = join(dataHome, "cc.local.app", "projects");
+  const dir = join(dataHome, "garret", "projects");
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
     .filter((name) => name.endsWith(".db"))
@@ -606,7 +558,7 @@ function seed(path: string): void {
 
 function homeFor(label: string): string {
   const dir = join(root, `home-${label}`);
-  mkdirSync(join(dir, "cc.local.app"), { recursive: true });
+  mkdirSync(join(dir, "garret"), { recursive: true });
   return dir;
 }
 
@@ -658,7 +610,7 @@ const folderSource = join(root, "folder-source.db");
 seed(folderSource);
 const folderChosenDir = join(root, "folder-chosen");
 mkdirSync(folderChosenDir, { recursive: true });
-const folderDefaultDir = join(folderHome, "cc.local.app", "projects");
+const folderDefaultDir = join(folderHome, "garret", "projects");
 const folderChosen = await folderBoot("folder choose", folderSource, folderHome, folderName, folderChosenDir);
 const folderChosenFiles = databaseFilesIn(folderChosenDir);
 const folderBook = folderChosenFiles.length === 1

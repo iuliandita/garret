@@ -12,6 +12,7 @@ const NAMES: IconName[] = [
   "italic",
   "underline",
   "outline",
+  "house",
   "menu",
   "message-square",
   "search",

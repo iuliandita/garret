@@ -262,3 +262,8 @@ describe("the module-scope instance the page actually boots with", () => {
     }
   });
 });
+
+test("save failure wording names automatic saving and warns that changes remain in the window", () => {
+  expect(EN["project.error.persist"]).toBe("Not saved: {message} Automatic saving has stopped. Your latest changes are only in this window.");
+  expect(DE["project.error.persist"]).toBe("Nicht gesichert: {message} Das automatische Speichern wurde angehalten. Ihre letzten Änderungen gibt es nur in diesem Fenster.");
+});
