@@ -24,13 +24,11 @@
     },
     "editor": {
       "breaking": "none",
-      "docs": {
-        "docs/MAINTENANCE.md": "6de868284f9a31dceb373ef6c00e5995da087f7b719086b0670ffa36b21e0ae5"
-      },
+      "docs": {},
       "migration": "Android migration: update the previous cc.local.app to transfer-capable 0.0.3, export a complete backup copy of each book archive and separate recovery key, install com.usegarret.app alongside it, import and compare manuscripts, notes and pictures before removing the old app. Preferences need resetting; both apps stay independent. Keep exports and old books for rollback; later edits require fresh exports into a compatible build. Retain the signing key and keep increasing version codes during release preparation. Collections retain schema 17. Older Android builds refuse this preset; keep the closed database and adjacent originals for rollback.",
-      "no_impact": "",
-      "note": "Collection creation, story details and scoped export are documented with English and German controls and existing navigator counts and revision states. Empty replace-all drops empty text runs and joins equally marked neighbors; the editor normalizes affected stored scenes on load without a schema migration. Share deterministic Android build preparation with F-Droid; path, timestamp and configuration normalization are verified by independent source-root comparisons.",
-      "source_sha256": "8bbea06993cbe7cdbf971550e6168912121772d886eb33acec981b792cc9fa05"
+      "no_impact": "Preview rendering only; manuscript storage, export bytes, save scheduling and user controls are unchanged.",
+      "note": "Mount only visible EPUB documents and one neighbor each way, with a minimum of three; preserve preview positions and fractional reader column geometry.",
+      "source_sha256": "db2ee7feb18d5fff821af0b70130498606d372a3134e5947377e5ef2056ac9e5"
     },
     "encryption": {
       "breaking": "none",

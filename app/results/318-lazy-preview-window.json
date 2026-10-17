@@ -1,0 +1,205 @@
+{
+  "run_id": "318-lazy-preview-window",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-diagnostic",
+  "environment": {
+    "kernel": "7.2.9-2-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 2.23,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "rows": 20000,
+    "close_released_documents": true,
+    "documents": 1572,
+    "end": {
+      "label": "Page 2,716 of 2,716",
+      "last_document_fragments": [
+        {
+          "height": 87.75,
+          "width": 284.4375
+        }
+      ],
+      "left": 977378,
+      "mounted": 3,
+      "total_width": 977738,
+      "width": 360
+    },
+    "initial_elements": 45378,
+    "initial_mounted": 3,
+    "reader_after": {
+      "height": 426,
+      "last": [
+        {
+          "css": "height: 385.578125px; break-before: column; display: flow-root;",
+          "name": "OEBPS/text/1567.xhtml",
+          "rect": {
+            "bottom": 641.015625,
+            "height": 385.5625,
+            "left": -226,
+            "right": 90,
+            "top": 255.453125,
+            "width": 316,
+            "x": -226,
+            "y": 255.453125
+          },
+          "text": ""
+        },
+        {
+          "css": "break-before: column; display: flow-root;",
+          "name": "OEBPS/text/1568.xhtml",
+          "rect": {
+            "bottom": 343.1875,
+            "height": 87.734375,
+            "left": 149.8125,
+            "right": 434.25,
+            "top": 255.453125,
+            "width": 284.4375,
+            "x": 149.8125,
+            "y": 255.453125
+          },
+          "text": "\n\nAusência Lantern 185\n\n"
+        },
+        {
+          "css": "break-before: column; display: flow-root;",
+          "name": "OEBPS/text/1569.xhtml",
+          "rect": {
+            "bottom": 641.03125,
+            "height": 385.578125,
+            "left": 149.8125,
+            "right": 794.25,
+            "top": 255.453125,
+            "width": 644.4375,
+            "x": 149.8125,
+            "y": 255.453125
+          },
+          "text": "\n\nAusência Ombré 29\n\n"
+        },
+        {
+          "css": "break-before: column; display: flow-root;",
+          "name": "OEBPS/text/1570.xhtml",
+          "rect": {
+            "bottom": 343.21875,
+            "height": 87.75,
+            "left": 869.8125,
+            "right": 1154.25,
+            "top": 255.46875,
+            "width": 284.4375,
+            "x": 869.8125,
+            "y": 255.46875
+          },
+          "text": "\n\nNocturne Ombré 813\n\n"
+        }
+      ],
+      "left": 565538,
+      "width": 565898
+    },
+    "reader_before": {
+      "height": 426,
+      "last": [
+        {
+          "css": "height: 385.578125px; display: flow-root; break-before: column;",
+          "name": "OEBPS/text/1567.xhtml",
+          "rect": {
+            "bottom": 641.015625,
+            "height": 385.5625,
+            "left": -226,
+            "right": 90,
+            "top": 255.453125,
+            "width": 316,
+            "x": -226,
+            "y": 255.453125
+          },
+          "text": ""
+        },
+        {
+          "css": "display: flow-root; break-before: column;",
+          "name": "OEBPS/text/1568.xhtml",
+          "rect": {
+            "bottom": 343.1875,
+            "height": 87.734375,
+            "left": 149.8125,
+            "right": 434.25,
+            "top": 255.453125,
+            "width": 284.4375,
+            "x": 149.8125,
+            "y": 255.453125
+          },
+          "text": "\n\nAusência Lantern 185\n\n"
+        },
+        {
+          "css": "display: flow-root; break-before: column;",
+          "name": "OEBPS/text/1569.xhtml",
+          "rect": {
+            "bottom": 343.171875,
+            "height": 87.71875,
+            "left": 509.8125,
+            "right": 794.25,
+            "top": 255.453125,
+            "width": 284.4375,
+            "x": 509.8125,
+            "y": 255.453125
+          },
+          "text": "\n\nAusência Ombré 29\n\n"
+        },
+        {
+          "css": "display: flow-root; break-before: column;",
+          "name": "OEBPS/text/1570.xhtml",
+          "rect": {
+            "bottom": 343.21875,
+            "height": 87.75,
+            "left": 869.8125,
+            "right": 1154.25,
+            "top": 255.46875,
+            "width": 284.4375,
+            "x": 869.8125,
+            "y": 255.46875
+          },
+          "text": "\n\nNocturne Ombré 813\n\n"
+        }
+      ],
+      "left": 977378,
+      "width": 977738
+    },
+    "reader_refresh": {
+      "after": {
+        "name": "OEBPS/text/1570.xhtml",
+        "offset": -59.8125
+      },
+      "before": {
+        "name": "OEBPS/text/1570.xhtml",
+        "offset": -59.8125
+      },
+      "delta_px": 0
+    },
+    "reopened_frame": true,
+    "scroll_refresh": {
+      "after": {
+        "name": "OEBPS/text/0099.xhtml",
+        "offset": 198.125
+      },
+      "before": {
+        "name": "OEBPS/text/0099.xhtml",
+        "offset": 198.46875
+      },
+      "delta_px": -0.34375
+    },
+    "scrolled_mounted": 3,
+    "scope": "Staged-only read-only EPUB window, scroll and framed-page checks; no latency or memory verdicts."
+  },
+  "verdicts": [],
+  "seed": "app-v1",
+  "rig_commit": "0317f54"
+}
