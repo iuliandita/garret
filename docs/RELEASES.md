@@ -46,3 +46,10 @@ commands, links, hashes, and review obligations. They do not contact the
 website or prove its published content matches the app. A companion website
 update can be pending independently; check its actual deployment before
 claiming it is aligned. See [maintenance](MAINTENANCE.md) for the guard's limits.
+
+Desktop packaging uses the exact `@tauri-apps/cli` development dependency from
+`bun.lock`, installed with `bun install --frozen-lockfile`. The AppImage bundler
+also downloads linuxdeploy and its plugins at build time; the locked CLI does
+not make those upstream downloads offline or reproducible. Linux packages ship
+the visible `com.usegarret.app.desktop` entry and matching icons. The bundler's
+product-name entry is hidden to avoid a duplicate menu item.

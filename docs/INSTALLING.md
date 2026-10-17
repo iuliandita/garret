@@ -46,3 +46,13 @@ folder to remove that copy. These actions leave user manuscripts, preferences
 and recovery copies in place. Keep a separate backup before upgrading and read
 [compatibility and recovery](COMPATIBILITY.md) before rolling back: uninstalling
 the app does not downgrade a book's database.
+
+On Windows, the uninstaller's optional "Delete the application data" checkbox
+removes only `%APPDATA%\com.usegarret.app` and
+`%LOCALAPPDATA%\com.usegarret.app` for the current user. It also clears installer
+registry preferences. Neither directory contains books or settings: those remain
+under `%APPDATA%\garret` (including its library and recovery files), or in a
+folder you selected. The single-instance lock remains under
+`%APPDATA%\cc.local.app`, and the pinned WebView2 profile remains under
+`%LOCALAPPDATA%\cc.local.app`. The checkbox does not remove those folders and
+is not applied during an installer upgrade.

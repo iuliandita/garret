@@ -8,7 +8,7 @@
   <description>
     <p>Write and organize novels in a local library. Work with outlines, revision history, research, and manuscript exports without an account or network connection.</p>
   </description>
-  <launchable type="desktop-id">garret.desktop</launchable>
+  <launchable type="desktop-id">com.usegarret.app.desktop</launchable>
   <url type="homepage">https://usegarret.com</url>
   <url type="bugtracker">https://github.com/iuliandita/garret/issues</url>
   <developer id="com.iuliandita"><name>iuliandita</name></developer>

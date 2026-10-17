@@ -15,72 +15,74 @@
     "backup-recovery": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "c4e6d37c87ce300287c6a56c34a26f8a8bc05fb5454f4df8a0f03b5e26329aae"
+        "docs/COMPATIBILITY.md": "f77a6ec0d56387ca8dc31fda01c531fc6dda7b70301c5b97e05e8fd489d47051"
       },
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
       "no_impact": "",
-      "note": "Document complete book and profile backups, interrupted migration preservation, archive boundaries, and restoring separate pre-upgrade copies. The desktop identity change leaves book recovery and encrypted archives unchanged.",
+      "note": "Document complete book and profile backups, interrupted migration preservation, archive boundaries, and restoring separate pre-upgrade copies. The desktop identity change leaves book recovery and encrypted archives unchanged. Installer formats preserve portable layouts and book data; installer identity, bundled resources, locked packaging tools and content validation are documented.",
       "source_sha256": "2edd84df587e32edba860845496359304bc871189b1a9f8bacee26f390bea937"
     },
     "editor": {
       "breaking": "none",
       "docs": {
-        "README.md": "eb04450b720ce23d2235e75242f89eaf130b71846c986222f50659f71ec90243"
+        "README.md": "6a1ac0ac867a513b5e8a6f05242cddb8fca258baa13a5df12c52954857d97d1d"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. The desktop and Android identities are documented; interface behavior is unchanged.",
+      "note": "Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. The desktop and Android identities are documented; interface behavior is unchanged. Installer formats preserve portable layouts and book data; installer identity, bundled resources, locked packaging tools and content validation are documented.",
       "source_sha256": "0e4f0d0a283e6d20ed949c9cf1571526fe34324d91603deeffdb00f7c1d408fc"
     },
     "encryption": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "c4e6d37c87ce300287c6a56c34a26f8a8bc05fb5454f4df8a0f03b5e26329aae"
+        "docs/COMPATIBILITY.md": "f77a6ec0d56387ca8dc31fda01c531fc6dda7b70301c5b97e05e8fd489d47051"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Distinguish encrypted portable archives from plaintext working files and add encryption dependency and source review obligations. The identity change preserves archive encryption, keys, and plaintext staging markers.",
+      "note": "Distinguish encrypted portable archives from plaintext working files and add encryption dependency and source review obligations. The identity change preserves archive encryption, keys, and plaintext staging markers. Installer formats preserve portable layouts and book data; installer identity, bundled resources, locked packaging tools and content validation are documented.",
       "source_sha256": "3de071163792f42498cde75496e4894e6649599b1f5d949390410cf68e8a3c9a"
     },
     "maintenance": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "c4e6d37c87ce300287c6a56c34a26f8a8bc05fb5454f4df8a0f03b5e26329aae"
+        "docs/COMPATIBILITY.md": "f77a6ec0d56387ca8dc31fda01c531fc6dda7b70301c5b97e05e8fd489d47051",
+        "docs/RELEASES.md": "5fd30e30eb593e4fb54dda099696f595ec88a3c90ca65b545f1855b8abe32c44"
       },
       "migration": "Desktop identifier changes leave books, settings, and SQLite schema 17 unchanged. Windows retains its previous WebView2 profile; Android retains its package. macOS starts fresh regenerable caches and native window restore state, leaving old entries untouched. Keep the normal closed-book and profile backup before upgrade; rollback uses the previous package and preserved files.",
       "no_impact": "",
-      "note": "Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged. Document fresh macOS caches and native window state without a startup migration, stable books and settings, and retained Windows editor and proof WebView2 profiles.",
-      "source_sha256": "1920ccbed8c5161f0a36e302309c9cc49241cc14bc5ea5b8dc504a2c68bb0363"
+      "note": "Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged. Document fresh macOS caches and native window state without a startup migration, stable books and settings, and retained Windows editor and proof WebView2 profiles. Installer formats preserve portable layouts and book data; installer identity, bundled resources, locked packaging tools and content validation are documented.",
+      "source_sha256": "2730fb8fe0a761ff65d21f2471d0e484d63f26b7dfc413b0c1370c0567535af9"
     },
     "native-packaging": {
       "breaking": "none",
       "docs": {
-        "README.md": "eb04450b720ce23d2235e75242f89eaf130b71846c986222f50659f71ec90243",
-        "docs/COMPATIBILITY.md": "c4e6d37c87ce300287c6a56c34a26f8a8bc05fb5454f4df8a0f03b5e26329aae"
+        "README.md": "6a1ac0ac867a513b5e8a6f05242cddb8fca258baa13a5df12c52954857d97d1d",
+        "docs/COMPATIBILITY.md": "f77a6ec0d56387ca8dc31fda01c531fc6dda7b70301c5b97e05e8fd489d47051",
+        "docs/RELEASES.md": "5fd30e30eb593e4fb54dda099696f595ec88a3c90ca65b545f1855b8abe32c44"
       },
       "migration": "Desktop identifier changes leave books, settings, and SQLite schema 17 unchanged. Windows retains its previous WebView2 profile; Android retains its package. macOS starts fresh regenerable caches and native window restore state, leaving old entries untouched. Keep the normal closed-book and profile backup before upgrade; rollback uses the previous package and preserved files.",
       "no_impact": "",
-      "note": "Require the latest exact-commit develop push CI run to succeed before alpha tag packaging; an older success cannot hide a pending or failed newer run. Existing platforms, asset publication, tag ancestry, application behavior, and compatibility remain unchanged. Change the desktop identifier, explicitly preserve the Android package and Windows WebView2 profile, and derive macOS bundle identity from configuration.",
-      "source_sha256": "f055c1ab31d14c0d70530aea2fbe1423bc4b4bcff2853956d585818b110037de"
+      "note": "Require the latest exact-commit develop push CI run to succeed before alpha tag packaging; an older success cannot hide a pending or failed newer run. Existing platforms, asset publication, tag ancestry, application behavior, and compatibility remain unchanged. Change the desktop identifier, explicitly preserve the Android package and Windows WebView2 profile, and derive macOS bundle identity from configuration. Installer formats preserve portable layouts and book data; installer identity, bundled resources, locked packaging tools and content validation are documented.",
+      "source_sha256": "7c50e7b15771c2425690c345ba759811b282d75d319d2f0295878f9509753b1a"
     },
     "project-format": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "c4e6d37c87ce300287c6a56c34a26f8a8bc05fb5454f4df8a0f03b5e26329aae"
+        "docs/COMPATIBILITY.md": "f77a6ec0d56387ca8dc31fda01c531fc6dda7b70301c5b97e05e8fd489d47051"
       },
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
       "no_impact": "",
-      "note": "Document bounded foreign DOCX expansion and unchanged manuscript schema, and require source-bound review for project-format changes. The desktop identity change does not change manuscript formats or SQLite schema.",
+      "note": "Document bounded foreign DOCX expansion and unchanged manuscript schema, and require source-bound review for project-format changes. The desktop identity change does not change manuscript formats or SQLite schema. Installer formats preserve portable layouts and book data; installer identity, bundled resources, locked packaging tools and content validation are documented.",
       "source_sha256": "633eb04cbb992be4f186db0ed49f4ba7929e26aa0029d3512d17e3861292a724"
     },
     "schema": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "c4e6d37c87ce300287c6a56c34a26f8a8bc05fb5454f4df8a0f03b5e26329aae"
+        "docs/COMPATIBILITY.md": "f77a6ec0d56387ca8dc31fda01c531fc6dda7b70301c5b97e05e8fd489d47051"
       },
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
       "no_impact": "",
-      "note": "Document current SQLite schema 17 and profile migration compatibility, backup, upgrade, and rollback limits; introduce conservative migration review obligations. The desktop identity change leaves schema 17 and the existing book profile unchanged.",
+      "note": "Document current SQLite schema 17 and profile migration compatibility, backup, upgrade, and rollback limits; introduce conservative migration review obligations. The desktop identity change leaves schema 17 and the existing book profile unchanged. Installer formats preserve portable layouts and book data; installer identity, bundled resources, locked packaging tools and content validation are documented.",
       "source_sha256": "62d95aba766994ebe98af65fd148d822bf59daffd49ad561db365ed0b52c59c4"
     }
   },

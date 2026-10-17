@@ -3544,10 +3544,6 @@ fn resolve_asset_root(
     if let Some(resources) = resource_dir {
         candidates.insert(1, resources.join("dist"));
     }
-    // macOS seals resources separately from executable code inside app bundles.
-    if resource_dir.is_none() && exe_dir.ends_with("Contents/MacOS") {
-        candidates.insert(1, exe_dir.join("../Resources/dist"));
-    }
     match candidates.iter().find(|c| is_build(c)) {
         Some(found) => AssetRoot::Found(found.clone()),
         None => AssetRoot::Missing(candidates.to_vec()),
@@ -8615,7 +8611,7 @@ mod tests {
     }
 
     #[test]
-    fn asset_root_app_dist_wins_over_both_fallbacks() {
+    fn app_dist_wins_over_both_fallbacks() {
         let dir = tempdir().unwrap();
         let exe = release_exe(dir.path());
         let staged = built_dist(dir.path().join("staged"));
@@ -8632,7 +8628,7 @@ mod tests {
     }
 
     #[test]
-    fn asset_root_an_app_dist_without_an_index_does_not_fall_through() {
+    fn an_app_dist_without_an_index_does_not_fall_through() {
         let dir = tempdir().unwrap();
         let exe = release_exe(dir.path());
         let empty = dir.path().join("staged");
@@ -8650,7 +8646,7 @@ mod tests {
     }
 
     #[test]
-    fn asset_root_falls_back_to_the_dist_beside_the_executable() {
+    fn falls_back_to_the_dist_beside_the_executable() {
         let dir = tempdir().unwrap();
         let exe = release_exe(dir.path());
         let beside = built_dist(exe.parent().unwrap().join("dist"));
@@ -8663,7 +8659,7 @@ mod tests {
     }
 
     #[test]
-    fn asset_root_installed_interface_uses_platform_resources() {
+    fn installed_interface_uses_platform_resources() {
         let dir = tempdir().unwrap();
         for (executable, resource) in [
             ("usr/bin/garret", "usr/lib/garret"),
@@ -8685,21 +8681,20 @@ mod tests {
     }
 
     #[test]
-    fn asset_root_the_page_is_found_in_macos_bundle_resources() {
+    fn executable_dist_precedes_platform_resources() {
         let dir = tempdir().unwrap();
-        let exe = dir.path().join("garret.app/Contents/MacOS/garret");
-        std::fs::create_dir_all(exe.parent().unwrap()).unwrap();
-        let resources = built_dist(dir.path().join("garret.app/Contents/Resources/dist"));
-        match resolve_asset_root(None, Some(&exe), None) {
-            AssetRoot::Found(found) => assert_eq!(found.canonicalize().unwrap(), resources.canonicalize().unwrap()),
-            other => panic!("expected bundle resources, got {other:?}"),
-        }
-        let override_dir = built_dist(dir.path().join("staged"));
-        assert_eq!(resolve_asset_root(Some(&override_dir), Some(&exe), None), AssetRoot::Found(override_dir));
+        let exe = release_exe(dir.path());
+        let beside = built_dist(exe.parent().unwrap().join("dist"));
+        let resources = dir.path().join("resources");
+        built_dist(resources.join("dist"));
+        assert_eq!(
+            resolve_asset_root(None, Some(&exe), Some(&resources)),
+            AssetRoot::Found(beside)
+        );
     }
 
     #[test]
-    fn asset_root_falls_back_to_the_repo_layout_from_the_executable() {
+    fn falls_back_to_the_repo_layout_from_the_executable() {
         let dir = tempdir().unwrap();
         let exe = release_exe(dir.path());
         std::fs::create_dir_all(exe.parent().unwrap()).unwrap();
@@ -8717,7 +8712,7 @@ mod tests {
     }
 
     #[test]
-    fn asset_root_skips_a_candidate_directory_that_holds_no_index() {
+    fn skips_a_candidate_directory_that_holds_no_index() {
         let dir = tempdir().unwrap();
         let exe = release_exe(dir.path());
         // Exists, and is empty - a `cargo build` on a tree whose UI has never
@@ -8734,7 +8729,7 @@ mod tests {
     }
 
     #[test]
-    fn asset_root_reports_every_path_it_tried_when_nothing_resolves() {
+    fn reports_every_path_it_tried_when_nothing_resolves() {
         let dir = tempdir().unwrap();
         let exe = release_exe(dir.path());
 
@@ -8751,7 +8746,7 @@ mod tests {
     }
 
     #[test]
-    fn asset_root_resolves_nothing_when_the_executable_path_is_unknown() {
+    fn resolves_nothing_when_the_executable_path_is_unknown() {
         // std::env::current_exe can fail. Without it there is no candidate at
         // all, and the window must say so rather than serve a blank page.
         assert_eq!(

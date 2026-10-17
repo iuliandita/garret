@@ -10,7 +10,8 @@
     "withGlobalTauri": true,
     "security": {
       "csp": "default-src 'self' appdist:; connect-src 'self' appdist: ipc: http://ipc.localhost; script-src 'self' appdist:; style-src 'self' appdist: 'unsafe-inline'; img-src 'self' appdist: data:; base-uri 'none'; form-action 'none'"
-    }
+    },
+    "enableGTKAppId": true
   },
   "bundle": {
     "active": true,
@@ -51,7 +52,11 @@
         "files": {
           "/usr/share/metainfo/com.usegarret.app.metainfo.xml": "../../../scripts/linux/com.usegarret.app.metainfo.xml",
           "/usr/share/doc/garret/COPYING": "../../../COPYING",
-          "/usr/share/doc/garret/THIRD-PARTY-NOTICES.md": "../../../THIRD-PARTY-NOTICES.md"
+          "/usr/share/doc/garret/THIRD-PARTY-NOTICES.md": "../../../THIRD-PARTY-NOTICES.md",
+          "/usr/share/applications/com.usegarret.app.desktop": "../../../scripts/linux/com.usegarret.app.desktop",
+          "/usr/share/icons/hicolor/32x32/apps/com.usegarret.app.png": "icons/32x32.png",
+          "/usr/share/icons/hicolor/128x128/apps/com.usegarret.app.png": "icons/128x128.png",
+          "/usr/share/icons/hicolor/256x256/apps/com.usegarret.app.png": "icons/128x128@2x.png"
         },
         "desktopTemplate": "../../../scripts/linux/garret.desktop",
         "depends": [
@@ -65,7 +70,11 @@
         "files": {
           "/usr/share/metainfo/com.usegarret.app.metainfo.xml": "../../../scripts/linux/com.usegarret.app.metainfo.xml",
           "/usr/share/doc/garret/COPYING": "../../../COPYING",
-          "/usr/share/doc/garret/THIRD-PARTY-NOTICES.md": "../../../THIRD-PARTY-NOTICES.md"
+          "/usr/share/doc/garret/THIRD-PARTY-NOTICES.md": "../../../THIRD-PARTY-NOTICES.md",
+          "/usr/share/applications/com.usegarret.app.desktop": "../../../scripts/linux/com.usegarret.app.desktop",
+          "/usr/share/icons/hicolor/32x32/apps/com.usegarret.app.png": "icons/32x32.png",
+          "/usr/share/icons/hicolor/128x128/apps/com.usegarret.app.png": "icons/128x128.png",
+          "/usr/share/icons/hicolor/256x256/apps/com.usegarret.app.png": "icons/128x128@2x.png"
         },
         "desktopTemplate": "../../../scripts/linux/garret.desktop",
         "depends": [
@@ -79,7 +88,11 @@
         "files": {
           "usr/share/metainfo/com.usegarret.app.metainfo.xml": "../../../scripts/linux/com.usegarret.app.metainfo.xml",
           "usr/share/doc/garret/COPYING": "../../../COPYING",
-          "usr/share/doc/garret/THIRD-PARTY-NOTICES.md": "../../../THIRD-PARTY-NOTICES.md"
+          "usr/share/doc/garret/THIRD-PARTY-NOTICES.md": "../../../THIRD-PARTY-NOTICES.md",
+          "usr/share/applications/com.usegarret.app.desktop": "../../../scripts/linux/com.usegarret.app.desktop",
+          "usr/share/icons/hicolor/32x32/apps/com.usegarret.app.png": "icons/32x32.png",
+          "usr/share/icons/hicolor/128x128/apps/com.usegarret.app.png": "icons/128x128.png",
+          "usr/share/icons/hicolor/256x256/apps/com.usegarret.app.png": "icons/128x128@2x.png"
         }
       }
     }

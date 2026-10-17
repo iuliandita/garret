@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=garret
+Comment=An offline writing studio for novelists
+Exec=garret
+Icon=com.usegarret.app
+Terminal=false
+Categories=Office;WordProcessor;
+StartupNotify=true
+StartupWMClass=com.usegarret.app

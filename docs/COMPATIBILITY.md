@@ -55,6 +55,17 @@ store writing or settings in WebView localStorage or IndexedDB.
 Linux old-to-new book and settings reuse is exercised on disposable data; macOS
 and Windows native upgrade behavior still requires testing on those platforms.
 
+
+On Windows, the uninstaller's optional "Delete the application data" checkbox
+removes only `%APPDATA%\com.usegarret.app` and
+`%LOCALAPPDATA%\com.usegarret.app` for the current user. It also clears installer
+registry preferences. Neither directory contains books or settings: those remain
+under `%APPDATA%\garret` (including its library and recovery files), or in a
+folder you selected. The single-instance lock remains under
+`%APPDATA%\cc.local.app`, and the pinned WebView2 profile remains under
+`%LOCALAPPDATA%\cc.local.app`. The checkbox does not remove those folders and
+is not applied during an installer upgrade.
+
 ## Backup, restore, and rollback
 
 Use a disposable book to verify an encrypted archive with its separately saved

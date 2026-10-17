@@ -7,4 +7,5 @@ Icon={{icon}}
 Terminal=false
 Categories=Office;WordProcessor;
 StartupNotify=true
-StartupWMClass=garret
+StartupWMClass=com.usegarret.app
+NoDisplay=true

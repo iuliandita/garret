@@ -132,7 +132,7 @@ ditto -c -k --sequesterRsrc --keepParent "$stage" "$archive"
 (cd "$build" && shasum -a 256 "$(basename "$archive")" > "$(basename "$archive").sha256")
 check_source
 rm -rf "$repo/app/shell-tauri/src-tauri/target/$target/release/bundle"
-(cd "$repo/app/shell-tauri" && CARGO_TARGET_DIR="$repo/app/shell-tauri/src-tauri/target" bunx @tauri-apps/cli@2.12.3 bundle --ci --no-binary-patching --target "$target" --bundles dmg)
+(cd "$repo/app/shell-tauri" && CARGO_TARGET_DIR="$repo/app/shell-tauri/src-tauri/target" "$repo/node_modules/.bin/tauri" bundle --ci --no-binary-patching --target "$target" --bundles dmg)
 python3 "$here/collect-installers.py" "macos-$architecture" "$repo/app/shell-tauri/src-tauri/target/$target/release/bundle" "$build"
 check_source
 rm "$build/INCOMPLETE.txt"
