@@ -1053,9 +1053,9 @@ mod tests {
         let original = crate::store::document_fields::tests::mixed().to_string();
         // Fixture-only storage; the live flush/restore policy remains disabled.
         store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![original, id]).unwrap();
-        let comment = store.comment_create(&id, "spanning an atom", 2, 9, "😀bewi").unwrap();
+        let comment = store.comment_create(&id, "spanning an atom", 2, 9, "😀be￼wi").unwrap();
         let anchors = store.comments(&id).unwrap();
-        assert_eq!((anchors[0].anchor_from, anchors[0].anchor_to, anchors[0].quote.as_str()), (2, 9, "😀bewi"));
+        assert_eq!((anchors[0].anchor_from, anchors[0].anchor_to, anchors[0].quote.as_str()), (2, 9, "😀be￼wi"));
         let target = store.insert_version(&id, &body("replacement"), 0, None).unwrap();
         let restored = store.doc_restore(&id, target, rev).unwrap();
         assert!(store.comments(&id).unwrap().iter().find(|saved| saved.id == comment.id).unwrap().orphaned);

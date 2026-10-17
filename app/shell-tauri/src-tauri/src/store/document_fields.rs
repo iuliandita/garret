@@ -9,9 +9,38 @@ pub struct Field {
     pub text: String,
     /// Absolute document position for prose; field-relative for attributes.
     pub from: usize,
+    /// Absolute positions at each UTF-16 boundary of the searchable text.
+    positions: Vec<usize>,
 }
 
-/// Structural reader only. Asset existence is checked by the store/inventory.
+impl Field {
+    pub(crate) fn position(&self, byte: usize) -> usize {
+        self.positions[self.text[..byte].encode_utf16().count()]
+    }
+
+    fn prose(position: usize) -> Self {
+        Self {
+            instance_id: None,
+            field: "prose",
+            text: String::new(),
+            from: position,
+            positions: vec![position],
+        }
+    }
+
+    fn append(&mut self, text: &str, position: usize) {
+        if self.text.is_empty() {
+            self.from = position;
+            self.positions[0] = position;
+        }
+        self.text.push_str(text);
+        self.positions.extend((1..=text.encode_utf16().count()).map(|offset| position + offset));
+    }
+}
+
+/// Retained reader only. Asset existence is checked by the store/inventory.
+/// Legacy prose permits empty runs and unfamiliar marks without rewriting them;
+/// any document containing atoms still uses the strict structural validator.
 pub(crate) fn read(body: &str) -> Option<Value> {
     let value: Value = serde_json::from_str(body).ok()?;
     let assets: HashSet<String> = value
@@ -21,7 +50,28 @@ pub(crate) fn read(body: &str) -> Option<Value> {
         .filter(|node| node["type"] == "figure")
         .filter_map(|node| node["attrs"]["asset_id"].as_str().map(str::to_owned))
         .collect();
-    super::document_format::validate(&value, true, &assets).ok()?;
+    let mut projection = value.clone();
+    let blocks = projection.get_mut("content")?.as_array_mut()?;
+    if blocks.iter().all(|block| block["type"] == "paragraph"
+        && block.get("content").is_none_or(|content| content.as_array().is_some_and(|nodes|
+            nodes.iter().all(|node| node["type"] == "text"))))
+    {
+        for block in blocks {
+            for node in block.get_mut("content").and_then(Value::as_array_mut).into_iter().flatten() {
+                if let Some(marks) = node.get("marks") {
+                    if !marks.as_array()?.iter().all(|mark| mark["type"].is_string()) {
+                        return None;
+                    }
+                }
+                let text = node.as_object_mut()?;
+                text.remove("marks");
+                if text.get("text").and_then(Value::as_str) == Some("") {
+                    text.insert("text".into(), Value::String(" ".into()));
+                }
+            }
+        }
+    }
+    super::document_format::validate(&projection, true, &assets).ok()?;
     Some(value)
 }
 
@@ -29,11 +79,17 @@ pub fn fields(body: &str) -> Option<Vec<Field>> {
     let value = read(body)?;
     let mut fields = Vec::new();
     let mut position = 0;
+    let mut run: Option<Field> = None;
     for block in value["content"].as_array()? {
         match block["type"].as_str()? {
             "paragraph" => {
                 position += 1;
-                let mut run: Option<Field> = None;
+                if let Some(run) = run.as_mut().filter(|run| !run.text.is_empty()) {
+                    // The displayed separator spans the closing and opening
+                    // paragraph tokens, so its far boundary is not from + 1.
+                    run.text.push(' ');
+                    run.positions.push(position);
+                }
                 for node in block
                     .get("content")
                     .and_then(Value::as_array)
@@ -42,14 +98,8 @@ pub fn fields(body: &str) -> Option<Vec<Field>> {
                 {
                     if node["type"] == "text" {
                         let text = node["text"].as_str()?;
-                        run.get_or_insert_with(|| Field {
-                            instance_id: None,
-                            field: "prose",
-                            text: String::new(),
-                            from: position,
-                        })
-                        .text
-                        .push_str(text);
+                        run.get_or_insert_with(|| Field::prose(position))
+                            .append(text, position);
                         position += text.encode_utf16().count();
                     } else {
                         if let Some(run) = run.take() {
@@ -60,29 +110,39 @@ pub fn fields(body: &str) -> Option<Vec<Field>> {
                             field: "note",
                             text: node["attrs"]["body"].as_str()?.into(),
                             from: 0,
+                            positions: (0..=node["attrs"]["body"].as_str()?.encode_utf16().count()).collect(),
                         });
                         position += 1;
                     }
                 }
-                if let Some(run) = run {
-                    fields.push(run);
-                }
                 position += 1;
             }
             "figure" => {
+                if let Some(run) = run.take() {
+                    fields.push(run);
+                }
                 for field in ["caption", "alt"] {
                     fields.push(Field {
                         instance_id: Some(block["attrs"]["id"].as_str()?.into()),
                         field,
                         text: block["attrs"][field].as_str()?.into(),
                         from: 0,
+                        positions: (0..=block["attrs"][field].as_str()?.encode_utf16().count()).collect(),
                     });
                 }
                 position += 1;
             }
-            "scene_break" => position += 1,
+            "scene_break" => {
+                if let Some(run) = run.take() {
+                    fields.push(run);
+                }
+                position += 1;
+            }
             _ => return None,
         }
+    }
+    if let Some(run) = run {
+        fields.push(run);
     }
     Some(fields)
 }
@@ -124,6 +184,75 @@ pub(crate) mod tests {
             {"type":"scene_break"},
             {"type":"paragraph","content":[{"type":"text","text":"last words"}]}
         ]})
+    }
+
+    #[test]
+    fn retained_legacy_prose_search_replace_quote_and_validation_preserve_reads() {
+        for marks in [json!([]), json!([{"type":"future","attrs":{"style":"keep"}}])] {
+            let dir = tempfile::tempdir().unwrap();
+            let path = dir.path().join("retained.db");
+            let store = super::super::Store::open(&path).unwrap();
+            let item = store.item_create(None, "scene", "Scene").unwrap();
+            let value = json!({"type":"doc","content":[{"type":"paragraph","content":[
+                {"type":"text","text":""},
+                {"type":"text","text":"😀moon","marks":marks}
+            ]}]});
+            let body = format!(" {} ", value);
+            store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![body, item.id]).unwrap();
+            assert_eq!(read(&body), Some(value.clone()));
+            assert!(super::super::document_format::validate_write(&body).is_err());
+            let (fields, scanned, skipped) = store.document_search_fields().unwrap();
+            let corpus = crate::find::Corpus { fields, scanned, skipped, ..Default::default() };
+            let items = [crate::find::SearchItem { id: &item.id, kind: "scene", title: "Scene" }];
+            let found = crate::find::search(&items, &corpus, "moon", 10);
+            assert_eq!(found.results[0].matches, 1);
+            assert_eq!((found.results[0].locators[0].from, found.results[0].locators[0].to), (3, 7));
+            assert_eq!(super::super::knowledge::quote_at(&body, 1, 7).as_deref(), Some("😀moon"));
+            assert!(crate::replace::replace_in_body(&body, "missing", "sun").unwrap().body.is_none());
+            let next = crate::replace::replace_in_body(&body, "moon", "sun").unwrap();
+            assert_eq!((next.replaced, next.spanning), (1, 0));
+            let rewritten: Value = serde_json::from_str(&next.body.unwrap()).unwrap();
+            assert_eq!(rewritten["content"][0]["content"].as_array().unwrap().len(), 1);
+            assert_eq!(rewritten["content"][0]["content"][0]["text"], "😀sun");
+            assert_eq!(rewritten["content"][0]["content"][0]["marks"], marks);
+            // The shared integrity reader must accept retained prose without
+            // granting the write path permission to store its legacy shape.
+            assert!(crate::validation::validate(&path).unwrap().ok);
+            assert_eq!(store.load_doc(&item.id).unwrap().body, body);
+        }
+        let mut atom = mixed();
+        atom["content"][0]["content"][0]["text"] = json!("");
+        assert!(read(&atom.to_string()).is_none());
+        atom = mixed();
+        atom["content"][0]["content"][0]["marks"] = json!([{"type":"future"}]);
+        assert!(read(&atom.to_string()).is_none());
+    }
+
+    #[test]
+    fn adjacent_paragraph_search_maps_positions_and_reports_spanning_replacements() {
+        let body = json!({"type":"doc","content":[
+            {"type":"paragraph","content":[{"type":"text","text":"İ😀cat"}]},
+            {"type":"paragraph","content":[{"type":"text","text":"sat down"}]},
+            {"type":"scene_break"},
+            {"type":"paragraph","content":[{"type":"text","text":"cat"}]},
+            {"type":"paragraph","content":[{"type":"text","text":"sat"}]}
+        ]}).to_string();
+        let corpus = crate::find::Corpus {
+            fields: HashMap::from([("scene".into(), fields(&body).unwrap())]),
+            ..Default::default()
+        };
+        let items = [crate::find::SearchItem { id: "scene", kind: "scene", title: "Scene" }];
+        let found = crate::find::search(&items, &corpus, "cat sat", 10);
+        assert_eq!(found.results[0].matches, 2);
+        assert_eq!(found.results[0].locators.iter().map(|loc| (loc.from, loc.to)).collect::<Vec<_>>(), vec![(4, 12), (20, 28)]);
+        assert_eq!(crate::find::search(&items, &corpus, "sat down", 10).results[0].locators[0].from, 9);
+        let capped = crate::find::search(&items, &corpus, "cat sat", 0);
+        assert_eq!((capped.total, capped.truncated), (1, true));
+        let unchanged = crate::replace::replace_in_body(&body, "cat sat", "dog lay").unwrap();
+        assert_eq!((unchanged.replaced, unchanged.spanning, unchanged.body), (0, 2, None));
+        assert_eq!(crate::find::search(&items, &corpus, "down cat", 10).total, 0);
+        let unchanged = crate::replace::replace_in_body(&body, "down cat", "joined").unwrap();
+        assert_eq!((unchanged.replaced, unchanged.spanning, unchanged.body), (0, 0, None));
     }
 
     #[test]
@@ -190,9 +319,12 @@ pub(crate) mod tests {
             if case["id"] == "unregistered-figure" {
                 continue;
             }
+            // The format corpus pins strict writes. Retained text-only bodies
+            // also accept the legacy empty-run and mark representations.
             assert_eq!(
                 read(&case["body"].to_string()).is_some(),
-                case["valid"].as_bool().unwrap(),
+                case["valid"].as_bool().unwrap()
+                    || matches!(case["id"].as_str(), Some("empty-text" | "unknown-mark" | "mark-attributes" | "duplicate-mark" | "empty-text-unknown-mark")),
                 "{}",
                 case["id"]
             );

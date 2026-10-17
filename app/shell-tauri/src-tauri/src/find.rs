@@ -266,8 +266,8 @@ pub fn search(items: &[SearchItem<'_>], corpus: &Corpus, query: &str, limit: usi
                         item_id: item.id.into(),
                         instance_id: field.instance_id.clone(),
                         field: field.field,
-                        from: field.from + field.text[..start].encode_utf16().count(),
-                        to: field.from + field.text[..end].encode_utf16().count(),
+                        from: field.position(start),
+                        to: field.position(end),
                     });
                 }
             }
