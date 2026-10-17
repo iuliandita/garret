@@ -1168,6 +1168,7 @@ mod tests {
 
         let chapters = [("scene".to_string(), "Scene".to_string(), 0)];
         let book = crate::export::Book {
+            publication: None,
             single_scene: false,
             name: "Book", contents_title: "Contents", front: &[], chapters: &chapters, back: &[],
         };
@@ -1465,6 +1466,7 @@ mod tests {
         );
 
         let book = crate::export::Book {
+            publication: None,
             single_scene: false,
             name: "A & B < C *",
             contents_title: "Contents",
