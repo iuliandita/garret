@@ -3545,7 +3545,7 @@ fn resolve_asset_root(
         candidates.insert(1, resources.join("dist"));
     }
     // macOS seals resources separately from executable code inside app bundles.
-    if exe_dir.ends_with("Contents/MacOS") {
+    if resource_dir.is_none() && exe_dir.ends_with("Contents/MacOS") {
         candidates.insert(1, exe_dir.join("../Resources/dist"));
     }
     match candidates.iter().find(|c| is_build(c)) {
