@@ -52,7 +52,9 @@ to the text, and organize the next draft into revision passes and tasks.
 ### Prepare the book
 
 Export to Markdown, DOCX, or EPUB, or make a PDF proof copy. Set up book design,
-front and back matter, covers, and pen names before exporting.
+chapter openers (ornament, its position, how far down the text area a chapter starts),
+front and back matter (including a References page, marked as a bibliography in EPUB),
+covers, and pen names before exporting.
 
 The EPUB and PDF previews sit beside your prose in a rail you can widen by
 dragging its divider or with the arrow keys; the width is remembered on that

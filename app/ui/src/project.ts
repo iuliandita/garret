@@ -2806,6 +2806,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
           newPage: style.new_page,
           capsTitle: style.caps_title,
           dropCap: style.drop_cap,
+          ornamentAbove: style.ornament_above,
+          sink: style.sink,
         })) as ChapterStyle,
       // THE EXPORT BAR'S OWN ROUTE, as EPUB. Not a second export path: that
       // unit owns the drain, the single-flight latch and both notices, and a

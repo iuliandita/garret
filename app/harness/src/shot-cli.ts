@@ -683,6 +683,13 @@ interface Options {
   previewFormat: "epub" | "pdf" | null;
   /** The same, with all four styling options turned on first. */
   previewStyled: boolean;
+  /** Overrides for the planted ornament id and `design.chapter` row. Either
+   *  implies `previewStyled`. */
+  previewGlyph: string | null;
+  previewRow: string | null;
+  /** Retype the fixture's top-level parts as chapters, so chapter openers
+   *  have something to style. */
+  previewChapters: boolean;
   /** How far to scroll the preview before capturing, in wheel notches. */
   previewScroll: number;
   /** Keys pressed once the rail has rendered, in order. */
@@ -870,6 +877,9 @@ function parseArgs(argv: string[]): Options {
   let hostError = false;
   let previewFormat: "epub" | "pdf" | null = null;
   let previewStyled = false;
+  let previewGlyph: string | null = null;
+  let previewRow: string | null = null;
+  let previewChapters = false;
   let previewScroll = 0;
   let previewKeys: string[] = [];
   let prefsScroll = 0;
@@ -1139,6 +1149,20 @@ function parseArgs(argv: string[]): Options {
     // 044. THE SAME RAIL IN THE OTHER FORMAT, which is why these are two flags
     // on one mechanism rather than two capture routes: the menu item differs
     // and nothing else does.
+    if (flag === "--preview-chapters") {
+      previewChapters = true;
+      i += 1;
+      continue;
+    }
+    if (flag === "--preview-glyph" || flag === "--preview-row") {
+      const value = rest[i + 1];
+      if (value === undefined) throw new Error(`${flag} needs a value`);
+      if (flag === "--preview-glyph") previewGlyph = value;
+      else previewRow = value;
+      previewStyled = true;
+      i += 2;
+      continue;
+    }
     if (flag === "--pdf") {
       previewFormat = "pdf";
       i += 1;
@@ -1568,6 +1592,9 @@ function parseArgs(argv: string[]): Options {
     hostError,
     previewFormat,
     previewStyled,
+    previewGlyph,
+    previewRow,
+    previewChapters,
     previewScroll,
     previewKeys,
     prefsScroll,
@@ -2741,12 +2768,12 @@ function plantDemoCovers(path: string): void {
  *  the application's own spelling of a stored value could not tell a build that
  *  had changed it from one that had not. `design.rs` holds the other statement.
  */
-function plantChapterStyle(path: string): void {
+function plantChapterStyle(path: string, glyph: string | null, row: string | null): void {
   const db = new Database(path);
   try {
     for (const [key, value] of [
-      ["design.glyph", "asterism"],
-      ["design.chapter", "new-page caps-title drop-cap"],
+      ["design.glyph", glyph ?? "asterism"],
+      ["design.chapter", row ?? "new-page caps-title drop-cap"],
     ]) {
       db.query(
         "INSERT INTO meta (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
@@ -2993,7 +3020,15 @@ if (options.warningHistory) {
 // rows. The only route a writer has is the rail itself, and a capture that had
 // to drive four presses to reach the state it is photographing would be
 // photographing the presses.
-if (options.previewStyled) plantChapterStyle(projectPath);
+if (options.previewStyled) plantChapterStyle(projectPath, options.previewGlyph, options.previewRow);
+if (options.previewChapters) {
+  const db = new Database(projectPath);
+  try {
+    db.query("UPDATE item SET type = 'chapter' WHERE type = 'part'").run();
+  } finally {
+    db.close();
+  }
+}
 // THE CAST FIRST AND THE TAGS SECOND, and the order is load-bearing rather than
 // tidy: an appearance names a cast member, and one planted before the member
 // exists is a row the store would have refused and the panel cannot draw.
@@ -3405,6 +3440,7 @@ try {
           "menu-new-foreword",
           "menu-new-acknowledgements",
           "menu-new-afterword",
+          "menu-new-references",
         ]) {
           await driver.activate(itemId);
           await Bun.sleep(TYPE_SETTLE_MS);

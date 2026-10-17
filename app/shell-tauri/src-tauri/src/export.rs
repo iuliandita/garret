@@ -1262,4 +1262,37 @@ mod tests {
         let out = manuscript(&book("N", &items), &bodies);
         assert!(out.text().contains("## Opening"));
     }
+
+    fn references_body() -> String {
+        serde_json::json!({"type":"doc","content":[
+            {"type":"paragraph","content":[{"type":"text","text":"Austen, J. Emma. 1815."}]},
+            {"type":"paragraph","content":[{"type":"text","text":"Woolf, V. The Waves. 1931."}]},
+        ]})
+        .to_string()
+    }
+
+    #[test]
+    fn a_references_page_exports_as_a_heading_with_one_paragraph_per_entry() {
+        let chapters = vec![("c".to_string(), "Chapter One".to_string(), 0)];
+        let back = vec![("r".to_string(), "References".to_string(), 0)];
+        let mut bodies = HashMap::new();
+        bodies.insert("r".to_string(), references_body());
+        let out = manuscript(
+            &Book {
+                name: "N",
+                contents_title: "Contents",
+                front: &[],
+                chapters: &chapters,
+                back: &back,
+            },
+            &bodies,
+        );
+        assert!(
+            out.text().ends_with(
+                "## References\n\nAusten, J. Emma. 1815.\n\nWoolf, V. The Waves. 1931.\n"
+            ),
+            "{}",
+            out.text()
+        );
+    }
 }

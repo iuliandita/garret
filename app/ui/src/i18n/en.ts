@@ -1673,24 +1673,39 @@ export const EN = {
   // application's keystroke path is measured and gated; a preview that
   // repainted as somebody typed would spend that budget on every word.
   "preview.epub.note":
-    "Rendered from the book as saved. Press Refresh after you write more. How a reading system sets the page will differ. EPUB includes the front cover, but not the back cover.",
+    "Rendered from the book as saved. Press Refresh after you write more. How a reading system sets the page, including how far down a chapter starts, will differ. EPUB includes the front cover, but not the back cover.",
   // A PROOF COPY AND NOT A PRINTER'S FILE, said on the surface rather than only
   // in a decision record: a writer who sent this to a printer expecting bleed
   // and a spine would find out from the printer.
   "preview.pdf.note":
     "A proof copy to read or send to a first reader, laid out at the page size and margins selected here. Not a printer\u2019s file: no bleed, no spreads. Press Refresh after you write more.",
   "preview.legend.ornament": "Chapter ornament",
-  "preview.name.ornament": "The ornament under each chapter title",
+  "preview.name.ornament": "The ornament for each chapter title",
   "preview.glyph.none": "None",
   "preview.glyph.asterisks": "Three asterisks",
   "preview.glyph.asterism": "Asterism",
   "preview.glyph.fleuron": "Fleuron",
   "preview.glyph.diamond": "Diamond",
+  "preview.glyph.dots": "Three dots",
+  "preview.glyph.hedera": "Hedera",
+  "preview.glyph.rule": "Rule with a dot",
+  "preview.legend.position": "Ornament position",
+  "preview.name.position": "Whether the ornament sits above or below the chapter title",
+  "preview.position.below": "Below title",
+  "preview.position.above": "Above title",
+  "preview.legend.sink": "Chapter start",
+  "preview.name.sink": "How far down the text area each chapter starts, as a third or half of its height",
+  "preview.sink.none": "Top of page",
+  "preview.sink.third": "A third down",
+  "preview.sink.half": "Halfway down",
   "preview.legend.chapter": "Book style",
   "preview.name.chapter": "Heading and chapter styling",
   "preview.option.new_page": "New page for parts and chapters",
   "preview.option.caps_title": "Book-body headings in capitals",
   "preview.option.drop_cap": "Drop cap at chapter openings",
+  "preview.option.ornament_above": "Ornament above the chapter title",
+  "preview.option.sink_third": "Chapters start a third of the way down the text area",
+  "preview.option.sink_half": "Chapters start halfway down the text area",
   "preview.epub.summary.one": "{items} section, {words} words.",
   "preview.epub.summary.other": "{items} sections, {words} words.",
   "preview.pdf.summary.one": "{leaves} page, {items} sections, {words} words.",
@@ -1885,6 +1900,7 @@ export const EN = {
   "menu.new-foreword": "New foreword",
   "menu.new-acknowledgements": "New acknowledgements",
   "menu.new-afterword": "New afterword",
+  "menu.new-references": "New references",
   // The moves. Verbs, and OUT/IN rather than left/right: the chord is
   // Alt+Left and Alt+Right, and the shortcut column beside the label already
   // says so -- but "Move left" describes the key while "Move out" describes
@@ -1944,6 +1960,7 @@ export const EN = {
   "item.matter.foreword": "Foreword",
   "item.matter.acknowledgements": "Acknowledgements",
   "item.matter.afterword": "Afterword",
+  "item.matter.references": "References",
   // A TIMELINE'S TITLE CARRIES NO `{n}` EITHER, `item.matter`'s reason: the
   // model is one story clock per book, so "Timeline 1" would be a
   // lie about a book that has exactly one.
