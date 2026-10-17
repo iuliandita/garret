@@ -83,7 +83,7 @@ Assert-UnchangedSource
 $bundleDir = Join-Path $hostDir "target/$target/release/bundle"
 if (Test-Path $bundleDir) { Remove-Item $bundleDir -Recurse -Force }
 Push-Location (Join-Path $repo 'app/shell-tauri')
-try { Invoke-Checked -Command bunx -Arguments @('--no-install', 'tauri', 'bundle', '--ci', '--no-binary-patching', '--target', $target, '--bundles', 'nsis') }
+try { Invoke-Checked -Command bun -Arguments @((Join-Path $repo 'node_modules/@tauri-apps/cli/tauri.js'), 'bundle', '--ci', '--no-binary-patching', '--target', $target, '--bundles', 'nsis') }
 finally { Pop-Location }
 Invoke-Checked -Command python -Arguments @((Join-Path $PSScriptRoot 'collect-installers.py'), 'windows', $bundleDir, $out)
 Assert-UnchangedSource

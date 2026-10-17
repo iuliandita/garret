@@ -66,7 +66,7 @@ tar -C "$out" -czf "$tar" app
 (cd "$out" && sha256sum "$(basename "$tar")" > "$(basename "$tar").sha256")
 
 rm -rf "$repo/app/shell-tauri/src-tauri/target/release/bundle"
-(cd "$repo/app/shell-tauri" && CARGO_TARGET_DIR="$repo/app/shell-tauri/src-tauri/target" "$repo/node_modules/.bin/tauri" bundle --ci --no-binary-patching --bundles deb,rpm,appimage)
+(cd "$repo/app/shell-tauri" && CARGO_TARGET_DIR="$repo/app/shell-tauri/src-tauri/target" bun "$repo/node_modules/@tauri-apps/cli/tauri.js" bundle --ci --no-binary-patching --bundles deb,rpm,appimage)
 python3 "$here/collect-installers.py" linux "$repo/app/shell-tauri/src-tauri/target/release/bundle" "$out"
 if [[ $(git -C "$repo" rev-parse HEAD) != "$revision" || -n $(git -C "$repo" status --porcelain) ]]; then
   echo "source changed during bundling; refusing to label this package" >&2

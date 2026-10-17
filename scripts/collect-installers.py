@@ -15,4 +15,4 @@ for extension in formats:
         raise SystemExit(f"Expected one fresh {extension} installer, found {len(matches)}")
     suffix = "-setup.exe" if extension == "exe" else f".{extension}"
     architecture = platform if platform.startswith("macos-") else f"{platform}-x86_64"
-    shutil.copyfile(matches[0], destination / f"garret-{architecture}{suffix}")
+    shutil.copy(matches[0], destination / f"garret-{architecture}{suffix}")
