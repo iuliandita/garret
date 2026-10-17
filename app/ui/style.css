@@ -8088,6 +8088,8 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 }
 
 #preview-options > #preview-ornament,
+#preview-options > #preview-position,
+#preview-options > #preview-sink,
 #preview-options > #preview-chapter {
   margin-top: 10px;
 }
@@ -8101,6 +8103,8 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
    from the other side -- a wrapped row beginning UNDER the legend and reading
    as another group with no name -- and stacking answers both at once. */
 #preview-ornament,
+#preview-position,
+#preview-sink,
 #preview-chapter {
   display: flex;
   flex-direction: column;

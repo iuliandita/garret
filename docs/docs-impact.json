@@ -14,72 +14,66 @@
   "receipts": {
     "backup-recovery": {
       "breaking": "none",
-      "docs": {
-        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
-        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
-      },
+      "docs": {},
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
-      "no_impact": "",
-      "note": "Document complete book and profile backups, interrupted migration preservation, archive boundaries, and restoring separate pre-upgrade copies.",
-      "source_sha256": "2edd84df587e32edba860845496359304bc871189b1a9f8bacee26f390bea937"
+      "no_impact": "Salvage reports design rows verbatim and is unchanged; only a test fixture gained default fields for the new chapter options, so recovery behavior and archive contracts are unaffected.",
+      "note": "No recovery or backup behavior changes.",
+      "source_sha256": "04cfc79736524fb7162bcc5a50c45be9cb0f78bcc21297ccc16912f94773f674"
     },
     "editor": {
       "breaking": "none",
       "docs": {
-        "README.md": "6636549b3c95d1899df47efe1cb88ffad529f544d411fab8a0f42267a5f3b431"
+        "README.md": "6714210555d7018aa09628013620e4989276bc6b4184626be07467574d4e9c6a"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. The creation menu and README also cover the References back-matter page.",
-      "source_sha256": "3d60e3feb4b392ae1acaee39633f578dcfb5aefd63e89ab5bb8e0878e2619e7f"
+      "note": "Document chapter openers (ornament, its position, chapter sink) in the book preparation summary; the preview rail gains two option groups and three ornaments. Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. The creation menu and README also cover the References back-matter page.",
+      "source_sha256": "3837b3a360d62638f685dfc5aa39f5a17b019df5b5b470aa3648f92212b80985"
     },
     "encryption": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
-        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
+        "docs/COMPATIBILITY.md": "aaf05cc02dc251a134e65de1d2a26332d7d75aca1f7ababc4109d8197381fe27"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Distinguish encrypted portable archives from plaintext working files and add encryption dependency and source review obligations.",
+      "note": "Distinguish encrypted portable archives from plaintext working files and add encryption dependency and source review obligations. Chapter openers change no encryption behavior; only a compatibility paragraph was added.",
       "source_sha256": "3de071163792f42498cde75496e4894e6649599b1f5d949390410cf68e8a3c9a"
     },
     "maintenance": {
       "breaking": "none",
       "docs": {},
       "migration": "",
-      "no_impact": "Harness and test files changed only for the References menu item; contributor guidance, documentation checks and recovery contracts are unchanged.",
-      "note": "Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged.",
-      "source_sha256": "4464b17050683007801cb5b1ab39723540ad9599a393c62357d56672cce64561"
+      "no_impact": "Renderer, paginator and test sources changed for chapter openers and CI runs one display-gated paginator test; contributor guidance, documentation checks and native-test exclusions are unchanged. Harness and test files changed only for the References menu item; contributor guidance, documentation checks and recovery contracts are unchanged.",
+      "note": "No contributor workflow change. Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged.",
+      "source_sha256": "9e116c346e9872cd7fda374129c030c3b6b56a363468f778119f1a672f76c70f"
     },
     "native-packaging": {
       "breaking": "none",
-      "docs": {
-        "CONTRIBUTING.md": "272888b63e282071b5f8c40e627910c1064d4fe6d422f5967dab9dd6fa456d11",
-        "docs/RELEASES.md": "a89c23cedc46f620969337f6a3957ddceb589017a562d600bed0bb1da86ac48d"
-      },
+      "docs": {},
       "migration": "",
-      "no_impact": "",
-      "note": "Require the latest exact-commit develop push CI run to succeed before alpha tag packaging; an older success cannot hide a pending or failed newer run. Existing platforms, asset publication, tag ancestry, application behavior, and compatibility remain unchanged.",
-      "source_sha256": "2f6c313459ffcf4cacba835bae2f161f2fa7a56e95c5a4614e855eacb9ef9f8e"
+      "no_impact": "CI gains one narrow display-gated paginator test step in the host job; packaging, release admission and artifacts are unchanged.",
+      "note": "Require the latest exact-commit develop push CI run to succeed before alpha tag packaging; an older success cannot hide a pending or failed newer run. Existing platforms, asset publication, tag ancestry, application behavior, and compatibility remain unchanged. The host job also runs one display-gated proof paginator test.",
+      "source_sha256": "d6ce91ef8888dbd6613d38e3b794bb7ea12e98cc981e184e9c8cace733bc5c4d"
     },
     "project-format": {
       "breaking": "none",
-      "docs": {},
-      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
-      "no_impact": "No stored-format change: a References page is an ordinary matter document at the same SQLite schema, so older builds open such books unchanged; only EPUB export gains a section semantic.",
-      "note": "Document bounded foreign DOCX expansion and unchanged manuscript schema, and require source-bound review for project-format changes. A References page adds no stored format.",
-      "source_sha256": "08b02150cb30e97307b3d0d76a223f42f541bcec15e3e8edd6d9ff35dd8e1aca"
+      "docs": {
+        "docs/COMPATIBILITY.md": "aaf05cc02dc251a134e65de1d2a26332d7d75aca1f7ababc4109d8197381fe27"
+      },
+      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Chapter openers add optional words (ornament-above, sink-third, sink-half) and three ornament names to the stored chapter options; older builds ignore them, so back up the closed book before upgrading as above and expect an older package to show the ornament below the title with no sink.",
+      "no_impact": "",
+      "note": "Chapter openers add optional words to the stored chapter options and three ornament names; the SQLite schema is unchanged and books without them render as before. Document bounded foreign DOCX expansion and unchanged manuscript schema, and require source-bound review for project-format changes. A References page adds no stored format. No stored-format change: a References page is an ordinary matter document at the same SQLite schema, so older builds open such books unchanged; only EPUB export gains a section semantic.",
+      "source_sha256": "ecd9bd4084681bdb7351b8070477cd7e7596836e85862567fea473aa095c5887"
     },
     "schema": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
-        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
+        "docs/COMPATIBILITY.md": "aaf05cc02dc251a134e65de1d2a26332d7d75aca1f7ababc4109d8197381fe27"
       },
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
       "no_impact": "",
-      "note": "Document current SQLite schema 17 and profile migration compatibility, backup, upgrade, and rollback limits; introduce conservative migration review obligations.",
+      "note": "Document current SQLite schema 17 and profile migration compatibility, backup, upgrade, and rollback limits; introduce conservative migration review obligations. The schema stays at 17 for chapter openers, which add optional words to an existing row.",
       "source_sha256": "62d95aba766994ebe98af65fd148d822bf59daffd49ad561db365ed0b52c59c4"
     }
   },

@@ -5709,6 +5709,7 @@ pub(crate) mod tests {
                 new_page: true,
                 caps_title: false,
                 drop_cap: true,
+                ..Default::default()
             },
         )
         .unwrap();

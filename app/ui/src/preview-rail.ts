@@ -36,6 +36,7 @@
 import { isCompositionKey } from "./composition-key";
 import { formatNumber, plural, t } from "./i18n";
 import {
+  SINKS,
   STYLE_FLAGS,
   gutterVerdict,
   parseDocumentBody,
@@ -159,6 +160,44 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   }
   flagGroup.append(flagLegend, flagChoices);
 
+  /** A named group of mutually exclusive toggles, painted by aria-pressed like
+   *  every other option here. `attribute` is the data attribute the click
+   *  handler reads. */
+  function choiceGroup(
+    id: string,
+    legendKey: string,
+    nameKey: string,
+    attribute: "previewPosition" | "previewSink",
+    values: readonly string[],
+    labelKey: string,
+  ): HTMLDivElement {
+    const group = document.createElement("div");
+    group.id = id;
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", t(nameKey));
+    const legend = document.createElement("span");
+    legend.className = "preview-legend";
+    legend.setAttribute("aria-hidden", "true");
+    legend.textContent = t(legendKey);
+    const choices = document.createElement("div");
+    choices.className = "preview-choices";
+    for (const value of values) {
+      const control = button(`${id}-${value}`, t(`${labelKey}.${value}`));
+      control.dataset[attribute] = value;
+      choices.append(control);
+    }
+    group.append(legend, choices);
+    return group;
+  }
+  const positionGroup = choiceGroup(
+    "preview-position", "preview.legend.position", "preview.name.position",
+    "previewPosition", ["below", "above"], "preview.position",
+  );
+  const sinkGroup = choiceGroup(
+    "preview-sink", "preview.legend.sink", "preview.name.sink",
+    "previewSink", SINKS, "preview.sink",
+  );
+
   const note = document.createElement("p");
   note.id = "preview-note";
   note.textContent = t("preview.epub.note");
@@ -170,7 +209,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   const options = document.createElement("div");
   options.id = "preview-options";
   options.hidden = true;
-  options.append(ornamentGroup, flagGroup);
+  options.append(ornamentGroup, positionGroup, sinkGroup, flagGroup);
   const optionsToggle = button("preview-options-toggle", t("preview.options"));
   optionsToggle.setAttribute("aria-label", t("preview.options"));
   optionsToggle.setAttribute("aria-expanded", "false");
@@ -231,6 +270,15 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     }
     for (const [flag, control] of flagButtons) {
       control.setAttribute("aria-pressed", String(style[flag]));
+    }
+    for (const control of positionGroup.querySelectorAll<HTMLButtonElement>("button")) {
+      control.setAttribute(
+        "aria-pressed",
+        String((control.dataset.previewPosition === "above") === style.ornament_above),
+      );
+    }
+    for (const control of sinkGroup.querySelectorAll<HTMLButtonElement>("button")) {
+      control.setAttribute("aria-pressed", String(control.dataset.previewSink === style.sink));
     }
   }
 
@@ -546,6 +594,16 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       // DOM by any other route cannot be stored. `design-panel.ts`'s rule.
       if (value !== "" && !glyphs.some((g) => g.id === value)) return;
       void commit({ ...current, glyph: value === "" ? null : value });
+      return;
+    }
+    const position = target.closest<HTMLElement>("[data-preview-position]")?.dataset.previewPosition;
+    if (position === "above" || position === "below") {
+      void commit({ ...current, ornament_above: position === "above" });
+      return;
+    }
+    const sink = target.closest<HTMLElement>("[data-preview-sink]")?.dataset.previewSink;
+    if (sink !== undefined && (SINKS as readonly string[]).includes(sink)) {
+      void commit({ ...current, sink: sink as ChapterStyle["sink"] });
       return;
     }
     const flag = target.closest<HTMLElement>("[data-preview-flag]")?.dataset.previewFlag;

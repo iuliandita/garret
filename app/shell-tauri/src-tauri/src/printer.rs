@@ -511,6 +511,11 @@ mod tests {
                 document.querySelectorAll('.proof-text p').forEach(function(p){
                   p.setAttribute('data-lines', String(Math.round(p.offsetHeight / 20)));
                 });
+                document.querySelectorAll('.proof-text > [data-proof-sink]').forEach(function(el){
+                  var box = el.parentNode.getBoundingClientRect();
+                  el.setAttribute('data-top', String(Math.round(el.getBoundingClientRect().top - box.top)));
+                  el.setAttribute('data-text-height', String(Math.round(box.height)));
+                });
                 window.__proof.pages = Array.from(document.querySelectorAll('.proof-leaf'),
                   function(page){ return page.outerHTML; });
                 if(document.querySelector('.proof-text em strong')){
@@ -643,6 +648,79 @@ mod tests {
             refused,
             "proof layout failed: a proof heading and following block exceed the page"
         );
+
+        // A SUNK OPENING starts that far down a fresh leaf: the text area of
+        // this fixture is 110px.
+        let half = paginate(document(
+            "<h2 data-proof-sink=\"half\">Chapter</h2><p>text</p>",
+        ))
+        .unwrap();
+        assert_eq!(half.report.leaves, 1);
+        assert!(half.report.pages[0].contains("margin-top: 55px"), "{:?}", half.report.pages);
+        // The RENDERED offset of the opening inside its text area, not the
+        // style that was asked for: a half is a half of the text block, within
+        // a line (20px here).
+        let offset = |page: &str| -> (f64, f64) {
+            let read = |name: &str| -> f64 {
+                let at = page.find(name).unwrap_or_else(|| panic!("{name}: {page}")) + name.len();
+                page[at..].split('"').next().unwrap().parse().unwrap()
+            };
+            (read("data-top=\""), read("data-text-height=\""))
+        };
+        let (top, height) = offset(&half.report.pages[0]);
+        assert_eq!(height, 110.0);
+        assert!((top - height / 2.0).abs() <= 20.0, "half: {top} of {height}");
+        let third = paginate(document(
+            "<p>before</p><h2 data-proof-sink=\"third\">Chapter</h2><p>text</p>",
+        ))
+        .unwrap();
+        assert_eq!(third.report.leaves, 2, "a sunk opening opens its own leaf");
+        assert!(!third.report.pages[0].contains("Chapter"));
+        assert!(third.report.pages[1].contains("margin-top: 37px"), "{:?}", third.report.pages);
+        let (top, height) = offset(&third.report.pages[1]);
+        assert!((top - height / 3.0).abs() <= 20.0, "third: {top} of {height}");
+        // With the ornament above the title the ornament leads and carries the
+        // sink; the title follows it.
+        let led = paginate(document(
+            "<p class=\"ornament ornament-above\" data-proof-sink=\"third\">*</p><h2>Head</h2><p>text</p>",
+        ))
+        .unwrap();
+        let (top, height) = offset(&led.report.pages[0]);
+        assert!((top - height / 3.0).abs() <= 20.0, "led: {top} of {height}");
+
+        // A sink that leaves no room for the heading and its text gives way
+        // rather than refusing the proof; the same pair without a sink is the
+        // refusal asserted above.
+        let yielded = paginate(document(
+            "<h2 data-proof-sink=\"half\" style=\"height:60px\">Head</h2><p>tail</p>",
+        ))
+        .unwrap();
+        assert_eq!(yielded.report.leaves, 1);
+        assert!(!yielded.report.pages[0].contains("margin-top"), "{:?}", yielded.report.pages);
+
+        // A heading group is never left at the foot of a leaf without the text
+        // it introduces, whichever side the ornament is on.
+        let long = "words to wrap ".repeat(40);
+        let below = paginate(document(&format!(
+            "<p>a</p><p>b</p><p>c</p><h2>Head</h2><p class=\"ornament\">*</p><p>{long}</p>"
+        )))
+        .unwrap();
+        assert!(!below.report.pages[0].contains("Head"), "{:?}", below.report.pages);
+        assert!(below.report.pages[1].contains("Head"));
+        let above = paginate(document(&format!(
+            "<p>a</p><p>b</p><p>c</p><p class=\"ornament ornament-above\">*</p>\
+             <h2>Head</h2><p>{long}</p>"
+        )))
+        .unwrap();
+        assert!(!above.report.pages[0].contains("ornament"), "{:?}", above.report.pages);
+        let second = &above.report.pages[1];
+        assert!(second.find("ornament").unwrap() < second.find("Head").unwrap());
+        let stacked = paginate(document(&format!(
+            "<p>a</p><p>b</p><p>c</p><h2>Part</h2><h2>Scene</h2><p>{long}</p>"
+        )))
+        .unwrap();
+        assert!(!stacked.report.pages[0].contains("Part"), "{:?}", stacked.report.pages);
+        assert!(stacked.report.pages[1].contains("Part"));
     }
 
     #[test]
@@ -687,6 +765,7 @@ mod tests {
                 new_page: false,
                 caps_title: false,
                 drop_cap: false,
+                ..Default::default()
             },
             front_cover: Some(Cover {
                 bytes: include_bytes!("../fixtures/black-and-clear.png").to_vec(),
