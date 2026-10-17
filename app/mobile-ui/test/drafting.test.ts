@@ -20,7 +20,7 @@ function fixture(overrides: Partial<MobileDrafting> = {}, locale: "en" | "de" = 
     find: async () => ({ results: [], truncated: false, skipped: 0 }),
     goals: async () => ({ target: "500", today: 12, available: true, collecting: true }),
     notes: async () => ({ body: "Watch the tide" }), saveNotes: async () => {},
-    reference: async () => ({ notes: [{ title: "Harbour", body: "A tidal port" }], cast: [{ name: "Ada", summary: "The captain", aliases: ["Skipper"], fields: [{ label: "Ship", value: "Ferry" }] }] }),
+    reference: async () => ({ skipped: 1, notes: [{ title: "Harbour", body: "A tidal port" }], cast: [{ name: "Ada", summary: "The captain", aliases: ["Skipper"], fields: [{ label: "Ship", value: "Ferry" }] }] }),
     comments: async () => [], resolve: async () => [], ...overrides,
   };
   const writes: string[] = []; const sizes: number[] = [];
@@ -84,19 +84,22 @@ test("mobile rename and move use the selected scene and fresh item revision, the
 });
 
 test("mobile search selects occurrences without writing and opens book results with the desktop match locator", async () => {
-  let search: unknown;
-  const f = fixture({ find: async (...args) => { search = args; return { results: [{ item_id: "b", title: "Departure", snippet: "A different tide", matches: 1 }], truncated: true, skipped: 1 }; } });
-  let dialog = await open(f, f.m.search); dialog.querySelector("input")!.value = "tide";
-  dialog.querySelector("form")!.dispatchEvent(new Event("submit", { cancelable: true }));
-  expect(dialog.querySelectorAll("nav button")).toHaveLength(2);
-  (dialog.querySelectorAll("nav button")[1] as HTMLButtonElement).click(); await task();
-  expect(f.workspace.editor.selection()).toEqual({ from: 15, to: 19 });
-  dialog = await open(f, f.m.search); dialog.querySelector("input")!.value = "tide";
-  click(dialog, f.m.searchBook); dialog = await ready(f.mount);
-  expect(search).toEqual(["tide", "a"]); expect(dialog.textContent).toContain(f.m.searchLimited); expect(dialog.textContent).toContain(f.m.searchSkipped);
-  dialog.querySelector<HTMLButtonElement>("nav button")!.click(); await task(); await task();
-  expect(f.mount.querySelector("h1")!.textContent).toBe("Departure"); expect(f.workspace.editor.selection()).toEqual({ from: 13, to: 17 }); expect(f.writes).toHaveLength(0);
-  await finish(f);
+  for (const locale of ["en", "de"] as const) {
+    let search: unknown;
+    const f = fixture({ find: async (...args) => { search = args; return { results: [{ item_id: "b", title: "Departure", snippet: "A different tide", matches: 1 }], truncated: true, skipped: 1 }; } }, locale);
+    let dialog = await open(f, f.m.search); dialog.querySelector("input")!.value = "tide";
+    dialog.querySelector("form")!.dispatchEvent(new Event("submit", { cancelable: true }));
+    expect(dialog.querySelectorAll("nav button")).toHaveLength(2);
+    expect(dialog.querySelector("[role=status]")!.textContent).toBe(f.m.searchMatches.replace("{n}", "2"));
+    (dialog.querySelectorAll("nav button")[1] as HTMLButtonElement).click(); await task();
+    expect(f.workspace.editor.selection()).toEqual({ from: 15, to: 19 });
+    dialog = await open(f, f.m.search); dialog.querySelector("input")!.value = "tide";
+    click(dialog, f.m.searchBook); dialog = await ready(f.mount);
+    expect(search).toEqual(["tide", "a"]); expect(dialog.textContent).toContain(f.m.searchLimited); expect(dialog.textContent).toContain(f.m.searchSkipped);
+    dialog.querySelector<HTMLButtonElement>("nav button")!.click(); await task(); await task();
+    expect(f.mount.querySelector("h1")!.textContent).toBe("Departure"); expect(f.workspace.editor.selection()).toEqual({ from: 13, to: 17 }); expect(f.writes).toHaveLength(0);
+    await finish(f);
+  }
 });
 
 test("mobile goals preserve negative daily progress and save canonical custom targets for the local day", async () => {
@@ -110,27 +113,35 @@ test("mobile goals preserve negative daily progress and save canonical custom ta
   await finish(f);
 });
 
-test("mobile notes read and save the captured scene's synopsis, preserve drafts after failure and stay separate from prose", async () => {
-  let fail = true; const saved: unknown[] = [];
-  const f = fixture({ saveNotes: async (...args) => { saved.push(args); if (fail) throw new Error("disk full"); } });
-  const before = f.workspace.editor.serialize(); const dialog = await open(f, f.m.notes);
-  const textarea = dialog.querySelector("textarea")!; expect(textarea.value).toBe("Watch the tide"); textarea.value = "A new note";
-  click(dialog, f.m.saveAction); await ready(f.mount);
-  expect(dialog.querySelector<HTMLElement>("[role=alert]")!.hidden).toBe(false); expect(textarea.value).toBe("A new note");
-  fail = false; click(dialog, f.m.saveAction); await ready(f.mount);
-  expect(saved).toEqual([["a", "A new note"], ["a", "A new note"]]); expect(dialog.textContent).toContain(f.m.saved);
-  expect(f.workspace.editor.serialize()).toBe(before); expect(f.writes).toHaveLength(0); await finish(f);
+test("mobile synopsis shares the desktop field and preserves failed-save drafts without changing prose", async () => {
+  for (const locale of ["en", "de"] as const) {
+    let fail = true; const saved: unknown[] = [];
+    const f = fixture({ saveNotes: async (...args) => { saved.push(args); if (fail) throw new Error("disk full"); } }, locale);
+    const before = f.workspace.editor.serialize(); const dialog = await open(f, f.m.synopsis);
+    expect(dialog.getAttribute("aria-label")).toBe(locale === "en" ? "Synopsis" : "Inhaltsangabe");
+    expect(dialog.textContent).toContain(f.m.synopsisHint);
+    expect(dialog.querySelector("label")!.textContent).toContain(f.m.synopsisField);
+    const textarea = dialog.querySelector("textarea")!; expect(textarea.value).toBe("Watch the tide"); textarea.value = "A new note";
+    click(dialog, f.m.saveAction); await ready(f.mount);
+    expect(dialog.querySelector<HTMLElement>("[role=alert]")!.hidden).toBe(false); expect(textarea.value).toBe("A new note");
+    fail = false; click(dialog, f.m.saveAction); await ready(f.mount);
+    expect(saved).toEqual([["a", "A new note"], ["a", "A new note"]]); expect(dialog.textContent).toContain(f.m.saved);
+    expect(f.workspace.editor.serialize()).toBe(before); expect(f.writes).toHaveLength(0); await finish(f);
+  }
 });
 
 test("mobile reference lookup searches aliases and fields and exposes no editing controls", async () => {
-  const f = fixture(); const before = f.workspace.editor.serialize(); const dialog = await open(f, f.m.reference);
-  expect(dialog.querySelectorAll("details")).toHaveLength(2);
-  const input = dialog.querySelector("input")!; input.value = "Skipper"; input.dispatchEvent(new Event("input"));
-  expect(dialog.querySelectorAll("details")).toHaveLength(1); expect(dialog.querySelector("summary")!.textContent).toBe("Ada");
-  input.value = "Ferry"; input.dispatchEvent(new Event("input")); expect(dialog.textContent).toContain("Ship: Ferry");
-  input.value = "missing"; input.dispatchEvent(new Event("input")); expect(dialog.textContent).toContain(f.m.noReferences);
-  expect(dialog.querySelectorAll("textarea,form")).toHaveLength(0); expect(dialog.querySelectorAll("button")).toHaveLength(1);
-  expect(f.workspace.editor.serialize()).toBe(before); await finish(f);
+  for (const locale of ["en", "de"] as const) {
+    const f = fixture({}, locale); const before = f.workspace.editor.serialize(); const dialog = await open(f, f.m.reference);
+    expect(dialog.querySelectorAll("details")).toHaveLength(2);
+    expect(dialog.textContent).toContain(f.m.referenceSkipped.replace("{n}", "1"));
+    const input = dialog.querySelector("input")!; input.value = "Skipper"; input.dispatchEvent(new Event("input"));
+    expect(dialog.querySelectorAll("details")).toHaveLength(1); expect(dialog.querySelector("summary")!.textContent).toBe("Ada");
+    input.value = "Ferry"; input.dispatchEvent(new Event("input")); expect(dialog.textContent).toContain("Ship: Ferry");
+    input.value = "missing"; input.dispatchEvent(new Event("input")); expect(dialog.textContent).toContain(f.m.noReferences);
+    expect(dialog.querySelectorAll("textarea,form")).toHaveLength(0); expect(dialog.querySelectorAll("button")).toHaveLength(1);
+    expect(f.workspace.editor.serialize()).toBe(before); await finish(f);
+  }
 });
 
 test("mobile comments retain quotes and orphan status and refresh resolved editor anchors after acknowledgment", async () => {
@@ -148,6 +159,9 @@ test("mobile comments retain quotes and orphan status and refresh resolved edito
 test("mobile tools localize in both themes and text size uses the acknowledged device preference without changing prose", async () => {
   for (const locale of ["en", "de"] as const) for (const theme of ["light", "dark"] as const) {
     const f = fixture({}, locale, theme); const before = f.workspace.editor.serialize();
+    const synopsis = await open(f, f.m.synopsis);
+    expect(synopsis.getAttribute("aria-label")).toBe(locale === "en" ? "Synopsis" : "Inhaltsangabe");
+    expect(synopsis.textContent).toContain(f.m.synopsisHint); f.workspace.back();
     const dialog = await open(f, f.m.textSize);
     expect(dialog.getAttribute("aria-label")).toBe(f.m.textSize); expect(f.mount.querySelector<HTMLElement>("section")!.dataset.theme).toBe(theme);
     expect(f.mount.querySelector<HTMLElement>("section")!.style.getPropertyValue("--prose-size")).toBe("22px");
@@ -161,7 +175,7 @@ test("mobile tool reads wait for saved prose and pending operations block Back a
   let answer!: () => void; let reads = 0;
   const f = fixture({ notes: () => { reads++; return new Promise(resolve => { answer = () => resolve({ body: "Saved note" }); }); } });
   f.workspace.editor.typeChar("new writing");
-  f.mount.querySelector<HTMLButtonElement>('[data-action="outline"]')!.click(); click(f.mount.querySelector(".mobile-outline")!, f.m.notes);
+  f.mount.querySelector<HTMLButtonElement>('[data-action="outline"]')!.click(); click(f.mount.querySelector(".mobile-outline")!, f.m.synopsis);
   await task(); expect(f.writes).toHaveLength(1); expect(reads).toBe(1);
   const before = f.workspace.editor.serialize(); f.workspace.editor.typeChar("blocked"); expect(f.workspace.editor.serialize()).toBe(before);
   f.workspace.back(); expect(f.mount.querySelector<HTMLDialogElement>(".mobile-drafting")!.open).toBe(true); expect(await f.workspace.close()).toBe(false);

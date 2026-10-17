@@ -8,13 +8,13 @@ saves locally. It includes light/dark appearances and English/German labels
 selected from the device language. No account is needed.
 
 Outline also offers scene rename and move/reorder, search in the current scene
-or book, daily word goals, scene notes, Bible/cast lookup, comments, and text size.
+or book, daily word goals, Synopsis, Bible/cast lookup, comments, and text size.
 Move changes only a scene (including any existing children); parts and chapters
 have no editing actions. Choose an existing destination and the preceding item,
 or First. Search results open the scene and select a matching passage.
 
-Scene notes use the desktop Synopsis field and save with an explicit Save action;
-closing discards an unsaved note draft. Comments retain their quoted passages and
+Synopsis edits the same field as the desktop synopsis panel and uses explicit Save;
+closing discards an unsaved synopsis draft. Comments retain their quoted passages and
 can be resolved. Bible/cast lookup is read-only. Daily progress uses the desktop
 saved-typing ledger, including negative progress and its paused/unavailable states;
 pasted/imported words do not count as typing. The daily target is an application

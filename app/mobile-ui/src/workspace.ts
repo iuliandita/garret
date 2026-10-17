@@ -127,7 +127,7 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
   page.addEventListener("scroll", schedulePosition, { passive: true });
   const markButtons = new Map<string, HTMLButtonElement>();
   const showError = (message: string) => {
-    const modal = root.querySelector<HTMLDialogElement>("dialog[open]");
+    const modal = [...root.querySelectorAll<HTMLDialogElement>("dialog[open]")].find(dialog => dialog.querySelector("header"));
     const target = modal ?? root;
     if (error.parentElement !== target) {
       if (modal) modal.querySelector("header")!.after(error);

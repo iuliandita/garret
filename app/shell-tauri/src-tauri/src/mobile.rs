@@ -726,8 +726,9 @@ struct ReferenceNote {
 struct Reference {
     notes: Vec<ReferenceNote>,
     cast: Vec<store::cast::CastMember>,
+    skipped: usize,
 }
-fn reference(store: &store::Store) -> Result<Reference, String> {
+fn reference_items(store: &store::Store) -> Result<Vec<(String, String)>, String> {
     let items = store.items().map_err(|error| error.to_string())?;
     let live = store::without_trashed(items);
     let mut bible_depth = None;
@@ -738,25 +739,42 @@ fn reference(store: &store::Store) -> Result<Reference, String> {
         }
         if item.depth == 0 && item.item_type == store::BIBLE_TYPE {
             bible_depth = Some(item.depth);
-        } else if bible_depth.is_some() && store::carries_document(&item.item_type) {
-            let doc = store
-                .load_doc(&item.id)
-                .map_err(|error| error.to_string())?;
-            let body = store::document_text(&doc.body).ok_or("reference document is unreadable")?;
-            notes.push(ReferenceNote {
-                title: item.title,
-                body,
-            });
+        } else if bible_depth.is_some()
+            && item.item_type != store::TIMELINE_TYPE
+            && store::carries_document(&item.item_type)
+        {
+            notes.push((item.id, item.title));
+        }
+    }
+    Ok(notes)
+}
+fn reference(path: &std::path::Path, items: Vec<(String, String)>) -> Result<Reference, String> {
+    let store = store::Store::open_readonly(path).map_err(|error| error.to_string())?;
+    let mut notes = Vec::new();
+    let mut skipped = 0;
+    for (id, title) in items {
+        match store.load_doc(&id).ok().and_then(|doc| store::document_text(&doc.body)) {
+            Some(body) => notes.push(ReferenceNote { title, body }),
+            None => skipped += 1,
         }
     }
     Ok(Reference {
         notes,
         cast: store.cast_list().map_err(|error| error.to_string())?,
+        skipped,
     })
 }
 #[tauri::command]
-fn mobile_reference(host: State<'_, MobileHost>, generation: u64) -> Result<Reference, String> {
-    host.drafting(generation, reference)
+async fn mobile_reference(host: State<'_, MobileHost>, generation: u64) -> Result<Reference, String> {
+    let (path, items) = {
+        let session = host.session.lock().map_err(|_| "book session unavailable")?;
+        idle(&session)?;
+        let open = checked(&session, generation)?;
+        (book_path(&host, &open.id)?, reference_items(&open.store)?)
+    };
+    tauri::async_runtime::spawn_blocking(move || reference(&path, items))
+        .await
+        .map_err(|error| error.to_string())?
 }
 fn search_book(
     path: &std::path::Path,
@@ -1680,13 +1698,14 @@ mod tests {
     fn mobile_drafting_references_are_readonly_and_comments_resolve_only_in_the_requested_scene() {
         let (_root, host, book) = drafting_host();
         let scene = &book.scenes[0];
+        let path = book_path(&host, &book.id).unwrap();
         let (comment, other) = host.drafting(book.generation, |store| {
             let bible = store.item_create(None, store::BIBLE_TYPE, "Bible").unwrap();
             let note = store.item_create(Some(&bible.id), "note", "Setting").unwrap();
             store.flush(&[store::FlushEntry { item_id: note.id, base_rev: 1, body: r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"The harbour"}]}]}"#.into(), comments: None }]).unwrap();
             let member = store.cast_create("character", "Ada").unwrap();
             store.cast_create("character", "Removed").and_then(|member| store.cast_remove(&member.id)).unwrap();
-            let reference = reference(store).unwrap();
+            let reference = reference(&path, reference_items(store).unwrap()).unwrap();
             assert_eq!(reference.notes.len(), 1); assert_eq!(reference.notes[0].body, "The harbour");
             assert_eq!(reference.cast.len(), 1); assert_eq!(reference.cast[0].id, member.id);
             let comment = store.comment_create(&scene.id, "Check this", 1, 2, "Old passage").unwrap();
@@ -1709,6 +1728,64 @@ mod tests {
             Ok(())
         })
         .unwrap();
+    }
+    #[test]
+    fn mobile_drafting_reference_skips_timelines_and_unreadable_notes() {
+        let (_root, host, book) = drafting_host();
+        let broken = host.drafting(book.generation, |store| {
+            let bible = store.item_create(None, store::BIBLE_TYPE, "Bible").unwrap();
+            store.item_create(Some(&bible.id), "note", "Readable").unwrap();
+            store.item_create(Some(&bible.id), store::TIMELINE_TYPE, "Timeline").unwrap();
+            Ok(store.item_create(Some(&bible.id), "note", "Unreadable").unwrap())
+        }).unwrap();
+        let path = book_path(&host, &book.id).unwrap();
+        rusqlite::Connection::open(&path).unwrap().execute(
+            "UPDATE doc SET body = 'unreadable' WHERE item_id = ?1", [&broken.id],
+        ).unwrap();
+        let app = tauri::test::mock_builder().manage(host)
+            .build(tauri::test::mock_context(tauri::test::noop_assets())).unwrap();
+        let found = tauri::async_runtime::block_on(mobile_reference(app.state(), book.generation)).unwrap();
+        assert_eq!(found.skipped, 1);
+        assert_eq!(found.notes.len(), 1);
+        assert_eq!(found.notes[0].title, "Readable");
+    }
+    #[test]
+    fn mobile_drafting_commands_refuse_during_an_active_transfer() {
+        let (_root, host, book) = drafting_host();
+        let scene = &book.scenes[0];
+        start_transfer(&host, Direction::Export, book.generation).unwrap();
+        let app = tauri::test::mock_builder().manage(host)
+            .build(tauri::test::mock_context(tauri::test::noop_assets())).unwrap();
+        for command in ["rename", "structure", "move", "synopsis", "synopsis_set", "goals", "goals_set", "comments", "resolve", "reference"] {
+            let state = app.state::<MobileHost>();
+            let result = match command {
+                "rename" => mobile_scene_rename(state, book.generation, scene.id.clone(), "Renamed".into(), scene.rev).map(|_| ()),
+                "structure" => mobile_structure(state, book.generation).map(|_| ()),
+                "move" => mobile_scene_move(state, book.generation, scene.id.clone(), None, None, scene.rev).map(|_| ()),
+                "synopsis" => mobile_scene_notes(state, book.generation, scene.id.clone()).map(|_| ()),
+                "synopsis_set" => mobile_scene_notes_set(state, book.generation, scene.id.clone(), "Remember".into()).map(|_| ()),
+                "goals" | "goals_set" => mobile_goals(state, book.generation, "2026-10-17".into(), (command == "goals_set").then(|| "500".into())).map(|_| ()),
+                "comments" => mobile_comments(state, book.generation, scene.id.clone()).map(|_| ()),
+                "resolve" => mobile_comment_resolve(state, book.generation, scene.id.clone(), 1).map(|_| ()),
+                "reference" => tauri::async_runtime::block_on(mobile_reference(state, book.generation)).map(|_| ()),
+                _ => unreachable!(),
+            };
+            assert_eq!(result.unwrap_err(), "transfer_busy", "{command}");
+        }
+    }
+    #[test]
+    fn mobile_drafting_find_wrapper_checks_generation_and_scene_but_allows_transfer_reads() {
+        let (_root, host, book) = drafting_host();
+        let scene = &book.scenes[0];
+        let app = tauri::test::mock_builder().manage(host)
+            .build(tauri::test::mock_context(tauri::test::noop_assets())).unwrap();
+        let state = app.state::<MobileHost>();
+        let stale = tauri::async_runtime::block_on(mobile_find(state.clone(), book.generation + 1, "query".into(), scene.id.clone()));
+        assert!(matches!(stale, Err(message) if message == "this request belongs to an older book session"));
+        let container = tauri::async_runtime::block_on(mobile_find(state.clone(), book.generation, "query".into(), scene.parent_id.clone().unwrap()));
+        assert!(matches!(container, Err(message) if message == "scene is not in the open book"));
+        start_transfer(&state, Direction::Export, book.generation).unwrap();
+        assert!(tauri::async_runtime::block_on(mobile_find(state, book.generation, "query".into(), scene.id.clone())).is_ok());
     }
     #[test]
     fn mobile_transfer_seventeen_picker_cancels_do_not_exhaust_admission() {

@@ -6,7 +6,7 @@ import type { MobileScene } from "./workspace";
 export interface StructureItem { id: string; parent_id: string | null; type: string; title: string; rev: number; depth: number }
 export interface MobileGoals { target: string; today: number | null; collecting: boolean; available: boolean }
 export interface MobileComment { id: number; body: string; quote: string; anchor_from: number; anchor_to: number; resolved: boolean; orphaned: boolean }
-export interface MobileReference { notes: { title: string; body: string }[]; cast: { name: string; summary: string; aliases: string[]; fields: { label: string; value: string }[] }[] }
+export interface MobileReference { skipped: number; notes: { title: string; body: string }[]; cast: { name: string; summary: string; aliases: string[]; fields: { label: string; value: string }[] }[] }
 export interface MobileDrafting {
   structure(): Promise<StructureItem[]>;
   rename(itemId: string, title: string, baseRev: number): Promise<MobileScene[]>;
@@ -126,7 +126,7 @@ export function createDraftingTools(opts: Options) {
   add(m.search, async (content, run, close) => {
     const form = node("form"); const input = node("input"); input.type = "search"; input.required = true; input.maxLength = 1000;
     const scene = node("button", m.searchScene); scene.type = "submit";
-    const results = node("nav"); const status = node("p"); status.setAttribute("role", "status");
+    const results = node("nav"); const status = node("div"); status.setAttribute("role", "status");
     function jump(id: string, query: string, range?: { from: number; to: number }) {
       close();
       void opts.openScene(id).then(ok => {
@@ -137,7 +137,8 @@ export function createDraftingTools(opts: Options) {
       const query = input.value.trim(); if (!query) return;
       run(async () => {
         const found = await opts.host.find(query, opts.activeId());
-        results.replaceChildren(); status.textContent = [found.results.length ? "" : m.noResults, found.truncated ? m.searchLimited : "", found.skipped ? m.searchSkipped : ""].filter(Boolean).join(" ");
+        results.replaceChildren(); status.replaceChildren();
+        for (const message of [found.results.length ? "" : m.noResults, found.truncated ? m.searchLimited : "", found.skipped ? m.searchSkipped : ""]) if (message) status.append(node("p", message));
         for (const hit of found.results) {
           const result = button(hit.title || m.untitled, () => jump(hit.item_id, query));
           if (hit.snippet) result.append(node("small", hit.snippet)); results.append(result);
@@ -147,7 +148,8 @@ export function createDraftingTools(opts: Options) {
     form.addEventListener("submit", event => {
       event.preventDefault(); const query = input.value.trim(); if (!query) return;
       const doc = schema.nodeFromJSON(JSON.parse(opts.editor.serialize())); const matches = locateMatches(doc, query);
-      results.replaceChildren(); status.textContent = matches.length ? `${matches.length}${matches.length > 200 ? ` ${m.sceneSearchLimited}` : ""}` : m.noResults;
+      results.replaceChildren(); status.replaceChildren(node("p", matches.length ? m.searchMatches.replace("{n}", matches.length.toLocaleString(opts.locale)) : m.noResults));
+      if (matches.length > 200) status.append(node("p", m.sceneSearchLimited));
       for (const range of matches.slice(0, 200)) {
         const snippet = doc.textBetween(Math.max(0, range.from - 35), Math.min(doc.content.size, range.to + 35), " ");
         results.append(button(snippet, () => jump(opts.activeId(), query, range)));
@@ -169,11 +171,11 @@ export function createDraftingTools(opts: Options) {
     form.append(field(m.dailyTarget, input), submit); content.append(status, form);
     form.addEventListener("submit", event => { event.preventDefault(); const value = Number(input.value); if (!Number.isInteger(value) || value < 0 || value > 1_000_000) return; run(async () => paint(await opts.host.goals(opts.localDay(), value === 0 ? "off" : String(value)))); });
   });
-  add(m.notes, async (content, run) => {
+  add(m.synopsis, async (content, run) => {
     const id = opts.activeId(); const notes = await opts.host.notes(id);
     const input = node("textarea"); input.value = notes?.body ?? ""; input.rows = 8;
     const status = node("p"); status.setAttribute("role", "status");
-    content.append(node("p", m.notesHint), field(m.notes, input), button(m.saveAction, () => run(async () => {
+    content.append(node("p", m.synopsisHint), field(m.synopsisField, input), button(m.saveAction, () => run(async () => {
       await opts.host.saveNotes(id, input.value); status.textContent = m.saved;
     })), status);
     input.addEventListener("input", () => { status.textContent = m.pending; });
@@ -181,6 +183,7 @@ export function createDraftingTools(opts: Options) {
   add(m.reference, async content => {
     const reference = await opts.host.reference(); const input = node("input"); input.type = "search";
     const list = node("div");
+    if (reference.skipped) content.append(node("p", m.referenceSkipped.replace("{n}", reference.skipped.toLocaleString(opts.locale))));
     function paint() {
       const query = input.value.trim().toLocaleLowerCase(opts.locale); list.replaceChildren();
       for (const [title, records] of [[m.bible, reference.notes], [m.cast, reference.cast.map(member => ({ title: member.name, body: [member.summary, ...member.aliases, ...member.fields.map(field => `${field.label}: ${field.value}`)].join("\n") }))]] as const) {

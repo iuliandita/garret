@@ -136,7 +136,7 @@ no new book or transfer format is introduced. Old day-baseline metadata is retai
 and is not reclassified as typed progress. Daily targets use the desktop
 `daily_target` string encoding in application settings; they are device preferences
 and do not travel with a book. Text size is stored with Android appearance settings.
-Scene notes require explicit Save, and closing their dialog discards unsaved drafts.
+Synopsis edits the desktop synopsis panel field with explicit Save; closing the dialog discards unsaved drafts.
 Only scene mutations are exposed; parts and chapters remain read-only on mobile.
 Unsupported project presets remain refused before opening. Android relies on the
 system lock screen for device privacy; an application privacy lock is not provided.

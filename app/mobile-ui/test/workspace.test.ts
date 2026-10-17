@@ -86,6 +86,12 @@ test("save failure keeps prose mounted and blocks departure and same-scene error
   expect(f.workspace.editor.serialize()).toBe(before);
   expect(f.mount.querySelector(".mobile-save")!.textContent).toBe("Not saved");
   expect(f.mount.querySelector<HTMLElement>(".mobile-error")!.hidden).toBe(false);
+  f.mount.querySelector<HTMLButtonElement>(".mobile-error button")!.click();
+  const recovery = f.mount.querySelector<HTMLDialogElement>(".mobile-recovery")!;
+  expect(recovery.open).toBe(true);
+  expect(await f.workspace.openScene("a")).toBe(false);
+  expect(f.mount.querySelector("section > .mobile-error")).not.toBeNull();
+  expect(recovery.querySelector("textarea")!.value).toContain("unsaved");
   // Simulate document destruction only after asserting the refused public close.
   f.workspace.editor.destroy(); f.mount.remove();
 });

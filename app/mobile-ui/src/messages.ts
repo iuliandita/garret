@@ -1,10 +1,10 @@
 const en = {
   rename: "Rename scene", move: "Move scene", destination: "Inside", after: "After", first: "First", manuscript: "Manuscript root",
-  saveAction: "Save", search: "Search", query: "Find text", searchScene: "Find in this scene", searchBook: "Search book", noResults: "No matches.",
+  saveAction: "Save", search: "Search", query: "Find text", searchScene: "Find in this scene", searchBook: "Search book", noResults: "No matches.", searchMatches: "{n} matches",
   searchLimited: "Only the first 200 matching scenes are shown.", searchSkipped: "Some documents could not be searched.",
   goals: "Word goals", dailyTarget: "Daily word target (0 turns it off)", today: "Typed words today", goalUnavailable: "Daily progress is unavailable.", goalPaused: "Word statistics are paused. Resume them on desktop to count new writing.",
-  notes: "Scene notes", notesHint: "These notes use the scene's Synopsis field on desktop. They are not part of the manuscript.",
-  reference: "Bible and cast", bible: "Bible", cast: "Cast", lookup: "Filter references", noReferences: "No matching references.",
+  synopsis: "Synopsis", synopsisField: "What this is about", synopsisHint: "What happens here, and why it is in the book.",
+  reference: "Bible and cast", bible: "Bible", cast: "Cast", lookup: "Filter references", noReferences: "No matching references.", referenceSkipped: "{n} reference documents could not be read.",
   showPassage: "Show passage", sceneSearchLimited: "Only the first 200 occurrences are shown.",
   comments: "Comments", resolve: "Resolve", resolved: "Resolved", orphaned: "Passage no longer attached", noComments: "No comments for this scene.",
   textSize: "Text size", textSizeHint: "Applies to writing on this device.",
@@ -63,11 +63,11 @@ const en = {
 };
 const de: typeof en = {
   rename: "Szene umbenennen", move: "Szene verschieben", destination: "Innerhalb von", after: "Nach", first: "Am Anfang", manuscript: "Manuskriptebene",
-  saveAction: "Speichern", search: "Suchen", query: "Text suchen", searchScene: "In dieser Szene suchen", searchBook: "Im Buch suchen", noResults: "Keine Treffer.",
+  saveAction: "Speichern", search: "Suchen", query: "Text suchen", searchScene: "In dieser Szene suchen", searchBook: "Im Buch suchen", noResults: "Keine Treffer.", searchMatches: "{n} Treffer",
   searchLimited: "Nur die ersten 200 passenden Szenen werden angezeigt.", searchSkipped: "Einige Dokumente konnten nicht durchsucht werden.",
   goals: "Wortziele", dailyTarget: "Tägliches Wortziel (0 schaltet es aus)", today: "Heute getippte Wörter", goalUnavailable: "Der Tagesfortschritt ist nicht verfügbar.", goalPaused: "Die Wortstatistik ist pausiert. Aktiviere sie am Desktop, um neue Wörter zu zählen.",
-  notes: "Szenennotizen", notesHint: "Diese Notizen verwenden das Synopsis-Feld der Szene am Desktop. Sie gehören nicht zum Manuskript.",
-  reference: "Bibel und Figuren", bible: "Bibel", cast: "Figuren", lookup: "Referenzen filtern", noReferences: "Keine passenden Referenzen.",
+  synopsis: "Inhaltsangabe", synopsisField: "Worum es hier geht", synopsisHint: "Was hier geschieht, und warum es im Buch steht.",
+  reference: "Bibel und Figuren", bible: "Bibel", cast: "Figuren", lookup: "Referenzen filtern", noReferences: "Keine passenden Referenzen.", referenceSkipped: "{n} Referenzdokumente konnten nicht gelesen werden.",
   showPassage: "Textstelle zeigen", sceneSearchLimited: "Nur die ersten 200 Vorkommen werden angezeigt.",
   comments: "Kommentare", resolve: "Erledigen", resolved: "Erledigt", orphaned: "Textstelle nicht mehr zugeordnet", noComments: "Keine Kommentare zu dieser Szene.",
   textSize: "Textgröße", textSizeHint: "Gilt für das Schreiben auf diesem Gerät.",
