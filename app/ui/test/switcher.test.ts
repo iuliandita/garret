@@ -1,3 +1,4 @@
+import type { ProjectPreset } from "../src/project-preset";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { describe, expect, test } from "bun:test";
 
@@ -143,16 +144,17 @@ interface Rig {
 }
 
 interface RigOptions {
+  projectPreset?: () => ProjectPreset;
   listProjects?: () => Promise<ProjectSummary[]>;
   listPendingRegistrations?: () => Promise<PendingRegistration[]>;
   retryRegistration?: (token: string) => Promise<ProjectSummary>;
-  createProject?: (name: string) => Promise<ProjectSummary>;
-  createProjectIn?: (name: string) => Promise<ProjectSummary | null>;
+  createProject?: (name: string, preset?: ProjectPreset) => Promise<ProjectSummary>;
+  createProjectIn?: (name: string, preset?: ProjectPreset) => Promise<ProjectSummary | null>;
   newDir?: () => Promise<string>;
   /** The FILES only. The rig wraps them in the report shape with `importDir`,
    *  so a test that is about the list does not have to restate a path. */
   currentName?: () => string;
-  renameProject?: (name: string) => Promise<ProjectSummary>;
+  renameProject?: (name: string, preset?: ProjectPreset) => Promise<ProjectSummary>;
   forgetProject?: (path: string) => Promise<void>;
   moveProject?: () => Promise<ProjectSummary | null>;
   currentPath?: () => string;
@@ -221,6 +223,7 @@ function mount(options: RigOptions = {}): Rig {
   nameContainer.id = "nav-header";
   document.body.appendChild(nameContainer);
   const switcher = createSwitcher({
+    projectPreset: options.projectPreset,
     container,
     nameContainer,
     listProjects: () => {
@@ -229,17 +232,17 @@ function mount(options: RigOptions = {}): Rig {
     },
     listPendingRegistrations: options.listPendingRegistrations,
     retryRegistration: options.retryRegistration,
-    createProject: (name) => {
+    createProject: (name, preset) => {
       calls.created.push(name);
       return (
-        options.createProject?.(name) ??
+        options.createProject?.(name, preset) ??
         Promise.resolve({ path: `/p/${name}.mss`, name, modified_at: 9 })
       );
     },
-    createProjectIn: (name) => {
+    createProjectIn: (name, preset) => {
       calls.createdIn.push(name);
       return (
-        options.createProjectIn?.(name) ??
+        options.createProjectIn?.(name, preset) ??
         Promise.resolve({ path: `/chosen/${name}.db`, name, modified_at: 9 })
       );
     },
@@ -2434,6 +2437,22 @@ describe("the cast button in the header", () => {
   const cast = (): HTMLButtonElement =>
     document.getElementById("nav-cast") as HTMLButtonElement;
 
+  test("switching from nonfiction to novel restores the Cast button", () => {
+    let preset: ProjectPreset = "nonfiction";
+    const rig = mount({ projectPreset: () => preset });
+    try {
+      expect(cast().hidden).toBe(true);
+      expect(cast().parentElement?.hidden).toBe(true);
+      rig.switcher.setBookOpen(false);
+      preset = "novel";
+      rig.switcher.setBookOpen(true);
+      expect(cast().hidden).toBe(false);
+      expect(cast().parentElement?.hidden).toBe(false);
+      cast().click();
+      expect(rig.calls.openCast).toBe(1);
+    } finally { teardown(rig); }
+  });
+
   test("it is labelled, and clicking it runs the dep", () => {
     const rig = mount();
     expect(cast()).not.toBeNull();
@@ -3078,3 +3097,22 @@ for (const departure of ["same", "privacy", "workspace", "reopen"] as const) {
     } finally { teardown(rig); }
   });
 }
+
+test.each(["short", "nonfiction"] as const)("switcher forwards %s to both creation destinations", async (preset) => {
+  const calls: unknown[][] = [];
+  const r = mount({
+    createProject: async (...args) => { calls.push(args); return { path: "/p/new.db", name: "Draft", modified_at: 0 }; },
+    createProjectIn: async (...args) => { calls.push(args); return null; },
+  });
+  r.switcher.open("create");
+  await settle();
+  (r.container.querySelector("#project-new-preset") as HTMLSelectElement).value = preset;
+  (r.container.querySelector("#project-new-name") as HTMLInputElement).value = "Draft";
+  r.container.querySelector<HTMLButtonElement>("#project-create")!.click();
+  await settle();
+  (r.container.querySelector("#project-new-name") as HTMLInputElement).value = "Draft";
+  r.container.querySelector<HTMLButtonElement>("#project-new-choose")!.click();
+  await settle();
+  expect(calls).toEqual([["Draft", preset], ["Draft", preset]]);
+  teardown(r);
+});

@@ -38,7 +38,7 @@ interface Rig {
   panel(): HTMLElement;
 }
 
-function mount(): Rig {
+function mount(preset?: "novel" | "short" | "nonfiction"): Rig {
   const calls: Calls = {
     created: [],
     renamed: [],
@@ -53,6 +53,7 @@ function mount(): Rig {
   // care about the type distinction opens on.
   const world = { trashed: false, type: "scene" };
   const menu = createNavContextMenu({
+    preset,
     container: document.body,
     create: (relativeTo, itemType) => calls.created.push({ relativeTo, itemType }),
     beginRename: (id) => calls.renamed.push(id),
@@ -534,4 +535,12 @@ describe("the stylesheet gives the panel the shared control treatment", () => {
     expect(at).toBeGreaterThan(-1);
     expect(css.slice(at, css.indexOf("}", at))).toContain("position: fixed");
   });
+});
+
+test("nonfiction context menu keeps synopsis and omits appearances", () => {
+  const r = mount("nonfiction");
+  r.menu.open("scene-1", 10, 10);
+  expect(r.item("nav-context-synopsis")).not.toBeNull();
+  expect(r.item("nav-context-appears")).toBeNull();
+  teardown(r);
 });

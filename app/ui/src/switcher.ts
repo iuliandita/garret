@@ -1,3 +1,4 @@
+import { createPresetChoice, projectPreset, type ProjectPreset } from "./project-preset";
 // app/ui/src/switcher.ts
 // The project surface: a header strip naming the open manuscript, and a panel
 // listing the others. There is deliberately no native file dialog - it would be
@@ -113,6 +114,7 @@ export interface LegacyProtection {
 }
 
 export interface SwitcherDeps {
+  projectPreset?: () => ProjectPreset;
   /** Where the book's NAME is painted: the strip above the outline, not the
    *  project bar. Separate from `container` because the panel is positioned
    *  against #project-bar and the name is not in it any more. */
@@ -122,14 +124,14 @@ export interface SwitcherDeps {
   listProjects(): Promise<ProjectSummary[]>;
   listPendingRegistrations?(): Promise<PendingRegistration[]>;
   retryRegistration?(token: string): Promise<ProjectSummary>;
-  createProject(name: string): Promise<ProjectSummary>;
+  createProject(name: string, preset?: ProjectPreset): Promise<ProjectSummary>;
   /** Create a book in a folder the WRITER picks, through the operating system.
    *
    *  `null` is the writer CANCELLING the dialog, and it is an answer rather
    *  than a failure: it must raise no notice and leave the typed name alone, so
    *  a writer who changed their mind about the folder has not lost the name
    *  they were half way through choosing. */
-  createProjectIn(name: string): Promise<ProjectSummary | null>;
+  createProjectIn(name: string, preset?: ProjectPreset): Promise<ProjectSummary | null>;
   /** Where the next new book would go, resolved. */
   newDir(): Promise<string>;
   /** The Markdown files the writer has dropped in for import, by name. */
@@ -367,6 +369,8 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   input.id = "project-new-name";
   input.type = "text";
   input.setAttribute("aria-label", t("switcher.name.label"));
+
+  const presetChoice = createPresetChoice("project-new-preset");
 
   const newNameField = document.createElement("div");
   newNameField.className = "field-with-label";
@@ -707,6 +711,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     move,
     newHeading,
     newNameField,
+    presetChoice.field,
     newWhere,
     chooseWhere,
     create,
@@ -1773,7 +1778,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const current = (): Promise<boolean> => outcomeCurrent(path, opened);
     void (async (): Promise<void> => {
       try {
-        const made = await deps.createProject(wanted);
+        const made = await deps.createProject(wanted, projectPreset(presetChoice.select.value));
         if (!await current()) return;
         const warning = registrationNotice(made);
         if (warning) deps.onNotice(warning);
@@ -1810,7 +1815,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const current = (): Promise<boolean> => outcomeCurrent(path, opened);
     void (async (): Promise<void> => {
       try {
-        const made = await deps.createProjectIn(wanted);
+        const made = await deps.createProjectIn(wanted, projectPreset(presetChoice.select.value));
         // Cancellation keeps the typed name and does not announce a result.
         if (made === null || !await current()) return;
         const warning = registrationNotice(made);
@@ -1896,8 +1901,8 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   function paintBookAvailability(): void {
     const open = hasBook();
     name.hidden = !open;
-    cast.hidden = !open;
-    castTip.anchor.hidden = !open;
+    cast.hidden = !open || deps.projectPreset?.() === "nonfiction";
+    castTip.anchor.hidden = cast.hidden;
     addTip.anchor.hidden = !open || deps.openCreation === undefined;
     bookRequired.hidden = open;
     for (const node of [here, move, recoveryHeading, recoveryList, archiveHeading, archiveWhere, archiveNow, archiveList, mirrorHeading, mirrorWhere, mirrorState, mirrorToggle, mirrorCheck]) node.hidden = !open;

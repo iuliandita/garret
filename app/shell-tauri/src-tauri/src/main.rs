@@ -1148,9 +1148,16 @@ pub(crate) fn create_into_dir(
     dir: &Path,
     name: &str,
     strings: &strings::Strings,
+    preset: Option<&str>,
 ) -> std::result::Result<projects::ProjectSummary, String> {
-    let made = projects::create_in(dir, name, strings)?;
+    let made = projects::create_in_preset(dir, name, strings, preset)?;
     Ok(book_registration::remember(data_home, dir, made))
+}
+
+#[command_boundary::command]
+fn project_preset(state: State<'_, StoreState>) -> Result<String, String> {
+    let guard = locked(&state);
+    open_project(&guard)?.store.project_preset().map(str::to_owned).map_err(|e| e.to_string())
 }
 
 #[command_boundary::command]
@@ -1168,6 +1175,7 @@ fn project_create(
     data_home: State<'_, DataHome>,
     strings: State<'_, HostStrings>,
     name: String,
+    preset: Option<String>,
 ) -> std::result::Result<projects::ProjectSummary, String> {
     // Deliberately does not switch to it: creation and opening are separate
     // acts, so a failed open cannot lose a just-created manuscript.
@@ -1175,8 +1183,9 @@ fn project_create(
     // INTO THE REMEMBERED FOLDER, which is `<Documents>/Books` until a writer
     // chooses otherwise. The plain create is still one act with no
     // dialog.
+    projects::validate_preset(preset.as_deref())?;
     let dir = new_book_dir(&data_home.0)?;
-    create_into_dir(&data_home.0, &dir, &name, &strings.0)
+    create_into_dir(&data_home.0, &dir, &name, &strings.0, preset.as_deref())
 }
 
 /// Where the next new book would go, so the panel can show it before the writer
@@ -4418,6 +4427,7 @@ fn main() {
             __wire_project_forget,
             __wire_project_new_dir,
             __wire_project_create,
+            __wire_project_preset,
             __wire_project_pending_registrations,
             __wire_project_retry_registration,
             __wire_project_open,
@@ -5014,7 +5024,7 @@ mod tests {
         dir: &Path,
         name: &str,
     ) -> std::result::Result<crate::projects::ProjectSummary, String> {
-        super::create_into_dir(data_home, dir, name, &english())
+        super::create_into_dir(data_home, dir, name, &english(), None)
     }
 
     fn import_named(
@@ -7986,6 +7996,7 @@ mod tests {
             &crate::projects::library_dir(home.path()),
             "Deutsch",
             &captured,
+            None,
         )
         .unwrap();
         let store = crate::store::Store::open_readonly(Path::new(&made.path)).unwrap();
@@ -9241,6 +9252,7 @@ mod tests {
     fn docx_bytes_under_an_md_name_import_as_docx() {
         let (dir, library, _drop) = import_fixture("# Ignored\n\n## X\n\np\n");
         let book = crate::export::Book {
+            single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
             front: &[],

@@ -1,0 +1,5 @@
+0.0.2 Alpha, Versionscode 2.
+
+Diese Vorschau hat keine Android-spezifischen Änderungen gegenüber 0.0.1. Die Zuverlässigkeitskorrekturen für die Speicherung und die Paketänderungen der Desktop-Version gelten für denselben Quellstand.
+
+Die Android-App öffnet und erstellt Bücher, bearbeitet Szenen mit automatischem Speichern und behält die Bücher auf dem Gerät. Hell und dunkel, Deutsch und Englisch. Kein Import, Export oder Abgleich.

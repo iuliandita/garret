@@ -1,3 +1,4 @@
+import type { ProjectPreset } from "./project-preset";
 import { t } from "./i18n";
 import type { Invoke } from "./project";
 import type { ProjectSwitchOutcome } from "./project-switch";
@@ -15,7 +16,7 @@ export function createLibraryBookActions(deps: {
   canReportCreated?(): Promise<boolean>;
 }): {
   openBook(path: string, name?: string): Promise<boolean>;
-  createBook(name: string, identityId: string | null): Promise<LibraryCreateResult>;
+  createBook(name: string, identityId: string | null, preset?: ProjectPreset): Promise<LibraryCreateResult>;
 } {
   const opened = (outcome: ProjectSwitchOutcome): boolean => outcome === "switched" || outcome === "same";
   return {
@@ -24,9 +25,9 @@ export function createLibraryBookActions(deps: {
       deps.refresh();
       return opened(result);
     },
-    async createBook(name, identityId) {
+    async createBook(name, identityId, preset = "novel") {
       const workspace = deps.currentWorkspace?.();
-      const created = await deps.invoke("project_create", { name }) as ProjectSummary;
+      const created = await deps.invoke("project_create", { name, preset }) as ProjectSummary;
       const warning = registrationNotice(created);
       if (warning) {
         try {
