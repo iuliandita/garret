@@ -1,4 +1,4 @@
-use crate::commands::export::{export_into, export_slug, replace_file, Dest, ExportResult};
+use crate::commands::export::{export_slug, replace_file, Dest, ExportResult};
 use crate::export::Format;
 use crate::{
     create_into_dir, export_dir, import_path, imports_dir, locked, new_book_dir, open_project,
@@ -850,6 +850,8 @@ pub(crate) async fn project_export_as(
     state: State<'_, StoreState>,
     data_home: State<'_, DataHome>,
     format: String,
+    story_id: Option<String>,
+    generation: Option<u64>,
 ) -> std::result::Result<Option<ExportResult>, String> {
     let format = Format::from_id(&format)
         .ok_or_else(|| format!("{format:?} is not a format this build writes"))?;
@@ -860,7 +862,11 @@ pub(crate) async fn project_export_as(
     let (path, name) = {
         let guard = locked(&state);
         let project = open_project(&guard)?;
-        (project.path.clone(), project.name.clone())
+        let name = if let Some(id) = &story_id {
+            if generation != Some(project.generation) { return Err("the open book changed".into()); }
+            crate::collection::story(&project.store, id)?.title
+        } else { project.name.clone() };
+        (project.path.clone(), name)
     };
 
     // Read before the dialog opens: an unreadable vault must stop the export,
@@ -897,7 +903,7 @@ pub(crate) async fn project_export_as(
             .map_err(|e| e.to_string())?;
         let scratch_path = scratch.path().to_path_buf();
         let app = app.clone();
-        return crate::commands::export::export_into_with(
+        return crate::commands::export::export_scope_into_with(
             &path,
             &name,
             &dest,
@@ -905,6 +911,7 @@ pub(crate) async fn project_export_as(
             format,
             &vault,
             strings,
+            story_id.as_deref(),
             move |html| {
                 let text = String::from_utf8(html).map_err(|e| e.to_string())?;
                 let printed = crate::printer::render_via(&app, &text, Some(&scratch_path), page)?;
@@ -923,7 +930,7 @@ pub(crate) async fn project_export_as(
             (design.page.width_um, design.page.height_um)
         };
         let app = app.clone();
-        return crate::commands::export::export_into_with(
+        return crate::commands::export::export_scope_into_with(
             &path,
             &name,
             &dest,
@@ -931,6 +938,7 @@ pub(crate) async fn project_export_as(
             format,
             &vault,
             strings,
+            story_id.as_deref(),
             move |html| {
                 let text = String::from_utf8(html).map_err(|e| e.to_string())?;
                 crate::printer_windows::render_via(&app, &text, true, page)?
@@ -940,7 +948,7 @@ pub(crate) async fn project_export_as(
         )
         .map(Some);
     }
-    export_into(&path, &name, &dest, Dest::Replace, format, &vault, strings).map(Some)
+    crate::commands::export::export_scope_into_with(&path, &name, &dest, Dest::Replace, format, &vault, strings, story_id.as_deref(), Ok).map(Some)
 }
 
 /// Put the statistics file the PAGE composed where the writer chooses.

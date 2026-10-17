@@ -21,7 +21,7 @@ describe("saved reference", () => {
     expect(target.querySelector("u")?.textContent).toBe(" under");
     expect(savedProse(JSON.stringify({ type: "doc", content: [{ type: "future" }] }), document)).toBeNull();
     expect(savedProse(JSON.stringify({ type: "paragraph", content: [{ type: "text", text: "wrong root" }] }), document)).toBeNull();
-    expect(savedProse(JSON.stringify({ type: "doc", content: [] }), document)).toBeNull();
+    expect(savedProse(JSON.stringify({ type: "doc", content: [] }), document)?.firstChild?.nodeName).toBe("P");
   });
 
   test("pins an id across selection changes, shows stale revision and removal, and never writes", async () => {

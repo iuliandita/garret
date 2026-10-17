@@ -2304,6 +2304,24 @@ describe("banner tone", () => {
     mounted.destroy();
   });
 
+  test("a format refusal names the scene and retains the unsaved editor", async () => {
+    shell();
+    const h = host();
+    const mounted = await mountProject(deps({ invoke: async (command, args) => {
+      if (command === "doc_flush") throw new Error("document format refused: scene-0: new document nodes are disabled; nothing was changed");
+      return h.invoke(command, args);
+    } }));
+    try {
+      mounted.editor.typeChar("unsaved");
+      const before = mounted.editor.serialize();
+      await mounted.session!.flushPending();
+      expect(labelOf("persist-error")).toContain("Scene Arrival");
+      expect(labelOf("persist-error")).toContain("copy your text");
+      expect(await mounted.session!.switchTo("scene-1")).not.toBe("switched");
+      expect(mounted.editor.serialize()).toBe(before);
+    } finally { mounted.destroy(); }
+  });
+
   test("a problem renders as problem and status", async () => {
     // A failed open is not a failed save. It is polite - it must not interrupt
     // what a screen reader is reading - and it is not good news either.

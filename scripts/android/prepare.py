@@ -1,13 +1,22 @@
 #!/usr/bin/env python3
 """Apply reproducible private-preview settings after Tauri Android generation."""
 from pathlib import Path
+import json
 import shutil
+import sys
 import xml.etree.ElementTree as ET
 
 source = Path(__file__).resolve().parent
 repo = source.parent.parent
 android = repo / "app/shell-tauri/src-tauri/gen/android"
 main = android / "app/src/main"
+if sys.argv[1:] == ["--canonicalize-config"]:
+    # Tauri serializes desktop packaging HashMaps in a random order on Android.
+    config = main / "assets/tauri.conf.json"
+    config.write_text(json.dumps(json.loads(config.read_text()), sort_keys=True, separators=(",", ":")) + "\n")
+    raise SystemExit(0)
+if sys.argv[1:]:
+    raise SystemExit("usage: prepare.py [--canonicalize-config]")
 namespace = "http://schemas.android.com/apk/res/android"
 ET.register_namespace("android", namespace)
 manifest = main / "AndroidManifest.xml"
@@ -34,7 +43,7 @@ for kind in ("cloud-backup", "device-transfer"):
 ET.indent(rules, space="    ")
 ET.ElementTree(rules).write(main / "res/xml/data_extraction_rules.xml", encoding="utf-8", xml_declaration=True)
 for name in ("MainActivity.kt", "TransferPlugin.kt"):
-    shutil.copyfile(source / name, main / "java/cc/local/app" / name)
+    shutil.copyfile(source / name, main / "java/com/usegarret/app" / name)
 # Launcher icons come from scripts/render-icons, not the generator's defaults.
 launchers = repo / "app/shell-tauri/src-tauri/icons/android"
 for icon in sorted(launchers.glob("mipmap-*/*.png")):
@@ -48,11 +57,41 @@ lines = properties.read_text().splitlines()
 settings = {"org.gradle.workers.max": "8", "org.gradle.parallel": "false", "org.gradle.daemon": "false"}
 lines = [line for line in lines if line.partition("=")[0] not in settings]
 properties.write_text("\n".join([*lines, *(f"{key}={value}" for key, value in settings.items())]) + "\n")
-task = android / "buildSrc/src/main/java/cc/local/app/kotlin/BuildTask.kt"
+task = android / "buildSrc/src/main/java/com/usegarret/app/kotlin/BuildTask.kt"
 task_source = task.read_text()
 generated = 'listOf("tauri", "android", "android-studio-script")'
-container_cli = 'listOf("/usr/local/bin/tauri", "android", "android-studio-script")'
+cli = shutil.which("tauri")
+if cli is None:
+    raise SystemExit("Tauri CLI is missing from PATH")
+container_cli = f'listOf("{cli}", "android", "android-studio-script")'
 if generated not in task_source and container_cli not in task_source:
     raise SystemExit("generated Tauri build command changed")
 task.write_text(task_source.replace(generated, container_cli))
+# Applies to Gradle ZIP/JAR tasks; AGP normalizes APK entry timestamps itself.
+gradle = android / "build.gradle.kts"
+archive_settings = '''
+allprojects {
+    tasks.withType<org.gradle.api.tasks.bundling.AbstractArchiveTask>().configureEach {
+        isPreserveFileTimestamps = false
+        isReproducibleFileOrder = true
+    }
+}
+'''
+if archive_settings not in gradle.read_text():
+    with gradle.open("a") as output:
+        output.write(archive_settings)
+app_gradle = android / "app/build.gradle.kts"
+canonicalize = '''
+tasks.matching { it.name == "mergeUniversalReleaseAssets" }.configureEach {
+    dependsOn("rustBuildUniversalRelease")
+    doFirst {
+        project.exec {
+            commandLine("python3", "${rootDir}/../../../../../scripts/android/prepare.py", "--canonicalize-config")
+        }
+    }
+}
+'''
+if canonicalize not in app_gradle.read_text():
+    with app_gradle.open("a") as output:
+        output.write(canonicalize)
 print("Prepared Android preview: local data, bounded builds, lifecycle and keyboard handling")

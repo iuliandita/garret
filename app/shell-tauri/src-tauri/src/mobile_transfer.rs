@@ -310,7 +310,7 @@ pub(crate) fn preview(stage: &Path, books: &Path) -> Result<Preview, String> {
             "transfer_invalid".into()
         }
     })?;
-    let source = transfer_copy::inspect(&bundle).map_err(|_| "transfer_incomplete")?;
+    let source = transfer_copy::inspect(&bundle).map_err(|error| transfer_error(error, "transfer_incomplete"))?;
     let mut related = Vec::new();
     let mut unreadable_books = 0;
     for entry in fs::read_dir(books).map_err(|_| "transfer_invalid")? {
@@ -362,16 +362,24 @@ pub(crate) fn publish(stage: &Path, books: &Path, expected: &Preview) -> Result<
     let bundle = stage.join("point");
     let reader = mobile_core::open_supported(&backup_bundle::db_path(&bundle))?;
     drop(reader);
-    let source = transfer_copy::inspect(&bundle).map_err(|_| "transfer_stale")?;
-    if source != expected.source {
-        return Err("transfer_stale".into());
-    }
     admit(available(stage)?, tree_bytes(&bundle)?, 2)?;
-    let owned = transfer_copy::stage(&bundle, stage, &source).map_err(|_| "transfer_invalid")?;
+    let owned = transfer_copy::stage(&bundle, stage, &expected.source)
+        .map_err(|error| {
+            let fallback = if error.starts_with("transfer source changed") { "transfer_stale" } else { "transfer_invalid" };
+            transfer_error(error, fallback)
+        })?;
     let id = uuid::Uuid::now_v7().to_string();
     let dest = books.join(format!("{id}.db"));
     transfer_publish::publish(&owned.database, &dest).map_err(|_| "transfer_publish")?;
     Ok(id)
+}
+
+fn transfer_error(error: String, fallback: &str) -> String {
+    if let Some((item_id, _)) = error.strip_prefix("document format refused: ").and_then(|message| message.split_once(':')) {
+        format!("transfer_format:{item_id}")
+    } else {
+        fallback.into()
+    }
 }
 
 #[cfg(test)]
@@ -549,11 +557,11 @@ pub(crate) mod tests {
             let reader = Store::open_readonly(&db).unwrap();
             assert_eq!(
                 mobile_core::supported(&reader).is_ok(),
-                matches!(preset, None | Some("novel")),
+                matches!(preset, None | Some("novel" | "short" | "nonfiction" | "collection")),
                 "{preset:?}"
             );
             assert_eq!(fs::read(&db).unwrap(), before);
-            if !matches!(preset, None | Some("novel")) {
+            if !matches!(preset, None | Some("novel" | "short" | "nonfiction" | "collection")) {
                 let stage = stage(
                     &root.path().join("transfer"),
                     &uuid::Uuid::now_v7().to_string(),
@@ -602,10 +610,11 @@ pub(crate) mod tests {
             checksum: String,
         }
         for (preset, newer, code) in [
-            ("short", false, "unsupported_project_preset"),
             ("zzz", false, "unsupported_project_preset"),
             ("novel", true, "unsupported_schema"),
             ("short", true, "unsupported_schema"),
+            ("nonfiction", true, "unsupported_schema"),
+            ("collection", true, "unsupported_schema"),
             ("zzz", true, "unsupported_schema"),
         ] {
             let root = tempfile::tempdir().unwrap();

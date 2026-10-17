@@ -191,6 +191,7 @@ pub fn stylesheet(design: &BookDesign, style: &ChapterStyle) -> String {
          .proof-title {{ display: flex; flex-direction: column; \
          justify-content: center; height: 100%; text-align: center; }}\n\
          .proof-title h1 {{ font-size: 2.1em; margin: 0; }}\n\
+         .story-byline {{ text-align: center; text-indent: 0; margin: 0.5em 0 1em; break-after: avoid; }}\n\
          .proof-title .proof-byline {{ font-size: 1.1em; margin: 1.6em 0 0; \
          text-indent: 0; }}\n\
          .proof-plate {{ height: 100%; display: flex; }}\n\
@@ -420,6 +421,9 @@ pub fn proof_document(proof: &Proof) -> String {
                         ));
                     }
                 }
+            }
+            if let Some(author) = proof.book.byline(id) {
+                flow.push_str(&format!("<p class=\"story-byline\">{}</p>\n", xml_escape(author)));
             }
             let prose = proof
                 .bodies
@@ -673,7 +677,7 @@ pub const PAGINATOR_JS: &str = r#"
     var group = [];
     var prev = block.previousElementSibling;
     while (prev !== null && group.length < 4 &&
-        (/^H[1-6]$/.test(prev.tagName) || prev.classList.contains("ornament"))) {
+        (/^H[1-6]$/.test(prev.tagName) || prev.classList.contains("ornament") || prev.classList.contains("story-byline"))) {
       group.unshift(prev);
       prev = prev.previousElementSibling;
     }
@@ -1004,6 +1008,7 @@ mod tests {
 
     fn book<'a>(name: &'a str, chapters: &'a [(String, String, i64)]) -> Book<'a> {
         Book {
+            publication: None,
             single_scene: false,
             name,
             contents_title: "Contents",
@@ -1498,6 +1503,7 @@ mod tests {
         let chapters = [item("part", "Part", 0), item("chapter", "Chapter", 1)];
         let back = [item("back", "Afterword", 0)];
         let b = Book {
+            publication: None,
             single_scene: false,
             name: "Book", contents_title: "Contents", front: &front,
             chapters: &chapters, back: &back,
@@ -1895,6 +1901,7 @@ mod tests {
         let chapters = [item("c", "Chapter One", 0)];
         let back = [item("r", "References", 0)];
         let b = Book {
+            publication: None,
             name: "Book", contents_title: "Contents", front: &[],
             chapters: &chapters, back: &back,
             single_scene: false,

@@ -33,6 +33,21 @@
 // UNKNOWN once. Change a string here only with a rig run behind it.
 
 export const EN = {
+  "preset.collection": "Story collection",
+  "item.numbered.story": "Story {n}",
+  "collection.new-story": "New story",
+  "collection.fields": "Story details",
+  "collection.title": "Story title",
+  "collection.title-required": "Enter a story title.",
+  "collection.author": "Author (optional)",
+  "collection.status": "Status",
+  "collection.save": "Save story",
+  "collection.export": "Save and export this story",
+  "collection.inheritance": "An empty author uses the book's pen name for single-story export. Collection covers and front/back matter are left out. Changes are saved before exporting.",
+  "collection.error": "The story could not be saved or opened: {error}",
+  "preflight.at.story-heading": "story heading",
+  "preflight.at.story-contents": "story contents entry",
+
   "preset.label": "Project type",
   "preset.novel": "Novel",
   "preset.short": "Short fiction",
@@ -2523,6 +2538,7 @@ export const EN = {
   "banner.dismiss": "dismiss this message",
   "banner.details": "Details",
   "project.error.persist": "Not saved: {message} Automatic saving has stopped. Your latest changes are only in this window.",
+  "project.error.format-refused": "Scene {scene} uses a document format this version cannot save. Automatic saving has stopped. Keep this book open and copy your text before restarting.",
   "project.error.open-document": "Could not open that document: {error}",
   // A body written by a NEWER build of the application: it carries a mark or a
   // node this schema has no type for. Named rather than described in

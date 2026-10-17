@@ -444,7 +444,8 @@ impl Store {
                     })
                 }
             }
-            let body = self.version_body(version_id)?;
+            let body = crate::replace::normalize_legacy_text(&self.version_body(version_id)?);
+            self.validate_body_write(item_id, &body)?;
             let current: Option<(String, i64)> = self
                 .conn
                 .query_row(
@@ -596,6 +597,7 @@ impl Store {
                 };
                 spanning += outcome.spanning;
                 if let Some(next) = outcome.body {
+                    self.validate_body_write(item_id, &next)?;
                     if source_words::eligible(&self.conn, item_id)? {
                         source_movements.push(source_words::directional(
                             WordSource::Unattributed,
@@ -688,6 +690,9 @@ impl Store {
         accepts: &[(String, i64, String)],
         label: &str,
     ) -> Result<AcceptReport> {
+        for (id, _, body) in accepts {
+            self.validate_body_write(id, body)?;
+        }
         let now = now_ms();
         self.conn.execute_batch("BEGIN IMMEDIATE")?;
         let outcome = (|| -> Result<AcceptReport> {
@@ -822,6 +827,8 @@ impl Store {
             let body = body.ok_or(StoreError::NotFound {
                 item_id: format!("version {version_id} of {item_id} in snapshot {snapshot_id}"),
             })?;
+            let body = crate::replace::normalize_legacy_text(&body);
+            self.validate_body_write(item_id, &body)?;
             let current: Option<(String, i64)> = self
                 .conn
                 .query_row(
@@ -941,11 +948,13 @@ impl Store {
                 if was == current {
                     continue;
                 }
+                let was = crate::replace::normalize_legacy_text(was);
+                self.validate_body_write(item_id, &was)?;
                 if source_words::eligible(&self.conn, item_id)? {
                     source_movements.push(source_words::directional(
                         WordSource::Restored,
                         Some(current),
-                        was,
+                        &was,
                     ));
                 }
                 self.insert_version(item_id, current, now, None)?;
@@ -1556,6 +1565,43 @@ mod tests {
         let after = store.comments(&id).unwrap();
         assert_eq!(after.len(), 1);
         assert!(after[0].orphaned, "the anchor must read as an orphan");
+    }
+
+    fn empty_replacement_leaves_readable_runs(runs: serde_json::Value, expected: serde_json::Value) {
+        let (_dir, store, id, rev) = seeded("first");
+        let body = serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":runs}]}).to_string();
+        store.flush(&[FlushEntry { item_id: id.clone(), body, base_rev: rev, comments: None }]).unwrap();
+        let report = store.replace_everywhere(&std::collections::HashSet::new(), "moon", "", "Before replacing").unwrap();
+        assert_eq!(report.replaced, 1);
+        let loaded: serde_json::Value = serde_json::from_str(&store.load_doc(&id).unwrap().body).unwrap();
+        assert_eq!(loaded["content"][0]["content"], expected);
+    }
+
+    #[test]
+    fn empty_replacement_removes_a_whole_run() {
+        empty_replacement_leaves_readable_runs(serde_json::json!([
+            {"type":"text","text":"left"}, {"type":"text","text":"moon"}, {"type":"text","text":"right"}
+        ]), serde_json::json!([{"type":"text","text":"leftright"}]));
+    }
+
+    #[test]
+    fn empty_replacement_keeps_a_whole_paragraph_readable() {
+        empty_replacement_leaves_readable_runs(serde_json::json!([
+            {"type":"text","text":"moon"}
+        ]), serde_json::json!([]));
+    }
+
+    #[test]
+    fn empty_replacement_removes_a_whole_marked_span() {
+        empty_replacement_leaves_readable_runs(serde_json::json!([
+            {"type":"text","text":"left","marks":[{"type":"strong"}]},
+            {"type":"text","text":"moon","marks":[{"type":"em"}]},
+            {"type":"text","text":"right","marks":[{"type":"strong"}]},
+            {"type":"text","text":"plain"}
+        ]), serde_json::json!([
+            {"type":"text","text":"leftright","marks":[{"type":"strong"}]},
+            {"type":"text","text":"plain"}
+        ]));
     }
 
     #[test]

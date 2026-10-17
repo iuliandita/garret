@@ -5,12 +5,15 @@
   </picture>
 </p>
 
-New desktop books offer Novel, Short fiction, and Nonfiction project types.
+New desktop books offer Novel, Short fiction, Nonfiction, and Story collection project types.
 Short fiction starts with one scene and grows structure as needed. Nonfiction
 starts with its own book design, calls the Bible Reference notes, and keeps
 fiction tools available under Planning > More. A single-scene manuscript
 exports without generated contents or outline headings; front and back matter
-remain included.
+remain included. Collections keep stories in one book, with their own titles,
+optional authors, status and word counts. Use Story details from a story's
+navigator context menu to edit its fields or export it alone in Markdown, EPUB,
+PDF or Word. See [collection export rules](docs/COMPATIBILITY.md).
 
 ## A writing studio for the whole book.
 
@@ -23,9 +26,12 @@ or an internet connection to write. Your books stay on your own disk.
 
 > **Early alpha.** garret moves fast; keep backups of your work.
 
-The current published build is [0.0.2 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.2).
+The current published build is [0.0.3 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.3).
 See [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
+
+Development builds keep schema 17 and refuse unsupported document writes.
+Legacy books with empty text runs remain recoverable; see the compatibility guide.
 
 ![garret writing view](docs/screenshots/editor-light.png)
 
@@ -99,8 +105,8 @@ or [build garret from source](#building-from-source-linux).
 
 Download alpha builds from [GitHub Releases](https://github.com/iuliandita/garret/releases).
 Choose the download for your device and follow the included instructions.
-The next release adds Windows `-setup.exe`, Linux `.deb`, `.rpm` and `.AppImage`,
-and macOS `.dmg` installers alongside the portable archives. See the
+Windows `-setup.exe`, Linux `.deb`, `.rpm` and `.AppImage`,
+and macOS `.dmg` installers are available alongside the portable archives. See the
 [installation guide](docs/INSTALLING.md) for setup, upgrades and removal. Android uses an APK; the phone app has fewer
 features and does not sync books automatically. Keep a backup before trying a
 new build.
@@ -145,7 +151,7 @@ release for you:
 
 1. Add `https://github.com/iuliandita/garret` as an app source.
 2. Pick the asset whose name ends in `-android.apk`, for example
-   `garret-0.0.2-android.apk`. The `-android-info.zip` asset holds instructions
+   `garret-0.0.4-android.apk`. The `-android-info.zip` asset holds instructions
    and build details; it is not installable.
 3. Check the signing certificate. Obtainium shows the certificate hash for the
    installed app on its app page; the SHA-256 digest must be
@@ -155,11 +161,12 @@ release for you:
    the reported certificate SHA-256 digest.
 
 An installed copy keeps updating in place only while the package name and the
-signing key stay the same. One package change is planned: the Android app moves
-from `cc.local.app` to `com.usegarret.app` in
-[#279](https://github.com/iuliandita/garret/issues/279). That build installs
-next to the existing app instead of updating it, so keep the current app
-installed; books cannot be moved between the two yet.
+signing key stay the same. Android now uses `com.usegarret.app`, with the same
+signing key as `cc.local.app`. It installs next to the old app. First update
+the old app to the transfer-capable 0.0.3 release and export each book with its
+separate recovery key, then install the new app and import those archives.
+Keep the old app until you have checked the imported books, notes and pictures.
+See the [one-time Android move](scripts/android/README.md#one-time-package-move).
 
 ## Building from source (Linux)
 
@@ -176,8 +183,8 @@ scripts/run-app
 
 `scripts/run-app` rebuilds the interface, builds the host on first use, and
 starts the app. `scripts/install-desktop-entry` adds a menu entry for that
-launcher, using desktop identifier `com.usegarret.app`. Android retains package
-`cc.local.app`. See [upgrade compatibility](docs/COMPATIBILITY.md) for native
+launcher, using application identifier `com.usegarret.app` on desktop and
+Android. See [upgrade compatibility](docs/COMPATIBILITY.md) for native
 profile preservation. Release-style packages come from `scripts/package-linux`,
 `scripts/package-windows`, `scripts/package-macos` and `scripts/package-android`.
 
@@ -236,7 +243,7 @@ This is a manual copy, not synchronization or merging.
 
 The phone accepts archives up to 1 GiB and contents up to 512 MiB, with extra
 private storage required for verification and copying. This Android version
-supports only absent or `novel` project presets; other presets are refused
+supports absent, `novel`, `short`, `nonfiction`, and `collection` project presets; other presets are refused
 before editable opening. See [compatibility and recovery](docs/COMPATIBILITY.md)
 for interrupted transfers, leftover-file disposal, updates, and verification
 limits. Android transfer is not certified on physical devices.

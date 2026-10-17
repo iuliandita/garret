@@ -20,6 +20,7 @@ import { isOneWord, wordAround, type WordRange } from "./word-at";
 import { spellRedrawKey, spellRedrawPlugin } from "./spell-redraw";
 import { EditSourceTracker, type EditSourceChange } from "./edit-source";
 import { t } from "./i18n";
+import { validDocument } from "./document-format";
 
 export const schema = new Schema({
   nodes: {
@@ -86,7 +87,7 @@ export type DocInput =
 
 /** Pure: one schema, two entry formats. Exported so it is testable without a DOM. */
 export function docJsonFrom(input: DocInput): PmNodeJson {
-  if (input.kind === "pmjson") return input.json;
+  if (input.kind === "pmjson") return withoutEmptyText(input.json) as PmNodeJson;
   const paragraphs: PmNodeJson[] = input.blocks
     .filter((b) => b.text.length > 0)
     .map((b) => ({ type: "paragraph", content: [{ type: "text", text: b.text }] }));
@@ -94,6 +95,25 @@ export function docJsonFrom(input: DocInput): PmNodeJson {
     type: "doc",
     content: paragraphs.length > 0 ? paragraphs : [{ type: "paragraph" }],
   };
+}
+
+function withoutEmptyText(parsed: unknown): unknown {
+  // Replace-all in older books could leave empty text runs, which ProseMirror rejects.
+  if (parsed && typeof parsed === "object" && "type" in parsed && parsed.type === "doc"
+      && "content" in parsed && Array.isArray(parsed.content)) {
+    if (parsed.content.length === 0) parsed.content.push({ type: "paragraph" });
+    for (const paragraph of parsed.content) {
+      if (paragraph && typeof paragraph === "object" && paragraph.type === "paragraph"
+          && Array.isArray(paragraph.content)) {
+        paragraph.content = paragraph.content.filter((node: unknown) => !(
+          node && typeof node === "object" && "type" in node && node.type === "text"
+          && "text" in node && node.text === ""
+          && validDocument({ type: "doc", content: [{ type: "paragraph", content: [{ ...node, text: "x" }] }] })
+        ));
+      }
+    }
+  }
+  return parsed;
 }
 
 /** A stored body this build can open, or null.
@@ -106,13 +126,10 @@ export function docJsonFrom(input: DocInput): PmNodeJson {
  *  swap: at mount it was a blank window, and after mount it was an unhandled
  *  rejection and nothing on screen at all.
  *
- *  The Rust side is deliberately permissive by contrast -- an unrecognised node
- *  contributes its descendants' text (`store::document_text`) -- so the
- *  asymmetry is real and it is the page's. This is the cheap half of the
- *  answer, which is all the underline record asks for: ASK FIRST, and let the
- *  caller report. It does not attempt to salvage the body; a build that cannot
- *  read a document must not offer to edit it, because the first keystroke would
- *  write whatever it managed to keep over the writer's scene.
+ *  Rust text projections can recover descendants from unfamiliar nodes, but
+ *  writes and editor loads validate the complete supported format. A build
+ *  that cannot read a document must not offer to edit it: the first keystroke
+ *  could otherwise overwrite content it did not understand.
  *
  *  Returns the JSON rather than a boolean so the caller cannot parse twice and
  *  cannot pass a DIFFERENT string to the editor than the one that was checked.
@@ -124,6 +141,8 @@ export function readableBody(body: string): PmNodeJson | null {
   } catch {
     return null;
   }
+  parsed = withoutEmptyText(parsed);
+  if (!validDocument(parsed)) return null;
   try {
     schema.nodeFromJSON(parsed as Record<string, unknown>);
   } catch {

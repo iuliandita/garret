@@ -1,6 +1,5 @@
 {
   "productName": "garret",
-  "identifier": "cc.local.app",
   "build": { "frontendDist": "../../mobile-ui/dist" },
   "app": {
     "windows": [{ "label": "main", "title": "garret" }],
@@ -8,5 +7,5 @@
       "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
     }
   },
-  "bundle": { "resources": null, "android": { "minSdkVersion": 24, "versionCode": 3 } }
+  "bundle": { "resources": null, "android": { "minSdkVersion": 24, "versionCode": 4 } }
 }

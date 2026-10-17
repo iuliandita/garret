@@ -252,10 +252,16 @@ const CONTENTS_LEVEL: usize = 2;
 pub struct TocEntry {
     pub id: String,
     pub title: String,
-    /// The heading level of the item this entry points at, 2..6. The list's
-    /// indentation is derived from it, so an entry and its heading cannot
-    /// disagree about where they sit.
+    /// Contents level, 2..6. Collections list stories as peers even when
+    /// manuscript containers group them.
     pub level: usize,
+}
+
+#[derive(Default)]
+pub struct Publication {
+    pub author: Option<String>,
+    pub bylines: HashMap<String, String>,
+    pub contents: Option<std::collections::HashSet<String>>,
 }
 
 /// The book a renderer is handed: its name and its THREE runs, in the order they
@@ -269,6 +275,7 @@ pub struct TocEntry {
 /// A renderer that had to ask "is this row front matter?" would be a second
 /// place where that question is answered.
 pub struct Book<'a> {
+    pub publication: Option<&'a Publication>,
     pub single_scene: bool,
     pub name: &'a str,
     /// The heading the generated contents is given. Passed in, like `name`,
@@ -292,6 +299,22 @@ pub struct ChapterOpenings {
 }
 
 impl<'a> Book<'a> {
+    pub fn author(&self) -> Option<&str> {
+        self.publication.and_then(|p| p.author.as_deref())
+    }
+
+    pub fn byline(&self, id: &str) -> Option<&str> {
+        let author = self.publication?.bylines.get(id)?;
+        if self.single_scene && self.chapters.iter().any(|(item, title, _)| item == id && title.trim().is_empty()) {
+            return None;
+        }
+        Some(author.as_str())
+    }
+
+    pub fn lists(&self, id: &str) -> bool {
+        self.publication.and_then(|p| p.contents.as_ref()).is_none_or(|ids| ids.contains(id))
+    }
+
     pub fn suppresses_heading(&self, run_index: usize, title: &str) -> bool {
         self.single_scene && run_index == 1 && title.trim().is_empty()
     }
@@ -306,17 +329,23 @@ impl<'a> Book<'a> {
 /// Navigable headings in file order, excluding the H1 and contents heading.
 /// A single-scene manuscript leaves only its front and back matter in navigation.
 ///
-/// Built from the SAME runs and the SAME `heading_level` the body uses, so a
-/// contents entry cannot name a level the heading below it does not have.
+/// Built from the body runs. Collection contents flatten story entries;
+/// other entries retain their heading level.
 pub fn contents_of(book: &Book) -> Vec<TocEntry> {
     let mut out = Vec::new();
     for (run_index, run) in book.runs().into_iter().enumerate() {
         if book.single_scene && run_index == 1 { continue; }
         for (id, title, depth) in run {
+            if run_index == 1 && !book.lists(id) { continue; }
             out.push(TocEntry {
                 id: id.clone(),
-                title: heading_title(title),
-                level: heading_level(*depth),
+                title: if book.publication.is_some() {
+                    let title = title.replace(['\r', '\n'], " ");
+                    book.byline(id).map(|author| format!("{title} ({author})")).unwrap_or(title)
+                } else { heading_title(title) },
+                level: if run_index == 1 && book.publication.is_some_and(|p| p.contents.is_some()) {
+                    CONTENTS_LEVEL
+                } else { heading_level(*depth) },
             });
         }
     }
@@ -337,7 +366,7 @@ pub fn contents_of(book: &Book) -> Vec<TocEntry> {
 /// Two spaces per level, which is the column a parent's `- ` marker opens its
 /// content at, so a nested entry is a nested list item and not an indented code
 /// block.
-fn contents_block(entries: &[TocEntry]) -> String {
+fn contents_block(entries: &[TocEntry], plain_titles: bool) -> String {
     let mut out = String::new();
     for entry in entries {
         if !out.is_empty() {
@@ -349,7 +378,7 @@ fn contents_block(entries: &[TocEntry]) -> String {
         // `trim_end` for the reason a heading is trimmed: an item with an empty
         // title would otherwise leave a trailing space, which is a CommonMark
         // hard break and markup nobody asked for.
-        out.push_str(format!("- {}", entry.title).trim_end());
+        out.push_str(format!("- {}", if plain_titles { escape(&entry.title, false) } else { entry.title.clone() }).trim_end());
     }
     out
 }
@@ -381,6 +410,7 @@ pub fn manuscript(book: &Book, bodies: &HashMap<String, String>) -> Manuscript {
         &mut out,
         format!("# {}", heading_title(book.name)).trim_end(),
     );
+    if let Some(author) = book.author() { push_block(&mut out, &escape(author, true)); }
     let contents = contents_of(book);
     // A book with no items at all gets NO contents section rather than an empty
     // one: a heading over nothing is a section the writer did not ask for and
@@ -395,7 +425,7 @@ pub fn manuscript(book: &Book, bodies: &HashMap<String, String>) -> Manuscript {
             )
             .trim_end(),
         );
-        push_block(&mut out, &contents_block(&contents));
+        push_block(&mut out, &contents_block(&contents, book.publication.is_some()));
     }
     for (run_index, run) in book.runs().into_iter().enumerate() {
         for (id, title, depth) in run {
@@ -410,6 +440,7 @@ pub fn manuscript(book: &Book, bodies: &HashMap<String, String>) -> Manuscript {
                     .trim_end(),
                 );
             }
+            if let Some(author) = book.byline(id) { push_block(&mut out, &escape(author, true)); }
             if let Some((prose, underlined)) =
                 bodies.get(id).and_then(|b| document_markdown_counted(b))
             {
@@ -571,6 +602,7 @@ mod tests {
     /// the three runs build a `Book` themselves.
     fn book<'a>(name: &'a str, chapters: &'a [(String, String, i64)]) -> Book<'a> {
         Book {
+            publication: None,
             single_scene: false,
             name,
             contents_title: "Contents",
@@ -670,6 +702,7 @@ mod tests {
         let back = vec![("a".to_string(), "Acknowledgements".to_string(), 0)];
         let out = manuscript(
             &Book {
+                publication: None,
                 single_scene: false,
                 name: "N",
                 contents_title: "Contents",
@@ -701,6 +734,7 @@ mod tests {
         );
         let out = manuscript(
             &Book {
+                publication: None,
                 single_scene: false,
                 name: "N",
                 contents_title: "Contents",
@@ -728,6 +762,7 @@ mod tests {
             ("s".to_string(), "Opening".to_string(), 1),
         ];
         let book = Book {
+            publication: None,
             single_scene: false,
             name: "N",
             contents_title: "Contents",
@@ -1291,6 +1326,7 @@ mod tests {
         bodies.insert("r".to_string(), references_body());
         let out = manuscript(
             &Book {
+                publication: None,
                 name: "N",
                 contents_title: "Contents",
                 front: &[],

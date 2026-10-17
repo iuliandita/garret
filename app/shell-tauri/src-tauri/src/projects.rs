@@ -372,6 +372,7 @@ fn create_imported_with(
     strings: &crate::strings::Strings,
     before_create: impl FnOnce(&Path),
 ) -> Result<ProjectSummary, String> {
+    crate::store::document_format::validate_import(rows).map_err(|e| e.to_string())?;
     create_book_with(library, name, before_create, |store, path| {
         store.import_tree(rows).map(|_| ()).map_err(|e| {
             format!(
@@ -1033,7 +1034,7 @@ pub fn create_in(
 
 pub fn validate_preset(preset: Option<&str>) -> Result<(), String> {
     match preset {
-        None | Some("novel" | "short" | "nonfiction") => Ok(()),
+        None | Some("novel" | "short" | "nonfiction" | "collection") => Ok(()),
         Some(_) => Err("unknown project preset".into()),
     }
 }
@@ -1305,6 +1306,10 @@ fn restore_point_impl(
         );
     }
 
+    Store::open_readonly(&source_db)
+        .and_then(|store| store.validate_retained_formats())
+        .map_err(|e| e.to_string())?;
+
     fs::create_dir_all(library).map_err(|e| format!("cannot create {}: {e}", library.display()))?;
     // A sidecar occupies a name even when its database is missing. Claim only
     // a free name, then recheck before using any reserved destination.
@@ -1406,6 +1411,9 @@ fn restore_point_impl(
         let staged = stage.as_ref().unwrap().path().join("project.db");
         fs::File::create(&staged).map_err(|e| format!("{}: {e}", staged.display()))?;
         copy(&source_db, &staged)?;
+        Store::open_readonly(&staged)
+            .and_then(|store| store.validate_retained_formats())
+            .map_err(|e| e.to_string())?;
         if bundled {
             crate::backup_bundle::verify_database_copy(point, &staged)?;
             if allow_picture_gaps {
@@ -2879,6 +2887,17 @@ mod tests {
     }
 
     #[test]
+    fn format_gate_import_refuses_before_claiming_a_book() {
+        let dir = tempdir().unwrap();
+        let created = std::cell::Cell::new(false);
+        let future = r#"{"type":"doc","content":[{"type":"scene_break"}]}"#;
+        let error = super::create_imported_with(dir.path(), "Book", &[(None, "scene", "Scene", Some(future))], &english(), |_| created.set(true)).unwrap_err();
+        assert!(error.contains("document format refused"));
+        assert!(!created.get());
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 0);
+    }
+
+    #[test]
     fn exclusive_creation_preserves_a_book_arriving_after_preflight() {
         for (imported, with_sidecars) in
             [(false, true), (true, true), (false, false), (true, false)]
@@ -2901,7 +2920,7 @@ mod tests {
                 super::create_imported_with(
                     dir.path(),
                     "Book",
-                    &[(None, "scene", "Imported scene", Some("Imported prose"))],
+                    &[(None, "scene", "Imported scene", Some(crate::test_support::body("Imported prose").as_str()))],
                     &english(),
                     arrive,
                 )
@@ -3040,7 +3059,7 @@ mod tests {
                     super::create_imported_with(
                         dir.path(),
                         "Book",
-                        &[(None, "scene", "Imported", Some("Prose"))],
+                        &[(None, "scene", "Imported", Some(crate::test_support::body("Prose").as_str()))],
                         &english(),
                         arrive,
                     )
@@ -3140,6 +3159,7 @@ mod tests {
         // becoming "create plus a fill": a manuscript that arrived with its own
         // scenes must not carry an empty one nobody wrote.
         let dir = tempdir().expect("a temp dir");
+        let prose = crate::test_support::body("Prose.");
         let rows = vec![
             (None, "part", "Part One", None),
             (Some(0usize), "chapter", "Chapter One", None),
@@ -3147,7 +3167,7 @@ mod tests {
                 Some(1usize),
                 "scene",
                 "A scene the writer wrote",
-                Some("Prose."),
+                Some(prose.as_str()),
             ),
         ];
         let summary = create_imported(dir.path(), "Real Manuscript", &rows).expect("the import");
@@ -6397,7 +6417,7 @@ mod project_presets_tests {
 
     #[test]
     fn project_presets_survive_backup_archive_restore_transfer_and_salvage_verbatim() {
-        for value in ["short", "nonfiction", "future-preset"] {
+        for value in ["short", "nonfiction", "collection", "future-preset"] {
             let dir = tempfile::tempdir().unwrap();
             let made = create_in_preset(
                 dir.path(),
@@ -6415,6 +6435,9 @@ mod project_presets_tests {
             store
                 .set_meta(crate::core_constants::PRESET_KEY, value)
                 .unwrap();
+            let author_key = format!("collection.author.{}", store.items().unwrap().iter().find(|item| item.item_type == "chapter").map(|item| item.id.as_str()).unwrap_or("retained-story"));
+            let author = "  Ada & Lane  ";
+            store.set_meta(&author_key, author).unwrap();
             let point = dir.path().join("copy.point");
             assert!(
                 crate::backup_bundle::write(path, &store, &point)
@@ -6422,6 +6445,7 @@ mod project_presets_tests {
                     .verified
             );
             let copy = Store::open_readonly(&crate::backup_bundle::db_path(&point)).unwrap();
+            assert_eq!(copy.get_meta(&author_key).unwrap().as_deref(), Some(author));
             assert_eq!(
                 copy.get_meta(crate::core_constants::PRESET_KEY)
                     .unwrap()
@@ -6433,6 +6457,7 @@ mod project_presets_tests {
             std::fs::create_dir(&stage).unwrap();
             let transferred = crate::transfer_copy::stage(&point, &stage, &expected).unwrap();
             let copy = Store::open_readonly(&transferred.database).unwrap();
+            assert_eq!(copy.get_meta(&author_key).unwrap().as_deref(), Some(author));
             assert_eq!(
                 copy.get_meta(crate::core_constants::PRESET_KEY)
                     .unwrap()
@@ -6452,6 +6477,7 @@ mod project_presets_tests {
             )
             .unwrap();
             let restored_store = Store::open_readonly(Path::new(&restored.path)).unwrap();
+            assert_eq!(restored_store.get_meta(&author_key).unwrap().as_deref(), Some(author));
             assert_eq!(
                 restored_store
                     .get_meta(crate::core_constants::PRESET_KEY)
@@ -6460,6 +6486,7 @@ mod project_presets_tests {
                 Some(value)
             );
             let recovered = crate::salvage::salvage(path, &dir.path().join("salvage")).unwrap();
+            assert_eq!(recovered.meta.as_ref().unwrap().get(&author_key).map(String::as_str), Some(author));
             assert_eq!(
                 recovered
                     .meta
@@ -6478,6 +6505,7 @@ mod project_presets_tests {
             Some("novel"),
             Some("short"),
             Some("nonfiction"),
+            Some("collection"),
             Some("future-preset"),
         ] {
             let dir = tempfile::tempdir().unwrap();
@@ -6524,6 +6552,7 @@ mod project_presets_tests {
                 match value {
                     Some("short") => "short",
                     Some("nonfiction") => "nonfiction",
+                    Some("collection") => "collection",
                     _ => "novel",
                 }
             );
@@ -6536,8 +6565,8 @@ mod project_presets_tests {
         }
     }
     #[test]
-    fn project_presets_creation_refuses_unknown_and_reserved_values() {
-        for value in ["collection", "future-preset", "", "SHORT"] {
+    fn project_presets_creation_refuses_unknown_values() {
+        for value in ["future-preset", "", "SHORT"] {
             let dir = tempfile::tempdir().unwrap();
             assert!(create_in_preset(
                 dir.path(),

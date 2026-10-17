@@ -29,6 +29,21 @@
 // Bibel, Pseudonym, Fokusmodus, Schreibmaschinenmodus.
 
 export const DE = {
+  "preset.collection": "Geschichtensammlung",
+  "item.numbered.story": "Geschichte {n}",
+  "collection.new-story": "Neue Geschichte",
+  "collection.fields": "Geschichtendetails",
+  "collection.title": "Titel der Geschichte",
+  "collection.title-required": "Bitte einen Titel für die Geschichte eingeben.",
+  "collection.author": "Autor (optional)",
+  "collection.status": "Bearbeitungsstand",
+  "collection.save": "Geschichte speichern",
+  "collection.export": "Geschichte speichern und exportieren",
+  "collection.inheritance": "Ohne eigenen Autor wird beim Einzelexport das Pseudonym des Buchs verwendet. Umschlag sowie Vorspann und Nachspann der Sammlung entfallen. Änderungen werden vor dem Export gespeichert.",
+  "collection.error": "Die Geschichte konnte nicht gespeichert oder geöffnet werden: {error}",
+  "preflight.at.story-heading": "Überschrift der Geschichte",
+  "preflight.at.story-contents": "Inhaltsverzeichniseintrag der Geschichte",
+
   "preset.label": "Projekttyp",
   "preset.novel": "Roman",
   "preset.short": "Kurze Prosa",
@@ -2114,6 +2129,7 @@ export const DE = {
   "banner.dismiss": "diese Meldung schließen",
   "banner.details": "Details",
   "project.error.persist": "Nicht gesichert: {message} Das automatische Speichern wurde angehalten. Ihre letzten Änderungen gibt es nur in diesem Fenster.",
+  "project.error.format-refused": "Szene {scene} verwendet ein Dokumentformat, das diese Version nicht speichern kann. Das automatische Speichern wurde angehalten. Lassen Sie dieses Buch geöffnet und kopieren Sie Ihren Text vor einem Neustart.",
   "project.error.open-document": "Dieses Dokument konnte nicht geöffnet werden: {error}",
   "project.error.unreadable-body":
     "{item} wurde von einem anderen Build der Anwendung geschrieben und konnte nicht geöffnet werden. Ihre Arbeit steckt weiterhin in der Datei.",

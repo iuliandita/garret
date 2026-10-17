@@ -1,10 +1,11 @@
 import { createDraftingTools, type MobileDrafting } from "./drafting";
-import { createEditor, schema, countWordsIn, type Editor } from "../../ui/src/editor";
+import { createEditor, schema, countWordsIn, readableBody, type Editor } from "../../ui/src/editor";
 import { flushAnchorsFor, MAX_MAPPED_COMMENTS, type CommentAnchor } from "../../ui/src/comments";
 import { parseReviewBody } from "../../ui/src/review-fragments";
 import { createSession, type Session } from "../../ui/src/session";
 import { createFlushScheduler, type FlushEntry, type FlushAck, type FlushAttribution } from "../../ui/src/store/flush";
 import { mobileMessages } from "./messages";
+import { refusedDocumentId } from "../../ui/src/document-format";
 import type { WritingPosition } from "./position";
 
 export interface MobileDocument {
@@ -28,7 +29,7 @@ export interface MobileWorkspaceOptions {
   // global project identity when a delayed save reaches this boundary.
   loadDoc(itemId: string): Promise<MobileDocument>;
   flush(entries: FlushEntry[], attribution?: FlushAttribution[]): Promise<FlushAck[]>;
-  createScene?(title: string): Promise<{ scenes: MobileScene[]; item_id: string }>;
+  createScene?(title: string, currentSceneId: string): Promise<{ scenes: MobileScene[]; item_id: string }>;
   drafting?: MobileDrafting;
   textSize?: number;
   saveTextSize?(size: number): boolean;
@@ -51,7 +52,9 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
   function checked(doc: MobileDocument, expectedId: string) {
     if (doc.item_id !== expectedId || !Number.isSafeInteger(doc.rev) || doc.rev < 0) throw new Error(m.unsupported);
     try {
-      const parsed = parseReviewBody(doc.body, schema);
+      const json = readableBody(doc.body);
+      if (!json) throw new Error(m.unsupported);
+      const parsed = parseReviewBody(JSON.stringify(json), schema);
       const ids = new Set<number>();
       if (doc.comments.length > MAX_MAPPED_COMMENTS) throw new Error(m.unsupported);
       for (const anchor of doc.comments) {
@@ -160,7 +163,10 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
     commentsOf: id => flushAnchorsFor(session.activeDocId(), id, editor.commentsCapped(), editor.commentAnchors()),
     wordCountOf: body => countWordsIn(schema.nodeFromJSON(JSON.parse(body))),
     localDay: opts.localDay,
-    onFailure: () => showError(m.saveError),
+    onFailure: message => {
+      const refused = refusedDocumentId(message);
+      showError(refused === null ? m.saveError : m.formatRefused.replace("{scene}", scenes.find(scene => scene.id === refused)?.title || refused));
+    },
     onStateChange: state => { save.textContent = m[state]; save.dataset.state = state; },
   });
   function refreshCount() {
@@ -263,7 +269,7 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
         setBusy(true);
         try {
           if (!await drain()) { showError(m.saveError); return; }
-          const result = await opts.createScene!(title);
+          const result = await opts.createScene!(title, session.activeDocId());
           if (!result.scenes.some(scene => scene.id === result.item_id)
             || !result.scenes.some(scene => scene.id === session.activeDocId())) throw new Error(m.openError);
           scenes = result.scenes;

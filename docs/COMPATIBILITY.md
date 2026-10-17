@@ -2,8 +2,26 @@
 
 SQLite schema: 17.
 
+Restoring a backup or transferring a book preserves legacy document bodies and
+history, including empty text runs. The copy is refused if a stored document or
+version contains the new node types, and the refusal names its item ID. History
+restores normalize empty runs before validating the body being written. Unchanged
+snapshot rows and documents untouched by replace-all are left alone.
+
+A refused save keeps the batch atomic: the interface cannot acknowledge partial
+success safely. Saving stops with the scene's name in English or German, and the
+unsaved text remains in the editor and pending buffers. Keep the book open and copy
+the text before restarting; the phone's recovery-copy action remains available.
+
 This describes the current source. [Published releases](RELEASES.md) are
 recorded separately; a change on develop is not a published download.
+
+New and changed prose bodies are validated before saving or restoring a
+batch. Unsupported nodes, marks, and attributes are refused without changing
+the book. Endnotes, figures, and scene-break nodes remain disabled. The schema
+ceiling stays at 17; this adds no migration or upgrade. Existing supported
+documents remain compatible. Keep closed-book backups using the steps below;
+rollback uses the previous application and a complete backup copy.
 
 ## Before upgrading
 
@@ -26,13 +44,18 @@ Opening a supported older book can upgrade its SQLite schema. A newer schema
 is refused by an older build; do not edit `PRAGMA user_version` to bypass this.
 Static version checks do not establish that every legacy book upgrades correctly.
 
-Both 0.0.1 and 0.0.2 use SQLite schema 17. The 0.0.2 DOCX importer adds
+0.0.1 through 0.0.4 use SQLite schema 17. The 0.0.2 DOCX importer adds
 archive expansion limits: 128 entries, 128 MiB combined, and 64 MiB per entry.
 An oversized foreign document can now be refused. Preserve the original and
 split or simplify a copy before retrying; do not bypass the limits. This does
 not change the stored manuscript schema or require converting existing books.
 
-New desktop books can start as a novel, short fiction, or nonfiction. The
+Book-wide replacement with an empty value removes the matched text runs and
+keeps empty paragraphs readable. Scenes containing empty text runs left by
+0.0.3 reopen automatically: the editor normalizes them on load, without changing
+the stored body until the next save. This requires no schema migration.
+
+New desktop books can start as a novel, short fiction, nonfiction, or collection. The
 optional `project.preset` metadata key adds no schema migration: a missing or
 unknown value uses novel defaults, and unknown values remain stored unchanged.
 Older desktop builds ignore this key and show novel tools. Short fiction starts
@@ -56,6 +79,46 @@ Use the closed-book backup and disposable-copy upgrade steps above; rollback
 to an older desktop build needs no preset conversion. Android preset support
 is handled separately; do not assume an older Android build understands it.
 
+Collections use ordinary chapter containers as stories. The outermost chapters
+in the manuscript are stories; nested chapters remain sections. New story follows
+the selected story in the same parent, without an automatic part. Scenes stay in
+the selected story or section. Outside a story, a new scene goes into the nearest
+preceding story in outline order (the last story when nothing is selected). If
+none precedes it, a new story holds the scene, inside the selected part if any.
+Each story keeps its existing title and revision status; navigator counts sum
+its scenes. Right-click a story (or press Shift+F10) and choose Story details to
+edit its title, optional public author, and status, or save and export it alone.
+The optional author is stored as `collection.author.<item-id>` metadata. It
+travels with backups, archives, transfer and salvage; enter only a name intended
+for publication. Older desktop builds retain it but show ordinary chapters and
+omit story authors from exports. Older Android builds can refuse collections;
+update before transferring one to the phone.
+
+Whole-collection exports list stories and their explicit authors in contents,
+with each explicit author below the story heading. Collection front/back matter
+and covers appear once. Exporting one story uses its title and its author, or
+the book's pinned pen name when the story author is empty. It inherits book
+typography, but omits collection covers, front/back matter, and other stories.
+A one-scene story has no generated contents page or default scaffold headings.
+EPUB stores its effective author as creator; all four formats print its byline.
+An explicit story author omits the book pin's other identity and publishing
+fields. Falling back to the book author retains that pin's export fields.
+The CLI supports `garret export book.db story.epub --format epub --story ID`;
+use the `stories` list in `garret inspect book.db --json` to find each live story's
+`id`, `title` and `author` (or null when inherited). A whole-book export omits
+`--story`. The `garret preflight` command checks the whole book and does not
+accept `--story`.
+DOCX contents are generated only for a whole collection. Scoped EPUB identifiers
+combine the book identity and story ID. Only chapter items receive chapter
+openers in scoped exports. No export changes stored book metadata.
+
+Collections introduce no schema migration. Keep the complete closed-book and
+profile backup described above. Rollback needs no conversion; preserve the
+upgraded copy and use the previous package with a separate pre-upgrade backup.
+Changes made after that backup are absent from it. Android editing uses the
+same scene containers and retains story author metadata; story creation,
+publication fields and scoped exports are desktop features.
+
 Chapter openers add three optional words to a book's stored chapter options:
 `ornament-above`, `sink-third` and `sink-half`, plus three more ornament names.
 The SQLite schema is unchanged and the defaults of existing books are
@@ -74,15 +137,15 @@ carries them.
 The desktop profile now uses `garret` instead of `cc.local.app`, preserving a
 compatibility link after migration. Close older versions before first launch.
 If migration stops, preserve both folders named in the warning, close garret,
-and request recovery help. Do not merge, overwrite, or delete them. The Android
-application identifier remains `cc.local.app`; profile migration is not sync.
+and request recovery help. Do not merge, overwrite, or delete them. Android uses the separate package move described below; desktop profile
+migration is not sync.
 
 The desktop application identifier is `com.usegarret.app`. This changes the
 Linux menu-entry identity and macOS bundle identity without relocating books,
 `settings.json`, recovery copies, or single-instance ownership. Linux keeps its
 WebView data in the `garret` profile; Windows keeps its existing WebView2 data
-under the local application-data directory's `cc.local.app` folder. Android
-explicitly keeps `cc.local.app`, so installing an update preserves its sandbox.
+under the local application-data directory's `cc.local.app` folder. Android also uses `com.usegarret.app`, which creates a separate sandbox from
+the old Android package.
 
 On macOS, the new identifier starts fresh WebKit and HTTP caches, temporary
 caches, and native window positions and restore state. The previous native window
@@ -107,14 +170,21 @@ is not applied during an installer upgrade.
 
 ## Android transfer and updates
 
-The source stays at version 0.0.2 and Android version code 2 until release
-preparation. The release-preparation change must raise both to 0.0.3/code 3
-before distributing an update. The application ID stays `cc.local.app`; install
-updates signed with the same retained key. Do not uninstall or clear app data
-to update: both delete private books. Android normally refuses a lower version
-code; rollback must preserve device data and use complete exported archives
-with their separate recovery keys on a compatible desktop build. Installing
-an older APK is not a recovery method.
+Android now uses `com.usegarret.app` instead of `cc.local.app`, keeping the
+same signing key. It installs alongside the old app and cannot access its
+private books. First update the old package to the transfer-capable 0.0.3
+release, export every complete book archive and its separate recovery key,
+then install the new package and import. Compare manuscripts, notes and pictures
+before removing the old app. Preferences must be set again; there is no sync.
+See the [step-by-step move](../scripts/android/README.md#one-time-package-move).
+
+Release preparation must increase the version and Android version code without
+resetting the sequence for the new package. Updates within one package require
+the same signing key. Do not uninstall or clear app data to update: both delete
+private books. Keep exported archives and separate keys for rollback. Before
+new edits, the old app still holds the original books; later edits require a
+fresh export/import into a compatible transfer-capable build. Android normally
+refuses a lower version code; installing an older APK is not a recovery method.
 
 Transfer reuses the desktop binary age archive and complete point bundle.
 There is no new schema or archive format. Every import creates a fresh owned
@@ -134,10 +204,15 @@ shared index, or a pending rollback journal, is reported as unavailable rather
 than repaired during a probe; preserve the complete files for desktop recovery.
 An unreadable library neighbor is flagged and skipped during related-copy
 inspection, so it cannot block a separate import. Import checks authenticated archive metadata and the staged database
-before creating any library file, originals directory or catalog entry. Only an absent value or exactly `novel` is supported.
-Empty, short-fiction, nonfiction, collection and unknown values are refused
+before creating any library file, originals directory or catalog entry. Absent values and exactly `novel`, `short`, `nonfiction`, or `collection` are supported.
+Empty and unknown values are refused
 with an English/German explanation. Desktop leniency for unknown presets does
 not change this Android release's capability. Use desktop for those projects.
+
+New scenes follow the active scene in its current container. Chapterless short
+fiction keeps scenes at the manuscript root without creating chapters or parts.
+Nonfiction uses the same writing and reference data; its preset is preserved.
+This change adds no schema migration or preset conversion for rollback.
 
 Import is bounded while reading and extracting: at most 1 GiB ciphertext and
 512 MiB plaintext payload, plus a free-space allowance for verification and

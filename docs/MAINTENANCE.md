@@ -1,5 +1,15 @@
 # Keeping documentation current
 
+If an older book contains empty text runs from replace-all, the editor removes
+those runs on load. The original database body stays intact until the next save;
+no schema migration or manual repair is needed.
+
+Format-write refusals leave the entire save batch pending. The protocol has no
+per-entry refusal acknowledgement, so partial commits would lose unsaved buffers.
+Restore and transfer preflights reject new nodes while retaining legacy bodies
+and history; only incoming history bodies and changed replacement candidates
+undergo strict write validation. Keep these recovery and mutation checks separate.
+
 Documentation is part of a change. The offline guard detects review obligations
 and verifiable drift. It cannot establish that prose is correct, an editor
 interaction works, or a live upgrade, restore, or rollback succeeds.
@@ -48,6 +58,25 @@ An optional local hook can call `sh scripts/check-docs --base origin/develop`
 from an existing pre-push hook. Keep existing hook protections; do not replace
 them or change the repository's hook directory just to install this check.
 Local hooks supplement required CI and release checks.
+
+Android packaging and the F-Droid draft share one unsigned build script with
+pinned frontend tools, locked dependencies and deterministic path/time settings.
+After changing tool versions or packaging, compare unsigned APKs from two clean
+directories, then compare the independently rebuilt APK with the published
+developer-signed release. Local determinism alone does not establish F-Droid
+reproducibility. Follow the [F-Droid maintainer checklist](../fastlane/fdroid/README.md)
+before submitting or enabling the disabled draft recipe.
+
+The display-gated proof paginator test has a 300-second process timeout and a
+30-second kill grace. A timeout fails the required host job with a process
+snapshot; the GTK main-loop timer alone cannot bound a blocked main loop.
+The underlying intermittent hang remains tracked in #324.
+
+macOS packaging retries the specific hdiutil resource-busy creation failure up
+to three attempts, waiting 10 seconds between attempts. It prints disk-image
+diagnostics and detaches only images from the current build's bundle directory.
+Other bundler failures stop immediately. Signing, content verification and
+release eligibility checks still apply.
 
 ## Source impact and assessments
 
@@ -104,7 +133,13 @@ Project presets use the optional `project.preset` metadata key at SQLite schema
 17, with no schema migration or preset conversion for rollback. Missing and
 unknown stored values use novel defaults; preserve unknown values verbatim.
 Backup snapshots, encrypted archive restores, portable copies, and salvage must
-carry this metadata with the rest of the book. Keep the complete closed-book
+carry this metadata with the rest of the book, including per-story
+`collection.author.<item-id>` public bylines. Collection stories are ordinary
+outermost manuscript chapters; title/status remain item fields. Scoped exports
+must share the normal preflight and crash-safe destination writer, rebase the
+selected subtree, and exclude collection matter and covers. Android admits
+collections because its scene placement already uses these ordinary containers.
+Keep the complete closed-book
 and profile backup and separate-copy rollback instructions in the
 [compatibility guide](COMPATIBILITY.md) when reviewing later changes. A preset
 assessment supplements the migration, backup, and rollback assessment for the

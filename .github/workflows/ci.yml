@@ -93,8 +93,20 @@ jobs:
       - name: Install a virtual display
         run: sudo apt-get install -y --no-install-recommends xvfb
       - name: Proof paginator
+        timeout-minutes: 7
         working-directory: app/shell-tauri/src-tauri
         run: |
-          GDK_BACKEND=x11 xvfb-run -a cargo test --locked --bin garret -- \
-            --ignored --exact --test-threads=1 \
-            printer::tests::rich_paragraphs_keep_text_and_marks_and_oversized_headings_refuse
+          # The in-test timer needs GTK's main loop to keep dispatching (#324).
+          if GDK_BACKEND=x11 timeout --verbose --signal=TERM --kill-after=30s 300s \
+            xvfb-run -a cargo test --locked --bin garret -- \
+              --ignored --exact --test-threads=1 \
+              printer::tests::rich_paragraphs_keep_text_and_marks_and_oversized_headings_refuse; then
+            exit 0
+          else
+            status=$?
+            if [ "$status" -eq 124 ] || [ "$status" -eq 137 ]; then
+              echo '::error::Proof paginator exceeded 300 seconds (30-second kill grace); see #324.'
+              ps -eo pid,ppid,stat,etime,wchan:32,comm
+            fi
+            exit "$status"
+          fi

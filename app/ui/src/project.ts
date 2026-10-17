@@ -15,6 +15,7 @@ import { isCompositionKey } from "./composition-key";
 import { formatNumber, plural, t } from "./i18n";
 import { createBanner, type Tone } from "./banner";
 import { HostCommandError } from "./command-error";
+import { refusedDocumentId } from "./document-format";
 import { createEditor, type DocInput, type Editor, readableBody, bodyText } from "./editor";
 import type { FixtureSource } from "./fixture/source";
 import { createNavigator, type ManuscriptNavigator } from "./navigator/index";
@@ -30,6 +31,7 @@ import { mountTimeline, type TimelineMount } from "./timeline-view";
 import { parseTimeline } from "./timeline-model";
 import {
   createOutline,
+  chapterItemsIn,
   isTrashedIn,
   liveItemsIn,
   readingOrderItems,
@@ -89,6 +91,8 @@ import { createStatusDot, type StatusDot } from "./status-dot";
 import { createTooltip } from "./tooltip";
 import { createWordCount, type WordCountView } from "./word-count";
 import { DEFAULT_DAILY_TARGET, localDate, type DailyTarget } from "./goals";
+import { createStoryPanel } from "./story-panel";
+import { storyIds } from "./collection";
 import { createExportBar, type ExportBar, type ExportWritten } from "./export-bar";
 import { createDesignPanel, type DesignPanel, type DesignTransferPreview } from "./design-panel";
 import { createCoversPanel, type CoversPanel } from "./covers-panel";
@@ -889,6 +893,11 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   function raiseFailure(message: string, error?: unknown): void {
     if (persistError !== null) return;
     persistError = message;
+    const refused = refusedDocumentId(error instanceof HostCommandError ? error.detail : message);
+    if (refused !== null) {
+      banner("persist-error", t("project.error.format-refused", { scene: titleOf(refused) || refused }), "failure");
+      return;
+    }
     // The host's sentence names its own recovery; the diagnostic goes behind
     // Details rather than into the one line that says automatic saving stopped.
     if (error instanceof HostCommandError) {
@@ -1227,6 +1236,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   const selectedId = (): string | null =>
     navigator.rows()[navigator.activeIndex()]?.id ?? null;
   const creationChooser = createCreationChooser({
+    collection: preset === "collection",
     create: (type) => { void outline?.create(type).catch(() => undefined); },
     matter: (kind) => { void outline?.createMatter(kind).catch(() => undefined); },
     returnFocus: () => {
@@ -1573,8 +1583,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       // the host refuses if it does not know it. Nothing about the export
       // slice's refusal of a page-named PATH is weakened by naming which of two
       // renderers to run.
-      exportProjectAs: async (format) =>
-        (await invoke("project_export_as", { format })) as ExportWritten | null,
+      exportProjectAs: async (format, storyId) =>
+        (await invoke("project_export_as", storyId === undefined ? { format } : { format, storyId, generation: deps.generation })) as ExportWritten | null,
       // NOT raiseFailure. That latches persistError, so one failed export would
       // suppress the banner for every genuine autosave failure after it - and a
       // failed export is not a failed save: the manuscript is untouched.
@@ -2960,6 +2970,22 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     });
   }
 
+  const storyPanel = preset === "collection" ? createStoryPanel({
+    read: async (id) => await invoke("story_get", { id, generation: deps.generation }) as import("./story-panel").StoryFields,
+    save: async (story) => {
+      if (projectDestroyed || projectLeaving || deps.privacyLocked?.()) throw new Error("the book is no longer available");
+      await invoke("story_save", { id: story.id, title: story.title, author: story.author ?? "", status: story.state, baseRev: story.rev, generation: deps.generation });
+      await outline?.refresh();
+    },
+    export: (id, format) => exportBar?.runAs(format, id),
+    notice: raiseNotice,
+    returnFocus: (id) => {
+      if (navigator.revealAndSelectById !== undefined) navigator.revealAndSelectById(id);
+      else navigator.selectById(id);
+      navEl.focus();
+    },
+  }) : null;
+
   // The navigator's context menu. A SECOND ROUTE to operations the Outline menu
   // already offers, so every dep here delegates to the unit that owns the action
   // rather than reimplementing it.
@@ -2972,6 +2998,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     const unit = outline;
     navContextMenu = createNavContextMenu({
       preset,
+      isStory: (id) => preset === "collection" && storyIds(chapterItemsIn(latestItems)).has(id),
+      openStory: (id) => { void storyPanel?.open(id); },
       // The BODY, not #nav: the panel is positioned at the pointer in viewport
       // coordinates and a row near the foot of the pane opens a menu that has to
       // be allowed to stand outside the navigator's scroll box.
@@ -3377,6 +3405,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       // every element this mount owns and accumulate one live closure per
       // project switch.
       synopsisPanel?.destroy();
+      storyPanel?.destroy();
       // Latching for the reason the panel above does: it registers a
       // document-level outside-click listener that would otherwise outlive every
       // element this mount owns and accumulate one live closure per project

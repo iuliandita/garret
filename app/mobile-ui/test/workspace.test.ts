@@ -33,6 +33,19 @@ test("the footer uses the singular word in both languages", async () => {
   }
 });
 
+test("legacy empty text runs open on the phone and after switching scenes", async () => {
+  const f = fixture({ initial: doc("a", ""), loadDoc: async id => doc(id, "") });
+  try {
+    expect(f.workspace.editor.wordCount()).toBe(0);
+    expect(await f.workspace.openScene("b")).toBe(true);
+    f.workspace.editor.typeChar("recovered");
+    await f.workspace.drain();
+    expect(f.writes[0][0].body).toContain("recovered");
+  } finally {
+    await f.workspace.close(); f.mount.remove();
+  }
+});
+
 test("switching saves the outgoing scene and its mapped notes before loading another", async () => {
   const initial = doc("a", "Before dawn");
   initial.comments = [{ id: 4, from: 2, to: 5, resolved: false }];
@@ -75,6 +88,18 @@ test("unknown content refuses a scene switch without losing the outgoing prose",
   expect(f.mount.querySelector("h1")!.textContent).toBe("The landing");
   expect(f.mount.querySelector<HTMLElement>(".mobile-error")!.hidden).toBe(false);
   await f.workspace.close(); f.mount.remove();
+});
+
+test.each(["en", "de"] as const)("a format refusal names the scene and keeps its recovery copy (%s)", async locale => {
+  const f = fixture({ locale, flush: async () => { throw new Error("document format refused: a: new document nodes are disabled; nothing was changed"); } });
+  try {
+    f.workspace.editor.typeChar("unsaved");
+    expect(await f.workspace.close()).toBe(false);
+    expect(f.mount.querySelector(".mobile-error")?.textContent).toContain("The landing");
+    expect(f.mount.querySelector(".mobile-error")?.textContent).toContain(locale === "en" ? "document format" : "Dokumentformat");
+    f.mount.querySelector<HTMLButtonElement>(".mobile-error button")!.click();
+    expect(f.mount.querySelector<HTMLTextAreaElement>(".mobile-recovery textarea")?.value).toContain("unsaved");
+  } finally { f.workspace.editor.destroy(); f.mount.remove(); }
 });
 
 test("save failure keeps prose mounted and blocks departure and same-scene error clearing", async () => {
@@ -363,4 +388,29 @@ test("export waits for the last save acknowledgement and freezes editing until t
   expect(f.workspace.editor.serialize()).not.toBe(before);
   const close = f.workspace.close(); await nextTask(); acknowledge();
   expect(await close).toBe(true); f.mount.remove();
+});
+
+
+test("New scene sends the active scene for root and chapter outlines in both locales", async () => {
+  for (const locale of ["en", "de"] as const) for (const chaptered of [false, true]) {
+    const scenes = ["a", "b"].map(id => ({ id, title: id, depth: chaptered ? 1 : 0,
+      context: chaptered ? [{ id: `chapter-${id}`, title: `Chapter ${id}`, kind: "chapter" as const }] : [] }));
+    const requests: [string, string][] = [];
+    const f = fixture({ locale, scenes, createScene: async (title, currentId) => {
+      requests.push([title, currentId]);
+      return { item_id: "new", scenes: [...scenes, { ...scenes[1], id: "new", title }] };
+    } });
+    expect(await f.workspace.openScene("b")).toBe(true);
+    f.workspace.editor.typeChar("saved before creating");
+    const outline = showOutline(f.mount);
+    outline.querySelector<HTMLInputElement>("input")!.value = "Next";
+    outline.querySelector("form")!.dispatchEvent(new Event("submit", { cancelable: true }));
+    await settled(f.mount);
+    expect(requests).toEqual([["Next", "b"]]);
+    expect(f.writes[0][0].item_id).toBe("b");
+    expect(f.mount.querySelector("h1")!.textContent).toBe("Next");
+    expect([...outline.querySelectorAll("nav button")].map(button => button.textContent)).toEqual(["a", "b", "Next"]);
+    expect([...outline.querySelectorAll("h3")].map(node => node.textContent)).toEqual(chaptered ? ["Chapter a", "Chapter b"] : []);
+    await f.workspace.close(); f.mount.remove();
+  }
 });

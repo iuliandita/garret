@@ -10,6 +10,9 @@ export interface TransferStatus {
 }
 export function transferError(code: unknown, locale: "en" | "de") {
   const m = mobileMessages(locale);
+  if (typeof code === "string" && code.startsWith("transfer_format:")) {
+    return m.transferFormat.replace("{item}", code.slice("transfer_format:".length));
+  }
   const messages: Record<string, string> = {
     unsupported_schema: m.unsupportedSchema,
     unsupported_project_preset: m.unsupportedPreset,

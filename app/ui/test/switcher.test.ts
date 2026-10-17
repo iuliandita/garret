@@ -3098,7 +3098,7 @@ for (const departure of ["same", "privacy", "workspace", "reopen"] as const) {
   });
 }
 
-test.each(["short", "nonfiction"] as const)("switcher forwards %s to both creation destinations", async (preset) => {
+test.each(["short", "nonfiction", "collection"] as const)("switcher forwards %s to both creation destinations", async (preset) => {
   const calls: unknown[][] = [];
   const r = mount({
     createProject: async (...args) => { calls.push(args); return { path: "/p/new.db", name: "Draft", modified_at: 0 }; },

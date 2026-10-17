@@ -1,5 +1,5 @@
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test, spyOn } from "bun:test";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
@@ -583,5 +583,110 @@ describe("resizing with the pointer", () => {
     expect(divider().tabIndex).toBe(0);
     divider().focus();
     expect(document.activeElement).toBe(divider());
+  });
+});
+
+
+describe("lazy EPUB documents", () => {
+  const book = (): EpubPreview => ({
+    ...EPUB,
+    documents: Array.from({ length: 1572 }, (_, i) => ({
+      name: `${i}.xhtml`, xhtml: XHTML(`<p>chapter ${i}</p>`).replace("<title>t</title>", `<title>chapter ${i}</title>`),
+    })),
+  });
+
+  test("mounts only three documents of a large book", async () => {
+    const h = mount({ read: async () => book() });
+    await h.rail.open("epub");
+    expect(pages().querySelectorAll(".epub-document")).toHaveLength(3);
+    expect(pages().textContent).not.toContain("chapter 1571");
+  });
+
+  test("short documents fill the viewport without waiting for another scroll", async () => {
+    const geometry = spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      if (!this.hasAttribute("data-epub-name")) return { top: 0, bottom: 600, height: 600, left: 0, right: 300, width: 300 } as DOMRect;
+      const heightOf = (el: Element): number => el.classList.contains("epub-document") ? 100 : parseFloat((el as HTMLElement).style.height);
+      const siblings = [...this.parentElement!.children];
+      const top = siblings.slice(0, siblings.indexOf(this)).reduce((sum, el) => sum + heightOf(el), 0) - pages().scrollTop;
+      const height = heightOf(this);
+      return { top, bottom: top + height, height, left: 0, right: 300, width: 300 } as DOMRect;
+    });
+    try {
+      const h = mount({ read: async () => book() });
+      Object.defineProperty(pages(), "clientHeight", { configurable: true, value: 600 });
+      await h.rail.open("epub");
+      expect(pages().querySelectorAll(".epub-document")).toHaveLength(7);
+      expect(pages().querySelector('[data-epub-name="6.xhtml"]')?.textContent).toBe("chapter 6");
+    } finally { geometry.mockRestore(); }
+  });
+
+  test.each([1, 3])("the e-reader reaches the last page and refreshes (%i pages in the last document)", async (lastPages) => {
+    const h = mount({ read: async () => book() });
+    await h.rail.open("epub");
+    layout(300, 1572 * 300);
+    Object.defineProperty(pages(), "scrollWidth", { configurable: true, get: () =>
+      (1572 + (pages().querySelector('[data-epub-name="1571.xhtml"].epub-document') ? lastPages - 1 : 0)) * 300 });
+    const geometry = spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      const index = this.hasAttribute("data-epub-name") ? [...this.parentElement!.children].indexOf(this) : 0;
+      const left = this.hasAttribute("data-epub-name") ? index * 300 - pages().scrollLeft : 0;
+      const width = index === 1571 ? lastPages * 300 : 300;
+      return { top: 0, bottom: 600, height: 600, left, right: left + width, width } as DOMRect;
+    });
+    try {
+      press("#preview-frame-toggle");
+      key(pages(), "End");
+      expect(pages().querySelector('[data-epub-name="1571.xhtml"]')?.classList.contains("epub-document")).toBe(true);
+      expect(pages().querySelectorAll(".epub-document")).toHaveLength(3);
+      key(pages(), "End");
+      expect(label()).toBe(lastPages === 1 ? "Page 1,572 of 1,572" : "Page 1,574 of 1,574");
+      press("#preview-refresh");
+      await settle();
+      expect(pages().scrollLeft).toBe((1571 + lastPages - 1) * 300);
+      expect(label()).toBe(lastPages === 1 ? "Page 1,572 of 1,572" : "Page 1,574 of 1,574");
+      key(pages(), "Home");
+      expect(pages().querySelector('[data-epub-name="0.xhtml"]')?.classList.contains("epub-document")).toBe(true);
+      expect(pages().scrollLeft).toBe(0);
+    } finally { geometry.mockRestore(); }
+  });
+
+  test("scrolling replaces distant documents and refresh keeps the document and offset", async () => {
+    let view = book();
+    const h = mount({ read: async () => view });
+    await h.rail.open("epub");
+    const geometry = spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      if (!this.hasAttribute("data-epub-name")) return { top: 0, left: 0, right: 300, bottom: 600, height: 600, width: 300 } as DOMRect;
+      const index = [...this.parentElement!.children].indexOf(this);
+      return { top: index * 1000 - pages().scrollTop, bottom: (index + 1) * 1000 - pages().scrollTop,
+        height: 1000, left: 0, right: 300, width: 300 } as DOMRect;
+    });
+    Object.defineProperty(pages(), "clientHeight", { configurable: true, value: 600 });
+    try {
+      pages().scrollTop = 100250;
+      pages().dispatchEvent(new Event("scroll"));
+      expect([...pages().querySelectorAll(".epub-document")].map(el => el.getAttribute("data-epub-name")))
+        .toEqual(["99.xhtml", "100.xhtml", "101.xhtml"]);
+      expect(pages().scrollTop).toBe(100250);
+      view = { ...view, documents: [{ name: "inserted.xhtml", xhtml: XHTML("<p>new</p>") }, ...view.documents]
+        .map((doc, index) => ({ ...doc, name: `${index}.xhtml` })) };
+      press("#preview-refresh");
+      await settle();
+      expect(pages().querySelector('[data-epub-name="101.xhtml"].epub-document p')?.textContent).toBe("chapter 100");
+      // The inserted document moves this anchor, but the offset stays 250px.
+      expect(pages().scrollTop).toBe(101250);
+      // Renaming one of two identically titled chapters must keep its filename,
+      // rather than following the remaining title to the other chapter.
+      view = { ...view, documents: view.documents.map((doc, index) => index === 1
+        ? { ...doc, xhtml: doc.xhtml.replace("<title>chapter 0</title>", "<title>chapter 100</title>") } : doc) };
+      press("#preview-refresh");
+      await settle();
+      view = { ...view, documents: view.documents.map((doc, index) => index === 101
+        ? { ...doc, xhtml: doc.xhtml.replace("<title>chapter 100</title>", "<title>renamed</title>") } : doc) };
+      press("#preview-refresh");
+      await settle();
+      expect(pages().querySelector('[data-epub-name="101.xhtml"].epub-document p')?.textContent).toBe("chapter 100");
+      expect(pages().scrollTop).toBe(101250);
+      h.rail.close();
+      expect(pages().childElementCount).toBe(0);
+    } finally { geometry.mockRestore(); }
   });
 });
