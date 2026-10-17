@@ -16,7 +16,7 @@
 // boot path, so APP_DIST points at the built dist directly.
 //
 // Usage: APP_GUI=1 bun app/harness/src/persist-cli.ts [minutes]
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { captureEnv } from "./env";
@@ -37,6 +37,12 @@ const DIST = "app/ui/dist";
 const FIXTURE = "lab/fixtures/out/stress";
 const FIXTURE_LABEL = "stress";
 const RESULTS = "app/results";
+const railArg = process.argv.slice(2).find((arg) => arg.startsWith("--preview-rail="));
+const railState = railArg?.split("=")[1];
+if (railArg && railState !== "open" && railState !== "closed") {
+  console.error("--preview-rail must be open or closed");
+  process.exit(1);
+}
 const MAX_MINUTES = 5;
 // Measured, not guessed: on the first three series recorded (2026-09-01,
 // 1m/3m/5m at stress) the boot transient peaks at 34 s in every run and has
@@ -85,7 +91,7 @@ for (const p of [BIN, DIST, FIXTURE]) {
   }
 }
 
-const requested = Number(process.argv[2] ?? 5);
+const requested = Number(process.argv.slice(2).find((arg) => !arg.startsWith("--")) ?? 5);
 if (requested > MAX_MINUTES) {
   console.error(
     `refusing a ${requested}-minute run: budgets over ${MAX_MINUTES} minutes straddle the ~600 s ` +
@@ -98,6 +104,13 @@ const fixtureFloor = fixtureItemFloor(FIXTURE);
 
 const projectDir = mkdtempSync(join(tmpdir(), "app-project-"));
 const projectPath = join(projectDir, "project.db");
+const staged = railState ? join(projectDir, "dist") : DIST;
+if (railState) {
+  cpSync(DIST, staged, { recursive: true });
+  const index = join(staged, "index.html");
+  writeFileSync(index, readFileSync(index, "utf8").replace('<html lang="en">',
+    `<html lang="en" data-measure-preview-rail="${railState}">`));
+}
 
 function cleanup(): void {
   rmSync(projectDir, { recursive: true, force: true });
@@ -118,15 +131,29 @@ console.log(`\n[2/3] write run, ${requested} min`);
 const write = await runShell({
   mode: "virtual",
   soakMs,
-  staged: DIST,
+  staged,
+  probeA11y: !railState,
+  onReady: railState ? async ({ displayNum }) => {
+    const display = `:${displayNum}`;
+    mkdirSync(join(RESULTS, "screenshots"), { recursive: true });
+    const shot = Bun.spawnSync(["import", "-display", display, "-window", "root",
+      join(RESULTS, "screenshots", `persist-rail-${railState}.png`)], { stderr: "inherit" });
+    if (shot.exitCode !== 0) throw new Error(`preview rail screenshot failed: ${shot.exitCode}`);
+  } : undefined,
   env: { APP_PROJECT: projectPath, APP_PERSIST_MODE: "write" },
-});
+}).catch((error: unknown) => { cleanup(); throw error; });
 try {
   assertFixtureFloor(FIXTURE_LABEL, write.payload.rows, fixtureFloor);
 } catch (e) {
   console.error(`\n${(e as Error).message}\nNothing was written.`);
   cleanup();
   process.exit(2);
+}
+const rail = write.payload.preview_rail;
+if (railState && (!rail || rail.state !== railState || !rail.idle_refresh_enabled
+    || (railState === "open" ? !rail.visible || rail.idle_renders < 1 : rail.visible || rail.idle_renders !== 0))) {
+  cleanup();
+  throw new Error("preview rail measurement assertion failed; nothing was written");
 }
 const writePersist = write.payload.persist;
 if (!writePersist || !writePersist.flush) {
@@ -146,7 +173,7 @@ console.log(`\n[3/3] verify run against the same project`);
 const verify = await runShell<VerifySinkPayload>({
   mode: "virtual",
   soakMs: 1000,
-  staged: DIST,
+  staged,
   env: { APP_PROJECT: projectPath, APP_PERSIST_MODE: "verify" },
   probeA11y: false,
 });
@@ -210,12 +237,14 @@ const verdicts = [...evaluateGates(metricsOf(write)), ...evaluatePersistGates(pe
 const path = writeResult(
   buildResult({
     workload: "app-persist",
-    runId: `app-persist-stress-${requested}m`,
+    runId: `app-persist-stress-${requested}m${railState ? `-rail-${railState}` : ""}`,
     candidate: "tauri",
     fixture: "stress",
     verdicts,
     metrics: {
       ...metricsOf(write),
+      preview_rail: rail ?? null,
+      ...(railState ? { omitted_gates: "a11y_exposure: this comparison measures typing with the rail open or closed; no full accessibility walk through the rendered stress manuscript" } : {}),
       startup_ms: write.payload.startup_ms,
       soak_minutes: requested,
       fixture_floor: fixtureFloor,
@@ -246,3 +275,5 @@ const path = writeResult(
 cleanup();
 console.log(`\nrecorded: ${path}`);
 for (const v of verdicts) console.log(`  ${v.gate}: ${v.value} (${v.threshold}) ${v.verdict}`);
+
+process.exit(verdicts.some((v) => v.verdict === "FAIL") ? 1 : 0);
