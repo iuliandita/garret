@@ -16,7 +16,10 @@ protect against losing that device.
 
 ## Upgrade and compatibility
 
-Extract the new desktop package into a separate folder, keeping its interface
+For installed builds, close garret and run the new installer or use your package
+manager to upgrade. Removal keeps manuscripts, settings and recovery data; it
+does not replace a backup. For portable builds, extract into a separate folder,
+keeping the interface
 files beside the executable or inside the macOS bundle. First open a disposable
 copy of a book and check its prose, outline, pictures, research, and exports.
 Opening a supported older book can upgrade its SQLite schema. A newer schema

@@ -84,8 +84,10 @@ or [build garret from source](#building-from-source-linux).
 ## Testing builds
 
 Download alpha builds from [GitHub Releases](https://github.com/iuliandita/garret/releases).
-Choose the download for your device, extract the whole desktop package, and
-follow the included instructions. Android uses an APK; the phone app has fewer
+Choose the download for your device and follow the included instructions.
+The next release adds Windows `-setup.exe`, Linux `.deb`, `.rpm` and `.AppImage`,
+and macOS `.dmg` installers alongside the portable archives. See the
+[installation guide](docs/INSTALLING.md) for setup, upgrades and removal. Android uses an APK; the phone app has fewer
 features and does not sync books automatically. Keep a backup before trying a
 new build.
 

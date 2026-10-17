@@ -13,7 +13,7 @@
     }
   },
   "bundle": {
-    "active": false,
+    "active": true,
     "icon": [
       "icons/icon.png",
       "icons/32x32.png",
@@ -21,6 +21,66 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "targets": "all",
+    "publisher": "iuliandita",
+    "homepage": "https://usegarret.com",
+    "license": "GPL-3.0-or-later",
+    "licenseFile": "../../../COPYING",
+    "category": "Productivity",
+    "shortDescription": "An offline writing studio for novelists",
+    "longDescription": "Write and organize novels with a local library, revision history, research and exports. No account or network connection is required.",
+    "resources": {
+      "../dist/": "dist/",
+      "../../../COPYING": "COPYING",
+      "../../../THIRD-PARTY-NOTICES.md": "THIRD-PARTY-NOTICES.md"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    },
+    "macOS": {
+      "signingIdentity": "-"
+    },
+    "linux": {
+      "deb": {
+        "files": {
+          "/usr/share/metainfo/com.usegarret.app.metainfo.xml": "../../../scripts/linux/com.usegarret.app.metainfo.xml",
+          "/usr/share/doc/garret/COPYING": "../../../COPYING",
+          "/usr/share/doc/garret/THIRD-PARTY-NOTICES.md": "../../../THIRD-PARTY-NOTICES.md"
+        },
+        "desktopTemplate": "../../../scripts/linux/garret.desktop",
+        "depends": [
+          "libc6 (>= 2.39)",
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0t64"
+        ],
+        "section": "editors"
+      },
+      "rpm": {
+        "files": {
+          "/usr/share/metainfo/com.usegarret.app.metainfo.xml": "../../../scripts/linux/com.usegarret.app.metainfo.xml",
+          "/usr/share/doc/garret/COPYING": "../../../COPYING",
+          "/usr/share/doc/garret/THIRD-PARTY-NOTICES.md": "../../../THIRD-PARTY-NOTICES.md"
+        },
+        "desktopTemplate": "../../../scripts/linux/garret.desktop",
+        "depends": [
+          "glibc >= 2.39",
+          "webkit2gtk4.1",
+          "gtk3"
+        ]
+      },
+      "appimage": {
+        "files": {
+          "usr/share/metainfo/com.usegarret.app.metainfo.xml": "../../../scripts/linux/com.usegarret.app.metainfo.xml",
+          "usr/share/doc/garret/COPYING": "../../../COPYING",
+          "usr/share/doc/garret/THIRD-PARTY-NOTICES.md": "../../../THIRD-PARTY-NOTICES.md"
+        }
+      }
+    }
   }
 }

@@ -21,6 +21,10 @@ than desktop and does not synchronize books automatically.
 
 ## Develop-only work
 
+The next release adds NSIS, deb, rpm, AppImage and dmg installers while keeping
+the portable archives. See [installation](INSTALLING.md) for prerequisites and
+upgrade/removal behavior. These formats are not part of the published 0.0.2 assets.
+
 Documentation drift checks and the versioned screenshot manifest are
 development tooling added after 0.0.2. They do not change the published app.
 Future user-visible capabilities awaiting release belong here and in the
