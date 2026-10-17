@@ -1558,6 +1558,43 @@ mod tests {
         assert!(after[0].orphaned, "the anchor must read as an orphan");
     }
 
+    fn empty_replacement_leaves_readable_runs(runs: serde_json::Value, expected: serde_json::Value) {
+        let (_dir, store, id, rev) = seeded("first");
+        let body = serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":runs}]}).to_string();
+        store.flush(&[FlushEntry { item_id: id.clone(), body, base_rev: rev, comments: None }]).unwrap();
+        let report = store.replace_everywhere(&std::collections::HashSet::new(), "moon", "", "Before replacing").unwrap();
+        assert_eq!(report.replaced, 1);
+        let loaded: serde_json::Value = serde_json::from_str(&store.load_doc(&id).unwrap().body).unwrap();
+        assert_eq!(loaded["content"][0]["content"], expected);
+    }
+
+    #[test]
+    fn empty_replacement_removes_a_whole_run() {
+        empty_replacement_leaves_readable_runs(serde_json::json!([
+            {"type":"text","text":"left"}, {"type":"text","text":"moon"}, {"type":"text","text":"right"}
+        ]), serde_json::json!([{"type":"text","text":"leftright"}]));
+    }
+
+    #[test]
+    fn empty_replacement_keeps_a_whole_paragraph_readable() {
+        empty_replacement_leaves_readable_runs(serde_json::json!([
+            {"type":"text","text":"moon"}
+        ]), serde_json::json!([]));
+    }
+
+    #[test]
+    fn empty_replacement_removes_a_whole_marked_span() {
+        empty_replacement_leaves_readable_runs(serde_json::json!([
+            {"type":"text","text":"left","marks":[{"type":"strong"}]},
+            {"type":"text","text":"moon","marks":[{"type":"em"}]},
+            {"type":"text","text":"right","marks":[{"type":"strong"}]},
+            {"type":"text","text":"plain"}
+        ]), serde_json::json!([
+            {"type":"text","text":"leftright","marks":[{"type":"strong"}]},
+            {"type":"text","text":"plain"}
+        ]));
+    }
+
     #[test]
     fn a_snapshot_restore_leaves_an_UNCHANGED_document_s_notes_alone() {
         // The counterpart claim, and the one that makes the three above mean
