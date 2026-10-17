@@ -68,7 +68,9 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-function mount(opts: { storage?: MemoryStorage; width?: number } = {}): Harness {
+function mount(
+  opts: { storage?: MemoryStorage; width?: number; read?: () => Promise<EpubPreview> } = {},
+): Harness {
   const container = document.createElement("div");
   document.body.append(container);
   const h: Harness = {
@@ -83,7 +85,7 @@ function mount(opts: { storage?: MemoryStorage; width?: number } = {}): Harness 
   h.rail = createPreviewRail({
     container,
     drain: async () => { h.drains += 1; },
-    read: async () => { h.reads += 1; return EPUB; },
+    read: opts.read ?? (async () => { h.reads += 1; return EPUB; }),
     readProof: async () => { h.proofReads += 1; return PROOF; },
     readStyle: async () => STYLE,
     writeStyle: async (style) => style,
@@ -510,5 +512,76 @@ describe("refresh after a pause", () => {
     stale.fn();
     await Promise.resolve(); await Promise.resolve();
     expect(h.reads).toBe(reads);
+  });
+});
+
+const settle = async (): Promise<void> => {
+  for (let i = 0; i < 8; i += 1) await Promise.resolve();
+};
+
+describe("one render at a time", () => {
+  test("requests during a render coalesce into exactly one follow-up", async () => {
+    let started = 0;
+    let active = 0;
+    let widest = 0;
+    const gates: (() => void)[] = [];
+    const read = (): Promise<EpubPreview> => {
+      started += 1;
+      active += 1;
+      widest = Math.max(widest, active);
+      return new Promise((resolve) => {
+        gates.push(() => { active -= 1; resolve(EPUB); });
+      });
+    };
+    const h = mount({ read });
+    const opening = h.rail.open("epub");
+    await settle();
+    expect(started).toBe(1);
+    gates.shift()!();
+    await opening;
+
+    press("#preview-refresh");
+    await settle();
+    expect(started).toBe(2);
+    // Refresh again, an idle refresh, and a third Refresh, all mid-render.
+    press("#preview-auto-toggle");
+    press("#preview-refresh");
+    h.rail.saveStateChanged("pending");
+    h.rail.saveStateChanged("saved");
+    pending(h)[0]!.fn();
+    press("#preview-refresh");
+    await settle();
+    expect(started).toBe(2);
+    expect(widest).toBe(1);
+
+    gates.shift()!();
+    await settle();
+    expect(started).toBe(3);
+    expect(widest).toBe(1);
+    gates.shift()!();
+    await settle();
+    expect(started).toBe(3);
+    expect(gates).toHaveLength(0);
+  });
+});
+
+describe("resizing with the pointer", () => {
+  test("leaves focus where it was, and the divider stays a tab stop", async () => {
+    const h = mount({ width: 1400 });
+    await h.rail.open("epub");
+    const editor = document.createElement("button");
+    document.body.append(editor);
+    editor.focus();
+    rail().getBoundingClientRect = () => ({ right: 1400 }) as DOMRect;
+    const fire = (type: string, clientX: number): boolean =>
+      divider().dispatchEvent(new PointerEvent(type, { pointerId: 3, clientX, button: 0, bubbles: true, cancelable: true }));
+    const notPrevented = fire("pointerdown", 980);
+    fire("pointermove", 1400 - 600);
+    fire("pointerup", 1400 - 600);
+    expect(notPrevented).toBe(false);
+    expect(document.activeElement).toBe(editor);
+    expect(divider().tabIndex).toBe(0);
+    divider().focus();
+    expect(document.activeElement).toBe(divider());
   });
 });

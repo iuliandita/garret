@@ -381,9 +381,10 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
 
   const onDividerPointerDown = (event: Event): void => {
     if (!(event instanceof PointerEvent) || event.button !== 0 || rail.hidden) return;
-    // No selection starts in the prose behind the handle, and focus stays here.
+    // No selection starts in the prose behind the handle, and focus stays where
+    // it was: a writer who drags the divider keeps their caret, and the arrow
+    // keys keep moving it. The divider is still a tab stop for keyboard users.
     event.preventDefault();
-    divider.focus();
     drag = { pointerId: event.pointerId, right: rail.getBoundingClientRect().right };
     divider.dataset.dragging = "true";
     divider.setPointerCapture?.(event.pointerId);
@@ -831,7 +832,33 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     return element;
   }
 
-  async function render(): Promise<void> {
+  /** ONE RENDER AT A TIME. A render is O(the manuscript); the generation
+   *  checks below discard a stale answer but cannot stop its work, so a request
+   *  made while one is running (Refresh, an option, the idle timer) only marks
+   *  that another is owed, and exactly one follow-up runs after it finishes. */
+  let rendering: Promise<void> | null = null;
+  let renderOwed = false;
+
+  function render(): Promise<void> {
+    if (rendering !== null) {
+      renderOwed = true;
+      return rendering;
+    }
+    rendering = (async (): Promise<void> => {
+      try {
+        do {
+          renderOwed = false;
+          await renderOnce();
+        } while (renderOwed && !destroyed && !rail.hidden);
+      } finally {
+        rendering = null;
+        renderOwed = false;
+      }
+    })();
+    return rendering;
+  }
+
+  async function renderOnce(): Promise<void> {
     if (destroyed || rail.hidden || showing === null) return;
     const wanted = showing;
     // Whatever was pending is being answered now.
