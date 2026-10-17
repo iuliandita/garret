@@ -10,23 +10,26 @@ It uses the same universal arm64/x86_64 APK as GitHub, rather than introducing
 ABI version codes. Rust 1.98.1, NDK 30.0.16248370, Bun 1.4.2, Node 26.11.1 and
 Tauri CLI 2.11.5 match the release builder. Tauri invokes Cargo directly;
 there is no cargo-ndk dependency to pin. The generated Gradle wrapper, Android
-plugin and Kotlin versions come from that exact CLI. JDK 17 and Android API 36
-are required. Tool upgrades must be made in the recipe and builder together
-and followed by a fresh comparison. System JDK/Gradle environment differences
-still require validation on F-Droid's builder.
+plugin and Kotlin versions come from that exact CLI. The release image uses
+JDK 17; the F-Droid recipe uses Debian Trixie's OpenJDK 21 with Gradle 8.14.3
+and AGP 8.11.0. Gradle supports running on Java 21 since 8.5
+([compatibility matrix](https://docs.gradle.org/8.14.3/userguide/compatibility.html));
+[AGP 8.11 requires at least JDK 17](https://developer.android.com/build/releases/agp-8-11-0-release-notes).
+Android API 36 is required. Tool upgrades must be made in the recipe and
+builder together and followed by a fresh comparison. See the verification
+result below before submitting.
 
 ## Select a release and submit
 
-1. Publish a new release after these changes with package `com.usegarret.app`,
-   a higher version code, and the retained signing key. Do not replace v0.0.3:
-   that APK is `cc.local.app`, although its certificate has the same SHA-256.
-   The disabled 0.0.4 entry is only a placeholder, not a reserved version.
+1. Use the published v0.0.4 tag (`440929f5`) with package
+   `com.usegarret.app`, version name `0.0.4` and version code `4`.
+   The recipe's `Binaries` URL expands to
+   [garret-0.0.4-android.apk](https://github.com/iuliandita/garret/releases/download/v0.0.4/garret-0.0.4-android.apk).
+   Do not replace an existing release to accommodate a source fix; any source
+   fix needs a new version and a new reproducibility comparison.
 2. Fork [fdroiddata](https://gitlab.com/fdroid/fdroiddata) in your own account
    and clone your fork. Copy `com.usegarret.app.yml` into its `metadata/`
-   directory. Set `versionName`, `versionCode`, `commit`, `CurrentVersion`
-   and `CurrentVersionCode` to that release, then remove the build's `disable`
-   line. Confirm that `Binaries` expands to the actual published asset URL and that the
-   release includes the English/German fastlane metadata.
+   directory and confirm the English/German fastlane metadata is included.
 3. From fdroiddata, run `fdroid lint com.usegarret.app`,
    `fdroid rewritemeta com.usegarret.app`, then
    `fdroid build --verbose --test --on-server com.usegarret.app` inside a
@@ -35,6 +38,9 @@ still require validation on F-Droid's builder.
    selected release tag before invoking `--on-server`; production build hosts
    normally prepare this checkout before entering the builder. A direct
    invocation with no checkout can fail while reading `SOURCE_DATE_EPOCH`.
+   The checkout's `origin` must be the public GitHub repository, reachable
+   from inside the container. Use a fresh container for each attempt:
+   `--on-server` removes `sudo` after provisioning, even if a later step fails.
    The `--on-server` option executes the recipe's tool-installation commands;
    plain local builds skip its `sudo` section. Keep the logs. Resolve scanner,
    SDK/tool provisioning and lint findings;
@@ -106,12 +112,30 @@ the only differing entry; canonicalization removed that difference.
 This is local reproducibility evidence, not a match against a post-migration
 published release or certification of installed-app updates.
 
+## Official buildserver verification of 0.0.4
+
 The official `registry.gitlab.com/fdroid/fdroidserver:buildserver` image at
 digest `sha256:9cb68105642ca4e7b295f0ceab10f069f5b3247dc18fa7c36046e9d81aa469a8`
-was also tested with fdroidserver commit
-`5806784d0d43bed7b938fd4b327162da68927060`. Metadata rewrite/lint passed and
-NDK 30.0.16248370 installed. The build stopped in the recipe's `sudo` section:
-Debian Trixie has no `openjdk-17-jdk-headless` package. Resolve reproducible
-JDK 17 provisioning with the F-Droid maintainers before enabling the draft;
-switching JDK versions requires another APK comparison. No source build or
-signed-release comparison completed in that container. Issue #292 remains open.
+was tested with fdroidserver commit
+`5806784d0d43bed7b938fd4b327162da68927060` and the unmodified v0.0.4 source
+commit `440929f5a3a1e03779f9dec4385bbd17b926cabb`. The initial JDK 17
+provisioning failure is resolved by Debian Trixie's OpenJDK 21
+(`21.0.12.1+1-1-deb13u1-Debian`).
+
+The first JDK 21 build completed compilation and APK packaging, but
+fdroidserver's automatic signature-copy verification failed (exit 1).
+Entry hashes isolated the payload difference to `lib/arm64-v8a/libgarret_lib.so`
+and `lib/x86_64/libgarret_lib.so`. Java/Dex, resources and assets matched.
+Tauri 2.11.5's code generator appends the CSP hashes of `main.js` and
+`workspace.js` in filesystem traversal order; the published library contains
+main then workspace, while the failed rebuild contains workspace then main.
+Both libraries have identical Rust, Clang and linker version strings.
+
+The recipe builds through `disorderfs --sort-dirents=yes --reverse-dirents=no`
+to stabilize traversal, following the
+[F-Droid reproducibility guide](https://f-droid.org/docs/Reproducible_Builds/)
+and the [F-Droid client recipe precedent](https://gitlab.com/fdroid/fdroiddata/-/blob/19792568d3bccd9b98bbcde4c5f4ba743949ea36/metadata/org.fdroid.fdroid.yml).
+The container needs `/dev/fuse`, `SYS_ADMIN` and permission to mount FUSE
+(for Docker, `--device /dev/fuse --cap-add SYS_ADMIN --security-opt apparmor=unconfined`).
+This changes the build environment, not the tagged application source.
+
