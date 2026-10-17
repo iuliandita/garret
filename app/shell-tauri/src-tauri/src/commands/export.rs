@@ -267,6 +267,7 @@ fn render_project_with(
         back,
         bodies,
         openings,
+        single_scene,
     } = walk_of(&store)?;
     // ONE list for every question that is about the file as a whole -- the word
     // count below and the reported item count. A dedication is prose in the
@@ -294,6 +295,7 @@ fn render_project_with(
 
     let contents_title = strings.t(CONTENTS_KEY);
     let book = crate::export::Book {
+        single_scene,
         name,
         contents_title: &contents_title,
         front: &front,
@@ -428,6 +430,7 @@ fn render_project_with(
 /// prose and the reported figure together, and `export_word_count_agrees` stays
 /// a tripwire rather than a pair of matching blind spots.
 struct Walked {
+    single_scene: bool,
     front: Vec<(String, String, i64)>,
     chapters: Vec<(String, String, i64)>,
     back: Vec<(String, String, i64)>,
@@ -437,6 +440,10 @@ struct Walked {
 
 fn walk_of(store: &store::Store) -> std::result::Result<Walked, String> {
     let walk = store::book_walk(store.items().map_err(|e| e.to_string())?);
+    let single_scene = walk.chapters.last().is_some_and(|item| item.item_type == "scene")
+        && walk.chapters.windows(2).all(|pair| pair[1].parent_id.as_deref() == Some(pair[0].id.as_str()))
+        && walk.chapters.iter().take(walk.chapters.len().saturating_sub(1))
+            .all(|item| item.item_type == "part" || item.item_type == "chapter");
     let bodies = store.documents().map_err(|e| e.to_string())?;
     let mut openings = crate::export::ChapterOpenings::default();
     for item in &walk.chapters {
@@ -448,9 +455,16 @@ fn walk_of(store: &store::Store) -> std::result::Result<Walked, String> {
         }
     }
     let tuples = |rows: Vec<store::Item>| -> Vec<(String, String, i64)> {
-        rows.into_iter().map(|i| (i.id, i.title, i.depth)).collect()
+        rows.into_iter().map(|item| {
+            // Suppress only this item's own default, including defaults from an earlier locale.
+            let title = if single_scene && crate::strings::is_numbered_heading(&item.title, &item.item_type) {
+                String::new()
+            } else { item.title };
+            (item.id, title, item.depth)
+        }).collect()
     };
     Ok(Walked {
+        single_scene,
         front: tuples(walk.front),
         chapters: tuples(walk.chapters),
         back: tuples(walk.back),
@@ -488,6 +502,7 @@ pub(crate) fn preflight_of_store(
         back,
         bodies,
         openings: _,
+        single_scene: _,
     } = walk_of(&store)?;
     let items: Vec<&(String, String, i64)> =
         front.iter().chain(chapters.iter()).chain(back.iter()).collect();
@@ -1037,7 +1052,9 @@ mod tests {
         // satisfy the first alone.
         let dir = tempdir().unwrap();
         let db = dir.path().join("p.db");
-        drop(seeded_project(&db));
+        let store = seeded_project(&db);
+        store.item_create(None, "scene", "Second scene").unwrap();
+        drop(store);
         let dest = dir.path().join("out.md");
         super::export_to(&db, "My Novel", &dest, &no_vault(), pseudo()).unwrap();
         let text = std::fs::read_to_string(&dest).unwrap();
@@ -1057,7 +1074,9 @@ mod tests {
         // can be read without a zip reader.
         let dir = tempdir().unwrap();
         let db = dir.path().join("p.db");
-        drop(seeded_project(&db));
+        let store = seeded_project(&db);
+        store.item_create(None, "scene", "Second scene").unwrap();
+        drop(store);
         let dest = dir.path().join("out.epub");
         super::export_into(
             &db,
@@ -1115,7 +1134,9 @@ mod tests {
         static NOTHING: crate::strings::Locale = crate::strings::Locale::new("zz", EMPTY);
         let dir = tempdir().unwrap();
         let db = dir.path().join("p.db");
-        drop(seeded_project(&db));
+        let store = seeded_project(&db);
+        store.item_create(None, "scene", "Second scene").unwrap();
+        drop(store);
         let dest = dir.path().join("out.md");
         super::export_to(
             &db,
@@ -1258,6 +1279,7 @@ mod tests {
         let bodies = store.documents().unwrap();
         let rendered = crate::export::manuscript(
             &crate::export::Book {
+                single_scene: true,
                 name: "My Novel",
                 contents_title: &crate::strings::Strings::english().t(CONTENTS_KEY),
                 front: &[],
@@ -1727,8 +1749,8 @@ mod tests {
         // The dedication prints ABOVE the seeded scene and the acknowledgements
         // below it. Position, not merely presence.
         let at = |needle: &str| written.find(needle).expect(needle);
-        assert!(at("## Dedication") < at("## Only scene"));
-        assert!(at("## Only scene") < at("## Acknowledgements"));
+        assert!(at("## Dedication") < at("four words go here"));
+        assert!(at("four words go here") < at("## Acknowledgements"));
         assert_eq!(
             result.items, 3,
             "the scene, the dedication, the acknowledgements"
@@ -2170,6 +2192,7 @@ mod tests {
         let db = dir.path().join("p.db");
         {
             let store = seeded_project(&db);
+            store.item_create(None, "scene", "Second scene").unwrap();
             crate::design::write_design(&store, &crate::design::preset("non-fiction").unwrap())
                 .unwrap();
             crate::design::write_chapter_style(
@@ -2179,6 +2202,7 @@ mod tests {
                     new_page: true,
                     caps_title: true,
                     drop_cap: true,
+                    ..Default::default()
                 },
             )
             .unwrap();
@@ -2865,5 +2889,313 @@ mod tests {
         .unwrap();
         assert!(r.preflight.fields.is_empty());
         assert!(!std::fs::read_to_string(&md).unwrap().contains("Ada Vane"));
+    }
+}
+
+#[cfg(test)]
+mod project_presets_tests {
+    use super::*;
+
+    fn text_of(written: crate::export::Manuscript, format: crate::export::Format) -> String {
+        match format {
+            crate::export::Format::Epub => {
+                crate::epub::reading_order(&crate::epub::read_zip(&written.bytes).unwrap())
+                    .into_iter()
+                    .map(|(_, body)| body)
+                    .collect()
+            }
+            crate::export::Format::Docx => String::from_utf8(
+                crate::epub::read_zip(&written.bytes)
+                    .unwrap()
+                    .into_iter()
+                    .find(|(name, _)| name == "word/document.xml")
+                    .unwrap()
+                    .1,
+            )
+            .unwrap(),
+            _ => String::from_utf8(written.bytes).unwrap(),
+        }
+    }
+
+    #[test]
+    fn project_presets_single_scene_keeps_custom_headings_through_container_chains() {
+        for titles in [
+            vec![("scene", "The Storm")],
+            vec![("scene", "Chapter 1")],
+            vec![("chapter", "Prologue"), ("scene", "Scene 1")],
+            vec![
+                ("part", "Part 1"),
+                ("chapter", "Chapter 1"),
+                ("scene", "Scene 1"),
+            ],
+            vec![
+                ("part", "The coast"),
+                ("chapter", "Prologue"),
+                ("scene", "The Storm"),
+            ],
+            vec![
+                ("part", "Teil 1"),
+                ("chapter", "Kapitel 1"),
+                ("scene", "Szene 1"),
+            ],
+            vec![("chapter", ""), ("scene", "")],
+        ] {
+            let dir = tempfile::tempdir().unwrap();
+            let path = dir.path().join("draft.db");
+            let store = store::Store::open(&path).unwrap();
+            let mut parent = None;
+            for (kind, title) in &titles {
+                parent = Some(
+                    store
+                        .item_create(parent.as_deref(), kind, title)
+                        .unwrap()
+                        .id,
+                );
+            }
+            assert!(walk_of(&store).unwrap().single_scene);
+            drop(store);
+            for format in [
+                crate::export::Format::Markdown,
+                crate::export::Format::Epub,
+                crate::export::Format::Docx,
+                crate::export::Format::Pdf,
+            ] {
+                let (written, _, _, _) = render_project(
+                    &path,
+                    "Draft",
+                    format,
+                    &crate::identity::Vault::default(),
+                    crate::strings::Strings::english(),
+                )
+                .unwrap();
+                let text = text_of(written, format);
+                for title in ["The Storm", "Prologue", "The coast", "Chapter 1"] {
+                    let expected = titles.iter().any(|(kind, stored)| {
+                        *stored == title && (*kind != "chapter" || title != "Chapter 1")
+                    });
+                    assert_eq!(text.contains(title), expected, "{format:?}: {text}");
+                    if expected
+                        && matches!(
+                            format,
+                            crate::export::Format::Epub | crate::export::Format::Pdf
+                        )
+                    {
+                        assert!(text.contains(&format!(">{title}</h")), "{format:?}: {text}");
+                    }
+                }
+                if titles.iter().all(|(_, title)| title.is_empty()) {
+                    assert!(!(2..=6).any(|level| text.contains(&format!("></h{level}>"))), "{text}");
+                    assert!(
+                        !text
+                            .lines()
+                            .any(|line| line.starts_with('#') && line.chars().all(|c| c == '#')),
+                        "{text}"
+                    );
+                    if format == crate::export::Format::Docx {
+                        assert!(!text.contains("w:val=\"Heading"), "{text}");
+                    }
+                }
+                for title in [
+                    "Part 1",
+                    "Chapter 1",
+                    "Scene 1",
+                    "Teil 1",
+                    "Kapitel 1",
+                    "Szene 1",
+                ] {
+                    let custom = titles.iter().any(|(kind, stored)| {
+                        *stored == title && *kind == "scene" && title == "Chapter 1"
+                    });
+                    assert_eq!(text.contains(title), custom, "{format:?}: {text}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn project_presets_added_sections_export_normally() {
+        for kind in ["scene", "chapter"] {
+            let dir = tempfile::tempdir().unwrap();
+            let made = crate::projects::create_in_preset(
+                dir.path(),
+                "Draft",
+                &crate::strings::Strings::english(),
+                Some("short"),
+            )
+            .unwrap();
+            let path = Path::new(&made.path);
+            let store = store::Store::open(path).unwrap();
+            store.item_create(None, kind, "Added section").unwrap();
+            assert!(!walk_of(&store).unwrap().single_scene);
+            drop(store);
+            let (written, _, _, _) = render_project(
+                path,
+                "Draft",
+                crate::export::Format::Markdown,
+                &crate::identity::Vault::default(),
+                crate::strings::Strings::english(),
+            )
+            .unwrap();
+            let text = String::from_utf8(written.bytes).unwrap();
+            assert!(text.contains("## Contents"));
+            assert!(text.contains("Added section"));
+            assert!(text.contains("Scene 1"));
+        }
+    }
+
+    #[test]
+    fn project_presets_single_scene_exports_keep_prose_and_matter_without_scaffolding() {
+        for preset in [None, Some("short"), Some("nonfiction")] {
+            let dir = tempfile::tempdir().unwrap();
+            let made = crate::projects::create_in_preset(
+                dir.path(),
+                "Draft",
+                &crate::strings::Strings::english(),
+                preset,
+            )
+            .unwrap();
+            let path = Path::new(&made.path);
+            let store = store::Store::open(path).unwrap();
+            crate::design::write_chapter_style(
+                &store,
+                &crate::design::ChapterStyle {
+                    glyph: Some(crate::design::GLYPHS[0].id.to_string()),
+                    drop_cap: true,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+            let scene = store
+                .items()
+                .unwrap()
+                .into_iter()
+                .find(|item| item.item_type == "scene")
+                .unwrap();
+            store
+                .flush(&[store::FlushEntry {
+                    item_id: scene.id.clone(),
+                    body: crate::test_support::body("Story prose survives."),
+                    base_rev: store.load_doc(&scene.id).unwrap().rev,
+                    comments: None,
+                }])
+                .unwrap();
+            let matter = store
+                .item_create(None, store::FRONT_MATTER_TYPE, "Front matter")
+                .unwrap();
+            let dedication = store
+                .item_create(Some(&matter.id), "matter", "Dedication")
+                .unwrap();
+            store
+                .flush(&[store::FlushEntry {
+                    item_id: dedication.id.clone(),
+                    body: crate::test_support::body("For the reader."),
+                    base_rev: store.load_doc(&dedication.id).unwrap().rev,
+                    comments: None,
+                }])
+                .unwrap();
+            let back = store
+                .item_create(None, store::BACK_MATTER_TYPE, "Back matter")
+                .unwrap();
+            store
+                .item_create(Some(&back.id), "matter", "Afterword")
+                .unwrap();
+            let walked = walk_of(&store).unwrap();
+            let book = crate::export::Book {
+                single_scene: true,
+                name: "Draft",
+                contents_title: "Contents",
+                front: &walked.front,
+                chapters: &walked.chapters,
+                back: &walked.back,
+            };
+            let entries = crate::export::contents_of(&book);
+            assert_eq!(entries.len(), 2);
+            assert!(entries.iter().any(|entry| entry.title == "Dedication"));
+            assert!(entries.iter().any(|entry| entry.title == "Afterword"));
+            drop(store);
+            for format in [
+                crate::export::Format::Markdown,
+                crate::export::Format::Epub,
+                crate::export::Format::Docx,
+                crate::export::Format::Pdf,
+            ] {
+                let (written, _, _, _) = render_project(
+                    path,
+                    "Draft",
+                    format,
+                    &crate::identity::Vault::default(),
+                    crate::strings::Strings::english(),
+                )
+                .unwrap();
+                let text = match format {
+                    crate::export::Format::Epub => {
+                        let entries = crate::epub::read_zip(&written.bytes).unwrap();
+                        let opf = entries
+                            .iter()
+                            .find(|(name, _)| name == crate::epub::OPF_PATH)
+                            .unwrap();
+                        assert!(!String::from_utf8_lossy(&opf.1).contains("<itemref idref=\"nav\""));
+                        assert!(!crate::epub::reading_order(&entries).iter().any(|(name, _)| name.ends_with("/nav.xhtml")));
+                        let nav = entries
+                            .iter()
+                            .find(|(name, _)| {
+                                name == &format!("{}/{}", crate::epub::OEBPS, crate::epub::NAV_HREF)
+                            })
+                            .unwrap();
+                        let nav = String::from_utf8_lossy(&nav.1);
+                        assert!(
+                            nav.contains("Dedication") && nav.contains("Afterword"),
+                            "{nav}"
+                        );
+                        assert!(!nav.contains(">Contents</h"), "{nav}");
+                        assert!(
+                            !nav.contains("Scene 1") && !nav.contains("Chapter 1"),
+                            "{nav}"
+                        );
+                        assert!(entries.iter().any(|(name, bytes)| name.ends_with(".css")
+                            && String::from_utf8_lossy(bytes).contains(".opening::first-letter")));
+                        crate::epub::reading_order(&entries)
+                            .into_iter()
+                            .map(|(_, body)| body)
+                            .collect::<String>()
+                    }
+                    crate::export::Format::Docx => {
+                        let entries = crate::epub::read_zip(&written.bytes).unwrap();
+                        String::from_utf8(
+                            entries
+                                .into_iter()
+                                .find(|(name, _)| name == "word/document.xml")
+                                .unwrap()
+                                .1,
+                        )
+                        .unwrap()
+                    }
+                    _ => String::from_utf8(written.bytes).unwrap(),
+                };
+                if matches!(
+                    format,
+                    crate::export::Format::Epub | crate::export::Format::Pdf
+                ) {
+                    assert_eq!(text.matches("<p class=\"opening\"").count(), 1, "{text}");
+                    assert!(!text.contains("<p class=\"ornament\""), "{text}");
+                }
+                if format == crate::export::Format::Pdf {
+                    assert!(
+                        text.contains(
+                            "class=\"opening\" data-proof-running=\"Draft\">Story prose survives."
+                        ),
+                        "{text}"
+                    );
+                    assert!(text.contains("p.opening::first-letter"), "{text}");
+                }
+                assert!(text.contains("Story prose survives."));
+                assert!(text.contains("For the reader."));
+                assert!(text.contains("Dedication"));
+                assert!(!text.contains("Scene 1"));
+                assert!(!text.contains("Chapter 1"));
+                assert!(!text.contains(">Contents</h"));
+                assert!(!text.contains("## Contents"));
+            }
+        }
     }
 }

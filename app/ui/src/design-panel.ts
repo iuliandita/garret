@@ -115,7 +115,7 @@ function transferValue(field: string, raw: string | null, view: BookDesignView |
   }
   if (field === "glyph") {
     if (raw === "") return t("preview.glyph.none");
-    return ["asterisks", "asterism", "fleuron", "diamond"].includes(raw)
+    return ["asterisks", "asterism", "fleuron", "diamond", "dots", "hedera", "rule"].includes(raw)
       ? t(`preview.glyph.${raw}`) : invalid;
   }
   if (field === "chapter") {
@@ -123,8 +123,10 @@ function transferValue(field: string, raw: string | null, view: BookDesignView |
     const flags = raw.split(" ");
     const known: Record<string, string> = {
       "new-page": "new_page", "caps-title": "caps_title", "drop-cap": "drop_cap",
+      "ornament-above": "ornament_above", "sink-third": "sink_third", "sink-half": "sink_half",
     };
-    if (flags.some((flag) => known[flag] === undefined) || new Set(flags).size !== flags.length) return invalid;
+    if (flags.some((flag) => known[flag] === undefined) || new Set(flags).size !== flags.length ||
+        flags.filter((flag) => flag.startsWith("sink-")).length > 1) return invalid;
     return flags.map((flag) => t(`preview.option.${known[flag]}`)).join(", ");
   }
   if (field === "cover_fit_front" || field === "cover_fit_back") {

@@ -269,6 +269,7 @@ pub struct TocEntry {
 /// A renderer that had to ask "is this row front matter?" would be a second
 /// place where that question is answered.
 pub struct Book<'a> {
+    pub single_scene: bool,
     pub name: &'a str,
     /// The heading the generated contents is given. Passed in, like `name`,
     /// because this module is pure and holds no writer-facing words of its own.
@@ -291,6 +292,10 @@ pub struct ChapterOpenings {
 }
 
 impl<'a> Book<'a> {
+    pub fn suppresses_heading(&self, run_index: usize, title: &str) -> bool {
+        self.single_scene && run_index == 1 && title.trim().is_empty()
+    }
+
     /// The three runs in emission order. One place states it, so the contents
     /// and the body cannot disagree about what comes first.
     fn runs(&self) -> [&'a [(String, String, i64)]; 3] {
@@ -298,14 +303,15 @@ impl<'a> Book<'a> {
     }
 }
 
-/// Every heading the file will carry, in file order, excluding the H1 and the
-/// contents' own heading.
+/// Navigable headings in file order, excluding the H1 and contents heading.
+/// A single-scene manuscript leaves only its front and back matter in navigation.
 ///
 /// Built from the SAME runs and the SAME `heading_level` the body uses, so a
 /// contents entry cannot name a level the heading below it does not have.
 pub fn contents_of(book: &Book) -> Vec<TocEntry> {
     let mut out = Vec::new();
-    for run in book.runs() {
+    for (run_index, run) in book.runs().into_iter().enumerate() {
+        if book.single_scene && run_index == 1 { continue; }
         for (id, title, depth) in run {
             out.push(TocEntry {
                 id: id.clone(),
@@ -379,7 +385,7 @@ pub fn manuscript(book: &Book, bodies: &HashMap<String, String>) -> Manuscript {
     // A book with no items at all gets NO contents section rather than an empty
     // one: a heading over nothing is a section the writer did not ask for and
     // cannot fill from this screen.
-    if !contents.is_empty() {
+    if !book.single_scene && !contents.is_empty() {
         push_block(
             &mut out,
             format!(
@@ -391,17 +397,19 @@ pub fn manuscript(book: &Book, bodies: &HashMap<String, String>) -> Manuscript {
         );
         push_block(&mut out, &contents_block(&contents));
     }
-    for run in book.runs() {
+    for (run_index, run) in book.runs().into_iter().enumerate() {
         for (id, title, depth) in run {
-            push_block(
-                &mut out,
-                format!(
-                    "{} {}",
-                    "#".repeat(heading_level(*depth)),
-                    heading_title(title)
-                )
-                .trim_end(),
-            );
+            if !book.suppresses_heading(run_index, title) {
+                push_block(
+                    &mut out,
+                    format!(
+                        "{} {}",
+                        "#".repeat(heading_level(*depth)),
+                        heading_title(title)
+                    )
+                    .trim_end(),
+                );
+            }
             if let Some((prose, underlined)) =
                 bodies.get(id).and_then(|b| document_markdown_counted(b))
             {
@@ -563,6 +571,7 @@ mod tests {
     /// the three runs build a `Book` themselves.
     fn book<'a>(name: &'a str, chapters: &'a [(String, String, i64)]) -> Book<'a> {
         Book {
+            single_scene: false,
             name,
             contents_title: "Contents",
             front: &[],
@@ -661,6 +670,7 @@ mod tests {
         let back = vec![("a".to_string(), "Acknowledgements".to_string(), 0)];
         let out = manuscript(
             &Book {
+                single_scene: false,
                 name: "N",
                 contents_title: "Contents",
                 front: &front,
@@ -691,6 +701,7 @@ mod tests {
         );
         let out = manuscript(
             &Book {
+                single_scene: false,
                 name: "N",
                 contents_title: "Contents",
                 front: &front,
@@ -717,6 +728,7 @@ mod tests {
             ("s".to_string(), "Opening".to_string(), 1),
         ];
         let book = Book {
+            single_scene: false,
             name: "N",
             contents_title: "Contents",
             front: &front,
@@ -1261,5 +1273,39 @@ mod tests {
         bodies.insert("s1".to_string(), "corrupt".to_string());
         let out = manuscript(&book("N", &items), &bodies);
         assert!(out.text().contains("## Opening"));
+    }
+
+    fn references_body() -> String {
+        serde_json::json!({"type":"doc","content":[
+            {"type":"paragraph","content":[{"type":"text","text":"Austen, J. Emma. 1815."}]},
+            {"type":"paragraph","content":[{"type":"text","text":"Woolf, V. The Waves. 1931."}]},
+        ]})
+        .to_string()
+    }
+
+    #[test]
+    fn a_references_page_exports_as_a_heading_with_one_paragraph_per_entry() {
+        let chapters = vec![("c".to_string(), "Chapter One".to_string(), 0)];
+        let back = vec![("r".to_string(), "References".to_string(), 0)];
+        let mut bodies = HashMap::new();
+        bodies.insert("r".to_string(), references_body());
+        let out = manuscript(
+            &Book {
+                name: "N",
+                contents_title: "Contents",
+                front: &[],
+                chapters: &chapters,
+                back: &back,
+                single_scene: false,
+            },
+            &bodies,
+        );
+        assert!(
+            out.text().ends_with(
+                "## References\n\nAusten, J. Emma. 1815.\n\nWoolf, V. The Waves. 1931.\n"
+            ),
+            "{}",
+            out.text()
+        );
     }
 }

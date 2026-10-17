@@ -1,3 +1,4 @@
+import type { ProjectPreset } from "../src/project-preset";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { describe, expect, test } from "bun:test";
 import { menuRoute } from "../../harness/src/menu-drive";
@@ -67,7 +68,7 @@ interface Rig {
   list(): HTMLElement;
 }
 
-function mount(privacy?: { enabled: boolean; calls: number; shortcut?: "ctrl_alt_l" | "ctrl_alt_p" | "off" }, openCreation?: () => void): Rig {
+function mount(privacy?: { enabled: boolean; calls: number; shortcut?: "ctrl_alt_l" | "ctrl_alt_p" | "off" }, openCreation?: () => void, preset: () => ProjectPreset = () => "novel"): Rig {
   const container = document.createElement("span");
   document.body.append(container);
 
@@ -114,6 +115,7 @@ function mount(privacy?: { enabled: boolean; calls: number; shortcut?: "ctrl_alt
   };
 
   const bar = createMenuBar({
+    projectPreset: preset,
     container,
     openCreation,
     showManuscript: () => undefined,
@@ -1616,6 +1618,7 @@ describe("the items that open a page dialog say so", () => {
     "menu-new-foreword": "menu-outline",
     "menu-new-acknowledgements": "menu-outline",
     "menu-new-afterword": "menu-outline",
+    "menu-new-references": "menu-outline",
     "menu-rename": "menu-outline",
     "menu-remove": "menu-outline",
     "menu-nav-back": "menu-outline",
@@ -1704,6 +1707,7 @@ describe("the four pages that are not chapters", () => {
         ["menu-new-foreword", "foreword"],
         ["menu-new-acknowledgements", "acknowledgements"],
         ["menu-new-afterword", "afterword"],
+        ["menu-new-references", "references"],
       ] as const) {
         rig.title("menu-outline").click();
         rig.item(item)?.click();
@@ -1713,6 +1717,7 @@ describe("the four pages that are not chapters", () => {
         "foreword",
         "acknowledgements",
         "afterword",
+        "references",
       ]);
       // Never `create(...)`: these are placed in one section, always, and
       // routing them through `planPlacement` would land a dedication in the
@@ -2003,3 +2008,28 @@ for (const shortcut of ["ctrl_alt_l", "ctrl_alt_p", "off"] as const) {
     }
   });
 }
+
+test("nonfiction moves fiction tools under More and rechecks after switching books", () => {
+  let preset: ProjectPreset = "nonfiction";
+  const r = mount(undefined, undefined, () => preset);
+  r.title("menu-outline").click();
+  document.getElementById("menu-new")!.click();
+  document.getElementById("menu-more")!.click();
+  expect(document.getElementById("menu-new-note")?.textContent).toContain("New reference document");
+  expect(document.getElementById("menu-new-bible-folder")?.textContent).toContain("New reference folder");
+  r.bar.close();
+  r.title("menu-outline").click();
+  document.getElementById("menu-planning")!.click();
+  expect(document.getElementById("menu-cast")).toBeNull();
+  expect(document.getElementById("menu-appears")).toBeNull();
+  expect(document.getElementById("menu-appears-map")).toBeNull();
+  document.getElementById("menu-fiction-more")!.click();
+  document.getElementById("menu-fiction-cast")!.click();
+  expect(r.calls.cast).toBe(1);
+  preset = "novel";
+  r.title("menu-outline").click();
+  document.getElementById("menu-planning")!.click();
+  expect(document.getElementById("menu-cast")).not.toBeNull();
+  expect(document.getElementById("menu-fiction-more")).toBeNull();
+  r.bar.destroy();
+});

@@ -1,3 +1,4 @@
+import type { ProjectPreset } from "./project-preset";
 // app/ui/src/outline.ts
 // Neighbour arithmetic for outline moves: the pure half of "move this row up /
 // down / out / in".
@@ -260,7 +261,7 @@ export const BIBLE_TITLE = t("outline.bible-title");
  *
  *  A UNION OF FOUR WORDS rather than four methods, because the four differ in
  *  exactly two values and a method each would be four copies of one body. */
-export type MatterKind = "dedication" | "foreword" | "acknowledgements" | "afterword";
+export type MatterKind = "dedication" | "foreword" | "acknowledgements" | "afterword" | "references";
 
 /** WHICH SECTION EACH KIND GOES IN, and it is the only place that decision is
  *  written down.
@@ -293,6 +294,11 @@ const MATTER_KINDS: Readonly<
     section: BACK_MATTER_TYPE,
     sectionTitle: () => t("outline.back-matter-title"),
     title: () => t("item.matter.afterword"),
+  },
+  references: {
+    section: BACK_MATTER_TYPE,
+    sectionTitle: () => t("outline.back-matter-title"),
+    title: () => t("item.matter.references"),
   },
 };
 
@@ -401,6 +407,7 @@ function itemsExcludingRoots(
 }
 
 export interface OutlineDeps {
+  preset?: ProjectPreset;
   generation: number;
   canMutate?: () => boolean;
   invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
@@ -964,7 +971,7 @@ export function createOutline(deps: OutlineDeps): Outline {
         // each one back to where THIS walk - not any later one - had it.
         const before = walk;
         const anchor = relativeTo ?? deps.selectedId();
-        const place = planPlacement(walk, anchor, itemType);
+        const place = planPlacement(walk, anchor, itemType, deps.preset);
         // THE HOLDERS FIRST, THEN THE ITEM INSIDE THE LAST. `holders` is empty
         // in every case but one -- a chapter with no part above it, which is
         // the press that could not produce indentation, a reported defect.
@@ -1182,7 +1189,7 @@ export function createOutline(deps: OutlineDeps): Outline {
         // outside it would be numbered against a tree that may already have
         // changed.
         docTitle: (items) => nextNumberedTitle(items, NOTE_TYPE, numberPattern(NOTE_TYPE)),
-        noSection: () => t("outline.failed.no-bible"),
+        noSection: () => t(deps.preset === "nonfiction" ? "preset.reference-creation-failed" : "outline.failed.no-bible"),
       }, anchorId);
     },
 
@@ -1192,7 +1199,7 @@ export function createOutline(deps: OutlineDeps): Outline {
         rootTitle: BIBLE_TITLE,
         docType: BIBLE_FOLDER_TYPE,
         docTitle: (items) => nextNumberedTitle(items, BIBLE_FOLDER_TYPE, numberPattern(BIBLE_FOLDER_TYPE)),
-        noSection: () => t("outline.failed.no-bible"),
+        noSection: () => t(deps.preset === "nonfiction" ? "preset.reference-creation-failed" : "outline.failed.no-bible"),
       }, anchorId);
     },
 
@@ -1209,7 +1216,7 @@ export function createOutline(deps: OutlineDeps): Outline {
         // "the bible section could not be created", and a second sentence
         // for the identical failure would be a second thing to translate for
         // no new information.
-        noSection: () => t("outline.failed.no-bible"),
+        noSection: () => t(deps.preset === "nonfiction" ? "preset.reference-creation-failed" : "outline.failed.no-bible"),
       }, anchorId);
     },
 

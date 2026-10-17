@@ -59,18 +59,18 @@ interface ParsedMenus {
   itemCount: number;
 }
 
-let cached: { sourcePath: string; catalogPath: string; menus: ParsedMenus } | null = null;
+let cached: { sourcePath: string; catalogPath: string; preset: string; menus: ParsedMenus } | null = null;
 
-function cachedMenus(sourcePath: string, catalogPath: string): ParsedMenus {
-  if (cached?.sourcePath !== sourcePath || cached.catalogPath !== catalogPath) {
-    cached = { sourcePath, catalogPath, menus: parseMenus(sourcePath, catalogPath) };
+function cachedMenus(sourcePath: string, catalogPath: string, preset = "novel"): ParsedMenus {
+  if (cached?.sourcePath !== sourcePath || cached.catalogPath !== catalogPath || cached.preset !== preset) {
+    cached = { sourcePath, catalogPath, preset, menus: parseMenus(sourcePath, catalogPath, preset) };
   }
   return cached.menus;
 }
 
 /** Read literal menu pages without executing the UI module. Each child page
  *  starts with Back, so leaf indices and ancestor routes include that row. */
-function parseMenus(sourcePath: string, catalogPath: string): ParsedMenus {
+function parseMenus(sourcePath: string, catalogPath: string, preset: string): ParsedMenus {
   const source = readFileSync(sourcePath, "utf8");
   const routes = new Map<string, MenuItemRoute>();
   const chords = new Map<MenuId, string>();
@@ -88,8 +88,21 @@ function parseMenus(sourcePath: string, catalogPath: string): ParsedMenus {
   }
   function visitPage(page: ts.ArrayLiteralExpression, owner: MenuId, accelerator: string,
     ancestors: readonly { index: number; count: number }[], nested: boolean): void {
-    const count = page.elements.length + (nested ? 1 : 0);
-    for (const [position, node] of page.elements.entries()) {
+    const nodes = page.elements.filter((node) => {
+      if (!ts.isObjectLiteralExpression(node)) throw new Error(`${sourcePath}: menu page must contain literal items`);
+      const visible = property(node, "visible");
+      if (!visible) return true;
+      if (!ts.isArrowFunction(visible) || !ts.isBinaryExpression(visible.body) ||
+        visible.body.left.getText(tree) !== "deps.projectPreset?.()" || !ts.isStringLiteral(visible.body.right)) {
+        throw new Error(`${sourcePath}: unsupported menu visibility rule`);
+      }
+      const equal = preset === visible.body.right.text;
+      if (visible.body.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken) return equal;
+      if (visible.body.operatorToken.kind === ts.SyntaxKind.ExclamationEqualsEqualsToken) return !equal;
+      throw new Error(`${sourcePath}: unsupported menu visibility comparison`);
+    });
+    const count = nodes.length + (nested ? 1 : 0);
+    for (const [position, node] of nodes.entries()) {
       if (!ts.isObjectLiteralExpression(node)) throw new Error(`${sourcePath}: menu page must contain literal items`);
       const identity = property(node, "id");
       if (!identity || !ts.isStringLiteral(identity)) throw new Error(`${sourcePath}: menu item has no literal id`);
@@ -180,8 +193,9 @@ export function menuRoute(
   itemId: string,
   sourcePath = "app/ui/src/menu-bar.ts",
   catalogPath = "app/ui/src/i18n/en.ts",
+  preset = "novel",
 ): MenuItemRoute {
-  const menus = cachedMenus(sourcePath, catalogPath);
+  const menus = cachedMenus(sourcePath, catalogPath, preset);
   const route = menus.routes.get(itemId);
   if (route === undefined) {
     const known = [...menus.routes.keys()].join(", ");
@@ -288,6 +302,7 @@ export function menuDriver(
   xdo: Xdo,
   sourcePath = "app/ui/src/menu-bar.ts",
   catalogPath = "app/ui/src/i18n/en.ts",
+  preset = "novel",
 ): MenuDriver {
   const key = (chord: string): void => {
     xdo(display, ["key", "--window", wid, chord]);
@@ -301,7 +316,7 @@ export function menuDriver(
     openMenu,
     activate: async (itemId: string): Promise<void> => {
       const creation = creationKeys(itemId, sourcePath);
-      const route = menuRoute(creation ? "menu-new" : itemId, sourcePath, catalogPath);
+      const route = menuRoute(creation ? "menu-new" : itemId, sourcePath, catalogPath, preset);
       await openMenu(route.chord);
       for (const [page, step] of route.path.entries()) {
         const upward = step.count - step.index;
@@ -400,6 +415,7 @@ export function navContextIndex(
   itemId: string,
   rowType: string,
   sourcePath = "app/ui/src/nav-context-menu.ts",
+  preset = "novel",
 ): number {
   navCached ??= parseNavContext(sourcePath);
   const index = navCached.get(itemId);
@@ -408,7 +424,9 @@ export function navContextIndex(
       `no context item "${itemId}" in ${sourcePath}; it holds: ${[...navCached.keys()].join(", ")}`,
     );
   }
-  if (BODY_TYPES.includes(rowType)) return index;
+  const fictionOffset = preset === "nonfiction" && (navCached.get("nav-context-appears") ?? Infinity) < index ? 1 : 0;
+  if (preset === "nonfiction" && itemId === "nav-context-appears") throw new Error("appearances are hidden in nonfiction context menus");
+  if (BODY_TYPES.includes(rowType)) return index - fictionOffset;
   if (BODY_ONLY_IDS.includes(itemId)) {
     throw new Error(`"${itemId}" is not painted on a "${rowType}" row, so it has no index there`);
   }
