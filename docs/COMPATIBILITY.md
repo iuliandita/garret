@@ -197,3 +197,16 @@ is affected, compatibility with the old build, the backup needed, the upgrade
 steps, what rollback restores, and what was actually tested. Existing schema
 test exclusions and platform limits still apply; a documentation gate cannot
 certify a live upgrade or restore.
+
+### Android drafting data
+
+Android drafting tools reuse the existing item revisions and positions, synopsis,
+cast, Bible documents, comments and saved-typing ledger. SQLite stays at schema 17;
+no new book or transfer format is introduced. Old day-baseline metadata is retained
+and is not reclassified as typed progress. Daily targets use the desktop
+`daily_target` string encoding in application settings; they are device preferences
+and do not travel with a book. Text size is stored with Android appearance settings.
+Synopsis edits the desktop synopsis panel field with explicit Save; closing the dialog discards unsaved drafts.
+Only scene mutations are exposed; parts and chapters remain read-only on mobile.
+Unsupported project presets remain refused before opening. Android relies on the
+system lock screen for device privacy; an application privacy lock is not provided.

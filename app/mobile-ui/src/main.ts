@@ -1,3 +1,4 @@
+import type { MobileDrafting } from "./drafting";
 import { mobileMessages } from "./messages";
 import { showTransfer, transferError, type TransferStatus } from "./transfer";
 import { createIcon } from "../../ui/src/icons";
@@ -13,7 +14,7 @@ window.__appLocale = locale;
 const m = mobileMessages(locale);
 document.documentElement.lang = locale;
 const native = (window as Window & { __TAURI__?: { core: { invoke: Invoke } } }).__TAURI__;
-const appearanceBridge = (window as Window & { garretAppearance?: { current(): string; set(value: string): void } }).garretAppearance;
+const appearanceBridge = (window as Window & { garretAppearance?: { current(): string; set(value: string): void; textSize?(): number; setTextSize?(value: number): boolean } }).garretAppearance;
 const lifecycle = window as Window & { __mobileWriting?: boolean };
 window.addEventListener("mobile-back", () => workspace?.back());
 let workspace: MobileWorkspace | undefined;
@@ -63,6 +64,20 @@ async function open(command: "mobile_open" | "mobile_create", args: Record<strin
       loadDoc: itemId => native.core.invoke<MobileDocument>("mobile_document", { generation, itemId }),
       flush: (entries, attribution) => native.core.invoke<FlushAck[]>("mobile_flush", { generation, entries, attribution }),
       createScene: title => native.core.invoke<{ scenes: MobileScene[]; item_id: string }>("mobile_scene_create", { generation, title }),
+      textSize: appearanceBridge?.textSize?.() ?? 19,
+      saveTextSize: size => appearanceBridge?.setTextSize?.(size) ?? false,
+      drafting: {
+        structure: () => native.core.invoke<Awaited<ReturnType<MobileDrafting["structure"]>>>("mobile_structure", { generation }),
+        rename: (itemId, title, baseRev) => native.core.invoke<Awaited<ReturnType<MobileDrafting["rename"]>>>("mobile_scene_rename", { generation, itemId, title, baseRev }),
+        move: (itemId, newParentId, afterId, baseRev) => native.core.invoke<Awaited<ReturnType<MobileDrafting["move"]>>>("mobile_scene_move", { generation, itemId, newParentId, afterId, baseRev }),
+        find: (query, currentScene) => native.core.invoke<Awaited<ReturnType<MobileDrafting["find"]>>>("mobile_find", { generation, query, currentScene }),
+        goals: (day, target) => native.core.invoke<Awaited<ReturnType<MobileDrafting["goals"]>>>("mobile_goals", { generation, day, target: target ?? null }),
+        notes: itemId => native.core.invoke<Awaited<ReturnType<MobileDrafting["notes"]>>>("mobile_scene_notes", { generation, itemId }),
+        saveNotes: (itemId, body) => native.core.invoke("mobile_scene_notes_set", { generation, itemId, body }),
+        reference: () => native.core.invoke<Awaited<ReturnType<MobileDrafting["reference"]>>>("mobile_reference", { generation }),
+        comments: itemId => native.core.invoke<Awaited<ReturnType<MobileDrafting["comments"]>>>("mobile_comments", { generation, itemId }),
+        resolve: (itemId, commentId) => native.core.invoke<Awaited<ReturnType<MobileDrafting["resolve"]>>>("mobile_comment_resolve", { generation, itemId, commentId }),
+      },
       localDay: () => {
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
