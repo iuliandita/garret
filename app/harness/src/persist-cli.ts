@@ -26,7 +26,6 @@ import { buildResult, scriptOf, writeResult } from "./results";
 import { bucketRss, summarizeRss } from "./rss-series";
 import {
   BIN,
-  findWindowId,
   SHELL_PROC_NAME,
   runShell,
   survivingShellPids,
@@ -137,7 +136,7 @@ const write = await runShell({
   onReady: railState ? async ({ displayNum }) => {
     const display = `:${displayNum}`;
     mkdirSync(join(RESULTS, "screenshots"), { recursive: true });
-    const shot = Bun.spawnSync(["import", "-display", display, "-window", findWindowId(display),
+    const shot = Bun.spawnSync(["import", "-display", display, "-window", "root",
       join(RESULTS, "screenshots", `persist-rail-${railState}.png`)], { stderr: "inherit" });
     if (shot.exitCode !== 0) throw new Error(`preview rail screenshot failed: ${shot.exitCode}`);
   } : undefined,
