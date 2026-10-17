@@ -1229,7 +1229,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       else if (timelineMount !== null) timelineMount.focus();
       else editor.focus();
     },
-    referenceTitle: preset === "nonfiction" ? () => referenceTitle(preset) : undefined,
+    referenceTitle: preset === "nonfiction" ? () => referenceTitle(preset, latestItems.find((item) => item.parent_id === null && item.type === BIBLE_TYPE)?.title) : undefined,
     bible: () => {
       const selected = selectedId();
       const root = latestItems.find((item) => item.parent_id === null && item.type === BIBLE_TYPE);
@@ -1237,7 +1237,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         item.id === bibleParentFor(latestItems, selected, root.id));
       const anchor = parent?.id ?? null;
       return {
-        destination: parent?.type === "bible" || !parent ? referenceTitle(preset) : parent.title,
+        destination: parent?.type === "bible" || !parent ? referenceTitle(preset, root?.title) : parent.title,
         entry: () => { void outline?.createNote(anchor).catch(() => undefined); },
         folder: () => { void outline?.createBibleFolder(anchor).catch(() => undefined); },
         timeline: () => { void outline?.createTimeline(anchor).catch(() => undefined); },

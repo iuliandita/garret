@@ -144,6 +144,7 @@ interface Rig {
 }
 
 interface RigOptions {
+  projectPreset?: () => ProjectPreset;
   listProjects?: () => Promise<ProjectSummary[]>;
   listPendingRegistrations?: () => Promise<PendingRegistration[]>;
   retryRegistration?: (token: string) => Promise<ProjectSummary>;
@@ -222,6 +223,7 @@ function mount(options: RigOptions = {}): Rig {
   nameContainer.id = "nav-header";
   document.body.appendChild(nameContainer);
   const switcher = createSwitcher({
+    projectPreset: options.projectPreset,
     container,
     nameContainer,
     listProjects: () => {
@@ -2434,6 +2436,22 @@ describe("the book's name in the sidebar", () => {
 describe("the cast button in the header", () => {
   const cast = (): HTMLButtonElement =>
     document.getElementById("nav-cast") as HTMLButtonElement;
+
+  test("switching from nonfiction to novel restores the Cast button", () => {
+    let preset: ProjectPreset = "nonfiction";
+    const rig = mount({ projectPreset: () => preset });
+    try {
+      expect(cast().hidden).toBe(true);
+      expect(cast().parentElement?.hidden).toBe(true);
+      rig.switcher.setBookOpen(false);
+      preset = "novel";
+      rig.switcher.setBookOpen(true);
+      expect(cast().hidden).toBe(false);
+      expect(cast().parentElement?.hidden).toBe(false);
+      cast().click();
+      expect(rig.calls.openCast).toBe(1);
+    } finally { teardown(rig); }
+  });
 
   test("it is labelled, and clicking it runs the dep", () => {
     const rig = mount();

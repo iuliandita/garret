@@ -63,7 +63,7 @@ export function storeSourceFrom(items: ProjectItem[], seed: string, preset: Proj
     count: rows.length,
     seed,
     titleAt: (i) => preset === "nonfiction" && at(i).type === "bible" && at(i).parent_id === null
-      ? referenceTitle(preset) : at(i).title,
+      ? referenceTitle(preset, at(i).title) : at(i).title,
     idAt: (i) => at(i).id,
     depthAt: (i) => at(i).depth,
     typeAt: (i) => at(i).type,

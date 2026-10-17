@@ -2010,6 +2010,12 @@ test("nonfiction moves fiction tools under More and rechecks after switching boo
   let preset: ProjectPreset = "nonfiction";
   const r = mount(undefined, undefined, () => preset);
   r.title("menu-outline").click();
+  document.getElementById("menu-new")!.click();
+  document.getElementById("menu-more")!.click();
+  expect(document.getElementById("menu-new-note")?.textContent).toContain("New reference document");
+  expect(document.getElementById("menu-new-bible-folder")?.textContent).toContain("New reference folder");
+  r.bar.close();
+  r.title("menu-outline").click();
   document.getElementById("menu-planning")!.click();
   expect(document.getElementById("menu-cast")).toBeNull();
   expect(document.getElementById("menu-appears")).toBeNull();

@@ -1591,14 +1591,16 @@ describe("createNote: a document in the bible", () => {
     expect(r.failures).toHaveLength(1);
   });
 
-  test("a section that does not appear in the re-read is reported, not guessed at", async () => {
+  test.each(["novel", "nonfiction"] as const)("a missing section is reported with %s wording, not guessed at", async (preset) => {
     // The create said applied and the walk does not hold the row. Carrying on
     // with `parentId: null` would put a bible document at the root of the book,
     // which is a document in the manuscript that counts toward nothing.
-    const r = await seeded({ walks: [book(), book()] });
+    const r = await seeded({ preset, walks: [book(), book()] });
     expect(await r.outline.createNote()).toBe("failed");
     expect(r.calls.filter((c) => c.cmd === "item_create")).toHaveLength(1);
-    expect(r.failures).toHaveLength(1);
+    expect(r.failures).toEqual([preset === "nonfiction"
+      ? "The reference notes section could not be created, so no document was added."
+      : "The bible section could not be created, so no document was added."]);
   });
 
   test("a bible row that is not a root is not the section", async () => {

@@ -9029,7 +9029,7 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 #library #library-new-book-preset { width: 100%; min-height: 44px; }
 #library #library-new-book-name::placeholder { color: var(--muted); }
 #library div#library-new-book-tile { align-items: flex-end; }
-#library div#library-new-book-tile > button { margin-bottom: 7px; }
+#library div#library-new-book-tile > button { min-height: 44px; margin-bottom: 0; }
 #snapshot-confirmation {
   position: absolute;
   width: 1px;

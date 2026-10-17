@@ -1,6 +1,7 @@
 import { t } from "./i18n";
 import { createPanelShell } from "./panel-shell";
 import type { MatterKind } from "./outline";
+import { addReferenceLabel } from "./project-preset";
 
 export interface BibleCreation {
   destination: string;
@@ -44,7 +45,7 @@ export function createCreationChooser(deps: {
   };
   const referenceHeading = (): string => {
     const name = deps.referenceTitle?.();
-    return name === undefined ? t("creation.bible") : t("preset.add-reference", { name });
+    return name === undefined ? t("creation.bible") : addReferenceLabel(name);
   };
   const bibleChoices = (target: BibleCreation, showHeading = true): HTMLElement => {
     const group = document.createElement("section");

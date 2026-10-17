@@ -1184,7 +1184,7 @@ export function createOutline(deps: OutlineDeps): Outline {
         // outside it would be numbered against a tree that may already have
         // changed.
         docTitle: (items) => nextNumberedTitle(items, NOTE_TYPE, numberPattern(NOTE_TYPE)),
-        noSection: () => t("outline.failed.no-bible"),
+        noSection: () => t(deps.preset === "nonfiction" ? "preset.reference-creation-failed" : "outline.failed.no-bible"),
       }, anchorId);
     },
 
@@ -1194,7 +1194,7 @@ export function createOutline(deps: OutlineDeps): Outline {
         rootTitle: BIBLE_TITLE,
         docType: BIBLE_FOLDER_TYPE,
         docTitle: (items) => nextNumberedTitle(items, BIBLE_FOLDER_TYPE, numberPattern(BIBLE_FOLDER_TYPE)),
-        noSection: () => t("outline.failed.no-bible"),
+        noSection: () => t(deps.preset === "nonfiction" ? "preset.reference-creation-failed" : "outline.failed.no-bible"),
       }, anchorId);
     },
 
@@ -1211,7 +1211,7 @@ export function createOutline(deps: OutlineDeps): Outline {
         // "the bible section could not be created", and a second sentence
         // for the identical failure would be a second thing to translate for
         // no new information.
-        noSection: () => t("outline.failed.no-bible"),
+        noSection: () => t(deps.preset === "nonfiction" ? "preset.reference-creation-failed" : "outline.failed.no-bible"),
       }, anchorId);
     },
 

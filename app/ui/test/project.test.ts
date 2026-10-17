@@ -744,21 +744,22 @@ afterEach(() => {
 });
 
 describe("mountProject store path", () => {
-  test("the mounted nonfiction book labels its existing reference data without renaming it", async () => {
+  test.each([["Bible", "Reference notes", "Add to reference notes"], ["Research archive", "Research archive", "Add to Research archive"]])("the mounted nonfiction book displays %s without renaming it", async (title, displayed, creationLabel) => {
     shell();
     const items: ProjectItem[] = [...walk(),
-      { id: "reference", parent_id: null, type: "bible", title: "Bible", position: "0001", rev: 1, state: null, depth: 0 },
+      { id: "reference", parent_id: null, type: "bible", title, position: "0001", rev: 1, state: null, depth: 0 },
     ];
     const h = host({ preset: "nonfiction", items });
     const mounted = await mountProject(deps({ invoke: h.invoke }));
     try {
       expect(mounted.preset).toBe("nonfiction");
-      expect(document.getElementById("nav")?.textContent).toContain("Reference notes");
-      expect(document.getElementById("bible-create")?.getAttribute("aria-label")).toBe("Add to Reference notes");
+      expect(document.getElementById("nav")?.textContent).toContain(displayed);
+      expect(document.getElementById("bible-create")?.getAttribute("aria-label")).toBe("Add to reference notes");
       mounted.menuActions.openCreation();
-      expect(document.body.textContent).toContain("Add to Reference notes");
+      expect(document.body.textContent).toContain(creationLabel);
+      expect(document.querySelector(".creation-destination")?.textContent).toContain(displayed);
       expect(h.of("item_rename")).toEqual([]);
-      expect(items.at(-1)?.title).toBe("Bible");
+      expect(items.at(-1)?.title).toBe(title);
     } finally { mounted.destroy(); }
   });
 
