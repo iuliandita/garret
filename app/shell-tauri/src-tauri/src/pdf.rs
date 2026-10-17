@@ -287,7 +287,7 @@ pub fn document_blocks(body: &str) -> Option<String> {
 /// The whole book as one HTML document that paginates itself.
 #[cfg(test)]
 pub fn proof_document(proof: &Proof) -> String {
-    proof_document_planned(proof, None, "Notes").unwrap()
+    proof_document_planned(proof, None, &crate::strings::Strings::english().t("book.notes")).unwrap()
 }
 
 pub(crate) fn proof_document_planned(
