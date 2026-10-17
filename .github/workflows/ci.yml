@@ -98,7 +98,9 @@ jobs:
         run: |
           # The in-test timer needs GTK's main loop to keep dispatching (#324).
           if GDK_BACKEND=x11 timeout --verbose --signal=TERM --kill-after=30s 300s \
-            sleep 600; then
+            xvfb-run -a cargo test --locked --bin garret -- \
+              --ignored --exact --test-threads=1 \
+              printer::tests::rich_paragraphs_keep_text_and_marks_and_oversized_headings_refuse; then
             exit 0
           else
             status=$?
