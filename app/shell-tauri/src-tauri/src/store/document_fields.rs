@@ -11,11 +11,13 @@ pub struct Field {
     pub from: usize,
     /// Absolute positions at each UTF-16 boundary of the searchable text.
     positions: Vec<usize>,
+    starts: Vec<usize>,
 }
 
 impl Field {
-    pub(crate) fn position(&self, byte: usize) -> usize {
-        self.positions[self.text[..byte].encode_utf16().count()]
+    pub(crate) fn position(&self, byte: usize, end: bool) -> usize {
+        let offset = self.text[..byte].encode_utf16().count();
+        if end { self.positions[offset] } else { self.starts[offset] }
     }
 
     fn prose(position: usize) -> Self {
@@ -25,6 +27,7 @@ impl Field {
             text: String::new(),
             from: position,
             positions: vec![position],
+            starts: Vec::new(),
         }
     }
 
@@ -34,6 +37,7 @@ impl Field {
             self.positions[0] = position;
         }
         self.text.push_str(text);
+        self.starts.extend((0..text.encode_utf16().count()).map(|offset| position + offset));
         self.positions.extend((1..=text.encode_utf16().count()).map(|offset| position + offset));
     }
 }
@@ -89,6 +93,7 @@ pub fn fields(body: &str) -> Option<Vec<Field>> {
                     // paragraph tokens, so its far boundary is not from + 1.
                     run.text.push(' ');
                     run.positions.push(position);
+                    run.starts.push(position);
                 }
                 for node in block
                     .get("content")
@@ -111,6 +116,7 @@ pub fn fields(body: &str) -> Option<Vec<Field>> {
                             text: node["attrs"]["body"].as_str()?.into(),
                             from: 0,
                             positions: (0..=node["attrs"]["body"].as_str()?.encode_utf16().count()).collect(),
+                            starts: (0..node["attrs"]["body"].as_str()?.encode_utf16().count()).collect(),
                         });
                         position += 1;
                     }
@@ -128,6 +134,7 @@ pub fn fields(body: &str) -> Option<Vec<Field>> {
                         text: block["attrs"][field].as_str()?.into(),
                         from: 0,
                         positions: (0..=block["attrs"][field].as_str()?.encode_utf16().count()).collect(),
+                        starts: (0..block["attrs"][field].as_str()?.encode_utf16().count()).collect(),
                     });
                 }
                 position += 1;
@@ -246,6 +253,8 @@ pub(crate) mod tests {
         assert_eq!(found.results[0].matches, 2);
         assert_eq!(found.results[0].locators.iter().map(|loc| (loc.from, loc.to)).collect::<Vec<_>>(), vec![(4, 12), (20, 28)]);
         assert_eq!(crate::find::search(&items, &corpus, "sat down", 10).results[0].locators[0].from, 9);
+        let separator = crate::find::search(&items, &corpus, " sat", 10);
+        assert_eq!((separator.results[0].locators[0].from, separator.results[0].locators[0].to), (9, 12));
         let capped = crate::find::search(&items, &corpus, "cat sat", 0);
         assert_eq!((capped.total, capped.truncated), (1, true));
         let unchanged = crate::replace::replace_in_body(&body, "cat sat", "dog lay").unwrap();

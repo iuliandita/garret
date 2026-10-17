@@ -3,7 +3,7 @@
 //
 // Host locators use UTF-16 positions for prose and field offsets for attributes.
 import type { Node as PmNode } from "prosemirror-model";
-import { documentFields } from "./document-projections";
+import type { TextField } from "./document-projections";
 
 /** Fold one string for comparison, ONE CODE POINT AT A TIME.
  *
@@ -44,6 +44,8 @@ export interface FieldLocator {
 export interface FieldMatch extends MatchRange {
   locator: FieldLocator;
   text: string;
+  textFrom: number;
+  textTo: number;
 }
 
 function offsets(text: string): { folded: string; starts: number[]; ends: number[] } {
@@ -59,20 +61,60 @@ function offsets(text: string): { folded: string; starts: number[]; ends: number
   return { folded, starts, ends };
 }
 
+interface SearchField extends TextField {
+  positions: MatchRange[];
+}
+
+function searchFields(doc: PmNode): SearchField[] {
+  const fields: SearchField[] = [];
+  let prose: SearchField | undefined;
+  const finish = (): void => {
+    if (prose) fields.push(prose);
+    prose = undefined;
+  };
+  const append = (text: string, from: number, synthetic = false): void => {
+    prose ??= { instance_id: null, field: "prose", text: "", from, to: from, positions: [] };
+    prose.text += text;
+    for (let i = 0; i < text.length; i++) prose.positions.push({ from: from + (synthetic ? 0 : i), to: from + (synthetic ? 0 : i + 1) });
+    prose.to = from + (synthetic ? 0 : text.length);
+  };
+  const attribute = (field: "note" | "caption" | "alt", text: string, id: string, from: number): void => {
+    fields.push({ instance_id: id, field, text, from, to: from + 1, positions: [] });
+  };
+  doc.forEach((block, pos) => {
+    if (block.type.name === "paragraph") {
+      // The separator has no manuscript width; either bound maps inside the next paragraph.
+      if (prose?.text) append(" ", pos + 1, true);
+      block.forEach((child, offset) => {
+        if (child.isText) append(child.text ?? "", pos + 1 + offset);
+        else {
+          finish();
+          attribute("note", child.attrs.body as string, child.attrs.id as string, pos + 1 + offset);
+        }
+      });
+    } else {
+      finish();
+      if (block.type.name === "figure") for (const field of ["caption", "alt"] as const) attribute(field, block.attrs[field] as string, block.attrs.id as string, pos);
+    }
+  });
+  finish();
+  return fields;
+}
+
 export function locateFieldMatches(doc: PmNode, query: string): FieldMatch[] {
   const needle = foldForFind(query);
   if (!needle) return [];
   const out: FieldMatch[] = [];
-  for (const field of documentFields(doc)) {
+  for (const field of searchFields(doc)) {
     const { folded, starts, ends } = offsets(field.text);
     let at = folded.indexOf(needle);
     while (at >= 0) {
       const start = starts[at], end = ends[at + needle.length - 1];
       if (start !== undefined && end !== undefined) {
         const prose = field.field === "prose";
-        const from = prose ? field.from + start : field.from;
-        const to = prose ? field.from + end : field.to;
-        out.push({ from, to, text: field.text, locator: { instance_id: field.instance_id, field: field.field,
+        const from = prose ? field.positions[start]!.from : field.from;
+        const to = prose ? field.positions[end - 1]!.to : field.to;
+        out.push({ from, to, text: field.text, textFrom: start, textTo: end, locator: { instance_id: field.instance_id, field: field.field,
           from: prose ? from : start, to: prose ? to : end } });
       }
       at = folded.indexOf(needle, at + needle.length);

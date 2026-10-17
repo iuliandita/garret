@@ -137,4 +137,17 @@ test("legacy clipboard text drops marks without appending the recovery warning",
     expect(plaintext(content, plaintextLabels())).toBe(`${text}\n\n${plaintextLabels().loss}`);
   }
   expect(clipboardPlaintext(atomDoc().content, plaintextLabels())).toBe(plaintext(atomDoc().content, plaintextLabels()));
+  const mount = document.createElement("div"); document.body.append(mount);
+  const editor = createEditor(mount, { kind: "pmjson", json: doc.toJSON() });
+  const copied: Record<string, string> = {};
+  try {
+    editor.selectRange(1, doc.content.size - 1);
+    const event = new Event("copy", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", { value: {
+      clearData: () => undefined,
+      setData: (type: string, text: string) => { copied[type] = text; },
+    } });
+    mount.querySelector(".ProseMirror")!.dispatchEvent(event);
+    expect(copied["text/plain"]).toBe("Bold and italic\n\nNext paragraph");
+  } finally { editor.destroy(); mount.remove(); }
 });

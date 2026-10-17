@@ -55,8 +55,8 @@ describe("locateMatches", () => {
     expect(locateMatches(doc(["aaaaa"]), "aa").length).toBe(2);
   });
 
-  test("paragraph fields never join for replacement", () => {
-    expect(locateMatches(doc(["ends here"], ["here it goes"]), "here here")).toEqual([]);
+  test("crosses paragraphs the same way the search does", () => {
+    expect(locateMatches(doc(["ends here"], ["here it goes"]), "here here").length).toBe(1);
   });
 
   test("is case-insensitive, like the panel", () => {
@@ -197,17 +197,17 @@ describe("nextMatchAfter", () => {
 });
 
 describe("a match spanning a paragraph break is REFUSED, not replaced", () => {
-  // Search fields preserve paragraph boundaries.
+  // Find joins prose paragraphs, while replacement must preserve their breaks.
   const spanning = (): PmNode => doc(["one cat"], ["sat two"]);
 
-  test("locateMatches excludes it", () => {
-    expect(locateMatches(spanning(), "cat sat").length).toBe(0);
+  test("locateMatches still finds the cross-paragraph range", () => {
+    expect(locateMatches(spanning(), "cat sat").length).toBe(1);
   });
 
   test("planReplacements leaves the paragraphs alone", () => {
     const plan = planReplacements(spanning(), "cat sat");
     expect(plan.replacements.length).toBe(0);
-    expect(plan.spanning).toBe(0);
+    expect(plan.spanning).toBe(1);
   });
 
   test("a match inside one paragraph is unaffected by the rule", () => {
@@ -220,7 +220,9 @@ describe("a match spanning a paragraph break is REFUSED, not replaced", () => {
 
   test("planSelected refuses it too", () => {
     const d = spanning();
-    const hit = { from: 5, to: 14 };
+    const hit = locateMatches(d, "cat sat")[0]!;
+    expect(hit).toEqual({ from: 5, to: 13 });
+    expect(d.resolve(hit.from).sameParent(d.resolve(hit.to))).toBe(false);
     expect(planSelected(d, "cat sat", hit)).toBeNull();
   });
 

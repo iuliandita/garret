@@ -115,6 +115,13 @@ export function legacyText(body: string): string {
   readLegacyDocument(body);
   return proseText(body);
 }
+
+export function legacySearchText(body: string): string | null {
+  let root: unknown;
+  try { root = JSON.parse(body) as unknown; } catch { return null; }
+  if (root === null || typeof root !== "object" || !("type" in root) || root.type !== "doc") return null;
+  return legacyText(body);
+}
 export function proseWords(body: string, assets: ReadonlySet<string> = new Set()): number {
   return proseText(body, assets).split(/\p{White_Space}+/u).filter((word) => word.length > 0).length;
 }

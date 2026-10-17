@@ -35,15 +35,21 @@ readable notes and figure placeholders with relative original links, and retains
 registered originals even when automatic text versions are omitted. Salvage
 reports those omissions and layout losses; it is not an editable downgrade.
 Legacy bodies retain the existing readable Markdown fallback, including unknown
-marks. A damaged original is copied with a `corrupt_figure_original` loss and its
-recorded hash kept for diagnosis. An unreadable registry row or directory records
+marks. Read-only database integrity checks accept retained unknown text marks
+and empty runs without rewriting the bodies. Atom shapes and note formats remain
+strict; figure mapping and original completeness are checked separately against
+the copied database. Production writes and database restoration still enforce
+the disabled new-node policy. A damaged original is copied with a
+`corrupt_figure_original` loss and its recorded hash kept for diagnosis. An unreadable registry row or directory records
 a loss without stopping the remaining recovery. The salvage manifest adds
 `figure_assets_recovered` and `figure_originals_recovered` counts, plus `figures`
 for the relative registry filename, or null when no registry was recovered.
 
 Consumers are prepared for endnotes, figures, and scene breaks using isolated
-fixtures. Search keeps paragraph prose, note bodies, captions, and alternative
-text in separate fields. Prose replacement never edits attributes. Word counts
+fixtures. Search keeps prose, note bodies, captions, and alternative text in
+separate fields. Adjacent prose paragraphs retain their searchable space;
+atoms and attribute fields stop a match. Replacement refuses matches spanning
+paragraph breaks and never edits attributes. Word counts
 exclude attribute text and count neither references nor block atoms as words.
 History compares note, caption, and alternative text separately from prose.
 Review proposals retain complete atoms and refuse affected review Word handoffs.

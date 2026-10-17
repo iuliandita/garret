@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { Glob } from "bun";
-import { readDocument, readLegacyDocument, proseText, proseWords, legacyText, legacyMarkedRuns, legacyBodyHash } from "../src/document-read";
+import { readDocument, readLegacyDocument, proseText, proseWords, legacyText, legacySearchText, legacyMarkedRuns, legacyBodyHash } from "../src/document-read";
 import corpus from "../fixtures/document-format.json";
 
 const expected: Record<string, [string, number]> = {
@@ -82,11 +82,17 @@ test("malformed JSON, duplicate identities, unknown fields and formats cannot pr
   }
 });
 
+test("search oracles skip unparseable and non-document rows but refuse unsupported documents", () => {
+  for (const body of ["{", "null", "[]", "{}", '{"type":"timeline","content":[]}']) expect(legacySearchText(body)).toBeNull();
+  expect(legacySearchText(document([paragraph([text("visible")])]))).toBe("visible");
+  expect(() => legacySearchText(document([paragraph([text("visible"), note])]))).toThrow();
+});
+
 // Runnable rigs have module-level side effects. Keep their reader wiring visible without booting them.
 const readers: Record<string, string[]> = {
-  "replace-cli": ["legacyText(body)", "readLegacyDocument(body)"],
+  "replace-cli": ["legacySearchText(body)", "readLegacyDocument(body)"],
   "mreplace-cli": ["legacyText(body)"],
-  "find-cli": ["legacyText(body)"],
+  "find-cli": ["legacySearchText(body)"],
   "history-cli": ["legacyText(body)"],
   "first-cli": ["legacyText(body)"],
   "export-cli": ["legacyText(body)", "legacyMarkedRuns(body, mark)"],

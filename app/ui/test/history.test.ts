@@ -1282,7 +1282,7 @@ describe("comparison result visibility", () => {
   });
 });
 
-test("history detects scene breaks, figure changes, and endnote moves without text changes", () => {
+test("history detects scene breaks, figure changes, and endnote moves without text changes", async () => {
   const note = { type: "endnote", attrs: { id: "0199ed16-8c00-7000-8000-000000000001", fmt: "text", body: "A source" } };
   const figure = { type: "figure", attrs: { id: "0199ed16-8c00-7000-8000-000000000002", asset_id: "0199ed16-8c00-7000-8000-000000000003", width: "full", caption: "Caption", alt: "Description" } };
   const paragraph = (content: object[]) => ({ type: "paragraph", content });
@@ -1305,4 +1305,13 @@ test("history detects scene breaks, figure changes, and endnote moves without te
   expect(diffDocumentFields(serialize(before), serialize(before)).some(field => field.field === "structure")).toBe(false);
   const captionChange = [before[0], { ...figure, attrs: { ...figure.attrs, caption: "New caption" } }];
   expect(diffDocumentFields(serialize(before), serialize(captionChange)).some(field => field.field === "structure")).toBe(false);
+  const rig = mount({}, { versions: rows(), versionBody: serialize(before), currentBody: serialize([...before, { type: "scene_break" }]) });
+  try {
+    await rig.history.open();
+    rig.container.querySelector<HTMLButtonElement>(".history-compare")!.click();
+    await settle(12);
+    expect(rig.container.querySelector("#history-diff-summary")!.textContent).toBe("Scene structure changed.");
+    expect(rig.container.querySelector("#history-diff-body")!.textContent).toContain("Scene structure changed.");
+    expect(rig.container.querySelector("#history-diff")!.textContent).not.toContain("No difference");
+  } finally { rig.destroy(); }
 });

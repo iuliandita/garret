@@ -36,7 +36,7 @@
 // shell is involved anywhere in this file.
 //
 // Usage: APP_GUI=1 bun app/harness/src/replace-cli.ts <tiny|stress>
-import { readLegacyDocument, legacyText } from "./document-read";
+import { readLegacyDocument, legacySearchText } from "./document-read";
 import { Database } from "bun:sqlite";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -122,8 +122,8 @@ interface WalkRow {
  *  nodes concatenated with nothing between them, one separator before each
  *  block node's content, none before the first -- but restating it is what
  *  makes the oracle independent of the thing it grades. */
-function projectText(body: string): string {
-  return legacyText(body);
+function projectText(body: string): string | null {
+  return legacySearchText(body);
 }
 
 /** Fold ONE CODE POINT AT A TIME, restated from find-locate.ts's rule and from

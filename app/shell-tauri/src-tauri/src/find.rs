@@ -266,8 +266,8 @@ pub fn search(items: &[SearchItem<'_>], corpus: &Corpus, query: &str, limit: usi
                         item_id: item.id.into(),
                         instance_id: field.instance_id.clone(),
                         field: field.field,
-                        from: field.position(start),
-                        to: field.position(end),
+                        from: field.position(start, false),
+                        to: field.position(end, true),
                     });
                 }
             }

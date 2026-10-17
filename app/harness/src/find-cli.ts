@@ -20,7 +20,7 @@
 // path can be interpreted as a command.
 //
 // Usage: APP_GUI=1 bun app/harness/src/find-cli.ts <tiny|stress>
-import { legacyText } from "./document-read";
+import { legacySearchText } from "./document-read";
 import { Database } from "bun:sqlite";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -93,8 +93,8 @@ interface WalkRow {
 }
 
 /** Paragraph-only search oracle; unsupported fields must never disappear from a grade. */
-function projectText(body: string): string {
-  return legacyText(body);
+function projectText(body: string): string | null {
+  return legacySearchText(body);
 }
 
 interface Corpus {

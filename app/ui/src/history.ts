@@ -604,7 +604,9 @@ export function createHistory(deps: HistoryDeps): History {
     }
 
     const totals = fields.reduce((sum, field) => ({ added: sum.added + field.added, removed: sum.removed + field.removed }), { added: 0, removed: 0 });
-    diffSummary.textContent = diffSummaryLabel(totals.added, totals.removed);
+    const structureChanged = fields.some(field => field.field === "structure");
+    diffSummary.textContent = structureChanged && totals.added === 0 && totals.removed === 0
+      ? t("history.diff.structure-changed") : diffSummaryLabel(totals.added, totals.removed);
     // Built from the FIGURES, never by reading the rendered summary back out of
     // the DOM: the recorded word-count rule, which is what stops the visible
     // wording becoming load-bearing for what a screen reader hears.
@@ -619,7 +621,7 @@ export function createHistory(deps: HistoryDeps): History {
     // The legend explains two marks. With neither on screen it is a caption for
     // nothing, which reads as a diff that failed to paint its own body.
     diffLegend.hidden = totals.added === 0 && totals.removed === 0;
-    if (totals.added === 0 && totals.removed === 0) {
+    if (totals.added === 0 && totals.removed === 0 && !structureChanged) {
       // The summary already says it in words. Painting the whole unchanged
       // scene under a line that says nothing changed is a screenful of prose
       // asking to be read for a difference that is not there.
@@ -627,7 +629,7 @@ export function createHistory(deps: HistoryDeps): History {
     } else {
       diffBody.replaceChildren();
       for (const field of fields) {
-        if (field.added === 0 && field.removed === 0) continue;
+        if (field.added === 0 && field.removed === 0 && field.field !== "structure") continue;
         const section = document.createElement("section");
         if (field.field !== "prose") {
           const label = document.createElement("h4");

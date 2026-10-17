@@ -113,10 +113,10 @@ describe("locateFirstMatch", () => {
     expect(selected(d, locateFirstMatch(d, "crate"))).toBe("crate");
   });
 
-  test("search does not join paragraph fields", () => {
+  test("joins prose paragraphs with a synthetic space", () => {
     const d = doc(["one"], ["two"]);
     expect(locateFirstMatch(d, "onetwo")).toBeNull();
-    expect(locateFirstMatch(d, "one two")).toBeNull();
+    expect(locateFirstMatch(d, "one two")).toEqual({ from: 1, to: 9 });
   });
 
   test("emits NO separator before the first block", () => {
@@ -129,9 +129,9 @@ describe("locateFirstMatch", () => {
     expect(locateFirstMatch(d, "one")).not.toBeNull();
   });
 
-  test("paragraph boundaries add no searchable characters", () => {
+  test("paragraph separators map to the next content position", () => {
     const d = doc(["one"], ["two"]);
-    expect(locateFirstMatch(d, " two")).toBeNull();
+    expect(locateFirstMatch(d, " two")).toEqual({ from: 6, to: 9 });
     expect(selected(d, locateFirstMatch(d, "two"))).toBe("two");
   });
 

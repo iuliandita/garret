@@ -21,7 +21,7 @@ import { spellRedrawKey, spellRedrawPlugin } from "./spell-redraw";
 import { EditSourceTracker, type EditSourceChange } from "./edit-source";
 import { t } from "./i18n";
 import { validDocument, validDocumentShape } from "./document-format";
-import { plaintext, positionalText, proseText, type PlaintextLabels } from "./document-projections";
+import { clipboardPlaintext, positionalText, proseText, type PlaintextLabels } from "./document-projections";
 import { remintClipboard, validateClipboardHtml } from "./document-clipboard";
 import type { FieldLocator } from "./find-locate";
 
@@ -634,7 +634,7 @@ export function createEditor(
   const view: EditorView = new EditorView(mount, {
     state: EditorState.create({ doc, plugins: editorPlugins() }),
     attributes: { role: "textbox", "aria-multiline": "true", "aria-label": t("editor.name"), lang: "" },
-    clipboardTextSerializer: slice => plaintext(slice.content, plaintextLabels()),
+    clipboardTextSerializer: slice => clipboardPlaintext(slice.content, plaintextLabels()),
     handlePaste(_view, event, slice) {
       try {
         validateClipboardHtml(event.clipboardData?.getData("text/html") ?? "");

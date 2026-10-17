@@ -14,6 +14,10 @@ Move changes only a scene (including any existing children); parts and chapters
 have no editing actions. Choose an existing destination and the preceding item,
 or First. Search results open the scene and select a matching passage.
 
+Prose search retains matches across paragraph breaks. Search context stays near
+the match; note, caption and alternative-text results identify their field.
+New-node fixtures exercise these targets without enabling new-node writes.
+
 Synopsis edits the same field as the desktop synopsis panel and uses explicit Save;
 closing discards an unsaved synopsis draft. Comments retain their quoted passages and
 can be resolved. Bible/cast lookup is read-only. Daily progress uses the desktop
