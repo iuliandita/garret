@@ -8367,6 +8367,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
    rendered. The selector outranks the book's scoped stylesheet. */
 #preview-pages[data-framed][data-proof] {
   display: block;
+  background: transparent;
 }
 
 #preview-pages[data-framed][data-proof] .proof-leaf {
@@ -8391,9 +8392,24 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   text-align: center;
 }
 
-#preview-frame #preview-pager button {
+#preview-rail #preview-frame #preview-pager button {
   min-height: 24px;
   padding-inline: 10px;
+  background: rgb(255 255 255 / 12%);
+  color: #e6e7e8;
+}
+
+#preview-rail #preview-frame #preview-pager button:hover:not(:disabled) {
+  background: rgb(255 255 255 / 22%);
+}
+
+#preview-rail #preview-frame #preview-pager button:disabled {
+  background: transparent;
+  color: #7d7e81;
+}
+
+#preview-frame[data-device="tablet"] #preview-screen {
+  background: color-mix(in srgb, var(--fg) 14%, var(--bg));
 }
 
 #preview-frame-label {
