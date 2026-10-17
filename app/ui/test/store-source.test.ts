@@ -75,3 +75,11 @@ describe("loadStoreSource", () => {
     expect(seen).toEqual(["project_items"]);
   });
 });
+
+test.each([["Bible", "Reference notes"], ["Bibel", "Reference notes"], ["Research archive", "Research archive"]])("nonfiction displays %s as %s without renaming it", (title, displayed) => {
+  const rows = [{ id: "reference", parent_id: null, type: "bible", title, position: "0", rev: 1, state: null, depth: 0 }];
+  const source = storeSourceFrom(rows, "test", "nonfiction");
+  expect(source.titleAt(0)).toBe(displayed);
+  expect(source.items[0]!.title).toBe(title);
+  expect(storeSourceFrom(rows, "test").titleAt(0)).toBe(title);
+});

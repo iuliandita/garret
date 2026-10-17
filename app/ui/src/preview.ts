@@ -30,14 +30,20 @@ export interface EpubPreview {
   words: number;
 }
 
-/** The four options, as the host spells them. */
+/** The chapter options, as the host spells them. */
 export interface ChapterStyle {
   /** The id of an ornament, or null for none. */
   glyph: string | null;
   new_page: boolean;
   caps_title: boolean;
   drop_cap: boolean;
+  ornament_above: boolean;
+  sink: Sink;
 }
+
+/** How far down its page a chapter opening starts, as the host spells it. */
+export const SINKS = ["none", "third", "half"] as const;
+export type Sink = (typeof SINKS)[number];
 
 export interface Glyph {
   id: string;

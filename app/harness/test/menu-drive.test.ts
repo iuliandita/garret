@@ -79,7 +79,7 @@ describe("the menu source parses into routes", () => {
     expect(file.map((id) => menuRoute(id, REAL).index)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect(menuRoute("menu-export-docx", REAL).path).toEqual([{ index: 5, count: 11 }, { index: 4, count: 8 }]);
     expect(menuRoute("menu-new-afterword", REAL).path).toEqual([
-      { index: 0, count: 8 }, { index: 4, count: 5 }, { index: 4, count: 5 }, { index: 4, count: 5 },
+      { index: 0, count: 8 }, { index: 4, count: 5 }, { index: 4, count: 5 }, { index: 4, count: 6 },
     ]);
   });
 
@@ -329,6 +329,9 @@ test("the shipped module parses, and the removal item is where the rig expects",
   expect(navContextItemCount("app/ui/src/nav-context-menu.ts")).toBe(8);
   expect(navContextIndex("nav-context-remove", "scene", "app/ui/src/nav-context-menu.ts")).toBe(6);
   expect(navContextIndex("nav-context-remove", "part", "app/ui/src/nav-context-menu.ts")).toBe(4);
+  expect(navContextIndex("nav-context-remove", "scene", "app/ui/src/nav-context-menu.ts", "nonfiction")).toBe(5);
+  expect(navContextIndex("nav-context-remove", "part", "app/ui/src/nav-context-menu.ts", "nonfiction")).toBe(4);
+  expect(() => navContextIndex("nav-context-appears", "scene", "app/ui/src/nav-context-menu.ts", "nonfiction")).toThrow(/hidden/);
 });
 
 
@@ -358,4 +361,14 @@ test("an unsupported creation chooser shape fails before sending any input", asy
   const driver = menuDriver(":99", "123", (_display, args) => sent.push(args.at(-1) ?? ""), path);
   await expect(driver.activate("menu-new-scene")).rejects.toThrow(/control order changed/);
   expect(sent).toEqual([]);
+});
+
+test("preset menu routes count the visible planning rows", () => {
+  const source = "app/ui/src/menu-bar.ts";
+  const catalog = "app/ui/src/i18n/en.ts";
+  expect(menuRoute("menu-knowledge", source, catalog).index).toBe(4);
+  expect(menuRoute("menu-knowledge", source, catalog, "nonfiction").index).toBe(4);
+  expect(() => menuRoute("menu-cast", source, catalog, "nonfiction")).toThrow();
+  const more = menuRoute("menu-fiction-cast", source, catalog, "nonfiction");
+  expect(more.path.slice(-2).map((step) => step.index)).toEqual([3, 1]);
 });

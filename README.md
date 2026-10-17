@@ -5,6 +5,13 @@
   </picture>
 </p>
 
+New desktop books offer Novel, Short fiction, and Nonfiction project types.
+Short fiction starts with one scene and grows structure as needed. Nonfiction
+starts with its own book design, calls the Bible Reference notes, and keeps
+fiction tools available under Planning > More. A single-scene manuscript
+exports without generated contents or outline headings; front and back matter
+remain included.
+
 ## A writing studio for the whole book.
 
 **garret** <img src="assets/brand/garret/garret-middle-dot.svg" alt="·" width="8" height="16"> is a powerful writing studio for novelists, completely free and open
@@ -52,7 +59,14 @@ to the text, and organize the next draft into revision passes and tasks.
 ### Prepare the book
 
 Export to Markdown, DOCX, or EPUB, or make a PDF proof copy. Set up book design,
-front and back matter, covers, and pen names before exporting.
+chapter openers (ornament, its position, how far down the text area a chapter starts),
+front and back matter (including a References page, marked as a bibliography in EPUB),
+covers, and pen names before exporting.
+
+The EPUB and PDF previews sit beside your prose in a rail you can widen by
+dragging its divider or with the arrow keys; the width is remembered on that
+device. An optional e-reader or tablet frame shows an approximate paged view,
+and an optional refresh runs after you stop typing.
 
 ### Keep control of your work
 

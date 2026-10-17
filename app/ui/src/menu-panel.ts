@@ -40,6 +40,7 @@ export interface MenuItemSpec {
    *  an open panel and an expanded state on it would be false for the whole time
    *  the panel is up. */
   opensDialog?: boolean;
+  visible?: () => boolean;
   enabled?: () => boolean;
   checked?: () => boolean;
   /** Draw a separator above this item. The separator is not an item:
@@ -197,6 +198,7 @@ export function createMenuPanel(opts: MenuPanelOptions): MenuPanel {
       children.push(button);
     }
     for (const spec of specs) {
+      if (spec.visible?.() === false) continue;
       if (spec.separatorBefore === true && rendered.length > 0) {
         const rule = document.createElement("div");
         rule.className = "menu-separator";

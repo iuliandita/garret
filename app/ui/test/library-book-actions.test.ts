@@ -33,7 +33,7 @@ describe("Library book command contract", () => {
     expect(r.switched).toEqual(["/books/new.db"]);
     expect(r.names).toEqual(["New"]);
     expect(r.calls).toEqual([
-      { command: "project_create", args: { name: "New" } },
+      { command: "project_create", args: { name: "New", preset: "novel" } },
       { command: "identity_pin_preview", args: { id: "identity-1" } },
       { command: "identity_pin", args: { id: "identity-1", token: "book-specific-preview" } },
     ]);
@@ -91,4 +91,10 @@ test("a partial Library create waits for privacy and rechecks its workspace", as
   release(true);
   expect(await creating).toBe("unopened");
   expect(notices).toEqual([]);
+});
+
+test.each(["novel", "short", "nonfiction"] as const)("creation sends the %s project preset", async (preset) => {
+  const r = rig();
+  await r.actions.createBook("New", null, preset);
+  expect(r.calls[0]).toEqual({ command: "project_create", args: { name: "New", preset } });
 });

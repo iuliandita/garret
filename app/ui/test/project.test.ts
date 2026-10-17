@@ -40,6 +40,7 @@ interface Host {
 }
 
 interface HostOpts {
+  preset?: string;
   items?: ProjectItem[];
   docRev?: number;
   /** Successive project_items answers. The boot walk is [0]; every outline
@@ -117,6 +118,7 @@ function host(opts: HostOpts = {}): Host {
     // `today` is a fixed slice of it rather than another moving number: the
     // tests here are about whether the page asks and repaints, and a second
     // moving figure would make a stale reading look like a fresh one.
+    if (cmd === "project_preset") return opts.preset ?? "novel";
     if (cmd === "project_progress") return { total: ++counted * WORD_COUNT_STEP, today: 40 };
     if (cmd === "project_items") {
       if (opts.walks === undefined) return items;
@@ -742,6 +744,25 @@ afterEach(() => {
 });
 
 describe("mountProject store path", () => {
+  test.each([["Bible", "Reference notes", "Add to reference notes"], ["Research archive", "Research archive", "Add to Research archive"]])("the mounted nonfiction book displays %s without renaming it", async (title, displayed, creationLabel) => {
+    shell();
+    const items: ProjectItem[] = [...walk(),
+      { id: "reference", parent_id: null, type: "bible", title, position: "0001", rev: 1, state: null, depth: 0 },
+    ];
+    const h = host({ preset: "nonfiction", items });
+    const mounted = await mountProject(deps({ invoke: h.invoke }));
+    try {
+      expect(mounted.preset).toBe("nonfiction");
+      expect(document.getElementById("nav")?.textContent).toContain(displayed);
+      expect(document.getElementById("bible-create")?.getAttribute("aria-label")).toBe("Add to reference notes");
+      mounted.menuActions.openCreation();
+      expect(document.body.textContent).toContain(creationLabel);
+      expect(document.querySelector(".creation-destination")?.textContent).toContain(displayed);
+      expect(h.of("item_rename")).toEqual([]);
+      expect(items.at(-1)?.title).toBe(title);
+    } finally { mounted.destroy(); }
+  });
+
   test("continuous chapter writes two scene ids through the one editor and preserves active undo on exit", async () => {
     shell();
     const h = host();
@@ -4713,7 +4734,7 @@ describe("publishing requires acknowledged prose", () => {
       if (cmd === "project_export" || cmd === "project_export_as") return { path: "/exports/test", underlined: 0, format: args?.format ?? "markdown" };
       if (cmd === "epub_preview") return epub;
       if (cmd === "pdf_preview") return pdf;
-      if (cmd === "chapter_style_get") return { style: { glyph: null, new_page: false, caps_title: false, drop_cap: false }, glyphs: [] };
+      if (cmd === "chapter_style_get") return { style: { glyph: null, new_page: false, caps_title: false, drop_cap: false, ornament_above: false, sink: "none" }, glyphs: [] };
       if (cmd === "book_design_get") return { design, fonts: [design.font], page_sizes: [design.page], presets: [] };
       return fallback.invoke(cmd, args);
     };

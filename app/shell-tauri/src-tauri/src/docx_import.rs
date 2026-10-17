@@ -1168,6 +1168,7 @@ mod tests {
 
         let chapters = [("scene".to_string(), "Scene".to_string(), 0)];
         let book = crate::export::Book {
+            single_scene: false,
             name: "Book", contents_title: "Contents", front: &[], chapters: &chapters, back: &[],
         };
         let bodies = StdHashMap::from([("scene".to_string(), body.clone())]);
@@ -1464,6 +1465,7 @@ mod tests {
         );
 
         let book = crate::export::Book {
+            single_scene: false,
             name: "A & B < C *",
             contents_title: "Contents",
             front: &front,

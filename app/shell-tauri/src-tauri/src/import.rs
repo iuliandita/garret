@@ -1008,6 +1008,7 @@ mod tests {
         }
         crate::export::manuscript(
             &crate::export::Book {
+                single_scene: false,
                 name: &imported.name,
                 contents_title: &crate::strings::Strings::english()
                     .t(crate::commands::export::CONTENTS_KEY),
