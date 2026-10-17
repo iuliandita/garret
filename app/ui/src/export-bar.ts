@@ -36,6 +36,7 @@ import { exportFormatName, type ExportFormat } from "./export-formats";
 export interface ExportWritten {
   path: string;
   underlined: number;
+  assets_written: boolean;
   format: string;
 }
 
@@ -143,7 +144,7 @@ export function createExportBar(deps: ExportBarDeps): ExportBar {
                 path: result.path,
                 format: exportFormatName(result.format),
               });
-      if (message !== null && result?.format === "markdown") {
+      if (message !== null && result?.format === "markdown" && result.assets_written === true) {
         message += ` ${t("export.done.assets")}`;
       }
     } catch (error: unknown) {

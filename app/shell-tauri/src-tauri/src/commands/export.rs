@@ -9,6 +9,7 @@ pub(crate) struct ExportResult {
     pub(crate) path: String,
     pub(crate) items: u64,
     pub(crate) words: u64,
+    pub(crate) assets_written: bool,
     /// Underlined runs the Markdown could not carry. Markdown has no underline,
     /// so the mark is dropped -- and the drop is REPORTED, because a loss the
     /// writer is never told about is the class of silent loss this repo
@@ -199,7 +200,8 @@ pub(crate) fn export_scope_into_with(
         _ => None,
     };
 
-    if !written.assets.is_empty() {
+    let assets_written = !written.assets.is_empty();
+    if assets_written {
         crate::markdown_package::publish(dest, &bytes, &written.assets)?;
     } else {
         match mode {
@@ -229,6 +231,7 @@ pub(crate) fn export_scope_into_with(
         items,
         words,
         underlined: written.underlined_runs,
+        assets_written,
         format: written.format.id().to_string(),
         pages,
         preflight,
@@ -1397,6 +1400,8 @@ mod tests {
         let dest = dir.path().join("out.md");
         let r = export_to(&db, "My Novel", &dest).unwrap();
         assert_eq!(r.format, crate::export::Format::Markdown.id());
+        assert!(!r.assets_written);
+        assert!(!dest.parent().unwrap().join("assets").exists());
     }
 
     #[test]
