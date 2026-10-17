@@ -1145,6 +1145,7 @@ impl Store {
         Ok(match self.get_meta(crate::core_constants::PRESET_KEY)?.as_deref() {
             Some("short") => "short",
             Some("nonfiction") => "nonfiction",
+            Some("collection") => "collection",
             _ => "novel",
         })
     }
@@ -1188,7 +1189,7 @@ impl Store {
                 self.item_create(
                     None,
                     "chapter",
-                    &strings.f("item.numbered.chapter", &[("n", "1")]),
+                    &strings.f(if self.project_preset()? == "collection" { "item.numbered.story" } else { "item.numbered.chapter" }, &[("n", "1")]),
                 )?
                 .id,
             )

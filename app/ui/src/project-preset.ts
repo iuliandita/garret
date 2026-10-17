@@ -1,9 +1,9 @@
 import { CATALOGS, t } from "./i18n";
 
-export type ProjectPreset = "novel" | "short" | "nonfiction";
+export type ProjectPreset = "novel" | "short" | "nonfiction" | "collection";
 
 export function projectPreset(value: unknown): ProjectPreset {
-  return value === "short" || value === "nonfiction" ? value : "novel";
+  return value === "short" || value === "nonfiction" || value === "collection" ? value : "novel";
 }
 
 export function referenceTitle(preset: ProjectPreset, storedTitle?: string): string {
@@ -23,7 +23,7 @@ export function createPresetChoice(id: string): { field: HTMLElement; select: HT
   label.textContent = t("preset.label");
   const select = document.createElement("select");
   select.id = id;
-  for (const preset of ["novel", "short", "nonfiction"] as const) {
+  for (const preset of ["novel", "short", "nonfiction", "collection"] as const) {
     const option = document.createElement("option");
     option.value = preset;
     option.textContent = t(`preset.${preset}`);

@@ -1472,7 +1472,7 @@ mod tests {
     }
     #[test]
     fn mobile_transferred_presets_create_scenes_in_order_without_scaffolding() {
-        for preset in ["short", "nonfiction"] {
+        for preset in ["short", "nonfiction", "collection"] {
             let root = tempfile::tempdir().unwrap();
             let (host, _) = host(root.path());
             let source = root.path().join("source.db");
@@ -1482,6 +1482,12 @@ mod tests {
             store
                 .ensure_starter_structure(&strings::Strings::new(&strings::EN))
                 .unwrap();
+            let other_story = if preset == "collection" {
+                let story = store.item_create(None, "chapter", "Second story").unwrap();
+                let scene = store.item_create(Some(&story.id), "scene", "Forest").unwrap();
+                store.set_meta(&format!("collection.author.{}", story.id), "Other Author").unwrap();
+                Some((story.id, scene.id))
+            } else { None };
             let stage =
                 transfer::stage(&host.transfers, &uuid::Uuid::now_v7().to_string()).unwrap();
             let bundle = transfer::snapshot(&source, &store, &stage).unwrap();
@@ -1507,14 +1513,12 @@ mod tests {
                 between
                     .scenes
                     .iter()
+                    .filter(|scene| scene.parent_id == first.parent_id)
                     .map(|scene| scene.id.as_str())
                     .collect::<Vec<_>>(),
                 [&first.id, &between.item_id, &second.item_id, &third.item_id]
             );
-            assert!(between
-                .scenes
-                .iter()
-                .all(|scene| scene.parent_id == first.parent_id));
+            assert_eq!(between.scenes.iter().filter(|scene| scene.parent_id == first.parent_id).count(), 4);
             host.drafting(book.generation, |store| {
                 let items = manuscript_items(store)?;
                 assert_eq!(
@@ -1522,7 +1526,7 @@ mod tests {
                         .iter()
                         .filter(|item| item.item_type == "chapter")
                         .count(),
-                    if preset == "short" { 0 } else { 1 }
+                    if preset == "short" { 0 } else if preset == "collection" { 2 } else { 1 }
                 );
                 assert!(!items.iter().any(|item| item.item_type == "part"));
                 assert_eq!(
@@ -1536,12 +1540,25 @@ mod tests {
                         .iter()
                         .filter(|item| item.item_type == "scene")
                         .count(),
-                    4
+                    if preset == "collection" { 5 } else { 4 }
                 );
                 Ok(())
             })
             .unwrap();
-            assert_eq!(scenes(&store).unwrap().len(), 1);
+            assert_eq!(scenes(&store).unwrap().len(), if preset == "collection" { 2 } else { 1 });
+            if let Some((story, scene)) = other_story {
+                let first_before = host.drafting(book.generation, |store| Ok(store.documents().unwrap())).unwrap();
+                let added = host.create_scene(book.generation, &scene, "Inside second story").unwrap();
+                let new_scene = added.scenes.iter().find(|row| row.id == added.item_id).unwrap();
+                assert_eq!(new_scene.parent_id.as_deref(), Some(story.as_str()));
+                assert_eq!(added.scenes.iter().filter(|row| row.parent_id == first.parent_id).map(|row| row.id.clone()).collect::<Vec<_>>(), between.scenes.iter().filter(|row| row.parent_id == first.parent_id).map(|row| row.id.clone()).collect::<Vec<_>>());
+                host.drafting(book.generation, |store| {
+                    let after = store.documents().unwrap();
+                    for (id, body) in &first_before { assert_eq!(after.get(id), Some(body)); }
+                    assert_eq!(store.get_meta(&format!("collection.author.{story}")).unwrap().as_deref(), Some("Other Author"));
+                    Ok(())
+                }).unwrap();
+            }
             if preset == "short" {
                 let nested = host
                     .drafting(book.generation, |store| {
@@ -2199,7 +2216,6 @@ mod tests {
     #[test]
     fn mobile_transfer_open_refuses_schema_before_preset_without_library_changes() {
         for (preset, newer, code) in [
-            ("collection", false, "unsupported_project_preset"),
             ("zzz", false, "unsupported_project_preset"),
             ("novel", true, "unsupported_schema"),
             ("short", true, "unsupported_schema"),

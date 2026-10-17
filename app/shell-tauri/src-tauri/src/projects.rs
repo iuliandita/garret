@@ -1033,7 +1033,7 @@ pub fn create_in(
 
 pub fn validate_preset(preset: Option<&str>) -> Result<(), String> {
     match preset {
-        None | Some("novel" | "short" | "nonfiction") => Ok(()),
+        None | Some("novel" | "short" | "nonfiction" | "collection") => Ok(()),
         Some(_) => Err("unknown project preset".into()),
     }
 }
@@ -6397,7 +6397,7 @@ mod project_presets_tests {
 
     #[test]
     fn project_presets_survive_backup_archive_restore_transfer_and_salvage_verbatim() {
-        for value in ["short", "nonfiction", "future-preset"] {
+        for value in ["short", "nonfiction", "collection", "future-preset"] {
             let dir = tempfile::tempdir().unwrap();
             let made = create_in_preset(
                 dir.path(),
@@ -6478,6 +6478,7 @@ mod project_presets_tests {
             Some("novel"),
             Some("short"),
             Some("nonfiction"),
+            Some("collection"),
             Some("future-preset"),
         ] {
             let dir = tempfile::tempdir().unwrap();
@@ -6524,6 +6525,7 @@ mod project_presets_tests {
                 match value {
                     Some("short") => "short",
                     Some("nonfiction") => "nonfiction",
+                    Some("collection") => "collection",
                     _ => "novel",
                 }
             );
@@ -6536,8 +6538,8 @@ mod project_presets_tests {
         }
     }
     #[test]
-    fn project_presets_creation_refuses_unknown_and_reserved_values() {
-        for value in ["collection", "future-preset", "", "SHORT"] {
+    fn project_presets_creation_refuses_unknown_values() {
+        for value in ["future-preset", "", "SHORT"] {
             let dir = tempfile::tempdir().unwrap();
             assert!(create_in_preset(
                 dir.path(),

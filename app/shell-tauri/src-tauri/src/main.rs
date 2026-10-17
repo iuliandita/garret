@@ -20,6 +20,7 @@ use tauri::{Manager, State, WebviewUrl, WebviewWindowBuilder};
 mod data_migration;
 mod command_error;
 mod core_constants;
+mod collection;
 mod book_open;
 mod book_registration;
 mod backup_bundle;
@@ -4437,6 +4438,8 @@ fn main() {
             __wire_project_new_dir,
             __wire_project_create,
             __wire_project_preset,
+            commands::collection::__wire_story_get,
+            commands::collection::__wire_story_save,
             __wire_project_pending_registrations,
             __wire_project_retry_registration,
             __wire_project_open,
@@ -9261,6 +9264,7 @@ mod tests {
     fn docx_bytes_under_an_md_name_import_as_docx() {
         let (dir, library, _drop) = import_fixture("# Ignored\n\n## X\n\np\n");
         let book = crate::export::Book {
+            publication: None,
             single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",

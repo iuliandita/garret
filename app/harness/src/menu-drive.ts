@@ -424,13 +424,15 @@ export function navContextIndex(
       `no context item "${itemId}" in ${sourcePath}; it holds: ${[...navCached.keys()].join(", ")}`,
     );
   }
-  const fictionOffset = preset === "nonfiction" && (navCached.get("nav-context-appears") ?? Infinity) < index ? 1 : 0;
-  if (preset === "nonfiction" && itemId === "nav-context-appears") throw new Error("appearances are hidden in nonfiction context menus");
-  if (BODY_TYPES.includes(rowType)) return index - fictionOffset;
-  if (BODY_ONLY_IDS.includes(itemId)) {
-    throw new Error(`"${itemId}" is not painted on a "${rowType}" row, so it has no index there`);
-  }
-  const skipped = BODY_ONLY_IDS.filter((id) => (navCached!.get(id) ?? Infinity) < index).length;
+  const storyVisible = preset === "collection" && rowType === "chapter";
+  if (itemId === "nav-context-story" && !storyVisible) throw new Error("story details are hidden on this row");
+  const hidden = [
+    ...(!storyVisible ? ["nav-context-story"] : []),
+    ...(preset === "nonfiction" ? ["nav-context-appears"] : []),
+    ...(!BODY_TYPES.includes(rowType) ? BODY_ONLY_IDS : []),
+  ];
+  if (hidden.includes(itemId)) throw new Error(`"${itemId}" is hidden or not painted on a "${rowType}" row`);
+  const skipped = [...new Set(hidden)].filter((id) => (navCached!.get(id) ?? Infinity) < index).length;
   return index - skipped;
 }
 

@@ -549,11 +549,11 @@ pub(crate) mod tests {
             let reader = Store::open_readonly(&db).unwrap();
             assert_eq!(
                 mobile_core::supported(&reader).is_ok(),
-                matches!(preset, None | Some("novel" | "short" | "nonfiction")),
+                matches!(preset, None | Some("novel" | "short" | "nonfiction" | "collection")),
                 "{preset:?}"
             );
             assert_eq!(fs::read(&db).unwrap(), before);
-            if !matches!(preset, None | Some("novel" | "short" | "nonfiction")) {
+            if !matches!(preset, None | Some("novel" | "short" | "nonfiction" | "collection")) {
                 let stage = stage(
                     &root.path().join("transfer"),
                     &uuid::Uuid::now_v7().to_string(),
@@ -602,7 +602,6 @@ pub(crate) mod tests {
             checksum: String,
         }
         for (preset, newer, code) in [
-            ("collection", false, "unsupported_project_preset"),
             ("zzz", false, "unsupported_project_preset"),
             ("novel", true, "unsupported_schema"),
             ("short", true, "unsupported_schema"),

@@ -29,6 +29,20 @@
 // Bibel, Pseudonym, Fokusmodus, Schreibmaschinenmodus.
 
 export const DE = {
+  "preset.collection": "Geschichtensammlung",
+  "item.numbered.story": "Geschichte {n}",
+  "collection.new-story": "Neue Geschichte",
+  "collection.fields": "Geschichtendetails",
+  "collection.title": "Titel der Geschichte",
+  "collection.author": "Autor (optional)",
+  "collection.status": "Bearbeitungsstand",
+  "collection.save": "Geschichte speichern",
+  "collection.export": "Geschichte speichern und exportieren",
+  "collection.inheritance": "Ohne eigenen Autor wird beim Einzelexport das Pseudonym des Buchs verwendet. Umschlag sowie Vorspann und Nachspann der Sammlung entfallen. Änderungen werden vor dem Export gespeichert.",
+  "collection.error": "Die Geschichte konnte nicht gespeichert oder geöffnet werden: {error}",
+  "preflight.at.story-heading": "Überschrift der Geschichte",
+  "preflight.at.story-contents": "Inhaltsverzeichniseintrag der Geschichte",
+
   "preset.label": "Projekttyp",
   "preset.novel": "Roman",
   "preset.short": "Kurze Prosa",

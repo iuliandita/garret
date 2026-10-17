@@ -323,6 +323,7 @@ fn stylesheet(font: &str, style: &ChapterStyle) -> String {
          {{ text-indent: 0; }}\n\
          .{ORNAMENT_CLASS} {{ text-align: center; text-indent: 0; margin: 1.5em 0; }}\n\
          .{UNDERLINE_CLASS} {{ text-decoration: underline; }}\n\
+         .story-byline {{ text-align: center; text-indent: 0; margin: 0.5em 0 1em; break-after: avoid; }}\n\
          nav ol {{ list-style: none; padding-left: 1em; }}\n\
          a {{ color: inherit; text-decoration: none; }}\n",
         family = css_string(font),
@@ -487,6 +488,9 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
                     ));
                 }
             }
+            if let Some(author) = epub.book.byline(id) {
+                doc.body.push_str(&format!("<p class=\"story-byline\">{}</p>\n", xml_escape(author)));
+            }
             // An item with no body, and an item whose body this build cannot
             // read, contribute a heading only. `export::manuscript`'s rule:
             // losing a chapter silently is the worst thing either renderer can
@@ -577,7 +581,7 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
             epub,
             epub.book.name,
             "titlepage",
-            &format!("<section><h1>{}</h1></section>", xml_escape(epub.book.name)),
+            &format!("<section><h1>{}</h1>{}</section>", xml_escape(epub.book.name), epub.book.author().map(|author| format!("<p class=\"story-byline\">{}</p>", xml_escape(author))).unwrap_or_default()),
         ),
     ));
 
@@ -976,6 +980,7 @@ mod tests {
 
     fn plain<'a>(name: &'a str, runs: &'a [(String, String, i64)]) -> Book<'a> {
         Book {
+            publication: None,
             single_scene: false,
             name,
             contents_title: "Contents",
@@ -1138,6 +1143,7 @@ mod tests {
         let rows = chapters(&[("a", "One", 0), ("c", "A scene", 1)]);
         let front = chapters(&[("d", "Dedication", 0)]);
         let book = Book {
+            publication: None,
             single_scene: false,
             name: "My Novel",
             contents_title: "Contents",
@@ -1639,6 +1645,7 @@ mod tests {
         let body = chapters(&[("a", "One", 0)]);
         let back = chapters(&[("z", "Afterword", 0)]);
         let book = Book {
+            publication: None,
             single_scene: false,
             name: "N",
             contents_title: "Contents",
@@ -2030,6 +2037,7 @@ mod tests {
         // `identity_metadata` fails HERE, which is the only thing that stops the
         // check becoming a list of promises.
         let book = Book {
+            publication: None,
             single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
@@ -2067,6 +2075,7 @@ mod tests {
         // exactly what it was before this slice, or the graded EPUB evidence is
         // about a file nobody had.
         let book = Book {
+            publication: None,
             single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
@@ -2085,6 +2094,7 @@ mod tests {
     fn a_name_with_markup_in_it_is_escaped_into_the_package_document() {
         // A pen name is the writer's own text and the package document is XML.
         let book = Book {
+            publication: None,
             single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
@@ -2115,6 +2125,7 @@ mod tests {
         let body = chapters(&[("a", "One", 0)]);
         let back = chapters(&[("r", title, 0)]);
         let book = Book {
+            publication: None,
             name: "N",
             contents_title: "Contents",
             front: &[],

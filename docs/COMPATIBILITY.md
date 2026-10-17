@@ -32,7 +32,7 @@ An oversized foreign document can now be refused. Preserve the original and
 split or simplify a copy before retrying; do not bypass the limits. This does
 not change the stored manuscript schema or require converting existing books.
 
-New desktop books can start as a novel, short fiction, or nonfiction. The
+New desktop books can start as a novel, short fiction, nonfiction, or collection. The
 optional `project.preset` metadata key adds no schema migration: a missing or
 unknown value uses novel defaults, and unknown values remain stored unchanged.
 Older desktop builds ignore this key and show novel tools. Short fiction starts
@@ -55,6 +55,38 @@ copies retain the metadata key verbatim.
 Use the closed-book backup and disposable-copy upgrade steps above; rollback
 to an older desktop build needs no preset conversion. Android preset support
 is handled separately; do not assume an older Android build understands it.
+
+Collections use ordinary chapter containers as stories. The outermost chapters
+in the manuscript are stories; nested chapters remain sections. New story adds
+a story without an automatic part. Scenes stay in the selected story or section.
+Each story keeps its existing title and revision status; navigator counts sum
+its scenes. Right-click a story (or press Shift+F10) and choose Story details to
+edit its title, optional public author, and status, or save and export it alone.
+The optional author is stored as `collection.author.<item-id>` metadata. It
+travels with backups, archives, transfer and salvage; enter only a name intended
+for publication. Older desktop builds retain it but show ordinary chapters and
+omit story authors from exports. Older Android builds can refuse collections;
+update before transferring one to the phone.
+
+Whole-collection exports list stories and their explicit authors in contents,
+with each explicit author below the story heading. Collection front/back matter
+and covers appear once. Exporting one story uses its title and its author, or
+the book's pinned pen name when the story author is empty. It inherits book
+typography, but omits collection covers, front/back matter, and other stories.
+A one-scene story has no generated contents page or default scaffold headings.
+EPUB stores its effective author as creator; all four formats print its byline.
+An explicit story author omits the book pin's other identity and publishing
+fields. Falling back to the book author retains that pin's export fields.
+The CLI supports `garret export book.db story.epub --format epub --story ID`;
+use `garret inspect book.db --json` to find the story's chapter ID. A whole-book
+export omits `--story`. No export changes stored book metadata.
+
+Collections introduce no schema migration. Keep the complete closed-book and
+profile backup described above. Rollback needs no conversion; preserve the
+upgraded copy and use the previous package with a separate pre-upgrade backup.
+Changes made after that backup are absent from it. Android editing uses the
+same scene containers and retains story author metadata; story creation,
+publication fields and scoped exports are desktop features.
 
 Chapter openers add three optional words to a book's stored chapter options:
 `ornament-above`, `sink-third` and `sink-half`, plus three more ornament names.
@@ -133,8 +165,8 @@ shared index, or a pending rollback journal, is reported as unavailable rather
 than repaired during a probe; preserve the complete files for desktop recovery.
 An unreadable library neighbor is flagged and skipped during related-copy
 inspection, so it cannot block a separate import. Import checks authenticated archive metadata and the staged database
-before creating any library file, originals directory or catalog entry. Absent values and exactly `novel`, `short`, or `nonfiction` are supported.
-Empty, collection and unknown values are refused
+before creating any library file, originals directory or catalog entry. Absent values and exactly `novel`, `short`, `nonfiction`, or `collection` are supported.
+Empty and unknown values are refused
 with an English/German explanation. Desktop leniency for unknown presets does
 not change this Android release's capability. Use desktop for those projects.
 

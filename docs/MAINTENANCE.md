@@ -104,7 +104,13 @@ Project presets use the optional `project.preset` metadata key at SQLite schema
 17, with no schema migration or preset conversion for rollback. Missing and
 unknown stored values use novel defaults; preserve unknown values verbatim.
 Backup snapshots, encrypted archive restores, portable copies, and salvage must
-carry this metadata with the rest of the book. Keep the complete closed-book
+carry this metadata with the rest of the book, including per-story
+`collection.author.<item-id>` public bylines. Collection stories are ordinary
+outermost manuscript chapters; title/status remain item fields. Scoped exports
+must share the normal preflight and crash-safe destination writer, rebase the
+selected subtree, and exclude collection matter and covers. Android admits
+collections because its scene placement already uses these ordinary containers.
+Keep the complete closed-book
 and profile backup and separate-copy rollback instructions in the
 [compatibility guide](COMPATIBILITY.md) when reviewing later changes. A preset
 assessment supplements the migration, backup, and rollback assessment for the

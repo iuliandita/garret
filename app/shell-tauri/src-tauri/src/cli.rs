@@ -97,7 +97,7 @@ usage:
   garret analytics <project.db> [--json]
   garret search    <project.db> <query> [--limit N] [--json]
   garret validate  <project.db> [--json]
-  garret export    <project.db> <dest> [--format markdown|epub|pdf]
+  garret export    <project.db> <dest> [--format markdown|epub|pdf|docx] [--story ID]
                             (pdf is laid out by a web engine and needs a display)
   garret history   <project.db> [--item ID] [--json]
   garret knowledge <project.db> [--json]
@@ -490,6 +490,10 @@ pub fn export(
     dest: &Path,
     format: export::Format,
 ) -> Result<crate::commands::export::ExportResult, String> {
+    export_scope(path, dest, format, None)
+}
+
+pub fn export_scope(path: &Path, dest: &Path, format: export::Format, story_id: Option<&str>) -> Result<crate::commands::export::ExportResult, String> {
     let store = store::Store::open_readonly(path).map_err(|e| e.to_string())?;
     let name = project_name(&store, path);
     drop(store);
@@ -523,7 +527,7 @@ pub fn export(
             .tempfile()
             .map_err(|e| e.to_string())?;
         let scratch_path = scratch.path().to_path_buf();
-        return crate::commands::export::export_into_with(
+        return crate::commands::export::export_scope_into_with(
             path,
             &name,
             dest,
@@ -531,6 +535,7 @@ pub fn export(
             format,
             &vault,
             strings,
+            story_id,
             move |html| {
                 let text = String::from_utf8(html).map_err(|e| e.to_string())?;
                 let printed = crate::printer::render_standalone(&text, Some(&scratch_path), page)?;
@@ -540,7 +545,7 @@ pub fn export(
             },
         );
     }
-    crate::commands::export::export_into(
+    crate::commands::export::export_scope_into_with(
         path,
         &name,
         dest,
@@ -548,6 +553,8 @@ pub fn export(
         format,
         &vault,
         strings,
+        story_id,
+        Ok,
     )
 }
 
@@ -1081,6 +1088,7 @@ struct Options {
     limit: usize,
     item: Option<String>,
     key: Option<String>,
+    story: Option<String>,
     /// Which file `export` writes.
     ///
     /// A FLAG AND NOT THE DESTINATION'S EXTENSION. Deriving it from the name
@@ -1099,6 +1107,7 @@ fn parse(args: &[String]) -> Result<Options, String> {
         limit: find::DEFAULT_LIMIT,
         item: None,
         key: None,
+        story: None,
         format: export::Format::Markdown,
         positional: Vec::new(),
     };
@@ -1125,6 +1134,10 @@ fn parse(args: &[String]) -> Result<Options, String> {
                 let raw = args.get(i + 1).ok_or("--format needs a format")?;
                 out.format = export::Format::from_id(raw)
                     .ok_or_else(|| format!("--format {raw:?} is not a format this build writes"))?;
+                i += 1;
+            }
+            "--story" => {
+                out.story = Some(args.get(i + 1).ok_or("--story needs a story id")?.clone());
                 i += 1;
             }
             "--item" => {
@@ -1227,6 +1240,9 @@ fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
         return Err(Refusal::Usage("no subcommand given".into()));
     };
     let opts = parse(&argv[1..]).map_err(Refusal::Usage)?;
+    if opts.story.is_some() && command != "export" {
+        return Err(Refusal::Usage("--story applies only to export".into()));
+    }
     if opts.allow_picture_gaps && command != "restore" {
         return Err(Refusal::Usage("--allow-picture-gaps applies only to restore".into()));
     }
@@ -1424,7 +1440,10 @@ fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
             // lie, and 1 would tell a script its arguments were wrong when they
             // were fine and the destination was occupied.
             read(&|| {
-                let r = export(&path, &dest, opts.format)?;
+                let r = match opts.story.as_deref() {
+                    Some(id) => export_scope(&path, &dest, opts.format, Some(id))?,
+                    None => export(&path, &dest, opts.format)?,
+                };
                 // No `--json` on export: its answer is a FILE, and the one line
                 // saying where it landed is the same in both shapes.
                 println!(
@@ -3826,6 +3845,7 @@ mod tests {
     fn importing_this_crates_own_docx_has_items_and_no_losses() {
         let dir = tempdir().unwrap();
         let book = crate::export::Book {
+            publication: None,
             single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",

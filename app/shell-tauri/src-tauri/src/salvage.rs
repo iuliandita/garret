@@ -1631,6 +1631,7 @@ fn extract(
             let contents_title = strings.t(crate::commands::export::CONTENTS_KEY);
             let written = export::manuscript(
                 &export::Book {
+                    publication: None,
                     single_scene: false,
                     name: &name,
                     contents_title: &contents_title,

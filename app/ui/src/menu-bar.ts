@@ -326,7 +326,7 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
     {
       id: "menu-outline", label: t("menu.outline"), key: t("menu.outline.key"), items: [
         {
-          id: "menu-new", label: () => t("menu.new"), opensDialog: true, children: deps.openCreation ? undefined : [{ id: "menu-new-scene", label: () => t("menu.new-scene"), run: () => deps.create("scene") }, { id: "menu-new-chapter", label: () => t("menu.new-chapter"), run: () => deps.create("chapter") }, { id: "menu-new-part", label: () => t("menu.new-part"), run: () => deps.create("part") }, {
+          id: "menu-new", label: () => t("menu.new"), opensDialog: true, children: deps.openCreation ? undefined : [{ id: "menu-new-scene", label: () => t("menu.new-scene"), run: () => deps.create("scene") }, { id: "menu-new-chapter", label: () => t(deps.projectPreset?.() === "collection" ? "collection.new-story" : "menu.new-chapter"), run: () => deps.create("chapter") }, { id: "menu-new-part", label: () => t("menu.new-part"), run: () => deps.create("part") }, {
               id: "menu-more", label: () => t("menu.more"), children: [{ id: "menu-new-note", label: () => t(deps.projectPreset?.() === "nonfiction" ? "preset.new-reference-document" : "menu.new-note"), run: deps.createNote }, { id: "menu-new-bible-folder", label: () => t(deps.projectPreset?.() === "nonfiction" ? "preset.new-reference-folder" : "menu.new-bible-folder"), run: deps.createBibleFolder }, { id: "menu-new-timeline", label: () => t("menu.new-timeline"), run: deps.createTimeline }, {
                   id: "menu-book-pages", label: () => t("menu.book-pages"), children: [
                     {

@@ -992,7 +992,7 @@ export function createOutline(deps: OutlineDeps): Outline {
         // book and OUT of the chapter sequence, and adoption is a question
         // about the sequence. See `chapterItemsIn`.
         const chapterItems = chapterItemsIn(walk);
-        const candidates = planAdoption(chapterItems, creating);
+        const candidates = deps.preset === "collection" ? [] : planAdoption(chapterItems, creating);
         const adoptionSafe = adoptionPreservesOrder(chapterItems, candidates, place);
         const adopt = adoptionSafe ? candidates : [];
         let parentId = place.parentId;
@@ -1010,7 +1010,7 @@ export function createOutline(deps: OutlineDeps): Outline {
           // PER STEP, against the walk as it stands NOW: `run` re-reads before
           // it returns, so the item's number is computed after the holder
           // exists rather than against the tree this press started in.
-          const title = nextNumberedTitle(walk, type, numberPattern(type));
+          const title = nextNumberedTitle(walk, type, deps.preset === "collection" && type === "chapter" ? t("item.numbered.story") : numberPattern(type));
           let id: string | null = null;
           // camelCase, and every Option arg explicitly present even when null:
           // a missing or misspelled key deserializes to None, which for

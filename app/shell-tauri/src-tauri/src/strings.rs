@@ -175,7 +175,7 @@ impl Strings {
 
 /// Defaults can outlive the locale in which a book was created.
 pub fn is_numbered_heading(title: &str, kind: &str) -> bool {
-    if !matches!(kind, "part" | "chapter" | "scene") {
+    if !matches!(kind, "part" | "chapter" | "scene" | "story") {
         return false;
     }
     CATALOGS.iter().any(|locale| {

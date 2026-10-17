@@ -43,7 +43,7 @@ pub fn supported(store: &store::Store) -> Result<(), String> {
         .map_err(|error| error.to_string())?
         .as_deref()
     {
-        None | Some("novel" | "short" | "nonfiction") => Ok(()),
+        None | Some("novel" | "short" | "nonfiction" | "collection") => Ok(()),
         _ => Err("unsupported_project_preset".into()),
     }
 }

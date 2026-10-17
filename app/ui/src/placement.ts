@@ -227,11 +227,15 @@ export function planPlacement(
   // last root that is not the bin or the bible -- never a plain append, which
   // would land under both of them.
   const rootAnswer = (after?: string | null): Placement => ({
-    holders: preset === "short" ? [] : holderFor(itemType),
+    holders: preset === "short" || preset === "collection" ? [] : holderFor(itemType),
     parentId: null,
     afterId: after === undefined ? rootAppendPoint(items) : after,
   });
   if (selectedId === null) return rootAnswer();
+  if (preset === "collection" && itemType === "chapter") {
+    const top = ancestorsOrSelf(items, selectedId).at(-1);
+    return rootAnswer(top !== undefined && !isReservedRoot(top) ? top.id : undefined);
+  }
   const chain = ancestorsOrSelf(items, selectedId);
   if (chain.length === 0) return rootAnswer();
 
