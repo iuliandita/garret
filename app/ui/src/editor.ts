@@ -86,7 +86,7 @@ export type DocInput =
 
 /** Pure: one schema, two entry formats. Exported so it is testable without a DOM. */
 export function docJsonFrom(input: DocInput): PmNodeJson {
-  if (input.kind === "pmjson") return input.json;
+  if (input.kind === "pmjson") return withoutEmptyText(input.json) as PmNodeJson;
   const paragraphs: PmNodeJson[] = input.blocks
     .filter((b) => b.text.length > 0)
     .map((b) => ({ type: "paragraph", content: [{ type: "text", text: b.text }] }));
@@ -94,6 +94,23 @@ export function docJsonFrom(input: DocInput): PmNodeJson {
     type: "doc",
     content: paragraphs.length > 0 ? paragraphs : [{ type: "paragraph" }],
   };
+}
+
+function withoutEmptyText(parsed: unknown): unknown {
+  // Replace-all in older books could leave empty text runs, which ProseMirror rejects.
+  if (parsed && typeof parsed === "object" && "type" in parsed && parsed.type === "doc"
+      && "content" in parsed && Array.isArray(parsed.content)) {
+    for (const paragraph of parsed.content) {
+      if (paragraph && typeof paragraph === "object" && paragraph.type === "paragraph"
+          && Array.isArray(paragraph.content)) {
+        paragraph.content = paragraph.content.filter((node: unknown) => !(
+          node && typeof node === "object" && "type" in node && node.type === "text"
+          && "text" in node && node.text === ""
+        ));
+      }
+    }
+  }
+  return parsed;
 }
 
 /** A stored body this build can open, or null.
@@ -124,19 +141,7 @@ export function readableBody(body: string): PmNodeJson | null {
   } catch {
     return null;
   }
-  // Replace-all in older books could leave empty text runs, which ProseMirror rejects.
-  if (parsed && typeof parsed === "object" && "type" in parsed && parsed.type === "doc"
-      && "content" in parsed && Array.isArray(parsed.content)) {
-    for (const paragraph of parsed.content) {
-      if (paragraph && typeof paragraph === "object" && paragraph.type === "paragraph"
-          && Array.isArray(paragraph.content)) {
-        paragraph.content = paragraph.content.filter((node: unknown) => !(
-          node && typeof node === "object" && "type" in node && node.type === "text"
-          && "text" in node && node.text === ""
-        ));
-      }
-    }
-  }
+  parsed = withoutEmptyText(parsed);
   try {
     schema.nodeFromJSON(parsed as Record<string, unknown>);
   } catch {

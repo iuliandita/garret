@@ -33,6 +33,19 @@ test("the footer uses the singular word in both languages", async () => {
   }
 });
 
+test("legacy empty text runs open on the phone and after switching scenes", async () => {
+  const f = fixture({ initial: doc("a", ""), loadDoc: async id => doc(id, "") });
+  try {
+    expect(f.workspace.editor.wordCount()).toBe(0);
+    expect(await f.workspace.openScene("b")).toBe(true);
+    f.workspace.editor.typeChar("recovered");
+    await f.workspace.drain();
+    expect(f.writes[0][0].body).toContain("recovered");
+  } finally {
+    await f.workspace.close(); f.mount.remove();
+  }
+});
+
 test("switching saves the outgoing scene and its mapped notes before loading another", async () => {
   const initial = doc("a", "Before dawn");
   initial.comments = [{ id: 4, from: 2, to: 5, resolved: false }];
