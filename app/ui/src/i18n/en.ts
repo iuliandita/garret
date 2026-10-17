@@ -1873,6 +1873,7 @@ export const EN = {
   "menu.new-foreword": "New foreword",
   "menu.new-acknowledgements": "New acknowledgements",
   "menu.new-afterword": "New afterword",
+  "menu.new-references": "New references",
   // The moves. Verbs, and OUT/IN rather than left/right: the chord is
   // Alt+Left and Alt+Right, and the shortcut column beside the label already
   // says so -- but "Move left" describes the key while "Move out" describes
@@ -1932,6 +1933,7 @@ export const EN = {
   "item.matter.foreword": "Foreword",
   "item.matter.acknowledgements": "Acknowledgements",
   "item.matter.afterword": "Afterword",
+  "item.matter.references": "References",
   // A TIMELINE'S TITLE CARRIES NO `{n}` EITHER, `item.matter`'s reason: the
   // model is one story clock per book, so "Timeline 1" would be a
   // lie about a book that has exactly one.

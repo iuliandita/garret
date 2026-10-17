@@ -3387,6 +3387,7 @@ try {
           "menu-new-foreword",
           "menu-new-acknowledgements",
           "menu-new-afterword",
+          "menu-new-references",
         ]) {
           await driver.activate(itemId);
           await Bun.sleep(TYPE_SETTLE_MS);

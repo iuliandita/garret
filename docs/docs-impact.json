@@ -26,12 +26,12 @@
     "editor": {
       "breaking": "none",
       "docs": {
-        "README.md": "c124fff0e0ddfbc28757426e5ad184c897bfff59fff6c81ea5e46c85097a8b96"
+        "README.md": "6636549b3c95d1899df47efe1cb88ffad529f544d411fab8a0f42267a5f3b431"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged.",
-      "source_sha256": "0e4f0d0a283e6d20ed949c9cf1571526fe34324d91603deeffdb00f7c1d408fc"
+      "note": "Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. The creation menu and README also cover the References back-matter page.",
+      "source_sha256": "3d60e3feb4b392ae1acaee39633f578dcfb5aefd63e89ab5bb8e0878e2619e7f"
     },
     "encryption": {
       "breaking": "none",
@@ -46,13 +46,11 @@
     },
     "maintenance": {
       "breaking": "none",
-      "docs": {
-        "CONTRIBUTING.md": "272888b63e282071b5f8c40e627910c1064d4fe6d422f5967dab9dd6fa456d11"
-      },
+      "docs": {},
       "migration": "",
-      "no_impact": "",
+      "no_impact": "Harness and test files changed only for the References menu item; contributor guidance, documentation checks and recovery contracts are unchanged.",
       "note": "Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged.",
-      "source_sha256": "f38f6d6a0678d7ffd0a4bf023ae6f9aac685727c2507728ae4188fac8b518e9b"
+      "source_sha256": "4464b17050683007801cb5b1ab39723540ad9599a393c62357d56672cce64561"
     },
     "native-packaging": {
       "breaking": "none",
@@ -67,14 +65,11 @@
     },
     "project-format": {
       "breaking": "none",
-      "docs": {
-        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
-        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
-      },
+      "docs": {},
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
-      "no_impact": "",
-      "note": "Document bounded foreign DOCX expansion and unchanged manuscript schema, and require source-bound review for project-format changes.",
-      "source_sha256": "633eb04cbb992be4f186db0ed49f4ba7929e26aa0029d3512d17e3861292a724"
+      "no_impact": "No stored-format change: a References page is an ordinary matter document at the same SQLite schema, so older builds open such books unchanged; only EPUB export gains a section semantic.",
+      "note": "Document bounded foreign DOCX expansion and unchanged manuscript schema, and require source-bound review for project-format changes. A References page adds no stored format.",
+      "source_sha256": "08b02150cb30e97307b3d0d76a223f42f541bcec15e3e8edd6d9ff35dd8e1aca"
     },
     "schema": {
       "breaking": "none",
