@@ -27,8 +27,8 @@
       "docs": {},
       "migration": "Android migration: update the previous cc.local.app to transfer-capable 0.0.3, export a complete backup copy of each book archive and separate recovery key, install com.usegarret.app alongside it, import and compare manuscripts, notes and pictures before removing the old app. Preferences need resetting; both apps stay independent. Keep exports and old books for rollback; later edits require fresh exports into a compatible build. Retain the signing key and keep increasing version codes during release preparation. Collections retain schema 17. Older Android builds refuse this preset; keep the closed database and adjacent originals for rollback.",
       "no_impact": "Preview rendering only; manuscript storage, export bytes, save scheduling and user controls are unchanged.",
-      "note": "Mount only visible EPUB documents and one neighbor each way, with a minimum of three; preserve preview reading positions across refreshes.",
-      "source_sha256": "362553e6af2646aa5f177cc415706b95590433745fd81f2cc15cb60b82df0973"
+      "note": "Mount only visible EPUB documents and one neighbor each way, with a minimum of three; preserve preview positions and fractional reader column geometry.",
+      "source_sha256": "ba14708ef6ae474f803db04ac0716d60e7b139955c2809b036d4ee0c4e43c297"
     },
     "encryption": {
       "breaking": "none",
