@@ -50,7 +50,7 @@
       "migration": "",
       "no_impact": "",
       "note": "Compatibility guidance documents Android resource limits, ordered capability refusals, retained staging and the limits of automated verification. Compatibility guidance describes automatic cleanup, explicit disposal, unavailable transfer storage, and exact SQLite probe behavior.",
-      "source_sha256": "43694b87fbe42f755de3f1292d06601534024913f2d0d2015f5a42ad21d18f15"
+      "source_sha256": "595a9d07c5fafb129cf470e24595253776dca810009c8d82be333a478673f97b"
     },
     "native-packaging": {
       "breaking": "none",
@@ -60,7 +60,7 @@
       "migration": "",
       "no_impact": "",
       "note": "The source remains version 0.0.2 with Android code 2. Release preparation raises both before an in-place update; the signing flow and application identifier remain unchanged.",
-      "source_sha256": "589b25e5dc9bd58d82ab3e4044949374b2f95fdd931aff4d18efe33de155966e"
+      "source_sha256": "40b56de5f3b83bfa6db8ea3165923f5967d170f621b8441775d17cd4d736d6e1"
     },
     "project-format": {
       "breaking": "none",

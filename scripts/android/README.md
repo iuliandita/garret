@@ -66,9 +66,10 @@ checks signature/alignment, and writes a source-bound directory under
 key is generated on first local use. CI release builds refuse missing signing
 material; build-only CI runs explicitly use a disposable key. Keep the signing key and password private and backed up;
 losing them prevents in-place updates. Do not share generated signing material.
-This source uses version code 3 and the existing `cc.local.app` identifier;
-install it over the preceding version with the same signing key. Native update
-and file-provider round trips require their own runtime checks.
+This source stays at 0.0.2/version code 2 with the existing `cc.local.app`
+identifier. Release preparation must raise both to 0.0.3/code 3 for an in-place
+update with the same signing key. Native update and file-provider round trips
+require their own runtime checks.
 
 ## Isolated runtime check
 
