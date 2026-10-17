@@ -8,5 +8,5 @@
       "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
     }
   },
-  "bundle": { "resources": null, "android": { "minSdkVersion": 24, "versionCode": 2 } }
+  "bundle": { "resources": null, "android": { "minSdkVersion": 24, "versionCode": 3 } }
 }
