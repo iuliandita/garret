@@ -56,6 +56,11 @@ chapter openers (ornament, its position, how far down the text area a chapter st
 front and back matter (including a References page, marked as a bibliography in EPUB),
 covers, and pen names before exporting.
 
+The EPUB and PDF previews sit beside your prose in a rail you can widen by
+dragging its divider or with the arrow keys; the width is remembered on that
+device. An optional e-reader or tablet frame shows an approximate paged view,
+and an optional refresh runs after you stop typing.
+
 ### Keep control of your work
 
 Books live on your own disk. Recovery copies, scene history, salvage tools,

@@ -8010,11 +8010,15 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 }
 
 #preview-rail {
+  /* The column is named so the divider can share the rail's cell. */
+  grid-column: 3;
   grid-row: 2;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  width: 420px;
+  /* 420px until the writer drags the divider; preview-rail.ts sets the
+     property, clamped to the window. The overlay rule below ignores it. */
+  width: var(--preview-rail-width, 420px);
   /* The row is `minmax(0, 1fr)` and this is the flex-column half of the same
      rule: without it the pages box below refuses to shrink past its content and
      the rail grows instead of scrolling. */
@@ -8028,6 +8032,62 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   background: var(--nav-bg);
 }
 
+/* THE DIVIDER lives in the rail's own grid cell, pinned to its left edge, so it
+   neither adds a column nor scrolls with the rail's contents. At rest it is a
+   short grip; it is the only thing a pointer or a keyboard can grab. */
+#preview-divider {
+  position: relative;
+  grid-column: 3;
+  grid-row: 2;
+  justify-self: start;
+  align-self: stretch;
+  z-index: 2;
+  width: 10px;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+#preview-divider::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 3px;
+  height: 36px;
+  margin-top: -18px;
+  border-radius: 2px;
+  background: var(--muted);
+  opacity: 0.45;
+}
+
+#preview-divider:hover::before,
+#preview-divider[data-dragging]::before,
+#preview-divider:focus-visible::before {
+  opacity: 1;
+  background: var(--fg);
+}
+
+#preview-divider:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: -2px;
+  border-radius: var(--radius-control);
+}
+
+#preview-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+}
+
+#preview-rail button#preview-frame-toggle,
+#preview-rail button#preview-auto-toggle {
+  min-height: 24px;
+  padding-inline: 8px;
+  font-size: var(--text-sm);
+}
+
 #preview-rail-head {
   display: flex;
   align-items: center;
@@ -8036,7 +8096,12 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 }
 
 @media (max-width: 900px) {
-  /* Keep the proof controls reachable when three columns cannot fit. */
+  /* Keep the proof controls reachable when three columns cannot fit. The rail
+     is an overlay here, so there is nothing to resize. */
+  #preview-divider {
+    display: none;
+  }
+
   #preview-rail {
     position: fixed;
     inset: 39px 0 34px auto;
@@ -8217,6 +8282,146 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
      under the book that scrolls to blank paper, which is what the first styled
      capture photographed. */
   overflow-x: hidden;
+}
+
+/* THE DEVICE FRAME. Cosmetic and generic: a neutral bezel around the same
+   painted bytes, never a brand. The bezel is hardware and keeps its own dark
+   neutral in both themes; the screen inside is the book's paper and follows
+   the theme like the unframed preview does. Nothing here moves, so there is
+   no reduced-motion branch. */
+#preview-frame {
+  flex: 1 1 auto;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 16px 10px;
+  border-radius: 22px;
+  background: #2b2c2e;
+  outline: 1px solid var(--border);
+  color: #c9cacc;
+}
+
+#preview-frame[data-device="tablet"] {
+  padding: 18px 18px 10px;
+  border-radius: 26px;
+  background: #1c1d1f;
+}
+
+#preview-frame[data-device="ereader"] {
+  padding-bottom: 12px;
+  border-radius: 14px;
+}
+
+#preview-screen {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg);
+  border-radius: 4px;
+}
+
+#preview-frame[data-device="tablet"] #preview-screen {
+  border-radius: 10px;
+}
+
+#preview-pages[data-framed] {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+}
+
+#preview-pages[data-framed]:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: -2px;
+}
+
+/* PAGED READING. One column is one page: the box is as tall as the screen and
+   the text runs on into further columns to the right, which the pager scrolls
+   to. The padding is the page margin and the gap is twice it, so one page is
+   exactly one clientWidth. */
+#preview-pages[data-framed]:not([data-proof]) {
+  --reader-pad: 22px;
+  padding: 20px var(--reader-pad);
+  column-count: 1;
+  column-gap: calc(2 * var(--reader-pad));
+  column-fill: auto;
+}
+
+#preview-pages[data-framed]:not([data-proof]) .epub-document + .epub-document {
+  break-before: column;
+}
+
+#preview-pages[data-framed]:not([data-proof]) img {
+  max-height: 100%;
+  break-inside: avoid;
+}
+
+#preview-pages[data-framed]:not([data-proof]) :is(h1, h2, h3) {
+  break-after: avoid;
+}
+
+/* A TABLET SHOWS ONE WHOLE LEAF. The leaf is scaled by the smaller of its
+   width and height fits and centred by a translate; the others are not
+   rendered. The selector outranks the book's scoped stylesheet. */
+#preview-pages[data-framed][data-proof] {
+  display: block;
+  background: transparent;
+}
+
+#preview-pages[data-framed][data-proof] .proof-leaf {
+  margin: 0;
+  transform: translate(var(--proof-x, 0px), var(--proof-y, 0px)) scale(var(--proof-scale, 1));
+}
+
+#preview-pages[data-framed][data-proof] .proof-leaf:not(.is-current) {
+  display: none;
+}
+
+#preview-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+#preview-page-label {
+  text-align: center;
+}
+
+#preview-rail #preview-frame #preview-pager button {
+  min-height: 24px;
+  padding-inline: 10px;
+  background: rgb(255 255 255 / 12%);
+  color: #e6e7e8;
+}
+
+#preview-rail #preview-frame #preview-pager button:hover:not(:disabled) {
+  background: rgb(255 255 255 / 22%);
+}
+
+#preview-rail #preview-frame #preview-pager button:disabled {
+  background: transparent;
+  color: #7d7e81;
+}
+
+#preview-frame[data-device="tablet"] #preview-screen {
+  background: color-mix(in srgb, var(--fg) 14%, var(--bg));
+}
+
+#preview-frame-label {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-ui);
+  text-align: center;
+  color: #a9aaad;
 }
 
 /* A document a reading system will refuse, or a stylesheet this page cannot

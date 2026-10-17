@@ -158,6 +158,10 @@
 //                         format. A whole proof is laid out by a
 //                         second web view, so this waits longer than --epub.
 //   --pdf-styled          the same, with the four options planted on.
+//   --preview-keys "<k> <k>"
+//                         press these xdotool keys in order once the rail has
+//                         rendered (Tab to a control, Return to press it,
+//                         shift+Tab then Return for the divider's half snap).
 //   --preview-scroll <n>  scroll the rail by n wheel notches before capturing.
 //                         The ONLY way to photograph what the options do: an
 //                         ornament is on a chapter and a book's chapters sit
@@ -688,6 +692,8 @@ interface Options {
   previewChapters: boolean;
   /** How far to scroll the preview before capturing, in wheel notches. */
   previewScroll: number;
+  /** Keys pressed once the rail has rendered, in order. */
+  previewKeys: string[];
   /** The same for the preferences panel's body. */
   prefsScroll: number;
   /** Plant, open the panel, and press the front cover's View full size. TWO
@@ -875,6 +881,7 @@ function parseArgs(argv: string[]): Options {
   let previewRow: string | null = null;
   let previewChapters = false;
   let previewScroll = 0;
+  let previewKeys: string[] = [];
   let prefsScroll = 0;
   let coversFull = false;
   let matterDemo = false;
@@ -1111,6 +1118,16 @@ function parseArgs(argv: string[]): Options {
         throw new Error("--preview-scroll needs a positive whole number of notches");
       }
       previewScroll = n;
+      i += 2;
+      continue;
+    }
+    if (flag === "--preview-keys") {
+      const raw = rest[i + 1];
+      const keys = (raw ?? "").split(/\s+/).filter((key) => key !== "");
+      if (keys.length === 0 || !keys.every((key) => /^[A-Za-z0-9_+]+$/.test(key))) {
+        throw new Error("--preview-keys needs xdotool key names separated by spaces");
+      }
+      previewKeys = keys;
       i += 2;
       continue;
     }
@@ -1579,6 +1596,7 @@ function parseArgs(argv: string[]): Options {
     previewRow,
     previewChapters,
     previewScroll,
+    previewKeys,
     prefsScroll,
     coversFull,
     matterDemo,
@@ -3744,6 +3762,11 @@ try {
         // rail get anything to paint. A capture taken mid-render photographs
         // an empty frame and reads as a broken feature.
         await Bun.sleep(TYPE_SETTLE_MS * (options.previewFormat === "pdf" ? 8 : 2));
+        for (const name of options.previewKeys) {
+          xdo(display, ["key", "--window", wid, name]);
+          await Bun.sleep(150);
+        }
+        if (options.previewKeys.length > 0) await Bun.sleep(TYPE_SETTLE_MS);
         if (options.previewScroll > 0) {
           // A WHEEL AND NOT A KEY. The rail takes focus itself and Page Down
           // would scroll whichever of the two scrollers has it; the pointer

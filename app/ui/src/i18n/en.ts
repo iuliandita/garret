@@ -1656,6 +1656,18 @@ export const EN = {
   "preview.save-as": "Save as\u2026",
   "preview.close": "Close",
   "preview.options": "Book appearance",
+  "preview.frame.toggle": "Device frame",
+  "preview.auto.toggle": "Auto-refresh",
+  "preview.divider.name": "Resize the preview",
+  "preview.divider.value": "{width} pixels wide",
+  "preview.divider.value-half": "{width} pixels wide, half the window",
+  "preview.frame.pager": "Pages",
+  "preview.frame.previous": "Previous",
+  "preview.frame.next": "Next",
+  "preview.frame.page": "Page {page} of {pages}",
+  "preview.frame.approximate": "Approximate preview. Every reader and tablet sets a page its own way.",
+  "preview.frame.screen-epub": "EPUB page in a generic e-reader frame",
+  "preview.frame.screen-pdf": "Proof page in a generic tablet frame",
   // ON DEMAND, and the line says why rather than leaving a writer wondering
   // whether the rail is broken. A full render is O(the manuscript) and this
   // application's keystroke path is measured and gated; a preview that

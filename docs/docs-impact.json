@@ -23,12 +23,12 @@
     "editor": {
       "breaking": "none",
       "docs": {
-        "README.md": "6714210555d7018aa09628013620e4989276bc6b4184626be07467574d4e9c6a"
+        "README.md": "1e59c360ab8f626e9fe067eb62b668b92ec781bd943c72d2a85ada0c9fef0394"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Document chapter openers (ornament, its position, chapter sink) in the book preparation summary; the preview rail gains two option groups and three ornaments. Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. The creation menu and README also cover the References back-matter page.",
-      "source_sha256": "3837b3a360d62638f685dfc5aa39f5a17b019df5b5b470aa3648f92212b80985"
+      "note": "Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. README now mentions the resizable preview rail with its optional device frame and refresh after a pause; device-local width preference only, no project format or compatibility change. Document chapter openers (ornament, its position, chapter sink) in the book preparation summary; the preview rail gains two option groups and three ornaments. Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. The creation menu and README also cover the References back-matter page.",
+      "source_sha256": "5044462eb1325cd3f7c675857b15b91f22223170694cbbd6ec678f5ddd3aeac8"
     },
     "encryption": {
       "breaking": "none",
