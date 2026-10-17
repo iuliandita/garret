@@ -302,27 +302,17 @@ fn format_gate_review_acceptance_and_return_store_nothing() {
             .unwrap();
         let snapshot = store.review_scene_snapshot(&ids[1]).unwrap();
         let expected = crate::review_docx::manifest(&snapshot).unwrap();
-        for projection in ["accepted", "rejected"] {
-            let plan = crate::review_docx::ReviewPlan {
-                expected: expected.clone(),
-                decisions: vec![],
-                new_hunks: vec![],
-                new_messages: vec![],
-                rejected_projection: if projection == "rejected" {
-                    body.clone()
-                } else {
-                    snapshot.body.clone()
-                },
-                accepted_projection: if projection == "accepted" {
-                    body.clone()
-                } else {
-                    snapshot.body.clone()
-                },
-            };
-            let before = state(&store);
-            refused(store.review_return_apply(&plan, &ReviewReturnAuthors::default()));
-            assert_eq!(state(&store), before);
-        }
+        let plan = crate::review_docx::ReviewPlan {
+            expected: expected.clone(),
+            decisions: vec![],
+            new_hunks: vec![],
+            new_messages: vec![],
+            rejected_projection: body.clone(),
+            accepted_projection: snapshot.body.clone(),
+        };
+        let before = state(&store);
+        refused(store.review_return_apply(&plan, &ReviewReturnAuthors::default()));
+        assert_eq!(state(&store), before);
         store
             .conn
             .execute(
@@ -394,6 +384,45 @@ fn format_gate_database_restore_and_newer_open_leave_files_unchanged() {
             assert_eq!(std::fs::read(&db).unwrap(), before);
             assert!(!std::path::PathBuf::from(format!("{}-wal", db.display())).exists());
         }
+    }
+}
+
+#[test]
+fn format_gate_restore_rechecks_the_staged_copy_before_publication() {
+    for newer in [false, true] {
+        let dir = tempfile::tempdir().unwrap();
+        let db = dir.path().join("point.db");
+        let (store, ids) = setup(&db);
+        store.checkpoint().unwrap();
+        drop(store);
+        let before = std::fs::read(&db).unwrap();
+        let library = dir.path().join("library");
+        let result =
+            crate::projects::restore_point_with(&db, &library, "book", 1, |source, target| {
+                crate::projects::copy_point(source, target)?;
+                let conn = rusqlite::Connection::open(target).unwrap();
+                if newer {
+                    conn.pragma_update(None, "user_version", 18).unwrap();
+                } else {
+                    conn.execute(
+                        "UPDATE doc SET body=?1 WHERE item_id=?2",
+                        rusqlite::params![new_bodies()[0], ids[1]],
+                    )
+                    .unwrap();
+                }
+                Ok(())
+            });
+        let error = result.unwrap_err();
+        assert!(
+            error.contains(if newer {
+                "schema v18"
+            } else {
+                "document format refused"
+            }),
+            "{error}"
+        );
+        assert_eq!(std::fs::read_dir(&library).unwrap().count(), 0);
+        assert_eq!(std::fs::read(&db).unwrap(), before);
     }
 }
 

@@ -2588,6 +2588,7 @@ pub(crate) fn historical_test_store(path: &Path, version: i64) -> Store {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::body;
 
     #[test]
     fn fold_for_sort_lowers_case_and_strips_latin_diacritics() {
@@ -3346,7 +3347,7 @@ mod tests {
             store
                 .flush(&[FlushEntry {
                     item_id: created.id.clone(),
-                    body: "{\"type\":\"doc\",\"content\":[]}".to_string(),
+                    body: EMPTY_DOC_BODY.to_string(),
                     base_rev: created.doc_rev.unwrap(),
                     comments: None,
                 }])
@@ -3360,7 +3361,7 @@ mod tests {
         // The prose survived, byte for byte.
         assert_eq!(
             store.load_doc(&seeded).unwrap().body,
-            "{\"type\":\"doc\",\"content\":[]}"
+            EMPTY_DOC_BODY
         );
         // And the new tables are usable, not merely present.
         assert!(store.doc_versions(&seeded).unwrap().is_empty());
@@ -3388,7 +3389,7 @@ mod tests {
                 conn: rusqlite::Connection::open(&path).unwrap(),
             };
             let created = store.item_create(None, "scene", "Chapter One").unwrap();
-            let body = "{\"type\":\"doc\",\"content\":[]}".to_string();
+            let body = EMPTY_DOC_BODY.to_string();
             let entries = [FlushEntry {
                 item_id: created.id.clone(),
                 body: body.clone(),
@@ -3444,7 +3445,7 @@ mod tests {
                 conn: rusqlite::Connection::open(&path).unwrap(),
             };
             let created = store.item_create(None, "scene", "Chapter One").unwrap();
-            let body = "{\"type\":\"doc\",\"content\":[]}".to_string();
+            let body = EMPTY_DOC_BODY.to_string();
             let entries = [FlushEntry {
                 item_id: created.id.clone(),
                 body: body.clone(),
@@ -3506,7 +3507,7 @@ mod tests {
                 conn: rusqlite::Connection::open(&path).unwrap(),
             };
             let created = store.item_create(None, "scene", "Chapter One").unwrap();
-            let body = "{\"type\":\"doc\",\"content\":[]}".to_string();
+            let body = EMPTY_DOC_BODY.to_string();
             let entries = [FlushEntry {
                 item_id: created.id.clone(),
                 body: body.clone(),
@@ -3573,7 +3574,7 @@ mod tests {
                 conn: rusqlite::Connection::open(&path).unwrap(),
             };
             let created = store.item_create(None, "scene", "Chapter One").unwrap();
-            let body = "{\"type\":\"doc\",\"content\":[]}".to_string();
+            let body = EMPTY_DOC_BODY.to_string();
             let entries = [FlushEntry {
                 item_id: created.id.clone(),
                 body: body.clone(),
@@ -3644,7 +3645,7 @@ mod tests {
                 conn: rusqlite::Connection::open(&path).unwrap(),
             };
             let created = store.item_create(None, "scene", "Chapter One").unwrap();
-            let body = "{\"type\":\"doc\",\"content\":[]}".to_string();
+            let body = EMPTY_DOC_BODY.to_string();
             let entries = [FlushEntry {
                 item_id: created.id.clone(),
                 body: body.clone(),
@@ -3734,7 +3735,7 @@ mod tests {
                 conn: rusqlite::Connection::open(&path).unwrap(),
             };
             let created = store.item_create(None, "scene", "Chapter One").unwrap();
-            let body = "{\"type\":\"doc\",\"content\":[]}".to_string();
+            let body = EMPTY_DOC_BODY.to_string();
             let entries = [FlushEntry {
                 item_id: created.id.clone(),
                 body: body.clone(),
@@ -3843,7 +3844,7 @@ mod tests {
             register_collations(&conn).unwrap();
             let store = Store { conn };
             let created = store.item_create(None, "scene", "Chapter One").unwrap();
-            let body = "{\"type\":\"doc\",\"content\":[]}".to_string();
+            let body = EMPTY_DOC_BODY.to_string();
             let entries = [FlushEntry {
                 item_id: created.id.clone(),
                 body: body.clone(),
@@ -3954,7 +3955,7 @@ mod tests {
             register_collations(&conn).unwrap();
             let store = Store { conn };
             let created = store.item_create(None, "scene", "Chapter One").unwrap();
-            let body = "{\"type\":\"doc\",\"content\":[]}".to_string();
+            let body = EMPTY_DOC_BODY.to_string();
             let entries = [FlushEntry {
                 item_id: created.id.clone(),
                 body: body.clone(),
@@ -4806,26 +4807,26 @@ mod tests {
         let acks = store
             .flush(&[FlushEntry {
                 item_id: made.id.clone(),
-                body: "typed".into(),
+                body: body("typed"),
                 base_rev,
                 comments: None,
             }])
             .unwrap();
         assert_eq!(acks[0].rev, 2);
-        assert_eq!(store.load_doc(&made.id).unwrap().body, "typed");
+        assert_eq!(store.load_doc(&made.id).unwrap().body, body("typed"));
 
         // The negative half: without doc_rev a caller would send 0, and that is
         // the conflict the field prevents.
         match store.flush(&[FlushEntry {
             item_id: made.id.clone(),
-            body: "blind".into(),
+            body: body("blind"),
             base_rev: 0,
             comments: None,
         }]) {
             Err(StoreError::Conflict { item_id }) => assert_eq!(item_id, made.id),
             other => panic!("expected Conflict on a base_rev 0 blind write, got {other:?}"),
         }
-        assert_eq!(store.load_doc(&made.id).unwrap().body, "typed");
+        assert_eq!(store.load_doc(&made.id).unwrap().body, body("typed"));
     }
 
     #[test]
@@ -5446,7 +5447,7 @@ mod tests {
             let acks = store
                 .flush(&[FlushEntry {
                     item_id: "i1".into(),
-                    body: "{\"type\":\"doc\",\"v\":2}".into(),
+                    body: body("version two"),
                     base_rev: 1,
                     comments: None,
                 }])
@@ -5456,7 +5457,7 @@ mod tests {
         // Reopened: proves it reached the file, not just the cache.
         let store = Store::open(&path).unwrap();
         let doc = store.load_doc("i1").unwrap();
-        assert_eq!(doc.body, "{\"type\":\"doc\",\"v\":2}");
+        assert_eq!(doc.body, body("version two"));
         assert_eq!(doc.rev, 2);
     }
 
@@ -5476,13 +5477,13 @@ mod tests {
         let err = store.flush(&[
             FlushEntry {
                 item_id: "i2".into(),
-                body: "new2".into(),
+                body: body("new2"),
                 base_rev: 1,
                 comments: None,
             },
             FlushEntry {
                 item_id: "i1".into(),
-                body: "new1".into(),
+                body: body("new1"),
                 base_rev: 99,
                 comments: None,
             },
@@ -5502,13 +5503,13 @@ mod tests {
         let acks = store
             .flush(&[FlushEntry {
                 item_id: "i2".into(),
-                body: "after-conflict".into(),
+                body: body("after-conflict"),
                 base_rev: 1,
                 comments: None,
             }])
             .unwrap();
         assert_eq!(acks[0].rev, 2);
-        assert_eq!(store.load_doc("i2").unwrap().body, "after-conflict");
+        assert_eq!(store.load_doc("i2").unwrap().body, body("after-conflict"));
     }
 
     #[test]
@@ -5519,13 +5520,13 @@ mod tests {
         let acks = store
             .flush(&[FlushEntry {
                 item_id: "i2".into(),
-                body: "fresh".into(),
+                body: body("fresh"),
                 base_rev: 0,
                 comments: None,
             }])
             .unwrap();
         assert_eq!(acks[0].rev, 1);
-        assert_eq!(store.load_doc("i2").unwrap().body, "fresh");
+        assert_eq!(store.load_doc("i2").unwrap().body, body("fresh"));
     }
 
     #[test]
@@ -5538,7 +5539,7 @@ mod tests {
             let acks = store
                 .flush(&[FlushEntry {
                     item_id: "i1".into(),
-                    body: format!("body-{n}"),
+                    body: body(&format!("body-{n}")),
                     base_rev,
                     comments: None,
                 }])
@@ -5566,7 +5567,7 @@ mod tests {
         let acks = store
             .flush(&[FlushEntry {
                 item_id: "i1".into(),
-                body: "x".into(),
+                body: body("x"),
                 base_rev: 1,
                 comments: None,
             }])
@@ -5586,13 +5587,13 @@ mod tests {
         let err = store.flush(&[
             FlushEntry {
                 item_id: "i1".into(),
-                body: "first".into(),
+                body: body("first"),
                 base_rev: 1,
                 comments: None,
             },
             FlushEntry {
                 item_id: "i1".into(),
-                body: "second".into(),
+                body: body("second"),
                 base_rev: 1,
                 comments: None,
             },
@@ -5612,7 +5613,7 @@ mod tests {
         seed_two(&store);
         match store.flush(&[FlushEntry {
             item_id: "ghost".into(),
-            body: "x".into(),
+            body: body("x"),
             base_rev: 0,
             comments: None,
         }]) {
@@ -5623,7 +5624,7 @@ mod tests {
         store
             .flush(&[FlushEntry {
                 item_id: "i2".into(),
-                body: "ok".into(),
+                body: body("ok"),
                 base_rev: 0,
                 comments: None,
             }])
@@ -6152,7 +6153,7 @@ mod tests {
         store
             .flush(&[FlushEntry {
                 item_id: a.id.clone(),
-                body: "AAA".to_string(),
+                body: body("AAA"),
                 base_rev: a.doc_rev.unwrap(),
                 comments: None,
             }])
@@ -6160,7 +6161,7 @@ mod tests {
 
         let docs = store.documents().unwrap();
 
-        assert_eq!(docs.get(&a.id).map(String::as_str), Some("AAA"));
+        assert_eq!(docs.get(&a.id).map(String::as_str), Some(body("AAA").as_str()));
         assert_eq!(docs.get(&b.id).map(String::as_str), Some(EMPTY_DOC_BODY));
     }
 
@@ -6185,7 +6186,7 @@ mod tests {
             store
                 .flush(&[FlushEntry {
                     item_id: a.id.clone(),
-                    body: "AAA".to_string(),
+                    body: body("AAA"),
                     base_rev: a.doc_rev.unwrap(),
                     comments: None,
                 }])
@@ -6196,7 +6197,7 @@ mod tests {
         let store = Store::open_readonly(&path).unwrap();
         let docs = store.documents().unwrap();
 
-        assert_eq!(docs.get(&id).map(String::as_str), Some("AAA"));
+        assert_eq!(docs.get(&id).map(String::as_str), Some(body("AAA").as_str()));
     }
 
     /// The design's mechanism, against THIS crate's bundled SQLite rather than

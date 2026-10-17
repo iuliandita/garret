@@ -691,13 +691,14 @@ impl Store {
             let mut body = old_body.clone();
             if decision == ReviewDecision::Accept {
                 self.validate_body_write(&item_id, &old_body)?;
-                let mut bodies = Vec::with_capacity(selected.len());
+                let mut candidate = body.clone();
                 for (_, hunk) in &selected {
-                    body = review_document::apply_hunk(&body, hunk).map_err(StoreError::InvalidReview)?;
-                    self.validate_body_write(&item_id, &body)?;
-                    bodies.push(body.clone());
+                    candidate = review_document::apply_hunk(&candidate, hunk)
+                        .map_err(StoreError::InvalidReview)?;
+                    self.validate_body_write(&item_id, &candidate)?;
                 }
-                for ((id, hunk), next) in selected.iter().zip(bodies) {
+                for (id, hunk) in &selected {
+                    let next = review_document::apply_hunk(&body, hunk).map_err(StoreError::InvalidReview)?;
                     self.conn.execute(
                         "UPDATE review_hunk SET state = 'accepted', decided_at = ?2,
                          decision_author_id = ?3, decision_author_name = ?4 WHERE id = ?1",
@@ -776,9 +777,11 @@ impl Store {
         plan: &ReviewPlan,
         authors: &ReviewReturnAuthors,
     ) -> Result<ReviewReturnResult> {
-        self.validate_body_write(&plan.expected.item_id, &self.load_doc(&plan.expected.item_id)?.body)?;
+        self.validate_body_write(
+            &plan.expected.item_id,
+            &self.load_doc(&plan.expected.item_id)?.body,
+        )?;
         self.validate_body_write(&plan.expected.item_id, &plan.rejected_projection)?;
-        self.validate_body_write(&plan.expected.item_id, &plan.accepted_projection)?;
         let now = now_ms();
         self.conn.execute_batch("BEGIN IMMEDIATE")?;
         let result = (|| -> Result<ReviewReturnResult> {
@@ -860,6 +863,22 @@ impl Store {
                     return Err(invalid("invalid returned review message or target"));
                 }
             }
+            let skip: HashSet<i64> = decisions.keys().copied().collect();
+            let mut accepted: Vec<(i64, i64, ReviewHunk)> = decisions
+                .iter()
+                .filter(|(_, accept)| **accept)
+                .map(|(id, _)| {
+                    let (group_id, hunk) = &pending[id];
+                    (*id, *group_id, hunk.clone())
+                })
+                .collect();
+            accepted.sort_by(|a, b| (b.2.from, b.2.to, b.0).cmp(&(a.2.from, a.2.to, a.0)));
+            let mut candidate = snapshot.body.clone();
+            for (_, _, hunk) in &accepted {
+                candidate = review_document::apply_hunk(&candidate, hunk)
+                        .map_err(StoreError::InvalidReview)?;
+                self.validate_body_write(&plan.expected.item_id, &candidate)?;
+            }
             let mut created_by_name = BTreeMap::new();
             let mut created_authors = Vec::new();
             let mut mapped_authors = BTreeMap::new();
@@ -886,16 +905,6 @@ impl Store {
                     )
                 })
                 .transpose()?;
-            let skip: HashSet<i64> = decisions.keys().copied().collect();
-            let mut accepted: Vec<(i64, i64, ReviewHunk)> = decisions
-                .iter()
-                .filter(|(_, accept)| **accept)
-                .map(|(id, _)| {
-                    let (group_id, hunk) = &pending[id];
-                    (*id, *group_id, hunk.clone())
-                })
-                .collect();
-            accepted.sort_by(|a, b| (b.2.from, b.2.to, b.0).cmp(&(a.2.from, a.2.to, a.0)));
             let old_body = snapshot.body;
             let mut body = old_body.clone();
             let mut decided_groups = HashSet::new();
@@ -2068,20 +2077,26 @@ mod tests {
     }
 
     #[test]
-    fn unsupported_flush_keeps_the_save_and_conflicts_the_proposal() {
+    fn unsupported_flush_refuses_without_changing_prose_or_proposals() {
         let (_dir, store, id, rev, author) = setup("abc");
         let group = store
             .review_group_create(&id, rev, author, &[replace(2, "b", "B")])
             .unwrap();
-        write(&store, &id, rev, "not supported document JSON");
-        assert_eq!(
-            store.load_doc(&id).unwrap().body,
-            "not supported document JSON"
-        );
-        assert_eq!(
-            store.review_group(group.id).unwrap().hunks[0].state,
-            "conflicted"
-        );
+        assert!(matches!(
+            store.flush(&[FlushEntry {
+                item_id: id.clone(),
+                body: "not supported document JSON".into(),
+                base_rev: rev,
+                comments: None,
+            }]),
+            Err(StoreError::InvalidDocument(_))
+        ));
+        let saved = store.load_doc(&id).unwrap();
+        assert_eq!(saved.body, doc("abc"));
+        assert_eq!(saved.rev, rev);
+        let unchanged = store.review_group(group.id).unwrap();
+        assert_eq!(unchanged.rev, group.rev);
+        assert_eq!(unchanged.hunks[0].state, "pending");
     }
 
     #[test]

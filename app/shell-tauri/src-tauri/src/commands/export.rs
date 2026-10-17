@@ -1410,14 +1410,11 @@ mod tests {
             // An unreadable body: the scan reports it as skipped rather than
             // counted, and the export must undercount identically.
             let bad = store.item_create(None, "scene", "Bad").unwrap();
-            store
-                .flush(&[FlushEntry {
-                    item_id: bad.id.clone(),
-                    body: "{not json at all".to_string(),
-                    base_rev: bad.doc_rev.unwrap(),
-                    comments: None,
-                }])
-                .unwrap();
+            let conn = rusqlite::Connection::open(&db).unwrap();
+            conn.execute(
+                "UPDATE doc SET body = '{not json at all' WHERE item_id = ?1",
+                [&bad.id],
+            ).unwrap();
         }
         let scanned = word_count_at(&db).unwrap();
         assert_eq!(

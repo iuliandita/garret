@@ -2909,7 +2909,7 @@ mod tests {
                 super::create_imported_with(
                     dir.path(),
                     "Book",
-                    &[(None, "scene", "Imported scene", Some("Imported prose"))],
+                    &[(None, "scene", "Imported scene", Some(crate::test_support::body("Imported prose").as_str()))],
                     &english(),
                     arrive,
                 )
@@ -3048,7 +3048,7 @@ mod tests {
                     super::create_imported_with(
                         dir.path(),
                         "Book",
-                        &[(None, "scene", "Imported", Some("Prose"))],
+                        &[(None, "scene", "Imported", Some(crate::test_support::body("Prose").as_str()))],
                         &english(),
                         arrive,
                     )
@@ -3148,6 +3148,7 @@ mod tests {
         // becoming "create plus a fill": a manuscript that arrived with its own
         // scenes must not carry an empty one nobody wrote.
         let dir = tempdir().expect("a temp dir");
+        let prose = crate::test_support::body("Prose.");
         let rows = vec![
             (None, "part", "Part One", None),
             (Some(0usize), "chapter", "Chapter One", None),
@@ -3155,7 +3156,7 @@ mod tests {
                 Some(1usize),
                 "scene",
                 "A scene the writer wrote",
-                Some("Prose."),
+                Some(prose.as_str()),
             ),
         ];
         let summary = create_imported(dir.path(), "Real Manuscript", &rows).expect("the import");
