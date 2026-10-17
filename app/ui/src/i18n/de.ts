@@ -29,6 +29,16 @@
 // Bibel, Pseudonym, Fokusmodus, Schreibmaschinenmodus.
 
 export const DE = {
+  "preset.label": "Projekttyp",
+  "preset.novel": "Roman",
+  "preset.short": "Kurze Prosa",
+  "preset.nonfiction": "Sachbuch",
+  "preset.reference-notes": "Referenznotizen",
+  "preset.add-reference": "Zu den Referenznotizen hinzufügen",
+  "preset.add-reference-to": "Zu {name} hinzufügen",
+  "preset.new-reference-document": "Neues Referenzdokument",
+  "preset.new-reference-folder": "Neuer Referenzordner",
+  "preset.reference-creation-failed": "Der Abschnitt Referenznotizen konnte nicht angelegt werden, es wurde also kein Dokument hinzugefügt.",
   "creation.destination-changed": "Das Ziel hat sich geändert. Öffnen Sie die Auswahl erneut, bevor Sie einen Eintrag hinzufügen.",
   "creation.plus": "+",
   "prefs.sidebar-word-counts": "Wortzahlen in der Seitenleiste",

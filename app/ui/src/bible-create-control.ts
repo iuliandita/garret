@@ -1,15 +1,17 @@
+import type { ProjectPreset } from "./project-preset";
 import { t } from "./i18n";
 import { createTooltip } from "./tooltip";
 
 /** The control follows the real Bible row but stays outside the virtual tree. */
-export function createBibleCreateControl(nav: HTMLElement, open: () => void): { destroy(): void } {
+export function createBibleCreateControl(nav: HTMLElement, open: () => void, preset: ProjectPreset = "novel"): { destroy(): void } {
+  const label = preset === "nonfiction" ? t("preset.add-reference") : t("creation.bible.open");
   const button = document.createElement("button");
   button.id = "bible-create";
   button.type = "button";
   button.textContent = t("creation.plus");
-  button.setAttribute("aria-label", t("creation.bible.open"));
+  button.setAttribute("aria-label", label);
   button.addEventListener("click", open);
-  const tip = createTooltip({ control: button, name: t("creation.bible.open"), hint: null });
+  const tip = createTooltip({ control: button, name: label, hint: null });
   tip.anchor.classList.add("bible-create-anchor");
   tip.anchor.hidden = true;
   (nav.parentElement ?? document.body).append(tip.anchor);

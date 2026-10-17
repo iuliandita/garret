@@ -84,6 +84,16 @@ upgrade, and rollback. A sensitive change cannot use the no-impact path.
 Describe what a writer must preserve and what rollback loses or restores.
 State the actual isolated validation performed and any untested platform.
 
+Project presets use the optional `project.preset` metadata key at SQLite schema
+17, with no schema migration or preset conversion for rollback. Missing and
+unknown stored values use novel defaults; preserve unknown values verbatim.
+Backup snapshots, encrypted archive restores, portable copies, and salvage must
+carry this metadata with the rest of the book. Keep the complete closed-book
+and profile backup and separate-copy rollback instructions in the
+[compatibility guide](COMPATIBILITY.md) when reviewing later changes. A preset
+assessment supplements the migration, backup, and rollback assessment for the
+full checked range; it does not replace it.
+
 Before release, run `sh scripts/check-docs --release` and review the complete
 range. A later query-only or version-only commit cannot erase an earlier
 migration obligation. The initial `--init --note` baseline records the existing

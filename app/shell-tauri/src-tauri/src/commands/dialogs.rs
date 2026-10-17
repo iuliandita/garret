@@ -572,13 +572,15 @@ pub(crate) async fn project_create_pick(
     data_home: State<'_, DataHome>,
     strings: State<'_, HostStrings>,
     name: String,
+    preset: Option<String>,
 ) -> std::result::Result<Option<projects::ProjectSummary>, String> {
+    projects::validate_preset(preset.as_deref())?;
     let start = new_book_dir(&data_home.0)?;
     fs::create_dir_all(&start).map_err(|e| format!("{}: {e}", start.display()))?;
     let Some(dir) = ask_for_book_folder(&app, &start).await else {
         return Ok(None);
     };
-    create_into_dir(&data_home.0, &dir, &name, &strings.0).map(Some)
+    create_into_dir(&data_home.0, &dir, &name, &strings.0, preset.as_deref()).map(Some)
 }
 
 /// Move the OPEN book into a folder the writer picks, through the operating

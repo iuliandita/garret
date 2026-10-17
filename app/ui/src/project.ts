@@ -1,3 +1,4 @@
+import { projectPreset, referenceTitle, type ProjectPreset } from "./project-preset";
 // app/ui/src/project.ts
 // Page assembly for one open project: source, navigator, editor, failure
 // surface, flush scheduler, session and opener. Extracted from main.ts because
@@ -195,6 +196,7 @@ export interface MountDeps {
 }
 
 export interface MountedProject {
+  preset?: ProjectPreset;
   navigator: ManuscriptNavigator;
   editor: Editor;
   session: Session | null;
@@ -343,8 +345,9 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   const { mode, persistMode, projectPath, invoke } = deps;
 
   if (invoke === undefined) throw new Error("APP_PROJECT is set but the Tauri bridge is absent");
+  const preset = projectPreset(await invoke("project_preset"));
   const store = await loadStoreSource(invoke, deps.seed);
-  const source: FixtureSource = storeSourceFrom(readingOrderItems(store.items), deps.seed);
+  const source: FixtureSource = storeSourceFrom(readingOrderItems(store.items), deps.seed, preset);
   // The boot-time walk, kept for the mutation phase.
   const storeItems: ProjectItem[] = store.items;
   // idAt(0) is the first row of a depth-first walk, which is a part. Only
@@ -1232,6 +1235,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       else if (timelineMount !== null) timelineMount.focus();
       else editor.focus();
     },
+    referenceTitle: preset === "nonfiction" ? () => referenceTitle(preset, latestItems.find((item) => item.parent_id === null && item.type === BIBLE_TYPE)?.title) : undefined,
     bible: () => {
       const selected = selectedId();
       const root = latestItems.find((item) => item.parent_id === null && item.type === BIBLE_TYPE);
@@ -1239,14 +1243,14 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         item.id === bibleParentFor(latestItems, selected, root.id));
       const anchor = parent?.id ?? null;
       return {
-        destination: parent?.title ?? t("outline.bible-title"),
+        destination: parent?.type === "bible" || !parent ? referenceTitle(preset, root?.title) : parent.title,
         entry: () => { void outline?.createNote(anchor).catch(() => undefined); },
         folder: () => { void outline?.createBibleFolder(anchor).catch(() => undefined); },
         timeline: () => { void outline?.createTimeline(anchor).catch(() => undefined); },
       };
     },
   });
-  const bibleCreate = createBibleCreateControl(navEl, () => creationChooser.open(true));
+  const bibleCreate = createBibleCreateControl(navEl, () => creationChooser.open(true), preset);
   /** What the Outline menu's one context item is currently OFFERING.
    *
    *  Held rather than re-derived when the item runs, so the action taken is the
@@ -1258,6 +1262,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   const sectionMovePrompt = createSectionMovePrompt(document.body);
   {
     const unit = createOutline({
+      preset,
       generation: deps.generation,
       canMutate: () => !projectDestroyed && !projectLeaving && !historyOperationInFlight && !deps.privacyLocked?.(),
       invoke,
@@ -1282,7 +1287,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         if (openId !== undefined && !liveItemsIn(items).some((item) => item.id === openId)) {
           sceneNotes?.clear();
         }
-        navigator.reload(storeSourceFrom(readingOrderItems(items), deps.seed));
+        navigator.reload(storeSourceFrom(readingOrderItems(items), deps.seed, preset));
         outlineView?.setItems(items);
         // The ONE place the header follows a rename. Every route to one - the
         // rename panel from the menu or the row's context menu - ends in the
@@ -2966,6 +2971,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   if (outline !== null) {
     const unit = outline;
     navContextMenu = createNavContextMenu({
+      preset,
       // The BODY, not #nav: the panel is positioned at the pointer in viewport
       // coordinates and a row near the foot of the pane opens a menu that has to
       // be allowed to stand outside the navigator's scroll box.
@@ -3027,6 +3033,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   }
 
   const mounted: MountedProject = {
+    preset,
     navigator,
     editor,
     session,

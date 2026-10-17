@@ -252,15 +252,17 @@ fn wrap_marks(text: &str, node: &serde_json::Value) -> String {
 /// The documents of the reading order, in it, out of a read-back archive.
 ///
 /// THE PREVIEW'S OWN RULE, and it is a prefix test rather than a parse of the
-/// package document. Every spine document lives under `OEBPS/text/` and nothing
-/// else does, so archive order IS spine order by construction -- and the
-/// preview is then the file, read back, with no second statement of what the
-/// book opens to.
+/// package document. Archive order is spine order, except that a single-scene
+/// book keeps its required navigation document outside the spine.
 pub fn reading_order(entries: &[(String, Vec<u8>)]) -> Vec<(String, String)> {
     let prefix = format!("{OEBPS}/{TEXT_DIR}/");
+    let nav = format!("{OEBPS}/{NAV_HREF}");
+    let nav_in_spine = entries.iter().find(|(name, _)| name == OPF_PATH)
+        .is_some_and(|(_, bytes)| String::from_utf8_lossy(bytes).contains("<itemref idref=\"nav\"/>"));
     entries
         .iter()
-        .filter(|(name, _)| name.starts_with(&prefix) && name.ends_with(".xhtml"))
+        .filter(|(name, _)| name.starts_with(&prefix) && name.ends_with(".xhtml")
+            && (name != &nav || nav_in_spine))
         .map(|(name, bytes)| (name.clone(), String::from_utf8_lossy(bytes).into_owned()))
         .collect()
 }
@@ -317,7 +319,7 @@ fn stylesheet(font: &str, style: &ChapterStyle) -> String {
          h1, h2, h3, h4, h5, h6 {{ font-weight: normal; text-align: center; \
          margin: 2em 0 1em; page-break-after: avoid; break-after: avoid; }}\n\
          p {{ margin: 0; text-indent: 1.2em; text-align: justify; }}\n\
-         h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p, .{ORNAMENT_CLASS} + p \
+         p.{OPENING_CLASS}, h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p, .{ORNAMENT_CLASS} + p \
          {{ text-indent: 0; }}\n\
          .{ORNAMENT_CLASS} {{ text-align: center; text-indent: 0; margin: 1.5em 0; }}\n\
          .{UNDERLINE_CLASS} {{ text-decoration: underline; }}\n\
@@ -412,12 +414,13 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
             anchor += 1;
             let level = crate::export::heading_level(*depth);
             let opens = *depth <= 0 || docs.is_empty();
-            let styled = run_index == 1 && epub.openings.styled.contains(id);
-            let page = run_index == 1 && epub.openings.page.contains(id);
+            let scaffold_free = epub.book.suppresses_heading(run_index, title);
+            let styled = !scaffold_free && run_index == 1 && epub.openings.styled.contains(id);
+            let page = !scaffold_free && run_index == 1 && epub.openings.page.contains(id);
             if opens {
                 docs.push(Doc {
                     href: format!("{:04}.xhtml", docs.len() + 1),
-                    title: title.clone(),
+                    title: if scaffold_free { epub.book.name.to_string() } else { title.clone() },
                     epub_type,
                     section_type: if run_index == 2 && is_references_title(title) {
                         BIBLIOGRAPHY_TYPE
@@ -427,7 +430,9 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
                     body: String::new(),
                 });
             }
-            if opens || styled || page { opening_pending = styled; }
+            if epub.book.single_scene && run_index == 1 {
+                opening_pending = run.last().is_some_and(|(last, _, _)| last == id);
+            } else if opens || styled || page { opening_pending = styled; }
             let doc = docs.last_mut().expect("a document was opened above");
             let fragment = format!("h{anchor}");
             targets.insert(id.clone(), format!("{}#{fragment}", doc.href));
@@ -467,11 +472,13 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
             } else {
                 heading_classes.splice(0..0, lead);
             }
-            doc.body.push_str(&format!(
-                "<h{level} id=\"{fragment}\"{}>{}</h{level}>\n",
-                class_attr(&heading_classes),
-                xml_escape(title)
-            ));
+            if !scaffold_free {
+                doc.body.push_str(&format!(
+                    "<h{level} id=\"{fragment}\"{}>{}</h{level}>\n",
+                    class_attr(&heading_classes),
+                    xml_escape(title)
+                ));
+            }
             if !above {
                 if let Some(ornament) = ornament_here {
                     doc.body.push_str(&format!(
@@ -585,9 +592,10 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
     // thing that book has. It also keeps 041's rule that a heading over nothing
     // is a section nobody asked for: there is never a heading here over an
     // empty list.
+    let nav_heading = if epub.book.single_scene { String::new() }
+        else { format!("<h1>{}</h1>\n", xml_escape(epub.book.contents_title)) };
     let mut nav = format!(
-        "<nav epub:type=\"toc\" id=\"toc\"><h1>{}</h1>\n<ol>\n<li><a href=\"{TITLE_HREF}\">{}</a>",
-        xml_escape(epub.book.contents_title),
+        "<nav epub:type=\"toc\" id=\"toc\">{nav_heading}<ol>\n<li><a href=\"{TITLE_HREF}\">{}</a>",
         xml_escape(epub.book.name),
     );
     // THE NESTING, and it is the one piece of this file with a state machine in
@@ -630,10 +638,10 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
         "<item id=\"nav\" href=\"{NAV_HREF}\" media-type=\"application/xhtml+xml\" \
          properties=\"nav\"/>"
     ));
-    spine.push_str("<itemref idref=\"nav\"/>");
+    if !epub.book.single_scene { spine.push_str("<itemref idref=\"nav\"/>"); }
     later.push(Entry::text(
         &format!("{OEBPS}/{NAV_HREF}"),
-        &xhtml_of(epub, epub.book.contents_title, "frontmatter", &nav),
+        &xhtml_of(epub, if epub.book.single_scene { epub.book.name } else { epub.book.contents_title }, "frontmatter", &nav),
     ));
 
     for (n, doc) in docs.iter().enumerate() {
@@ -968,6 +976,7 @@ mod tests {
 
     fn plain<'a>(name: &'a str, runs: &'a [(String, String, i64)]) -> Book<'a> {
         Book {
+            single_scene: false,
             name,
             contents_title: "Contents",
             front: &[],
@@ -1129,6 +1138,7 @@ mod tests {
         let rows = chapters(&[("a", "One", 0), ("c", "A scene", 1)]);
         let front = chapters(&[("d", "Dedication", 0)]);
         let book = Book {
+            single_scene: false,
             name: "My Novel",
             contents_title: "Contents",
             front: &front,
@@ -1629,6 +1639,7 @@ mod tests {
         let body = chapters(&[("a", "One", 0)]);
         let back = chapters(&[("z", "Afterword", 0)]);
         let book = Book {
+            single_scene: false,
             name: "N",
             contents_title: "Contents",
             front: &front,
@@ -2019,6 +2030,7 @@ mod tests {
         // `identity_metadata` fails HERE, which is the only thing that stops the
         // check becoming a list of promises.
         let book = Book {
+            single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
             front: &[],
@@ -2055,6 +2067,7 @@ mod tests {
         // exactly what it was before this slice, or the graded EPUB evidence is
         // about a file nobody had.
         let book = Book {
+            single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
             front: &[],
@@ -2072,6 +2085,7 @@ mod tests {
     fn a_name_with_markup_in_it_is_escaped_into_the_package_document() {
         // A pen name is the writer's own text and the package document is XML.
         let book = Book {
+            single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
             front: &[],
@@ -2106,6 +2120,7 @@ mod tests {
             front: &[],
             chapters: &body,
             back: &back,
+            single_scene: false,
         };
         let mut texts = bodies(&[]);
         texts.insert("r".to_string(), references_body());

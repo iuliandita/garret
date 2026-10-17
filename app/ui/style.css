@@ -1512,6 +1512,7 @@ body {
 #find-query:focus-visible,
 #comments-compose:focus-visible,
 #project-new-name:focus-visible,
+#project-new-preset:focus-visible,
 #project-name-field:focus-visible,
 #prefs-goal-custom:focus-visible,
 #prefs-dict-word:focus-visible,
@@ -2849,6 +2850,8 @@ body.nav-hidden #nav-column {
    shared one; this adds the drawn arrow the native paint cannot. */
 #prefs-language,
 #prefs-start,
+#project-new-preset,
+#library-new-book-preset,
 #design-page-select,
 #proof-page-select,
 #cast-panel select,
@@ -9227,13 +9230,15 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 #history-panel .field-with-label > #snapshot-name { width: 100%; margin: 0; }
 #project-panel .field-with-label { display: flex; width: 204px; }
 #project-panel .field-with-label > input { width: 100%; min-width: 0; }
+#project-panel .field-with-label > select { width: 100%; min-width: 0; }
 #find-panel label[for="find-query"],
 #find-panel label[for="find-replace"] { display: block; margin: 8px 0 4px; }
 #library #library-new-book-tile .field-with-label { width: min(320px, 100%); margin: 0; }
 #library #library-new-book-name { width: 100%; color: var(--fg); }
+#library #library-new-book-preset { width: 100%; min-height: 44px; }
 #library #library-new-book-name::placeholder { color: var(--muted); }
 #library div#library-new-book-tile { align-items: flex-end; }
-#library div#library-new-book-tile > button { margin-bottom: 7px; }
+#library div#library-new-book-tile > button { min-height: 44px; margin-bottom: 0; }
 #snapshot-confirmation {
   position: absolute;
   width: 1px;
