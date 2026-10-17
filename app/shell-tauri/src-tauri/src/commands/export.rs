@@ -286,6 +286,7 @@ fn render_scope_with(
         openings,
         single_scene,
         mut publication,
+        note_scopes,
     } = walk_scope(&store, story_id)?;
     // ONE list for every question that is about the file as a whole -- the word
     // count below and the reported item count. A dedication is prose in the
@@ -427,7 +428,11 @@ fn render_scope_with(
                     media_type: f.mime(),
                     extension: f.extension(),
                 });
+            let plan = crate::publication_plan::Plan::from_store(&book, &bodies, note_scopes, &store, path)?;
+            let notes_title = strings.t("book.notes");
             crate::epub::manuscript(&crate::epub::Epub {
+                plan: Some(&plan),
+                notes_title: &notes_title,
                 book: &book,
                 language: strings.tag(),
                 bodies: &bodies,
@@ -474,6 +479,7 @@ struct Walked {
     back: Vec<(String, String, i64)>,
     bodies: std::collections::HashMap<String, String>,
     openings: crate::export::ChapterOpenings,
+    note_scopes: crate::publication_plan::Scopes,
 }
 
 fn walk_of(store: &store::Store) -> std::result::Result<Walked, String> {
@@ -483,6 +489,8 @@ fn walk_of(store: &store::Store) -> std::result::Result<Walked, String> {
 fn walk_scope(store: &store::Store, story_id: Option<&str>) -> std::result::Result<Walked, String> {
     let mut walk = store::book_walk(store.items().map_err(|e| e.to_string())?);
     let collection = store.project_preset().map_err(|e| e.to_string())? == "collection";
+    let numbering = store.get_meta("notes.numbering").map_err(|e| e.to_string())?;
+    let note_scopes = crate::publication_plan::Scopes::of(&walk, crate::publication_plan::Numbering::parse(numbering.as_deref(), collection)?, collection);
     let mut publication = crate::export::Publication::default();
     if let Some(id) = story_id {
         crate::collection::story(store, id)?;
@@ -526,6 +534,7 @@ fn walk_scope(store: &store::Store, story_id: Option<&str>) -> std::result::Resu
     }
     Ok(Walked {
         publication,
+        note_scopes,
         single_scene,
         front: tuples(walk.front),
         chapters,
@@ -564,6 +573,7 @@ pub(crate) fn preflight_of_store(
         back,
         bodies,
         openings: _,
+        note_scopes: _,
         single_scene,
         publication,
     } = walk_of(&store)?;
@@ -3430,3 +3440,11 @@ mod project_presets_tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "export/format_golden.rs"]
+mod format_golden;
+
+#[cfg(test)]
+#[path = "export/publication_tests.rs"]
+mod publication_tests;

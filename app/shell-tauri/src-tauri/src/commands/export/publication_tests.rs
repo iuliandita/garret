@@ -1,0 +1,446 @@
+use super::*;
+use crate::publication_plan::{Asset, Plan};
+use serde_json::json;
+use std::collections::HashMap;
+
+struct Fixture {
+    root: tempfile::TempDir,
+    db: PathBuf,
+    store: store::Store,
+    stories: Vec<String>,
+    scenes: Vec<String>,
+    assets: Vec<store::figure_assets::FigureAsset>,
+}
+
+fn fixture() -> Fixture {
+    let root = tempfile::tempdir().unwrap();
+    let db = root.path().join("book.db");
+    let store = store::Store::open(&db).unwrap();
+    store.set_meta("project.preset", "collection").unwrap();
+    store::figure_assets::test_support::install(&store);
+    let mut stories = Vec::new();
+    let mut scenes = Vec::new();
+    let mut assets = Vec::new();
+    let source = root.path().join("picked.png");
+    std::fs::write(&source, crate::figures::tests::PNG).unwrap();
+    for index in 0..2 {
+        if index == 1 {
+            std::fs::write(&source, include_bytes!("../../../fixtures/two-halves.jpg")).unwrap();
+        }
+        let story = store
+            .item_create(None, "chapter", &format!("Story {index}"))
+            .unwrap();
+        let chapter = store
+            .item_create(Some(&story.id), "chapter", "Section")
+            .unwrap();
+        let scene = store
+            .item_create(Some(&chapter.id), "scene", "Scene")
+            .unwrap();
+        let asset = crate::figures::test_support::import(&db, &store, &source);
+        let body = json!({"type":"doc","content":[
+            {"type":"paragraph","content":[{"type":"text","text":"A literal [^1] & 😀"},
+                {"type":"endnote","attrs":{"id":"0199ed16-8c00-7000-8000-000000000001","fmt":"text","body":format!("note {index}\nsecond <line>")}},
+                {"type":"endnote","attrs":{"id":"0199ed16-8c00-7000-8000-000000000003","fmt":"text","body":format!("additional {index}")}}]},
+            {"type":"figure","attrs":{"id":"0199ed16-8c00-7000-8000-000000000002","asset_id":asset.id,"width":if index == 0 {"page"} else {"half"},"caption":format!("caption {index} & <text>"),"alt":"A \"quoted\" <view> & sky"}},
+            {"type":"scene_break"}
+        ]}).to_string();
+        let conn = rusqlite::Connection::open(&db).unwrap();
+        conn.execute(
+            "UPDATE doc SET body=?1 WHERE item_id=?2",
+            rusqlite::params![body, scene.id],
+        )
+        .unwrap();
+        stories.push(story.id);
+        scenes.push(scene.id);
+        assets.push(asset);
+    }
+    Fixture {
+        root,
+        db,
+        store,
+        stories,
+        scenes,
+        assets,
+    }
+}
+
+fn with_plan<T>(
+    fixture: &Fixture,
+    story: Option<&str>,
+    f: impl FnOnce(&crate::export::Book, &Walked, &Plan) -> T,
+) -> T {
+    let walk = walk_scope(&fixture.store, story).unwrap();
+    let book = crate::export::Book {
+        publication: None,
+        single_scene: walk.single_scene,
+        name: "Collected",
+        contents_title: "Contents",
+        front: &walk.front,
+        chapters: &walk.chapters,
+        back: &walk.back,
+    };
+    // Scope ownership is captured by the production walk before tuple conversion.
+    let scopes = crate::publication_plan::Scopes {
+        by_item: walk.note_scopes.by_item.clone(),
+        rows: walk
+            .note_scopes
+            .rows
+            .iter()
+            .map(|row| crate::publication_plan::Scope {
+                label: row.label.clone(),
+                end: row.end.clone(),
+            })
+            .collect(),
+    };
+    let plan = Plan::from_store(&book, &walk.bodies, scopes, &fixture.store, &fixture.db).unwrap();
+    f(&book, &walk, &plan)
+}
+
+fn epub(book: &crate::export::Book, walk: &Walked, plan: &Plan) -> Vec<u8> {
+    crate::epub::manuscript(&crate::epub::Epub {
+        book,
+        bodies: &walk.bodies,
+        plan: Some(plan),
+        notes_title: "Notes",
+        book_id: None,
+        story_id: None,
+        language: "en",
+        font: "serif",
+        style: Default::default(),
+        openings: Default::default(),
+        cover: None,
+        modified: "2026-10-17T00:00:00Z",
+        pin: None,
+    })
+    .unwrap()
+    .bytes
+}
+
+fn check_links(entries: &[(String, Vec<u8>)]) {
+    use quick_xml::{events::Event, Reader};
+    let mut ids = HashMap::new();
+    let mut links = Vec::new();
+    let mut positions = HashMap::new();
+    for (path, bytes) in entries.iter().filter(|(path, _)| path.ends_with(".xhtml")) {
+        let mut reader = Reader::from_reader(bytes.as_slice());
+        let mut local = std::collections::HashSet::new();
+        loop {
+            match reader.read_event().unwrap() {
+                Event::Start(element) | Event::Empty(element) => {
+                    for attr in element.attributes() {
+                        let attr = attr.unwrap();
+                        let value = attr
+                            .normalized_value(quick_xml::XmlVersion::Implicit1_0)
+                            .unwrap()
+                            .into_owned();
+                        match attr.key.as_ref() {
+                            b"id" => {
+                                positions.insert((path.clone(), value.clone()), local.len());
+                                assert!(local.insert(value), "duplicate ID in {path}");
+                            }
+                            b"href" | b"src" => links.push((path.clone(), value)),
+                            _ => {}
+                        }
+                    }
+                }
+                Event::Eof => break,
+                _ => {}
+            }
+        }
+        ids.insert(path.clone(), local);
+    }
+    let spine = crate::epub::reading_order(entries);
+    let mut previous = None;
+    for (from, link) in links {
+        assert!(
+            !link.starts_with('/') && !link.contains(":"),
+            "nonrelative link {link}"
+        );
+        let (file, fragment) = link
+            .split_once('#')
+            .map(|(a, b)| (a, Some(b)))
+            .unwrap_or((&link, None));
+        let target = Path::new(&from).parent().unwrap().join(file);
+        let mut normalized = PathBuf::new();
+        for component in target.components() {
+            if component == std::path::Component::ParentDir {
+                normalized.pop();
+            } else {
+                normalized.push(component);
+            }
+        }
+        let target = normalized.to_str().unwrap();
+        assert!(
+            entries.iter().any(|(path, _)| path == target),
+            "missing {link} from {from}"
+        );
+        if let Some(fragment) = fragment {
+            assert!(ids[target].contains(fragment), "missing fragment {link}");
+        }
+        if from.ends_with("/nav.xhtml") && !link.ends_with(".css") {
+            let doc = spine.iter().position(|(path, _)| path == target).unwrap();
+            let position = fragment
+                .map(|fragment| positions[&(target.to_string(), fragment.to_string())] + 1)
+                .unwrap_or(0);
+            let current = (doc, position);
+            assert!(
+                previous.is_none_or(|previous| previous <= current),
+                "navigation moves backwards at {link}"
+            );
+            previous = Some(current);
+        }
+    }
+}
+
+#[test]
+fn scoped_epub_notes_media_and_fallback_links_resolve() {
+    let fixture = fixture();
+    for numbering in ["book", "chapter", "story"] {
+        fixture
+            .store
+            .set_meta("notes.numbering", numbering)
+            .unwrap();
+        for selected in [false, true] {
+            with_plan(
+                &fixture,
+                selected.then_some(fixture.stories[0].as_str()),
+                |book, walk, plan| {
+                    assert_eq!(plan.notes.len(), if selected { 2 } else { 4 });
+                    assert_eq!(plan.assets.len(), if selected { 1 } else { 2 });
+                    assert_eq!(
+                        plan.notes
+                            .iter()
+                            .map(|note| note.number)
+                            .collect::<Vec<_>>(),
+                        if !selected && numbering == "book" {
+                            vec![1, 2, 3, 4]
+                        } else if selected {
+                            vec![1, 2]
+                        } else {
+                            vec![1, 2, 1, 2]
+                        }
+                    );
+                    let bytes = epub(book, walk, plan);
+                    let entries = crate::epub::read_zip(&bytes).unwrap();
+                    check_links(&entries);
+                    let media = entries
+                        .iter()
+                        .filter(|(name, _)| name.starts_with("OEBPS/assets/"))
+                        .collect::<Vec<_>>();
+                    assert_eq!(media.len(), if selected { 1 } else { 2 });
+                    if selected {
+                        assert!(media
+                            .iter()
+                            .all(|(name, _)| !name.contains(&fixture.assets[1].sha256)));
+                    }
+                    for (index, note) in plan.notes.iter().enumerate() {
+                        let reference = entries
+                            .iter()
+                            .find(|(_, data)| {
+                                String::from_utf8_lossy(data)
+                                    .contains(&format!("id=\"ref-{}\"", index + 1))
+                            })
+                            .unwrap();
+                        let target = entries
+                            .iter()
+                            .find(|(_, data)| {
+                                String::from_utf8_lossy(data)
+                                    .contains(&format!("id=\"note-{}\"", index + 1))
+                            })
+                            .unwrap();
+                        let reference_text = String::from_utf8_lossy(&reference.1);
+                        let target_text = String::from_utf8_lossy(&target.1);
+                        let reference_name = Path::new(&reference.0)
+                            .file_name()
+                            .unwrap()
+                            .to_str()
+                            .unwrap();
+                        let target_name =
+                            Path::new(&target.0).file_name().unwrap().to_str().unwrap();
+                        assert!(reference_text.contains(&format!(
+                            "href=\"{target_name}#note-{}\">{}<",
+                            index + 1,
+                            note.number
+                        )));
+                        assert!(target_text.contains(&format!(
+                            "href=\"{reference_name}#ref-{}\">{}<",
+                            index + 1,
+                            note.number
+                        )));
+                    }
+                    let text = entries
+                        .iter()
+                        .filter(|(name, _)| name.ends_with(".xhtml"))
+                        .map(|(_, bytes)| String::from_utf8_lossy(bytes))
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    for expected in [
+                        "epub:type=\"noteref\"",
+                        "epub:type=\"endnote\"",
+                        "epub:type=\"backlink\"",
+                        "<figcaption>caption 0 &amp; &lt;text&gt;</figcaption>",
+                        "alt=\"A &quot;quoted&quot; &lt;view&gt; &amp; sky\"",
+                        "<hr class=\"scene-break\"/>",
+                        "literal [^1]",
+                        "second &lt;line&gt;",
+                        "class=\"page\"",
+                    ] {
+                        assert!(text.contains(expected), "{expected}");
+                    }
+                    if selected {
+                        for excluded in ["note 1", "caption 1", "Story 1"] {
+                            assert!(!text.contains(excluded), "{excluded}");
+                        }
+                    }
+                    let opf = entries
+                        .iter()
+                        .find(|(name, _)| name.ends_with("content.opf"))
+                        .unwrap();
+                    assert!(String::from_utf8_lossy(&opf.1).contains("media-type=\"image/png\""));
+                    assert_eq!(
+                        String::from_utf8_lossy(&opf.1).contains("media-type=\"image/jpeg\""),
+                        !selected
+                    );
+                    let css = &entries
+                        .iter()
+                        .find(|(name, _)| name.ends_with("style.css"))
+                        .unwrap()
+                        .1;
+                    assert!(String::from_utf8_lossy(css).contains("break-before: page"));
+                    if let Some(out) = std::env::var_os("GARRET_EPUB_TEST_OUTPUT") {
+                        std::fs::create_dir_all(&out).unwrap();
+                        std::fs::write(
+                            PathBuf::from(out).join(format!("{numbering}-{selected}.epub")),
+                            bytes,
+                        )
+                        .unwrap();
+                    }
+                },
+            );
+        }
+    }
+    // Missing unselected originals cannot block or leak into a selected-story export.
+    std::fs::remove_file(
+        crate::pictures::dir_for(&fixture.db).join(&fixture.assets[1].stored_name),
+    )
+    .unwrap();
+    with_plan(&fixture, Some(&fixture.stories[0]), |book, walk, plan| {
+        check_links(&crate::epub::read_zip(&epub(book, walk, plan)).unwrap());
+    });
+}
+
+#[test]
+fn publication_refusals_preserve_unknown_content_and_missing_originals() {
+    let fixture = fixture();
+    let walk = walk_scope(&fixture.store, Some(&fixture.stories[0])).unwrap();
+    let book = crate::export::Book {
+        publication: None,
+        single_scene: false,
+        name: "N",
+        contents_title: "Contents",
+        front: &walk.front,
+        chapters: &walk.chapters,
+        back: &walk.back,
+    };
+    let build = |bodies: &HashMap<String, String>| {
+        Plan::from_store(
+            &book,
+            bodies,
+            crate::publication_plan::Scopes::book(&book),
+            &fixture.store,
+            &fixture.db,
+        )
+    };
+    assert!(build(&walk.bodies).is_ok());
+    let original: serde_json::Value =
+        serde_json::from_str(&walk.bodies[&fixture.scenes[0]]).unwrap();
+    for (pointer, value) in [
+        ("/content/0/content/1/attrs/fmt", json!("html")),
+        (
+            "/content/1/attrs/asset_id",
+            json!("0199ed16-8c00-7000-8000-000000000099"),
+        ),
+        ("/content/1/attrs/alt", json!("  ")),
+        ("/content/2/type", json!("future")),
+    ] {
+        let mut value_body = original.clone();
+        *value_body.pointer_mut(pointer).unwrap() = value;
+        let mut bodies = walk.bodies.clone();
+        bodies.insert(fixture.scenes[0].clone(), value_body.to_string());
+        assert!(build(&bodies).is_err(), "accepted {pointer}");
+    }
+    let note_only = HashMap::from([(
+        fixture.scenes[0].clone(),
+        json!({"type":"doc","content":[original["content"][0].clone()]}).to_string(),
+    )]);
+    assert!(
+        Plan::build(&book, &note_only, Default::default(), |_| panic!(
+            "no figure in this body"
+        ))
+        .err()
+        .unwrap()
+        .contains("missing note scope")
+    );
+    let path = crate::pictures::dir_for(&fixture.db).join(&fixture.assets[0].stored_name);
+    let original_bytes = std::fs::read(&path).unwrap();
+    let mut corrupt = original_bytes.clone();
+    corrupt[20] ^= 1;
+    std::fs::write(&path, corrupt).unwrap();
+    assert!(build(&walk.bodies)
+        .err()
+        .unwrap()
+        .contains("hash or size mismatch"));
+    std::fs::remove_file(&path).unwrap();
+    assert!(build(&walk.bodies).is_err());
+    std::fs::write(&path, &original_bytes).unwrap();
+    assert!(build(&walk.bodies).is_ok());
+    let mut record = fixture.assets[0].clone();
+    record.bytes += 1;
+    assert!(Asset::verified(&record, original_bytes.clone()).is_err());
+    record = fixture.assets[0].clone();
+    record.mime = "image/jpeg".into();
+    assert!(Asset::verified(&record, original_bytes.clone()).is_err());
+    record = fixture.assets[0].clone();
+    record.width_px += 1;
+    assert!(Asset::verified(&record, original_bytes).is_err());
+    #[cfg(unix)]
+    {
+        let dir = crate::pictures::dir_for(&fixture.db);
+        let moved = fixture.root.path().join("retained-originals");
+        std::fs::rename(&dir, &moved).unwrap();
+        std::os::unix::fs::symlink(&moved, &dir).unwrap();
+        assert!(build(&walk.bodies)
+            .err()
+            .unwrap()
+            .contains("unsafe or missing original directory"));
+        std::fs::remove_file(&dir).unwrap();
+        std::fs::rename(&moved, &dir).unwrap();
+        assert!(build(&walk.bodies).is_ok());
+    }
+    assert_eq!(fixture.store.user_version().unwrap(), 17);
+    assert!(!store::document_format::new_nodes_allowed());
+    assert!(fixture.root.path().exists());
+}
+
+#[test]
+fn unreadable_epub_refuses_before_publishing_a_destination() {
+    let root = tempfile::tempdir().unwrap();
+    let db = root.path().join("book.db");
+    let store = store::Store::open(&db).unwrap();
+    let scene = store.item_create(None, "scene", "Scene").unwrap();
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![r#"{"type":"doc","content":[{"type":"future","content":[{"type":"text","text":"Hidden prose"}]}]}"#, scene.id]).unwrap();
+    let dest = root.path().join("book.epub");
+    let error = export_as(
+        &db,
+        "Book",
+        &dest,
+        crate::export::Format::Epub,
+        &crate::identity::Vault::default(),
+        crate::strings::Strings::english(),
+    )
+    .unwrap_err();
+    assert!(error.contains("unsupported document content"), "{error}");
+    assert!(!dest.exists());
+    assert_eq!(store.user_version().unwrap(), 17);
+}
