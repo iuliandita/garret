@@ -4576,6 +4576,9 @@ fn main() {
             }
         })
         .setup(move |app| {
+            // X11 keeps a separate class from the GTK application ID.
+            #[cfg(target_os = "linux")]
+            gtk::gdk::set_program_class(&app.config().identifier);
             #[cfg(unix)]
             if let Some(listener) = owned_socket {
                 let handle = app.handle().clone();

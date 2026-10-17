@@ -51,7 +51,7 @@
       "migration": "Desktop identifier changes leave books, settings, and SQLite schema 17 unchanged. Windows retains its previous WebView2 profile; Android retains its package. macOS starts fresh regenerable caches and native window restore state, leaving old entries untouched. Keep the normal closed-book and profile backup before upgrade; rollback uses the previous package and preserved files.",
       "no_impact": "",
       "note": "Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged. Document fresh macOS caches and native window state without a startup migration, stable books and settings, and retained Windows editor and proof WebView2 profiles. Installer formats preserve portable layouts and book data; installer identity, bundled resources, locked packaging tools and content validation are documented.",
-      "source_sha256": "6734c3c576d691d1735a4267ef22816be0d0dd1b92941b96006406a5f6860263"
+      "source_sha256": "42778f18ff67c0cf8b87d059bfd7bab526765778befb9ad05c9995e4b23f1145"
     },
     "native-packaging": {
       "breaking": "none",
