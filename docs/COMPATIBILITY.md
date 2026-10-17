@@ -53,6 +53,17 @@ copies retain note text, captions, alternative text, and figure placeholders, an
 state that formatting, structure, and originals are omitted. These reader changes
 keep the schema ceiling and disabled production writes described above.
 
+The default `garret search book.db QUERY --json` result adds a `locators` array
+to each hit, retaining the existing keys. Each locator contains `field`,
+`item_id`, `instance_id`, `from`, and `to`. Consumers that require an exact key
+set must accept this additive change. Ranges use UTF-16 code units, with an
+inclusive `from` and exclusive `to`. Prose ranges are absolute document positions,
+including structural positions, rather than offsets into flattened text or the
+snippet; prose locators have a null `instance_id`. Attribute ranges for `note`,
+`caption`, and `alt` are relative to the start of that field, and `instance_id`
+identifies the endnote or figure. This changes CLI output without a schema
+migration or book conversion.
+
 The command-line `design-apply` operation requires the exact current SQLite
 schema. Open older books in the application to upgrade them before applying a
 design; a preview token cannot bypass that requirement.
