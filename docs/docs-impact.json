@@ -30,7 +30,7 @@
       "migration": "",
       "no_impact": "",
       "note": "Document Android root scene placement, current-container creation, and short fiction and nonfiction admission while preserving schema-first refusal and collection refusal.",
-      "source_sha256": "206da207339cb5189eb11f2d67c0dc82b08d8572283e2f6a32eb966ec3623637"
+      "source_sha256": "d163552499542162452efffa4b884bc726ed5265f560f7603ff4304288eded40"
     },
     "encryption": {
       "breaking": "none",
@@ -48,7 +48,7 @@
       "migration": "Desktop identifier changes leave books, settings, and SQLite schema 17 unchanged. Windows retains its previous WebView2 profile; Android retains its package. macOS starts fresh regenerable caches and native window restore state, leaving old entries untouched. Keep the normal closed-book and profile backup before upgrade; rollback uses the previous package and preserved files.",
       "no_impact": "",
       "note": "Document Android root scene placement, current-container creation, and short fiction and nonfiction admission while preserving schema-first refusal and collection refusal.",
-      "source_sha256": "46da18d4a36eb35c720ca892fa0e2d0728fdcc5617fec0bfefc7a5d0cf44f4dc"
+      "source_sha256": "f1c9bb4e2d9a680e721f46a5e409543bd6a2ecc150498148230fe7e6887cc7db"
     },
     "native-packaging": {
       "breaking": "none",

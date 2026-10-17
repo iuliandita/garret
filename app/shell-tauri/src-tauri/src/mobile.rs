@@ -1551,18 +1551,18 @@ mod tests {
                         let nested = store
                             .item_create(Some(&chapter.id), "scene", "Inside")
                             .unwrap();
-                        Ok(nested)
+                        Ok((nested.id, chapter.id))
                     })
                     .unwrap();
                 let added = host
-                    .create_scene(book.generation, &nested.id, "Still inside")
+                    .create_scene(book.generation, &nested.0, "Still inside")
                     .unwrap();
                 assert!(added.scenes[..4]
                     .iter()
                     .all(|scene| scene.parent_id.is_none()));
                 assert!(added.scenes[4..]
                     .iter()
-                    .all(|scene| scene.parent_id == nested.parent_id));
+                    .all(|scene| scene.parent_id.as_deref() == Some(nested.1.as_str())));
                 host.drafting(book.generation, |store| {
                     assert!(!store
                         .items()
