@@ -1,7 +1,7 @@
 # Installing garret
 
-These installers are prepared for the next release. Published 0.0.2 downloads
-remain portable archives. Download the format matching your system from
+These installers are available from 0.0.3. Earlier downloads were portable
+archives only. Download the format matching your system from
 [Releases](https://github.com/iuliandita/garret/releases) and check its SHA-256
 against the release checksums before installing.
 
