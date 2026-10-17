@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::io::{Read, Write};
-use std::path::{Component, Path};
+use std::path::{Component, Path, PathBuf};
 
 fn relative(path: &str) -> Result<Vec<&str>, String> {
     if path.is_empty() || path.contains(['\\', ':', '%', '?', '#', '\0']) || path.starts_with('/') {
@@ -20,66 +20,78 @@ fn relative(path: &str) -> Result<Vec<&str>, String> {
     Ok(parts)
 }
 
-pub(crate) fn read_asset(root: &Path, path: &str) -> Result<Vec<u8>, String> {
-    let parts = relative(path)?;
-    let root = if root.as_os_str().is_empty() {
-        Path::new(".")
-    } else {
-        root
-    };
-    #[cfg(unix)]
-    let input = {
-        use rustix::fs::{open, openat, Mode, OFlags};
-        let directory = OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
-        let mut parent = open(root, directory, Mode::empty()).map_err(|e| e.to_string())?;
-        for part in &parts[..parts.len() - 1] {
-            parent = openat(&parent, *part, directory, Mode::empty()).map_err(|e| e.to_string())?;
-        }
-        let fd = openat(
-            &parent,
-            *parts.last().unwrap(),
-            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
-            Mode::empty(),
-        )
-        .map_err(|e| e.to_string())?;
-        let file = fs::File::from(fd);
-        let metadata = file.metadata().map_err(|e| e.to_string())?;
-        if !metadata.is_file() || metadata.len() > crate::pictures::MAX_PICTURE_BYTES {
-            return Err("invalid Markdown asset file or size".into());
-        }
-        file
-    };
-    #[cfg(not(unix))]
-    let input = {
-        let mut location = root.to_path_buf();
-        for part in &parts[..parts.len() - 1] {
-            location.push(part);
-            let metadata = fs::symlink_metadata(&location).map_err(|e| e.to_string())?;
-            if !metadata.is_dir() || metadata.file_type().is_symlink() {
-                return Err("unsafe Markdown asset directory".into());
-            }
-        }
-        location.push(parts.last().unwrap());
-        let canonical_root = root.canonicalize().map_err(|e| e.to_string())?;
-        if !location
-            .canonicalize()
-            .map_err(|e| e.to_string())?
-            .starts_with(canonical_root)
-        {
-            return Err("Markdown asset leaves selected package root".into());
-        }
-        crate::backup_bundle::open_regular_with_limit(&location, crate::pictures::MAX_PICTURE_BYTES)
-            .map_err(|e| e.to_string())?
-    };
-    let mut bytes = Vec::new();
-    input
-        .take(crate::pictures::MAX_PICTURE_BYTES + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|e| e.to_string())?;
-    if bytes.len() as u64 > crate::pictures::MAX_PICTURE_BYTES {
-        return Err("Markdown asset exceeds limit".into());
+pub(crate) struct Root(PathBuf);
+
+impl Root {
+    pub(crate) fn new(root: &Path) -> Result<Self, String> {
+        let root = if root.as_os_str().is_empty() {
+            Path::new(".")
+        } else {
+            root
+        };
+        root.canonicalize().map(Self).map_err(|e| e.to_string())
     }
-    Ok(bytes)
+
+    pub(crate) fn read_asset(&self, path: &str) -> Result<Vec<u8>, String> {
+        let parts = relative(path)?;
+        let root = &self.0;
+        #[cfg(unix)]
+        let input = {
+            use rustix::fs::{open, openat, Mode, OFlags};
+            let directory = OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+            let mut parent = open(root, directory, Mode::empty()).map_err(|e| e.to_string())?;
+            for part in &parts[..parts.len() - 1] {
+                parent =
+                    openat(&parent, *part, directory, Mode::empty()).map_err(|e| e.to_string())?;
+            }
+            let fd = openat(
+                &parent,
+                *parts.last().unwrap(),
+                OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
+                Mode::empty(),
+            )
+            .map_err(|e| e.to_string())?;
+            let file = fs::File::from(fd);
+            let metadata = file.metadata().map_err(|e| e.to_string())?;
+            if !metadata.is_file() || metadata.len() > crate::pictures::MAX_PICTURE_BYTES {
+                return Err("invalid Markdown asset file or size".into());
+            }
+            file
+        };
+        #[cfg(not(unix))]
+        let input = {
+            let mut location = root.to_path_buf();
+            for part in &parts[..parts.len() - 1] {
+                location.push(part);
+                let metadata = fs::symlink_metadata(&location).map_err(|e| e.to_string())?;
+                if !metadata.is_dir() || metadata.file_type().is_symlink() {
+                    return Err("unsafe Markdown asset directory".into());
+                }
+            }
+            location.push(parts.last().unwrap());
+            if !location
+                .canonicalize()
+                .map_err(|e| e.to_string())?
+                .starts_with(root)
+            {
+                return Err("Markdown asset leaves selected package root".into());
+            }
+            crate::backup_bundle::open_regular_with_limit(
+                &location,
+                crate::pictures::MAX_PICTURE_BYTES,
+            )
+            .map_err(|e| e.to_string())?
+        };
+        let mut bytes = Vec::new();
+        input
+            .take(crate::pictures::MAX_PICTURE_BYTES + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|e| e.to_string())?;
+        if bytes.len() as u64 > crate::pictures::MAX_PICTURE_BYTES {
+            return Err("Markdown asset exceeds limit".into());
+        }
+        Ok(bytes)
+    }
 }
 
 fn sync_directory(path: &Path) -> Result<(), String> {
@@ -136,6 +148,7 @@ fn publish_with(
     }
     let stage = root.join(format!(".markdown-stage-{}", uuid::Uuid::now_v7()));
     fs::create_dir(&stage).map_err(|e| e.to_string())?;
+    let mut assets_created = false;
     let result: Result<(), String> = (|| {
         fs::create_dir(stage.join("assets")).map_err(|e| e.to_string())?;
         for (path, bytes) in assets {
@@ -143,6 +156,7 @@ fn publish_with(
         }
         write_new(&stage.join("manuscript.md"), bytes)?;
         fs::create_dir(root.join("assets")).map_err(|e| e.to_string())?;
+        assets_created = true;
         for path in assets.keys() {
             fs::hard_link(stage.join(path), root.join(path)).map_err(|e| e.to_string())?;
         }
@@ -153,8 +167,16 @@ fn publish_with(
         Ok(())
     })();
     if let Err(error) = result {
+        let retained_assets = if assets_created {
+            format!(
+                "; partial assets retained at {}",
+                root.join("assets").display()
+            )
+        } else {
+            String::new()
+        };
         return Err(format!(
-            "{error}; Markdown stage retained at {}",
+            "{error}; Markdown stage retained at {}{retained_assets}",
             stage.display()
         ));
     }
@@ -170,6 +192,10 @@ fn publish_with(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn read_asset(root: &Path, path: &str) -> Result<Vec<u8>, String> {
+        Root::new(root)?.read_asset(path)
+    }
 
     #[test]
     fn packages_confine_assets_and_publish_markdown_last_without_clobbering() {
@@ -213,7 +239,13 @@ mod tests {
             assert!(read_asset(&selected, "link/outside.png").is_err());
             assert!(read_asset(&selected, "assets/link.png").is_err());
             std::os::unix::fs::symlink(&selected, root.path().join("selected-link")).unwrap();
-            assert!(read_asset(&root.path().join("selected-link"), "assets/image.png").is_err());
+            let linked = Root::new(&root.path().join("selected-link")).unwrap();
+            assert_eq!(
+                linked.read_asset("assets/image.png").unwrap(),
+                crate::figures::tests::PNG
+            );
+            assert!(linked.read_asset("link/outside.png").is_err());
+            assert!(linked.read_asset("assets/link.png").is_err());
         }
         let oversized = fs::File::create(selected.join("assets/oversized.png")).unwrap();
         oversized
@@ -237,6 +269,13 @@ mod tests {
         })
         .unwrap_err();
         assert!(error.contains("stage retained"));
+        assert!(
+            error.contains(&format!(
+                "partial assets retained at {}",
+                out.path().join("assets").display()
+            )),
+            "{error}"
+        );
         assert_eq!(fs::read_to_string(&dest).unwrap(), "external work");
         let stages: Vec<_> = fs::read_dir(out.path())
             .unwrap()

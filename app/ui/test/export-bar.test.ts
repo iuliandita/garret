@@ -142,7 +142,7 @@ describe("exporting the manuscript", () => {
       EN["export.done.underlined.one"]
         ?.replaceAll("{path}", "/exports/novel.md")
         .replaceAll("{count}", "1")
-        .replaceAll("{format}", "Markdown"),
+        .replaceAll("{format}", "Markdown") + ` ${EN["export.done.assets"]}`,
     );
   });
 
@@ -203,7 +203,7 @@ describe("exporting the manuscript", () => {
     expect(rig.dones()[0]).toBe(
       EN["export.done"]
         ?.replaceAll("{path}", "/exports/novel.md")
-        .replaceAll("{format}", "Markdown"),
+        .replaceAll("{format}", "Markdown") + ` ${EN["export.done.assets"]}`,
     );
   });
 
@@ -451,7 +451,7 @@ describe("exporting to a destination the writer picks", () => {
     const rig = mount({ exportProjectAs: () => Promise.resolve({ path: "/home/w/book.md", underlined: 0, format: "markdown" }) });
     rig.bar.runAs("markdown");
     await settle();
-    expect(rig.dones()).toEqual(["Exported Markdown to /home/w/book.md"]);
+    expect(rig.dones()).toEqual([`Exported Markdown to /home/w/book.md ${EN["export.done.assets"]}`]);
     expect(rig.notices()).toEqual([]);
   });
 
@@ -519,7 +519,7 @@ describe("which channel a message goes down", () => {
     const rig = mount({ exportProject: () => Promise.resolve({ path: "/exports/a.md", underlined: 0, format: "markdown" }) });
     rig.bar.run("markdown");
     await settle();
-    expect(rig.dones()).toEqual(["Exported Markdown to /exports/a.md"]);
+    expect(rig.dones()).toEqual([`Exported Markdown to /exports/a.md ${EN["export.done.assets"]}`]);
     expect(rig.notices()).toEqual([]);
   });
 
@@ -549,6 +549,6 @@ describe("which channel a message goes down", () => {
     await settle();
 
     expect(rig.notices()).toEqual(["Markdown export failed: read-only"]);
-    expect(rig.dones()).toEqual(["Exported Markdown to /exports/b.md"]);
+    expect(rig.dones()).toEqual([`Exported Markdown to /exports/b.md ${EN["export.done.assets"]}`]);
   });
 });

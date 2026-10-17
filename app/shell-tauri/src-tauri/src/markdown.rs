@@ -92,6 +92,7 @@ pub(crate) struct Parsed {
 
 pub(crate) fn is_dialect(source: &str) -> bool {
     source
+        .trim_start_matches('\u{feff}')
         .lines()
         .any(|line| line.starts_with("<!-- garret-document-format:") || line.starts_with(FIGURE))
 }
@@ -105,6 +106,7 @@ pub(crate) fn parse(
     stem: &str,
     mut resolve: impl FnMut(&str) -> Result<Vec<u8>, String>,
 ) -> Result<Parsed, String> {
+    let source = source.trim_start_matches('\u{feff}').replace("\r\n", "\n");
     let source = source
         .strip_prefix(MARKER)
         .ok_or("unsupported Markdown document format marker")?;
@@ -266,6 +268,42 @@ mod tests {
             |source: &str| parse(source, "book", |_| Ok(crate::figures::tests::PNG.to_vec()));
         let valid = format!("{MARKER}# Book\n\n## Scene\n\nliteral \\[^1\\] [^s1-1]\n\n[^s1-1]: note\\*\n    next\n");
         assert!(read(&valid).is_ok());
+        for source in [
+            valid.clone(),
+            format!("\u{feff}{valid}"),
+            valid.replace('\n', "\r\n"),
+            format!("\u{feff}{}", valid.replace('\n', "\r\n")),
+        ] {
+            assert!(is_dialect(&source));
+            let parsed = read(&source).unwrap();
+            assert_eq!(parsed.imported.name, "Book");
+            assert_eq!(parsed.imported.items.len(), 1);
+            let doc: Value =
+                serde_json::from_str(parsed.imported.items[0].body.as_ref().unwrap()).unwrap();
+            assert_eq!(
+                doc["content"][0]["content"][1]["attrs"]["body"],
+                "note*\nnext"
+            );
+            let error = crate::import::parse_package(&source, "book", std::path::Path::new("."))
+                .unwrap_err();
+            assert!(
+                error.contains("new-format Markdown conversion is disabled"),
+                "{error}"
+            );
+        }
+        let ordinary = "# Book\n\n## Scene\n\nordinary [^1]\n\n---\n\n![image](assets/image.png)\n";
+        for source in [
+            ordinary.to_string(),
+            format!("\u{feff}{ordinary}"),
+            ordinary.replace('\n', "\r\n"),
+            format!("\u{feff}{}", ordinary.replace('\n', "\r\n")),
+        ] {
+            assert!(!is_dialect(&source));
+            assert_eq!(
+                crate::import::parse_package(&source, "book", std::path::Path::new(".")).unwrap(),
+                crate::import::parse(&source, "book")
+            );
+        }
         for source in [
             valid.replace("18", "19"),
             valid.replace("s1-1", "bad!"),

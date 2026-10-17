@@ -498,7 +498,8 @@ pub(crate) fn parse_package(source: &str, stem: &str, root: &std::path::Path) ->
 }
 
 pub(crate) fn read_package(source: &str, stem: &str, root: &std::path::Path) -> Result<crate::markdown::Parsed, String> {
-    crate::markdown::parse(source, stem, |path| crate::markdown_package::read_asset(root, path))
+    let root = crate::markdown_package::Root::new(root)?;
+    crate::markdown::parse(source, stem, |path| root.read_asset(path))
 }
 
 pub(crate) fn parse_with(source: &str, stem: &str, mut read: impl FnMut(&[String]) -> Result<Option<String>, String>) -> Result<Imported, String> {

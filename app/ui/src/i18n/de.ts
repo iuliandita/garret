@@ -1467,6 +1467,7 @@ export const DE = {
   "stats.export.csv": "Für eine Tabellenkalkulation exportieren (CSV)…",
   "stats.export.json": "Als Daten exportieren (JSON)…",
   "export.done": "{format} nach {path} exportiert",
+  "export.done.assets": "Geben Sie die Markdown-Datei zusammen mit dem benachbarten Ordner assets weiter.",
   "export.done.underlined.one":
     "{format} nach {path} exportiert. {format} kennt kein Unterstrichen, {count} unterstrichene Stelle wurde deshalb als einfacher Text geschrieben.",
   "export.done.underlined.other":

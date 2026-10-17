@@ -99,6 +99,7 @@ usage:
   garret validate  <project.db> [--json]
   garret export    <project.db> <dest> [--format markdown|epub|pdf|docx] [--story ID]
                             (pdf is laid out by a web engine and needs a display)
+                            (keep Markdown with its adjacent assets folder when sharing)
   garret history   <project.db> [--item ID] [--json]
   garret knowledge <project.db> [--json]
   garret salvage   <project.db> <out-dir> [--json]

@@ -143,6 +143,9 @@ export function createExportBar(deps: ExportBarDeps): ExportBar {
                 path: result.path,
                 format: exportFormatName(result.format),
               });
+      if (message !== null && result?.format === "markdown") {
+        message += ` ${t("export.done.assets")}`;
+      }
     } catch (error: unknown) {
       // The REQUESTED format here, because there is no result to read one off.
       message = t("export.error", {

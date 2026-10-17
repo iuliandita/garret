@@ -81,14 +81,20 @@ references and definitions, relative hashed PNG/JPEG assets, captions, scene
 breaks, and bounded figure placement metadata. Literal footnote syntax remains
 escaped prose. The matching package reader remints instance and asset IDs and
 resolves originals only below the selected Markdown file's parent directory;
-absolute paths, traversal, URLs, and symbolic links are refused. The desktop and
+the selected parent is canonicalized once, so a symlinked user folder works,
+while absolute paths, traversal, URLs, and symbolic links below it are refused. The desktop and
 CLI refuse marked new-format conversion before creating a book while authoring
-is disabled. Ordinary Markdown and Word output retains its existing byte hashes.
+is disabled, including marked files with a leading UTF-8 BOM or CRLF line endings.
+Ordinary Markdown keeps its existing BOM and line-ending behavior, and ordinary
+Markdown and Word output retains its existing byte hashes.
 
 Keep a Markdown file and its adjacent `assets` folder together when sharing.
 A package export stages originals beside the destination, publishes them before
-the Markdown file, and refuses existing destinations or asset folders. A failure
-after staging keeps the stage and reports its location; preserve it until the
+the Markdown file, and refuses existing destinations or asset folders. Asset-bearing
+packages refuse Export as during the pre-save check, before the native dialog can
+ask about replacing a file; use Export manuscript in a folder without `assets`.
+A failure after staging keeps the stage and reports its location and any partially
+published assets folder; preserve both until the
 outcome is known. It never overwrites an existing package to resolve a collision.
 
 New-format readable-folder copies are tested only with matching-schema fixtures.

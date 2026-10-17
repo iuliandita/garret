@@ -112,6 +112,24 @@ pub(crate) enum Dest {
     Replace,
 }
 
+fn check_destination_mode(written: &crate::export::Manuscript, mode: Dest) -> Result<(), String> {
+    if mode == Dest::Replace && !written.assets.is_empty() {
+        return Err("Markdown packages cannot use Export as or replace files. Use Export manuscript in a folder without an existing assets folder".into());
+    }
+    Ok(())
+}
+
+pub(crate) fn check_save_as(
+    path: &Path, name: &str, format: crate::export::Format, vault: &crate::identity::Vault,
+    strings: crate::strings::Strings, story_id: Option<&str>,
+) -> Result<(), String> {
+    if format == crate::export::Format::Markdown {
+        let (written, _, _, _) = render_scope_with(path, name, format, vault, strings, None, story_id)?;
+        check_destination_mode(&written, Dest::Replace)?;
+    }
+    Ok(())
+}
+
 /// The temp file a `Dest::Replace` export lands in before the rename. A sibling
 /// of the destination, deliberately: `rename` is only atomic within a
 /// filesystem, and `/tmp` is a different one on this machine.
@@ -171,6 +189,7 @@ pub(crate) fn export_scope_into_with(
     convert: impl FnOnce(Vec<u8>) -> std::result::Result<Vec<u8>, String>,
 ) -> std::result::Result<ExportResult, String> {
     let (written, items, words, preflight) = render_scope_with(path, name, format, vault, strings, None, story_id)?;
+    check_destination_mode(&written, mode)?;
     let bytes = convert(written.bytes)?;
     let pages = match format {
         crate::export::Format::Pdf => Some(
@@ -278,12 +297,12 @@ fn render_scope_with(
     path: &Path, name: &str, format: crate::export::Format, vault: &crate::identity::Vault,
     strings: crate::strings::Strings, markup_limit: Option<u32>, story_id: Option<&str>,
 ) -> std::result::Result<Rendered, String> {
-    render_scope_policy(path, name, format, vault, strings, markup_limit, story_id, false)
+    render_scope_policy(path, name, format, vault, strings, markup_limit, story_id, #[cfg(test)] false)
 }
 
 fn render_scope_policy(
     path: &Path, name: &str, format: crate::export::Format, vault: &crate::identity::Vault,
-    strings: crate::strings::Strings, markup_limit: Option<u32>, story_id: Option<&str>, fixture: bool,
+    strings: crate::strings::Strings, markup_limit: Option<u32>, story_id: Option<&str>, #[cfg(test)] fixture: bool,
 ) -> std::result::Result<Rendered, String> {
     let store = store::Store::open_readonly(path).map_err(|e| e.to_string())?;
     let story = story_id.map(|id| crate::collection::story(&store, id)).transpose()?;
@@ -373,7 +392,8 @@ fn render_scope_policy(
     }
 
     let has_new = items.iter().filter_map(|(id, _, _)| bodies.get(id)).any(|body| crate::figure_salvage::has_new_nodes(body));
-    let fixture = cfg!(test) && fixture;
+    #[cfg(not(test))]
+    let fixture = false;
     if has_new && !fixture {
         return Err("This document format cannot be exported by this build".into());
     }

@@ -442,8 +442,7 @@ fn pass_inner(
         (items, bodies, doc_revs, texts, schema_version, dictionary)
     };
 
-    if schema_version >= crate::store::figure_assets::SCHEMA_VERSION
-        || bodies.values().any(|body| crate::figure_salvage::has_new_nodes(body)) {
+    if bodies.values().any(|body| crate::figure_salvage::has_new_nodes(body)) {
         return Err("new-format readable-folder output is disabled by this build".into());
     }
     std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
