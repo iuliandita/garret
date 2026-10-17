@@ -76,10 +76,12 @@ developer-signed release. Local determinism alone does not establish F-Droid
 reproducibility. Follow the [F-Droid maintainer checklist](../fastlane/fdroid/README.md)
 before submitting or enabling the disabled draft recipe.
 
-The display-gated proof paginator test has a 300-second process timeout and a
-30-second kill grace. A timeout fails the required host job with a process
-snapshot; the GTK main-loop timer alone cannot bound a blocked main loop.
-The underlying intermittent hang remains tracked in #324.
+The display-gated proof tests have a 90-second watchdog on a separate OS thread,
+armed before GTK initialization. It reports the last phase and thread wait
+channels before aborting, even if GTK stops dispatching. Core dumps are disabled
+in these isolated test processes. The paginator CI step retains its 300-second
+process timeout and 30-second kill grace, including compilation and startup.
+The underlying intermittent hang remains unconfirmed and tracked in #324.
 
 macOS packaging retries the specific hdiutil resource-busy creation failure up
 to three attempts, waiting 10 seconds between attempts. It prints disk-image

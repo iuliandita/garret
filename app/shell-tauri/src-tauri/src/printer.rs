@@ -420,6 +420,124 @@ pub fn render_standalone(
 mod tests {
     use super::*;
 
+    struct TestWatchdog {
+        progress: std::sync::mpsc::Sender<Option<&'static str>>,
+    }
+
+    impl TestWatchdog {
+        fn start(timeout: std::time::Duration) -> Self {
+            #[cfg(target_os = "linux")]
+            rustix::process::setrlimit(
+                rustix::process::Resource::Core,
+                rustix::process::Rlimit {
+                    current: Some(0),
+                    maximum: Some(0),
+                },
+            )
+            .expect("disable core dumps for the isolated proof test");
+            let (progress, receiver) = std::sync::mpsc::channel();
+            let deadline = std::time::Instant::now() + timeout;
+            std::thread::spawn(move || {
+                let mut phase = "initializing GTK";
+                loop {
+                    match receiver.recv_timeout(
+                        deadline.saturating_duration_since(std::time::Instant::now()),
+                    ) {
+                        Ok(Some(next)) => phase = next,
+                        Ok(None) | Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => return,
+                        Err(std::sync::mpsc::RecvTimeoutError::Timeout) => break,
+                    }
+                }
+                eprintln!(
+                    "proof test watchdog expired after {timeout:?}: {phase}; pid={}",
+                    std::process::id()
+                );
+                if let Ok(threads) = std::fs::read_dir("/proc/self/task") {
+                    for thread in threads.flatten() {
+                        let name = std::fs::read_to_string(thread.path().join("comm"))
+                            .unwrap_or_else(|error| error.to_string());
+                        let wait = std::fs::read_to_string(thread.path().join("wchan"))
+                            .unwrap_or_else(|error| error.to_string());
+                        eprintln!(
+                            "thread {:?}: {}: {}",
+                            thread.file_name(),
+                            name.trim(),
+                            wait.trim()
+                        );
+                    }
+                }
+                std::process::abort();
+            });
+            Self { progress }
+        }
+
+        fn phase(&self, phase: &'static str) {
+            self.progress.send(Some(phase)).expect("watchdog is running");
+        }
+    }
+
+    impl Drop for TestWatchdog {
+        fn drop(&mut self) {
+            let _ = self.progress.send(None);
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn proof_watchdog_bounds_a_blocked_thread_and_cancels_after_completion() {
+        use std::os::unix::process::ExitStatusExt;
+        use std::process::{Command, Stdio};
+        use std::time::{Duration, Instant};
+
+        const CHILD: &str = "GARRET_PROOF_WATCHDOG_TEST";
+        if let Ok(mode) = std::env::var(CHILD) {
+            let watchdog = TestWatchdog::start(Duration::from_millis(100));
+            watchdog.phase("deliberately blocked test thread");
+            if mode == "blocked" {
+                loop {
+                    std::thread::park();
+                }
+            }
+            drop(watchdog);
+            std::thread::sleep(Duration::from_millis(250));
+            return;
+        }
+        for mode in ["blocked", "completed"] {
+            let mut child = Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "--nocapture",
+                    "printer::tests::proof_watchdog_bounds_a_blocked_thread_and_cancels_after_completion",
+                ])
+                .env(CHILD, mode)
+                .stdout(Stdio::null())
+                .stderr(Stdio::piped())
+                .spawn()
+                .unwrap();
+            let deadline = Instant::now() + Duration::from_secs(10);
+            while child.try_wait().unwrap().is_none() {
+                if Instant::now() >= deadline {
+                    child.kill().unwrap();
+                    child.wait().unwrap();
+                    panic!("watchdog child did not finish: {mode}");
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            let output = child.wait_with_output().unwrap();
+            let diagnostics = String::from_utf8_lossy(&output.stderr);
+            if mode == "blocked" {
+                assert_eq!(output.status.signal(), Some(6), "{diagnostics}");
+                assert!(
+                    diagnostics.contains("deliberately blocked test thread"),
+                    "{diagnostics}"
+                );
+                assert!(diagnostics.contains("thread "), "{diagnostics}");
+            } else {
+                assert!(output.status.success(), "{diagnostics}");
+            }
+        }
+    }
+
     #[test]
     fn proof_document_requires_its_own_window_and_exact_nonce() {
         assert!(proof_request_authorized(
@@ -469,14 +587,18 @@ mod tests {
         html: &str,
         dest: Option<&std::path::Path>,
         page_um: (i64, i64),
+        watchdog: &TestWatchdog,
     ) -> Result<Printed, String> {
+        watchdog.phase("setting up WebKit render");
         let result = std::rc::Rc::new(std::cell::RefCell::new(None));
         let done = result.clone();
         render_with_timeout(html, dest, page_um, 15, move |value| {
             *done.borrow_mut() = Some(value);
             gtk::main_quit();
         });
+        watchdog.phase("dispatching GTK or cleaning up WebKit");
         gtk::main();
+        watchdog.phase("checking render result");
         let answer = result.borrow_mut().take().expect("render answered");
         answer
     }
@@ -495,6 +617,7 @@ mod tests {
     #[test]
     #[ignore = "requires an isolated X display and a live WebKit process"]
     fn rich_paragraphs_keep_text_and_marks_and_oversized_headings_refuse() {
+        let watchdog = TestWatchdog::start(std::time::Duration::from_secs(90));
         fn document(flow: &str) -> String {
             let shell = r#"<!doctype html><html><head><style>
               html,body{margin:0}body{font:16px/20px serif}
@@ -531,9 +654,7 @@ mod tests {
                 .replace("__FLOW__", flow)
                 .replace("__SCRIPT__", crate::pdf::PAGINATOR_JS)
         }
-        fn paginate(html: String) -> Result<Printed, String> {
-            render_for_test(&html, None, (152_400, 228_600))
-        }
+        let paginate = |html: String| render_for_test(&html, None, (152_400, 228_600), &watchdog);
         fn text_column(page: &str) -> &str {
             let start = page.find("class=\"proof-text\"").expect("text column");
             let start = page[start..].find('>').unwrap() + start + 1;
@@ -732,6 +853,7 @@ mod tests {
         use crate::pdf::{pdf_page_count, proof_document, Cover, Proof};
         use std::process::Command;
 
+        let watchdog = TestWatchdog::start(std::time::Duration::from_secs(90));
         gtk::init().unwrap();
         let chapters = vec![("chapter".to_string(), "Chapter".to_string(), 0)];
         let book = Book {
@@ -788,6 +910,7 @@ mod tests {
             &html,
             Some(&dest),
             (design.page.width_um, design.page.height_um),
+            &watchdog,
         )
         .unwrap();
         let bytes = printed.bytes.expect("printed bytes");
