@@ -138,6 +138,8 @@ describe("the inspector", () => {
     expect(document.body.dataset.inspectorOpen).toBeUndefined();
 
     refuse = true;
+    // Reopening still has to be observed after the previous delivery is collected.
+    await Bun.sleep(0); Bun.gc(true);
     open(a);
     await waitFor(() => openInspector() === a.panel);
     expect(yieldInspector()).toBe(false);

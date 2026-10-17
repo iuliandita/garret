@@ -52,6 +52,8 @@ test("Bible create follows the root outside recycled rows and releases its subsc
     expect(anchor.hidden).toBe(true);
     top = 60; window.dispatchEvent(new Event("resize")); await flushUntil(() => !anchor.hidden && anchor.style.top === "60px");
     expect(anchor.style.top).toBe("60px");
+    // A mounted observer must retain its callback across garbage collection.
+    await Bun.sleep(0); Bun.gc(true);
     nav.reload({ ...source, count: 1 }); await flushUntil(() => anchor.hidden);
     expect(anchor.hidden).toBe(true);
     nav.reload(source); await flushUntil(() => !anchor.hidden);
