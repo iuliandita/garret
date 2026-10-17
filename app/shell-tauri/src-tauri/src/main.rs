@@ -8831,6 +8831,28 @@ mod tests {
     }
 
     #[test]
+    fn note_and_figure_docx_import_preserves_legacy_prose_and_losses_in_both_destinations() {
+        for picked in [false, true] {
+            let (dir, library, drop_dir) = import_fixture("Source remains");
+            let path = drop_dir.join("book.docx");
+            let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Manuscript</w:t><w:footnoteReference w:id="1"/><w:endnoteReference w:id="2"/><w:footnoteReference w:id="3"/><w:drawing/></w:r></w:p></w:body></w:document>"#;
+            let bytes = crate::epub::zip(&[crate::epub::Entry::text("word/document.xml", xml)]);
+            std::fs::write(&path, &bytes).unwrap();
+            let outcome = if picked { import_path(dir.path(), &library, &path) }
+                else { import_named(dir.path(), &library, &drop_dir, "book.docx") }.unwrap();
+            assert_eq!(outcome.losses, crate::docx_import::Losses { notes: 3, pictures: 1, ..Default::default() });
+            let store = crate::store::Store::open_readonly(Path::new(&outcome.summary.path)).unwrap();
+            let bodies = store.documents().unwrap();
+            assert_eq!(bodies.len(), 1);
+            for body in bodies.values() {
+                assert!(!crate::figure_salvage::has_new_nodes(body));
+                assert_eq!(serde_json::from_str::<serde_json::Value>(body).unwrap(), serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Manuscript"}]}]}));
+            }
+            assert_eq!(std::fs::read(&path).unwrap(), bytes);
+        }
+    }
+
+    #[test]
     fn the_starter_project_is_named() {
         // Until this slice a first launch met a book called `default` -- the
         // window title, the project bar and the project list all said it,

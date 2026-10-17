@@ -2,6 +2,35 @@
 
 SQLite schema: 17.
 
+DOCX import keeps its existing prose-only behavior while new-node conversion is
+disabled. Footnote and endnote references and pictures are omitted with separate
+loss counts in the interface and CLI; no atoms are stored. Note-body parts are
+not parsed in this mode, including malformed parts that previous builds ignored.
+Keep the original DOCX to retain its notes and pictures. No migration runs, and
+existing books remain unchanged. Back up closed books and adjacent originals;
+rollback uses the previous package with a separate complete copy and the same
+counted-loss import behavior.
+
+Prepared DOCX publication uses the shared plan for native endnotes, scoped
+numbering, inline pictures, captions, alternative text, and scene breaks. Legacy
+DOCX bytes remain unchanged. New-node publication and conversion remain disabled
+in production. Scoped publications include section restart settings and native
+custom note marks so readers that ignore those settings still display the plan's
+numbers. Those custom labels are fixed at export; after editing notes, export
+again to derive their numbering. LibreOffice opens native notes with these
+labels but collects them at the document end rather than each section end.
+Microsoft Word placement and editing behavior still need native qualification.
+
+The prepared importer keeps Word footnotes and endnotes as independent owned
+plain-text notes with new IDs. Prepared export/import preserves note-body
+whitespace and line breaks without adding marker text. It reports affected-note
+counts separately for
+flattened formatting, missing bodies (empty notes retained), and dropped note
+drawings. It does not preserve rich-note formatting. The interoperability fixture
+was written by LibreOffice, not Microsoft Word; native Word import qualification
+remains external. The CLI JSON loss object adds `note_formatting`,
+`missing_note_bodies`, and `note_drawings`; human-readable notices name each loss.
+
 Restoring a backup or transferring a book preserves legacy document bodies and
 history, including empty text runs. The copy is refused if a stored document or
 version contains the new node types, and the refusal names its item ID. History

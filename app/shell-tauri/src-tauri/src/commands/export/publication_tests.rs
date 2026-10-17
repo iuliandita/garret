@@ -122,6 +122,129 @@ fn epub(book: &crate::export::Book, walk: &Walked, plan: &Plan) -> Vec<u8> {
     .bytes
 }
 
+#[test]
+fn docx_publication_uses_native_notes_scopes_and_inline_media() {
+    for (numbering, selected, sections, expected_numbers) in [
+        ("book", false, 1, vec![1, 2, 3, 4, 5, 6]),
+        ("story", false, 2, vec![1, 2, 3, 4, 1, 2]),
+        ("chapter", false, 5, vec![1, 2, 1, 2, 1, 2]),
+        ("story", true, 1, vec![1, 2, 3, 4]),
+    ] {
+        let fixture = fixture();
+        fixture.store.set_meta("notes.numbering", numbering).unwrap();
+        with_plan(&fixture, selected.then_some(fixture.stories[0].as_str()), |_book, _walk, plan| {
+            assert_eq!(plan.notes.iter().map(|note| note.number).collect::<Vec<_>>(), expected_numbers);
+            let bytes = render_scope_policy(&fixture.db, "Collected", crate::export::Format::Docx,
+                &crate::identity::Vault::default(), crate::strings::Strings::english(), None,
+                selected.then_some(fixture.stories[0].as_str()), true).unwrap().0.bytes;
+            let entries = crate::epub::read_zip(&bytes).unwrap();
+            let part = |name: &str| String::from_utf8(entries.iter().find(|(path, _)| path == name).unwrap().1.clone()).unwrap();
+            for (path, bytes) in &entries {
+                if path.ends_with(".xml") || path.ends_with(".rels") {
+                    let mut reader = quick_xml::Reader::from_reader(bytes.as_slice());
+                    loop { match reader.read_event().unwrap() { quick_xml::events::Event::Eof => break, _ => {} } }
+                }
+            }
+            let document = part("word/document.xml");
+            let notes = part("word/endnotes.xml");
+            assert_eq!(document.matches("<w:endnoteReference ").count(), plan.notes.len());
+            assert_eq!(notes.matches("<w:endnote w:id=").count(), plan.notes.len());
+            let custom = plan.notes.iter().enumerate().any(|(index, note)| note.number != index + 1);
+            assert_eq!(document.matches("w:customMarkFollows=\"1\"").count(), if custom { plan.notes.len() } else { 0 });
+            for index in 1..=plan.notes.len() {
+                assert!(document.contains(&format!("<w:endnoteReference w:id=\"{index}\"")));
+                assert!(notes.contains(&format!("<w:endnote w:id=\"{index}\">")));
+                if custom {
+                    assert!(document.contains(&format!("w:id=\"{index}\" w:customMarkFollows=\"1\"/><w:t>{}</w:t>", plan.notes[index - 1].number)));
+                }
+            }
+            assert!(notes.contains("w:type=\"separator\" w:id=\"-1\""));
+            assert!(notes.contains("w:type=\"continuationSeparator\" w:id=\"0\""));
+            assert!(notes.contains("second &lt;line&gt;"));
+            assert_eq!(document.matches("<w:numRestart w:val=\"eachSect\"/>").count(), sections);
+            assert_eq!(document.matches("<w:pos w:val=\"sectEnd\"/>").count(), sections);
+            assert!(document.contains("Mixed legacy prose"));
+            assert!(document.contains("descr=\"A &quot;quoted&quot; &lt;view&gt; &amp; sky\""));
+            assert!(document.contains("caption 0 &amp; &lt;text&gt;"));
+            assert!(document.contains("<w:t>* * *</w:t>"));
+            assert_eq!(document.matches("<wp:inline ").count(), if selected { 2 } else { 3 });
+            assert!(!document.contains("wp:anchor"));
+            let rels = part("word/_rels/document.xml.rels");
+            let types = part("[Content_Types].xml");
+            assert!(rels.contains("/endnotes\" Target=\"endnotes.xml\""));
+            assert!(types.contains("wordprocessingml.endnotes+xml"));
+            assert!(rels.contains("/settings\" Target=\"settings.xml\""));
+            assert!(types.contains("PartName=\"/word/settings.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml\""));
+            let settings = part("word/settings.xml");
+            assert!(settings.contains("<w:endnotePr><w:endnote w:id=\"-1\"/><w:endnote w:id=\"0\"/></w:endnotePr>"));
+            for (index, asset) in plan.assets.values().enumerate() {
+                let name = asset.href.strip_prefix("assets/").unwrap();
+                assert!(rels.contains(&format!("Target=\"media/{name}\"")));
+                assert!(document.contains(&format!("r:embed=\"rId{}\"", index + 2)));
+                assert!(types.contains(&format!("ContentType=\"{}\"", asset.mime)));
+                assert_eq!(entries.iter().find(|(path, _)| path == &format!("word/media/{name}")).unwrap().1, asset.bytes);
+            }
+            assert_eq!(plan.assets.len(), if selected { 1 } else { 2 });
+            if selected { assert!(!notes.contains("note 1")); }
+            if let Some(out) = std::env::var_os("GARRET_DOCX_TEST_OUTPUT") {
+                std::fs::create_dir_all(&out).unwrap();
+                std::fs::write(PathBuf::from(out).join(format!("{numbering}-{selected}.docx")), bytes).unwrap();
+            }
+        });
+    }
+}
+
+#[test]
+fn docx_non_contiguous_note_scope_resumes_its_planned_start() {
+    let chapters: Vec<_> = ["a", "b", "c"].into_iter().map(|id| (id.to_string(), id.to_uppercase(), 0)).collect();
+    let book = crate::export::Book { publication: None, single_scene: false, name: "Notes", contents_title: "Contents", front: &[], chapters: &chapters, back: &[] };
+    let bodies = HashMap::from_iter(chapters.iter().map(|(id, _, _)| (id.clone(), json!({"type":"doc","content":[{"type":"paragraph","content":[
+        {"type":"text","text":"Prose"},
+        {"type":"endnote","attrs":{"id":"0199ed16-8c00-7000-8000-000000000001","fmt":"text","body":"A note"}}
+    ]}]}).to_string())));
+    let scopes = crate::publication_plan::Scopes {
+        by_item: HashMap::from([("a".into(), 0), ("b".into(), 1), ("c".into(), 0)]),
+        rows: vec![crate::publication_plan::Scope { label: "Outer".into(), end: "c".into() }, crate::publication_plan::Scope { label: "Inner".into(), end: "b".into() }],
+    };
+    let plan = crate::publication_plan::Plan::build(&book, &bodies, scopes, |_| unreachable!()).unwrap();
+    assert_eq!(plan.notes.iter().map(|note| note.number).collect::<Vec<_>>(), [1, 1, 2]);
+    let rendered = crate::docx::render_planned(&book, &bodies, "en", Some(&plan)).unwrap();
+    let entries = crate::epub::read_zip(&rendered.bytes).unwrap();
+    let document = String::from_utf8_lossy(&entries.iter().find(|(name, _)| name == "word/document.xml").unwrap().1);
+    let starts: Vec<_> = document.split("<w:numStart w:val=\"").skip(1).map(|tail| tail.split('"').next().unwrap()).collect();
+    assert_eq!(starts, ["1", "1", "2"]);
+    if let Some(out) = std::env::var_os("GARRET_DOCX_TEST_OUTPUT") {
+        std::fs::create_dir_all(&out).unwrap();
+        std::fs::write(PathBuf::from(out).join("non-contiguous.docx"), rendered.bytes).unwrap();
+    }
+}
+
+#[test]
+fn docx_distinct_asset_ids_with_identical_originals_share_a_media_part() {
+    let fixture = fixture();
+    let alias = crate::figures::test_support::import(&fixture.db, &fixture.store, &fixture.root.path().join("picked.png"));
+    let mut body: serde_json::Value = serde_json::from_str(&fixture.store.load_doc(&fixture.scenes[1]).unwrap().body).unwrap();
+    let mut duplicate = body["content"][1].clone();
+    duplicate["attrs"]["id"] = json!("0199ed16-8c00-7000-8000-000000000099");
+    duplicate["attrs"]["asset_id"] = json!(alias.id);
+    body["content"].as_array_mut().unwrap().push(duplicate);
+    let conn = rusqlite::Connection::open(&fixture.db).unwrap();
+    conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![body.to_string(), fixture.scenes[1]]).unwrap();
+    with_plan(&fixture, None, |book, walk, plan| {
+        assert_eq!(plan.assets.len(), 3);
+        let rendered = crate::docx::render_planned(book, &walk.bodies, "en", Some(plan)).unwrap();
+        let entries = crate::epub::read_zip(&rendered.bytes).unwrap();
+        let media: Vec<_> = entries.iter().filter(|(name, _)| name.starts_with("word/media/")).collect();
+        assert_eq!(media.len(), 2);
+        let types = String::from_utf8_lossy(&entries.iter().find(|(name, _)| name == "[Content_Types].xml").unwrap().1);
+        assert_eq!(types.matches("Extension=\"jpg\"").count(), 1);
+        assert_eq!(types.matches("Extension=\"png\"").count(), 1);
+        let document = String::from_utf8_lossy(&entries.iter().find(|(name, _)| name == "word/document.xml").unwrap().1);
+        assert_eq!(document.matches("<wp:inline ").count(), 4);
+        for id in 1..=4 { assert_eq!(document.matches(&format!("<wp:docPr id=\"{id}\"")).count(), 1); }
+    });
+}
+
 fn check_links(entries: &[(String, Vec<u8>)]) {
     use quick_xml::{events::Event, Reader};
     let mut ids = HashMap::new();
