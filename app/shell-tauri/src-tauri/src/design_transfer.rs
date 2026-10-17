@@ -125,14 +125,26 @@ fn valid(key: &str, raw: &str) -> Result<String, &'static str> {
         }
         crate::design::CHAPTER_KEY => {
             let mut found = std::collections::BTreeSet::new();
+            let mut sinks = 0;
             for flag in raw.split_whitespace() {
                 if !matches!(
                     flag,
-                    crate::design::NEW_PAGE | crate::design::CAPS_TITLE | crate::design::DROP_CAP
+                    crate::design::NEW_PAGE
+                        | crate::design::CAPS_TITLE
+                        | crate::design::DROP_CAP
+                        | crate::design::ORNAMENT_ABOVE
+                        | crate::design::SINK_THIRD
+                        | crate::design::SINK_HALF
                 ) || !found.insert(flag)
                 {
                     return Err("invalid_chapter_option");
                 }
+                if flag.starts_with("sink-") {
+                    sinks += 1;
+                }
+            }
+            if sinks > 1 {
+                return Err("invalid_chapter_option");
             }
             Ok(raw.to_string())
         }
@@ -468,6 +480,47 @@ mod tests {
                 .as_deref(),
             Some("fill")
         );
+    }
+
+    #[test]
+    fn opener_settings_travel_and_malformed_ones_are_refused() {
+        let dir = tempdir().unwrap();
+        let source = Store::open(&dir.path().join("source.db")).unwrap();
+        source.set_meta(crate::design::GLYPH_KEY, "hedera").unwrap();
+        source
+            .set_meta(
+                crate::design::CHAPTER_KEY,
+                "new-page drop-cap ornament-above sink-half",
+            )
+            .unwrap();
+        let file = dir.path().join("openers.book-design.json");
+        export(&source, &file).unwrap();
+
+        let target_path = dir.path().join("target.db");
+        let target = Store::open(&target_path).unwrap();
+        let shown = preview(&target, &target_path, &file, 1).unwrap();
+        assert!(shown.changes.iter().any(|c| c.field == "chapter"
+            && c.after.as_deref() == Some("new-page drop-cap ornament-above sink-half")));
+        apply(&target, &target_path, &file, 1, &shown.token).unwrap();
+        let style = crate::design::chapter_style_of(&target).unwrap();
+        assert_eq!(style.glyph.as_deref(), Some("hedera"));
+        assert!(style.ornament_above && style.new_page && style.drop_cap);
+        assert_eq!(style.sink, crate::design::Sink::Half);
+
+        for bad in [
+            "sink-third sink-half",
+            "sink-half sink-half",
+            "ornament-above ornament-above",
+            "sink-quarter",
+        ] {
+            let sidecar = format!(
+                r#"{{"version":1,"values":{{"font":null,"page":null,"margins":null,"glyph":null,"chapter":"{bad}","cover_fit_front":null,"cover_fit_back":null}}}}"#
+            );
+            let path = dir.path().join("bad.book-design.json");
+            fs::write(&path, sidecar).unwrap();
+            let refusal = preview(&target, &target_path, &path, 1).unwrap_err();
+            assert!(refusal.contains("invalid_chapter_option"), "{bad}: {refusal}");
+        }
     }
 
     #[test]

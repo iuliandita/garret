@@ -90,6 +90,11 @@ mod words;
 mod warning_history;
 mod zoom;
 
+#[cfg(windows)]
+fn legacy_webview_data_dir(app: &tauri::AppHandle) -> tauri::Result<PathBuf> {
+    app.path().resolve(data_migration::LEGACY_DIR, tauri::path::BaseDirectory::LocalData)
+}
+
 fn write_measurement_sink(
     payload: &serde_json::Value,
     destination: Option<&std::ffi::OsStr>,
@@ -1152,9 +1157,16 @@ pub(crate) fn create_into_dir(
     dir: &Path,
     name: &str,
     strings: &strings::Strings,
+    preset: Option<&str>,
 ) -> std::result::Result<projects::ProjectSummary, String> {
-    let made = projects::create_in(dir, name, strings)?;
+    let made = projects::create_in_preset(dir, name, strings, preset)?;
     Ok(book_registration::remember(data_home, dir, made))
+}
+
+#[command_boundary::command]
+fn project_preset(state: State<'_, StoreState>) -> Result<String, String> {
+    let guard = locked(&state);
+    open_project(&guard)?.store.project_preset().map(str::to_owned).map_err(|e| e.to_string())
 }
 
 #[command_boundary::command]
@@ -1172,6 +1184,7 @@ fn project_create(
     data_home: State<'_, DataHome>,
     strings: State<'_, HostStrings>,
     name: String,
+    preset: Option<String>,
 ) -> std::result::Result<projects::ProjectSummary, String> {
     // Deliberately does not switch to it: creation and opening are separate
     // acts, so a failed open cannot lose a just-created manuscript.
@@ -1179,8 +1192,9 @@ fn project_create(
     // INTO THE REMEMBERED FOLDER, which is `<Documents>/Books` until a writer
     // chooses otherwise. The plain create is still one act with no
     // dialog.
+    projects::validate_preset(preset.as_deref())?;
     let dir = new_book_dir(&data_home.0)?;
-    create_into_dir(&data_home.0, &dir, &name, &strings.0)
+    create_into_dir(&data_home.0, &dir, &name, &strings.0, preset.as_deref())
 }
 
 /// Where the next new book would go, so the panel can show it before the writer
@@ -3519,7 +3533,11 @@ enum AssetRoot {
 /// harness names a per-run staged copy; answering from a different build that
 /// happens to lie beside the binary would mean a graded run measuring something
 /// other than what it staged.
-fn resolve_asset_root(env_dist: Option<&Path>, exe: Option<&Path>) -> AssetRoot {
+fn resolve_asset_root(
+    env_dist: Option<&Path>,
+    exe: Option<&Path>,
+    resource_dir: Option<&Path>,
+) -> AssetRoot {
     let is_build = |dir: &Path| dir.join("index.html").is_file();
 
     if let Some(dir) = env_dist {
@@ -3541,9 +3559,8 @@ fn resolve_asset_root(env_dist: Option<&Path>, exe: Option<&Path>) -> AssetRoot 
         // shell-tauri -> app. A development convenience, and only that.
         exe_dir.join("../../../../ui/dist"),
     ];
-    // macOS seals resources separately from executable code inside app bundles.
-    if exe_dir.ends_with("Contents/MacOS") {
-        candidates.insert(1, exe_dir.join("../Resources/dist"));
+    if let Some(resources) = resource_dir {
+        candidates.insert(1, resources.join("dist"));
     }
     match candidates.iter().find(|c| is_build(c)) {
         Some(found) => AssetRoot::Found(found.clone()),
@@ -4258,9 +4275,12 @@ fn main() {
 
     // Resolved once, here, so every request answers from the same directory and
     // a failure is reported at startup instead of as a silent 404 per asset.
+    let context = tauri::generate_context!();
+    let resources = tauri::utils::platform::resource_dir(context.package_info(), &Default::default()).ok();
     let assets = resolve_asset_root(
         std::env::var_os("APP_DIST").map(PathBuf::from).as_deref(),
         std::env::current_exe().ok().as_deref(),
+        resources.as_deref(),
     );
     if let AssetRoot::Missing(tried) = &assets {
         eprintln!("no interface assets found; tried:");
@@ -4416,6 +4436,7 @@ fn main() {
             __wire_project_forget,
             __wire_project_new_dir,
             __wire_project_create,
+            __wire_project_preset,
             __wire_project_pending_registrations,
             __wire_project_retry_registration,
             __wire_project_open,
@@ -4574,6 +4595,9 @@ fn main() {
             }
         })
         .setup(move |app| {
+            // X11 keeps a separate class from the GTK application ID.
+            #[cfg(target_os = "linux")]
+            gtk::gdk::set_program_class(&app.config().identifier);
             #[cfg(unix)]
             if let Some(listener) = owned_socket {
                 let handle = app.handle().clone();
@@ -4759,6 +4783,9 @@ fn main() {
             // after migration, blocking the next launch on a fresh installation.
             #[cfg(target_os = "linux")]
             let window = window.data_directory(app.state::<DataHome>().0.join(APP_DIR));
+            // WebView2's default follows the identifier, independently of books and settings.
+            #[cfg(windows)]
+            let window = window.data_directory(legacy_webview_data_dir(app.handle())?);
             window.build()?;
 
             #[cfg(target_os = "linux")]
@@ -4820,7 +4847,7 @@ fn main() {
             }
             Ok(())
         })
-        .build(tauri::generate_context!());
+        .build(context);
 
     let run = run.map(|app| {
         // `App::run` never returns; the process exits from inside it. So the
@@ -5006,7 +5033,7 @@ mod tests {
         dir: &Path,
         name: &str,
     ) -> std::result::Result<crate::projects::ProjectSummary, String> {
-        super::create_into_dir(data_home, dir, name, &english())
+        super::create_into_dir(data_home, dir, name, &english(), None)
     }
 
     fn import_named(
@@ -7978,6 +8005,7 @@ mod tests {
             &crate::projects::library_dir(home.path()),
             "Deutsch",
             &captured,
+            None,
         )
         .unwrap();
         let store = crate::store::Store::open_readonly(Path::new(&made.path)).unwrap();
@@ -8617,7 +8645,7 @@ mod tests {
         // fallback could win, a run would silently measure whichever build
         // happened to be lying beside the binary.
         assert_eq!(
-            resolve_asset_root(Some(&staged), Some(&exe)),
+            resolve_asset_root(Some(&staged), Some(&exe), None),
             AssetRoot::Found(staged)
         );
     }
@@ -8635,7 +8663,7 @@ mod tests {
         // than the one the operator named, which is the failure this project
         // has already paid for twice with a stale app/ui/dist.
         assert_eq!(
-            resolve_asset_root(Some(&empty), Some(&exe)),
+            resolve_asset_root(Some(&empty), Some(&exe), None),
             AssetRoot::Missing(vec![empty])
         );
     }
@@ -8648,23 +8676,44 @@ mod tests {
         built_dist(dir.path().join("app/ui/dist"));
 
         assert_eq!(
-            resolve_asset_root(None, Some(&exe)),
+            resolve_asset_root(None, Some(&exe), None),
             AssetRoot::Found(beside)
         );
     }
 
     #[test]
-    fn the_page_is_found_in_macos_bundle_resources() {
+    fn installed_interface_uses_platform_resources() {
         let dir = tempdir().unwrap();
-        let exe = dir.path().join("garret.app/Contents/MacOS/garret");
-        std::fs::create_dir_all(exe.parent().unwrap()).unwrap();
-        let resources = built_dist(dir.path().join("garret.app/Contents/Resources/dist"));
-        match resolve_asset_root(None, Some(&exe)) {
-            AssetRoot::Found(found) => assert_eq!(found.canonicalize().unwrap(), resources.canonicalize().unwrap()),
-            other => panic!("expected bundle resources, got {other:?}"),
+        for (executable, resource) in [
+            ("usr/bin/garret", "usr/lib/garret"),
+            ("appimage/usr/bin/garret", "appimage/usr/lib/garret"),
+            ("garret.app/Contents/MacOS/garret", "garret.app/Contents/Resources"),
+            ("installed/garret.exe", "installed"),
+        ] {
+            let exe = dir.path().join(executable);
+            std::fs::create_dir_all(exe.parent().unwrap()).unwrap();
+            let resources = dir.path().join(resource);
+            let dist = built_dist(resources.join("dist"));
+            let found = resolve_asset_root(None, Some(&exe), Some(&resources));
+            assert_eq!(found, AssetRoot::Found(dist.clone()), "{executable}");
+            let missing = dir.path().join("explicit-missing");
+            assert_eq!(resolve_asset_root(Some(&missing), Some(&exe), Some(&resources)),
+                AssetRoot::Missing(vec![missing]));
+            std::fs::remove_dir_all(dist).unwrap();
         }
-        let override_dir = built_dist(dir.path().join("staged"));
-        assert_eq!(resolve_asset_root(Some(&override_dir), Some(&exe)), AssetRoot::Found(override_dir));
+    }
+
+    #[test]
+    fn executable_dist_precedes_platform_resources() {
+        let dir = tempdir().unwrap();
+        let exe = release_exe(dir.path());
+        let beside = built_dist(exe.parent().unwrap().join("dist"));
+        let resources = dir.path().join("resources");
+        built_dist(resources.join("dist"));
+        assert_eq!(
+            resolve_asset_root(None, Some(&exe), Some(&resources)),
+            AssetRoot::Found(beside)
+        );
     }
 
     #[test]
@@ -8677,7 +8726,7 @@ mod tests {
         // Four levels up from target/release reaches app/: release -> target ->
         // src-tauri -> shell-tauri -> app. The design document says three, which
         // lands in app/shell-tauri and finds nothing.
-        match resolve_asset_root(None, Some(&exe)) {
+        match resolve_asset_root(None, Some(&exe), None) {
             AssetRoot::Found(p) => {
                 assert_eq!(p.canonicalize().unwrap(), ui.canonicalize().unwrap())
             }
@@ -8694,7 +8743,7 @@ mod tests {
         std::fs::create_dir_all(exe.parent().unwrap().join("dist")).unwrap();
         let ui = built_dist(dir.path().join("app/ui/dist"));
 
-        match resolve_asset_root(None, Some(&exe)) {
+        match resolve_asset_root(None, Some(&exe), None) {
             AssetRoot::Found(p) => {
                 assert_eq!(p.canonicalize().unwrap(), ui.canonicalize().unwrap())
             }
@@ -8707,7 +8756,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let exe = release_exe(dir.path());
 
-        let tried = match resolve_asset_root(None, Some(&exe)) {
+        let tried = match resolve_asset_root(None, Some(&exe), None) {
             AssetRoot::Missing(paths) => paths,
             other => panic!("expected no asset root, got {other:?}"),
         };
@@ -8724,7 +8773,7 @@ mod tests {
         // std::env::current_exe can fail. Without it there is no candidate at
         // all, and the window must say so rather than serve a blank page.
         assert_eq!(
-            resolve_asset_root(None, None),
+            resolve_asset_root(None, None, None),
             AssetRoot::Missing(Vec::new())
         );
     }
@@ -9212,6 +9261,7 @@ mod tests {
     fn docx_bytes_under_an_md_name_import_as_docx() {
         let (dir, library, _drop) = import_fixture("# Ignored\n\n## X\n\np\n");
         let book = crate::export::Book {
+            single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
             front: &[],

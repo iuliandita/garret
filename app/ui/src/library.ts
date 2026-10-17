@@ -1,3 +1,4 @@
+import { createPresetChoice, projectPreset, type ProjectPreset } from "./project-preset";
 // app/ui/src/library.ts
 // The library screen: the pen-name strip, the desk, the shelf,
 // and the generated cover -- what the window shows before a book is open, and
@@ -103,7 +104,7 @@ export interface LibraryDeps {
   openBook(path: string, name?: string): Promise<boolean>;
   /** Creates and opens the book. A refused switch keeps the room open;
    *  failed attribution preserves its notice without announcing success. */
-  createBook(name: string, identityId: string | null): Promise<LibraryCreateResult>;
+  createBook(name: string, identityId: string | null, preset?: ProjectPreset): Promise<LibraryCreateResult>;
   openBooks(focus: "import" | "restore"): void;
   openPreferences?(): void;
   openHelp?(): void;
@@ -1055,7 +1056,7 @@ export function createLibrary(deps: LibraryDeps): Library {
       if (isCompositionKey(event)) return;
       if (event.key === "Enter") {
         event.preventDefault();
-        void createBook(input.value.trim());
+        void createBook(input.value.trim(), projectPreset(presetChoice.select.value));
       } else if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
@@ -1064,11 +1065,12 @@ export function createLibrary(deps: LibraryDeps): Library {
         document.getElementById("library-new-book-tile")?.focus();
       }
     });
+    const presetChoice = createPresetChoice("library-new-book-preset");
     const create = document.createElement("button");
     create.type = "button";
     create.id = "library-new-book-create";
     create.textContent = t("library.new-book.create");
-    create.addEventListener("click", () => void createBook(input.value.trim()));
+    create.addEventListener("click", () => void createBook(input.value.trim(), projectPreset(presetChoice.select.value)));
     const cancel = document.createElement("button");
     cancel.type = "button";
     cancel.id = "library-new-book-cancel";
@@ -1079,7 +1081,7 @@ export function createLibrary(deps: LibraryDeps): Library {
       document.getElementById("library-new-book-tile")?.focus();
     });
     field.append(label, input);
-    tile.append(field, create, cancel);
+    tile.append(field, presetChoice.field, create, cancel);
     input.focus();
   }
 
@@ -1212,7 +1214,7 @@ export function createLibrary(deps: LibraryDeps): Library {
     restoreFocus(operationGeneration, () => control);
   }
 
-  async function createBook(name: string): Promise<void> {
+  async function createBook(name: string, preset: ProjectPreset): Promise<void> {
     if (creatingBook || openingBook || name === "") return;
     creatingBook = true;
     paintBusy();
@@ -1223,7 +1225,7 @@ export function createLibrary(deps: LibraryDeps): Library {
     let failed = false;
     let result: LibraryCreateResult = "unopened";
     try {
-      result = await deps.createBook(name, latest.selected_identity);
+      result = await deps.createBook(name, latest.selected_identity, preset);
     } catch (error: unknown) {
       failed = true;
       deps.onNotice(t("library.error.create", { name, error: messageOf(error) }));

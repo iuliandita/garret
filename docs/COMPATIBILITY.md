@@ -16,7 +16,10 @@ protect against losing that device.
 
 ## Upgrade and compatibility
 
-Extract the new desktop package into a separate folder, keeping its interface
+For installed builds, close garret and run the new installer or use your package
+manager to upgrade. Removal keeps manuscripts, settings and recovery data; it
+does not replace a backup. For portable builds, extract into a separate folder,
+keeping the interface
 files beside the executable or inside the macOS bundle. First open a disposable
 copy of a book and check its prose, outline, pictures, research, and exports.
 Opening a supported older book can upgrade its SQLite schema. A newer schema
@@ -29,11 +32,78 @@ An oversized foreign document can now be refused. Preserve the original and
 split or simplify a copy before retrying; do not bypass the limits. This does
 not change the stored manuscript schema or require converting existing books.
 
+New desktop books can start as a novel, short fiction, or nonfiction. The
+optional `project.preset` metadata key adds no schema migration: a missing or
+unknown value uses novel defaults, and unknown values remain stored unchanged.
+Older desktop builds ignore this key and show novel tools. Short fiction starts
+with one scene at the root; nonfiction uses the non-fiction book design and
+keeps fiction tools under Planning > More. Reference notes use the same stored
+section as the Bible. Existing books and their data are unchanged.
+
+A manuscript consisting of one scene, optionally inside its chapter and part,
+exports without generated contents in Markdown, EPUB, PDF proof, and Word.
+Only empty or automatically numbered outline headings are omitted; titles
+written by the author still export. Front and back matter keep their headings
+and EPUB navigation entries. EPUB omits body entries from its navigation
+document and keeps that document outside the reading spine. The first scene
+paragraph keeps its drop cap when enabled by the book design; an ornament is
+omitted with its heading, and PDF running heads fall back to the book title.
+Adding another scene or a separate section restores normal outline headings
+and contents. These are export defaults, not changes to saved prose.
+Complete backups, encrypted archive restores, salvage, and portable book
+copies retain the metadata key verbatim.
+Use the closed-book backup and disposable-copy upgrade steps above; rollback
+to an older desktop build needs no preset conversion. Android preset support
+is handled separately; do not assume an older Android build understands it.
+
+Chapter openers add three optional words to a book's stored chapter options:
+`ornament-above`, `sink-third` and `sink-half`, plus three more ornament names.
+The SQLite schema is unchanged and the defaults of existing books are
+unchanged: ornament below the title, chapters starting at the top. The sink
+means a chapter opening starts a third or half of the way down the text area
+(the page inside its margins, a proof's text block), measured from the top of
+that area; in an EPUB it is relative spacing and a reading system decides the
+page. PDF pagination changed on purpose: a heading, the heading above it and
+any adjacent ornament now move to the next leaf together instead of leaving a
+heading at the foot of a page, so some proofs gain a page. An older build
+ignores the words (the ornament sits below the title and chapters start at the
+top of the page), draws no ornament for the new names, drops the words if it
+saves the chapter options, and refuses a book-design transfer file that
+carries them.
+
 The desktop profile now uses `garret` instead of `cc.local.app`, preserving a
 compatibility link after migration. Close older versions before first launch.
 If migration stops, preserve both folders named in the warning, close garret,
 and request recovery help. Do not merge, overwrite, or delete them. The Android
 application identifier remains `cc.local.app`; profile migration is not sync.
+
+The desktop application identifier is `com.usegarret.app`. This changes the
+Linux menu-entry identity and macOS bundle identity without relocating books,
+`settings.json`, recovery copies, or single-instance ownership. Linux keeps its
+WebView data in the `garret` profile; Windows keeps its existing WebView2 data
+under the local application-data directory's `cc.local.app` folder. Android
+explicitly keeps `cc.local.app`, so installing an update preserves its sandbox.
+
+On macOS, the new identifier starts fresh WebKit and HTTP caches, temporary
+caches, and native window positions and restore state. The previous native window
+positions and restore state do not carry over. Old `cc.local.app` entries in your
+home Library and temporary folder are left in place; garret does not move or
+delete them. Books and application settings are unaffected: garret keeps its
+preferences in the existing `settings.json`, and the desktop interface does not
+store writing or settings in WebView localStorage or IndexedDB.
+Linux old-to-new book and settings reuse is exercised on disposable data; macOS
+and Windows native upgrade behavior still requires testing on those platforms.
+
+
+On Windows, the uninstaller's optional "Delete the application data" checkbox
+removes only `%APPDATA%\com.usegarret.app` and
+`%LOCALAPPDATA%\com.usegarret.app` for the current user. It also clears installer
+registry preferences. Neither directory contains books or settings: those remain
+under `%APPDATA%\garret` (including its library and recovery files), or in a
+folder you selected. The single-instance lock remains under
+`%APPDATA%\cc.local.app`, and the pinned WebView2 profile remains under
+`%LOCALAPPDATA%\cc.local.app`. The checkbox does not remove those folders and
+is not applied during an installer upgrade.
 
 ## Android transfer and updates
 

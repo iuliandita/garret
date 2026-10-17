@@ -52,6 +52,15 @@ The exact tested APK and emulator version are recorded in
 Back navigation and lifecycle behavior still require testing. Try two scenes,
 wait for "Saved on this device", then close and reopen the app.
 
+## Updates
+
+[Obtainium](https://github.com/ImranR98/Obtainium) can install each published
+release as an update; the source URL, asset name and signing certificate
+fingerprint are in the
+[README update notes](../../README.md#android-updates-with-obtainium). An
+installed copy updates in place only while the package name and the signing key
+stay the same.
+
 ## Build
 
 The development image supplies Rust Android targets, SDK, NDK and Tauri CLI

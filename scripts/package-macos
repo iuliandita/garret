@@ -37,6 +37,8 @@ check_source() {
 }
 check_source
 bundle_version=$(bun -e 'const c = await Bun.file(process.argv[1]).json(); console.log(c.version)' "$repo/app/shell-tauri/src-tauri/tauri.conf.json")
+bundle_identifier=$(bun -e 'const c = await Bun.file(process.argv[1]).json(); console.log(c.identifier)' "$repo/app/shell-tauri/src-tauri/tauri.conf.json")
+[[ "$bundle_identifier" =~ ^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$ ]] || fail "Invalid bundle identifier."
 [[ "$bundle_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "Bundle version must have three numeric components."
 
 # Rebuild the ignored UI, then the locked host; explicit target avoids config
@@ -90,7 +92,7 @@ cat > "$bundle/Contents/Info.plist" <<PLIST
   <key>CFBundleDevelopmentRegion</key><string>en</string>
   <key>CFBundleExecutable</key><string>garret</string>
   <key>CFBundleIconFile</key><string>icon</string>
-  <key>CFBundleIdentifier</key><string>cc.local.app</string>
+  <key>CFBundleIdentifier</key><string>$bundle_identifier</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
   <key>CFBundleName</key><string>garret</string>
   <key>CFBundlePackageType</key><string>APPL</string>
@@ -128,6 +130,10 @@ rm "$build/file-list"
 archive="$build/garret-macos-$architecture.zip"
 ditto -c -k --sequesterRsrc --keepParent "$stage" "$archive"
 (cd "$build" && shasum -a 256 "$(basename "$archive")" > "$(basename "$archive").sha256")
+check_source
+rm -rf "$repo/app/shell-tauri/src-tauri/target/$target/release/bundle"
+(cd "$repo/app/shell-tauri" && CARGO_TARGET_DIR="$repo/app/shell-tauri/src-tauri/target" bun "$repo/node_modules/@tauri-apps/cli/tauri.js" bundle --ci --no-binary-patching --target "$target" --bundles dmg)
+python3 "$here/collect-installers.py" "macos-$architecture" "$repo/app/shell-tauri/src-tauri/target/$target/release/bundle" "$build"
 check_source
 rm "$build/INCOMPLETE.txt"
 printf '\nWrote %s\n' "$archive"

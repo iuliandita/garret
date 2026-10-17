@@ -1,3 +1,4 @@
+import type { ProjectPreset } from "./project-preset";
 // app/ui/src/nav-context-menu.ts
 // Right-click a row in the navigator and act on THAT row: the three creates,
 // Synopsis... and Who appears here... for a row that carries a body,
@@ -46,6 +47,7 @@ export function isContextMenuChord(event: KeyboardEvent): boolean {
 }
 
 export interface NavContextMenuDeps {
+  preset?: ProjectPreset;
   /** Where the panel is appended. The body, not `#nav`: the panel is
    *  `position: fixed` and a row near the foot of the pane opens a menu that
    *  must be allowed to stand outside the navigator's own scroll box. */
@@ -133,7 +135,7 @@ export function createNavContextMenu(deps: NavContextMenuDeps): NavContextMenu {
     if (carriesABody(itemId)) {
       items.push(
         { id: "nav-context-synopsis", label: () => t("menu.synopsis"), run: () => deps.openSynopsis(itemId) },
-        { id: "nav-context-appears", label: () => t("menu.appears"), run: () => deps.openAppears(itemId) },
+        { id: "nav-context-appears", visible: () => deps.preset !== "nonfiction", label: () => t("menu.appears"), run: () => deps.openAppears(itemId) },
       );
     }
     items.push(

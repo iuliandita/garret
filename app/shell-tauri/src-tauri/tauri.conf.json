@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "garret",
   "version": "0.0.2",
-  "identifier": "cc.local.app",
+  "identifier": "com.usegarret.app",
   "build": {
     "frontendDist": "../dist"
   },
@@ -10,10 +10,11 @@
     "withGlobalTauri": true,
     "security": {
       "csp": "default-src 'self' appdist:; connect-src 'self' appdist: ipc: http://ipc.localhost; script-src 'self' appdist:; style-src 'self' appdist: 'unsafe-inline'; img-src 'self' appdist: data:; base-uri 'none'; form-action 'none'"
-    }
+    },
+    "enableGTKAppId": true
   },
   "bundle": {
-    "active": false,
+    "active": true,
     "icon": [
       "icons/icon.png",
       "icons/32x32.png",
@@ -21,6 +22,79 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "targets": "all",
+    "publisher": "iuliandita",
+    "homepage": "https://usegarret.com",
+    "license": "GPL-3.0-or-later",
+    "licenseFile": "../../../COPYING",
+    "category": "Productivity",
+    "shortDescription": "An offline writing studio for novelists",
+    "longDescription": "Write and organize novels with a local library, revision history, research and exports. No account or network connection is required.",
+    "resources": {
+      "../dist/": "dist/",
+      "../../../COPYING": "COPYING",
+      "../../../THIRD-PARTY-NOTICES.md": "THIRD-PARTY-NOTICES.md"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    },
+    "macOS": {
+      "signingIdentity": "-"
+    },
+    "linux": {
+      "deb": {
+        "files": {
+          "/usr/share/metainfo/com.usegarret.app.metainfo.xml": "../../../scripts/linux/com.usegarret.app.metainfo.xml",
+          "/usr/share/doc/garret/COPYING": "../../../COPYING",
+          "/usr/share/doc/garret/THIRD-PARTY-NOTICES.md": "../../../THIRD-PARTY-NOTICES.md",
+          "/usr/share/applications/com.usegarret.app.desktop": "../../../scripts/linux/com.usegarret.app.desktop",
+          "/usr/share/icons/hicolor/32x32/apps/com.usegarret.app.png": "icons/32x32.png",
+          "/usr/share/icons/hicolor/128x128/apps/com.usegarret.app.png": "icons/128x128.png",
+          "/usr/share/icons/hicolor/256x256/apps/com.usegarret.app.png": "icons/128x128@2x.png"
+        },
+        "desktopTemplate": "../../../scripts/linux/garret.desktop",
+        "depends": [
+          "libc6 (>= 2.39)",
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0t64"
+        ],
+        "section": "editors"
+      },
+      "rpm": {
+        "files": {
+          "/usr/share/metainfo/com.usegarret.app.metainfo.xml": "../../../scripts/linux/com.usegarret.app.metainfo.xml",
+          "/usr/share/doc/garret/COPYING": "../../../COPYING",
+          "/usr/share/doc/garret/THIRD-PARTY-NOTICES.md": "../../../THIRD-PARTY-NOTICES.md",
+          "/usr/share/applications/com.usegarret.app.desktop": "../../../scripts/linux/com.usegarret.app.desktop",
+          "/usr/share/icons/hicolor/32x32/apps/com.usegarret.app.png": "icons/32x32.png",
+          "/usr/share/icons/hicolor/128x128/apps/com.usegarret.app.png": "icons/128x128.png",
+          "/usr/share/icons/hicolor/256x256/apps/com.usegarret.app.png": "icons/128x128@2x.png"
+        },
+        "desktopTemplate": "../../../scripts/linux/garret.desktop",
+        "depends": [
+          "glibc",
+          "libc.so.6(GLIBC_2.39)(64bit)",
+          "webkit2gtk4.1",
+          "gtk3"
+        ]
+      },
+      "appimage": {
+        "files": {
+          "usr/share/metainfo/com.usegarret.app.metainfo.xml": "../../../scripts/linux/com.usegarret.app.metainfo.xml",
+          "usr/share/doc/garret/COPYING": "../../../COPYING",
+          "usr/share/doc/garret/THIRD-PARTY-NOTICES.md": "../../../THIRD-PARTY-NOTICES.md",
+          "usr/share/applications/com.usegarret.app.desktop": "../../../scripts/linux/com.usegarret.app.desktop",
+          "usr/share/icons/hicolor/32x32/apps/com.usegarret.app.png": "icons/32x32.png",
+          "usr/share/icons/hicolor/128x128/apps/com.usegarret.app.png": "icons/128x128.png",
+          "usr/share/icons/hicolor/256x256/apps/com.usegarret.app.png": "icons/128x128@2x.png"
+        }
+      }
+    }
   }
 }

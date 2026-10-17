@@ -3826,6 +3826,7 @@ mod tests {
     fn importing_this_crates_own_docx_has_items_and_no_losses() {
         let dir = tempdir().unwrap();
         let book = crate::export::Book {
+            single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
             front: &[],
