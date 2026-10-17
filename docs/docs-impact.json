@@ -26,11 +26,11 @@
     "editor": {
       "breaking": "none",
       "docs": {
-        "README.md": "e2bbb27439357be926203c96e7d5fd497cd48b45bd9a07e8d482659047725570"
+        "README.md": "819a260d744026339fab7b7c26f612ae0da234c0e145cbde9658214d56df40f5"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Document the Obtainium update channel for the Android app in the README: the GitHub source URL, the release APK asset to pick, the signing certificate SHA-256 fingerprint to compare, and the one-time package move that ends in-place updates.",
+      "note": "Document the Obtainium update channel for the Android app in the README: the GitHub source URL, the release APK asset to pick, the signing certificate SHA-256 fingerprint to compare, the one-time package move that ends in-place updates, and the fact that books cannot move between the old and new app yet.",
       "source_sha256": "0e4f0d0a283e6d20ed949c9cf1571526fe34324d91603deeffdb00f7c1d408fc"
     },
     "encryption": {
@@ -55,12 +55,12 @@
     "native-packaging": {
       "breaking": "none",
       "docs": {
-        "README.md": "e2bbb27439357be926203c96e7d5fd497cd48b45bd9a07e8d482659047725570",
+        "README.md": "819a260d744026339fab7b7c26f612ae0da234c0e145cbde9658214d56df40f5",
         "scripts/android/README.md": "2c1e1bb647734d6bb19f102d8349484446b79d9e04b20be5c47d2e550b153237"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Point the Android preview guide at the new Obtainium update instructions and state that in-place updates depend on the unchanged package name and signing key.",
+      "note": "Point the Android preview guide at the Obtainium update instructions and state that in-place updates depend on the unchanged package name and signing key and that books cannot move between the old and new app yet.",
       "source_sha256": "fcc4f4f3c483c3835437571e65d8070031719a95d8d910b3cf1595466aaf21e1"
     },
     "project-format": {

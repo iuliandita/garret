@@ -10,7 +10,7 @@ What the Android app does today:
 * Follows the device language: English and German.
 * Offers a light and a dark theme.
 
-Everything works offline. Books stay on the device and no account is needed. There is no automatic sync between the desktop app and the phone, so moving a book between them is a manual step.
+Everything works offline. Books stay on the device and no account is needed. There is no sync, and moving books between the phone and the desktop app is not possible yet; a way to move them is planned.
 
 This is an early alpha of a larger project. The Android app has fewer features than the desktop app: it has no import or export, no story bible, no editorial review, and no publishing tools.
 

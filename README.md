@@ -109,8 +109,8 @@ An installed copy keeps updating in place only while the package name and the
 signing key stay the same. One package change is planned: the Android app moves
 from `cc.local.app` to `com.usegarret.app` in
 [#279](https://github.com/iuliandita/garret/issues/279). That build installs
-next to the existing app instead of updating it, so keep the current app until
-the new one has your books.
+next to the existing app instead of updating it, so keep the current app
+installed; books cannot be moved between the two yet.
 
 ## Building from source (Linux)
 

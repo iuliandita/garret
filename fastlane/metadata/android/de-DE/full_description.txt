@@ -10,7 +10,7 @@ Was die Android-App heute kann:
 * Der Gerätesprache folgen: Deutsch und Englisch.
 * Ein helles und ein dunkles Erscheinungsbild anbieten.
 
-Alles funktioniert offline. Die Bücher bleiben auf dem Gerät, ein Konto ist nicht nötig. Zwischen Desktop-App und Telefon gibt es keine automatische Synchronisierung; ein Buch wird von Hand übertragen.
+Alles funktioniert offline. Die Bücher bleiben auf dem Gerät, ein Konto ist nicht nötig. Es gibt keine Synchronisierung, und Bücher zwischen Telefon und Desktop-App zu übertragen ist noch nicht möglich; eine Möglichkeit dafür ist geplant.
 
 Dies ist eine frühe Alpha eines größeren Projekts. Die Android-App hat weniger Funktionen als die Desktop-App: kein Import und Export, keine Story-Bibel, keine Redaktionsfunktionen und keine Werkzeuge zum Veröffentlichen.
 
