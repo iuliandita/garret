@@ -2819,7 +2819,7 @@ mod tests {
                 _ => value["content"][1]["attrs"]["alt"] = serde_json::json!("Bram Kell"),
             }
             let bodies = std::collections::HashMap::from([("scene".into(), value.to_string())]);
-            let report = checked(crate::export::Format::Markdown, "Book", &vault, Some(&pin), &[&item], &bodies, &[]);
+            let report = super::checked(crate::export::Format::Markdown, "Book", &vault, Some(&pin), &[&item], &bodies, &[]);
             assert!(report.blockers > 0, "{field}");
         }
         let legacy = serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":[
@@ -2827,7 +2827,7 @@ mod tests {
         ]}]}).to_string();
         assert!(crate::store::document_fields::fields(&legacy).is_none());
         let bodies = std::collections::HashMap::from([("scene".into(), legacy)]);
-        let report = checked(crate::export::Format::Markdown, "Book", &vault, Some(&pin), &[&item], &bodies, &[]);
+        let report = super::checked(crate::export::Format::Markdown, "Book", &vault, Some(&pin), &[&item], &bodies, &[]);
         assert!(report.blockers > 0);
     }
 
