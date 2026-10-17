@@ -30,7 +30,7 @@
       "migration": "",
       "no_impact": "",
       "note": "Android adds localized archive preview, explicit separate-copy confirmation and guarded transfer admission through cancellation. Transfers now dispose disposable stages, offer localized leftover-file disposal and keep status responsive during transfer I/O.",
-      "source_sha256": "cec37bcfb60800c796d1c5d2d19ab607082904031e17d8dea34d695372b63de6"
+      "source_sha256": "bde479b1d16090be36787c636eb492efabaadf5b42bf18656950c9811bde7ca4"
     },
     "encryption": {
       "breaking": "none",
@@ -50,7 +50,7 @@
       "migration": "",
       "no_impact": "",
       "note": "Compatibility guidance documents Android resource limits, ordered capability refusals, retained staging and the limits of automated verification. Compatibility guidance describes automatic cleanup, explicit disposal, unavailable transfer storage, and exact SQLite probe behavior.",
-      "source_sha256": "595a9d07c5fafb129cf470e24595253776dca810009c8d82be333a478673f97b"
+      "source_sha256": "ea2574860923c738cbe2a6a42e817506bd6af1e15246fe370313d4d4b737f8c7"
     },
     "native-packaging": {
       "breaking": "none",
@@ -60,7 +60,7 @@
       "migration": "",
       "no_impact": "",
       "note": "The source remains version 0.0.2 with Android code 2. Release preparation raises both before an in-place update; the signing flow and application identifier remain unchanged.",
-      "source_sha256": "40b56de5f3b83bfa6db8ea3165923f5967d170f621b8441775d17cd4d736d6e1"
+      "source_sha256": "5315095954eb11b3658cbe06fcec237762d9a618ed10f01f124a5a1a4aab864c"
     },
     "project-format": {
       "breaking": "none",

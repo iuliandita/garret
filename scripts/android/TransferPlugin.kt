@@ -166,6 +166,7 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
             s.picker.resolve(JSObject().put("operation", s.operation).put("cancelled", false).put("ticket", s.ticket))
         } catch (_: Exception) {
             synchronized(monitor) { if (slot === s) slot = null }
+            if (result.resultCode == Activity.RESULT_OK) deleteCreated(s, result.data?.data)
             s.picker.reject("saf_picker_failed")
         }
     }
