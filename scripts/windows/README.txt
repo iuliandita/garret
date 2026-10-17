@@ -61,8 +61,9 @@ cover different machines and workflows.
 
 Known Windows limitations
 -------------------------
-- GUI PDF proof/preview uses WebView2. An advisory native Windows CI check covers
-  the sample book; other runtimes and font installations still need testing.
+- PDF export uses WebView2. Native Windows CI covers the sample's export renderer
+  and writer through a CI hook. The menu, preview and command bridge still need
+  native testing, as do other runtimes and font installations.
   CLI PDF export remains Linux-only.
 - Application privacy locking is Linux-only in this preview. Its settings
   are unavailable on Windows. Do not copy a Linux privacy.json into this app.

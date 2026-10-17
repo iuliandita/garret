@@ -16,11 +16,16 @@ pub(crate) struct Smoke {
 
 impl Smoke {
     fn stage(&self, phase: &str) {
-        let mut log = self.log.lock().expect("smoke log mutex");
+        let Ok(mut log) = self.log.lock() else {
+            let _ = writeln!(std::io::stderr(), "native PDF smoke phase log mutex poisoned");
+            return;
+        };
         if log.1 != phase {
             let event = serde_json::json!({"phase": phase, "elapsed_ms": self.started.elapsed().as_millis()});
-            writeln!(log.0, "{event}").expect("write smoke phase");
-            log.0.flush().expect("flush smoke phase");
+            if let Err(error) = writeln!(log.0, "{event}").and_then(|()| log.0.flush()) {
+                let _ = writeln!(std::io::stderr(), "native PDF smoke phase log failed: {error}");
+                return;
+            }
             log.1 = phase.into();
         }
     }
@@ -65,7 +70,7 @@ fn export(app: &tauri::AppHandle, root: &Path) -> Result<serde_json::Value, Stri
         &path,
         &name,
         &dest,
-        crate::commands::export::Dest::Replace,
+        crate::commands::export::Dest::New,
         crate::export::Format::Pdf,
         &crate::identity::Vault::default(),
         crate::commands::export::strings_for(root),
@@ -98,6 +103,14 @@ pub(crate) fn run(root: &Path) -> i32 {
     let prepare = || -> Result<Arc<Smoke>, String> {
         if !root.is_absolute() || !root.is_dir() {
             return Err("smoke directory must exist and be absolute".into());
+        }
+        if root
+            .symlink_metadata()
+            .map_err(|e| e.to_string())?
+            .file_type()
+            .is_symlink()
+        {
+            return Err("smoke directory must not be a symlink".into());
         }
         let root = root.canonicalize().map_err(|e| e.to_string())?;
         for name in ["proof.pdf", "result.json", "webview"] {
@@ -134,11 +147,18 @@ pub(crate) fn run(root: &Path) -> i32 {
             let (done, wait) = std::sync::mpsc::channel();
             let watchdog = setup.clone();
             std::thread::spawn(move || {
-                if wait.recv_timeout(std::time::Duration::from_secs(240)).is_err() {
-                    watchdog.stage("watchdog-timeout");
-                    let _ = watchdog.result(&serde_json::json!({"ok":false,"error":"native PDF smoke exceeded 240 seconds"}));
-                    std::process::exit(124);
-                }
+                let (phase, error, code) = match wait.recv_timeout(std::time::Duration::from_secs(240)) {
+                    Ok(()) => return,
+                    Err(std::sync::mpsc::RecvTimeoutError::Timeout) => (
+                        "watchdog-timeout", "native PDF smoke exceeded 240 seconds", 124,
+                    ),
+                    Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => (
+                        "worker-disconnected", "native PDF smoke worker disconnected before reporting completion", 1,
+                    ),
+                };
+                watchdog.stage(phase);
+                let _ = watchdog.result(&serde_json::json!({"ok":false,"error":error}));
+                std::process::exit(code);
             });
             std::thread::spawn(move || {
                 let result = export(&handle, &setup.root);

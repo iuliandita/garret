@@ -2,8 +2,30 @@ name: Windows PDF
 on:
   pull_request:
     branches: [develop]
+    paths:
+      - 'app/shell-tauri/src-tauri/src/main.rs'
+      - 'app/shell-tauri/src-tauri/src/printer_windows.rs'
+      - 'app/shell-tauri/src-tauri/src/printer.rs'
+      - 'app/shell-tauri/src-tauri/src/pdf*.rs'
+      - 'app/shell-tauri/src-tauri/src/commands/export.rs'
+      - 'app/shell-tauri/src-tauri/Cargo.toml'
+      - 'app/shell-tauri/src-tauri/Cargo.lock'
+      - 'app/fixtures/sample/**'
+      - '.github/workflows/windows-pdf.yml'
+      - 'scripts/windows/pdf-smoke.ps1'
   push:
     branches: [develop]
+    paths:
+      - 'app/shell-tauri/src-tauri/src/main.rs'
+      - 'app/shell-tauri/src-tauri/src/printer_windows.rs'
+      - 'app/shell-tauri/src-tauri/src/printer.rs'
+      - 'app/shell-tauri/src-tauri/src/pdf*.rs'
+      - 'app/shell-tauri/src-tauri/src/commands/export.rs'
+      - 'app/shell-tauri/src-tauri/Cargo.toml'
+      - 'app/shell-tauri/src-tauri/Cargo.lock'
+      - 'app/fixtures/sample/**'
+      - '.github/workflows/windows-pdf.yml'
+      - 'scripts/windows/pdf-smoke.ps1'
   workflow_dispatch:
 
 permissions:
@@ -17,7 +39,6 @@ jobs:
   windows-pdf:
     name: Native PDF (advisory)
     runs-on: windows-2025
-    continue-on-error: true
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: 8
@@ -50,7 +71,7 @@ jobs:
           cache-on-failure: true
       - name: Build the native host
         working-directory: app/shell-tauri/src-tauri
-        run: cargo build --locked --release --target x86_64-pc-windows-msvc -j 8
+        run: cargo build --locked --release --features pdf-smoke --target x86_64-pc-windows-msvc -j 8
       - name: Export the sample through WebView2
         timeout-minutes: 6
         shell: pwsh
