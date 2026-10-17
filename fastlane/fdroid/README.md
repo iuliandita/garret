@@ -23,14 +23,18 @@ still require validation on F-Droid's builder.
    The disabled 0.0.4 entry is only a placeholder, not a reserved version.
 2. Fork [fdroiddata](https://gitlab.com/fdroid/fdroiddata) in your own account
    and clone your fork. Copy `com.usegarret.app.yml` into its `metadata/`
-   directory. Set `versionName`, `versionCode`, `commit` and `CurrentVersion`
-   fields to that release, then remove the build's `disable` line. Confirm
-   that `Binaries` expands to the actual published asset URL and that the
+   directory. Set `versionName`, `versionCode`, `commit`, `CurrentVersion`
+   and `CurrentVersionCode` to that release, then remove the build's `disable`
+   line. Confirm that `Binaries` expands to the actual published asset URL and that the
    release includes the English/German fastlane metadata.
 3. From fdroiddata, run `fdroid lint com.usegarret.app`,
    `fdroid rewritemeta com.usegarret.app`, then
    `fdroid build --verbose --test --on-server com.usegarret.app` inside a
    disposable [official buildserver container](https://f-droid.org/en/docs/Submitting_to_F-Droid_Quick_Start_Guide/).
+   Pre-clone the source into `build/com.usegarret.app` and check out the
+   selected release tag before invoking `--on-server`; production build hosts
+   normally prepare this checkout before entering the builder. A direct
+   invocation with no checkout can fail while reading `SOURCE_DATE_EPOCH`.
    The `--on-server` option executes the recipe's tool-installation commands;
    plain local builds skip its `sudo` section. Keep the logs. Resolve scanner,
    SDK/tool provisioning and lint findings;
@@ -89,3 +93,15 @@ rebuild the tagged source and successfully copy/verify the published APK's
 signature. With `Binaries` and `AllowedAPKSigningKeys`, F-Droid publishes the
 developer's APK only on a successful match, and does not silently substitute
 its own signing key. See [F-Droid reproducible builds](https://f-droid.org/docs/Reproducible_Builds/).
+
+## Local verification
+
+The [2026-10-17 comparison receipt](../../app/results/292-fdroid-reproducibility.json)
+records two unsigned builds of commit `83ce734d` at different source paths,
+with separate native targets and generated Gradle projects. Both APKs contain
+958 entries and have SHA-256
+`16cdafb5be550cef73fe673bd452dfa999e18d24210a42bafaabc479f84d73bd`.
+The initial comparison isolated random Tauri configuration map ordering as
+the only differing entry; canonicalization removed that difference.
+This is local reproducibility evidence, not a match against a post-migration
+published release or certification of installed-app updates.

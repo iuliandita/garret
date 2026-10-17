@@ -1,0 +1,47 @@
+{
+  "recorded_utc": "2026-10-17T12:23:59.666809+00:00",
+  "source_revision": "83ce734d096a411c55f879e415f45d8d4017509b",
+  "architectures": [
+    "arm64-v8a",
+    "x86_64"
+  ],
+  "serialized": true,
+  "container_source_roots": [
+    "/build-one",
+    "/build-two"
+  ],
+  "independent_native_target_and_gradle_project_directories": true,
+  "shared_download_caches": true,
+  "initial_source_revision": "16ff957fa6c1330bd248b0d6fe6dde4f9a9d018e",
+  "initial_content_differences": [
+    "assets/tauri.conf.json"
+  ],
+  "cause": "Randomized Tauri desktop packaging map key order; parsed JSON values were equal.",
+  "fix": "Canonicalize generated JSON after the Rust build tasks and before Gradle merges release assets.",
+  "comparison": {
+    "identical": true,
+    "sha256": [
+      "16cdafb5be550cef73fe673bd452dfa999e18d24210a42bafaabc479f84d73bd",
+      "16cdafb5be550cef73fe673bd452dfa999e18d24210a42bafaabc479f84d73bd"
+    ],
+    "entries": [
+      958,
+      958
+    ],
+    "content_differences": [],
+    "zip_metadata_only": false
+  },
+  "canonical_config": true,
+  "build_path_leaks": [],
+  "published_certificate_check": {
+    "tag": "v0.0.3",
+    "asset": "garret-0.0.3-android.apk",
+    "apk_sha256": "13417c319c2211c293140089342ea563d6616463a912cea9c22e6141a28ac8ed",
+    "certificate_sha256": "bddd339d8832a6378dbd0471e41a3d2148f4411fa8b004c6b5524c93f6684a92",
+    "tool": "Android build-tools 36.0.0 apksigner verify --print-certs"
+  },
+  "limits": [
+    "Local determinism does not prove an independent F-Droid build matches a signed release.",
+    "The published v0.0.3 APK uses cc.local.app; a new com.usegarret.app release and an installed-app update check are still required."
+  ]
+}
