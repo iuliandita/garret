@@ -122,9 +122,11 @@ fn move_entry(parent: &Path, old_name: &str, new_name: &str) -> Result<(), Strin
     crate::backup_bundle::sync_directory(parent)
 }
 
-pub(crate) fn prepare(home: &Path) -> Result<(), String> {
-    if !home.is_absolute() {
-        return Err("native state migration requires an absolute home directory".into());
+pub(crate) fn prepare(home: &Path, temporary: &Path) -> Result<(), String> {
+    if !home.is_absolute() || !temporary.is_absolute() {
+        return Err(
+            "native state migration requires absolute home and temporary directories".into(),
+        );
     }
     for (directory, suffix) in [
         ("WebKit", ""),
@@ -141,7 +143,7 @@ pub(crate) fn prepare(home: &Path) -> Result<(), String> {
             &format!("{IDENTIFIER}{suffix}"),
         )?;
     }
-    Ok(())
+    move_entry(temporary, LEGACY_IDENTIFIER, IDENTIFIER)
 }
 
 #[cfg(test)]
@@ -153,6 +155,15 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let webkit = temp.path().join("Library/WebKit");
         let prefs = temp.path().join("Library/Preferences");
+        let temporary = temp.path().join("temporary");
+        fs::create_dir_all(temporary.join(LEGACY_IDENTIFIER).join("WebKit/MediaCache")).unwrap();
+        fs::write(
+            temporary
+                .join(LEGACY_IDENTIFIER)
+                .join("WebKit/MediaCache/media"),
+            b"retained temporary media",
+        )
+        .unwrap();
         fs::create_dir_all(webkit.join(LEGACY_IDENTIFIER)).unwrap();
         fs::create_dir_all(&prefs).unwrap();
         fs::write(
@@ -165,9 +176,13 @@ mod tests {
             b"retained native preferences",
         )
         .unwrap();
-        prepare(temp.path()).unwrap();
-        prepare(temp.path()).unwrap();
+        prepare(temp.path(), &temporary).unwrap();
+        prepare(temp.path(), &temporary).unwrap();
         for id in [LEGACY_IDENTIFIER, IDENTIFIER] {
+            assert_eq!(
+                fs::read(temporary.join(id).join("WebKit/MediaCache/media")).unwrap(),
+                b"retained temporary media"
+            );
             assert_eq!(
                 fs::read(webkit.join(id).join("localStorage")).unwrap(),
                 b"retained web state"

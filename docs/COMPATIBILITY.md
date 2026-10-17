@@ -45,6 +45,7 @@ explicitly keeps `cc.local.app`, so installing an update preserves its sandbox.
 On macOS, close older builds before upgrading. The first launch moves existing
 bundle-owned WebKit data, caches, HTTP storage, cookies, native preferences, and
 saved-window state to the new identity, retaining links from their former names.
+The identifier-owned temporary WebKit media cache also retains compatibility access.
 Back up these entries in your home Library along with the desktop profile before
 upgrading. A journal makes an interrupted move resumable. Conflicting destinations,
 unexpected links, and changed file identities stop startup with an error; keep

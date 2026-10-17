@@ -4093,7 +4093,7 @@ fn main() {
             return Err("cannot guard native state during identifier migration".into());
         }
         let home = dirs::home_dir().ok_or("cannot locate the home directory for native state")?;
-        native_identity::prepare(&home)
+        native_identity::prepare(&home, &std::env::temp_dir())
     });
     if let Err(error) = migration {
         // Reporting must not create a destination that would block a retry.

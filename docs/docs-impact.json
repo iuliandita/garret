@@ -15,7 +15,7 @@
     "backup-recovery": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "434483c95b191279e438610f05230c064bca318ec22a1f632c55a8050fb79adf"
+        "docs/COMPATIBILITY.md": "21d2e2bef3361d10f742c0343c3548b22841c079eeea844a10a2f9c8e71739fe"
       },
       "migration": "",
       "no_impact": "",
@@ -35,7 +35,7 @@
     "encryption": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "434483c95b191279e438610f05230c064bca318ec22a1f632c55a8050fb79adf"
+        "docs/COMPATIBILITY.md": "21d2e2bef3361d10f742c0343c3548b22841c079eeea844a10a2f9c8e71739fe"
       },
       "migration": "",
       "no_impact": "",
@@ -45,18 +45,18 @@
     "maintenance": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "434483c95b191279e438610f05230c064bca318ec22a1f632c55a8050fb79adf"
+        "docs/COMPATIBILITY.md": "21d2e2bef3361d10f742c0343c3548b22841c079eeea844a10a2f9c8e71739fe"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Document resumable macOS native-state moves, retained legacy links, conflict refusal, stable books and settings, and preservation of the Windows editor and proof WebView2 profiles.",
-      "source_sha256": "93efc343e8ddbab003385fc4857d5d7ed00bbe792013cc8d052c5f56d5ed50c0"
+      "note": "Document resumable macOS native-state moves, retained legacy links, conflict refusal, stable books and settings, and preservation of the Windows editor and proof WebView2 profiles. Preserve the identifier-owned temporary WebKit media cache as well as Library state.",
+      "source_sha256": "c7018e16f16df8c96a0e1e495650ed6bedaa4f115c969aef13712195f7fb9a90"
     },
     "native-packaging": {
       "breaking": "none",
       "docs": {
         "README.md": "eb04450b720ce23d2235e75242f89eaf130b71846c986222f50659f71ec90243",
-        "docs/COMPATIBILITY.md": "434483c95b191279e438610f05230c064bca318ec22a1f632c55a8050fb79adf"
+        "docs/COMPATIBILITY.md": "21d2e2bef3361d10f742c0343c3548b22841c079eeea844a10a2f9c8e71739fe"
       },
       "migration": "",
       "no_impact": "",
@@ -66,7 +66,7 @@
     "project-format": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "434483c95b191279e438610f05230c064bca318ec22a1f632c55a8050fb79adf"
+        "docs/COMPATIBILITY.md": "21d2e2bef3361d10f742c0343c3548b22841c079eeea844a10a2f9c8e71739fe"
       },
       "migration": "",
       "no_impact": "",
@@ -76,7 +76,7 @@
     "schema": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "434483c95b191279e438610f05230c064bca318ec22a1f632c55a8050fb79adf"
+        "docs/COMPATIBILITY.md": "21d2e2bef3361d10f742c0343c3548b22841c079eeea844a10a2f9c8e71739fe"
       },
       "migration": "",
       "no_impact": "",
