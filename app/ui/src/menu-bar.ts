@@ -1,3 +1,4 @@
+import type { ProjectPreset } from "./project-preset";
 // app/ui/src/menu-bar.ts
 // The application menu: one button, a list of four titles, one dropdown.
 //
@@ -62,6 +63,7 @@ export interface MenuSpec {
 export type ProjectsFocus = "list" | "create" | "import" | "backups";
 
 export interface MenuBarDeps {
+  projectPreset?: () => ProjectPreset;
   showManuscript: () => void;
   showOutlineTable: () => void;
   showOutlineCards: () => void;
@@ -325,7 +327,7 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
       id: "menu-outline", label: t("menu.outline"), key: t("menu.outline.key"), items: [
         {
           id: "menu-new", label: () => t("menu.new"), opensDialog: true, children: deps.openCreation ? undefined : [{ id: "menu-new-scene", label: () => t("menu.new-scene"), run: () => deps.create("scene") }, { id: "menu-new-chapter", label: () => t("menu.new-chapter"), run: () => deps.create("chapter") }, { id: "menu-new-part", label: () => t("menu.new-part"), run: () => deps.create("part") }, {
-              id: "menu-more", label: () => t("menu.more"), children: [{ id: "menu-new-note", label: () => t("menu.new-note"), run: deps.createNote }, { id: "menu-new-bible-folder", label: () => t("menu.new-bible-folder"), run: deps.createBibleFolder }, { id: "menu-new-timeline", label: () => t("menu.new-timeline"), run: deps.createTimeline }, {
+              id: "menu-more", label: () => t("menu.more"), children: [{ id: "menu-new-note", label: () => t(deps.projectPreset?.() === "nonfiction" ? "preset.new-reference-document" : "menu.new-note"), run: deps.createNote }, { id: "menu-new-bible-folder", label: () => t(deps.projectPreset?.() === "nonfiction" ? "preset.new-reference-folder" : "menu.new-bible-folder"), run: deps.createBibleFolder }, { id: "menu-new-timeline", label: () => t("menu.new-timeline"), run: deps.createTimeline }, {
                   id: "menu-book-pages", label: () => t("menu.book-pages"), children: [
                     {
                       id: "menu-new-dedication",
@@ -346,6 +348,11 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
                       id: "menu-new-afterword",
                       label: () => t("menu.new-afterword"),
                       run: () => deps.createMatter("afterword"),
+                    },
+                    {
+                      id: "menu-new-references",
+                      label: () => t("menu.new-references"),
+                      run: () => deps.createMatter("references"),
                     }
                   ], run: () => {}
                 }], run: () => {}
@@ -412,19 +419,27 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
             },
             {
               id: "menu-cast",
+              visible: () => deps.projectPreset?.() !== "nonfiction",
               opensDialog: true,
               label: () => t("menu.cast"),
               run: deps.openCast,
             },
+            { id: "menu-fiction-more", label: () => t("menu.more"), visible: () => deps.projectPreset?.() === "nonfiction", children: [
+              { id: "menu-fiction-cast", label: () => t("menu.cast"), opensDialog: true, run: deps.openCast },
+              { id: "menu-fiction-appears", label: () => t("menu.appears"), opensDialog: true, run: deps.openAppearances },
+              { id: "menu-fiction-map", label: () => t("menu.appears-map"), opensDialog: true, run: deps.openAppearancesMap },
+            ], run: () => {} },
             { id: "menu-knowledge", opensDialog: true, label: () => t("menu.knowledge"), run: () => deps.openKnowledge?.() },
             {
               id: "menu-appears",
+              visible: () => deps.projectPreset?.() !== "nonfiction",
               opensDialog: true,
               label: () => t("menu.appears"),
               run: deps.openAppearances,
             },
             {
               id: "menu-appears-map",
+              visible: () => deps.projectPreset?.() !== "nonfiction",
               opensDialog: true,
               label: () => t("menu.appears-map"),
               run: deps.openAppearancesMap,

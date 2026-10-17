@@ -1,3 +1,4 @@
+import { projectPreset, referenceTitle, type ProjectPreset } from "./project-preset";
 // app/ui/src/project.ts
 // Page assembly for one open project: source, navigator, editor, failure
 // surface, flush scheduler, session and opener. Extracted from main.ts because
@@ -195,6 +196,7 @@ export interface MountDeps {
 }
 
 export interface MountedProject {
+  preset?: ProjectPreset;
   navigator: ManuscriptNavigator;
   editor: Editor;
   session: Session | null;
@@ -343,8 +345,9 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   const { mode, persistMode, projectPath, invoke } = deps;
 
   if (invoke === undefined) throw new Error("APP_PROJECT is set but the Tauri bridge is absent");
+  const preset = projectPreset(await invoke("project_preset"));
   const store = await loadStoreSource(invoke, deps.seed);
-  const source: FixtureSource = storeSourceFrom(readingOrderItems(store.items), deps.seed);
+  const source: FixtureSource = storeSourceFrom(readingOrderItems(store.items), deps.seed, preset);
   // The boot-time walk, kept for the mutation phase.
   const storeItems: ProjectItem[] = store.items;
   // idAt(0) is the first row of a depth-first walk, which is a part. Only
@@ -918,6 +921,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // "current" are the same thing) and as the write payload's baseline.
   const loadedBodyHash = bodyHash(editor.serialize());
   let referenceRail: ReferenceRail | null = null;
+  let previewRail: PreviewRail | null = null;
   let craftPanel: CraftPanel | null = null;
   const flusher = createFlushScheduler({
     wordCountOf: (body) => countWords(bodyText(body)),
@@ -1001,7 +1005,12 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     // transition arriving before then has nothing to draw on and nothing
     // to lose: the indicator opens on `flusher.saveState()`, so it starts
     // from the truth rather than from whatever it missed.
-    onStateChange: (state) => saveIndicator?.set(state),
+    // The rail hears the same transitions for its refresh after a pause; it
+    // returns at once while closed, and this still fires on transitions only.
+    onStateChange: (state) => {
+      saveIndicator?.set(state);
+      previewRail?.saveStateChanged(state);
+    },
   });
   {
     flusher.register(activeDocId, activeDocRev);
@@ -1226,6 +1235,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       else if (timelineMount !== null) timelineMount.focus();
       else editor.focus();
     },
+    referenceTitle: preset === "nonfiction" ? () => referenceTitle(preset, latestItems.find((item) => item.parent_id === null && item.type === BIBLE_TYPE)?.title) : undefined,
     bible: () => {
       const selected = selectedId();
       const root = latestItems.find((item) => item.parent_id === null && item.type === BIBLE_TYPE);
@@ -1233,14 +1243,14 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         item.id === bibleParentFor(latestItems, selected, root.id));
       const anchor = parent?.id ?? null;
       return {
-        destination: parent?.title ?? t("outline.bible-title"),
+        destination: parent?.type === "bible" || !parent ? referenceTitle(preset, root?.title) : parent.title,
         entry: () => { void outline?.createNote(anchor).catch(() => undefined); },
         folder: () => { void outline?.createBibleFolder(anchor).catch(() => undefined); },
         timeline: () => { void outline?.createTimeline(anchor).catch(() => undefined); },
       };
     },
   });
-  const bibleCreate = createBibleCreateControl(navEl, () => creationChooser.open(true));
+  const bibleCreate = createBibleCreateControl(navEl, () => creationChooser.open(true), preset);
   /** What the Outline menu's one context item is currently OFFERING.
    *
    *  Held rather than re-derived when the item runs, so the action taken is the
@@ -1252,6 +1262,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   const sectionMovePrompt = createSectionMovePrompt(document.body);
   {
     const unit = createOutline({
+      preset,
       generation: deps.generation,
       canMutate: () => !projectDestroyed && !projectLeaving && !historyOperationInFlight && !deps.privacyLocked?.(),
       invoke,
@@ -1276,7 +1287,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         if (openId !== undefined && !liveItemsIn(items).some((item) => item.id === openId)) {
           sceneNotes?.clear();
         }
-        navigator.reload(storeSourceFrom(readingOrderItems(items), deps.seed));
+        navigator.reload(storeSourceFrom(readingOrderItems(items), deps.seed, preset));
         outlineView?.setItems(items);
         // The ONE place the header follows a rename. Every route to one - the
         // rename panel from the menu or the row's context menu - ends in the
@@ -2772,7 +2783,6 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // BUILT ONLY WHERE THERE IS A HOST AND A FLUSHER, exactly as the export bar
   // is and for the same reason: a preview is a rendering of the book AS SAVED,
   // and "as saved" means nothing without a scheduler to drain.
-  let previewRail: PreviewRail | null = null;
   const epubEl = document.getElementById("preview-controls");
   if (epubEl === null) {
     throw new Error("page shell is missing #preview-controls: index.html and project.ts disagree");
@@ -2801,6 +2811,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
           newPage: style.new_page,
           capsTitle: style.caps_title,
           dropCap: style.drop_cap,
+          ornamentAbove: style.ornament_above,
+          sink: style.sink,
         })) as ChapterStyle,
       // THE EXPORT BAR'S OWN ROUTE, as EPUB. Not a second export path: that
       // unit owns the drain, the single-flight latch and both notices, and a
@@ -2959,6 +2971,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   if (outline !== null) {
     const unit = outline;
     navContextMenu = createNavContextMenu({
+      preset,
       // The BODY, not #nav: the panel is positioned at the pointer in viewport
       // coordinates and a row near the foot of the pane opens a menu that has to
       // be allowed to stand outside the navigator's scroll box.
@@ -3020,6 +3033,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   }
 
   const mounted: MountedProject = {
+    preset,
     navigator,
     editor,
     session,

@@ -1,3 +1,4 @@
+import type { ProjectPreset } from "./project-preset";
 // app/ui/src/placement.ts
 // Where a new part, chapter or scene lands.
 //
@@ -213,6 +214,7 @@ export function planPlacement(
   items: readonly ProjectItem[],
   selectedId: string | null,
   itemType: string,
+  preset: ProjectPreset = "novel",
 ): Placement {
   // NOTHING SELECTED, or a selection the walk does not contain -- the caller
   // asked about a row that has since gone, which is the same answer. It appends
@@ -225,7 +227,7 @@ export function planPlacement(
   // last root that is not the bin or the bible -- never a plain append, which
   // would land under both of them.
   const rootAnswer = (after?: string | null): Placement => ({
-    holders: holderFor(itemType),
+    holders: preset === "short" ? [] : holderFor(itemType),
     parentId: null,
     afterId: after === undefined ? rootAppendPoint(items) : after,
   });

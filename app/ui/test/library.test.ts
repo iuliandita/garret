@@ -1242,3 +1242,19 @@ test("Library menu preserves dirty membership drafts and labels the identity cho
   expect(r.library.isOpen()).toBe(true);
   expect(document.getElementById("library-membership-discard")).not.toBeNull();
 });
+
+test.each(["novel", "short", "nonfiction"])("Library creation chooser forwards %s", async (preset) => {
+  const choices: unknown[][] = [];
+  const r = rig({ createBook: async (...args) => { choices.push(args); return "opened"; } });
+  r.library.open();
+  await flush();
+  document.getElementById("library-new-book-tile")!.click();
+  const choice = document.getElementById("library-new-book-preset") as HTMLSelectElement;
+  expect(choice.value).toBe("novel");
+  expect([...choice.options].map((option) => option.value)).toEqual(["novel", "short", "nonfiction"]);
+  choice.value = preset;
+  (document.getElementById("library-new-book-name") as HTMLInputElement).value = "Draft";
+  document.getElementById("library-new-book-create")!.click();
+  await flush();
+  expect(choices).toEqual([["Draft", null, preset]]);
+});

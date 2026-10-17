@@ -173,6 +173,25 @@ impl Strings {
     }
 }
 
+/// Defaults can outlive the locale in which a book was created.
+pub fn is_numbered_heading(title: &str, kind: &str) -> bool {
+    if !matches!(kind, "part" | "chapter" | "scene") {
+        return false;
+    }
+    CATALOGS.iter().any(|locale| {
+        let pattern = Strings::new(locale).t(&format!("item.numbered.{kind}"));
+        let Some((prefix, suffix)) = pattern.split_once("{n}") else {
+            return false;
+        };
+        title
+            .strip_prefix(prefix)
+            .and_then(|rest| rest.strip_suffix(suffix))
+            .is_some_and(|n| {
+                !n.is_empty() && n.bytes().all(|c| c.is_ascii_digit()) && !n.starts_with('0')
+            })
+    })
+}
+
 /// Fill `{name}` from `vars`. AN UNKNOWN NAME IS LEFT AS WRITTEN, for the same
 /// reason a missing key renders visibly.
 fn interpolate(template: &str, vars: &[(&str, &str)]) -> String {
@@ -222,6 +241,7 @@ const EN_ENTRIES: &[(&str, &str)] = &[
     ("backup.dialog.destination", "Choose encrypted backup folder"),
     ("book.contents", "Contents"),
     ("item.numbered.chapter", "Chapter {n}"),
+    ("item.numbered.part", "Part {n}"),
     ("item.numbered.scene", "Scene {n}"),
     // The window title with nothing open: the
     // one non-book title this application has, and not a product name.
@@ -355,6 +375,7 @@ const DE_ENTRIES: &[(&str, &str)] = &[
     ("backup.dialog.destination", "Ordner für verschlüsselte Sicherungen wählen"),
     ("book.contents", "Inhalt"),
     ("item.numbered.chapter", "Kapitel {n}"),
+    ("item.numbered.part", "Teil {n}"),
     ("item.numbered.scene", "Szene {n}"),
     ("library", "Bibliothek"),
     ("privacy.acknowledge", "Ich verstehe, dass dies die Anwendung verbirgt und meine Dateien nicht verschlüsselt."),
