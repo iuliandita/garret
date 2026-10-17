@@ -85,7 +85,7 @@ pub(crate) fn init<R: Runtime>() -> TauriPlugin<R> {
         .setup(|app, api| {
             #[cfg(target_os = "android")]
             app.manage(Bridge(
-                api.register_android_plugin("cc.local.app", "TransferPlugin")?,
+                api.register_android_plugin("com.usegarret.app", "TransferPlugin")?,
             ));
             #[cfg(not(target_os = "android"))]
             let _ = (app, api);

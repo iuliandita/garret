@@ -10,11 +10,13 @@ What the Android app does today:
 * Follows the device language: English and German.
 * Offers a light and a dark theme.
 
-Everything works offline. Books stay on the device and no account is needed. There is no sync, and moving books between the phone and the desktop app is not possible yet; a way to move them is planned.
+Everything works offline. Books stay on the device and no account is needed. There is no sync. Complete encrypted book archives and separate recovery keys move books between compatible apps.
 
-This is an early alpha of a larger project. The Android app has fewer features than the desktop app: it has no import or export, no story bible, no editorial review, and no publishing tools.
+This is an early alpha of a larger project. The Android app has fewer features than the desktop app: it has no desktop editorial review or publishing tools.
 
 The code is written with AI coding agents, with human review and testing. garret is free software under the GNU General Public License, version 3 or later.
 
 Source code: https://github.com/iuliandita/garret
 Report problems: https://github.com/iuliandita/garret/issues
+
+The Android package is now com.usegarret.app. It installs alongside the old cc.local.app app with the same signing key. Update the old app to 0.0.3 first, export each complete book and its separate recovery key, then import into the new app. Check manuscripts, notes and pictures before removing the old app. The two apps do not sync.
