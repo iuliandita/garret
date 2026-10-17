@@ -412,7 +412,7 @@ mod tests {
         store
             .flush(&[FlushEntry {
                 item_id: id.clone(),
-                body: r#"{"type":"doc","content":[]}"#.to_string(),
+                body: crate::store::EMPTY_DOC_BODY.to_string(),
                 base_rev: created.doc_rev.unwrap(),
                 comments: None,
             }])
@@ -738,7 +738,7 @@ mod tests {
 
         let refused = store.flush(&[FlushEntry {
             item_id: item.clone(),
-            body: "{}".to_string(),
+            body: crate::store::EMPTY_DOC_BODY.to_string(),
             // Deliberately stale, so the UPDATE matches nothing.
             base_rev: 9999,
             comments: Some(vec![CommentAnchor {

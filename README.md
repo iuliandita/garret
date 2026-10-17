@@ -30,6 +30,9 @@ The current published build is [0.0.3 alpha](https://github.com/iuliandita/garre
 See [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
 
+Development builds keep schema 17 and refuse unsupported document writes.
+Legacy books with empty text runs remain recoverable; see the compatibility guide.
+
 ![garret writing view](docs/screenshots/editor-light.png)
 
 [Website](https://usegarret.com) | [Full screenshot gallery](docs/screenshots/README.md) | [Sample books](app/fixtures/classics/README.md)

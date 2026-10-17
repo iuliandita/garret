@@ -33,6 +33,11 @@ Only novel projects are editable; unsupported presets are refused before opening
 The phone accepts at most 1 GiB archives and 512 MiB contents, with extra free
 space needed for verification and a separate owned copy.
 
+Schema-17 transfers retain legacy empty text runs and history. New document
+nodes are refused before preview or publication, with the affected item ID in
+English or German. A refused save names the scene and keeps its text pending;
+use the recovery-copy action before restarting.
+
 Cancellation waits for the original native operation. Close an open system
 picker to let cancellation finish. Provider write, close or readback failures
 leave the destination unverified. The app attempts to delete documents it created

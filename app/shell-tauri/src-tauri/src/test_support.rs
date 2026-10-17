@@ -21,6 +21,9 @@ pub(crate) fn seeded_project(path: &Path) -> crate::store::Store {
 
 /// A body of `text` as one paragraph, which is what a flush carries.
 pub(crate) fn body(text: &str) -> String {
+    if text.is_empty() {
+        return crate::store::EMPTY_DOC_BODY.to_string();
+    }
     format!(
         r#"{{"type":"doc","content":[{{"type":"paragraph","content":[
              {{"type":"text","text":"{text}"}}]}}]}}"#

@@ -444,7 +444,8 @@ impl Store {
                     })
                 }
             }
-            let body = self.version_body(version_id)?;
+            let body = crate::replace::normalize_legacy_text(&self.version_body(version_id)?);
+            self.validate_body_write(item_id, &body)?;
             let current: Option<(String, i64)> = self
                 .conn
                 .query_row(
@@ -596,6 +597,7 @@ impl Store {
                 };
                 spanning += outcome.spanning;
                 if let Some(next) = outcome.body {
+                    self.validate_body_write(item_id, &next)?;
                     if source_words::eligible(&self.conn, item_id)? {
                         source_movements.push(source_words::directional(
                             WordSource::Unattributed,
@@ -688,6 +690,9 @@ impl Store {
         accepts: &[(String, i64, String)],
         label: &str,
     ) -> Result<AcceptReport> {
+        for (id, _, body) in accepts {
+            self.validate_body_write(id, body)?;
+        }
         let now = now_ms();
         self.conn.execute_batch("BEGIN IMMEDIATE")?;
         let outcome = (|| -> Result<AcceptReport> {
@@ -822,6 +827,8 @@ impl Store {
             let body = body.ok_or(StoreError::NotFound {
                 item_id: format!("version {version_id} of {item_id} in snapshot {snapshot_id}"),
             })?;
+            let body = crate::replace::normalize_legacy_text(&body);
+            self.validate_body_write(item_id, &body)?;
             let current: Option<(String, i64)> = self
                 .conn
                 .query_row(
@@ -941,11 +948,13 @@ impl Store {
                 if was == current {
                     continue;
                 }
+                let was = crate::replace::normalize_legacy_text(was);
+                self.validate_body_write(item_id, &was)?;
                 if source_words::eligible(&self.conn, item_id)? {
                     source_movements.push(source_words::directional(
                         WordSource::Restored,
                         Some(current),
-                        was,
+                        &was,
                     ));
                 }
                 self.insert_version(item_id, current, now, None)?;

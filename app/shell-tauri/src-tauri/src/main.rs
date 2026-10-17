@@ -7486,7 +7486,7 @@ mod tests {
     }
 
     #[test]
-    fn a_corrupt_body_is_skipped_by_both_the_index_and_a_recount() {
+    fn an_existing_corrupt_body_is_skipped_by_both_the_index_and_a_recount() {
         let dir = tempdir().unwrap();
         let mut project = opened(&dir.path().join("counted.db"));
         let good = create_into(&mut project, None, "scene", "Good").unwrap();
@@ -7494,23 +7494,24 @@ mod tests {
 
         flush_into(
             &mut project,
-            &[
-                FlushEntry {
-                    item_id: good.id.clone(),
-                    body: body("four words go here"),
-                    base_rev: good.doc_rev.unwrap(),
-                    comments: None,
-                },
-                FlushEntry {
-                    item_id: bad.id.clone(),
-                    body: "{not json at all".to_string(),
-                    base_rev: bad.doc_rev.unwrap(),
-                    comments: None,
-                },
-            ],
+            &[FlushEntry {
+                item_id: good.id.clone(),
+                body: body("four words go here"),
+                base_rev: good.doc_rev.unwrap(),
+                comments: None,
+            }],
             1,
         )
         .unwrap();
+
+        let conn = rusqlite::Connection::open(&project.path).unwrap();
+        conn.execute(
+            "UPDATE doc SET body = '{not json at all', rev = 2 WHERE item_id = ?1",
+            [&bad.id],
+        )
+        .unwrap();
+        drop(conn);
+        project.words = project.store.word_index().unwrap();
 
         // Skipped, and SAID to be skipped: the figure is what tells the operator
         // the total is an undercount.
@@ -7686,14 +7687,11 @@ mod tests {
         let path = dir.path().join("counted.db");
         let store = seeded_project(&path);
         let created = store.item_create(None, "scene", "Broken").unwrap();
-        store
-            .flush(&[crate::store::FlushEntry {
-                item_id: created.id,
-                body: r#"{"foo":1}"#.to_string(),
-                base_rev: created.doc_rev.unwrap(),
-                comments: None,
-            }])
-            .unwrap();
+        let conn = rusqlite::Connection::open(&path).unwrap();
+        conn.execute(
+            "UPDATE doc SET body = '{\"foo\":1}' WHERE item_id = ?1",
+            [&created.id],
+        ).unwrap();
 
         let out = find_in(&path, "words", find::DEFAULT_LIMIT).unwrap();
         assert_eq!(out.scanned, 2);
@@ -9051,7 +9049,7 @@ mod tests {
         let dir = tempdir().expect("a temp dir");
         let store = crate::store::Store::open(&dir.path().join("p.db")).expect("a store");
         let err = store
-            .import_tree(&[(None, "chapter", "a", Some("{}"))])
+            .import_tree(&[(None, "chapter", "a", Some(store::EMPTY_DOC_BODY))])
             .unwrap_err();
         assert!(format!("{err}").contains("cannot carry a body"), "{err}");
     }

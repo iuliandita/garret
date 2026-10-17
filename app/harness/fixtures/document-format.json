@@ -1,0 +1,1479 @@
+[
+  {
+    "id": "legacy-empty-paragraph",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph"
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": true,
+    "legacy": true
+  },
+  {
+    "id": "legacy-marks-unicode",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Prose 😀",
+              "marks": [
+                {
+                  "type": "em"
+                },
+                {
+                  "type": "strong"
+                },
+                {
+                  "type": "underline"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Second paragraph."
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": true,
+    "legacy": true
+  },
+  {
+    "id": "endnote",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Prose"
+            },
+            {
+              "type": "endnote",
+              "attrs": {
+                "id": "0199ed16-8c00-7000-8000-000000000001",
+                "fmt": "text",
+                "body": "A source.\nSecond line: café 😀."
+              }
+            },
+            {
+              "type": "text",
+              "text": "tail"
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": true,
+    "legacy": false
+  },
+  {
+    "id": "figure",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "full",
+            "caption": "Figure caption",
+            "alt": "Figure description"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": true,
+    "legacy": false
+  },
+  {
+    "id": "scene-break",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "scene_break"
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": true,
+    "legacy": false
+  },
+  {
+    "id": "mixed",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Prose"
+            },
+            {
+              "type": "endnote",
+              "attrs": {
+                "id": "0199ed16-8c00-7000-8000-000000000001",
+                "fmt": "text",
+                "body": "A source.\nSecond line: café 😀."
+              }
+            }
+          ]
+        },
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "full",
+            "caption": "Figure caption",
+            "alt": "Figure description"
+          }
+        },
+        {
+          "type": "scene_break"
+        },
+        {
+          "type": "paragraph"
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": true,
+    "legacy": false
+  },
+  {
+    "id": "figure-half",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "half",
+            "caption": "Figure caption",
+            "alt": "Figure description"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": true,
+    "legacy": false
+  },
+  {
+    "id": "figure-page",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "page",
+            "caption": "Figure caption",
+            "alt": "Figure description"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": true,
+    "legacy": false
+  },
+  {
+    "id": "figure-draft-empty-text",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "full",
+            "caption": "",
+            "alt": ""
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": true,
+    "legacy": false
+  },
+  {
+    "id": "unknown-root",
+    "body": {
+      "type": "future",
+      "content": [
+        {
+          "type": "paragraph"
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "empty-document",
+    "body": {
+      "type": "doc",
+      "content": []
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": true,
+    "legacy": true
+  },
+  {
+    "id": "missing-document-content",
+    "body": {
+      "type": "doc"
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "unknown-root-field",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph"
+        }
+      ],
+      "future": true
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "null-paragraph-content",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": null
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "paragraph-attributes",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "attrs": {}
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "unknown-node",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "image",
+          "attrs": {
+            "src": "image.png"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "inline-figure",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "figure",
+              "attrs": {
+                "id": "0199ed16-8c00-7000-8000-000000000002",
+                "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+                "width": "full",
+                "caption": "Figure caption",
+                "alt": "Figure description"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "block-endnote",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "endnote",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000001",
+            "fmt": "text",
+            "body": "A source.\nSecond line: café 😀."
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "empty-text",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false,
+    "readable": true
+  },
+  {
+    "id": "text-with-content",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "x",
+              "content": []
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "unknown-mark",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "x",
+              "marks": [
+                {
+                  "type": "future"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "mark-attributes",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "x",
+              "marks": [
+                {
+                  "type": "em",
+                  "attrs": {}
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "duplicate-mark",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "x",
+              "marks": [
+                {
+                  "type": "em"
+                },
+                {
+                  "type": "em"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "duplicate-notes",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "endnote",
+              "attrs": {
+                "id": "0199ed16-8c00-7000-8000-000000000001",
+                "fmt": "text",
+                "body": "A source.\nSecond line: café 😀."
+              }
+            },
+            {
+              "type": "endnote",
+              "attrs": {
+                "id": "0199ed16-8c00-7000-8000-000000000001",
+                "fmt": "text",
+                "body": "A source.\nSecond line: café 😀."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "duplicate-cross-kind",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "endnote",
+              "attrs": {
+                "id": "0199ed16-8c00-7000-8000-000000000001",
+                "fmt": "text",
+                "body": "A source.\nSecond line: café 😀."
+              }
+            }
+          ]
+        },
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000001",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "full",
+            "caption": "Figure caption",
+            "alt": "Figure description"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "endnote-missing-id",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "endnote",
+              "attrs": {
+                "fmt": "text",
+                "body": "A source.\nSecond line: café 😀."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "endnote-missing-fmt",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "endnote",
+              "attrs": {
+                "id": "0199ed16-8c00-7000-8000-000000000001",
+                "body": "A source.\nSecond line: café 😀."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "endnote-missing-body",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "endnote",
+              "attrs": {
+                "id": "0199ed16-8c00-7000-8000-000000000001",
+                "fmt": "text"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "endnote-bad-id",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "endnote",
+              "attrs": {
+                "id": "../asset",
+                "fmt": "text",
+                "body": "A source.\nSecond line: café 😀."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "endnote-uppercase-id",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "endnote",
+              "attrs": {
+                "id": "0199ED16-8C00-7000-8000-000000000001",
+                "fmt": "text",
+                "body": "A source.\nSecond line: café 😀."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "endnote-extra-attribute",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "endnote",
+              "attrs": {
+                "id": "0199ed16-8c00-7000-8000-000000000001",
+                "fmt": "text",
+                "body": "A source.\nSecond line: café 😀.",
+                "future": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "endnote-marked",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "endnote",
+              "attrs": {
+                "id": "0199ed16-8c00-7000-8000-000000000001",
+                "fmt": "text",
+                "body": "A source.\nSecond line: café 😀."
+              },
+              "marks": [
+                {
+                  "type": "em"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "figure-missing-id",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "full",
+            "caption": "Figure caption",
+            "alt": "Figure description"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "figure-missing-asset_id",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "width": "full",
+            "caption": "Figure caption",
+            "alt": "Figure description"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "figure-missing-width",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "caption": "Figure caption",
+            "alt": "Figure description"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "figure-missing-caption",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "full",
+            "alt": "Figure description"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "figure-missing-alt",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "full",
+            "caption": "Figure caption"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "figure-bad-id",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "../asset",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "full",
+            "caption": "Figure caption",
+            "alt": "Figure description"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "figure-uppercase-id",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ED16-8C00-7000-8000-000000000001",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "full",
+            "caption": "Figure caption",
+            "alt": "Figure description"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "figure-extra-attribute",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "full",
+            "caption": "Figure caption",
+            "alt": "Figure description",
+            "future": true
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "figure-marked",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "full",
+            "caption": "Figure caption",
+            "alt": "Figure description"
+          },
+          "marks": [
+            {
+              "type": "em"
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "unknown-note-format",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "endnote",
+              "attrs": {
+                "id": "0199ed16-8c00-7000-8000-000000000001",
+                "fmt": "inline-json",
+                "body": "A source.\nSecond line: café 😀."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "nested-note-body",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "endnote",
+              "attrs": {
+                "id": "0199ed16-8c00-7000-8000-000000000001",
+                "fmt": "text",
+                "body": {
+                  "type": "doc"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "figure-path-instead-of-id",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "file.png",
+            "width": "full",
+            "caption": "Figure caption",
+            "alt": "Figure description"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "figure-bad-width",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "quarter",
+            "caption": "Figure caption",
+            "alt": "Figure description"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "unregistered-figure",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "full",
+            "caption": "Figure caption",
+            "alt": "Figure description"
+          }
+        }
+      ]
+    },
+    "assets": [],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "figure-nontext-caption",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "full",
+            "caption": 7,
+            "alt": "Figure description"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "figure-nontext-alt",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": "full",
+            "caption": "Figure caption",
+            "alt": 7
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "scene-break-attrs",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "scene_break",
+          "attrs": {}
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "scene-break-text",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "scene_break",
+          "text": "* * *"
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "scene-break-content",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "scene_break",
+          "content": []
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "mark-type-array",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Prose 😀",
+              "marks": [
+                {
+                  "type": [
+                    "em"
+                  ]
+                },
+                {
+                  "type": "strong"
+                },
+                {
+                  "type": "underline"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Second paragraph."
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "figure-width-array",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "figure",
+          "attrs": {
+            "id": "0199ed16-8c00-7000-8000-000000000002",
+            "asset_id": "0199ed16-8c00-7000-8000-000000000003",
+            "width": [
+              "full"
+            ],
+            "caption": "Figure caption",
+            "alt": "Figure description"
+          }
+        }
+      ]
+    },
+    "assets": [
+      "0199ed16-8c00-7000-8000-000000000003"
+    ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "legacy-mark-order-em-strong-underline",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Marked prose",
+              "marks": [
+                {
+                  "type": "em"
+                },
+                {
+                  "type": "strong"
+                },
+                {
+                  "type": "underline"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [],
+    "valid": true,
+    "legacy": true
+  },
+  {
+    "id": "legacy-mark-order-underline-strong-em",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Marked prose",
+              "marks": [
+                {
+                  "type": "underline"
+                },
+                {
+                  "type": "strong"
+                },
+                {
+                  "type": "em"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [],
+    "valid": true,
+    "legacy": true
+  },
+  {
+    "id": "legacy-mark-order-strong-underline-em",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Marked prose",
+              "marks": [
+                {
+                  "type": "strong"
+                },
+                {
+                  "type": "underline"
+                },
+                {
+                  "type": "em"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [],
+    "valid": true,
+    "legacy": true
+  },
+  {
+    "id": "legacy-empty-paragraph-array",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Before"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": []
+        },
+        {
+          "type": "paragraph"
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "After"
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [],
+    "valid": true,
+    "legacy": true
+  },
+  {
+    "id": "legacy-empty-paragraph-content",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": []
+        }
+      ]
+    },
+    "assets": [],
+    "valid": true,
+    "legacy": true
+  },
+  {
+    "id": "empty-text-unknown-attribute",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "",
+              "attrs": {
+                "future": "preserve"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "empty-text-unknown-mark",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "",
+              "marks": [
+                {
+                  "type": "future"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [],
+    "valid": false,
+    "legacy": false
+  }
+]

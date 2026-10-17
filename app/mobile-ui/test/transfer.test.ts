@@ -9,6 +9,13 @@ function press(root: HTMLElement, label: string) {
   if (!button) throw new Error(`missing control: ${label}`);
   button.click();
 }
+test.each(["en", "de"] as const)("format refusal has a distinct localized transfer message (%s)", locale => {
+  const message = transferError("transfer_format:scene-42", locale);
+  expect(message).toContain("scene-42");
+  expect(message).toContain(locale === "en" ? "document format" : "Dokumentformat");
+  expect(message).not.toBe(transferError("transfer_incomplete", locale));
+  expect(message).not.toBe(transferError("transfer_stale", locale));
+});
 test("import previews escape titles and publish only after the localized keep-both action", async () => {
   for (const [locale, theme] of [["en", "light"], ["de", "dark"]] as const) {
     const mount = document.createElement("section"); document.body.append(mount);

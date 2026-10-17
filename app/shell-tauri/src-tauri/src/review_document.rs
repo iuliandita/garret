@@ -79,8 +79,30 @@ pub(crate) enum Mark {
 }
 
 pub(crate) fn apply_hunk(body: &str, hunk: &ReviewHunk) -> Result<String, String> {
+    #[cfg(test)]
+    if let Some(candidate) = TEST_CANDIDATE.with(|value| value.borrow().clone()) {
+        return Ok(candidate);
+    }
     let source = parse_review_body(body)?;
     apply_hunk_to_tokens(&source, hunk)
+}
+
+#[cfg(test)]
+thread_local! {
+    static TEST_CANDIDATE: std::cell::RefCell<Option<String>> = const { std::cell::RefCell::new(None) };
+}
+
+#[cfg(test)]
+pub(crate) fn with_test_candidate<T>(body: &str, run: impl FnOnce() -> T) -> T {
+    struct Reset;
+    impl Drop for Reset {
+        fn drop(&mut self) {
+            TEST_CANDIDATE.with(|value| *value.borrow_mut() = None);
+        }
+    }
+    TEST_CANDIDATE.with(|value| *value.borrow_mut() = Some(body.into()));
+    let _reset = Reset;
+    run()
 }
 
 pub(crate) fn parse_review_body(body: &str) -> Result<Vec<FragmentToken>, String> {

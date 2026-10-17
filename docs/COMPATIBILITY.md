@@ -2,8 +2,26 @@
 
 SQLite schema: 17.
 
+Restoring a backup or transferring a book preserves legacy document bodies and
+history, including empty text runs. The copy is refused if a stored document or
+version contains the new node types, and the refusal names its item ID. History
+restores normalize empty runs before validating the body being written. Unchanged
+snapshot rows and documents untouched by replace-all are left alone.
+
+A refused save keeps the batch atomic: the interface cannot acknowledge partial
+success safely. Saving stops with the scene's name in English or German, and the
+unsaved text remains in the editor and pending buffers. Keep the book open and copy
+the text before restarting; the phone's recovery-copy action remains available.
+
 This describes the current source. [Published releases](RELEASES.md) are
 recorded separately; a change on develop is not a published download.
+
+New and changed prose bodies are validated before saving or restoring a
+batch. Unsupported nodes, marks, and attributes are refused without changing
+the book. Endnotes, figures, and scene-break nodes remain disabled. The schema
+ceiling stays at 17; this adds no migration or upgrade. Existing supported
+documents remain compatible. Keep closed-book backups using the steps below;
+rollback uses the previous application and a complete backup copy.
 
 ## Before upgrading
 

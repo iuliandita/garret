@@ -90,6 +90,18 @@ test("unknown content refuses a scene switch without losing the outgoing prose",
   await f.workspace.close(); f.mount.remove();
 });
 
+test.each(["en", "de"] as const)("a format refusal names the scene and keeps its recovery copy (%s)", async locale => {
+  const f = fixture({ locale, flush: async () => { throw new Error("document format refused: a: new document nodes are disabled; nothing was changed"); } });
+  try {
+    f.workspace.editor.typeChar("unsaved");
+    expect(await f.workspace.close()).toBe(false);
+    expect(f.mount.querySelector(".mobile-error")?.textContent).toContain("The landing");
+    expect(f.mount.querySelector(".mobile-error")?.textContent).toContain(locale === "en" ? "document format" : "Dokumentformat");
+    f.mount.querySelector<HTMLButtonElement>(".mobile-error button")!.click();
+    expect(f.mount.querySelector<HTMLTextAreaElement>(".mobile-recovery textarea")?.value).toContain("unsaved");
+  } finally { f.workspace.editor.destroy(); f.mount.remove(); }
+});
+
 test("save failure keeps prose mounted and blocks departure and same-scene error clearing", async () => {
   const f = fixture({ flush: async () => { throw new Error("disk full"); } });
   f.workspace.editor.typeChar("unsaved");
