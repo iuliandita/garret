@@ -51,7 +51,9 @@ export function createPreviewWindow(
     slot.setAttribute("aria-hidden", "true");
     // clientHeight rounds up fractional screens, spilling a placeholder into
     // another column. Keep the exact height inside the reader's 20px margins.
-    slot.style.height = `${heights.get(slot.dataset.epubName!) ?? (deps.framed() ? Math.max(1, pages.getBoundingClientRect().height - 40) : ESTIMATED_HEIGHT)}px`;
+    const height = heights.get(slot.dataset.epubName!)
+      ?? (deps.framed() ? Math.max(1, pages.getBoundingClientRect().height - 40) : ESTIMATED_HEIGHT);
+    slot.style.height = `${height}px`;
     slot.style.breakBefore = deps.framed() && index > 0 ? "column" : "";
     // Do not let margins escape the slot and change its measured extent.
     slot.style.display = "flow-root";
