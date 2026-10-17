@@ -105,3 +105,13 @@ The initial comparison isolated random Tauri configuration map ordering as
 the only differing entry; canonicalization removed that difference.
 This is local reproducibility evidence, not a match against a post-migration
 published release or certification of installed-app updates.
+
+The official `registry.gitlab.com/fdroid/fdroidserver:buildserver` image at
+digest `sha256:9cb68105642ca4e7b295f0ceab10f069f5b3247dc18fa7c36046e9d81aa469a8`
+was also tested with fdroidserver commit
+`5806784d0d43bed7b938fd4b327162da68927060`. Metadata rewrite/lint passed and
+NDK 30.0.16248370 installed. The build stopped in the recipe's `sudo` section:
+Debian Trixie has no `openjdk-17-jdk-headless` package. Resolve reproducible
+JDK 17 provisioning with the F-Droid maintainers before enabling the draft;
+switching JDK versions requires another APK comparison. No source build or
+signed-release comparison completed in that container. Issue #292 remains open.

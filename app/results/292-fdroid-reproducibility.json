@@ -40,6 +40,15 @@
     "certificate_sha256": "bddd339d8832a6378dbd0471e41a3d2148f4411fa8b004c6b5524c93f6684a92",
     "tool": "Android build-tools 36.0.0 apksigner verify --print-certs"
   },
+  "fdroid_build": {
+    "image": "registry.gitlab.com/fdroid/fdroidserver:buildserver",
+    "image_digest": "sha256:9cb68105642ca4e7b295f0ceab10f069f5b3247dc18fa7c36046e9d81aa469a8",
+    "fdroidserver_revision": "5806784d0d43bed7b938fd4b327162da68927060",
+    "metadata_lint": "passed",
+    "ndk_installed": "30.0.16248370",
+    "result": "blocked before source build",
+    "blocker": "Debian Trixie apt cannot locate openjdk-17-jdk-headless in the recipe sudo section. Resolve JDK 17 provisioning before enabling the draft."
+  },
   "limits": [
     "Local determinism does not prove an independent F-Droid build matches a signed release.",
     "The published v0.0.3 APK uses cc.local.app; a new com.usegarret.app release and an installed-app update check are still required."
