@@ -17,6 +17,8 @@ use tauri::Emitter;
 use tauri::{Manager, State, WebviewUrl, WebviewWindowBuilder};
 
 mod data_migration;
+#[cfg(all(unix, any(target_os = "macos", test)))]
+mod native_identity;
 mod command_error;
 mod core_constants;
 mod book_open;
@@ -80,6 +82,11 @@ mod test_support;
 mod words;
 mod warning_history;
 mod zoom;
+
+#[cfg(windows)]
+fn legacy_webview_data_dir(app: &tauri::AppHandle) -> tauri::Result<PathBuf> {
+    app.path().resolve(data_migration::LEGACY_DIR, tauri::path::BaseDirectory::LocalData)
+}
 
 fn write_measurement_sink(
     payload: &serde_json::Value,
@@ -4080,6 +4087,14 @@ fn main() {
     };
     #[cfg(windows)]
     let migration = data_migration::prepare(&data_home, &owned_file);
+    #[cfg(target_os = "macos")]
+    let migration = migration.and_then(|()| {
+        if owned_socket.is_none() {
+            return Err("cannot guard native state during identifier migration".into());
+        }
+        let home = dirs::home_dir().ok_or("cannot locate the home directory for native state")?;
+        native_identity::prepare(&home)
+    });
     if let Err(error) = migration {
         // Reporting must not create a destination that would block a retry.
         report_migration_failure(&data_home, &error);
@@ -4750,6 +4765,9 @@ fn main() {
             // after migration, blocking the next launch on a fresh installation.
             #[cfg(target_os = "linux")]
             let window = window.data_directory(app.state::<DataHome>().0.join(APP_DIR));
+            // WebView2's default follows the identifier, independently of books and settings.
+            #[cfg(windows)]
+            let window = window.data_directory(legacy_webview_data_dir(app.handle())?);
             window.build()?;
 
             #[cfg(target_os = "linux")]

@@ -15,76 +15,72 @@
     "backup-recovery": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
-        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
+        "docs/COMPATIBILITY.md": "434483c95b191279e438610f05230c064bca318ec22a1f632c55a8050fb79adf"
       },
-      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
+      "migration": "",
       "no_impact": "",
-      "note": "Document complete book and profile backups, interrupted migration preservation, archive boundaries, and restoring separate pre-upgrade copies.",
+      "note": "Document backups of native state and preservation of interrupted moves; book recovery and encrypted archives stay unchanged.",
       "source_sha256": "2edd84df587e32edba860845496359304bc871189b1a9f8bacee26f390bea937"
     },
     "editor": {
       "breaking": "none",
       "docs": {
-        "README.md": "c124fff0e0ddfbc28757426e5ad184c897bfff59fff6c81ea5e46c85097a8b96"
+        "README.md": "eb04450b720ce23d2235e75242f89eaf130b71846c986222f50659f71ec90243"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged.",
+      "note": "Document desktop and Android identities without changing interface behavior.",
       "source_sha256": "0e4f0d0a283e6d20ed949c9cf1571526fe34324d91603deeffdb00f7c1d408fc"
     },
     "encryption": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
-        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
+        "docs/COMPATIBILITY.md": "434483c95b191279e438610f05230c064bca318ec22a1f632c55a8050fb79adf"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Distinguish encrypted portable archives from plaintext working files and add encryption dependency and source review obligations.",
+      "note": "Refresh compatibility guidance without changing archive encryption, keys, or plaintext staging markers.",
       "source_sha256": "3de071163792f42498cde75496e4894e6649599b1f5d949390410cf68e8a3c9a"
     },
     "maintenance": {
       "breaking": "none",
       "docs": {
-        "CONTRIBUTING.md": "272888b63e282071b5f8c40e627910c1064d4fe6d422f5967dab9dd6fa456d11"
+        "docs/COMPATIBILITY.md": "434483c95b191279e438610f05230c064bca318ec22a1f632c55a8050fb79adf"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged.",
-      "source_sha256": "f38f6d6a0678d7ffd0a4bf023ae6f9aac685727c2507728ae4188fac8b518e9b"
+      "note": "Document resumable macOS native-state moves, retained legacy links, conflict refusal, stable books and settings, and preservation of the Windows editor and proof WebView2 profiles.",
+      "source_sha256": "93efc343e8ddbab003385fc4857d5d7ed00bbe792013cc8d052c5f56d5ed50c0"
     },
     "native-packaging": {
       "breaking": "none",
       "docs": {
-        "CONTRIBUTING.md": "272888b63e282071b5f8c40e627910c1064d4fe6d422f5967dab9dd6fa456d11",
-        "docs/RELEASES.md": "a89c23cedc46f620969337f6a3957ddceb589017a562d600bed0bb1da86ac48d"
+        "README.md": "eb04450b720ce23d2235e75242f89eaf130b71846c986222f50659f71ec90243",
+        "docs/COMPATIBILITY.md": "434483c95b191279e438610f05230c064bca318ec22a1f632c55a8050fb79adf"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Require the latest exact-commit develop push CI run to succeed before alpha tag packaging; an older success cannot hide a pending or failed newer run. Existing platforms, asset publication, tag ancestry, application behavior, and compatibility remain unchanged.",
-      "source_sha256": "2f6c313459ffcf4cacba835bae2f161f2fa7a56e95c5a4614e855eacb9ef9f8e"
+      "note": "Change the desktop identifier, preserve the Android package and Windows WebView2 profile, derive the macOS bundle identity from configuration, and document native upgrade limits.",
+      "source_sha256": "f055c1ab31d14c0d70530aea2fbe1423bc4b4bcff2853956d585818b110037de"
     },
     "project-format": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
-        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
+        "docs/COMPATIBILITY.md": "434483c95b191279e438610f05230c064bca318ec22a1f632c55a8050fb79adf"
       },
-      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
+      "migration": "",
       "no_impact": "",
-      "note": "Document bounded foreign DOCX expansion and unchanged manuscript schema, and require source-bound review for project-format changes.",
+      "note": "Refresh the compatibility guide for the desktop identity; manuscript formats and SQLite schema stay unchanged.",
       "source_sha256": "633eb04cbb992be4f186db0ed49f4ba7929e26aa0029d3512d17e3861292a724"
     },
     "schema": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
-        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
+        "docs/COMPATIBILITY.md": "434483c95b191279e438610f05230c064bca318ec22a1f632c55a8050fb79adf"
       },
-      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
+      "migration": "",
       "no_impact": "",
-      "note": "Document current SQLite schema 17 and profile migration compatibility, backup, upgrade, and rollback limits; introduce conservative migration review obligations.",
+      "note": "Keep SQLite schema 17 and the existing desktop book profile unchanged while documenting native-state migration.",
       "source_sha256": "62d95aba766994ebe98af65fd148d822bf59daffd49ad561db365ed0b52c59c4"
     }
   },
