@@ -68,6 +68,8 @@ interface Rig {
 }
 
 function rig(opts: {
+  preset?: OutlineDeps["preset"];
+  followCreated?: boolean;
   /** Successive `project_items` results. The last one repeats. */
   walks?: ProjectItem[][];
   selected?: string | null;
@@ -134,15 +136,17 @@ function rig(opts: {
     return {};
   };
 
+  let selected = opts.selected ?? null;
   const outline = createOutline({
     generation: 17,
+    preset: opts.preset,
     invoke,
     reload: (items) => {
       log.push("reload");
       reloads.push(items);
     },
-    selectedId: () => opts.selected ?? null,
-    onCreated: (id) => created.push(id),
+    selectedId: () => selected,
+    onCreated: (id) => { created.push(id); if (opts.followCreated) selected = id; },
     onFailure: (message) => failures.push(message),
     onDone: (message) => done.push(message),
     confirmSectionMove: opts.confirmSectionMove,
@@ -2497,4 +2501,18 @@ describe("createOutline: undo", () => {
       expect(r.outline.redoLabel()).toBeNull();
     });
   });
+});
+
+test("short fiction creates ordered siblings, an explicit chapter, then a part without extra holders", async () => {
+  const scenes = [...newBook(), item("made-1", null, 0, 1, "Scene 2")];
+  const chapter = { ...item("made-2", null, 0, 1, "Chapter 1"), type: "chapter" };
+  const r = await seeded({ preset: "short", followCreated: true, selected: "s1", walks: [newBook(), scenes, [...scenes, chapter]] });
+  await r.outline.create("scene");
+  await r.outline.create("chapter");
+  await r.outline.create("part");
+  const creates = r.calls.filter((call) => call.cmd === "item_create");
+  expect(creates.map((call) => [call.args?.itemType, call.args?.parentId, call.args?.afterId])).toEqual([
+    ["scene", null, "s1"], ["chapter", null, "made-1"], ["part", null, "made-2"],
+  ]);
+  expect(r.created).toEqual(["made-1", "made-2", "made-3"]);
 });

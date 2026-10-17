@@ -279,9 +279,11 @@ fn document_rels_xml() -> String {
 /// Word document opens at their own default and this only has to be valid.
 fn document_xml(book: &Book, bodies: &HashMap<String, String>) -> String {
     let mut body = styled_paragraph("Title", &heading_text(book.name));
-    for run in [book.front, book.chapters, book.back] {
+    for (run_index, run) in [book.front, book.chapters, book.back].into_iter().enumerate() {
         for (id, title, depth) in run {
-            body.push_str(&styled_paragraph(&heading_style(*depth), &heading_text(title)));
+            if !(book.single_scene && run_index == 1) {
+                body.push_str(&styled_paragraph(&heading_style(*depth), &heading_text(title)));
+            }
             // An item with no body, and an item whose body this build cannot
             // read, contribute a heading only -- `export::manuscript`'s
             // rule: losing a chapter silently is the worst thing either
@@ -379,6 +381,7 @@ mod tests {
         back: &'a [(String, String, i64)],
     ) -> Book<'a> {
         Book {
+            single_scene: false,
             name,
             contents_title: "Contents",
             front,

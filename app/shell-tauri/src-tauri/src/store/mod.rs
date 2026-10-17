@@ -1072,27 +1072,16 @@ impl Store {
             .optional()?)
     }
 
-    /// Gives a brand-new project what the page requires -- something to open --
-    /// and, in a book with nothing in it at all, the chapter that holds it.
-    /// Returns whether it created anything.
-    ///
-    /// A CHAPTER IS NOT OPTIONAL, by design: parts are optional and scenes
-    /// are optional, chapters are not. A book that opened as one bare scene at
-    /// the root is the
-    /// emptiness that produced the flat-outline defect reported with
-    /// a screenshot -- twice -- because the page's
-    /// placement rule had nothing above the selection to hang a new row on and
-    /// every first press landed at the root beside the scene.
-    ///
-    /// It is fixed HERE rather than in `placement.ts` because the page was
-    /// answering correctly about a book that was wrong. An earlier fix taught the chapter
-    /// press to build its own part, which is the same defect met one press
-    /// later; a starter with a chapter in it means the very first press already
-    /// has somewhere to go.
-    ///
-    /// Idempotent, and still keyed on "no scene anywhere" rather than "no items
-    /// at all": a manuscript whose only items are parts and chapters is a
-    /// project the writer built.
+    pub fn project_preset(&self) -> Result<&'static str> {
+        Ok(match self.get_meta("project.preset")?.as_deref() {
+            Some("short") => "short",
+            Some("nonfiction") => "nonfiction",
+            _ => "novel",
+        })
+    }
+
+    /// Short fiction starts flat; other presets keep a starter chapter.
+    /// Imports with an existing outline retain their own structure.
     pub fn ensure_starter_structure(&self, strings: &crate::strings::Strings) -> Result<bool> {
         // A SCENE, not merely an item. The condition used to be "the store is
         // empty", which is the same thing for a project being created and NOT
@@ -1125,7 +1114,7 @@ impl Store {
         // application adding a row to somebody's outline, which is the same
         // objection that keeps `create_imported` from becoming "create plus a
         // fill". A brand-new book has no outline to disturb.
-        let holder = if self.items()?.is_empty() {
+        let holder = if self.items()?.is_empty() && self.project_preset()? != "short" {
             Some(
                 self.item_create(
                     None,

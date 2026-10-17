@@ -33,6 +33,12 @@
 // UNKNOWN once. Change a string here only with a rig run behind it.
 
 export const EN = {
+  "preset.label": "Project type",
+  "preset.novel": "Novel",
+  "preset.short": "Short fiction",
+  "preset.nonfiction": "Nonfiction",
+  "preset.reference-notes": "Reference notes",
+  "preset.add-reference": "Add to {name}",
   "creation.destination-changed": "The destination changed. Open the chooser again before adding an item.",
   "creation.plus": "+",
   "prefs.sidebar-word-counts": "Sidebar word counts",

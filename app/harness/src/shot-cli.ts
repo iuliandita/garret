@@ -178,6 +178,7 @@
 //                         same way --states-demo and --comments-demo are: this
 //                         rig cannot click through the preferences panel's Add
 //                         control, so it writes the row `dict_add` would.
+//   --project-preset short|nonfiction  plant a small preset book for visual checks
 //   --data-home <path>    reuse this directory as XDG_DATA_HOME instead of
 //                         making a fresh one, so two invocations can share
 //                         ENCHANT_CONFIG_DIR -- the one way to capture the
@@ -593,6 +594,7 @@ interface Options {
    *  here: this is a photograph, not a graded claim, and this rig does not
    *  import page or host source. */
   dictWord: string | null;
+  projectPreset: "short" | "nonfiction" | null;
   /** Reuse this directory as XDG_DATA_HOME instead of making a fresh one.
    *
    *  THE ONE WAY TWO INVOCATIONS OF THIS RIG CAN SHARE `ENCHANT_CONFIG_DIR`:
@@ -843,6 +845,7 @@ function parseArgs(argv: string[]): Options {
   let selectLastWord = false;
   let typeAfter: string | null = null;
   let dictWord: string | null = null;
+  let projectPreset: "short" | "nonfiction" | null = null;
   let dataHomeOverride: string | null = null;
   let comments = false;
   let synopsis: string | null = null;
@@ -1433,6 +1436,10 @@ function parseArgs(argv: string[]): Options {
       case "--type-after":
         typeAfter = value;
         break;
+      case "--project-preset":
+        if (value !== "short" && value !== "nonfiction") throw new Error("--project-preset needs short or nonfiction");
+        projectPreset = value;
+        break;
       case "--data-home":
         dataHomeOverride = value;
         break;
@@ -1529,6 +1536,7 @@ function parseArgs(argv: string[]): Options {
     selectLastWord,
     typeAfter,
     dictWord,
+    projectPreset,
     dataHome: dataHomeOverride,
     size,
     comments,
@@ -1686,6 +1694,7 @@ function xdo(display: string, args: string[]): string {
 // Refused with the explanation rather than left to fail: --theme forces the
 // APP's palette without touching the bus, and is what a panel capture wants.
 function refuseUndrivableCombination(o: Options): void {
+  if (o.projectPreset !== null && (o.firstRun !== null || o.blank || o.library || o.libraryEmpty)) throw new Error("--project-preset needs a seeded book");
   if (o.craftKnowledge && o.craftReports) throw new Error("choose one craft panel per capture");
   if ((o.craftKnowledge || o.craftReports) && o.schemeAsked) throw new Error("craft panel captures need the accessibility bus: use --theme instead of --scheme");
   if ((o.hostError || o.warningHistory) && (o.press !== null || o.hover !== null || o.status || o.schemeAsked))
@@ -2028,7 +2037,7 @@ const appDataHome = dataHome(
 const localeCatalog = `app/ui/src/i18n/${options.locale}.ts`;
 const timelineUntitled = catalogText("timeline.untitled", localeCatalog);
 const localizedMenuDriver = (display: string, wid: string) =>
-  menuDriver(display, wid, xdo, undefined, localeCatalog);
+  menuDriver(display, wid, xdo, undefined, localeCatalog, options.projectPreset ?? "novel");
 if (options.ghostBook) {
   // A path under the run's own work dir that nothing creates: the shape of a
   // book the writer moved in their file manager. Planted through settings.json
@@ -2138,6 +2147,26 @@ if (
   seedFixtureDir = fixtureCopy;
 }
 
+if (options.projectPreset !== null) {
+  seedFixtureDir = join(workDir, "preset-fixture");
+  mkdirSync(seedFixtureDir);
+  const short = options.projectPreset === "short";
+  const items = [
+    ...(!short ? [{ id: "chapter", type: "chapter", title: "Chapter 1", parentId: null }] : []),
+    { id: "scene", type: "scene", title: "Scene 1", parentId: short ? null : "chapter" },
+    ...(!short ? [
+      { id: "reference", type: "bible", title: "Bible", parentId: null },
+      { id: "sources", type: "note", title: "Sources", parentId: "reference" },
+    ] : []),
+  ];
+  writeFileSync(join(seedFixtureDir, "project.json"), JSON.stringify({
+    meta: { seed: "preset-visual", name: short ? "The last light" : "Notes on the coast" }, items,
+  }));
+  writeFileSync(join(seedFixtureDir, "scenes.ndjson"), JSON.stringify({ id: "scene", blocks: [
+    { text: short ? "The light in the harbor window was still burning when she returned. She had left the key beneath the stone, exactly where he would look." : "A coastline is a record of change. The shape we see today reflects tides, weather, and the work of people who live beside the water." },
+  ] }) + "\n");
+}
+
 if (options.firstRun === null && !options.blank && !options.libraryEmpty) {
   console.log(`[1/3] seeding project from ${seedFixtureDir}`);
   const seeded = Bun.spawnSync([BIN, "--seed", seedFixtureDir, projectPath], {
@@ -2157,6 +2186,13 @@ if (options.firstRun === null && !options.blank && !options.libraryEmpty) {
         ? "[1/3] --library-empty: nothing seeded, an empty library only"
         : "[1/3] --first-run: no project seeded, an empty data home only",
   );
+}
+
+if (options.projectPreset !== null) {
+  const db = new Database(projectPath);
+  try {
+    db.query("INSERT OR REPLACE INTO meta(key, value) VALUES ('project.preset', ?1)").run(options.projectPreset);
+  } finally { db.close(); }
 }
 
 /** `--library` / `--library-form`: two extra books beside `projectPath`, two

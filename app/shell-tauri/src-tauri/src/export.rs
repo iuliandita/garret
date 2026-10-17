@@ -269,6 +269,7 @@ pub struct TocEntry {
 /// A renderer that had to ask "is this row front matter?" would be a second
 /// place where that question is answered.
 pub struct Book<'a> {
+    pub single_scene: bool,
     pub name: &'a str,
     /// The heading the generated contents is given. Passed in, like `name`,
     /// because this module is pure and holds no writer-facing words of its own.
@@ -304,6 +305,7 @@ impl<'a> Book<'a> {
 /// Built from the SAME runs and the SAME `heading_level` the body uses, so a
 /// contents entry cannot name a level the heading below it does not have.
 pub fn contents_of(book: &Book) -> Vec<TocEntry> {
+    if book.single_scene { return Vec::new(); }
     let mut out = Vec::new();
     for run in book.runs() {
         for (id, title, depth) in run {
@@ -391,17 +393,19 @@ pub fn manuscript(book: &Book, bodies: &HashMap<String, String>) -> Manuscript {
         );
         push_block(&mut out, &contents_block(&contents));
     }
-    for run in book.runs() {
+    for (run_index, run) in book.runs().into_iter().enumerate() {
         for (id, title, depth) in run {
-            push_block(
-                &mut out,
-                format!(
-                    "{} {}",
-                    "#".repeat(heading_level(*depth)),
-                    heading_title(title)
-                )
-                .trim_end(),
-            );
+            if !(book.single_scene && run_index == 1) {
+                push_block(
+                    &mut out,
+                    format!(
+                        "{} {}",
+                        "#".repeat(heading_level(*depth)),
+                        heading_title(title)
+                    )
+                    .trim_end(),
+                );
+            }
             if let Some((prose, underlined)) =
                 bodies.get(id).and_then(|b| document_markdown_counted(b))
             {
@@ -563,6 +567,7 @@ mod tests {
     /// the three runs build a `Book` themselves.
     fn book<'a>(name: &'a str, chapters: &'a [(String, String, i64)]) -> Book<'a> {
         Book {
+            single_scene: false,
             name,
             contents_title: "Contents",
             front: &[],
@@ -661,6 +666,7 @@ mod tests {
         let back = vec![("a".to_string(), "Acknowledgements".to_string(), 0)];
         let out = manuscript(
             &Book {
+                single_scene: false,
                 name: "N",
                 contents_title: "Contents",
                 front: &front,
@@ -691,6 +697,7 @@ mod tests {
         );
         let out = manuscript(
             &Book {
+                single_scene: false,
                 name: "N",
                 contents_title: "Contents",
                 front: &front,
@@ -717,6 +724,7 @@ mod tests {
             ("s".to_string(), "Opening".to_string(), 1),
         ];
         let book = Book {
+            single_scene: false,
             name: "N",
             contents_title: "Contents",
             front: &front,

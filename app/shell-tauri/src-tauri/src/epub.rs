@@ -370,12 +370,13 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
             anchor += 1;
             let level = crate::export::heading_level(*depth);
             let opens = *depth <= 0 || docs.is_empty();
-            let styled = run_index == 1 && epub.openings.styled.contains(id);
-            let page = run_index == 1 && epub.openings.page.contains(id);
+            let scaffold_free = epub.book.single_scene && run_index == 1;
+            let styled = !scaffold_free && run_index == 1 && epub.openings.styled.contains(id);
+            let page = !scaffold_free && run_index == 1 && epub.openings.page.contains(id);
             if opens {
                 docs.push(Doc {
                     href: format!("{:04}.xhtml", docs.len() + 1),
-                    title: title.clone(),
+                    title: if scaffold_free { epub.book.name.to_string() } else { title.clone() },
                     epub_type,
                     body: String::new(),
                 });
@@ -391,10 +392,12 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
             if run_index == 1 { classes.push("book-body-heading"); }
             let class = if classes.is_empty() { String::new() }
                 else { format!(" class=\"{}\"", classes.join(" ")) };
-            doc.body.push_str(&format!(
-                "<h{level} id=\"{fragment}\"{class}>{}</h{level}>\n",
-                xml_escape(title)
-            ));
+            if !scaffold_free {
+                doc.body.push_str(&format!(
+                    "<h{level} id=\"{fragment}\"{class}>{}</h{level}>\n",
+                    xml_escape(title)
+                ));
+            }
             // THE ORNAMENT MARKS A CHAPTER, not every heading under it. A
             // dinkus under every scene title is a page of dinkuses, and the
             // the design calls for a glyph at the chapter break.
@@ -511,9 +514,10 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
     // thing that book has. It also keeps 041's rule that a heading over nothing
     // is a section nobody asked for: there is never a heading here over an
     // empty list.
+    let nav_heading = if epub.book.single_scene { String::new() }
+        else { format!("<h1>{}</h1>\n", xml_escape(epub.book.contents_title)) };
     let mut nav = format!(
-        "<nav epub:type=\"toc\" id=\"toc\"><h1>{}</h1>\n<ol>\n<li><a href=\"{TITLE_HREF}\">{}</a>",
-        xml_escape(epub.book.contents_title),
+        "<nav epub:type=\"toc\" id=\"toc\">{nav_heading}<ol>\n<li><a href=\"{TITLE_HREF}\">{}</a>",
         xml_escape(epub.book.name),
     );
     // THE NESTING, and it is the one piece of this file with a state machine in
@@ -556,10 +560,10 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
         "<item id=\"nav\" href=\"{NAV_HREF}\" media-type=\"application/xhtml+xml\" \
          properties=\"nav\"/>"
     ));
-    spine.push_str("<itemref idref=\"nav\"/>");
+    if !epub.book.single_scene { spine.push_str("<itemref idref=\"nav\"/>"); }
     later.push(Entry::text(
         &format!("{OEBPS}/{NAV_HREF}"),
-        &xhtml_of(epub, epub.book.contents_title, "frontmatter", &nav),
+        &xhtml_of(epub, if epub.book.single_scene { epub.book.name } else { epub.book.contents_title }, "frontmatter", &nav),
     ));
 
     for (n, doc) in docs.iter().enumerate() {
@@ -894,6 +898,7 @@ mod tests {
 
     fn plain<'a>(name: &'a str, runs: &'a [(String, String, i64)]) -> Book<'a> {
         Book {
+            single_scene: false,
             name,
             contents_title: "Contents",
             front: &[],
@@ -1055,6 +1060,7 @@ mod tests {
         let rows = chapters(&[("a", "One", 0), ("c", "A scene", 1)]);
         let front = chapters(&[("d", "Dedication", 0)]);
         let book = Book {
+            single_scene: false,
             name: "My Novel",
             contents_title: "Contents",
             front: &front,
@@ -1445,6 +1451,7 @@ mod tests {
         let body = chapters(&[("a", "One", 0)]);
         let back = chapters(&[("z", "Afterword", 0)]);
         let book = Book {
+            single_scene: false,
             name: "N",
             contents_title: "Contents",
             front: &front,
@@ -1834,6 +1841,7 @@ mod tests {
         // `identity_metadata` fails HERE, which is the only thing that stops the
         // check becoming a list of promises.
         let book = Book {
+            single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
             front: &[],
@@ -1870,6 +1878,7 @@ mod tests {
         // exactly what it was before this slice, or the graded EPUB evidence is
         // about a file nobody had.
         let book = Book {
+            single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
             front: &[],
@@ -1887,6 +1896,7 @@ mod tests {
     fn a_name_with_markup_in_it_is_escaped_into_the_package_document() {
         // A pen name is the writer's own text and the package document is XML.
         let book = Book {
+            single_scene: false,
             name: "The Harbour",
             contents_title: "Contents",
             front: &[],

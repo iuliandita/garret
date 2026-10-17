@@ -1,3 +1,4 @@
+import { referenceTitle, type ProjectPreset } from "./project-preset";
 // app/ui/src/outline.ts
 // Neighbour arithmetic for outline moves: the pure half of "move this row up /
 // down / out / in".
@@ -401,6 +402,7 @@ function itemsExcludingRoots(
 }
 
 export interface OutlineDeps {
+  preset?: ProjectPreset;
   generation: number;
   canMutate?: () => boolean;
   invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
@@ -964,7 +966,7 @@ export function createOutline(deps: OutlineDeps): Outline {
         // each one back to where THIS walk - not any later one - had it.
         const before = walk;
         const anchor = relativeTo ?? deps.selectedId();
-        const place = planPlacement(walk, anchor, itemType);
+        const place = planPlacement(walk, anchor, itemType, deps.preset);
         // THE HOLDERS FIRST, THEN THE ITEM INSIDE THE LAST. `holders` is empty
         // in every case but one -- a chapter with no part above it, which is
         // the press that could not produce indentation, a reported defect.
@@ -1176,7 +1178,7 @@ export function createOutline(deps: OutlineDeps): Outline {
     createNote(anchorId?: string | null): Promise<OutlineOutcome> {
       return createInSection({
         rootType: BIBLE_TYPE,
-        rootTitle: BIBLE_TITLE,
+        rootTitle: referenceTitle(deps.preset ?? "novel"),
         docType: NOTE_TYPE,
         // Numbered from the WALK, inside the serialized body: a title computed
         // outside it would be numbered against a tree that may already have
@@ -1189,7 +1191,7 @@ export function createOutline(deps: OutlineDeps): Outline {
     createBibleFolder(anchorId?: string | null): Promise<OutlineOutcome> {
       return createInSection({
         rootType: BIBLE_TYPE,
-        rootTitle: BIBLE_TITLE,
+        rootTitle: referenceTitle(deps.preset ?? "novel"),
         docType: BIBLE_FOLDER_TYPE,
         docTitle: (items) => nextNumberedTitle(items, BIBLE_FOLDER_TYPE, numberPattern(BIBLE_FOLDER_TYPE)),
         noSection: () => t("outline.failed.no-bible"),
@@ -1199,7 +1201,7 @@ export function createOutline(deps: OutlineDeps): Outline {
     createTimeline(anchorId?: string | null): Promise<OutlineOutcome> {
       return createInSection({
         rootType: BIBLE_TYPE,
-        rootTitle: BIBLE_TITLE,
+        rootTitle: referenceTitle(deps.preset ?? "novel"),
         docType: TIMELINE_TYPE,
         // NOT NUMBERED, `createMatter`'s reason and not `createNote`'s: the
         // model is one story clock per book, so `timeline.untitled`

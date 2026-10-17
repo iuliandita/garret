@@ -5,6 +5,13 @@
   </picture>
 </p>
 
+New desktop books offer Novel, Short fiction, and Nonfiction project types.
+Short fiction starts with one scene and grows structure as needed. Nonfiction
+starts with its own book design, calls the Bible Reference notes, and keeps
+fiction tools available under Planning > More. A single-scene manuscript
+exports without generated contents or outline headings; front and back matter
+remain included.
+
 ## A writing studio for the whole book.
 
 **garret** <img src="assets/brand/garret/garret-middle-dot.svg" alt="·" width="8" height="16"> is a powerful writing studio for novelists, completely free and open

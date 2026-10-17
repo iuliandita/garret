@@ -10,6 +10,7 @@ export interface BibleCreation {
 }
 
 export function createCreationChooser(deps: {
+  referenceTitle?(): string;
   create(type: string): void;
   bible(): BibleCreation;
   matter(kind: MatterKind): void;
@@ -41,10 +42,14 @@ export function createCreationChooser(deps: {
     });
     return button;
   };
+  const referenceHeading = (): string => {
+    const name = deps.referenceTitle?.();
+    return name === undefined ? t("creation.bible") : t("preset.add-reference", { name });
+  };
   const bibleChoices = (target: BibleCreation, showHeading = true): HTMLElement => {
     const group = document.createElement("section");
     const heading = document.createElement("h3");
-    heading.textContent = t("creation.bible");
+    heading.textContent = referenceHeading();
     const destination = document.createElement("p");
     destination.className = "creation-destination";
     destination.textContent = t("creation.destination", { name: target.destination });
@@ -59,7 +64,7 @@ export function createCreationChooser(deps: {
     open(bible = false): void {
       if (destroyed) return;
       const target = deps.bible();
-      const title = t(bible ? "creation.bible" : "creation.manuscript");
+      const title = bible ? referenceHeading() : t("creation.manuscript");
       shell.setTitle(title);
       shell.closeButton.setAttribute("aria-label", t("panel.close", { title }));
       shell.body.replaceChildren();

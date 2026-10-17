@@ -1,3 +1,4 @@
+import type { ProjectPreset } from "../src/project-preset";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { describe, expect, test } from "bun:test";
 import { menuRoute } from "../../harness/src/menu-drive";
@@ -67,7 +68,7 @@ interface Rig {
   list(): HTMLElement;
 }
 
-function mount(privacy?: { enabled: boolean; calls: number; shortcut?: "ctrl_alt_l" | "ctrl_alt_p" | "off" }, openCreation?: () => void): Rig {
+function mount(privacy?: { enabled: boolean; calls: number; shortcut?: "ctrl_alt_l" | "ctrl_alt_p" | "off" }, openCreation?: () => void, preset: () => ProjectPreset = () => "novel"): Rig {
   const container = document.createElement("span");
   document.body.append(container);
 
@@ -114,6 +115,7 @@ function mount(privacy?: { enabled: boolean; calls: number; shortcut?: "ctrl_alt
   };
 
   const bar = createMenuBar({
+    projectPreset: preset,
     container,
     openCreation,
     showManuscript: () => undefined,
@@ -2003,3 +2005,22 @@ for (const shortcut of ["ctrl_alt_l", "ctrl_alt_p", "off"] as const) {
     }
   });
 }
+
+test("nonfiction moves fiction tools under More and rechecks after switching books", () => {
+  let preset: ProjectPreset = "nonfiction";
+  const r = mount(undefined, undefined, () => preset);
+  r.title("menu-outline").click();
+  document.getElementById("menu-planning")!.click();
+  expect(document.getElementById("menu-cast")).toBeNull();
+  expect(document.getElementById("menu-appears")).toBeNull();
+  expect(document.getElementById("menu-appears-map")).toBeNull();
+  document.getElementById("menu-fiction-more")!.click();
+  document.getElementById("menu-fiction-cast")!.click();
+  expect(r.calls.cast).toBe(1);
+  preset = "novel";
+  r.title("menu-outline").click();
+  document.getElementById("menu-planning")!.click();
+  expect(document.getElementById("menu-cast")).not.toBeNull();
+  expect(document.getElementById("menu-fiction-more")).toBeNull();
+  r.bar.destroy();
+});

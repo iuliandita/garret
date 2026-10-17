@@ -75,3 +75,11 @@ describe("loadStoreSource", () => {
     expect(seen).toEqual(["project_items"]);
   });
 });
+
+test("nonfiction changes only the displayed reference-section label", () => {
+  const rows = [{ id: "reference", parent_id: null, type: "bible", title: "Bible", position: "0", rev: 1, state: null, depth: 0 }];
+  const source = storeSourceFrom(rows, "test", "nonfiction");
+  expect(source.titleAt(0)).toBe("Reference notes");
+  expect(source.items[0]!.title).toBe("Bible");
+  expect(storeSourceFrom(rows, "test").titleAt(0)).toBe("Bible");
+});

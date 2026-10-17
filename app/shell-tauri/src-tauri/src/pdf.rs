@@ -330,8 +330,9 @@ pub fn proof_document(proof: &Proof) -> String {
         for (id, title, depth) in run {
             let level = crate::export::heading_level(*depth);
             let opens = *depth <= 0;
-            let styled = run_index == 1 && proof.openings.styled.contains(id);
-            let page = run_index == 1 && proof.openings.page.contains(id);
+            let scaffold_free = proof.book.single_scene && run_index == 1;
+            let styled = !scaffold_free && run_index == 1 && proof.openings.styled.contains(id);
+            let page = !scaffold_free && run_index == 1 && proof.openings.page.contains(id);
             // The first division does not request an extra break: that once
             // produced a blank initial leaf. Later typed parts and chapters
             // can request one without forcing a break before scene headings.
@@ -352,11 +353,13 @@ pub fn proof_document(proof: &Proof) -> String {
             } else {
                 String::new()
             };
-            flow.push_str(&format!(
-                "<h{level} id=\"{anchor}\"{class}{running}>{}</h{level}>\n",
-                xml_escape(title),
-                anchor = anchor_id(id),
-            ));
+            if !scaffold_free {
+                flow.push_str(&format!(
+                    "<h{level} id=\"{anchor}\"{class}{running}>{}</h{level}>\n",
+                    xml_escape(title),
+                    anchor = anchor_id(id),
+                ));
+            }
             // THE ORNAMENT MARKS A DIVISION, not every heading under it --
             // 043's rule and its reason, unchanged: a dinkus under every scene
             // title is a page of dinkuses.
@@ -913,6 +916,7 @@ mod tests {
 
     fn book<'a>(name: &'a str, chapters: &'a [(String, String, i64)]) -> Book<'a> {
         Book {
+            single_scene: false,
             name,
             contents_title: "Contents",
             front: &[],
@@ -1403,6 +1407,7 @@ mod tests {
         let chapters = [item("part", "Part", 0), item("chapter", "Chapter", 1)];
         let back = [item("back", "Afterword", 0)];
         let b = Book {
+            single_scene: false,
             name: "Book", contents_title: "Contents", front: &front,
             chapters: &chapters, back: &back,
         };

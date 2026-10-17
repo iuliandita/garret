@@ -29,6 +29,24 @@ An oversized foreign document can now be refused. Preserve the original and
 split or simplify a copy before retrying; do not bypass the limits. This does
 not change the stored manuscript schema or require converting existing books.
 
+New desktop books can start as a novel, short fiction, or nonfiction. The
+optional `project.preset` metadata key adds no schema migration: a missing or
+unknown value uses novel defaults, and unknown values remain stored unchanged.
+Older desktop builds ignore this key and show novel tools. Short fiction starts
+with one scene at the root; nonfiction uses the non-fiction book design and
+keeps fiction tools under Planning > More. Reference notes use the same stored
+section as the Bible. Existing books and their data are unchanged.
+
+A manuscript consisting of one scene, optionally inside its chapter and part, exports without generated contents or
+outline headings in Markdown, EPUB, PDF proof, and Word. Front and back matter
+still export with their headings. EPUB keeps its required navigation document
+outside the reading spine. Adding another scene or a separate section restores normal outline
+headings and contents. These are export defaults, not changes to saved prose.
+Complete backups, salvage, and portable book copies retain the metadata key.
+Use the closed-book backup and disposable-copy upgrade steps above; rollback
+to an older desktop build needs no preset conversion. Android preset support
+is handled separately; do not assume an older Android build understands it.
+
 The desktop profile now uses `garret` instead of `cc.local.app`, preserving a
 compatibility link after migration. Close older versions before first launch.
 If migration stops, preserve both folders named in the warning, close garret,

@@ -1,3 +1,4 @@
+import { referenceTitle, type ProjectPreset } from "../project-preset";
 // app/ui/src/store/source.ts
 // A FixtureSource over the project store. Identifiers and titles only: the
 // navigator never needs bodies, and retaining them is the memory lever
@@ -39,7 +40,7 @@ export interface StoreSource extends FixtureSource {
   typeAt(index: number): string;
 }
 
-export function storeSourceFrom(items: ProjectItem[], seed: string): StoreSource {
+export function storeSourceFrom(items: ProjectItem[], seed: string, preset: ProjectPreset = "novel"): StoreSource {
   if (items.length === 0) {
     throw new Error("project has no items: a navigator with no rows would pass every gate vacuously");
   }
@@ -61,7 +62,8 @@ export function storeSourceFrom(items: ProjectItem[], seed: string): StoreSource
     items: rows,
     count: rows.length,
     seed,
-    titleAt: (i) => at(i).title,
+    titleAt: (i) => preset === "nonfiction" && at(i).type === "bible" && at(i).parent_id === null
+      ? referenceTitle(preset) : at(i).title,
     idAt: (i) => at(i).id,
     depthAt: (i) => at(i).depth,
     typeAt: (i) => at(i).type,

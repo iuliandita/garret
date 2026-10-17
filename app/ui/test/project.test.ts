@@ -40,6 +40,7 @@ interface Host {
 }
 
 interface HostOpts {
+  preset?: string;
   items?: ProjectItem[];
   docRev?: number;
   /** Successive project_items answers. The boot walk is [0]; every outline
@@ -117,6 +118,7 @@ function host(opts: HostOpts = {}): Host {
     // `today` is a fixed slice of it rather than another moving number: the
     // tests here are about whether the page asks and repaints, and a second
     // moving figure would make a stale reading look like a fresh one.
+    if (cmd === "project_preset") return opts.preset ?? "novel";
     if (cmd === "project_progress") return { total: ++counted * WORD_COUNT_STEP, today: 40 };
     if (cmd === "project_items") {
       if (opts.walks === undefined) return items;
@@ -742,6 +744,24 @@ afterEach(() => {
 });
 
 describe("mountProject store path", () => {
+  test("the mounted nonfiction book labels its existing reference data without renaming it", async () => {
+    shell();
+    const items: ProjectItem[] = [...walk(),
+      { id: "reference", parent_id: null, type: "bible", title: "Bible", position: "0001", rev: 1, state: null, depth: 0 },
+    ];
+    const h = host({ preset: "nonfiction", items });
+    const mounted = await mountProject(deps({ invoke: h.invoke }));
+    try {
+      expect(mounted.preset).toBe("nonfiction");
+      expect(document.getElementById("nav")?.textContent).toContain("Reference notes");
+      expect(document.getElementById("bible-create")?.getAttribute("aria-label")).toBe("Add to Reference notes");
+      mounted.menuActions.openCreation();
+      expect(document.body.textContent).toContain("Add to Reference notes");
+      expect(h.of("item_rename")).toEqual([]);
+      expect(items.at(-1)?.title).toBe("Bible");
+    } finally { mounted.destroy(); }
+  });
+
   test("continuous chapter writes two scene ids through the one editor and preserves active undo on exit", async () => {
     shell();
     const h = host();

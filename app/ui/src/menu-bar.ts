@@ -1,3 +1,4 @@
+import type { ProjectPreset } from "./project-preset";
 // app/ui/src/menu-bar.ts
 // The application menu: one button, a list of four titles, one dropdown.
 //
@@ -62,6 +63,7 @@ export interface MenuSpec {
 export type ProjectsFocus = "list" | "create" | "import" | "backups";
 
 export interface MenuBarDeps {
+  projectPreset?: () => ProjectPreset;
   showManuscript: () => void;
   showOutlineTable: () => void;
   showOutlineCards: () => void;
@@ -412,19 +414,27 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
             },
             {
               id: "menu-cast",
+              visible: () => deps.projectPreset?.() !== "nonfiction",
               opensDialog: true,
               label: () => t("menu.cast"),
               run: deps.openCast,
             },
+            { id: "menu-fiction-more", label: () => t("menu.more"), visible: () => deps.projectPreset?.() === "nonfiction", children: [
+              { id: "menu-fiction-cast", label: () => t("menu.cast"), opensDialog: true, run: deps.openCast },
+              { id: "menu-fiction-appears", label: () => t("menu.appears"), opensDialog: true, run: deps.openAppearances },
+              { id: "menu-fiction-map", label: () => t("menu.appears-map"), opensDialog: true, run: deps.openAppearancesMap },
+            ], run: () => {} },
             { id: "menu-knowledge", opensDialog: true, label: () => t("menu.knowledge"), run: () => deps.openKnowledge?.() },
             {
               id: "menu-appears",
+              visible: () => deps.projectPreset?.() !== "nonfiction",
               opensDialog: true,
               label: () => t("menu.appears"),
               run: deps.openAppearances,
             },
             {
               id: "menu-appears-map",
+              visible: () => deps.projectPreset?.() !== "nonfiction",
               opensDialog: true,
               label: () => t("menu.appears-map"),
               run: deps.openAppearancesMap,

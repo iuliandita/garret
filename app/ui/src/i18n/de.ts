@@ -29,6 +29,12 @@
 // Bibel, Pseudonym, Fokusmodus, Schreibmaschinenmodus.
 
 export const DE = {
+  "preset.label": "Projekttyp",
+  "preset.novel": "Roman",
+  "preset.short": "Kurze Prosa",
+  "preset.nonfiction": "Sachbuch",
+  "preset.reference-notes": "Referenznotizen",
+  "preset.add-reference": "Zu {name} hinzufügen",
   "creation.destination-changed": "Das Ziel hat sich geändert. Öffnen Sie die Auswahl erneut, bevor Sie einen Eintrag hinzufügen.",
   "creation.plus": "+",
   "prefs.sidebar-word-counts": "Wortzahlen in der Seitenleiste",
