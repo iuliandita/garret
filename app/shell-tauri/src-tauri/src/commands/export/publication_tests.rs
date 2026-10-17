@@ -826,7 +826,7 @@ fn pdf_publication_reuses_scopes_assets_and_refuses_disabled_production() {
     }
     let dest = fixture.root.path().join("refused.pdf");
     assert!(export_as(&fixture.db, "Collected", &dest, crate::export::Format::Pdf,
-        &crate::identity::Vault::default(), crate::strings::Strings::english()).is_err());
+        &crate::identity::Vault::default(), crate::strings::Strings::english()).unwrap_err().contains("cannot be exported by this build"));
     assert!(!dest.exists());
     assert_eq!(fixture.store.user_version().unwrap(), 17);
     assert!(!store::document_format::new_nodes_allowed());

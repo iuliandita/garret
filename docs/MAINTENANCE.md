@@ -132,7 +132,11 @@ The underlying intermittent hang remains unconfirmed and tracked in #324.
 
 Install Poppler tools for PDF text and image inspection. The publication fixture
 checks delayed, rejected, and stalled figure decoding; damaged PNG/JPEG covers
-remain non-fatal. PNG eXIf and JPEG EXIF fixtures compare decoded dimensions,
+remain non-fatal and never enter the decode barrier. Truncated mid-data PNG/JPEG
+covers must retain a cover-page image in the printed PDF; a header-only fixture
+cannot detect lost partial painting. The disabled-production PDF assertion must
+require the explicit build refusal and fail when that gate is removed.
+PNG eXIf and JPEG EXIF fixtures compare decoded dimensions,
 placed aspect ratio, and DPI. Check heading companions on interior plates and
 caption containment at the smaller, spaced caption size. Render and inspect
 representative PDF pages after changing these placement rules. Production stays

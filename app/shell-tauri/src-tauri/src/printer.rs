@@ -1004,7 +1004,7 @@ mod tests {
             (&include_bytes!("../fixtures/two-halves.jpg")[..40], "image/jpeg"),
         ] {
             let legacy = crate::pdf::publication_tests::legacy_cover_document(bytes, mime).replace("</body>", r#"<script>
-              window.__proofReady.then(function() {
+              Promise.resolve(window.__proofReady).then(function() {
                 if (document.querySelector('.proof-plate img').naturalWidth !== 0) throw new Error('damaged cover fixture decoded');
               }).catch(function(error) { window.__proofError = error.message; });
             </script></body>"#);
@@ -1013,6 +1013,20 @@ mod tests {
             assert!(legacy.report.pages[0].contains("data-kind=\"plate\""));
             assert!(outside("pdftotext", &["-layout", dest.to_str().unwrap(), "-"]).contains("Legacycoverprose:"));
             assert_eq!(crate::pdf::pdf_page_count(legacy.bytes.as_ref().unwrap()), Some(legacy.report.leaves));
+        }
+        for (bytes, mime) in [
+            (include_bytes!("../fixtures/partial-cover.png").as_slice(), "image/png"),
+            (include_bytes!("../fixtures/partial-cover.jpg").as_slice(), "image/jpeg"),
+        ] {
+            let legacy = crate::pdf::publication_tests::legacy_cover_document(bytes, mime);
+            let legacy = render_for_test(&legacy, Some(&dest), page, &watchdog).unwrap();
+            assert!(legacy.report.figures.is_empty());
+            let images = outside("pdfimages", &["-list", dest.to_str().unwrap()]);
+            assert!(images.lines().skip(2).any(|line| {
+                let columns: Vec<_> = line.split_whitespace().collect();
+                columns.first() == Some(&"1") && columns.get(3) == Some(&"1200") && columns.get(4) == Some(&"1800")
+            }), "partial {mime} cover lost its image: {images}");
+            assert!(outside("pdftotext", &["-layout", dest.to_str().unwrap(), "-"]).contains("Legacycoverprose:"));
         }
         let refused = crate::pdf::publication_tests::document(&"Caption line\n".repeat(100));
         let error = match render_for_test(&refused, None, page, &watchdog) { Ok(_) => panic!("unfit caption printed"), Err(error) => error };

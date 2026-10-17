@@ -8,10 +8,11 @@ of a page. Full and half figures fit within the text column; page figures use a
 separate interior leaf with normal margins and a folio. Images preserve their
 decoded aspect ratio without crop or bleed. Captions have 0.4em of space above
 and use 0.9em type in PDF and EPUB. Images shrink to retain that caption size,
-and an unfit caption refuses the proof. Pagination waits for image decoding;
-failed figure decoding refuses the proof under the existing timeout. Damaged
-legacy covers remain non-fatal. A heading group directly before an interior
-plate travels with it.
+and an unfit caption refuses the proof. Pagination waits only for figure image
+decoding; failed figure decoding refuses the proof under the existing timeout.
+Covers are never passed to `decode()`, preserving legacy partial-image painting
+for truncated originals. Damaged legacy covers remain non-fatal. A heading group
+directly before an interior plate travels with it.
 Legacy prose rendering and existing proof fixtures retain their behavior.
 
 The paginator reports effective DPI for each figure from oriented pixels and its

@@ -955,11 +955,10 @@ pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), r#"
     window.__proofError = String(error && error.message || error).slice(0, 160);
   }
   }
-  var images = Array.from(flow.querySelectorAll("img"));
+  var images = Array.from(flow.querySelectorAll("figure img"));
   if (images.length) {
     window.__proofReady = Promise.all(images.map(function(image) {
-      var decoded = image.decode();
-      return image.closest("figure") ? decoded : decoded.catch(function() {});
+      return image.decode();
     })).then(paginate).catch(function() {
       window.__proofError = "a proof image did not decode";
     });
