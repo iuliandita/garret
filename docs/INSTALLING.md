@@ -16,7 +16,8 @@ license notices. The package manager installs WebKitGTK 4.1 and GTK 3 dependenci
 - AppImage: `chmod +x garret-VERSION-linux-x86_64.AppImage`, then run that file.
   FUSE 2 support may be needed (`libfuse2t64` on Ubuntu 24.04). If FUSE is
   unavailable, run it with `--appimage-extract-and-run` instead. AppImage does
-  not install a desktop menu entry automatically.
+  not install a desktop menu entry automatically. It uses the system graphics
+  drivers; minimal Ubuntu installations may need `libegl1` and `libgl1`.
 - Portable tar.gz: extract the whole archive, install `libwebkit2gtk-4.1-0`
   on Ubuntu / Mint, and run `app/garret`. Keep its `dist` folder beside it.
 
