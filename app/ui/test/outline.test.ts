@@ -68,6 +68,8 @@ interface Rig {
 }
 
 function rig(opts: {
+  preset?: OutlineDeps["preset"];
+  followCreated?: boolean;
   /** Successive `project_items` results. The last one repeats. */
   walks?: ProjectItem[][];
   selected?: string | null;
@@ -134,15 +136,17 @@ function rig(opts: {
     return {};
   };
 
+  let selected = opts.selected ?? null;
   const outline = createOutline({
     generation: 17,
+    preset: opts.preset,
     invoke,
     reload: (items) => {
       log.push("reload");
       reloads.push(items);
     },
-    selectedId: () => opts.selected ?? null,
-    onCreated: (id) => created.push(id),
+    selectedId: () => selected,
+    onCreated: (id) => { created.push(id); if (opts.followCreated) selected = id; },
     onFailure: (message) => failures.push(message),
     onDone: (message) => done.push(message),
     confirmSectionMove: opts.confirmSectionMove,
@@ -1587,14 +1591,16 @@ describe("createNote: a document in the bible", () => {
     expect(r.failures).toHaveLength(1);
   });
 
-  test("a section that does not appear in the re-read is reported, not guessed at", async () => {
+  test.each(["novel", "nonfiction"] as const)("a missing section is reported with %s wording, not guessed at", async (preset) => {
     // The create said applied and the walk does not hold the row. Carrying on
     // with `parentId: null` would put a bible document at the root of the book,
     // which is a document in the manuscript that counts toward nothing.
-    const r = await seeded({ walks: [book(), book()] });
+    const r = await seeded({ preset, walks: [book(), book()] });
     expect(await r.outline.createNote()).toBe("failed");
     expect(r.calls.filter((c) => c.cmd === "item_create")).toHaveLength(1);
-    expect(r.failures).toHaveLength(1);
+    expect(r.failures).toEqual([preset === "nonfiction"
+      ? "The reference notes section could not be created, so no document was added."
+      : "The bible section could not be created, so no document was added."]);
   });
 
   test("a bible row that is not a root is not the section", async () => {
@@ -1778,6 +1784,17 @@ describe("createMatter: front and back matter", () => {
     });
   });
 
+  test("references go to the back section and create an ordinary matter page", async () => {
+    const r = await seeded({ walks: [book(), withBack(), withBack()] });
+    await r.outline.createMatter("references");
+    const creates = r.calls.filter((c) => c.cmd === "item_create");
+    expect(creates[0]?.args).toMatchObject({ itemType: BACK_MATTER_TYPE });
+    expect(creates[1]?.args).toMatchObject({
+      itemType: MATTER_TYPE,
+      title: "References",
+    });
+  });
+
   /** NOT NUMBERED. `Dedication 1` in a book with one dedication is a lie about
    *  the book, and unlike `Scene`, `Note` or `Chapter` the word alone is already
    *  a title a writer can read. */
@@ -1789,6 +1806,7 @@ describe("createMatter: front and back matter", () => {
       ["foreword", "Foreword"],
       ["acknowledgements", "Acknowledgements"],
       ["afterword", "Afterword"],
+      ["references", "References"],
     ] as const) {
       const section = kind === "dedication" || kind === "foreword" ? withFront() : withBack();
       const r = await seeded({ walks: [section] });
@@ -2497,4 +2515,18 @@ describe("createOutline: undo", () => {
       expect(r.outline.redoLabel()).toBeNull();
     });
   });
+});
+
+test("short fiction creates ordered siblings, an explicit chapter, then a part without extra holders", async () => {
+  const scenes = [...newBook(), item("made-1", null, 0, 1, "Scene 2")];
+  const chapter = { ...item("made-2", null, 0, 1, "Chapter 1"), type: "chapter" };
+  const r = await seeded({ preset: "short", followCreated: true, selected: "s1", walks: [newBook(), scenes, [...scenes, chapter]] });
+  await r.outline.create("scene");
+  await r.outline.create("chapter");
+  await r.outline.create("part");
+  const creates = r.calls.filter((call) => call.cmd === "item_create");
+  expect(creates.map((call) => [call.args?.itemType, call.args?.parentId, call.args?.afterId])).toEqual([
+    ["scene", null, "s1"], ["chapter", null, "made-1"], ["part", null, "made-2"],
+  ]);
+  expect(r.created).toEqual(["made-1", "made-2", "made-3"]);
 });

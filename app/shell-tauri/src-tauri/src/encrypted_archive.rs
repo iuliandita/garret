@@ -957,6 +957,7 @@ mod tests {
         let external = root.path().join("research.txt");
         fs::write(&external, b"research original").unwrap();
         let store = Store::open(&db).unwrap();
+        store.set_meta(crate::core_constants::PRESET_KEY, "future-preset").unwrap();
         let research = crate::research::import_copy(&db, &external, |name, bytes, hash|
             store.research_resource_add("Source", name, "text/plain", bytes, hash, "", "")
         ).unwrap();
@@ -981,6 +982,7 @@ mod tests {
         assert_eq!(fs::read(pictures::dir_for(restored_db).join("face.png")).unwrap(),
             include_bytes!("../fixtures/two-halves.png"));
         assert_eq!(fs::read(crate::research::path_for(restored_db, &research.sha256).unwrap()).unwrap(), b"research original");
+        assert_eq!(Store::open_readonly(restored_db).unwrap().get_meta(crate::core_constants::PRESET_KEY).unwrap().as_deref(), Some("future-preset"));
         assert!(!backup_bundle::marker_present(restored_db).unwrap());
         assert!(Store::open_readonly(restored_db).unwrap().cast_list().unwrap()[0].picture_path.is_some());
         assert_eq!(fs::read(&db).unwrap(), before);

@@ -437,15 +437,16 @@ async function main(): Promise<void> {
         container: bar,
         nameContainer: navHeader,
         openCreation: () => current.menuActions.openCreation(),
+        projectPreset: () => current.preset ?? "novel",
         listProjects: async () => (await invoke("project_list")) as ProjectSummary[],
         listPendingRegistrations: async () => (await invoke("project_pending_registrations")) as import("./switcher").PendingRegistration[],
         retryRegistration: async (token) => (await invoke("project_retry_registration", { token })) as ProjectSummary,
-        createProject: async (name) =>
-          (await invoke("project_create", { name })) as ProjectSummary,
+        createProject: async (name, preset) =>
+          (await invoke("project_create", { name, preset })) as ProjectSummary,
         // `null` is the writer cancelling the folder dialog, which the host
         // reports as `Ok(None)` and which is an answer rather than a failure.
-        createProjectIn: async (name) =>
-          (await invoke("project_create_pick", { name })) as ProjectSummary | null,
+        createProjectIn: async (name, preset) =>
+          (await invoke("project_create_pick", { name, preset })) as ProjectSummary | null,
         newDir: async () => (await invoke("project_new_dir")) as string,
         listImports: async () => (await invoke("project_import_list")) as ImportReport,
         importProject: async (filename) =>
@@ -808,6 +809,7 @@ async function main(): Promise<void> {
       // time, so declaring it after is safe.
       createMenuBar({
         container: menuBar,
+        projectPreset: () => current.preset ?? "novel",
         // New/Open route to the library screen while nothing is mounted --
         // the switcher's other sections (recovery, archives, the mirror) are
         // about an open book, so with one open these stay the switcher's.

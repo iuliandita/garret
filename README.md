@@ -5,6 +5,13 @@
   </picture>
 </p>
 
+New desktop books offer Novel, Short fiction, and Nonfiction project types.
+Short fiction starts with one scene and grows structure as needed. Nonfiction
+starts with its own book design, calls the Bible Reference notes, and keeps
+fiction tools available under Planning > More. A single-scene manuscript
+exports without generated contents or outline headings; front and back matter
+remain included.
+
 ## A writing studio for the whole book.
 
 **garret** <img src="assets/brand/garret/garret-middle-dot.svg" alt="·" width="8" height="16"> is a powerful writing studio for novelists, completely free and open
@@ -52,7 +59,14 @@ to the text, and organize the next draft into revision passes and tasks.
 ### Prepare the book
 
 Export to Markdown, DOCX, or EPUB, or make a PDF proof copy. Set up book design,
-front and back matter, covers, and pen names before exporting.
+chapter openers (ornament, its position, how far down the text area a chapter starts),
+front and back matter (including a References page, marked as a bibliography in EPUB),
+covers, and pen names before exporting.
+
+The EPUB and PDF previews sit beside your prose in a rail you can widen by
+dragging its divider or with the arrow keys; the width is remembered on that
+device. An optional e-reader or tablet frame shows an approximate paged view,
+and an optional refresh runs after you stop typing.
 
 ### Keep control of your work
 
@@ -84,10 +98,68 @@ or [build garret from source](#building-from-source-linux).
 ## Testing builds
 
 Download alpha builds from [GitHub Releases](https://github.com/iuliandita/garret/releases).
-Choose the download for your device, extract the whole desktop package, and
-follow the included instructions. Android uses an APK; the phone app has fewer
+Choose the download for your device and follow the included instructions.
+The next release adds Windows `-setup.exe`, Linux `.deb`, `.rpm` and `.AppImage`,
+and macOS `.dmg` installers alongside the portable archives. See the
+[installation guide](docs/INSTALLING.md) for setup, upgrades and removal. Android uses an APK; the phone app has fewer
 features and does not sync books automatically. Keep a backup before trying a
 new build.
+
+### Verify a download
+
+The next release adds a signed `SHA256SUMS` manifest and GitHub artifact
+attestations. Older releases may have only per-file checksums.
+
+Release signing key fingerprint: not yet published
+
+Once the public key is published, import it and compare its full fingerprint
+with this page and [SECURITY.md](SECURITY.md). Download `SHA256SUMS`,
+`SHA256SUMS.asc`, and the release files with their `.sha256` sidecars into
+one directory, then run:
+
+```sh
+gpg --verify SHA256SUMS.asc SHA256SUMS
+sha256sum -c SHA256SUMS
+gh attestation verify <file> --repo iuliandita/garret
+```
+
+If you downloaded only the files for your platform, check those present with:
+
+```sh
+sha256sum -c --ignore-missing SHA256SUMS
+```
+
+On macOS, use `shasum -a 256 -c --ignore-missing SHA256SUMS` instead.
+Missing files are skipped; confirm that each intended download reports `OK`.
+
+Replace `<file>` with each downloaded file, including the manifest and signature.
+The manifest covers all packaged downloads and checksum sidecars; it excludes
+itself and its detached signature. Checking the complete manifest requires all
+listed files. A missing signature means GPG verification is unavailable; see the
+[code signing policy](docs/SIGNING.md) for current platform signing and fallback.
+
+### Android updates with Obtainium
+
+[Obtainium](https://github.com/ImranR98/Obtainium) installs each new Android
+release for you:
+
+1. Add `https://github.com/iuliandita/garret` as an app source.
+2. Pick the asset whose name ends in `-android.apk`, for example
+   `garret-0.0.2-android.apk`. The `-android-info.zip` asset holds instructions
+   and build details; it is not installable.
+3. Check the signing certificate. Obtainium shows the certificate hash for the
+   installed app on its app page; the SHA-256 digest must be
+   `BD:DD:33:9D:88:32:A6:37:8D:BD:04:71:E4:1A:3D:21:48:F4:41:1F:A8:B0:04:C6:B5:52:4C:93:F6:68:4A:92`.
+   To read it from a downloaded APK, run `apksigner verify --print-certs` from
+   the Android SDK build-tools, or `keytool -printcert -jarfile`, and compare
+   the reported certificate SHA-256 digest.
+
+An installed copy keeps updating in place only while the package name and the
+signing key stay the same. One package change is planned: the Android app moves
+from `cc.local.app` to `com.usegarret.app` in
+[#279](https://github.com/iuliandita/garret/issues/279). That build installs
+next to the existing app instead of updating it, so keep the current app
+installed; books cannot be moved between the two yet.
 
 ## Building from source (Linux)
 
@@ -104,7 +176,9 @@ scripts/run-app
 
 `scripts/run-app` rebuilds the interface, builds the host on first use, and
 starts the app. `scripts/install-desktop-entry` adds a menu entry for that
-launcher. Release-style packages come from `scripts/package-linux`,
+launcher, using desktop identifier `com.usegarret.app`. Android retains package
+`cc.local.app`. See [upgrade compatibility](docs/COMPATIBILITY.md) for native
+profile preservation. Release-style packages come from `scripts/package-linux`,
 `scripts/package-windows`, `scripts/package-macos` and `scripts/package-android`.
 
 ## Checks
