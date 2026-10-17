@@ -39,6 +39,8 @@ mod export;
 mod find;
 mod identity;
 mod import;
+mod markdown;
+mod markdown_package;
 #[cfg(unix)]
 mod instance;
 #[cfg(any(windows, test))]
@@ -1450,7 +1452,7 @@ fn import_path(
     } else {
         let source = String::from_utf8(bytes)
             .map_err(|_| format!("{}: not valid UTF-8 text", path.display()))?;
-        (import::parse(&source, stem), docx_import::Losses::default())
+        (import::parse_package(&source, stem, path.parent().ok_or("missing Markdown package root")?)?, docx_import::Losses::default())
     };
     let rows: Vec<store::ImportRow<'_>> = imported
         .items

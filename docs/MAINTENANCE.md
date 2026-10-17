@@ -36,6 +36,18 @@ rendering separate from strict atom validation. Two chapters in one story
 distinguish chapter and story numbering. Reject XML-forbidden characters in the
 publication plan, without changing stored prose validation or the legacy renderer.
 New-node publication fixtures do not enable production authoring or mirror output.
+Markdown fixtures exercise the actual scoped render path, package publication,
+relative asset resolution, reminted IDs, literal footnote syntax, placement
+bounds, and disabled conversion through the shared desktop/CLI import entry.
+Package tests plant a destination collision after originals become visible and
+check that the staged Markdown survives without overwriting the external file.
+On Unix, asset resolution walks directory handles with no-follow opens so a
+symlink cannot redirect a component outside the selected package root.
+Mirror fixtures cover matching-schema copies, relative media and format markers;
+the unchanged existing reader's retained-extra-key behavior rejects those markers.
+Stored-atom refusal remains independent of marker presence. Production new-format
+mirror output refuses before creating a destination. Run the complete mirror suite
+to retain the existing pause, conflict-copy, acceptance and undo checks.
 
 ## Checks
 

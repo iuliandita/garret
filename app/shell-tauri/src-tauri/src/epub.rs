@@ -824,6 +824,7 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
 /// perfectly.
 pub fn manuscript(epub: &Epub) -> Result<crate::export::Manuscript, String> {
     Ok(crate::export::Manuscript {
+        assets: Default::default(),
         bytes: render_checked(epub)?,
         format: crate::export::Format::Epub,
         underlined_runs: 0,

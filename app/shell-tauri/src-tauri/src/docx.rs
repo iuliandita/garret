@@ -337,6 +337,7 @@ pub fn render(book: &Book, bodies: &HashMap<String, String>, lang: &str) -> Manu
         Entry::text("word/document.xml", &document_xml(book, bodies)),
     ];
     Manuscript {
+        assets: Default::default(),
         bytes: zip(&entries),
         format: Format::Docx,
         // CARRIED, NOT DROPPED. Word has a real `<w:u>` and `run_xml` above
