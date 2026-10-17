@@ -26,12 +26,12 @@
     "editor": {
       "breaking": "none",
       "docs": {
-        "README.md": "c124fff0e0ddfbc28757426e5ad184c897bfff59fff6c81ea5e46c85097a8b96"
+        "README.md": "b1562b0c8a076607484c3bec78b9957bf0d705e949e54bb7f2002c4382b0a8b6"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged.",
-      "source_sha256": "0e4f0d0a283e6d20ed949c9cf1571526fe34324d91603deeffdb00f7c1d408fc"
+      "note": "Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged. README now mentions the resizable preview rail with its optional device frame and refresh after a pause; device-local width preference only, no project format or compatibility change.",
+      "source_sha256": "abe61195cc8a620d52f269ccb0286fd75ae4c258b91773a25782241ff6252321"
     },
     "encryption": {
       "breaking": "none",
