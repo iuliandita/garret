@@ -10,6 +10,7 @@ pub mod cast;
 pub mod comments;
 pub mod crash_child;
 pub mod dict;
+pub mod document_format;
 pub mod history;
 pub mod knowledge;
 pub mod position;
@@ -155,6 +156,7 @@ pub enum StoreError {
     },
     InvalidPlanning(String),
     InvalidReview(String),
+    InvalidDocument(String),
     ReviewConflict { group_id: i64 },
     /// An anchor naming a comment that belongs to a DIFFERENT document. Its own
     /// variant rather than UnknownComment because it is not a note that went
@@ -285,6 +287,7 @@ impl std::fmt::Display for StoreError {
             }
             StoreError::InvalidPlanning(reason) => write!(f, "{reason}"),
             StoreError::InvalidReview(reason) => write!(f, "{reason}"),
+            StoreError::InvalidDocument(reason) => write!(f, "document format refused: {reason}; nothing was changed"),
             StoreError::ReviewConflict { group_id } => {
                 write!(f, "review group {group_id} changed; reload it")
             }
@@ -469,6 +472,10 @@ impl Store {
     }
 
     fn prepare_writable(conn: Connection) -> Result<Store> {
+        let version: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
+        if version > SCHEMA_VERSION {
+            return Err(StoreError::NewerSchema { found: version, supported: SCHEMA_VERSION });
+        }
         register_collations(&conn)?;
         // journal_mode is persistent in the file; synchronous and foreign_keys
         // are per-connection and must be set on every open.
@@ -998,6 +1005,7 @@ impl Store {
     /// scenes and to nothing else, so any other pairing is refused here rather
     /// than silently dropped.
     pub fn import_tree(&self, rows: &[ImportRow<'_>]) -> Result<Vec<String>> {
+        document_format::validate_import(rows)?;
         self.conn.execute_batch("BEGIN IMMEDIATE")?;
         let result = (|| -> Result<Vec<String>> {
             let mut ids: Vec<String> = Vec::with_capacity(rows.len());
@@ -1695,6 +1703,9 @@ impl Store {
         session: Option<&analytics::Runtime>,
         tracking_on: bool,
     ) -> Result<Vec<FlushAck>> {
+        for entry in entries {
+            self.validate_body_write(&entry.item_id, &entry.body)?;
+        }
         let now = now_ms();
         self.conn.execute_batch("BEGIN IMMEDIATE")?;
         let outcome = (|| -> Result<Vec<FlushAck>> {

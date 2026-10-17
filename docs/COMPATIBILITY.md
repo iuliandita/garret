@@ -5,6 +5,13 @@ SQLite schema: 17.
 This describes the current source. [Published releases](RELEASES.md) are
 recorded separately; a change on develop is not a published download.
 
+Prose writes now validate the complete document before saving or restoring a
+batch. Unsupported nodes, marks, and attributes are refused without changing
+the book. Endnotes, figures, and scene-break nodes remain disabled. The schema
+ceiling stays at 17; this adds no migration or upgrade. Existing supported
+documents remain compatible. Keep closed-book backups using the steps below;
+rollback uses the previous application and a complete backup copy.
+
 ## Before upgrading
 
 Close every instance of garret. Make a separate copy of each manuscript's

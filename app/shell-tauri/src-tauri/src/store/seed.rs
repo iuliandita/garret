@@ -217,6 +217,7 @@ pub fn seed_project(fixture_dir: &Path, db_path: &Path) -> Result<usize> {
         let scene: FixtureScene = serde_json::from_str(line)
             .map_err(|e| StoreError::Seed(format!("parsing scenes.ndjson line {}: {e}", n + 1)))?;
         let doc = scene.body.unwrap_or_else(|| pm_doc(&scene.blocks));
+        super::document_format::validate_write(&doc.to_string())?;
         bodies.insert(scene.id, doc);
     }
 

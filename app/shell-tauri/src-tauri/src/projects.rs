@@ -372,6 +372,7 @@ fn create_imported_with(
     strings: &crate::strings::Strings,
     before_create: impl FnOnce(&Path),
 ) -> Result<ProjectSummary, String> {
+    crate::store::document_format::validate_import(rows).map_err(|e| e.to_string())?;
     create_book_with(library, name, before_create, |store, path| {
         store.import_tree(rows).map(|_| ()).map_err(|e| {
             format!(
@@ -1305,6 +1306,10 @@ fn restore_point_impl(
         );
     }
 
+    Store::open_readonly(&source_db)
+        .and_then(|store| store.validate_document_writes())
+        .map_err(|e| e.to_string())?;
+
     fs::create_dir_all(library).map_err(|e| format!("cannot create {}: {e}", library.display()))?;
     // A sidecar occupies a name even when its database is missing. Claim only
     // a free name, then recheck before using any reserved destination.
@@ -1406,6 +1411,9 @@ fn restore_point_impl(
         let staged = stage.as_ref().unwrap().path().join("project.db");
         fs::File::create(&staged).map_err(|e| format!("{}: {e}", staged.display()))?;
         copy(&source_db, &staged)?;
+        Store::open_readonly(&staged)
+            .and_then(|store| store.validate_document_writes())
+            .map_err(|e| e.to_string())?;
         if bundled {
             crate::backup_bundle::verify_database_copy(point, &staged)?;
             if allow_picture_gaps {

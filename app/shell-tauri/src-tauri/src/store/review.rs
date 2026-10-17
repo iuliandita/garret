@@ -690,9 +690,14 @@ impl Store {
             let skip: HashSet<i64> = selected_ids.iter().copied().collect();
             let mut body = old_body.clone();
             if decision == ReviewDecision::Accept {
-                for (id, hunk) in &selected {
-                    let next = review_document::apply_hunk(&body, hunk)
-                        .map_err(StoreError::InvalidReview)?;
+                self.validate_body_write(&item_id, &old_body)?;
+                let mut bodies = Vec::with_capacity(selected.len());
+                for (_, hunk) in &selected {
+                    body = review_document::apply_hunk(&body, hunk).map_err(StoreError::InvalidReview)?;
+                    self.validate_body_write(&item_id, &body)?;
+                    bodies.push(body.clone());
+                }
+                for ((id, hunk), next) in selected.iter().zip(bodies) {
                     self.conn.execute(
                         "UPDATE review_hunk SET state = 'accepted', decided_at = ?2,
                          decision_author_id = ?3, decision_author_name = ?4 WHERE id = ?1",
@@ -771,6 +776,9 @@ impl Store {
         plan: &ReviewPlan,
         authors: &ReviewReturnAuthors,
     ) -> Result<ReviewReturnResult> {
+        self.validate_body_write(&plan.expected.item_id, &self.load_doc(&plan.expected.item_id)?.body)?;
+        self.validate_body_write(&plan.expected.item_id, &plan.rejected_projection)?;
+        self.validate_body_write(&plan.expected.item_id, &plan.accepted_projection)?;
         let now = now_ms();
         self.conn.execute_batch("BEGIN IMMEDIATE")?;
         let result = (|| -> Result<ReviewReturnResult> {
