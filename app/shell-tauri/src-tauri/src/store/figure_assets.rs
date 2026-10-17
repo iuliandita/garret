@@ -70,6 +70,7 @@ pub(crate) struct Registry {
     pub present: bool,
     pub assets: BTreeMap<String, FigureAsset>,
     pub errors: Vec<String>,
+    pub uncertain_names: HashSet<String>,
 }
 
 pub(crate) fn read(conn: &Connection) -> Result<Registry> {
@@ -119,6 +120,14 @@ pub(crate) fn read(conn: &Connection) -> Result<Registry> {
                 orientation: row.get(7)?,
             })
         })();
+        if !asset.as_ref().is_ok_and(valid_asset) {
+            for extension in ["png", "jpg"] {
+                let name = format!("fig-{id}.{extension}");
+                if is_figure_name(&name) {
+                    registry.uncertain_names.insert(name);
+                }
+            }
+        }
         match asset {
             Ok(asset) if valid_asset(&asset) => {
                 registry.assets.insert(asset.stored_name.clone(), asset);
@@ -165,20 +174,18 @@ impl Store {
     }
 
     /// Inspect only figure references, without imposing write validation on
-    /// retained prose. Legacy books without a registry keep legacy enumeration.
+    /// retained prose, including damaged legacy books without a registry.
     pub(crate) fn figure_inventory(&self) -> Result<Registry> {
         let mut registry = self.figure_registry()?;
-        if !registry.present {
-            return Ok(registry);
-        }
         let ids: HashSet<String> = registry.assets.values().map(|a| a.id.clone()).collect();
         let mut scan = |id: &str, body: Option<&str>| match body
             .and_then(|body| serde_json::from_str(body).ok())
         {
             Some(value) => scan_references(&value, id, &ids, &mut registry.errors),
-            None => registry.errors.push(format!(
+            None if registry.present => registry.errors.push(format!(
                 "figure <unknown>: unreadable references in item {id}"
             )),
+            None => {},
         };
         let mut stmt = self.conn.prepare("SELECT d.item_id, d.body FROM doc d LEFT JOIN item i ON i.id=d.item_id WHERE i.type IS NULL OR i.type != ?1")?;
         for row in stmt.query_map([TIMELINE_TYPE], |r| {

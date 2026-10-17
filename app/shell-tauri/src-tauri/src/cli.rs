@@ -1483,6 +1483,9 @@ fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
                     "wrote {} as {} ({} item(s), {} word(s))",
                     r.path, r.format, r.items, r.words
                 );
+                if r.xml_characters_removed > 0 {
+                    println!("removed {} character(s) that XML cannot represent; the manuscript is unchanged", r.xml_characters_removed);
+                }
                 Ok(EXIT_OK)
             })
         }

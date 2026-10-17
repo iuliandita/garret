@@ -1667,6 +1667,8 @@ export const EN = {
   "stats.export.csv": "Export for a spreadsheet (CSV)\u2026",
   "stats.export.json": "Export as data (JSON)\u2026",
   "export.done": "Exported {format} to {path}",
+  "export.done.xmlCharacters.one": "Removed {count} character that XML cannot represent; the manuscript is unchanged.",
+  "export.done.xmlCharacters.other": "Removed {count} characters that XML cannot represent; the manuscript is unchanged.",
   "export.done.assets": "Keep the Markdown file with its adjacent assets folder when sharing.",
   // THE COUNTED LOSS, said in the writer's own words. The host counts the
   // underlined runs it dropped and the count rides back with the path; a drop

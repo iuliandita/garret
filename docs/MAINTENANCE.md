@@ -143,6 +143,18 @@ representative PDF pages after changing these placement rules. Production stays
 at schema 17 with the write and publication gates closed; these fixtures add no
 migration or activation.
 
+The figure fixture also checks a visible gap above a figure following prose.
+Page fitting reserves the figure's top margin as well as caption space. Verify
+unsafe empty-registry salvage directories, unreadable-row PNG/JPEG copies, and
+live/bin/history references without a figure table. Markdown package tests inject
+unsupported hard links before asset staging and exercise both save-as and export
+replacement refusals through the shared rendering boundary. XML export fixtures
+cover all 31 forbidden characters, counted removal, unchanged stored bodies,
+selected-story counts, identity checks after cleanup, and identical clean package
+contents. Interface notices
+cover zero, singular, and plural removal counts. Replace-all's unknown-mark
+fixture pins atomic refusal and unchanged history.
+
 macOS packaging retries the specific hdiutil resource-busy creation failure up
 to three attempts, waiting 10 seconds between attempts. It prints disk-image
 diagnostics and detaches only images from the current build's bundle directory.

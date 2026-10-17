@@ -901,6 +901,8 @@ mod tests {
               var caption = figure.querySelector('figcaption').getBoundingClientRect();
               var page = figure.closest('.proof-leaf');
               if (image.bottom > caption.top + 1 || caption.bottom > box.bottom + 1 || image.top < box.top - 1 || image.left < box.left - 1 || image.right > box.right + 1) throw new Error('figure containment failed');
+              var preceding = figure.previousElementSibling;
+              if (preceding && preceding.tagName === 'P' && image.top - preceding.getBoundingClientRect().bottom < parseFloat(getComputedStyle(figure).fontSize) * 0.59) throw new Error('figure top spacing missing');
               var captionSize = parseFloat(getComputedStyle(figure.querySelector('figcaption')).fontSize);
               var bodySize = parseFloat(getComputedStyle(figure).fontSize);
               if (Math.abs(captionSize / bodySize - 0.9) > 0.01 || caption.top - image.bottom < captionSize * 0.39) throw new Error('caption size or spacing missing');

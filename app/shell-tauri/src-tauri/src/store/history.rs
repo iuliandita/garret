@@ -1599,6 +1599,23 @@ mod tests {
         assert!(after[0].orphaned, "the anchor must read as an orphan");
     }
 
+    #[test]
+    fn unknown_marks_refuse_replace_everywhere_and_roll_back_the_whole_history() {
+        let (_dir, store, id, _) = seeded("moon");
+        let good = store.item_create(None, "scene", "Readable").unwrap();
+        write(&store, &good.id, "moon", good.doc_rev.unwrap());
+        let damaged = r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"moon","marks":[{"type":"future-mark"}]}]}]}"#;
+        store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![damaged, id]).unwrap();
+        let before = store.documents().unwrap();
+        let rows = |table: &str| store.conn.query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |r| r.get::<_, i64>(0)).unwrap();
+        let counts = (rows("snapshot"), rows("doc_version"), rows("blob"));
+        assert!(crate::replace::replace_in_body(damaged, "moon", "sun").unwrap().body.is_some());
+        let error = store.replace_everywhere(&std::collections::HashSet::new(), "moon", "sun", "Before replacement").unwrap_err();
+        assert!(matches!(error, StoreError::InvalidDocument(_)), "{error}");
+        assert_eq!(store.documents().unwrap(), before);
+        assert_eq!((rows("snapshot"), rows("doc_version"), rows("blob")), counts);
+    }
+
     fn empty_replacement_leaves_readable_runs(runs: serde_json::Value, expected: serde_json::Value) {
         let (_dir, store, id, rev) = seeded("first");
         let body = serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":runs}]}).to_string();

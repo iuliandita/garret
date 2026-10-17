@@ -674,7 +674,8 @@ pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), r#"
     var group = companions(block);
     var leadHeight = group.length && box.childNodes.length === group.length + 2 ?
       block.getBoundingClientRect().top - box.getBoundingClientRect().top : 0;
-    var available = box.clientHeight - captionHeight - leadHeight;
+    var figureMargin = parseFloat(getComputedStyle(block).marginTop);
+    var available = box.clientHeight - captionHeight - leadHeight - figureMargin;
     if (available <= 0) throw new Error("a proof figure caption exceeds the page");
     var width = box.clientWidth * (block.getAttribute("data-width") === "half" ? 0.5 : 1);
     var pixelsW = Number(block.getAttribute("data-pixels-width"));

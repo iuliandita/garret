@@ -92,7 +92,17 @@ pub(crate) fn recover(
                 }
             }
         }
-        _ if names.is_empty() => return Ok((0, 0, None)),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound && names.is_empty() => {
+            return Ok((0, 0, None));
+        }
+        Ok(_) => {
+            loss(losses, "unreadable_figure_directory", "figure directory is unsafe".into(), None);
+            return write_registry(out, assets, 0);
+        }
+        Err(error) if error.kind() != std::io::ErrorKind::NotFound => {
+            loss(losses, "unreadable_figure_directory", error.to_string(), None);
+            return write_registry(out, assets, 0);
+        }
         _ => {
             loss(
                 losses,

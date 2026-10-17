@@ -2,6 +2,34 @@
 
 SQLite schema: 17.
 
+EPUB and DOCX exports remove XML 1.0-forbidden characters from scene prose in
+the exported copy. The export result adds `xml_characters_removed`; the interface
+and CLI report a nonzero count. Stored prose, marks, history, and ordinary XML
+whitespace remain unchanged. Fixtures without these characters retain identical
+output bytes. Identity preflight and export word counts inspect the cleaned prose.
+Markdown and PDF prose are unchanged by this cleanup.
+
+Backup reports figure references in live, bin, and retained history bodies even
+when a schema-17 database lacks the registry table. An unreadable row with a
+safe figure UUID retains both PNG and JPEG filename candidates in the incomplete
+inventory so any available originals are copied. Missing candidates remain gaps;
+this never certifies damaged metadata. Salvage reports an existing unsafe or
+unreadable pictures directory even with no registered figures.
+
+Only a format marker on the first line selects the garret Markdown dialect
+(with an optional BOM). Unmarked files containing garret comments import as
+ordinary Markdown. A Markdown package requires filesystem hard links; the host
+probes support before staging originals or creating the published assets folder.
+An unsupported filesystem produces a plain refusal and leaves no probe debris.
+Existing uncertain publication stages remain retained for inspection.
+
+Replace-all still refuses a body with unknown marks and rolls back the whole
+transaction, including its snapshot and history rows. Readability fixtures pin
+explicit exceptions independently of the structural validator.
+
+PDF figures have a 0.6em top margin, included in their page-fit calculation.
+EPUB already gives figures 1.5em vertical margins. Legacy proof output is unchanged.
+
 Prepared PDF publication reuses the shared scoped publication plan for endnotes,
 figures, captions, and scene breaks. Notes follow their scope, never the bottom
 of a page. Full and half figures fit within the text column; page figures use a

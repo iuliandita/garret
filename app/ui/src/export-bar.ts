@@ -36,6 +36,7 @@ import { exportFormatName, type ExportFormat } from "./export-formats";
 export interface ExportWritten {
   path: string;
   underlined: number;
+  xml_characters_removed?: number;
   assets_written: boolean;
   format: string;
 }
@@ -144,6 +145,9 @@ export function createExportBar(deps: ExportBarDeps): ExportBar {
                 path: result.path,
                 format: exportFormatName(result.format),
               });
+      if (message !== null && (result?.xml_characters_removed ?? 0) > 0) {
+        message += ` ${plural("export.done.xmlCharacters", result!.xml_characters_removed!)}`;
+      }
       if (message !== null && result?.format === "markdown" && result.assets_written === true) {
         message += ` ${t("export.done.assets")}`;
       }

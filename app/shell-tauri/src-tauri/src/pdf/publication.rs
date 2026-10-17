@@ -4,7 +4,7 @@ use crate::{
 };
 
 pub(super) const CSS: &str = ".proof-leaf[data-kind=interior] .proof-runhead, .proof-leaf[data-kind=interior] .proof-folio { visibility: visible; }\n\
-    figure.proof-figure { margin: 0; padding: 0; break-inside: avoid; }\n\
+    figure.proof-figure { margin: 0.6em 0 0; padding: 0; break-inside: avoid; }\n\
     .proof-figure img { display: block; margin: auto; image-orientation: from-image; }\n\
     .proof-figure figcaption { margin: 0.4em 0 0; font-size: 0.9em; text-align: center; white-space: pre-wrap; overflow-wrap: anywhere; }\n\
     .proof-note { white-space: pre-wrap; text-indent: 0; }\n\
