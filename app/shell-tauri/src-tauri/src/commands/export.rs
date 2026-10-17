@@ -180,25 +180,29 @@ pub(crate) fn export_scope_into_with(
         _ => None,
     };
 
-    match mode {
-        // `create_new` is the refusal, and it is the kernel's: an `exists()`
-        // check first is a race, and the thing on the other side of that race is
-        // a manuscript.
-        Dest::New => {
-            let file = fs::OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .open(dest)
-                .map_err(|e| format!("{}: {e}", dest.display()))?;
-            write_manuscript(file, dest, &bytes)?;
+    if !written.assets.is_empty() {
+        crate::markdown_package::publish(dest, &bytes, &written.assets)?;
+    } else {
+        match mode {
+            // `create_new` is the refusal, and it is the kernel's: an `exists()`
+            // check first is a race, and the thing on the other side of that race is
+            // a manuscript.
+            Dest::New => {
+                let file = fs::OpenOptions::new()
+                    .write(true)
+                    .create_new(true)
+                    .open(dest)
+                    .map_err(|e| format!("{}: {e}", dest.display()))?;
+                write_manuscript(file, dest, &bytes)?;
+            }
+            // Write beside the destination and rename over it. NOT `truncate(true)`
+            // on `dest` itself: that destroys the writer's existing file at the
+            // instant it opens, so an ENOSPC halfway through leaves them with
+            // neither their old manuscript nor a complete new one. `write_manuscript`
+            // reclaims the TEMP on failure, which is why the original survives a
+            // failed replace untouched.
+            Dest::Replace => replace_file(dest, &bytes)?,
         }
-        // Write beside the destination and rename over it. NOT `truncate(true)`
-        // on `dest` itself: that destroys the writer's existing file at the
-        // instant it opens, so an ENOSPC halfway through leaves them with
-        // neither their old manuscript nor a complete new one. `write_manuscript`
-        // reclaims the TEMP on failure, which is why the original survives a
-        // failed replace untouched.
-        Dest::Replace => replace_file(dest, &bytes)?,
     }
 
     Ok(ExportResult {
@@ -273,6 +277,13 @@ fn render_project_with(
 fn render_scope_with(
     path: &Path, name: &str, format: crate::export::Format, vault: &crate::identity::Vault,
     strings: crate::strings::Strings, markup_limit: Option<u32>, story_id: Option<&str>,
+) -> std::result::Result<Rendered, String> {
+    render_scope_policy(path, name, format, vault, strings, markup_limit, story_id, false)
+}
+
+fn render_scope_policy(
+    path: &Path, name: &str, format: crate::export::Format, vault: &crate::identity::Vault,
+    strings: crate::strings::Strings, markup_limit: Option<u32>, story_id: Option<&str>, fixture: bool,
 ) -> std::result::Result<Rendered, String> {
     let store = store::Store::open_readonly(path).map_err(|e| e.to_string())?;
     let story = story_id.map(|id| crate::collection::story(&store, id)).transpose()?;
@@ -361,12 +372,18 @@ fn render_scope_with(
         return Err(crate::identity::blocked_message(&preflight.findings));
     }
 
-    if items.iter().filter_map(|(id, _, _)| bodies.get(id)).any(|body| crate::figure_salvage::has_new_nodes(body)) {
+    let has_new = items.iter().filter_map(|(id, _, _)| bodies.get(id)).any(|body| crate::figure_salvage::has_new_nodes(body));
+    let fixture = cfg!(test) && fixture;
+    if has_new && !fixture {
         return Err("This document format cannot be exported by this build".into());
     }
 
     let written = match format {
-        crate::export::Format::Markdown => crate::export::manuscript(&book, &bodies),
+        crate::export::Format::Markdown => {
+            let plan = if has_new { Some(crate::publication_plan::Plan::from_store(
+                &book, &bodies, publication_scopes(&store)?, &store, path)?) } else { None };
+            crate::export::manuscript_planned(&book, &bodies, plan.as_ref())
+        },
         // A PROOF COPY, and what the render answers with is HTML: the
         // book laid out for a page, with the script that cuts it into leaves.
         // Turning that into PDF bytes is `printer.rs`'s job and the caller's
@@ -403,6 +420,7 @@ fn render_scope_with(
                 pin: export_pin.as_ref(),
             });
             crate::export::Manuscript {
+                assets: Default::default(),
                 bytes: html.into_bytes(),
                 format: crate::export::Format::Pdf,
                 // A PROOF COPY CARRIES THE UNDERLINE, exactly as the EPUB does

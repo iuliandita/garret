@@ -327,7 +327,7 @@ fn inline(text: &str) -> Vec<Run> {
 }
 
 /// A paragraph's runs as a ProseMirror paragraph node.
-fn paragraph_node(text: &str) -> Option<serde_json::Value> {
+pub(crate) fn paragraph_node(text: &str) -> Option<serde_json::Value> {
     let content: Vec<serde_json::Value> = inline(text)
         .into_iter()
         .filter(|r| !r.text.is_empty())
@@ -480,6 +480,28 @@ fn drop_generated_contents(sections: &mut Vec<Section<'_>>) -> Option<String> {
 /// Parse `source` into a project. `stem` is the source file's name without its
 /// extension, used when the file does not name itself.
 pub fn parse(source: &str, stem: &str) -> Imported {
+    parse_with(source, stem, |paragraphs| Ok(document(paragraphs))).expect("legacy Markdown reader")
+}
+
+pub(crate) fn parse_package(source: &str, stem: &str, root: &std::path::Path) -> Result<Imported, String> {
+    if crate::markdown::is_dialect(source) {
+        if !crate::store::document_format::new_nodes_allowed() {
+            return Err("new-format Markdown conversion is disabled by this build".into());
+        }
+        let parsed = read_package(source, stem, root)?;
+        if !parsed.assets.is_empty() {
+            return Err("figure import requires asset registration in the activated format".into());
+        }
+        return Ok(parsed.imported);
+    }
+    Ok(parse(source, stem))
+}
+
+pub(crate) fn read_package(source: &str, stem: &str, root: &std::path::Path) -> Result<crate::markdown::Parsed, String> {
+    crate::markdown::parse(source, stem, |path| crate::markdown_package::read_asset(root, path))
+}
+
+pub(crate) fn parse_with(source: &str, stem: &str, mut read: impl FnMut(&[String]) -> Result<Option<String>, String>) -> Result<Imported, String> {
     let mut sections = sections(source);
     let derived_contents = drop_generated_contents(&mut sections);
     let levels: Vec<usize> = sections
@@ -510,7 +532,7 @@ pub fn parse(source: &str, stem: &str) -> Imported {
 
     for section in &sections {
         let paragraphs = paragraphs(&section.lines);
-        let body = document(&paragraphs);
+        let body = read(&paragraphs)?;
         match section.heading {
             None => {
                 // Prose before any heading. It becomes a scene at the root
@@ -565,11 +587,11 @@ pub fn parse(source: &str, stem: &str) -> Imported {
         }
     }
 
-    Imported {
+    Ok(Imported {
         derived_contents,
         name: name.unwrap_or_else(|| stem.to_string()),
         items,
-    }
+    })
 }
 
 #[cfg(test)]

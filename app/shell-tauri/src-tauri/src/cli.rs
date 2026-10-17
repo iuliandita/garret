@@ -105,6 +105,8 @@ usage:
   garret restore   <point.point|legacy-point.db> <library-dir> [--allow-picture-gaps]
   garret import    <manuscript> <library-dir> [--json]
                             (manuscript is Markdown or DOCX, decided by content)
+                            (keep Markdown with its adjacent assets folder when sharing)
+                            (new-format conversion is disabled in this build)
   garret preflight <project.db> [--json] [--format markdown|epub|pdf|docx]
                             (the export safety check, without writing a file)
   garret keygen <recovery-key.txt>

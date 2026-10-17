@@ -173,7 +173,7 @@ fn block_markdown(node: &serde_json::Value, underlined: &mut u64) -> Option<Stri
     (!trimmed.is_empty()).then(|| trimmed.to_string())
 }
 
-fn append_inline(node: &serde_json::Value, out: &mut String, underlined: &mut u64) {
+pub(crate) fn append_inline(node: &serde_json::Value, out: &mut String, underlined: &mut u64) {
     if node.get("type").and_then(|t| t.as_str()) == Some("text") {
         if let Some(text) = node.get("text").and_then(|t| t.as_str()) {
             // The block markers bind at the start of a line: the start of the
@@ -406,6 +406,10 @@ fn contents_block(entries: &[TocEntry], plain_titles: bool) -> String {
 /// gate. Whether the remaining single copy needs streaming is what the graded
 /// `export_ms` run at `stress` decides.
 pub fn manuscript(book: &Book, bodies: &HashMap<String, String>) -> Manuscript {
+    manuscript_planned(book, bodies, None)
+}
+
+pub(crate) fn manuscript_planned(book: &Book, bodies: &HashMap<String, String>, plan: Option<&crate::publication_plan::Plan>) -> Manuscript {
     let mut underlined_runs = 0u64;
     let mut out = String::new();
     push_block(
@@ -443,18 +447,31 @@ pub fn manuscript(book: &Book, bodies: &HashMap<String, String>) -> Manuscript {
                 );
             }
             if let Some(author) = book.byline(id) { push_block(&mut out, &escape(author, true)); }
-            if let Some((prose, underlined)) =
-                bodies.get(id).and_then(|b| document_markdown_counted(b))
+            let rendered = plan.and_then(|plan| plan.documents.get(id).map(|doc|
+                crate::markdown::document(id, doc, plan)));
+            if let Some((prose, underlined)) = rendered.or_else(||
+                bodies.get(id).and_then(|b| document_markdown_counted(b)))
             {
                 underlined_runs += underlined;
                 if !prose.is_empty() {
                     push_block(&mut out, &prose);
                 }
             }
+            if let Some(plan) = plan {
+                if let Some(scopes) = plan.endnotes.get(id) {
+                    for indices in scopes.values() {
+                        for index in indices {
+                            push_block(&mut out, &crate::markdown::definition(&plan.notes[*index]));
+                        }
+                    }
+                }
+            }
         }
     }
+    if plan.is_some_and(|p| p.has_new) { out.insert_str(0, crate::markdown::MARKER); }
     out.push('\n');
     Manuscript {
+        assets: plan.map(|p| p.assets.values().map(|a| (a.href.clone(), a.bytes.clone())).collect()).unwrap_or_default(),
         bytes: out.into_bytes(),
         format: Format::Markdown,
         underlined_runs,
@@ -546,6 +563,7 @@ impl Format {
 /// The Markdown renderer still builds a `String` internally and hands over its
 /// UTF-8: nothing about the emitted bytes changed when this type did.
 pub struct Manuscript {
+    pub assets: std::collections::BTreeMap<String, Vec<u8>>,
     pub bytes: Vec<u8>,
     /// What `bytes` is. Carried rather than assumed, because the caller writes
     /// the file, names it and reports it, and all three answers differ per

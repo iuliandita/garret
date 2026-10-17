@@ -442,6 +442,10 @@ fn pass_inner(
         (items, bodies, doc_revs, texts, schema_version, dictionary)
     };
 
+    if schema_version >= crate::store::figure_assets::SCHEMA_VERSION
+        || bodies.values().any(|body| crate::figure_salvage::has_new_nodes(body)) {
+        return Err("new-format readable-folder output is disabled by this build".into());
+    }
     std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     let mut effective_pauses = persisted_pauses(dir)?;
     effective_pauses.extend(paused.iter().cloned());
@@ -1240,6 +1244,27 @@ pub fn file_body(item: &crate::store::Item, body: Option<&str>) -> String {
         }
     }
     out
+}
+
+#[cfg(test)]
+pub(crate) fn planned_file(item: &crate::store::Item, schema: i64, plan: &crate::publication_plan::Plan) -> Result<crate::export::Manuscript, String> {
+    if schema != crate::store::figure_assets::SCHEMA_VERSION { return Err("new-format mirror requires the matching book schema".into()); }
+    let doc = plan.documents.get(&item.id).ok_or("missing planned mirror document")?;
+    let (mut prose, underlined_runs) = crate::markdown::document(&item.id, doc, plan);
+    for note in plan.notes.iter().filter(|note| note.item == item.id) {
+        prose.push_str("\n\n"); prose.push_str(&crate::markdown::definition(note));
+    }
+    let mut assets = std::collections::BTreeMap::new();
+    for block in doc["content"].as_array().unwrap() {
+        if block["type"] == "figure" {
+            let asset = &plan.assets[block["attrs"]["asset_id"].as_str().unwrap()];
+            assets.insert(asset.href.clone(), asset.bytes.clone());
+        }
+    }
+    Ok(crate::export::Manuscript {
+        bytes: format!("---\nid: {}\ntype: {}\ndocument_format: {schema}\n---\n\n# {}\n\n{prose}\n", one_line(&item.id), one_line(&item.item_type), crate::export::heading_title(&item.title)).into_bytes(),
+        format: crate::export::Format::Markdown, underlined_runs, assets,
+    })
 }
 
 /// What the mirror calls the book's side of a conflict, beside the writer's file.
@@ -4918,6 +4943,49 @@ mod tests {
             rows[0].file_body.is_none(),
             "a row nobody may apply carries no body to apply"
         );
+    }
+
+    #[test]
+    fn document_format_markers_refuse_in_the_existing_mirror_reader() {
+        let tmp = tempfile::tempdir().unwrap();
+        let m = mirrored(tmp.path());
+        let entry = prose_entry(&m);
+        let current = std::fs::read_to_string(m.out.join(&entry.path)).unwrap();
+        for marker in ["18", "19", "unknown", "17"] {
+            let text = current.replacen("---\n\n", &format!("document_format: {marker}\n---\n\n"), 1);
+            assert_eq!(read_file(&text).unwrap().extra, ["document_format"]);
+            std::fs::write(m.out.join(&entry.path), text).unwrap();
+            let rows = changes_now(&m);
+            assert_eq!(rows.len(), 1);
+            assert_eq!(rows[0].state, FRONT_MATTER);
+            assert!(!rows[0].can_accept);
+            assert!(rows[0].file_body.is_none());
+            let store = crate::store::Store::open_readonly(&m.src).unwrap();
+            assert!(accept_plan(&rows, &store.document_revs().unwrap(), &[entry.id.clone()]).is_err());
+        }
+        std::fs::write(m.out.join(&entry.path), &current).unwrap();
+        rewrite_prose(&m, &entry, "unaffected external prose");
+        assert!(changes_now(&m)[0].can_accept);
+        let store = crate::store::Store::open_readonly(&m.src).unwrap();
+        let original = store.load_doc(&entry.id).unwrap().body;
+        assert_eq!(crate::store::document_text(&original).unwrap(), "four words go here");
+        rusqlite::Connection::open(&m.src).unwrap().execute("UPDATE doc SET body=?1 WHERE item_id=?2",
+            rusqlite::params![crate::store::document_fields::tests::mixed().to_string(), entry.id]).unwrap();
+        std::fs::write(m.out.join(from_project_path(&entry.path)), "preserved book copy").unwrap();
+        let rows = changes_now(&m);
+        assert!(!rows[0].can_accept);
+        assert!(rows[0].error.as_deref().unwrap().contains("cannot be accepted"));
+        assert!(accept_plan(&rows, &store.document_revs().unwrap(), &[entry.id.clone()]).is_err());
+        let sibling = m.entries.iter().find(|row| row.id != entry.id && !row.path.ends_with("index.md")).unwrap();
+        rewrite_prose(&m, sibling, "ordinary sibling remains bidirectional");
+        let rows = changes_now(&m);
+        assert!(rows.iter().find(|row| row.id == sibling.id).unwrap().can_accept);
+        assert!(!rows.iter().find(|row| row.id == entry.id).unwrap().can_accept);
+        assert!(accept_plan(&rows, &store.document_revs().unwrap(), &[sibling.id.clone()]).is_ok());
+        let empty = tmp.path().join("disabled-output");
+        let error = pass(&m.src, "my-book", "My Book", &empty, NOW, &HashSet::new()).unwrap_err();
+        assert!(error.contains("new-format readable-folder output is disabled"));
+        assert!(!empty.exists());
     }
 
     #[test]

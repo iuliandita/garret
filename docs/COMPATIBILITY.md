@@ -76,6 +76,30 @@ adds no production migration. Keep the closed-book backups described below;
 rollback uses the previous build and complete copy. Reader popup behavior and
 native reading-system qualification remain unverified.
 
+Markdown publication fixtures reuse the scoped publication plan for footnote
+references and definitions, relative hashed PNG/JPEG assets, captions, scene
+breaks, and bounded figure placement metadata. Literal footnote syntax remains
+escaped prose. The matching package reader remints instance and asset IDs and
+resolves originals only below the selected Markdown file's parent directory;
+absolute paths, traversal, URLs, and symbolic links are refused. The desktop and
+CLI refuse marked new-format conversion before creating a book while authoring
+is disabled. Ordinary Markdown and Word output retains its existing byte hashes.
+
+Keep a Markdown file and its adjacent `assets` folder together when sharing.
+A package export stages originals beside the destination, publishes them before
+the Markdown file, and refuses existing destinations or asset folders. A failure
+after staging keeps the stage and reports its location; preserve it until the
+outcome is known. It never overwrites an existing package to resolve a collision.
+
+New-format readable-folder copies are tested only with matching-schema fixtures.
+They carry relative hashed assets and a `document_format: 18` front-matter marker.
+Production output remains disabled. The existing reader retains unknown keys and
+refuses inbound acceptance for every document-format marker. Stored atoms also
+prevent acceptance after marker removal. Ordinary documents keep their existing
+bidirectional, pause, conflict-copy, and undo behavior. Removing a marker and
+importing the file as ordinary Markdown is a lossy conversion, not a mirror
+round-trip. No schema upgrade or production activation is included.
+
 The default `garret search book.db QUERY --json` result adds a `locators` array
 to each hit, retaining the existing keys. Each locator contains `field`,
 `item_id`, `instance_id`, `from`, and `to`. Consumers that require an exact key
