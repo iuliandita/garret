@@ -81,6 +81,8 @@ armed before GTK initialization. It reports the last phase and thread wait
 channels before aborting, even if GTK stops dispatching. Core dumps are disabled
 in these isolated test processes. The paginator CI step retains its 300-second
 process timeout and 30-second kill grace, including compilation and startup.
+It uses an isolated X display, software rendering, disabled compositing and
+DMA-BUF rendering, and no accessibility bridge.
 The underlying intermittent hang remains unconfirmed and tracked in #324.
 
 macOS packaging retries the specific hdiutil resource-busy creation failure up

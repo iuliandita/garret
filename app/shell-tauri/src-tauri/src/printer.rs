@@ -491,7 +491,7 @@ mod tests {
 
         const CHILD: &str = "GARRET_PROOF_WATCHDOG_TEST";
         if let Ok(mode) = std::env::var(CHILD) {
-            let watchdog = TestWatchdog::start(Duration::from_millis(100));
+            let watchdog = TestWatchdog::start(Duration::from_secs(1));
             watchdog.phase("deliberately blocked test thread");
             if mode == "blocked" {
                 loop {
@@ -499,7 +499,7 @@ mod tests {
                 }
             }
             drop(watchdog);
-            std::thread::sleep(Duration::from_millis(250));
+            std::thread::sleep(Duration::from_millis(1250));
             return;
         }
         for mode in ["blocked", "completed"] {

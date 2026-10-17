@@ -95,9 +95,15 @@ jobs:
       - name: Proof paginator
         timeout-minutes: 7
         working-directory: app/shell-tauri/src-tauri
+        env:
+          GDK_BACKEND: x11
+          WEBKIT_DISABLE_COMPOSITING_MODE: "1"
+          WEBKIT_DISABLE_DMABUF_RENDERER: "1"
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          NO_AT_BRIDGE: "1"
         run: |
-          # The in-test timer needs GTK's main loop to keep dispatching (#324).
-          if GDK_BACKEND=x11 timeout --verbose --signal=TERM --kill-after=30s 300s \
+          # The outer bound also covers compilation and startup (#324).
+          if env -u WAYLAND_DISPLAY timeout --verbose --signal=TERM --kill-after=30s 300s \
             xvfb-run -a cargo test --locked --bin garret -- \
               --ignored --exact --test-threads=1 \
               printer::tests::rich_paragraphs_keep_text_and_marks_and_oversized_headings_refuse; then
