@@ -17,13 +17,16 @@ pub(crate) struct ReviewHunk {
     pub after: Vec<FragmentToken>,
 }
 
-/// Open and close have width one; text has its JavaScript UTF-16 width.
+/// Edges and opaque whole atoms have width one; text has its UTF-16 width.
 /// An isolated fragment may be open at either end, but the result must be a doc.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub(crate) enum FragmentToken {
     Open,
     Close,
+    Atom {
+        node: Value,
+    },
     Text {
         text: String,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -41,12 +44,20 @@ impl<'de> Deserialize<'de> for FragmentToken {
         let allowed = match kind {
             "open" | "close" => &["kind"][..],
             "text" => &["kind", "text", "marks"][..],
+            "atom" => &["kind", "node"][..],
             _ => return Err(serde::de::Error::custom("unsupported fragment kind")),
         };
         let object = object_with(&value, allowed).map_err(serde::de::Error::custom)?;
         match kind {
             "open" => Ok(Self::Open),
             "close" => Ok(Self::Close),
+            "atom" => {
+                let node = object
+                    .get("node")
+                    .ok_or_else(|| serde::de::Error::custom("missing atom node"))?;
+                validate_atom(node).map_err(serde::de::Error::custom)?;
+                Ok(Self::Atom { node: node.clone() })
+            }
             "text" => {
                 let text = object
                     .get("text")
@@ -152,6 +163,7 @@ pub(crate) fn same_unmarked_content(before: &[FragmentToken], after: &[FragmentT
         Open,
         Close,
         Character(char),
+        Atom(Value),
     }
     fn units(tokens: &[FragmentToken]) -> Vec<Unit> {
         let mut result = Vec::new();
@@ -159,6 +171,7 @@ pub(crate) fn same_unmarked_content(before: &[FragmentToken], after: &[FragmentT
             match token {
                 FragmentToken::Open => result.push(Unit::Open),
                 FragmentToken::Close => result.push(Unit::Close),
+                FragmentToken::Atom { node } => result.push(Unit::Atom(node.clone())),
                 FragmentToken::Text { text, .. } => {
                     result.extend(text.chars().map(Unit::Character));
                 }
@@ -180,6 +193,7 @@ pub(crate) fn changed_interval(
         Open,
         Close,
         Character(char, u8),
+        Atom(Value),
     }
     fn units(body: &str) -> Result<Vec<Unit>, String> {
         if body.len() > MAX_BODY_BYTES {
@@ -190,6 +204,7 @@ pub(crate) fn changed_interval(
             match token {
                 FragmentToken::Open => units.push(Unit::Open),
                 FragmentToken::Close => units.push(Unit::Close),
+                FragmentToken::Atom { node } => units.push(Unit::Atom(node)),
                 FragmentToken::Text { text, marks } => {
                     let mask = marks.iter().fold(0u8, |mask, mark| {
                         mask | match mark {
@@ -232,8 +247,32 @@ pub(crate) fn changed_interval(
     Ok(Some((start, old_end, new_end)))
 }
 
+// This reader validates structure without claiming that asset IDs are registered.
+// Writers separately resolve assets and enforce the production format policy.
+fn validate_shape(value: &Value) -> Result<(), String> {
+    let assets = value
+        .get("content")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter(|node| node["type"] == "figure")
+        .filter_map(|node| node["attrs"]["asset_id"].as_str().map(str::to_owned))
+        .collect();
+    crate::store::document_format::validate(value, true, &assets).map_err(|e| e.to_string())
+}
+
+fn validate_atom(node: &Value) -> Result<(), String> {
+    let block = match node.get("type").and_then(Value::as_str) {
+        Some("endnote") => json!({"type":"paragraph","content":[node]}),
+        Some("figure" | "scene_break") => node.clone(),
+        _ => return Err("unsupported review atom".into()),
+    };
+    validate_shape(&json!({"type":"doc","content":[block]}))
+}
+
 fn parse_document(body: &str) -> Result<Vec<FragmentToken>, String> {
     let value: Value = serde_json::from_str(body).map_err(|_| "invalid document JSON")?;
+    validate_shape(&value)?;
     let root = object_with(&value, &["type", "content"])?;
     if root.get("type").and_then(Value::as_str) != Some("doc") {
         return Err("expected doc root".into());
@@ -242,11 +281,17 @@ fn parse_document(body: &str) -> Result<Vec<FragmentToken>, String> {
         .get("content")
         .and_then(Value::as_array)
         .ok_or("document needs paragraphs")?;
-    if paragraphs.is_empty() || paragraphs.len() > MAX_TOKENS / 2 {
-        return Err("invalid paragraph count".into());
+    if paragraphs.is_empty() || paragraphs.len() > MAX_TOKENS {
+        return Err("invalid block count".into());
     }
     let mut tokens = Vec::new();
     for paragraph in paragraphs {
+        if matches!(paragraph["type"].as_str(), Some("figure" | "scene_break")) {
+            tokens.push(FragmentToken::Atom {
+                node: paragraph.clone(),
+            });
+            continue;
+        }
         let node = object_with(paragraph, &["type", "content"])?;
         if node.get("type").and_then(Value::as_str) != Some("paragraph") {
             return Err("unsupported paragraph node".into());
@@ -254,6 +299,12 @@ fn parse_document(body: &str) -> Result<Vec<FragmentToken>, String> {
         tokens.push(FragmentToken::Open);
         if let Some(content) = node.get("content") {
             for child in content.as_array().ok_or("invalid paragraph content")? {
+                if child["type"] == "endnote" {
+                    tokens.push(FragmentToken::Atom {
+                        node: child.clone(),
+                    });
+                    continue;
+                }
                 let text_node = object_with(child, &["type", "text", "marks"])?;
                 if text_node.get("type").and_then(Value::as_str) != Some("text") {
                     return Err("unsupported inline node".into());
@@ -350,6 +401,16 @@ fn canonical_fragment(tokens: &[FragmentToken]) -> Result<Vec<FragmentToken>, St
                     marks,
                 });
             }
+            FragmentToken::Atom { node } => {
+                validate_atom(node)?;
+                text_bytes = text_bytes
+                    .checked_add(node.to_string().len())
+                    .ok_or("fragment too large")?;
+                if text_bytes > MAX_BODY_BYTES {
+                    return Err("fragment too large".into());
+                }
+                output.push(token.clone());
+            }
             other => output.push(other.clone()),
         }
     }
@@ -432,6 +493,19 @@ fn document_from_tokens(tokens: &[FragmentToken]) -> Result<Value, String> {
                     paragraphs.push(json!({"type":"paragraph","content":children}));
                 }
             }
+            FragmentToken::Atom { node } => {
+                validate_atom(node)?;
+                if node["type"] == "endnote" {
+                    content
+                        .as_mut()
+                        .ok_or("endnote outside paragraph")?
+                        .push(node.clone());
+                } else if content.is_none() {
+                    paragraphs.push(node.clone());
+                } else {
+                    return Err("block atom inside paragraph".into());
+                }
+            }
             FragmentToken::Text { text, marks } => {
                 let children = content.as_mut().ok_or("text outside paragraph")?;
                 if marks.is_empty() {
@@ -447,7 +521,9 @@ fn document_from_tokens(tokens: &[FragmentToken]) -> Result<Value, String> {
     if content.is_some() || paragraphs.is_empty() {
         return Err("result is not a complete document".into());
     }
-    Ok(json!({"type":"doc","content":paragraphs}))
+    let result = json!({"type":"doc","content":paragraphs});
+    validate_shape(&result)?;
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -491,5 +567,161 @@ mod tests {
         ] {
             assert!(serde_json::from_str::<ReviewHunk>(raw).is_err(), "{raw}");
         }
+    }
+
+    fn atom_fixture() -> Value {
+        json!({"type":"doc","content":[
+            {"type":"paragraph","content":[{"type":"text","text":"😀"},
+                {"type":"endnote","attrs":{"id":"11111111-1111-4111-8111-111111111111","fmt":"text","body":"note 😀\n<script>"}},
+                {"type":"text","text":"🦊"}]},
+            {"type":"figure","attrs":{"id":"22222222-2222-4222-8222-222222222222","asset_id":"33333333-3333-4333-8333-333333333333","width":"full","caption":"caption","alt":"alt"}},
+            {"type":"scene_break"}, {"type":"paragraph","content":[{"type":"text","text":"tail"}]}
+        ]})
+    }
+
+    #[test]
+    fn whole_atoms_apply_exactly_and_stale_attributes_refuse_beside_astral_text() {
+        let original = atom_fixture();
+        let encoded = original.to_string();
+        let source = parse_review_body(&encoded).unwrap();
+        assert_eq!(fragment_width(&source), 15);
+        assert_eq!(changed_interval(&encoded, &encoded).unwrap(), None);
+        for (is_note, field, value) in [
+            (true, "body", "changed 🦊"),
+            (true, "id", "44444444-4444-4444-8444-444444444444"),
+            (false, "id", "44444444-4444-4444-8444-444444444444"),
+            (false, "asset_id", "55555555-5555-4555-8555-555555555555"),
+            (false, "width", "half"),
+            (false, "caption", "new caption"),
+            (false, "alt", "new alt"),
+        ] {
+            let old = if is_note {
+                &original["content"][0]["content"][1]
+            } else {
+                &original["content"][1]
+            };
+            let mut new = old.clone();
+            new["attrs"][field] = json!(value);
+            let from = if is_note { 3 } else { 7 };
+            let hunk = ReviewHunk {
+                from,
+                to: from + 1,
+                before: vec![FragmentToken::Atom { node: old.clone() }],
+                after: vec![FragmentToken::Atom { node: new.clone() }],
+            };
+            let wire = serde_json::to_string(&hunk).unwrap();
+            let hunk: ReviewHunk = serde_json::from_str(&wire).unwrap();
+            let result = apply_hunk(&encoded, &hunk).unwrap();
+            let mut expected = original.clone();
+            if is_note {
+                expected["content"][0]["content"][1] = new;
+            } else {
+                expected["content"][1] = new;
+            }
+            assert_eq!(
+                serde_json::from_str::<Value>(&result).unwrap(),
+                expected,
+                "{field}"
+            );
+            assert_eq!(
+                changed_interval(&encoded, &result).unwrap(),
+                Some((from, from + 1, from + 1))
+            );
+            assert!(!same_unmarked_content(&hunk.before, &hunk.after));
+            assert!(
+                apply_hunk(&result, &hunk).unwrap_err().contains("stale"),
+                "{field}"
+            );
+        }
+        for from in [3, 7, 8] {
+            let (left, rest) = cut(&source, from).unwrap();
+            let (atom, _) = cut(&rest, 1).unwrap();
+            assert_eq!(atom.len(), 1);
+            assert!(matches!(atom[0], FragmentToken::Atom { .. }));
+            let removed = apply_hunk(
+                &encoded,
+                &ReviewHunk {
+                    from,
+                    to: from + 1,
+                    before: atom.clone(),
+                    after: vec![],
+                },
+            )
+            .unwrap();
+            let restored = apply_hunk(
+                &removed,
+                &ReviewHunk {
+                    from,
+                    to: from,
+                    before: vec![],
+                    after: atom,
+                },
+            )
+            .unwrap();
+            assert_eq!(serde_json::from_str::<Value>(&restored).unwrap(), original);
+            assert_eq!(fragment_width(&left), from);
+        }
+        assert!(apply_hunk(
+            &encoded,
+            &ReviewHunk {
+                from: 2,
+                to: 3,
+                before: vec![FragmentToken::Text {
+                    text: "x".into(),
+                    marks: vec![]
+                }],
+                after: vec![]
+            }
+        )
+        .unwrap_err()
+        .contains("surrogate"));
+    }
+
+    #[test]
+    fn atom_wire_and_result_reject_unknown_or_lossy_shapes_and_duplicate_ids() {
+        let original = atom_fixture();
+        let note = original["content"][0]["content"][1].clone();
+        for (field, value) in [
+            ("fmt", json!("html")),
+            ("id", json!("bad")),
+            ("body", json!("界".repeat(22_000))),
+            ("extra", json!("lost")),
+        ] {
+            let mut invalid = note.clone();
+            invalid["attrs"][field] = value;
+            assert!(
+                serde_json::from_value::<FragmentToken>(json!({"kind":"atom","node":invalid}))
+                    .is_err(),
+                "{field}"
+            );
+        }
+        for invalid in [
+            json!({"type":"scene_break","attrs":{}}),
+            json!({"type":"text","text":"x"}),
+            json!({"type":"endnote","attrs":note["attrs"],"marks":[{"type":"em"}]}),
+            json!({"type":"endnote","attrs":note["attrs"],"content":[]}),
+        ] {
+            assert!(
+                serde_json::from_value::<FragmentToken>(json!({"kind":"atom","node":invalid}))
+                    .is_err()
+            );
+        }
+        let mut duplicate = original.clone();
+        duplicate["content"][1]["attrs"]["id"] = note["attrs"]["id"].clone();
+        assert!(parse_review_body(&duplicate.to_string()).is_err());
+        let hunk = ReviewHunk {
+            from: 4,
+            to: 4,
+            before: vec![],
+            after: vec![FragmentToken::Atom { node: note.clone() }],
+        };
+        assert!(apply_hunk(&original.to_string(), &hunk).is_err());
+        let hunk = ReviewHunk {
+            from: 0,
+            to: 0,
+            before: vec![],
+            after: vec![FragmentToken::Atom { node: note }],
+        };
+        assert!(apply_hunk(&original.to_string(), &hunk).is_err());
     }
 }

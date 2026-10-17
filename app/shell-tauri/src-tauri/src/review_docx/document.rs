@@ -926,6 +926,9 @@ fn render_events(events: &[Event]) -> Result<String, String> {
                     output.push_str(&format!("</w:{}>", revision.kind));
                 }
             }
+            Event::Token(FragmentToken::Atom { .. }, _) => {
+                return Err("review DOCX does not support opaque atoms".into());
+            }
             Event::Format {
                 text,
                 old,

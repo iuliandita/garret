@@ -4,6 +4,8 @@ if (typeof document === "undefined") GlobalRegistrator.register();
 import { createReviewPanel, proposalSummary, type ReviewPanelDeps } from "../src/review-panel";
 import type { ReviewGroup, ReviewState } from "../src/review-types";
 import { t } from "../src/i18n";
+import { reviewRich } from "../src/review-rich";
+import type { FragmentToken } from "../src/review-fragments";
 
 const body = JSON.stringify({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "one" }] }] });
 const summary = { id: 7, author_name: "Mara", rev: 2, created_at: 1, pending: 1, conflicted: 1, accepted: 0, rejected: 0, messages: 1 };
@@ -233,4 +235,17 @@ test("the proposals lead: creating a reviewer waits behind Add reviewer", async 
   r.click("review.author-create"); await tick(); await tick();
   expect(form.hidden).toBe(true);
   expect(toggle.getAttribute("aria-expanded")).toBe("false");
+});
+
+test("opaque review atoms render their exact payload safely in manuscript order", () => {
+  const atoms: FragmentToken[] = [
+    { kind: "atom", node: { type: "endnote", attrs: { id: "11111111-1111-4111-8111-111111111111", fmt: "text", body: "<img src=x>😀" } } },
+    { kind: "atom", node: { type: "figure", attrs: { id: "22222222-2222-4222-8222-222222222222", asset_id: "33333333-3333-4333-8333-333333333333", width: "half", caption: "<script>", alt: "alt" } } },
+    { kind: "atom", node: { type: "scene_break" } },
+  ];
+  const rendered = reviewRich([{ kind: "open" }, { kind: "text", text: "😀" }, atoms[0], { kind: "text", text: "🦊" }, { kind: "close" }, ...atoms.slice(1)]);
+  expect([...rendered.querySelectorAll(".review-atom")].map((node) => node.textContent))
+    .toEqual(atoms.map((token) => token.kind === "atom" ? JSON.stringify(token.node) : ""));
+  expect(rendered.firstElementChild?.textContent).toBe(`😀${JSON.stringify(atoms[0].kind === "atom" ? atoms[0].node : null)}🦊`);
+  expect(rendered.querySelectorAll("img,script").length).toBe(0);
 });
