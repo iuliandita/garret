@@ -45,13 +45,13 @@
 // THE FRAMES ARE COSMETIC. With the device frame on, the same painted bytes sit
 // in a generic e-reader (paged by CSS columns) or tablet (one whole leaf); the
 // host's EPUB documents and proof leaves are never recomposed for it.
+import { createPreviewWindow, type PreviewWindow } from "./preview-window";
 import { isCompositionKey } from "./composition-key";
 import { formatNumber, plural, t } from "./i18n";
 import {
   SINKS,
   STYLE_FLAGS,
   gutterVerdict,
-  parseDocumentBody,
   scaleFor,
   shrinkFor,
   scopeStylesheet,
@@ -459,6 +459,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   // ---- device frame and paging --------------------------------------------
   let frameOn = readDevice(storage, RAIL_FRAME_KEY) === "1";
   let pageIndex = 0;
+  let epubWindow: PreviewWindow | null = null;
   let observer: ResizeObserver | null = null;
 
   const framed = (): boolean => frameOn && showing !== null && !rail.hidden;
@@ -513,14 +514,17 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   }
 
   /** Re-measure after anything that can change a layout: a paint, a resize, a
-   *  width change, an image arriving. One layout read per call. */
+   *  width change, an image arriving. */
   function relayout(): void {
     if (destroyed || rail.hidden || showing === null) return;
     if (!framed()) {
+      epubWindow?.update();
       if (showing === "pdf" && pages.dataset.proof !== undefined) fit();
       return;
     }
+    epubWindow?.update();
     const count = pageTotal();
+    if (showing === "epub") pageIndex = Math.round(pages.scrollLeft / (pages.clientWidth || 1));
     pageIndex = clampPage(pageIndex, count);
     if (showing === "pdf") {
       leaves().forEach((leaf, index) => leaf.classList.toggle("is-current", index === pageIndex));
@@ -528,6 +532,8 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     } else {
       // The columns are one page wide, so a page is one clientWidth.
       pages.scrollLeft = pageIndex * pages.clientWidth;
+      epubWindow?.update();
+      pageIndex = Math.round(pages.scrollLeft / (pages.clientWidth || 1));
     }
     paintPager(count);
   }
@@ -538,6 +544,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     const next = clampPage(pageIndex + delta, count);
     if (next === pageIndex) return;
     pageIndex = next;
+    if (showing === "epub") pages.scrollLeft = next * pages.clientWidth;
     relayout();
   }
 
@@ -561,7 +568,12 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
         return;
       case "End":
         event.preventDefault();
-        turn(pageTotal());
+        // The last document may occupy more pages than its unvisited estimate.
+        if (showing === "epub") {
+          epubWindow?.revealLast();
+          pages.scrollLeft = (pageTotal() - 1) * pages.clientWidth;
+          relayout();
+        } else turn(pageTotal());
         return;
     }
   };
@@ -570,11 +582,15 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
   pages.addEventListener("load", relayout, true);
 
   function setFrame(on: boolean): void {
+    const position = epubWindow?.position();
     frameOn = on;
     writeDevice(storage, RAIL_FRAME_KEY, on ? "1" : "0");
     paintToggle(frameToggle, on);
     pageIndex = 0;
     placeFrame();
+    epubWindow?.resetLayout(position);
+    pageIndex = Math.round(pages.scrollLeft / (pages.clientWidth || 1));
+    relayout();
   }
 
   // ---- refresh after a pause ----------------------------------------------
@@ -679,6 +695,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
 
   /** Paint the documents the host read out of the archive. */
   function paintPreview(view: EpubPreview): void {
+    const position = epubWindow?.position();
     saySummary([
       plural("preview.epub.summary", view.items, {
         items: formatNumber(view.items),
@@ -691,40 +708,21 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     styleElement.textContent = scoped ?? "";
     const painted: Node[] = [];
     if (scoped === null) painted.push(line(t("preview.error.stylesheet")));
-    for (const document_ of view.documents) {
-      const body = parseDocumentBody(document_.xhtml);
-      if (body === null) {
-        // NAMED, never skipped. A document a reading system will refuse is the
-        // one thing a preview exists to show, and a gap where a chapter should
-        // be reads as a chapter the writer forgot to write.
-        painted.push(line(t("preview.error.document", { name: document_.name })));
-        continue;
-      }
-      const imported = document.importNode(body, true);
-      // THE ONE SUBSTITUTION, and it is not a second rendering. `../cover.png`
-      // resolves inside the container and nowhere else; the data URI is cut
-      // from the SAME archive entry that document points at.
-      if (view.cover_data_uri !== null) {
-        for (const image of imported.querySelectorAll("img")) {
-          image.setAttribute("src", view.cover_data_uri);
-          image.setAttribute("alt", t("preview.cover.alt"));
-        }
-      }
-      const documentWrapper = document.createElement("div");
-      documentWrapper.className = "epub-document";
-      documentWrapper.append(...[...imported.childNodes]);
-      painted.push(documentWrapper);
-    }
+    epubWindow?.destroy();
+    epubWindow = createPreviewWindow(pages, view, {
+      framed,
+      problem: (name) => line(t("preview.error.document", { name })),
+      coverAlt: () => t("preview.cover.alt"),
+    });
     // NOT A PROOF. The attribute is removed rather than left, exactly as
     // `data-theme` is removed rather than set to `system`: a hook that is true
     // for the wrong surface works by accident until a rule is added for it.
     delete pages.dataset.proof;
-    pages.replaceChildren(...painted);
-    for (const link of pages.querySelectorAll<HTMLAnchorElement>("a[href]")) {
-      link.tabIndex = -1;
-      link.setAttribute("aria-disabled", "true");
-    }
+    pages.replaceChildren(...painted, ...epubWindow.elements);
     placeFrame();
+    epubWindow.restore(position);
+    if (framed()) pageIndex = Math.round(pages.scrollLeft / (pages.clientWidth || 1));
+    relayout();
   }
 
   /** Paint the leaves the printer was handed.
@@ -734,6 +732,8 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
    *  serialised out of its own DOM, so parsing it as XML would fail on an
    *  `<img>` and report the writer's book as broken when nothing is. */
   function paintProof(view: PdfPreview): void {
+    epubWindow?.destroy();
+    epubWindow = null;
     const lines: string[] = [
       plural("preview.pdf.summary", view.leaves, {
         leaves: formatNumber(view.leaves),
@@ -937,6 +937,8 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       // NOT AN EMPTY RAIL. A catch that painted the no-documents state would
       // report a host that could not answer as a book with nothing in it --
       // the recorded `renderImports([])` defect.
+      epubWindow?.destroy();
+      epubWindow = null;
       pages.replaceChildren();
       deps.onNotice(t("preview.error.load", { error: messageOf(error) }));
     }
@@ -1055,6 +1057,9 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     generation += 1;
     lifecycle += 1;
     pageSetup?.hide();
+    epubWindow?.destroy();
+    epubWindow = null;
+    pages.replaceChildren();
     rail.hidden = true;
     divider.hidden = true;
     drag = null;
@@ -1088,6 +1093,8 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       // left its accessible name would announce the PREVIOUS book's figures
       // over the one the writer just asked for.
       saySummary([]);
+      epubWindow?.destroy();
+      epubWindow = null;
       pages.replaceChildren();
       styleElement.textContent = "";
       rail.hidden = false;
@@ -1156,6 +1163,8 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       cancelIdle();
       window.removeEventListener("resize", onWindowResize);
       observer?.disconnect();
+      epubWindow?.destroy();
+      epubWindow = null;
       pages.removeEventListener("keydown", onPagesKeyDown);
       pages.removeEventListener("load", relayout, true);
       rail.removeEventListener("click", onClick);
