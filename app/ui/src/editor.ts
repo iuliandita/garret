@@ -124,6 +124,19 @@ export function readableBody(body: string): PmNodeJson | null {
   } catch {
     return null;
   }
+  // Replace-all in older books could leave empty text runs, which ProseMirror rejects.
+  if (parsed && typeof parsed === "object" && "type" in parsed && parsed.type === "doc"
+      && "content" in parsed && Array.isArray(parsed.content)) {
+    for (const paragraph of parsed.content) {
+      if (paragraph && typeof paragraph === "object" && paragraph.type === "paragraph"
+          && Array.isArray(paragraph.content)) {
+        paragraph.content = paragraph.content.filter((node: unknown) => !(
+          node && typeof node === "object" && "type" in node && node.type === "text"
+          && "text" in node && node.text === ""
+        ));
+      }
+    }
+  }
   try {
     schema.nodeFromJSON(parsed as Record<string, unknown>);
   } catch {

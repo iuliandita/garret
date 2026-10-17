@@ -1,5 +1,9 @@
 # Keeping documentation current
 
+If an older book contains empty text runs from replace-all, the editor removes
+those runs on load. The original database body stays intact until the next save;
+no schema migration or manual repair is needed.
+
 Documentation is part of a change. The offline guard detects review obligations
 and verifiable drift. It cannot establish that prose is correct, an editor
 interaction works, or a live upgrade, restore, or rollback succeeds.

@@ -32,6 +32,11 @@ An oversized foreign document can now be refused. Preserve the original and
 split or simplify a copy before retrying; do not bypass the limits. This does
 not change the stored manuscript schema or require converting existing books.
 
+Book-wide replacement with an empty value removes the matched text runs and
+keeps empty paragraphs readable. Scenes containing empty text runs left by
+0.0.3 reopen automatically: the editor normalizes them on load, without changing
+the stored body until the next save. This requires no schema migration.
+
 New desktop books can start as a novel, short fiction, nonfiction, or collection. The
 optional `project.preset` metadata key adds no schema migration: a missing or
 unknown value uses novel defaults, and unknown values remain stored unchanged.
