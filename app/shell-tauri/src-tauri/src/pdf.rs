@@ -42,6 +42,10 @@ use crate::epub::{css_string, xml_escape};
 use crate::export::{Book, ChapterOpenings};
 use std::collections::HashMap;
 
+mod publication;
+#[cfg(test)]
+pub(crate) mod publication_tests;
+
 /// A block of the flow that is a LEAF rather than prose, and which kind.
 /// `plate` is a cover; `title` is the title page. The two differ in exactly one
 /// thing and it is the folio: a cover is not a page of the book, and a number
@@ -244,6 +248,7 @@ pub fn stylesheet(design: &BookDesign, style: &ChapterStyle) -> String {
              {{ margin-top: 0.6em; }}\n"
         ));
     }
+    css.push_str(publication::CSS);
     css
 }
 
@@ -280,7 +285,31 @@ pub fn document_blocks(body: &str) -> Option<String> {
 }
 
 /// The whole book as one HTML document that paginates itself.
+#[cfg(test)]
 pub fn proof_document(proof: &Proof) -> String {
+    proof_document_planned(proof, None, "Notes").unwrap()
+}
+
+pub(crate) fn proof_document_planned(
+    proof: &Proof,
+    plan: Option<&crate::publication_plan::Plan>,
+    notes_title: &str,
+) -> Result<String, String> {
+    let fallback;
+    let plan = match plan {
+        Some(plan) => plan,
+        None => {
+            fallback = crate::publication_plan::Plan::build(
+                proof.book, proof.bodies, crate::publication_plan::Scopes::book(proof.book),
+                |id| Err(format!("figure {id}: unresolved asset")),
+            )?;
+            &fallback
+        }
+    };
+    render_document(proof, plan, notes_title)
+}
+
+fn render_document(proof: &Proof, plan: &crate::publication_plan::Plan, notes_title: &str) -> Result<String, String> {
     let contents = crate::export::contents_of(proof.book);
     let ornament = proof.style.glyph.as_deref().and_then(glyph_ornament);
     let mut flow = String::new();
@@ -425,23 +454,28 @@ pub fn proof_document(proof: &Proof) -> String {
             if let Some(author) = proof.book.byline(id) {
                 flow.push_str(&format!("<p class=\"story-byline\">{}</p>\n", xml_escape(author)));
             }
-            let prose = proof
-                .bodies
-                .get(id)
-                .and_then(|b| document_blocks(b))
-                .unwrap_or_default();
-            for block in prose.lines() {
-                // Keep the opening pending through containers whose prose is in a child.
-                let class = if opening_pending && !block.trim().is_empty() {
-                    opening_pending = false;
-                    format!(" class=\"{OPENING_CLASS}\"")
-                } else {
-                    String::new()
-                };
-                let running = running_pending.take().map(|title|
-                    format!(" data-proof-running=\"{}\"", xml_escape(title))).unwrap_or_default();
-                flow.push_str(&format!("<p{class}{running}>{block}</p>\n"));
+            if plan.documents.contains_key(id) {
+                publication::blocks(plan, id, &mut flow, &mut opening_pending, running_pending.take())?;
+            } else {
+                let prose = proof
+                    .bodies
+                    .get(id)
+                    .and_then(|b| document_blocks(b))
+                    .unwrap_or_default();
+                for block in prose.lines() {
+                    // Keep the opening pending through containers whose prose is in a child.
+                    let class = if opening_pending && !block.trim().is_empty() {
+                        opening_pending = false;
+                        format!(" class=\"{OPENING_CLASS}\"")
+                    } else {
+                        String::new()
+                    };
+                    let running = running_pending.take().map(|title|
+                        format!(" data-proof-running=\"{}\"", xml_escape(title))).unwrap_or_default();
+                    flow.push_str(&format!("<p{class}{running}>{block}</p>\n"));
+                }
             }
+            publication::endnotes(plan, id, notes_title, &mut flow);
         }
     }
 
@@ -459,7 +493,7 @@ pub fn proof_document(proof: &Proof) -> String {
         "markupLimit": proof.markup_limit,
     }));
 
-    format!(
+    Ok(format!(
         "<!DOCTYPE html>\n<html lang=\"{language}\">\n<head>\n\
          <meta charset=\"utf-8\">\n<title>{title}</title>\n\
          <style>{css}</style>\n\
@@ -473,7 +507,7 @@ pub fn proof_document(proof: &Proof) -> String {
         language = xml_escape(proof.language),
         css = print_stylesheet(proof.design, &proof.style),
         meta = meta,
-    )
+    ))
 }
 
 /// JSON safe inside a `<script>` element.
@@ -523,7 +557,7 @@ pub fn anchor_id(id: &str) -> String {
 /// `dist` would make a book depend on a build directory. It is small, it is
 /// tested through the rendered document and through the rigs, and it has one
 /// home.
-pub const PAGINATOR_JS: &str = r#"
+pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), r#"
 (function () {
   "use strict";
   var flow = document.getElementById("proof-flow");
@@ -571,6 +605,7 @@ pub const PAGINATOR_JS: &str = r#"
     var h = parseFloat(getComputedStyle(textOf(page)).lineHeight);
     return isNaN(h) ? 16 : h;
   }
+  function paginate() {
   try {
   var current = leaf("");
   current.querySelector(".proof-runhead").textContent = meta.book;
@@ -597,8 +632,9 @@ pub const PAGINATOR_JS: &str = r#"
       // with it: no folio, no running head, no measure.
       if (textOf(current).childNodes.length) current = next();
       current.setAttribute("data-kind", own);
-      current.querySelector(".proof-runhead").textContent = "";
+      if (own !== "interior") current.querySelector(".proof-runhead").textContent = "";
       textOf(current).appendChild(block);
+      if (block.tagName === "FIGURE") fitFigure(current, block);
       if (full(current)) throw new Error("a proof leaf exceeds the page");
       if (i + 1 < blocks.length) current = next();
       continue;
@@ -619,8 +655,41 @@ pub const PAGINATOR_JS: &str = r#"
       block.style.marginTop = Math.round(textOf(current).clientHeight * SINK[sink]) + "px";
     }
     textOf(current).appendChild(block);
+    if (block.tagName === "FIGURE") fitFigure(current, block);
     if (!full(current)) continue;
     current = place(current, block);
+  }
+
+  function fitFigure(page, block) {
+    var box = textOf(page);
+    // Measure in the same text column, independently of preceding prose.
+    var probe = block.cloneNode(true);
+    probe.style.visibility = "hidden";
+    box.appendChild(probe);
+    var image = probe.querySelector("img");
+    image.style.display = "none";
+    var caption = probe.querySelector("figcaption");
+    var captionHeight = caption.getBoundingClientRect().height;
+    var group = companions(block);
+    var leadHeight = group.length && box.childNodes.length === group.length + 2 ?
+      block.getBoundingClientRect().top - box.getBoundingClientRect().top : 0;
+    var available = box.clientHeight - captionHeight - leadHeight;
+    if (available <= 0) throw new Error("a proof figure caption exceeds the page");
+    var width = box.clientWidth * (block.getAttribute("data-width") === "half" ? 0.5 : 1);
+    var pixelsW = Number(block.getAttribute("data-pixels-width"));
+    var pixelsH = Number(block.getAttribute("data-pixels-height"));
+    var orientation = Number(block.getAttribute("data-orientation"));
+    var rotated = orientation >= 5;
+    var ratio = (rotated ? pixelsW : pixelsH) / (rotated ? pixelsH : pixelsW);
+    var height = width * ratio;
+    if (height > available) { height = available; width = height / ratio; }
+    box.removeChild(probe);
+    var target = block.querySelector("img");
+    target.style.width = width + "px";
+    target.style.height = height + "px";
+    var check = proofFigureDpi(pixelsW, pixelsH, orientation, width / 96, height / 96);
+    block.setAttribute("data-dpi", String(check.dpi));
+    block.setAttribute("data-resolution", check.flag ? "flag" : check.warning ? "warning" : "accepted");
   }
 
   // A heading travels with the block after it when neither fits here.
@@ -663,6 +732,7 @@ pub const PAGINATOR_JS: &str = r#"
         }
       }
       textOf(page).appendChild(block);
+      if (block.tagName === "FIGURE") fitFigure(page, block);
       if (!full(page)) return page;
     }
     throw new Error("a proof paragraph needs too many pages");
@@ -856,11 +926,21 @@ pub const PAGINATOR_JS: &str = r#"
     return Math.abs(got - base) > 0.5;
   }
 
+  var figures = Array.from(sheet.querySelectorAll("figure"), function(figure) {
+    return {
+      id: figure.getAttribute("data-instance"),
+      item: figure.getAttribute("data-item"),
+      dpi: Number(figure.getAttribute("data-dpi")),
+      warning: figure.getAttribute("data-resolution") !== "accepted",
+      flag: figure.getAttribute("data-resolution") === "flag"
+    };
+  });
   var shown = markupLimit > 0 ? Math.min(markupLimit, leaves.length) : leaves.length;
   var report = {
     leaves: leaves.length,
     truncated: shown < leaves.length,
     fontResolved: resolved(meta.font),
+    figures: figures,
     pages: []
   };
   for (var q = 0; q < shown; q++) report.pages.push(leaves[q].outerHTML);
@@ -873,8 +953,17 @@ pub const PAGINATOR_JS: &str = r#"
   } catch (error) {
     window.__proofError = String(error && error.message || error).slice(0, 160);
   }
+  }
+  var images = Array.from(flow.querySelectorAll("img"));
+  if (images.length) {
+    window.__proofReady = Promise.all(images.map(function(image) {
+      return image.decode();
+    })).then(paginate).catch(function() {
+      window.__proofError = "a proof image did not decode";
+    });
+  } else { paginate(); }
 })();
-"#;
+"#);
 
 /// What the paginator reports, once it has run.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -894,6 +983,17 @@ pub struct ProofReport {
     pub font_resolved: bool,
     /// Each leaf, as the markup the printer was handed.
     pub pages: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub figures: Vec<FigureCheck>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct FigureCheck {
+    pub id: String,
+    pub item: String,
+    pub dpi: f64,
+    pub warning: bool,
+    pub flag: bool,
 }
 
 /// How many pages a PDF holds, read out of the file.

@@ -272,8 +272,26 @@ fn start_script(window: tauri::WebviewWindow, job: Arc<Job>) {
                 }
                 match status {
                     Ok(()) => {
-                        let result = serde_json::from_str::<String>(&text)
-                            .map_err(|e| e.to_string())
+                        let json = serde_json::from_str::<String>(&text);
+                        if json.as_deref().is_ok_and(printer::proof_pending) {
+                            let job = next.clone();
+                            tauri::async_runtime::spawn_blocking(move || {
+                                std::thread::sleep(Duration::from_millis(20));
+                                let app = job.app.clone();
+                                let failed = job.clone();
+                                if app.run_on_main_thread(move || {
+                                    if let Some(window) = job.app.get_webview_window(&job.label) {
+                                        start_script(window, job);
+                                    } else {
+                                        job.fail("proof window unavailable");
+                                    }
+                                }).is_err() {
+                                    failed.fail("proof window unavailable");
+                                }
+                            });
+                            return Ok(());
+                        }
+                        let result = json.map_err(|e| e.to_string())
                             .and_then(|json| printer::proof_report(&json));
                         match result {
                             Ok(report) if next.print => {

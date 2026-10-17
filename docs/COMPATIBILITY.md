@@ -2,6 +2,25 @@
 
 SQLite schema: 17.
 
+Prepared PDF publication reuses the shared scoped publication plan for endnotes,
+figures, captions, and scene breaks. Notes follow their scope, never the bottom
+of a page. Full and half figures fit within the text column; page figures use a
+separate interior leaf with normal margins and a folio. Images preserve their
+oriented aspect ratio without crop or bleed. Images shrink to keep captions at
+the normal type size, and an unfit caption refuses the proof. Pagination waits
+for every image to decode and refuses failed decoding under the existing timeout.
+Legacy prose rendering and existing proof fixtures retain their behavior.
+
+The paginator reports effective DPI for each figure from oriented pixels and its
+actual placed size. Below 300 DPI is a warning; below 200 DPI is also flagged.
+These advisories do not block publication. A 1200 by 1800 image is 300 DPI at
+4 by 6 inches, 200 DPI at 6 by 9, and 150 DPI at 8 by 12. EXIF rotation swaps the
+pixel axes before calculation. Preview reports include per-placement `figures`
+with item and instance IDs, DPI, warning, and flag values. Authoring, publication
+of new nodes, and their activation interface remain disabled; SQLite stays at
+schema 17 and no migration runs. Native Linux output is exercised under a virtual
+display; Windows and macOS layout qualification remains external.
+
 DOCX import keeps its existing prose-only behavior while new-node conversion is
 disabled. Footnote and endnote references and pictures are omitted with separate
 loss counts in the interface and CLI; no atoms are stored. Note-body parts are

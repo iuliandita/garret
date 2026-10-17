@@ -226,7 +226,7 @@ fn append_inline(node: &serde_json::Value, out: &mut String) {
 /// a SET on a text node, so `["em","strong"]` and `["strong","em"]` are the same
 /// node and must produce the same bytes. Strong outside, then em, then the
 /// underline innermost.
-fn wrap_marks(text: &str, node: &serde_json::Value) -> String {
+pub(crate) fn wrap_marks(text: &str, node: &serde_json::Value) -> String {
     let mut em = false;
     let mut strong = false;
     let mut underline = false;

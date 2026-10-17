@@ -152,7 +152,7 @@ fn tiff_orientation(data: &[u8]) -> Result<u8, String> {
     Ok(1)
 }
 
-fn orientation(data: &[u8], format: pictures::Format) -> Result<u8, String> {
+pub(crate) fn orientation(data: &[u8], format: pictures::Format) -> Result<u8, String> {
     match format {
         pictures::Format::Png => {
             let mut at = 8;
