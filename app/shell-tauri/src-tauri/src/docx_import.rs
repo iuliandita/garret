@@ -1149,6 +1149,31 @@ mod tests {
     }
 
     #[test]
+    fn native_scoped_note_round_trip_keeps_exact_body_whitespace_and_no_literal_marks() {
+        let chapters = [("a".into(), "One".into(), 0), ("b".into(), "Two".into(), 0)];
+        let book = crate::export::Book { publication: None, single_scene: false, name: "Notes", contents_title: "Contents", front: &[], chapters: &chapters, back: &[] };
+        let bodies = HashMap::from_iter(chapters.iter().map(|(id, _, _)| (id.clone(), json!({"type":"doc","content":[{"type":"paragraph","content":[
+            {"type":"text","text":"Prose"},
+            {"type":"endnote","attrs":{"id":"0199ed16-8c00-7000-8000-000000000001","fmt":"text","body":"\n leading & <text>\ntrailing \n"}}
+        ]}]}).to_string())));
+        let scopes = crate::publication_plan::Scopes {
+            by_item: HashMap::from([("a".into(), 0), ("b".into(), 1)]),
+            rows: vec![crate::publication_plan::Scope { label: "One".into(), end: "a".into() }, crate::publication_plan::Scope { label: "Two".into(), end: "b".into() }],
+        };
+        let plan = crate::publication_plan::Plan::build(&book, &bodies, scopes, |_| unreachable!()).unwrap();
+        let bytes = crate::docx::render_planned(&book, &bodies, "en", Some(&plan)).unwrap().bytes;
+        let imported = parse_with_policy(&bytes, "notes", true).unwrap();
+        let notes = owned_notes(&imported);
+        assert_eq!(notes.len(), 2);
+        assert!(notes.iter().all(|note| note["attrs"]["body"] == "\n leading & <text>\ntrailing \n"));
+        for item in &imported.imported.items {
+            if let Some(body) = &item.body {
+                assert_eq!(crate::store::document_text(body).as_deref(), Some("Prose"));
+            }
+        }
+    }
+
+    #[test]
     fn invalid_note_parts_refuse_without_truncating_or_guessing_bodies() {
         for (notes, reason) in [
             (String::new(), "missing note root"),

@@ -22,7 +22,8 @@ labels but collects them at the document end rather than each section end.
 Microsoft Word placement and editing behavior still need native qualification.
 
 The prepared importer keeps Word footnotes and endnotes as independent owned
-plain-text notes with new IDs. It reports affected-note counts separately for
+plain-text notes with new IDs. Prepared export/import preserves note-body
+whitespace and line breaks without adding marker text. It reports affected-note counts separately for
 flattened formatting, missing bodies (empty notes retained), and dropped note
 drawings. It does not preserve rich-note formatting. The interoperability fixture
 was written by LibreOffice, not Microsoft Word; native Word import qualification

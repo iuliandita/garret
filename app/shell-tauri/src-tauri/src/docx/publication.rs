@@ -21,7 +21,7 @@ fn custom_marks(plan: &Plan) -> bool {
 fn endnotes(plan: &Plan) -> String {
     let mut out = format!("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><w:endnotes xmlns:w=\"{W_NS}\"><w:endnote w:type=\"separator\" w:id=\"-1\"><w:p><w:r><w:separator/></w:r></w:p></w:endnote><w:endnote w:type=\"continuationSeparator\" w:id=\"0\"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:endnote>");
     for (index, note) in plan.notes.iter().enumerate() {
-        out.push_str(&format!("<w:endnote w:id=\"{}\"><w:p><w:pPr><w:ind w:firstLine=\"0\"/></w:pPr><w:r><w:rPr><w:vertAlign w:val=\"superscript\"/></w:rPr><w:endnoteRef/></w:r>{}</w:p></w:endnote>", index + 1, run_xml(&format!(" {}", note.body), &serde_json::Value::Null)));
+        out.push_str(&format!("<w:endnote w:id=\"{}\"><w:p><w:pPr><w:ind w:firstLine=\"0\"/></w:pPr><w:r><w:rPr><w:vertAlign w:val=\"superscript\"/></w:rPr><w:endnoteRef/><w:tab/></w:r>{}</w:p></w:endnote>", index + 1, run_xml(&note.body, &serde_json::Value::Null)));
     }
     out.push_str("</w:endnotes>");
     out
