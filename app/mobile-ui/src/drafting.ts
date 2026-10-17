@@ -148,7 +148,7 @@ export function createDraftingTools(opts: Options) {
           });
           for (const [index, locator] of (targets?.length ? targets : [undefined]).entries()) {
             const result = button(hit.title || m.untitled, () => jump(hit.item_id, query, locator));
-            if (hit.snippet) result.append(node("small", [locator ? t(`document.field.${locator.field}`) : "", index ? query : hit.snippet].filter(Boolean).join(": ")));
+            if (hit.snippet) result.append(node("small", [locator && locator.field !== "prose" ? t(`document.field.${locator.field}`) : "", index ? query : hit.snippet].filter(Boolean).join(": ")));
             results.append(result);
           }
         }
@@ -160,7 +160,13 @@ export function createDraftingTools(opts: Options) {
       results.replaceChildren(); status.replaceChildren(node("p", matches.length ? m.searchMatches.replace("{n}", matches.length.toLocaleString(opts.locale)) : m.noResults));
       if (matches.length > 200) status.append(node("p", m.sceneSearchLimited));
       for (const range of matches.slice(0, 200)) {
-        const snippet = `${t(`document.field.${range.locator.field}`)}: ${range.text}`;
+        const prose = range.locator.field === "prose";
+        const from = Math.max(0, range.textFrom - 35);
+        const limit = range.text.length;
+        const to = Math.min(limit, range.textTo + 35);
+        const context = range.text.slice(from, to);
+        const snippet = [prose ? "" : t(`document.field.${range.locator.field}`),
+          `${from ? "…" : ""}${context}${to < limit ? "…" : ""}`].filter(Boolean).join(": ");
         results.append(button(snippet, () => jump(opts.activeId(), query, range.locator)));
       }
     });

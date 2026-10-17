@@ -4,7 +4,7 @@ import { expect, test } from "bun:test";
 import { DOMSerializer, Fragment, Slice } from "prosemirror-model";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { bodyText, countWordsIn, createEditor, plaintextLabels, readableBody, schema, toggleMark } from "../src/editor";
-import { documentFields, plaintext, positionalText } from "../src/document-projections";
+import { clipboardPlaintext, documentFields, plaintext, positionalText } from "../src/document-projections";
 import { diffDocumentFields } from "../src/document-diff";
 import { remintClipboard, validateClipboardHtml } from "../src/document-clipboard";
 import { locateFieldMatches, locateMatches } from "../src/find-locate";
@@ -98,7 +98,6 @@ test("formatting and comment ranges preserve whole atoms beside astral character
   } finally { editor.destroy(); mount.remove(); }
 });
 
-
 test("editor paste remints note IDs and refuses malformed or duplicate atom HTML", () => {
   const mount = document.createElement("div"); document.body.append(mount);
   let refused = 0;
@@ -125,4 +124,17 @@ test("editor paste remints note IDs and refuses malformed or duplicate atom HTML
     expect(editor.serialize()).toBe(before);
     expect(refused).toBe(2);
   } finally { editor.destroy(); mount.remove(); }
+});
+
+test("legacy clipboard text drops marks without appending the recovery warning", () => {
+  const doc = schema.node("doc", null, [schema.node("paragraph", null, [
+    schema.text("Bold", [schema.marks.strong.create()]), schema.text(" and "),
+    schema.text("italic", [schema.marks.em.create()]),
+  ]), schema.node("paragraph", null, schema.text("Next paragraph"))]);
+  for (const content of [doc.content, doc.child(0).content]) {
+    const text = content === doc.content ? "Bold and italic\n\nNext paragraph" : "Bold and italic";
+    expect(clipboardPlaintext(content, plaintextLabels())).toBe(text);
+    expect(plaintext(content, plaintextLabels())).toBe(`${text}\n\n${plaintextLabels().loss}`);
+  }
+  expect(clipboardPlaintext(atomDoc().content, plaintextLabels())).toBe(plaintext(atomDoc().content, plaintextLabels()));
 });

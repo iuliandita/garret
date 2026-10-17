@@ -13,7 +13,7 @@ const structure = [
   { id: "later", parent_id: null, type: "chapter", title: "Later", rev: 7, depth: 0 },
 ];
 const task = () => new Promise(resolve => setTimeout(resolve, 0));
-function fixture(overrides: Partial<MobileDrafting> = {}, locale: "en" | "de" = "en", theme: "light" | "dark" = "light") {
+function fixture(overrides: Partial<MobileDrafting> = {}, locale: "en" | "de" = "en", theme: "light" | "dark" = "light", initialBody = body("Tide at dawn, tide at dusk")) {
   const host: MobileDrafting = {
     structure: async () => structure,
     rename: async () => scenes, move: async () => scenes,
@@ -27,7 +27,7 @@ function fixture(overrides: Partial<MobileDrafting> = {}, locale: "en" | "de" = 
   const mount = document.createElement("div"); document.body.append(mount);
   const workspace = createMobileWorkspace(mount, {
     bookTitle: "The Ferry", scenes, locale, theme,
-    initial: { item_id: "a", body: body("Tide at dawn, tide at dusk"), rev: 1, comments: [] },
+    initial: { item_id: "a", body: initialBody, rev: 1, comments: [] },
     loadDoc: async id => ({ item_id: id, body: body("A different tide"), rev: 1, comments: [] }),
     flush: async entries => { writes.push(...entries.map(entry => entry.body)); return entries.map(entry => ({ item_id: entry.item_id, rev: entry.base_rev + 1 })); },
     drafting: host, localDay: () => "2026-10-17", onLeave: () => {},
@@ -180,4 +180,55 @@ test("mobile tool reads wait for saved prose and pending operations block Back a
   const before = f.workspace.editor.serialize(); f.workspace.editor.typeChar("blocked"); expect(f.workspace.editor.serialize()).toBe(before);
   f.workspace.back(); expect(f.mount.querySelector<HTMLDialogElement>(".mobile-drafting")!.open).toBe(true); expect(await f.workspace.close()).toBe(false);
   answer(); const dialog = await ready(f.mount); expect(dialog.querySelector("textarea")!.value).toBe("Saved note"); await finish(f);
+});
+
+test("mobile scene snippets show context at each occurrence and label only attributes", async () => {
+  const prefix = "opening ".repeat(12), middle = " middle ".repeat(15), suffix = " ending ".repeat(12);
+  const text = `${prefix}tide${middle}tide${suffix}`;
+  const paragraph = { type: "paragraph", content: [{ type: "text", text }] };
+  const initialBody = JSON.stringify({ type: "doc", content: [paragraph, {
+    type: "paragraph", content: [{ type: "endnote", attrs: { id: "0199ed16-8c00-7000-8000-000000000001", fmt: "text", body: text } }],
+  }, { type: "figure", attrs: {
+    id: "0199ed16-8c00-7000-8000-000000000002", asset_id: "0199ed16-8c00-7000-8000-000000000003", width: "full", caption: text, alt: text,
+  } }] });
+  const f = fixture({}, "en", "light", initialBody);
+  try {
+    const dialog = await open(f, f.m.search); dialog.querySelector("input")!.value = "tide";
+    dialog.querySelector("form")!.dispatchEvent(new Event("submit", { cancelable: true }));
+    const snippets = [...dialog.querySelectorAll("nav button")].map(button => button.textContent);
+    const first = `…${text.slice(prefix.length - 35, prefix.length + 4 + 35)}…`;
+    const secondAt = prefix.length + 4 + middle.length;
+    const second = `…${text.slice(secondAt - 35, secondAt + 4 + 35)}…`;
+    expect(first).not.toBe(second);
+    expect(snippets).toEqual([first, second, ...["Endnotes", "Caption", "Alternative text"].flatMap(label => [`${label}: ${first}`, `${label}: ${second}`])]);
+  } finally { await finish(f); }
+});
+
+test("mobile book snippets omit the prose label while retaining attribute labels", async () => {
+  const f = fixture({ find: async () => ({ results: [{
+    item_id: "b", title: "Departure", snippet: "A different tide", matches: 2,
+    locators: [{ instance_id: null, field: "prose", from: 13, to: 17 },
+      { instance_id: "note", field: "note", from: 0, to: 4 }],
+  }], truncated: false, skipped: 0 }) });
+  try {
+    const dialog = await open(f, f.m.search); dialog.querySelector("input")!.value = "tide";
+    click(dialog, f.m.searchBook); await ready(f.mount);
+    expect([...dialog.querySelectorAll("nav small")].map(snippet => snippet.textContent)).toEqual(["A different tide", "Endnotes: tide"]);
+  } finally { await finish(f); }
+});
+
+test("mobile snippets center matches spanning joined paragraphs", async () => {
+  const prefix = "opening ".repeat(12), suffix = " ending ".repeat(12);
+  const initialBody = JSON.stringify({ type: "doc", content: [
+    { type: "paragraph", content: [{ type: "text", text: `${prefix}cross` }] },
+    { type: "paragraph", content: [{ type: "text", text: `boundary${suffix}` }] },
+  ] });
+  const f = fixture({}, "en", "light", initialBody);
+  try {
+    const dialog = await open(f, f.m.search); dialog.querySelector("input")!.value = "cross boundary";
+    dialog.querySelector("form")!.dispatchEvent(new Event("submit", { cancelable: true }));
+    expect([...dialog.querySelectorAll("nav button")].map(button => button.textContent)).toEqual([
+      `…${prefix.slice(-35)}cross boundary${suffix.slice(0, 35)}…`,
+    ]);
+  } finally { await finish(f); }
 });

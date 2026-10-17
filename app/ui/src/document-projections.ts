@@ -58,6 +58,14 @@ export interface PlaintextLabels {
 }
 
 export function plaintext(content: Fragment, labels: PlaintextLabels): string {
+  return serializePlaintext(content, labels, true);
+}
+
+export function clipboardPlaintext(content: Fragment, labels: PlaintextLabels): string {
+  return serializePlaintext(content, labels, false);
+}
+
+function serializePlaintext(content: Fragment, labels: PlaintextLabels, recovery: boolean): string {
   const blocks: string[] = [];
   const notes: string[] = [];
   let lossy = false;
@@ -69,11 +77,11 @@ export function plaintext(content: Fragment, labels: PlaintextLabels): string {
   };
   content.forEach(block => {
     if (!block.isInline) inline = false;
-    if (block.marks.length) lossy = true;
+    if (recovery && block.marks.length) lossy = true;
     if (block.type.name === "paragraph") {
       let text = "";
       block.forEach(child => {
-        if (child.isText) { text += child.text; if (child.marks.length) lossy = true; }
+        if (child.isText) { text += child.text; if (recovery && child.marks.length) lossy = true; }
         else if (child.type.name === "endnote") {
           notes.push(`[${notes.length + 1}] ${child.attrs.body as string}`);
           text += `[${notes.length}]`;
