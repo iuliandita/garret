@@ -3,11 +3,13 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import tomllib
 import zipfile
 
@@ -113,9 +115,8 @@ def collect(platform: str) -> None:
     print(out.relative_to(ROOT))
 
 
-def verify_downloads() -> None:
+def download_names() -> set[str]:
     value = check()
-    folder = ROOT / "app/dist-release/downloads"
     names = {
         f"garret-{value}-{suffix}"
         for suffix in ("linux-x86_64.tar.gz", "windows-x86_64.zip", "android.apk",
@@ -123,11 +124,16 @@ def verify_downloads() -> None:
                        "linux-x86_64.deb", "linux-x86_64.rpm", "linux-x86_64.AppImage",
                        "windows-x86_64-setup.exe", "macos-arm64.dmg", "macos-x86_64.dmg")
     }
-    expected = names | {f"{name}.sha256" for name in names}
+    return names | {f"{name}.sha256" for name in names}
+
+
+def verify_downloads() -> None:
+    folder = ROOT / "app/dist-release/downloads"
+    expected = download_names()
     actual = {path.name for path in folder.iterdir()}
     if actual != expected:
         raise ValueError(f"Incomplete or unexpected downloads: missing={sorted(expected - actual)}, extra={sorted(actual - expected)}")
-    for name in names:
+    for name in sorted(name for name in expected if not name.endswith(".sha256")):
         path = folder / name
         with path.open("rb") as stream:
             digest = hashlib.file_digest(stream, "sha256").hexdigest()
@@ -135,11 +141,67 @@ def verify_downloads() -> None:
             raise ValueError(f"Download checksum failed: {name}")
 
 
-def verify_remote_assets(names: set[str], complete: bool = False) -> None:
-    value = check()
+def write_manifest() -> None:
+    verify_downloads()
     folder = ROOT / "app/dist-release/downloads"
-    expected = {path.name for path in folder.iterdir()
-                if path.name.startswith(f"garret-{value}-") or path.name == "SHA256SUMS.txt"}
+    lines = []
+    for name in sorted(download_names()):
+        with (folder / name).open("rb") as stream:
+            digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        lines.append(f"{digest}  {name}\n")
+    (folder / "SHA256SUMS").write_text("".join(lines))
+
+
+def sign_manifest(allow_unsigned: bool = False) -> None:
+    folder = ROOT / "app/dist-release/downloads"
+    signature = folder / "SHA256SUMS.asc"
+    signature.unlink(missing_ok=True)
+    key = os.environ.get("RELEASE_GPG_PRIVATE_KEY", "")
+    if not key:
+        print("::warning::Release manifest signing skipped: RELEASE_GPG_PRIVATE_KEY is absent.")
+        if not allow_unsigned:
+            raise ValueError("Unsigned publication is blocked; configure release signing or explicitly set ALLOW_UNSIGNED_RELEASE=true.")
+        print("::warning::Unsigned publication explicitly allowed by ALLOW_UNSIGNED_RELEASE=true.")
+        return
+    with tempfile.TemporaryDirectory(prefix="release-gnupg-") as home:
+        env = {name: value for name, value in os.environ.items()
+               if name not in {"RELEASE_GPG_PRIVATE_KEY", "RELEASE_GPG_PASSPHRASE"}}
+        env["GNUPGHOME"] = home
+        command = ["gpg", "--batch", "--no-tty", "--no-options"]
+        def gpg(args: list[str], data: str | None = None) -> None:
+            try:
+                subprocess.run(command + args, input=data, text=True, env=env,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as error:
+                diagnostics = error.stderr or ""
+                for secret in (key, *key.splitlines(), os.environ.get("RELEASE_GPG_PASSPHRASE", "")):
+                    if secret:
+                        diagnostics = diagnostics.replace(secret, "[redacted]")
+                if diagnostics:
+                    print(diagnostics, file=sys.stderr)
+                raise
+        try:
+            gpg(["--import"], key)
+            gpg(["--pinentry-mode", "loopback", "--passphrase-fd", "0", "--armor",
+                 "--detach-sign", "--output", str(signature), str(folder / "SHA256SUMS")],
+                os.environ.get("RELEASE_GPG_PASSPHRASE", "") + "\n")
+            gpg(["--verify", str(signature), str(folder / "SHA256SUMS")])
+            for name in ("SECURITY.md", "README.md"):
+                if "Release signing key fingerprint: not yet published" in (ROOT / name).read_text():
+                    raise ValueError(f"Publish the release signing key fingerprint in {name} before signed publication.")
+        finally:
+            try:
+                subprocess.run(["gpgconf", "--kill", "gpg-agent"], env=env,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+            except OSError:
+                print("::warning::Could not stop the temporary GPG agent.", file=sys.stderr)
+
+
+def verify_remote_assets(names: set[str], complete: bool = False, allow_unsigned: bool = False) -> None:
+    folder = ROOT / "app/dist-release/downloads"
+    expected = download_names() | {"SHA256SUMS", "SHA256SUMS.asc"}
+    if allow_unsigned and not (folder / "SHA256SUMS.asc").exists():
+        expected.remove("SHA256SUMS.asc")
     if not names <= expected or (complete and names != expected):
         raise ValueError("The draft release has missing or unexpected assets; inspect it before publishing.")
 
@@ -149,7 +211,11 @@ if __name__ == "__main__":
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check").add_argument("--tag")
     commands.add_parser("verify-downloads")
-    commands.add_parser("verify-remote-assets").add_argument("--complete", action="store_true")
+    commands.add_parser("manifest")
+    commands.add_parser("sign-manifest").add_argument("--allow-unsigned", action="store_true")
+    remote = commands.add_parser("verify-remote-assets")
+    remote.add_argument("--complete", action="store_true")
+    remote.add_argument("--allow-unsigned", action="store_true")
     commands.add_parser("set-version").add_argument("version")
     commands.add_parser("collect").add_argument("platform", choices=["linux", "windows", "android", "macos-arm64", "macos-x86_64"])
     args = parser.parse_args()
@@ -158,9 +224,13 @@ if __name__ == "__main__":
             print(check(args.tag))
         elif args.command == "verify-remote-assets":
             assets = json.load(sys.stdin)["assets"]
-            verify_remote_assets({asset["name"] for asset in assets}, args.complete)
+            verify_remote_assets({asset["name"] for asset in assets}, args.complete, args.allow_unsigned)
         elif args.command == "verify-downloads":
             verify_downloads()
+        elif args.command == "manifest":
+            write_manifest()
+        elif args.command == "sign-manifest":
+            sign_manifest(args.allow_unsigned)
         elif args.command == "set-version":
             set_version(args.version)
         else:

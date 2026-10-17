@@ -105,6 +105,39 @@ and macOS `.dmg` installers alongside the portable archives. See the
 features and does not sync books automatically. Keep a backup before trying a
 new build.
 
+### Verify a download
+
+The next release adds a signed `SHA256SUMS` manifest and GitHub artifact
+attestations. Older releases may have only per-file checksums.
+
+Release signing key fingerprint: not yet published
+
+Once the public key is published, import it and compare its full fingerprint
+with this page and [SECURITY.md](SECURITY.md). Download `SHA256SUMS`,
+`SHA256SUMS.asc`, and the release files with their `.sha256` sidecars into
+one directory, then run:
+
+```sh
+gpg --verify SHA256SUMS.asc SHA256SUMS
+sha256sum -c SHA256SUMS
+gh attestation verify <file> --repo iuliandita/garret
+```
+
+If you downloaded only the files for your platform, check those present with:
+
+```sh
+sha256sum -c --ignore-missing SHA256SUMS
+```
+
+On macOS, use `shasum -a 256 -c --ignore-missing SHA256SUMS` instead.
+Missing files are skipped; confirm that each intended download reports `OK`.
+
+Replace `<file>` with each downloaded file, including the manifest and signature.
+The manifest covers all packaged downloads and checksum sidecars; it excludes
+itself and its detached signature. Checking the complete manifest requires all
+listed files. A missing signature means GPG verification is unavailable; see the
+[code signing policy](docs/SIGNING.md) for current platform signing and fallback.
+
 ### Android updates with Obtainium
 
 [Obtainium](https://github.com/ImranR98/Obtainium) installs each new Android

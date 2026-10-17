@@ -28,6 +28,22 @@ actual PR base, or the previous push commit. The release prepare job also runs
 the gate before packaging. Tag publication checks the complete range from the
 previous reachable alpha tag and publishes the same checked source commit.
 
+Release downloads are checked before `SHA256SUMS` is generated over all package
+files and checksum sidecars. The publish job signs the manifest using only the
+`release` environment secrets `RELEASE_GPG_PRIVATE_KEY` and
+`RELEASE_GPG_PASSPHRASE`, in a
+temporary GPG home that is removed after use. No key material is logged or
+uploaded. A missing key blocks publication unless the repository variable
+`ALLOW_UNSIGNED_RELEASE` is exactly `true`; a configured key that fails to sign
+or verify always blocks publication. A signed release also requires removing
+the unpublished fingerprint placeholder from both SECURITY.md and README.md.
+Configure environment restrictions before the first signed tag, as described
+in the signing policy. GitHub attestations cover the downloads,
+manifest, and available signature before release upload. Only the publish job
+has attestation and OIDC write permissions. The existing tag and CI eligibility
+checks still apply. See the [signing policy](SIGNING.md) and
+[verification instructions](../SECURITY.md#verifying-releases).
+
 An optional local hook can call `sh scripts/check-docs --base origin/develop`
 from an existing pre-push hook. Keep existing hook protections; do not replace
 them or change the repository's hook directory just to install this check.
