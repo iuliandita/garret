@@ -15,40 +15,46 @@
     "backup-recovery": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "d8b29ac84413295e1e34ad0232ddd54f61cbfb9095fcc2bfbaac46762586e3a5"
+        "docs/COMPATIBILITY.md": "871666f7dcb941937055035211fd9f8f8cf23239d91b430cc2647d4dbe5ace0e",
+        "docs/MAINTENANCE.md": "139f9bf616b0405f87734482d00d0a76d655e95d1e175c65c4e62a11cefd5eda"
       },
-      "migration": "",
+      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Preset metadata uses the existing meta table without a schema migration. Missing and unknown stored values retain novel behavior; unknown values remain stored verbatim. Backups, archive restores, transfer, and salvage preserve this metadata. Older builds need no preset conversion.",
       "no_impact": "",
-      "note": "Backup, portable transfer, and salvage retain preset metadata verbatim; the salvage export constructor keeps structured output.",
-      "source_sha256": "8a01555466ae01abe1997f5f424a45366eaca32344b83fb8359185522a0bf6ea"
+      "note": "Document complete book and profile backups, interrupted migration preservation, archive boundaries, and restoring separate pre-upgrade copies. Backup, archive restore, portable transfer, and salvage retain preset metadata verbatim.",
+      "source_sha256": "eba09c2895c4988b7b6b40a46edfb0d2195ce0fe1317a670b55ea6bf35ba059b"
     },
     "editor": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "d8b29ac84413295e1e34ad0232ddd54f61cbfb9095fcc2bfbaac46762586e3a5"
+        "docs/COMPATIBILITY.md": "871666f7dcb941937055035211fd9f8f8cf23239d91b430cc2647d4dbe5ace0e",
+        "docs/MAINTENANCE.md": "139f9bf616b0405f87734482d00d0a76d655e95d1e175c65c4e62a11cefd5eda"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Book creation offers three presets with themed controls; short fiction placement and nonfiction display labels follow saved metadata without renaming stored reference sections.",
-      "source_sha256": "944f696885174118f3476cf3feedef59169b07a4f40ef86f61542dd0e0ff7c5e"
+      "note": "Book creation offers three presets with aligned themed controls. Nonfiction reference labels preserve custom titles and fiction tools remain available under More; switching to a novel restores Cast.",
+      "source_sha256": "a40535ba083ddf56c87c3552f120502a8088b74d6d4f22522a871f978f4500ec"
     },
     "encryption": {
       "breaking": "none",
-      "docs": {},
+      "docs": {
+        "docs/COMPATIBILITY.md": "871666f7dcb941937055035211fd9f8f8cf23239d91b430cc2647d4dbe5ace0e",
+        "docs/MAINTENANCE.md": "139f9bf616b0405f87734482d00d0a76d655e95d1e175c65c4e62a11cefd5eda"
+      },
       "migration": "",
-      "no_impact": "Preset metadata and single-scene formatting do not change archive encryption, keys, passwords, or protection behavior.",
-      "note": "Preset metadata and single-scene formatting do not change archive encryption, keys, passwords, or protection behavior.",
-      "source_sha256": "3de071163792f42498cde75496e4894e6649599b1f5d949390410cf68e8a3c9a"
+      "no_impact": "",
+      "note": "Encrypted archive restore preserves optional preset metadata, including unknown stored values, while encryption, keys, passwords, and working-file protection boundaries remain unchanged.",
+      "source_sha256": "3e1bcb841f885c8386601525e587497470ba05f1e73747d7b270eb0df149ae34"
     },
     "maintenance": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "d8b29ac84413295e1e34ad0232ddd54f61cbfb9095fcc2bfbaac46762586e3a5"
+        "docs/COMPATIBILITY.md": "871666f7dcb941937055035211fd9f8f8cf23239d91b430cc2647d4dbe5ace0e",
+        "docs/MAINTENANCE.md": "139f9bf616b0405f87734482d00d0a76d655e95d1e175c65c4e62a11cefd5eda"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Desktop creation and export paths implement preset defaults; focused regression fixtures cover single-scene formatting and structured export behavior.",
-      "source_sha256": "081dd3f3aee3c04a89fdcac523829f99741714e1809719c568c00c5b4c7c9c95"
+      "note": "Preserve full-range migration, backup, and rollback assessments when adding optional preset metadata. Focused fixtures cover preset creation, export formatting, and metadata recovery.",
+      "source_sha256": "ff46a86eaa7804e393465e1146b29d1f91c669e5812bde3e9890bbfaf20e5d0f"
     },
     "native-packaging": {
       "breaking": "none",
@@ -61,22 +67,24 @@
     "project-format": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "d8b29ac84413295e1e34ad0232ddd54f61cbfb9095fcc2bfbaac46762586e3a5"
+        "docs/COMPATIBILITY.md": "871666f7dcb941937055035211fd9f8f8cf23239d91b430cc2647d4dbe5ace0e",
+        "docs/MAINTENANCE.md": "139f9bf616b0405f87734482d00d0a76d655e95d1e175c65c4e62a11cefd5eda"
       },
-      "migration": "",
+      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Preset metadata uses the existing meta table without a schema migration. Missing and unknown stored values retain novel behavior; unknown values remain stored verbatim. Backups, archive restores, transfer, and salvage preserve this metadata. Older builds need no preset conversion.",
       "no_impact": "",
-      "note": "Optional preset metadata preserves unknown values; export fixtures distinguish one-scene output from structured manuscripts with contents and styling.",
-      "source_sha256": "0b1b008484c10fe21da5a4cbf8cdbd9dd8a7a1eb858f30886be52a482f2ba13b"
+      "note": "Document bounded foreign DOCX expansion and unchanged manuscript schema, and require source-bound review for project-format changes. Optional preset metadata preserves unknown values; single-scene exports keep author-written titles, matter navigation, and enabled drop caps while omitting generated contents and scaffold headings.",
+      "source_sha256": "3c27e68019ab9a9a181eecc40a27c392de98ee40d991fccc1d78a1d692bbbf4d"
     },
     "schema": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "d8b29ac84413295e1e34ad0232ddd54f61cbfb9095fcc2bfbaac46762586e3a5"
+        "docs/COMPATIBILITY.md": "871666f7dcb941937055035211fd9f8f8cf23239d91b430cc2647d4dbe5ace0e",
+        "docs/MAINTENANCE.md": "139f9bf616b0405f87734482d00d0a76d655e95d1e175c65c4e62a11cefd5eda"
       },
-      "migration": "",
+      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Preset metadata uses the existing meta table without a schema migration. Missing and unknown stored values retain novel behavior; unknown values remain stored verbatim. Backups, archive restores, transfer, and salvage preserve this metadata. Older builds need no preset conversion.",
       "no_impact": "",
-      "note": "Preset metadata uses the existing meta table without changing schema version 17 or introducing a migration.",
-      "source_sha256": "eca024df1f2c3a03e32285659e06b22de854725f42999a3afd3d395fabbaaedc"
+      "note": "Document current SQLite schema 17 and profile migration compatibility, backup, upgrade, and rollback limits; introduce conservative migration review obligations. Project presets use the existing meta table without changing schema 17 or introducing a migration.",
+      "source_sha256": "9fc1ff179e06c0b79e37af9ae07f82c8d560b6d7f23f0944ddd6a3f6a35d93d1"
     }
   },
   "version": 1

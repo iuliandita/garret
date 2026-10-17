@@ -37,12 +37,18 @@ with one scene at the root; nonfiction uses the non-fiction book design and
 keeps fiction tools under Planning > More. Reference notes use the same stored
 section as the Bible. Existing books and their data are unchanged.
 
-A manuscript consisting of one scene, optionally inside its chapter and part, exports without generated contents or
-outline headings in Markdown, EPUB, PDF proof, and Word. Front and back matter
-still export with their headings. EPUB keeps its required navigation document
-outside the reading spine. Adding another scene or a separate section restores normal outline
-headings and contents. These are export defaults, not changes to saved prose.
-Complete backups, salvage, and portable book copies retain the metadata key.
+A manuscript consisting of one scene, optionally inside its chapter and part,
+exports without generated contents in Markdown, EPUB, PDF proof, and Word.
+Only empty or automatically numbered outline headings are omitted; titles
+written by the author still export. Front and back matter keep their headings
+and EPUB navigation entries. EPUB omits body entries from its navigation
+document and keeps that document outside the reading spine. The first scene
+paragraph keeps its drop cap when enabled by the book design; an ornament is
+omitted with its heading, and PDF running heads fall back to the book title.
+Adding another scene or a separate section restores normal outline headings
+and contents. These are export defaults, not changes to saved prose.
+Complete backups, encrypted archive restores, salvage, and portable book
+copies retain the metadata key verbatim.
 Use the closed-book backup and disposable-copy upgrade steps above; rollback
 to an older desktop build needs no preset conversion. Android preset support
 is handled separately; do not assume an older Android build understands it.
