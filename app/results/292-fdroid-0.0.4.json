@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-17",
+  "package": "com.usegarret.app",
+  "version_name": "0.0.4",
+  "version_code": 4,
+  "source": {
+    "tag": "v0.0.4",
+    "commit": "440929f5a3a1e03779f9dec4385bbd17b926cabb",
+    "application_source_modified": false
+  },
+  "buildserver_image": "registry.gitlab.com/fdroid/fdroidserver@sha256:9cb68105642ca4e7b295f0ceab10f069f5b3247dc18fa7c36046e9d81aa469a8",
+  "fdroidserver_commit": "5806784d0d43bed7b938fd4b327162da68927060",
+  "jdk": "Debian OpenJDK 21.0.12.1+1-1-deb13u1-Debian",
+  "reproducible_apk_tools_commit": "9401d827a2404827ec3de6cb90a879d9fbd3f60d",
+  "environment": {
+    "serialized": true,
+    "cpu_limit": 8,
+    "filesystem": "disorderfs --sort-dirents=yes --reverse-dirents=no",
+    "disk_backed_build_directory": true,
+    "compilation_and_dependency_caches_reused": true,
+    "source_and_srclib_checkouts_prepopulated_for_on_server": true
+  },
+  "commands": [
+    {
+      "command": "fdroid lint com.usegarret.app",
+      "exit_code": 0
+    },
+    {
+      "command": "fdroid rewritemeta com.usegarret.app",
+      "exit_code": 0
+    },
+    {
+      "command": "fdroid build --verbose --test --on-server com.usegarret.app:4",
+      "exit_code": 0
+    },
+    {
+      "command": "fdroidserver.common.verify_apks (apksigcopier.do_copy and apksigner)",
+      "exit_code": 0
+    }
+  ],
+  "published_apk": {
+    "url": "https://github.com/iuliandita/garret/releases/download/v0.0.4/garret-0.0.4-android.apk",
+    "sha256": "f7e11bb6ba0b3e2b52f358b5439ee4eff035c6e2cba330d8843661c42918a56b",
+    "certificate_sha256": "bddd339d8832a6378dbd0471e41a3d2148f4411fa8b004c6b5524c93f6684a92"
+  },
+  "normalized_unsigned_apk": {
+    "sha256": "e96d3e808cc156f282797c98fef235b70ca949135398a637cd01ca5a2682f0e6",
+    "entries": 958
+  },
+  "signature_copy": {
+    "verified": true,
+    "byte_identical_to_published": true,
+    "sha256": "f7e11bb6ba0b3e2b52f358b5439ee4eff035c6e2cba330d8843661c42918a56b"
+  },
+  "resolved_differences": [
+    "Tauri CSP script hashes followed filesystem traversal order; sorted disorderfs traversal reproduces both native libraries.",
+    "apksigner 35+ alignment extra fields differ from AGP zero padding; pinned zipalign.py --page-size 16 --pad-like-apksigner --replace reproduces ZIP layout."
+  ],
+  "remaining_owner_steps": [
+    "Submit metadata to fdroiddata from the owner account.",
+    "Test a GitHub-to-F-Droid update on a disposable device/profile without clearing app data.",
+    "Obtain F-Droid maintainer acceptance and AntiFeatures classification."
+  ],
+  "gitlab_submission_performed": false
+}

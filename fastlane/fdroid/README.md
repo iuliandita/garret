@@ -165,3 +165,27 @@ APK byte-identical to the published release, with SHA-256
 `f7e11bb6ba0b3e2b52f358b5439ee4eff035c6e2cba330d8843661c42918a56b`.
 `apksigner verify --print-certs` passed and confirmed the retained certificate
 fingerprint above. No application source fix or replacement release is needed.
+
+The [2026-10-17 official-builder receipt](../../app/results/292-fdroid-0.0.4.json)
+records the final recipe run. `fdroid lint`, `fdroid rewritemeta` and
+`fdroid build --verbose --test --on-server com.usegarret.app:4` all exited 0.
+The build's automatic reference-binary comparison and allowed-signer check
+passed. An explicit `fdroidserver.common.verify_apks` check, using
+`apksigcopier.do_copy` and `apksigner`, also exited 0. The normalized unsigned
+APK has 958 entries and SHA-256
+`e96d3e808cc156f282797c98fef235b70ca949135398a637cd01ca5a2682f0e6`.
+The signature-copied APK is byte-identical to the published APK above.
+
+The final run used a fresh official container and source checkout with reused
+dependency/compilation caches, a pre-populated pinned srclib, and disk-backed
+build storage. An earlier sorted attempt exhausted the host's temporary
+filesystem; retain build logs and use sufficient disk space. All heavy work
+was serialized. No signing material or host GitLab credentials were mounted,
+and no GitLab submission was made.
+
+Remaining owner work is steps 2-6 above: submit the metadata from your own
+fdroiddata fork, retain these receipts and build logs, and test installation
+over the GitHub build on a disposable device/profile with sample writing.
+Successful signature verification establishes APK identity; the device update
+and data-retention check has not been performed here. Future releases still
+need a fresh comparison, including filesystem ordering and signature layout.
