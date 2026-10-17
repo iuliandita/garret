@@ -7,8 +7,27 @@ The preview creates books and scenes, edits prose with basic formatting, and
 saves locally. It includes light/dark appearances and English/German labels
 selected from the device language. No account is needed.
 
-Use sample writing. This preview has no import/export, sync, or desktop
-review/publishing tools. Uninstalling or clearing app data deletes local books;
+Use sample writing. In a book, **Outline > Export book** saves a complete
+encrypted desktop-compatible archive through the system picker. Save a new
+recovery key first or choose an existing key, and keep it separately. In the
+library, **Import archive** reads the archive and key, previews its title and
+related copies, then adds a separate book after confirmation. Existing copies
+are never replaced. There is no sync or desktop review/publishing toolset.
+Only novel projects are editable; unsupported presets are refused before opening.
+The phone accepts at most 1 GiB archives and 512 MiB contents, with extra free
+space needed for verification and a separate owned copy.
+
+Cancellation waits for the original native operation. Close an open system
+picker to let cancellation finish. Provider write, close or readback failures
+leave the destination unverified. The app attempts to delete documents it created
+on failure. Terminal cleanup removes keys and plaintext; only ciphertext from an
+uncertain provider write is retained. Startup sweeps disposable stages, and the
+library offers **Discard leftover transfer files** without deleting books. A
+blocked provider close requires restarting the app before another transfer.
+Android transfer is not certified on physical devices.
+See [compatibility and recovery](../../docs/COMPATIBILITY.md) for limits.
+
+Uninstalling or clearing app data deletes local books;
 platform backup is disabled. Installation requires API 24 or newer, but this
 does not certify every such device. Book publication requires kernel support
 for atomic no-replace rename; older unsupported kernels refuse creation.
@@ -56,6 +75,10 @@ checks signature/alignment, and writes a source-bound directory under
 key is generated on first local use. CI release builds refuse missing signing
 material; build-only CI runs explicitly use a disposable key. Keep the signing key and password private and backed up;
 losing them prevents in-place updates. Do not share generated signing material.
+This source stays at 0.0.2/version code 2 with the existing `cc.local.app`
+identifier. Release preparation must raise both to 0.0.3/code 3 for an in-place
+update with the same signing key. Native update and file-provider round trips
+require their own runtime checks.
 
 ## Isolated runtime check
 

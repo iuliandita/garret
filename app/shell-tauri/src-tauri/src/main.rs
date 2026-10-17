@@ -73,6 +73,14 @@ mod salvage;
 mod store;
 mod strings;
 mod validation;
+#[cfg(test)]
+mod mobile;
+#[cfg(test)]
+mod mobile_saf;
+#[cfg(test)]
+mod mobile_core;
+#[cfg(test)]
+mod mobile_transfer;
 mod transfer_copy;
 mod transfer_publish;
 #[cfg(test)]

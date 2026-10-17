@@ -73,3 +73,14 @@ body { margin: 0; }
   .mobile-scene-title { margin-bottom: 12px; }
   .mobile-header { padding-block: 0; }
 }
+
+.mobile-transfer { border: 0; border-radius: 16px; padding: 24px; width: min(94vw, 600px); max-height: 90dvh; height: auto; overflow-y: auto; margin: auto; }
+.mobile-transfer:not([open]) { display: none; }
+.mobile-transfer::backdrop { background: rgb(0 0 0 / .5); }
+.mobile-transfer h2 { margin: 0; font: 24px/1.3 Georgia, serif; }
+.mobile-transfer p, .mobile-transfer li { line-height: 1.5; overflow-wrap: anywhere; }
+.mobile-transfer [role="status"] { min-height: 3em; }
+.mobile-transfer-actions { display: grid; gap: 12px; }
+.mobile-transfer-actions button { background: var(--selected); text-align: start; }
+
+.mobile-book-name small { display: block; margin-top: 4px; font: 13px/1.4 system-ui, sans-serif; color: var(--muted); }

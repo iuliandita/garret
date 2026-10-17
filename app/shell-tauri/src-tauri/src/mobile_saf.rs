@@ -5,8 +5,11 @@ use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 use tauri::{
     plugin::{Builder, PluginHandle, TauriPlugin},
-    Manager, Runtime,
+    Runtime,
 };
+
+#[cfg(target_os = "android")]
+use tauri::Manager;
 
 pub(crate) const ARCHIVE_LIMIT: u64 = 1024 * 1024 * 1024;
 pub(crate) const KEY_LIMIT: u64 = 512;
@@ -80,9 +83,12 @@ pub(crate) fn init<R: Runtime>() -> TauriPlugin<R> {
             true
         })
         .setup(|app, api| {
+            #[cfg(target_os = "android")]
             app.manage(Bridge(
                 api.register_android_plugin("cc.local.app", "TransferPlugin")?,
             ));
+            #[cfg(not(target_os = "android"))]
+            let _ = (app, api);
             Ok(())
         })
         .build()
@@ -104,6 +110,19 @@ pub(crate) fn stage_dir(data_home: &Path, stage_id: &str) -> Result<PathBuf, Str
     Ok(data_home.join("transfer").join(stage_id))
 }
 impl Receipt {
+    fn validate_write(
+        &self,
+        operation: &str,
+        stage_id: &str,
+        bytes: u64,
+        sha256: &str,
+    ) -> Result<(), String> {
+        self.validate(operation, stage_id, bytes, true)?;
+        if self.bytes != bytes || self.sha256 != sha256 {
+            return Err("transfer export is unverified".into());
+        }
+        Ok(())
+    }
     fn validate(
         &self,
         operation: &str,
@@ -129,17 +148,40 @@ impl<R: Runtime> Bridge<R> {
         command: &'static str,
         payload: Value,
     ) -> Result<T, String> {
-        let handle = self.0.clone();
-        // Tauri 2.11.5 unwraps its oneshot send: dropping that future before a late
-        // native reply can panic. Dropping our caller only detaches this draining task.
-        tauri::async_runtime::spawn(async move {
-            handle
-                .run_mobile_plugin_async(command, payload)
-                .await
-                .map_err(|_| "native transfer failed or was cancelled".to_string())
-        })
-        .await
-        .map_err(|_| "native transfer task failed".to_string())?
+        #[cfg(not(target_os = "android"))]
+        {
+            let _ = (command, payload);
+            return Err("native transfer requires Android".into());
+        }
+        #[cfg(target_os = "android")]
+        {
+            let handle = self.0.clone();
+            // Tauri 2.11.5 unwraps its oneshot send: dropping that future before a late
+            // native reply can panic. Dropping our caller only detaches this draining task.
+            tauri::async_runtime::spawn(async move {
+                handle
+                    .run_mobile_plugin_async(command, payload)
+                    .await
+                    .map_err(|error| match error {
+                        tauri::plugin::mobile::PluginInvokeError::InvokeRejected(reply)
+                            if matches!(
+                                reply.code.as_deref(),
+                                Some(
+                                    "transfer_too_large"
+                                        | "transfer_storage"
+                                        | "transfer_restart"
+                                        | "transfer_not_started"
+                                )
+                            ) =>
+                        {
+                            reply.code.unwrap()
+                        }
+                        _ => "transfer_provider".to_string(),
+                    })
+            })
+            .await
+            .map_err(|_| "native transfer task failed".to_string())?
+        }
     }
     /// After a successful pick, recheck generation/privacy before invoking read or write.
     pub(crate) async fn pick(
@@ -203,11 +245,8 @@ impl<R: Runtime> Bridge<R> {
         if ticket.mode != Mode::Create || bytes > ticket.kind.limit() || !hash_ok(sha256) {
             return Err("invalid transfer write admission".into());
         }
-        let reply: Receipt = self.call("writeVerified", json!({"operation":ticket.operation,"ticket":ticket.ticket,"stageId":stage_id,"maxBytes":ticket.kind.limit(),"expectedBytes":bytes,"expectedSha256":sha256})).await.map_err(|_| "transfer export is unverified".to_string())?;
-        reply.validate(&ticket.operation, stage_id, bytes, true)?;
-        if reply.bytes != bytes || reply.sha256 != sha256 {
-            return Err("transfer export is unverified".into());
-        }
+        let reply: Receipt = self.call("writeVerified", json!({"operation":ticket.operation,"ticket":ticket.ticket,"stageId":stage_id,"maxBytes":ticket.kind.limit(),"expectedBytes":bytes,"expectedSha256":sha256})).await?;
+        reply.validate_write(&ticket.operation, stage_id, bytes, sha256)?;
         Ok(reply)
     }
     /// This acknowledges cancellation admission only. Retain and await the original
@@ -256,6 +295,21 @@ mod tests {
         assert!(receipt.validate("other", id, 512, true).is_err());
         assert!(receipt.validate(id, id, 511, true).is_err());
         assert!(receipt.validate(id, id, 512, false).is_err());
+        assert!(receipt.validate_write(id, id, 512, &"a".repeat(64)).is_ok());
+        for (bytes, hash, verified) in [
+            (511, "a".repeat(64), true),
+            (512, "b".repeat(64), true),
+            (512, "a".repeat(64), false),
+        ] {
+            let failed = Receipt {
+                operation: id.into(),
+                stage_id: id.into(),
+                bytes,
+                sha256: hash,
+                verified,
+            };
+            assert!(failed.validate_write(id, id, 512, &"a".repeat(64)).is_err());
+        }
         receipt.sha256 = "A".repeat(64);
         assert!(receipt.validate(id, id, 512, true).is_err());
         assert!(serde_json::from_value::<Receipt>(json!({"operation":id,"stageId":id,"bytes":1,"sha256":"a".repeat(64),"verified":true,"uri":"content://provider"})).is_err());

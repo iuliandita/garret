@@ -509,6 +509,75 @@ impl Store {
             path,
             rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
         )?;
+        Self::readonly_connection(conn)
+    }
+
+    pub(crate) fn open_mobile_probe(path: &Path) -> Result<Store> {
+        use std::io::Read;
+        let invalid = || StoreError::Corrupt("cannot inspect book header".into());
+        let meta = std::fs::symlink_metadata(path).map_err(|_| invalid())?;
+        if !meta.is_file() || meta.file_type().is_symlink() {
+            return Err(invalid());
+        }
+        let mut header = [0u8; 100];
+        std::fs::File::open(path)
+            .map_err(|_| invalid())?
+            .read_exact(&mut header)
+            .map_err(|_| invalid())?;
+        if &header[..16] != b"SQLite format 3\0" {
+            return Err(invalid());
+        }
+        let version = u32::from_be_bytes(header[60..64].try_into().unwrap()) as i64;
+        if version > SCHEMA_VERSION {
+            return Err(StoreError::NewerSchema {
+                found: version,
+                supported: SCHEMA_VERSION,
+            });
+        }
+        if std::fs::symlink_metadata(path.with_extension("db-journal"))
+            .is_ok_and(|meta| meta.len() > 0)
+        {
+            return Err(invalid());
+        }
+        let wal = path.with_extension("db-wal");
+        let pending = match std::fs::symlink_metadata(&wal) {
+            Ok(meta) if meta.is_file() && !meta.file_type().is_symlink() => meta.len() > 0,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+            _ => return Err(invalid()),
+        };
+        // A closed database needs no sidecars. A live WAL probe must not create its index.
+        let suffix = if pending {
+            "?mode=ro&readonly_shm=1"
+        } else {
+            "?mode=ro&immutable=1"
+        };
+        if pending {
+            let meta =
+                std::fs::symlink_metadata(path.with_extension("db-shm")).map_err(|_| invalid())?;
+            if !meta.is_file() || meta.file_type().is_symlink() {
+                return Err(invalid());
+            }
+        }
+        let mut uri = String::from("file:");
+        for byte in path.as_os_str().as_encoded_bytes() {
+            if byte.is_ascii_alphanumeric() || b"/-_.~".contains(byte) {
+                uri.push(*byte as char);
+            } else {
+                use std::fmt::Write;
+                write!(uri, "%{byte:02X}").unwrap();
+            }
+        }
+        uri.push_str(suffix);
+        let conn = Connection::open_with_flags(
+            uri,
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY
+                | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX
+                | rusqlite::OpenFlags::SQLITE_OPEN_URI,
+        )?;
+        Self::readonly_connection(conn)
+    }
+
+    fn readonly_connection(conn: Connection) -> Result<Store> {
         conn.pragma_update(None, "busy_timeout", 5000)?;
         register_collations(&conn)?;
         let store = Store { conn };

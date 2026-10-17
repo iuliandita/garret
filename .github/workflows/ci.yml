@@ -44,6 +44,7 @@ jobs:
       - run: bunx tsc --noEmit -p app/tsconfig.json
       - run: bun test ./app/ui
       - run: bun test ./app/harness
+      - run: bun test ./app/mobile-ui/test
       - run: bun run build
         working-directory: app/ui
 

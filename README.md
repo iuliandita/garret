@@ -217,6 +217,30 @@ local recovery copy; it cannot protect your work if you lose the device.
 garret remembers the backup destination folder. Making and saving each archive
 is manual. **Restore encrypted archive** restores it as a separate book.
 
+### Move a book between desktop and Android
+
+On Android, open the book, open **Outline**, then choose **Export book**.
+Use an existing recovery key, or save a new key first. Keep the key separately
+from the archive. The app saves a complete encrypted `.age` archive through
+the system file picker, including picture and retained research originals.
+A successful export means the chosen file was closed and read back with the
+same length and hash; it does not verify a provider's later cloud upload.
+On desktop, use **Restore encrypted archive** with that archive and key.
+
+To move a desktop book onto the phone, make an encrypted archive on desktop,
+then choose **Import archive** in the Android library. Pick the archive and
+its separate key, review the book title and any related local copies, and
+choose **Keep both as separate books** (or **Import as a separate book**).
+Open the new copy from the library. Existing books and source files stay intact.
+This is a manual copy, not synchronization or merging.
+
+The phone accepts archives up to 1 GiB and contents up to 512 MiB, with extra
+private storage required for verification and copying. This Android version
+supports only absent or `novel` project presets; other presets are refused
+before editable opening. See [compatibility and recovery](docs/COMPATIBILITY.md)
+for interrupted transfers, leftover-file disposal, updates, and verification
+limits. Android transfer is not certified on physical devices.
+
 ### If a backup was interrupted
 
 Open the error's **Details** for the exact parent directory and retained folder.

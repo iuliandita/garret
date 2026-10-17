@@ -63,7 +63,7 @@ class MainActivity : TauriActivity() {
                     moveTaskToBack(true)
                     return
                 }
-                view.evaluateJavascript("window.__mobileWriting === true") { writing ->
+                view.evaluateJavascript("window.__mobileWriting === true || window.__mobileTransfer === true") { writing ->
                     if (writing == "true") {
                         view.evaluateJavascript("window.dispatchEvent(new Event('mobile-back'))", null)
                     } else {

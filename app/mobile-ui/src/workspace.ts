@@ -29,6 +29,7 @@ export interface MobileWorkspaceOptions {
   flush(entries: FlushEntry[], attribution?: FlushAttribution[]): Promise<FlushAck[]>;
   createScene?(title: string): Promise<{ scenes: MobileScene[]; item_id: string }>;
   localDay(): string;
+  exportBook?(): Promise<void>;
   beforeLeave?(): Promise<void>;
   onLeave(): void;
 }
@@ -269,6 +270,19 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
         finally { setBusy(false); }
       })();
     });
+  }
+  if (opts.exportBook) {
+    const transfer = document.createElement("button"); transfer.type = "button"; transfer.textContent = m.exportBook;
+    transfer.addEventListener("click", () => {
+      if (busy || closed) return;
+      setBusy(true);
+      void (async () => {
+        if (!await drain()) { showError(m.saveError); return; }
+        if (outline.open) outline.close();
+        await opts.exportBook!();
+      })().catch(() => showError(m.operationError)).finally(() => setBusy(false));
+    });
+    outline.append(transfer);
   }
   function sceneChanged() {
     const id = session.activeDocId();
