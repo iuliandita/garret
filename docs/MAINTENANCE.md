@@ -67,6 +67,17 @@ developer-signed release. Local determinism alone does not establish F-Droid
 reproducibility. Follow the [F-Droid maintainer checklist](../fastlane/fdroid/README.md)
 before submitting or enabling the disabled draft recipe.
 
+The display-gated proof paginator test has a 300-second process timeout and a
+30-second kill grace. A timeout fails the required host job with a process
+snapshot; the GTK main-loop timer alone cannot bound a blocked main loop.
+The underlying intermittent hang remains tracked in #324.
+
+macOS packaging retries the specific hdiutil resource-busy creation failure up
+to three attempts, waiting 10 seconds between attempts. It prints disk-image
+diagnostics and detaches only images from the current build's bundle directory.
+Other bundler failures stop immediately. Signing, content verification and
+release eligibility checks still apply.
+
 ## Source impact and assessments
 
 The single domain map lives in scripts/check-docs.py. Inspect it with

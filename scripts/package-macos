@@ -132,7 +132,39 @@ ditto -c -k --sequesterRsrc --keepParent "$stage" "$archive"
 (cd "$build" && shasum -a 256 "$(basename "$archive")" > "$(basename "$archive").sha256")
 check_source
 rm -rf "$repo/app/shell-tauri/src-tauri/target/$target/release/bundle"
-(cd "$repo/app/shell-tauri" && CARGO_TARGET_DIR="$repo/app/shell-tauri/src-tauri/target" bun "$repo/node_modules/@tauri-apps/cli/tauri.js" bundle --ci --no-binary-patching --target "$target" --bundles dmg)
+dmg_root="$repo/app/shell-tauri/src-tauri/target/$target/release/bundle"
+for attempt in 1 2 3; do
+  log="$build/dmg-attempt-$attempt.log"
+  if (cd "$repo/app/shell-tauri" && CARGO_TARGET_DIR="$repo/app/shell-tauri/src-tauri/target" bun "$repo/node_modules/@tauri-apps/cli/tauri.js" bundle --ci --no-binary-patching --target "$target" --bundles dmg) 2>&1 | tee "$log"; then
+    break
+  else
+    status=$?
+    hdiutil info || true
+    [[ "$attempt" -lt 3 ]] && grep -Fq 'hdiutil: create failed - Resource busy' "$log" || exit "$status"
+    printf 'DMG creation was busy (attempt %s/3); detaching build images and retrying in 10 seconds.\n' "$attempt" >&2
+    # Never detach unrelated images mounted on a developer's Mac.
+    hdiutil info -plist > "$build/hdiutil.plist"
+    devices=$(python3 - "$build/hdiutil.plist" "$dmg_root" <<'PYTHON'
+import plistlib
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[2]).resolve()
+with open(sys.argv[1], "rb") as source:
+    for image in plistlib.load(source).get("images", []):
+        if root in Path(image.get("image-path", "")).resolve().parents:
+            for entity in image.get("system-entities", []):
+                if entity.get("mount-point", "").startswith("/Volumes/"):
+                    print(entity["dev-entry"])
+PYTHON
+)
+    while IFS= read -r device; do
+      [[ -n "$device" ]] || continue
+      hdiutil detach "$device" || hdiutil detach -force "$device" || fail "Could not detach build image $device."
+    done <<< "$devices"
+    sleep 10
+  fi
+done
 python3 "$here/collect-installers.py" "macos-$architecture" "$repo/app/shell-tauri/src-tauri/target/$target/release/bundle" "$build"
 check_source
 rm "$build/INCOMPLETE.txt"
