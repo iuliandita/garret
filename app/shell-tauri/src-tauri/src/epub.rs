@@ -387,21 +387,6 @@ const ATOM_CSS: &str = "figure { margin: 1.5em 0; break-inside: avoid; }\n\
     hr.scene-break::after { content: '* * *'; }\n\
     a.noteref { vertical-align: super; font-size: smaller; }\n";
 
-fn document_locations(book: &Book) -> HashMap<String, String> {
-    let mut number = 0;
-    book.front
-        .iter()
-        .chain(book.chapters)
-        .chain(book.back)
-        .map(|(id, _, depth)| {
-            if *depth <= 0 || number == 0 {
-                number += 1;
-            }
-            (id.clone(), format!("{number:04}.xhtml"))
-        })
-        .collect()
-}
-
 fn render_blocks(
     plan: &crate::publication_plan::Plan,
     item: &str,
@@ -476,7 +461,7 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
             &fallback
         }
     };
-    let locations = document_locations(epub.book);
+    let mut locations = HashMap::new();
     let mut note_navigation = Vec::new();
     let contents = crate::export::contents_of(epub.book);
     let ornament = epub.style.glyph.as_deref().and_then(glyph_ornament);
@@ -505,15 +490,12 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
         (epub.book.back, "backmatter"),
     ];
     let mut anchor = 0usize;
+    let mut layout = Vec::new();
     for (run_index, (run, epub_type)) in runs.into_iter().enumerate() {
-        let mut opening_pending = false;
-        for (id, title, depth) in run {
+        for row @ (id, title, depth) in run {
             anchor += 1;
-            let level = crate::export::heading_level(*depth);
             let opens = *depth <= 0 || docs.is_empty();
             let scaffold_free = epub.book.suppresses_heading(run_index, title);
-            let styled = !scaffold_free && run_index == 1 && epub.openings.styled.contains(id);
-            let page = !scaffold_free && run_index == 1 && epub.openings.page.contains(id);
             if opens {
                 docs.push(Doc {
                     href: format!("{:04}.xhtml", docs.len() + 1),
@@ -527,98 +509,112 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
                     body: String::new(),
                 });
             }
-            if epub.book.single_scene && run_index == 1 {
-                opening_pending = run.last().is_some_and(|(last, _, _)| last == id);
-            } else if opens || styled || page { opening_pending = styled; }
-            let doc = docs.last_mut().expect("a document was opened above");
-            let fragment = format!("h{anchor}");
-            targets.insert(id.clone(), format!("{}#{fragment}", doc.href));
-            // A spine document already begins on a new page, so only a typed
-            // part or chapter within that document needs the break class.
-            // The first block of the opening carries the break and the sink:
-            // the ornament when it sits above the title, else the heading.
-            let ornament_here = styled.then_some(ornament).flatten();
-            let above = ornament_here.is_some() && epub.style.ornament_above;
-            let mut lead = Vec::new();
-            if page && !opens { lead.push(START_CLASS); }
-            if styled {
-                match epub.style.sink {
-                    Sink::None => {}
-                    Sink::Third => lead.push(SINK_THIRD_CLASS),
-                    Sink::Half => lead.push(SINK_HALF_CLASS),
-                }
+            let doc = docs.last().expect("a document was opened above");
+            locations.insert(id.clone(), doc.href.clone());
+            layout.push((run_index, docs.len() - 1, opens, anchor, row));
+        }
+    }
+    let mut previous_run = None;
+    let mut opening_pending = false;
+    for (run_index, doc_index, opens, anchor, (id, title, depth)) in layout {
+        if previous_run != Some(run_index) {
+            previous_run = Some(run_index);
+            opening_pending = false;
+        }
+        let level = crate::export::heading_level(*depth);
+        let scaffold_free = epub.book.suppresses_heading(run_index, title);
+        let styled = !scaffold_free && run_index == 1 && epub.openings.styled.contains(id);
+        let page = !scaffold_free && run_index == 1 && epub.openings.page.contains(id);
+        if epub.book.single_scene && run_index == 1 {
+            opening_pending = epub.book.chapters.last().is_some_and(|(last, _, _)| last == id);
+        } else if opens || styled || page { opening_pending = styled; }
+        let doc = &mut docs[doc_index];
+        let fragment = format!("h{anchor}");
+        targets.insert(id.clone(), format!("{}#{fragment}", doc.href));
+        // A spine document already begins on a new page, so only a typed
+        // part or chapter within that document needs the break class.
+        // The first block of the opening carries the break and the sink:
+        // the ornament when it sits above the title, else the heading.
+        let ornament_here = styled.then_some(ornament).flatten();
+        let above = ornament_here.is_some() && epub.style.ornament_above;
+        let mut lead = Vec::new();
+        if page && !opens { lead.push(START_CLASS); }
+        if styled {
+            match epub.style.sink {
+                Sink::None => {}
+                Sink::Third => lead.push(SINK_THIRD_CLASS),
+                Sink::Half => lead.push(SINK_HALF_CLASS),
             }
-            let mut heading_classes = Vec::new();
-            if run_index == 1 { heading_classes.push("book-body-heading"); }
-            let class_attr = |classes: &[&str]| if classes.is_empty() {
-                String::new()
-            } else {
-                format!(" class=\"{}\"", classes.join(" "))
-            };
-            // THE ORNAMENT MARKS A CHAPTER, not every heading under it. A
-            // dinkus under every scene title is a page of dinkuses, and the
-            // the design calls for a glyph at the chapter break.
-            if above {
-                let mut classes = vec![ORNAMENT_CLASS, ORNAMENT_ABOVE_CLASS];
-                classes.extend(&lead);
+        }
+        let mut heading_classes = Vec::new();
+        if run_index == 1 { heading_classes.push("book-body-heading"); }
+        let class_attr = |classes: &[&str]| if classes.is_empty() {
+            String::new()
+        } else {
+            format!(" class=\"{}\"", classes.join(" "))
+        };
+        // THE ORNAMENT MARKS A CHAPTER, not every heading under it. A
+        // dinkus under every scene title is a page of dinkuses, and the
+        // the design calls for a glyph at the chapter break.
+        if above {
+            let mut classes = vec![ORNAMENT_CLASS, ORNAMENT_ABOVE_CLASS];
+            classes.extend(&lead);
+            doc.body.push_str(&format!(
+                "<p{}>{}</p>\n",
+                class_attr(&classes),
+                xml_escape(ornament_here.expect("above implies an ornament"))
+            ));
+        } else {
+            heading_classes.splice(0..0, lead);
+        }
+        if !scaffold_free {
+            doc.body.push_str(&format!(
+                "<h{level} id=\"{fragment}\"{}>{}</h{level}>\n",
+                class_attr(&heading_classes),
+                xml_escape(title)
+            ));
+        }
+        if !above {
+            if let Some(ornament) = ornament_here {
                 doc.body.push_str(&format!(
-                    "<p{}>{}</p>\n",
-                    class_attr(&classes),
-                    xml_escape(ornament_here.expect("above implies an ornament"))
-                ));
-            } else {
-                heading_classes.splice(0..0, lead);
-            }
-            if !scaffold_free {
-                doc.body.push_str(&format!(
-                    "<h{level} id=\"{fragment}\"{}>{}</h{level}>\n",
-                    class_attr(&heading_classes),
-                    xml_escape(title)
+                    "<p class=\"{ORNAMENT_CLASS}\">{}</p>\n",
+                    xml_escape(ornament)
                 ));
             }
-            if !above {
-                if let Some(ornament) = ornament_here {
-                    doc.body.push_str(&format!(
-                        "<p class=\"{ORNAMENT_CLASS}\">{}</p>\n",
-                        xml_escape(ornament)
-                    ));
-                }
+        }
+        if let Some(author) = epub.book.byline(id) {
+            doc.body.push_str(&format!("<p class=\"story-byline\">{}</p>\n", xml_escape(author)));
+        }
+        // Only bodies with new nodes use strict publication rendering.
+        if plan.documents.contains_key(id) {
+            render_blocks(plan, id, &locations, &mut doc.body, &mut opening_pending);
+        } else {
+            let prose = epub.bodies.get(id).and_then(|body| document_xhtml(body)).unwrap_or_default();
+            for block in prose.lines() {
+                // Containers commonly have no prose; their first scene opens the division.
+                let class = if opening_pending && !block.trim().is_empty() {
+                    opening_pending = false;
+                    format!(" class=\"{OPENING_CLASS}\"")
+                } else {
+                    String::new()
+                };
+                doc.body.push_str(&format!("<p{class}>{block}</p>\n"));
             }
-            if let Some(author) = epub.book.byline(id) {
-                doc.body.push_str(&format!("<p class=\"story-byline\">{}</p>\n", xml_escape(author)));
+        }
+        for (scope, notes) in plan.endnotes.get(id).into_iter().flat_map(|scopes| scopes.iter().rev()) {
+            let row = &plan.scopes.rows[*scope];
+            let heading = if row.label.is_empty() { epub.notes_title.to_string() } else { format!("{}: {}", epub.notes_title, row.label) };
+            let target = format!("notes-{}", scope + 1);
+            note_navigation.push((id.clone(), format!("{}#{target}", doc.href), heading.clone()));
+            doc.body.push_str(&format!("<section epub:type=\"endnotes\" role=\"doc-endnotes\"><h2 id=\"{target}\">{}</h2><ol>\n", xml_escape(&heading)));
+            for index in notes {
+                let note = &plan.notes[*index];
+                let number = note.number;
+                let body = xml_escape(&note.body).replace('\n', "<br/>");
+                let href = &locations[&note.item];
+                doc.body.push_str(&format!("<li id=\"note-{}\" epub:type=\"endnote\" value=\"{number}\"><p>{body} <a epub:type=\"backlink\" role=\"doc-backlink\" href=\"{href}#ref-{}\">{number}</a></p></li>\n", index + 1, index + 1));
             }
-            // Bodyless containers keep their headings. The plan has already
-            // refused unreadable bodies rather than dropping their content.
-            if plan.has_new {
-                render_blocks(plan, id, &locations, &mut doc.body, &mut opening_pending);
-            } else {
-                let prose = epub.bodies.get(id).and_then(|body| document_xhtml(body)).unwrap_or_default();
-                for block in prose.lines() {
-                    // Containers commonly have no prose; their first scene opens the division.
-                    let class = if opening_pending && !block.trim().is_empty() {
-                        opening_pending = false;
-                        format!(" class=\"{OPENING_CLASS}\"")
-                    } else {
-                        String::new()
-                    };
-                    doc.body.push_str(&format!("<p{class}>{block}</p>\n"));
-                }
-            }
-            for (scope, notes) in plan.endnotes.get(id).into_iter().flat_map(|scopes| scopes.iter().rev()) {
-                let row = &plan.scopes.rows[*scope];
-                let heading = if row.label.is_empty() { epub.notes_title.to_string() } else { format!("{}: {}", epub.notes_title, row.label) };
-                let target = format!("notes-{}", scope + 1);
-                note_navigation.push((id.clone(), format!("{}#{target}", doc.href), heading.clone()));
-                doc.body.push_str(&format!("<section epub:type=\"endnotes\" role=\"doc-endnotes\"><h2 id=\"{target}\">{}</h2><ol>\n", xml_escape(&heading)));
-                for index in notes {
-                    let note = &plan.notes[*index];
-                    let number = note.number;
-                    let body = xml_escape(&note.body).replace('\n', "<br/>");
-                    let href = &locations[&note.item];
-                    doc.body.push_str(&format!("<li id=\"note-{}\" epub:type=\"endnote\" value=\"{number}\"><p>{body} <a epub:type=\"backlink\" role=\"doc-backlink\" href=\"{href}#ref-{}\">{number}</a></p></li>\n", index + 1, index + 1));
-                }
-                doc.body.push_str("</ol></section>\n");
-            }
+            doc.body.push_str("</ol></section>\n");
         }
     }
 
@@ -1812,12 +1808,13 @@ mod tests {
     }
 
     #[test]
-    fn an_item_whose_body_cannot_be_read_refuses_the_publication() {
+    fn an_item_whose_body_this_build_cannot_read_still_gets_its_heading() {
         let rows = chapters(&[("a", "One", 0)]);
         let book = plain("N", &rows);
         let mut b = HashMap::new();
         b.insert("a".to_string(), "{not json at all".to_string());
-        assert!(render_checked(&input(&book, &b)).unwrap_err().contains("item a: unsupported document content"));
+        let doc = named(&render(&input(&book, &b)), &format!("{OEBPS}/{TEXT_DIR}/0001.xhtml"));
+        assert!(doc.contains("One"), "{doc}");
     }
 
     #[test]

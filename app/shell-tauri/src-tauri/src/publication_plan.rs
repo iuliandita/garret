@@ -192,6 +192,20 @@ pub(crate) struct Plan {
     pub(crate) has_new: bool,
 }
 
+fn xml_text(text: &str, item: &str, field: &str) -> Result<(), String> {
+    if let Some(invalid) = text.chars().find(|c| {
+        !matches!(c,
+        '\u{9}' | '\u{a}' | '\u{d}' | '\u{20}'..='\u{d7ff}'
+        | '\u{e000}'..='\u{fffd}' | '\u{10000}'..='\u{10ffff}')
+    }) {
+        return Err(format!(
+            "item {item}: {field} contains XML 1.0-forbidden character U+{:04X}",
+            invalid as u32
+        ));
+    }
+    Ok(())
+}
+
 impl Plan {
     pub(crate) fn build(
         book: &crate::export::Book,
@@ -230,6 +244,9 @@ impl Plan {
             let Some(body) = bodies.get(id) else {
                 continue;
             };
+            if !crate::figure_salvage::has_new_nodes(body) {
+                continue;
+            }
             let document = store::document_fields::read(body)
                 .ok_or_else(|| format!("item {id}: unsupported document content"))?;
             let scope = *result
@@ -248,6 +265,7 @@ impl Plan {
                         {
                             if node["type"] == "endnote" {
                                 result.has_new = true;
+                                xml_text(node["attrs"]["body"].as_str().unwrap(), id, "note body")?;
                                 let number = counts.entry(scope).or_insert(0);
                                 *number += 1;
                                 let index = result.notes.len();
@@ -275,6 +293,12 @@ impl Plan {
                     }
                     Some("figure") => {
                         result.has_new = true;
+                        xml_text(block["attrs"]["caption"].as_str().unwrap(), id, "caption")?;
+                        xml_text(
+                            block["attrs"]["alt"].as_str().unwrap(),
+                            id,
+                            "alternative text",
+                        )?;
                         if block["attrs"]["alt"].as_str().unwrap().trim().is_empty() {
                             return Err(format!("item {id}: figure needs alternative text"));
                         }

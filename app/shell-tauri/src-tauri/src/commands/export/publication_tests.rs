@@ -50,6 +50,24 @@ fn fixture() -> Fixture {
             rusqlite::params![body, scene.id],
         )
         .unwrap();
+        if index == 0 {
+            let second = store
+                .item_create(Some(&story.id), "chapter", "Second section")
+                .unwrap();
+            let later = store
+                .item_create(Some(&second.id), "scene", "Later")
+                .unwrap();
+            conn.execute(
+                "UPDATE doc SET body=?1 WHERE item_id=?2",
+                rusqlite::params![body, later.id],
+            )
+            .unwrap();
+            let retained = store
+                .item_create(Some(&second.id), "scene", "Retained")
+                .unwrap();
+            conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![
+                r#"{"type":"doc","content":[{"type":"paragraph","attrs":{},"content":[{"type":"text","text":"Mixed legacy prose"}]}]}"#, retained.id]).unwrap();
+        }
         stories.push(story.id);
         scenes.push(scene.id);
         assets.push(asset);
@@ -79,19 +97,7 @@ fn with_plan<T>(
         chapters: &walk.chapters,
         back: &walk.back,
     };
-    // Scope ownership is captured by the production walk before tuple conversion.
-    let scopes = crate::publication_plan::Scopes {
-        by_item: walk.note_scopes.by_item.clone(),
-        rows: walk
-            .note_scopes
-            .rows
-            .iter()
-            .map(|row| crate::publication_plan::Scope {
-                label: row.label.clone(),
-                end: row.end.clone(),
-            })
-            .collect(),
-    };
+    let scopes = publication_scopes(&fixture.store).unwrap();
     let plan = Plan::from_store(&book, &walk.bodies, scopes, &fixture.store, &fixture.db).unwrap();
     f(&book, &walk, &plan)
 }
@@ -205,19 +211,19 @@ fn scoped_epub_notes_media_and_fallback_links_resolve() {
                 &fixture,
                 selected.then_some(fixture.stories[0].as_str()),
                 |book, walk, plan| {
-                    assert_eq!(plan.notes.len(), if selected { 2 } else { 4 });
+                    assert_eq!(plan.notes.len(), if selected { 4 } else { 6 });
                     assert_eq!(plan.assets.len(), if selected { 1 } else { 2 });
                     assert_eq!(
                         plan.notes
                             .iter()
                             .map(|note| note.number)
                             .collect::<Vec<_>>(),
-                        if !selected && numbering == "book" {
-                            vec![1, 2, 3, 4]
-                        } else if selected {
-                            vec![1, 2]
-                        } else {
-                            vec![1, 2, 1, 2]
+                        match (numbering, selected) {
+                            ("chapter", true) => vec![1, 2, 1, 2],
+                            ("chapter", false) => vec![1, 2, 1, 2, 1, 2],
+                            (_, true) => vec![1, 2, 3, 4],
+                            ("book", false) => vec![1, 2, 3, 4, 5, 6],
+                            _ => vec![1, 2, 3, 4, 1, 2],
                         }
                     );
                     let bytes = epub(book, walk, plan);
@@ -284,6 +290,7 @@ fn scoped_epub_notes_media_and_fallback_links_resolve() {
                         "literal [^1]",
                         "second &lt;line&gt;",
                         "class=\"page\"",
+                        "Mixed legacy prose",
                     ] {
                         assert!(text.contains(expected), "{expected}");
                     }
@@ -332,6 +339,12 @@ fn scoped_epub_notes_media_and_fallback_links_resolve() {
 #[test]
 fn publication_refusals_preserve_unknown_content_and_missing_originals() {
     let fixture = fixture();
+    fixture.store.set_meta("notes.numbering", "future").unwrap();
+    assert!(publication_scopes(&fixture.store)
+        .err()
+        .unwrap()
+        .contains("unsupported note numbering"));
+    fixture.store.delete_meta("notes.numbering").unwrap();
     let walk = walk_scope(&fixture.store, Some(&fixture.stories[0])).unwrap();
     let book = crate::export::Book {
         publication: None,
@@ -423,13 +436,13 @@ fn publication_refusals_preserve_unknown_content_and_missing_originals() {
 }
 
 #[test]
-fn unreadable_epub_refuses_before_publishing_a_destination() {
+fn disabled_new_node_epub_refuses_before_publishing_a_destination() {
     let root = tempfile::tempdir().unwrap();
     let db = root.path().join("book.db");
     let store = store::Store::open(&db).unwrap();
     let scene = store.item_create(None, "scene", "Scene").unwrap();
     let conn = rusqlite::Connection::open(&db).unwrap();
-    conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![r#"{"type":"doc","content":[{"type":"future","content":[{"type":"text","text":"Hidden prose"}]}]}"#, scene.id]).unwrap();
+    conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![r#"{"type":"doc","content":[{"type":"scene_break"},{"type":"future","content":[{"type":"text","text":"Hidden prose"}]}]}"#, scene.id]).unwrap();
     let dest = root.path().join("book.epub");
     let error = export_as(
         &db,
@@ -440,7 +453,81 @@ fn unreadable_epub_refuses_before_publishing_a_destination() {
         crate::strings::Strings::english(),
     )
     .unwrap_err();
-    assert!(error.contains("unsupported document content"), "{error}");
+    assert!(
+        error.contains("cannot be exported by this build"),
+        "{error}"
+    );
     assert!(!dest.exists());
     assert_eq!(store.user_version().unwrap(), 17);
+}
+
+#[test]
+fn publication_rejects_xml_forbidden_note_caption_and_alt_characters() {
+    let fixture = fixture();
+    let walk = walk_scope(&fixture.store, Some(&fixture.stories[0])).unwrap();
+    let book = crate::export::Book {
+        publication: None,
+        single_scene: false,
+        name: "N",
+        contents_title: "Contents",
+        front: &walk.front,
+        chapters: &walk.chapters,
+        back: &walk.back,
+    };
+    let original: serde_json::Value =
+        serde_json::from_str(&walk.bodies[&fixture.scenes[0]]).unwrap();
+    for (field, pointer) in [
+        ("note body", "/content/0/content/1/attrs/body"),
+        ("caption", "/content/1/attrs/caption"),
+        ("alternative text", "/content/1/attrs/alt"),
+    ] {
+        for invalid in [
+            '\0', '\u{8}', '\u{b}', '\u{c}', '\u{e}', '\u{1f}', '\u{fffe}', '\u{ffff}',
+        ] {
+            let mut document = original.clone();
+            *document.pointer_mut(pointer).unwrap() = json!(format!("before{invalid}after"));
+            let bodies = HashMap::from([(fixture.scenes[0].clone(), document.to_string())]);
+            let error = Plan::from_store(
+                &book,
+                &bodies,
+                crate::publication_plan::Scopes::book(&book),
+                &fixture.store,
+                &fixture.db,
+            )
+            .err()
+            .unwrap();
+            assert!(
+                error.contains(field)
+                    && error.contains("XML 1.0")
+                    && error.contains(&format!("U+{:04X}", invalid as u32)),
+                "{error}"
+            );
+        }
+    }
+}
+
+#[test]
+fn unknown_note_numbering_does_not_block_legacy_exports_or_preflight() {
+    let root = tempfile::tempdir().unwrap();
+    let db = root.path().join("book.db");
+    let store = store::Store::open(&db).unwrap();
+    store.item_create(None, "scene", "Scene").unwrap();
+    store.set_meta("notes.numbering", "future").unwrap();
+    let vault = crate::identity::Vault::default();
+    for format in [
+        crate::export::Format::Markdown,
+        crate::export::Format::Docx,
+        crate::export::Format::Pdf,
+        crate::export::Format::Epub,
+    ] {
+        render_project(
+            &db,
+            "Book",
+            format,
+            &vault,
+            crate::strings::Strings::english(),
+        )
+        .unwrap();
+        preflight_of_store(&store, "Book", format, &vault).unwrap();
+    }
 }
