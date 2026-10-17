@@ -109,7 +109,8 @@ Windows `-setup.exe`, Linux `.deb`, `.rpm` and `.AppImage`,
 and macOS `.dmg` installers are available alongside the portable archives. See the
 [installation guide](docs/INSTALLING.md) for setup, upgrades and removal. Android uses an APK; the phone app has fewer
 features and does not sync books automatically. Keep a backup before trying a
-new build.
+new build. See [compatibility and recovery](docs/COMPATIBILITY.md) for stored-format
+limits and salvage output.
 
 ### Verify a download
 

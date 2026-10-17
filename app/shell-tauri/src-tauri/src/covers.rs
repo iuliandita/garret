@@ -165,6 +165,9 @@ pub fn cover_of(store: &Store, side: &str) -> Result<Option<String>, String> {
 /// `cast_set_picture`'s rule verbatim: after this call nothing in the file names
 /// the previous picture, so nothing else can ever find it.
 pub fn set_cover(store: &Store, side: &str, name: &str) -> Result<Option<String>, String> {
+    if name.starts_with("fig-") {
+        return Err("figure originals cannot be assigned to covers".into());
+    }
     let key = key_or_error(side)?;
     let previous = store.get_meta(key).map_err(|e| e.to_string())?;
     store.set_meta(key, name).map_err(|e| e.to_string())?;

@@ -11,6 +11,7 @@ pub mod comments;
 pub mod crash_child;
 pub mod dict;
 pub mod document_format;
+pub mod figure_assets;
 pub mod history;
 pub mod knowledge;
 pub mod position;

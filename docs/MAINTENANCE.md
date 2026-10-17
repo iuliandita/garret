@@ -14,6 +14,11 @@ Documentation is part of a change. The offline guard detects review obligations
 and verifiable drift. It cannot establish that prose is correct, an editor
 interaction works, or a live upgrade, restore, or rollback succeeds.
 
+Figure retention checks use the proposed registry SQL only in disposable test
+databases. Keep the production schema ceiling at 17 and new-node writes disabled.
+Exercise history-only originals, canonical hashes, independent cast/cover
+ownership, recovery, transfer, and loss-aware salvage before enabling authoring.
+
 ## Checks
 
 Run from the repository root with Python 3.11 or newer and Git:

@@ -459,6 +459,16 @@ fn format_gate_mobile_database_imports_store_nothing() {
             let dir = tempfile::tempdir().unwrap();
             let db = dir.path().join("source.db");
             let (store, ids) = setup(&db);
+            let mut body = body.clone();
+            let mut value: Value = serde_json::from_str(&body).unwrap();
+            if value["content"][0]["type"] == "figure" {
+                crate::store::figure_assets::test_support::install(&store);
+                let image = dir.path().join("figure.png");
+                std::fs::write(&image, include_bytes!("../../../fixtures/two-halves.png")).unwrap();
+                let asset = crate::figures::test_support::import(&db, &store, &image);
+                value["content"][0]["attrs"]["asset_id"] = asset.id.into();
+                body = value.to_string();
+            }
             if history {
                 let snapshot = store.snapshot_create("Retained draft").unwrap();
                 store.conn.execute("UPDATE blob SET body=?1 WHERE key=(SELECT blob_key FROM doc_version WHERE item_id=?2 AND snapshot_id=?3)",
