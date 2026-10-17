@@ -28,7 +28,7 @@ export interface MobileWorkspaceOptions {
   // global project identity when a delayed save reaches this boundary.
   loadDoc(itemId: string): Promise<MobileDocument>;
   flush(entries: FlushEntry[], attribution?: FlushAttribution[]): Promise<FlushAck[]>;
-  createScene?(title: string): Promise<{ scenes: MobileScene[]; item_id: string }>;
+  createScene?(title: string, currentSceneId: string): Promise<{ scenes: MobileScene[]; item_id: string }>;
   drafting?: MobileDrafting;
   textSize?: number;
   saveTextSize?(size: number): boolean;
@@ -263,7 +263,7 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
         setBusy(true);
         try {
           if (!await drain()) { showError(m.saveError); return; }
-          const result = await opts.createScene!(title);
+          const result = await opts.createScene!(title, session.activeDocId());
           if (!result.scenes.some(scene => scene.id === result.item_id)
             || !result.scenes.some(scene => scene.id === session.activeDocId())) throw new Error(m.openError);
           scenes = result.scenes;

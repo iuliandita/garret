@@ -549,11 +549,11 @@ pub(crate) mod tests {
             let reader = Store::open_readonly(&db).unwrap();
             assert_eq!(
                 mobile_core::supported(&reader).is_ok(),
-                matches!(preset, None | Some("novel")),
+                matches!(preset, None | Some("novel" | "short" | "nonfiction")),
                 "{preset:?}"
             );
             assert_eq!(fs::read(&db).unwrap(), before);
-            if !matches!(preset, None | Some("novel")) {
+            if !matches!(preset, None | Some("novel" | "short" | "nonfiction")) {
                 let stage = stage(
                     &root.path().join("transfer"),
                     &uuid::Uuid::now_v7().to_string(),
@@ -602,10 +602,12 @@ pub(crate) mod tests {
             checksum: String,
         }
         for (preset, newer, code) in [
-            ("short", false, "unsupported_project_preset"),
+            ("collection", false, "unsupported_project_preset"),
             ("zzz", false, "unsupported_project_preset"),
             ("novel", true, "unsupported_schema"),
             ("short", true, "unsupported_schema"),
+            ("nonfiction", true, "unsupported_schema"),
+            ("collection", true, "unsupported_schema"),
             ("zzz", true, "unsupported_schema"),
         ] {
             let root = tempfile::tempdir().unwrap();

@@ -364,3 +364,28 @@ test("export waits for the last save acknowledgement and freezes editing until t
   const close = f.workspace.close(); await nextTask(); acknowledge();
   expect(await close).toBe(true); f.mount.remove();
 });
+
+
+test("New scene sends the active scene for root and chapter outlines in both locales", async () => {
+  for (const locale of ["en", "de"] as const) for (const chaptered of [false, true]) {
+    const scenes = ["a", "b"].map(id => ({ id, title: id, depth: chaptered ? 1 : 0,
+      context: chaptered ? [{ id: `chapter-${id}`, title: `Chapter ${id}`, kind: "chapter" as const }] : [] }));
+    const requests: [string, string][] = [];
+    const f = fixture({ locale, scenes, createScene: async (title, currentId) => {
+      requests.push([title, currentId]);
+      return { item_id: "new", scenes: [...scenes, { ...scenes[1], id: "new", title }] };
+    } });
+    expect(await f.workspace.openScene("b")).toBe(true);
+    f.workspace.editor.typeChar("saved before creating");
+    const outline = showOutline(f.mount);
+    outline.querySelector<HTMLInputElement>("input")!.value = "Next";
+    outline.querySelector("form")!.dispatchEvent(new Event("submit", { cancelable: true }));
+    await settled(f.mount);
+    expect(requests).toEqual([["Next", "b"]]);
+    expect(f.writes[0][0].item_id).toBe("b");
+    expect(f.mount.querySelector("h1")!.textContent).toBe("Next");
+    expect([...outline.querySelectorAll("nav button")].map(button => button.textContent)).toEqual(["a", "b", "Next"]);
+    expect([...outline.querySelectorAll("h3")].map(node => node.textContent)).toEqual(chaptered ? ["Chapter a", "Chapter b"] : []);
+    await f.workspace.close(); f.mount.remove();
+  }
+});

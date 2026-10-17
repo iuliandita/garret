@@ -360,32 +360,10 @@ fn open_book(host: &MobileHost, id: &str) -> Result<Book, String> {
 fn mobile_scene_create(
     host: State<'_, MobileHost>,
     generation: u64,
+    current_scene_id: String,
     title: String,
 ) -> Result<CreatedScene, String> {
-    let title = title.trim();
-    if title.is_empty() || title.chars().count() > 120 {
-        return Err("scene title must contain 1 to 120 characters".into());
-    }
-    let session = host
-        .session
-        .lock()
-        .map_err(|_| "book session unavailable")?;
-    idle(&session)?;
-    let open = checked(&session, generation)?;
-    let items = open.store.items().map_err(|error| error.to_string())?;
-    let excluded = store::excluded_from_book(&items);
-    let chapter = items
-        .into_iter()
-        .find(|item| item.item_type == "chapter" && !excluded.contains(&item.id))
-        .ok_or("book has no chapter")?;
-    let created = open
-        .store
-        .item_create(Some(&chapter.id), "scene", title)
-        .map_err(|error| error.to_string())?;
-    Ok(CreatedScene {
-        item_id: created.id,
-        scenes: scenes(&open.store)?,
-    })
+    host.create_scene(generation, &current_scene_id, &title)
 }
 
 #[tauri::command]
@@ -490,6 +468,35 @@ fn writing_scene(store: &store::Store, id: &str) -> Result<(), String> {
     Ok(())
 }
 impl MobileHost {
+    fn create_scene(
+        &self,
+        generation: u64,
+        current_scene_id: &str,
+        title: &str,
+    ) -> Result<CreatedScene, String> {
+        let title = title.trim();
+        if title.is_empty() || title.chars().count() > 120 {
+            return Err("scene title must contain 1 to 120 characters".into());
+        }
+        self.drafting(generation, |store| {
+            let current = scenes(store)?
+                .into_iter()
+                .find(|scene| scene.id == current_scene_id)
+                .ok_or("scene is not in the open book")?;
+            let created = store
+                .item_create_after(
+                    current.parent_id.as_deref(),
+                    "scene",
+                    title,
+                    Some(&current.id),
+                )
+                .map_err(|error| error.to_string())?;
+            Ok(CreatedScene {
+                item_id: created.id,
+                scenes: scenes(store)?,
+            })
+        })
+    }
     fn drafting<T>(
         &self,
         generation: u64,
@@ -1464,6 +1471,180 @@ mod tests {
         (root, host, book)
     }
     #[test]
+    fn mobile_transferred_presets_create_scenes_in_order_without_scaffolding() {
+        for preset in ["short", "nonfiction"] {
+            let root = tempfile::tempdir().unwrap();
+            let (host, _) = host(root.path());
+            let source = root.path().join("source.db");
+            let store = store::Store::open(&source).unwrap();
+            store.set_meta(NAME_KEY, "Harbour").unwrap();
+            store.set_meta("project.preset", preset).unwrap();
+            store
+                .ensure_starter_structure(&strings::Strings::new(&strings::EN))
+                .unwrap();
+            let stage =
+                transfer::stage(&host.transfers, &uuid::Uuid::now_v7().to_string()).unwrap();
+            let bundle = transfer::snapshot(&source, &store, &stage).unwrap();
+            let key = stage.join("key.in");
+            crate::encrypted_archive::generate_key(&key).unwrap();
+            transfer::encrypt(&bundle, &stage, &key).unwrap();
+            fs::copy(stage.join("archive.out"), stage.join("archive.in")).unwrap();
+            let preview = transfer::preview(&stage, &host.books).unwrap();
+            let id = transfer::publish(&stage, &host.books, &preview).unwrap();
+            let book = open_book(&host, &id).unwrap();
+            let first = &book.scenes[0];
+            assert_eq!(first.depth, if preset == "short" { 0 } else { 1 });
+            let second = host
+                .create_scene(book.generation, &first.id, "Second")
+                .unwrap();
+            let third = host
+                .create_scene(book.generation, &second.item_id, "Third")
+                .unwrap();
+            let between = host
+                .create_scene(book.generation, &first.id, "Between")
+                .unwrap();
+            assert_eq!(
+                between
+                    .scenes
+                    .iter()
+                    .map(|scene| scene.id.as_str())
+                    .collect::<Vec<_>>(),
+                [&first.id, &between.item_id, &second.item_id, &third.item_id]
+            );
+            assert!(between
+                .scenes
+                .iter()
+                .all(|scene| scene.parent_id == first.parent_id));
+            host.drafting(book.generation, |store| {
+                let items = manuscript_items(store)?;
+                assert_eq!(
+                    items
+                        .iter()
+                        .filter(|item| item.item_type == "chapter")
+                        .count(),
+                    if preset == "short" { 0 } else { 1 }
+                );
+                assert!(!items.iter().any(|item| item.item_type == "part"));
+                assert_eq!(
+                    store.get_meta("project.preset").unwrap().as_deref(),
+                    Some(preset)
+                );
+                assert_eq!(
+                    store
+                        .items()
+                        .unwrap()
+                        .iter()
+                        .filter(|item| item.item_type == "scene")
+                        .count(),
+                    4
+                );
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!(scenes(&store).unwrap().len(), 1);
+            if preset == "short" {
+                let nested = host
+                    .drafting(book.generation, |store| {
+                        let chapter = store
+                            .item_create(None, "chapter", "Explicit chapter")
+                            .unwrap();
+                        let nested = store
+                            .item_create(Some(&chapter.id), "scene", "Inside")
+                            .unwrap();
+                        Ok(nested)
+                    })
+                    .unwrap();
+                let added = host
+                    .create_scene(book.generation, &nested.id, "Still inside")
+                    .unwrap();
+                assert!(added.scenes[..4]
+                    .iter()
+                    .all(|scene| scene.parent_id.is_none()));
+                assert!(added.scenes[4..]
+                    .iter()
+                    .all(|scene| scene.parent_id == nested.parent_id));
+                host.drafting(book.generation, |store| {
+                    assert!(!store
+                        .items()
+                        .unwrap()
+                        .iter()
+                        .any(|item| item.item_type == "part"));
+                    Ok(())
+                })
+                .unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn mobile_new_scene_stays_in_the_current_container_and_preserves_outline_context() {
+        let (_root, host, book) = drafting_host();
+        let first = &book.scenes[0];
+        let (chapter, second) = host
+            .drafting(book.generation, |store| {
+                let chapter = store.item_create(None, "chapter", "Later").unwrap();
+                let scene = store
+                    .item_create(Some(&chapter.id), "scene", "Second")
+                    .unwrap();
+                Ok((chapter, scene))
+            })
+            .unwrap();
+        let created = host
+            .create_scene(book.generation, &second.id, "Next")
+            .unwrap();
+        assert_eq!(
+            created
+                .scenes
+                .iter()
+                .map(|scene| scene.id.as_str())
+                .collect::<Vec<_>>(),
+            [&first.id, &second.id, &created.item_id]
+        );
+        assert_eq!(created.scenes[0].parent_id, first.parent_id);
+        for scene in &created.scenes[1..] {
+            assert_eq!(scene.parent_id.as_deref(), Some(chapter.id.as_str()));
+            assert_eq!(scene.context.len(), 1);
+            assert_eq!(scene.context[0].title, "Later");
+        }
+    }
+
+    #[test]
+    fn mobile_new_scene_refuses_stale_missing_and_excluded_context_without_writes() {
+        let (_root, host, book) = drafting_host();
+        let first = &book.scenes[0];
+        let hidden = host
+            .drafting(book.generation, |store| {
+                let bible = store.item_create(None, "bible", "Notes").unwrap();
+                let hidden = store
+                    .item_create(Some(&bible.id), "scene", "Hidden")
+                    .unwrap();
+                Ok(hidden.id)
+            })
+            .unwrap();
+        for (generation, id) in [
+            (book.generation + 1, first.id.as_str()),
+            (book.generation, "missing"),
+            (book.generation, hidden.as_str()),
+            (book.generation, first.parent_id.as_deref().unwrap()),
+        ] {
+            assert!(host.create_scene(generation, id, "Lost").is_err());
+        }
+        host.drafting(book.generation, |store| {
+            assert_eq!(
+                store
+                    .items()
+                    .unwrap()
+                    .iter()
+                    .filter(|item| item.item_type == "scene")
+                    .count(),
+                2
+            );
+            Ok(())
+        })
+        .unwrap();
+    }
+
+    #[test]
     fn mobile_drafting_rename_and_move_preserve_structure_and_refuse_stale_revisions() {
         let (_root, host, book) = drafting_host();
         let scene = &book.scenes[0];
@@ -2018,10 +2199,12 @@ mod tests {
     #[test]
     fn mobile_transfer_open_refuses_schema_before_preset_without_library_changes() {
         for (preset, newer, code) in [
-            ("short", false, "unsupported_project_preset"),
+            ("collection", false, "unsupported_project_preset"),
             ("zzz", false, "unsupported_project_preset"),
             ("novel", true, "unsupported_schema"),
             ("short", true, "unsupported_schema"),
+            ("nonfiction", true, "unsupported_schema"),
+            ("collection", true, "unsupported_schema"),
             ("zzz", true, "unsupported_schema"),
         ] {
             for wal in [false, true] {
