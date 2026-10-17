@@ -1,0 +1,757 @@
+//! Private transfer preparation. Provider capabilities stay in the Android adapter.
+use crate::{
+    backup_bundle, encrypted_archive, mobile_core, store::Store, transfer_copy, transfer_publish,
+};
+use serde::Serialize;
+use sha2::{Digest, Sha256};
+use std::{
+    fs,
+    io::Read,
+    path::{Path, PathBuf},
+};
+
+pub(crate) const ARCHIVE_LIMIT: u64 = 1 << 30;
+pub(crate) const PAYLOAD_LIMIT: u64 = 512 << 20;
+const RESERVE: u64 = 16 << 20;
+const MAX_RETAINED: usize = 16;
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub(crate) struct Preview {
+    pub title: Option<String>,
+    pub related: Vec<String>,
+    pub source: transfer_copy::Source,
+    pub archive_bytes: u64,
+    pub archive_sha256: String,
+}
+
+pub(crate) fn private_dir(path: &Path) -> Result<(), String> {
+    let mut builder = fs::DirBuilder::new();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        builder.mode(0o700);
+    }
+    match builder.create(path) {
+        Ok(()) => (),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => (),
+        Err(_) => return Err("transfer_storage".into()),
+    }
+    let meta = fs::symlink_metadata(path).map_err(|_| "transfer_storage")?;
+    if !meta.is_dir() || meta.file_type().is_symlink() {
+        return Err("transfer_storage".into());
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        if meta.uid() != rustix::process::geteuid().as_raw() || meta.mode() & 0o077 != 0 {
+            return Err("transfer_storage".into());
+        }
+    }
+    Ok(())
+}
+
+pub(crate) fn retained(root: &Path) -> Result<usize, String> {
+    private_dir(root)?;
+    Ok(fs::read_dir(root).map_err(|_| "transfer_storage")?.count())
+}
+
+pub(crate) fn stage(root: &Path, token: &str) -> Result<PathBuf, String> {
+    let id = uuid::Uuid::parse_str(token).map_err(|_| "transfer_stale")?;
+    if id.to_string() != token {
+        return Err("transfer_stale".into());
+    }
+    if retained(root)? >= MAX_RETAINED {
+        return Err("transfer_retained".into());
+    }
+    let path = root.join(token);
+    if fs::symlink_metadata(&path).is_ok() {
+        return Err("transfer_stale".into());
+    }
+    private_dir(&path)?;
+    backup_bundle::sync_directory(root).map_err(|_| "transfer_storage")?;
+    Ok(path)
+}
+
+pub(crate) fn available(path: &Path) -> Result<u64, String> {
+    #[cfg(unix)]
+    {
+        let info = rustix::fs::statvfs(path).map_err(|_| "transfer_storage")?;
+        info.f_bavail
+            .checked_mul(info.f_frsize)
+            .ok_or_else(|| "transfer_storage".into())
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = path;
+        Err("transfer_storage".into())
+    }
+}
+
+pub(crate) fn admit(free: u64, bytes: u64, copies: u64) -> Result<(), String> {
+    if bytes > PAYLOAD_LIMIT {
+        return Err("transfer_too_large".into());
+    }
+    let needed = bytes
+        .checked_mul(copies)
+        .and_then(|n| n.checked_add(RESERVE))
+        .ok_or("transfer_too_large")?;
+    if free < needed {
+        return Err("transfer_storage".into());
+    }
+    Ok(())
+}
+
+pub(crate) fn read_budget(stage: &Path) -> Result<u64, String> {
+    let budget = available(stage)?.saturating_sub(RESERVE) / 4;
+    if budget < 1 << 20 {
+        return Err("transfer_storage".into());
+    }
+    Ok(ARCHIVE_LIMIT.min(budget))
+}
+
+fn file_bytes(path: &Path) -> Result<u64, String> {
+    let meta = fs::symlink_metadata(path).map_err(|_| "transfer_invalid")?;
+    if !meta.is_file() || meta.file_type().is_symlink() {
+        return Err("transfer_invalid".into());
+    }
+    Ok(meta.len())
+}
+
+fn tree_bytes(path: &Path) -> Result<u64, String> {
+    let mut total = 0u64;
+    for entry in fs::read_dir(path).map_err(|_| "transfer_invalid")? {
+        let path = entry.map_err(|_| "transfer_invalid")?.path();
+        let meta = fs::symlink_metadata(&path).map_err(|_| "transfer_invalid")?;
+        if meta.file_type().is_symlink() {
+            return Err("transfer_invalid".into());
+        }
+        let bytes = if meta.is_dir() {
+            tree_bytes(&path)?
+        } else {
+            file_bytes(&path)?
+        };
+        total = total
+            .checked_add(bytes)
+            .filter(|n| *n <= PAYLOAD_LIMIT)
+            .ok_or("transfer_too_large")?;
+    }
+    Ok(total)
+}
+
+pub(crate) fn fingerprint(path: &Path, limit: u64) -> Result<(u64, String), String> {
+    let mut input =
+        backup_bundle::open_regular_with_limit(path, limit).map_err(|_| "transfer_invalid")?;
+    let mut hash = Sha256::new();
+    let mut bytes = 0u64;
+    let mut buffer = [0; 64 * 1024];
+    loop {
+        let n = input.read(&mut buffer).map_err(|_| "transfer_invalid")?;
+        if n == 0 {
+            break;
+        }
+        bytes = bytes
+            .checked_add(n as u64)
+            .filter(|n| *n <= limit)
+            .ok_or("transfer_too_large")?;
+        hash.update(&buffer[..n]);
+    }
+    Ok((bytes, format!("{:x}", hash.finalize())))
+}
+
+pub(crate) fn snapshot(database: &Path, store: &Store, stage: &Path) -> Result<PathBuf, String> {
+    mobile_core::supported(store)?;
+    store.checkpoint().map_err(|_| "transfer_invalid")?;
+    // Include every sidecar entry in admission, even originals the snapshot does not reference.
+    let mut bytes = file_bytes(database)?
+        .checked_mul(2)
+        .ok_or("transfer_too_large")?;
+    for assets in [
+        crate::pictures::dir_for(database),
+        crate::research::dir_for(database),
+    ] {
+        if assets.exists() {
+            bytes = bytes
+                .checked_add(tree_bytes(&assets)?)
+                .ok_or("transfer_too_large")?;
+        }
+    }
+    admit(available(stage)?, bytes, 4)?;
+    let bundle = stage.join("snapshot.point");
+    let written = backup_bundle::write(database, store, &bundle).map_err(|_| "transfer_invalid")?;
+    if !written.verified {
+        return Err("transfer_incomplete".into());
+    }
+    backup_bundle::verify(&bundle).map_err(|_| "transfer_incomplete")?;
+    admit(available(stage)?, tree_bytes(&bundle)?, 3)?;
+    Ok(bundle)
+}
+
+pub(crate) fn encrypt(
+    bundle: &Path,
+    stage: &Path,
+    key_path: &Path,
+) -> Result<(u64, String), String> {
+    let key = encrypted_archive::key_from_path(key_path).map_err(|_| "transfer_key")?;
+    let bytes = tree_bytes(bundle)?;
+    admit(available(stage)?, bytes, 3)?;
+    let cipher = stage.join("archive.out");
+    encrypted_archive::write_verified_cipher(bundle, &cipher, &key)
+        .map_err(|_| "transfer_invalid")?;
+    fingerprint(&cipher, ARCHIVE_LIMIT)
+}
+
+/// Never let a refused library book create SQLite sidecars. Its WAL, if any,
+/// belongs in the private probe too, so crash recovery cannot hide metadata.
+pub(crate) fn read_supported<T>(
+    path: &std::path::Path,
+    root: &std::path::Path,
+    read: impl FnOnce(&Store) -> Result<T, String>,
+) -> Result<T, String> {
+    let probe = tempfile::Builder::new()
+        .prefix("probe-")
+        .tempdir_in(root)
+        .map_err(|_| "transfer_storage")?;
+    let database = probe.path().join("book.db");
+    for (source, target) in [
+        (path.to_path_buf(), database.clone()),
+        (
+            path.with_extension("db-wal"),
+            database.with_extension("db-wal"),
+        ),
+    ] {
+        match std::fs::symlink_metadata(&source) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound && source != path => {
+                continue
+            }
+            Err(_) => return Err("transfer_invalid".into()),
+            Ok(_) => (),
+        }
+        let mut input = crate::backup_bundle::open_regular_with_limit(&source, PAYLOAD_LIMIT)
+            .map_err(|_| "transfer_invalid")?;
+        let mut output = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(target)
+            .map_err(|_| "transfer_storage")?;
+        admit(
+            available(root)?,
+            input.metadata().map_err(|_| "transfer_invalid")?.len(),
+            1,
+        )?;
+        let copied = std::io::copy(&mut input.take(PAYLOAD_LIMIT + 1), &mut output)
+            .map_err(|_| "transfer_storage")?;
+        if copied > PAYLOAD_LIMIT {
+            return Err("transfer_too_large".into());
+        }
+    }
+    let reader = mobile_core::open_supported(&database)?;
+    read(&reader)
+}
+
+pub(crate) fn preview(stage: &Path, books: &Path) -> Result<Preview, String> {
+    let key =
+        encrypted_archive::key_from_path(&stage.join("key.in")).map_err(|_| "transfer_key")?;
+    let free = available(stage)?;
+    let payload = PAYLOAD_LIMIT.min(free.saturating_sub(RESERVE) / 3);
+    if payload < 1 << 20 {
+        return Err("transfer_storage".into());
+    }
+    let bundle = encrypted_archive::extract_checked(
+        &stage.join("archive.in"),
+        &key,
+        stage,
+        ARCHIVE_LIMIT,
+        payload,
+        |bundle| mobile_core::open_supported(&backup_bundle::db_path(bundle)).map(|_| ()),
+    )
+    .map_err(|error| {
+        if matches!(
+            error.as_str(),
+            "unsupported_schema" | "unsupported_project_preset"
+        ) {
+            error
+        } else if error.contains("too large") {
+            "transfer_too_large".into()
+        } else {
+            "transfer_invalid".into()
+        }
+    })?;
+    let source = transfer_copy::inspect(&bundle).map_err(|_| "transfer_incomplete")?;
+    let mut related = Vec::new();
+    for entry in fs::read_dir(books).map_err(|_| "transfer_invalid")? {
+        let entry = entry.map_err(|_| "transfer_invalid")?;
+        if !entry.file_type().map_err(|_| "transfer_invalid")?.is_file()
+            || entry.path().extension().and_then(|ext| ext.to_str()) != Some("db")
+        {
+            continue;
+        }
+        // An unreadable book must not disappear from the conflict check.
+        let store =
+            Store::open_readonly(&entry.path()).map_err(|_| "transfer_library_unreadable")?;
+        if transfer_copy::lineage(&store).map_err(|_| "transfer_library_unreadable")?
+            == source.lineage
+        {
+            related.push(
+                store
+                    .get_meta(crate::core_constants::NAME_KEY)
+                    .map_err(|_| "transfer_invalid")?
+                    .unwrap_or_default(),
+            );
+        }
+    }
+    related.sort();
+    admit(available(stage)?, tree_bytes(&bundle)?, 2)?;
+    let (archive_bytes, archive_sha256) = fingerprint(&stage.join("archive.in"), ARCHIVE_LIMIT)?;
+    Ok(Preview {
+        title: source.title.clone(),
+        related,
+        source,
+        archive_bytes,
+        archive_sha256,
+    })
+}
+
+pub(crate) fn publish(stage: &Path, books: &Path, expected: &Preview) -> Result<String, String> {
+    if fingerprint(&stage.join("archive.in"), ARCHIVE_LIMIT)?
+        != (expected.archive_bytes, expected.archive_sha256.clone())
+    {
+        return Err("transfer_stale".into());
+    }
+    let bundle = stage.join("point");
+    let reader = mobile_core::open_supported(&backup_bundle::db_path(&bundle))?;
+    drop(reader);
+    let source = transfer_copy::inspect(&bundle).map_err(|_| "transfer_stale")?;
+    if source != expected.source {
+        return Err("transfer_stale".into());
+    }
+    admit(available(stage)?, tree_bytes(&bundle)?, 2)?;
+    let owned = transfer_copy::stage(&bundle, stage, &source).map_err(|_| "transfer_invalid")?;
+    let id = uuid::Uuid::now_v7().to_string();
+    let dest = books.join(format!("{id}.db"));
+    transfer_publish::publish(&owned.database, &dest).map_err(|_| "transfer_publish")?;
+    Ok(id)
+}
+
+#[cfg(test)]
+pub(crate) mod tests {
+    use super::*;
+
+    pub(crate) fn contents(root: &Path) -> std::collections::BTreeMap<PathBuf, Option<Vec<u8>>> {
+        let mut found = std::collections::BTreeMap::new();
+        for entry in fs::read_dir(root).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_dir() {
+                found.insert(path.strip_prefix(root).unwrap().to_path_buf(), None);
+                for (child, data) in contents(&path) {
+                    found.insert(path.strip_prefix(root).unwrap().join(child), data);
+                }
+            } else {
+                found.insert(
+                    path.strip_prefix(root).unwrap().to_path_buf(),
+                    Some(fs::read(path).unwrap()),
+                );
+            }
+        }
+        found
+    }
+
+    fn book(root: &Path) -> PathBuf {
+        let path = root.join("original.db");
+        let store = Store::open(&path).unwrap();
+        store
+            .set_meta(crate::core_constants::NAME_KEY, "Harbour")
+            .unwrap();
+        store
+            .ensure_starter_structure(&crate::strings::Strings::new(&crate::strings::EN))
+            .unwrap();
+        let scene = store
+            .items()
+            .unwrap()
+            .into_iter()
+            .find(|item| item.item_type == "scene")
+            .unwrap();
+        let entry = crate::store::FlushEntry {
+            item_id: scene.id, base_rev: scene.doc_rev.unwrap(), comments: None,
+            body: r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"The tide waited."}]}]}"#.into(),
+        };
+        store.flush(&[entry.clone()]).unwrap();
+        store.record_versions(&[entry]).unwrap();
+        let cast = store.cast_create("character", "Ada").unwrap();
+        store.cast_set_picture(&cast.id, Some("face.png")).unwrap();
+        fs::create_dir(crate::pictures::dir_for(&path)).unwrap();
+        fs::write(
+            crate::pictures::dir_for(&path).join("face.png"),
+            include_bytes!("../fixtures/two-halves.png"),
+        )
+        .unwrap();
+        let research = root.join("source.txt");
+        fs::write(&research, b"A retained original").unwrap();
+        crate::research::import_copy(&path, &research, |name, bytes, hash| {
+            store.research_resource_add("Source", name, "text/plain", bytes, hash, "", "")
+        })
+        .unwrap();
+        store.checkpoint().unwrap();
+        path
+    }
+    fn incoming(root: &Path, db: &Path) -> PathBuf {
+        let stage = stage(&root.join("transfer"), &uuid::Uuid::now_v7().to_string()).unwrap();
+        let key = stage.join("key.in");
+        encrypted_archive::generate_key(&key).unwrap();
+        let store = Store::open_existing(db).unwrap();
+        let bundle = snapshot(db, &store, &stage).unwrap();
+        encrypt(&bundle, &stage, &key).unwrap();
+        fs::copy(stage.join("archive.out"), stage.join("archive.in")).unwrap();
+        stage
+    }
+    #[test]
+    fn mobile_transfer_round_trip_keeps_both_books_and_all_originals() {
+        let root = tempfile::tempdir().unwrap();
+        let db = book(root.path());
+        let stage = incoming(root.path(), &db);
+        let books = root.path().join("books");
+        fs::create_dir(&books).unwrap();
+        fs::copy(&db, books.join("existing.db")).unwrap();
+        let original = fs::read(&db).unwrap();
+        let existing = fs::read(books.join("existing.db")).unwrap();
+        let review = preview(&stage, &books).unwrap();
+        assert_eq!(review.related, ["Harbour"]);
+        assert_eq!(review.title.as_deref(), Some("Harbour"));
+        let id = publish(&stage, &books, &review).unwrap();
+        let copy = books.join(format!("{id}.db"));
+        let copied = Store::open_readonly(&copy).unwrap();
+        let source = Store::open_readonly(&db).unwrap();
+        assert_ne!(copied.book_id().unwrap(), source.book_id().unwrap());
+        assert_eq!(
+            transfer_copy::lineage(&copied).unwrap(),
+            source.book_id().unwrap().unwrap()
+        );
+        let scene = source
+            .items()
+            .unwrap()
+            .into_iter()
+            .find(|item| item.item_type == "scene")
+            .unwrap();
+        assert_eq!(
+            copied.load_doc(&scene.id).unwrap().body,
+            source.load_doc(&scene.id).unwrap().body
+        );
+        assert!(!copied.doc_versions(&scene.id).unwrap().is_empty());
+        assert_eq!(
+            fs::read(crate::pictures::dir_for(&copy).join("face.png")).unwrap(),
+            include_bytes!("../fixtures/two-halves.png")
+        );
+        let resources: Vec<_> = fs::read_dir(crate::research::dir_for(&copy))
+            .unwrap()
+            .collect();
+        assert_eq!(resources.len(), 1);
+        assert_eq!(
+            fs::read(resources[0].as_ref().unwrap().path()).unwrap(),
+            b"A retained original"
+        );
+        assert_eq!(fs::read(&db).unwrap(), original);
+        assert_eq!(fs::read(books.join("existing.db")).unwrap(), existing);
+        assert!(stage.join("archive.in").exists());
+        // Desktop restores the same archive produced by the phone's preparation core.
+        let key = encrypted_archive::key_from_path(&stage.join("key.in")).unwrap();
+        let desktop = root.path().join("desktop");
+        let restored = encrypted_archive::restore(
+            &stage.join("archive.out"),
+            &key,
+            &desktop,
+            "book",
+            1_700_000_000_000,
+            root.path(),
+        )
+        .unwrap();
+        assert_eq!(
+            fs::read(crate::pictures::dir_for(Path::new(&restored.path)).join("face.png")).unwrap(),
+            include_bytes!("../fixtures/two-halves.png")
+        );
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(
+                fs::metadata(stage.join("archive.out"))
+                    .unwrap()
+                    .permissions()
+                    .mode()
+                    & 0o777,
+                0o600
+            );
+        }
+    }
+    #[test]
+    fn mobile_transfer_refuses_every_unsupported_raw_preset_before_writable_open() {
+        let root = tempfile::tempdir().unwrap();
+        let db = book(root.path());
+        for preset in [
+            None,
+            Some("novel"),
+            Some(""),
+            Some("short"),
+            Some("nonfiction"),
+            Some("collection"),
+            Some("Novel"),
+            Some("zzz"),
+        ] {
+            let store = Store::open_existing(&db).unwrap();
+            if let Some(value) = preset {
+                store.set_meta("project.preset", value).unwrap();
+            }
+            store.checkpoint().unwrap();
+            drop(store);
+            let before = fs::read(&db).unwrap();
+            let reader = Store::open_readonly(&db).unwrap();
+            assert_eq!(
+                mobile_core::supported(&reader).is_ok(),
+                matches!(preset, None | Some("novel")),
+                "{preset:?}"
+            );
+            assert_eq!(fs::read(&db).unwrap(), before);
+            if !matches!(preset, None | Some("novel")) {
+                let stage = stage(
+                    &root.path().join("transfer"),
+                    &uuid::Uuid::now_v7().to_string(),
+                )
+                .unwrap();
+                // Make a desktop archive, which can contain layouts the phone refuses.
+                let bundle = stage.join("snapshot.point");
+                assert!(
+                    backup_bundle::write(&db, &reader, &bundle)
+                        .unwrap()
+                        .verified
+                );
+                encrypted_archive::generate_key(&stage.join("key.in")).unwrap();
+                let key = encrypted_archive::key_from_path(&stage.join("key.in")).unwrap();
+                encrypted_archive::write_verified_cipher(&bundle, &stage.join("archive.in"), &key)
+                    .unwrap();
+                let books = root.path().join("books");
+                fs::create_dir_all(&books).unwrap();
+                assert_eq!(
+                    preview(&stage, &books).unwrap_err(),
+                    "unsupported_project_preset"
+                );
+                assert_eq!(fs::read_dir(&books).unwrap().count(), 0);
+            }
+        }
+    }
+    #[test]
+    fn mobile_transfer_schema_refusal_precedes_preset_and_never_publishes() {
+        #[derive(serde::Serialize, serde::Deserialize)]
+        struct Asset {
+            name: String,
+            bytes: u64,
+            hash: String,
+        }
+        #[derive(serde::Serialize, serde::Deserialize)]
+        struct Inventory {
+            version: u32,
+            db_hash: String,
+            expected: Vec<String>,
+            assets: Vec<Asset>,
+            #[serde(default, skip_serializing_if = "Vec::is_empty")]
+            research_expected: Vec<String>,
+            #[serde(default, skip_serializing_if = "Vec::is_empty")]
+            research_assets: Vec<Asset>,
+            errors: Vec<String>,
+            checksum: String,
+        }
+        for (preset, newer, code) in [
+            ("short", false, "unsupported_project_preset"),
+            ("zzz", false, "unsupported_project_preset"),
+            ("novel", true, "unsupported_schema"),
+            ("short", true, "unsupported_schema"),
+            ("zzz", true, "unsupported_schema"),
+        ] {
+            let root = tempfile::tempdir().unwrap();
+            let db = book(root.path());
+            let store = Store::open_existing(&db).unwrap();
+            store.set_meta("project.preset", preset).unwrap();
+            let stage = stage(
+                &root.path().join("transfer"),
+                &uuid::Uuid::now_v7().to_string(),
+            )
+            .unwrap();
+            let bundle = stage.join("snapshot.point");
+            assert!(backup_bundle::write(&db, &store, &bundle).unwrap().verified);
+            drop(store);
+            if newer {
+                let connection =
+                    rusqlite::Connection::open(backup_bundle::db_path(&bundle)).unwrap();
+                connection
+                    .pragma_update(None, "user_version", crate::store::SCHEMA_VERSION + 1)
+                    .unwrap();
+                drop(connection);
+                let inventory_path = bundle.join(backup_bundle::INVENTORY_NAME);
+                let mut inventory: Inventory =
+                    serde_json::from_slice(&fs::read(&inventory_path).unwrap()).unwrap();
+                inventory.db_hash = format!(
+                    "{:016x}",
+                    crate::store::history::hash64(
+                        &fs::read(backup_bundle::db_path(&bundle)).unwrap()
+                    )
+                );
+                inventory.checksum.clear();
+                inventory.checksum = format!(
+                    "{:016x}",
+                    crate::store::history::hash64(&serde_json::to_vec(&inventory).unwrap())
+                );
+                fs::write(inventory_path, serde_json::to_vec(&inventory).unwrap()).unwrap();
+            }
+            encrypted_archive::generate_key(&stage.join("key.in")).unwrap();
+            let key = encrypted_archive::key_from_path(&stage.join("key.in")).unwrap();
+            let output = fs::File::create(stage.join("archive.in")).unwrap();
+            let writer = age::Encryptor::with_recipients(std::iter::once(
+                &key.to_public() as &dyn age::Recipient
+            ))
+            .unwrap()
+            .wrap_output(output)
+            .unwrap();
+            let mut tar = tar::Builder::new(writer);
+            tar.append_path_with_name(
+                bundle.join(backup_bundle::INVENTORY_NAME),
+                backup_bundle::INVENTORY_NAME,
+            )
+            .unwrap();
+            tar.append_path_with_name(backup_bundle::db_path(&bundle), backup_bundle::DB_NAME)
+                .unwrap();
+            for directory in [backup_bundle::PICTURES_NAME, backup_bundle::RESEARCH_NAME] {
+                let dir = bundle.join(directory);
+                tar.append_dir(format!("{directory}/"), &dir).unwrap();
+                let mut files: Vec<_> = fs::read_dir(&dir)
+                    .unwrap()
+                    .map(|entry| entry.unwrap().path())
+                    .collect();
+                files.sort();
+                for file in files {
+                    tar.append_path_with_name(
+                        &file,
+                        Path::new(directory).join(file.file_name().unwrap()),
+                    )
+                    .unwrap();
+                }
+            }
+            tar.into_inner()
+                .unwrap()
+                .finish()
+                .unwrap()
+                .sync_all()
+                .unwrap();
+            let books = root.path().join("books");
+            fs::create_dir(&books).unwrap();
+            book(&books);
+            let before = contents(&books);
+            assert_eq!(
+                preview(&stage, &books).unwrap_err(),
+                code,
+                "{preset} {newer}"
+            );
+            assert_eq!(contents(&books), before, "{preset} {newer}");
+            assert!(!stage.join("owned-copy").exists());
+        }
+    }
+    #[test]
+    fn mobile_transfer_refuses_stale_preview_and_truncated_archive_without_publication() {
+        let root = tempfile::tempdir().unwrap();
+        let db = book(root.path());
+        let stage = incoming(root.path(), &db);
+        let books = root.path().join("books");
+        fs::create_dir(&books).unwrap();
+        let review = preview(&stage, &books).unwrap();
+        let archive = stage.join("archive.in");
+        let bytes = fs::read(&archive).unwrap();
+        fs::write(&archive, &bytes[..bytes.len() - 1]).unwrap();
+        assert!(publish(&stage, &books, &review).is_err());
+        assert_eq!(fs::read_dir(&books).unwrap().count(), 0);
+        assert!(!stage.join("owned-copy").exists());
+        let partial = stage
+            .parent()
+            .unwrap()
+            .join(uuid::Uuid::now_v7().to_string());
+        private_dir(&partial).unwrap();
+        fs::copy(&archive, partial.join("archive.in")).unwrap();
+        fs::copy(stage.join("key.in"), partial.join("key.in")).unwrap();
+        assert!(preview(&partial, &books).is_err());
+        assert!(archive.exists());
+        assert!(db.exists());
+
+        // A tiny encrypted input can declare an oversized plaintext member.
+        let oversized = stage
+            .parent()
+            .unwrap()
+            .join(uuid::Uuid::now_v7().to_string());
+        private_dir(&oversized).unwrap();
+        fs::copy(stage.join("key.in"), oversized.join("key.in")).unwrap();
+        let key = encrypted_archive::key_from_path(&oversized.join("key.in")).unwrap();
+        let inventory = br#"{"version":1,"expected":[],"assets":[]}"#;
+        let mut plain = Vec::new();
+        for (name, size, body) in [
+            (
+                "inventory.json",
+                inventory.len() as u64,
+                inventory.as_slice(),
+            ),
+            ("project.db", PAYLOAD_LIMIT + 1, &[][..]),
+        ] {
+            let mut header = tar::Header::new_ustar();
+            header.set_path(name).unwrap();
+            header.set_entry_type(tar::EntryType::Regular);
+            header.set_size(size);
+            header.set_cksum();
+            plain.extend_from_slice(header.as_bytes());
+            plain.extend_from_slice(body);
+            plain.resize(plain.len().div_ceil(512) * 512, 0);
+        }
+        use std::io::Write;
+        let mut encrypted = age::Encryptor::with_recipients(std::iter::once(
+            &key.to_public() as &dyn age::Recipient
+        ))
+        .unwrap()
+        .wrap_output(Vec::new())
+        .unwrap();
+        encrypted.write_all(&plain).unwrap();
+        fs::write(oversized.join("archive.in"), encrypted.finish().unwrap()).unwrap();
+        assert_eq!(
+            preview(&oversized, &books).unwrap_err(),
+            "transfer_too_large"
+        );
+        assert!(!oversized.join("point/project.db").exists());
+    }
+    #[test]
+    fn mobile_transfer_storage_and_restart_boundaries_preserve_uncertain_stages() {
+        assert_eq!(admit(RESERVE + 99, 50, 2).unwrap_err(), "transfer_storage");
+        assert!(admit(RESERVE + 100, 50, 2).is_ok());
+        assert_eq!(
+            admit(u64::MAX, PAYLOAD_LIMIT + 1, 1).unwrap_err(),
+            "transfer_too_large"
+        );
+        assert!(admit(u64::MAX, u64::MAX, 4).is_err());
+        let root = tempfile::tempdir().unwrap();
+        let transfer_root = root.path().join("transfer");
+        let token = uuid::Uuid::now_v7().to_string();
+        let first = stage(&transfer_root, &token).unwrap();
+        fs::write(
+            first.join("archive.out"),
+            b"retained verified or partial output",
+        )
+        .unwrap();
+        assert_eq!(retained(&transfer_root).unwrap(), 1);
+        assert!(stage(&transfer_root, &token).is_err());
+        let second = stage(&transfer_root, &uuid::Uuid::now_v7().to_string()).unwrap();
+        assert_ne!(first, second);
+        assert_eq!(
+            fs::read(first.join("archive.out")).unwrap(),
+            b"retained verified or partial output"
+        );
+        assert!(stage(&transfer_root, "../book").is_err());
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::{symlink, PermissionsExt};
+            let unsafe_root = root.path().join("unsafe");
+            symlink(&transfer_root, &unsafe_root).unwrap();
+            assert!(retained(&unsafe_root).is_err());
+            fs::set_permissions(&transfer_root, fs::Permissions::from_mode(0o755)).unwrap();
+            assert!(retained(&transfer_root).is_err());
+        }
+    }
+}

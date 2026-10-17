@@ -15,76 +15,71 @@
     "backup-recovery": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
-        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
+        "docs/COMPATIBILITY.md": "f720a30d83181456f704b13600c4fa62a5d938a5b0413fbef175118bf155d71c"
       },
-      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
+      "migration": "",
       "no_impact": "",
-      "note": "Document complete book and profile backups, interrupted migration preservation, archive boundaries, and restoring separate pre-upgrade copies.",
-      "source_sha256": "2edd84df587e32edba860845496359304bc871189b1a9f8bacee26f390bea937"
+      "note": "Android preserves originals and uncertain private staging, verifies archives before provider output and publishes copied books database last.",
+      "source_sha256": "d131299ba4c35a99d2e754400cdd3d7abacdcf07500dbaf48698c86ab38619a4"
     },
     "editor": {
       "breaking": "none",
       "docs": {
-        "README.md": "c124fff0e0ddfbc28757426e5ad184c897bfff59fff6c81ea5e46c85097a8b96"
+        "docs/COMPATIBILITY.md": "f720a30d83181456f704b13600c4fa62a5d938a5b0413fbef175118bf155d71c"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged.",
-      "source_sha256": "0e4f0d0a283e6d20ed949c9cf1571526fe34324d91603deeffdb00f7c1d408fc"
+      "note": "Android adds localized archive preview, explicit separate-copy confirmation and guarded transfer admission through cancellation.",
+      "source_sha256": "5868d8475bce650d27617d30c9874381f596f041e3c2ba8db3357ac52223d3f0"
     },
     "encryption": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
-        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
+        "docs/COMPATIBILITY.md": "f720a30d83181456f704b13600c4fa62a5d938a5b0413fbef175118bf155d71c"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Distinguish encrypted portable archives from plaintext working files and add encryption dependency and source review obligations.",
-      "source_sha256": "3de071163792f42498cde75496e4894e6649599b1f5d949390410cf68e8a3c9a"
+      "note": "The existing age format gains bounded mobile extraction and authenticated capability inspection; ciphertext staging uses private file permissions.",
+      "source_sha256": "70753789b570dcd4a6cd3141de1c47e83a2ddbf62afc6013b3f7aaa83ded619a"
     },
     "maintenance": {
       "breaking": "none",
       "docs": {
-        "CONTRIBUTING.md": "272888b63e282071b5f8c40e627910c1064d4fe6d422f5967dab9dd6fa456d11"
+        "docs/COMPATIBILITY.md": "f720a30d83181456f704b13600c4fa62a5d938a5b0413fbef175118bf155d71c"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged.",
-      "source_sha256": "f38f6d6a0678d7ffd0a4bf023ae6f9aac685727c2507728ae4188fac8b518e9b"
+      "note": "Compatibility guidance documents Android resource limits, ordered capability refusals, retained staging and the limits of automated verification.",
+      "source_sha256": "6de15044d87980a3681a5b11d7d7afb3b69f478b7d2c1c8bbd6e6c2c2030281f"
     },
     "native-packaging": {
       "breaking": "none",
       "docs": {
-        "CONTRIBUTING.md": "272888b63e282071b5f8c40e627910c1064d4fe6d422f5967dab9dd6fa456d11",
-        "docs/RELEASES.md": "a89c23cedc46f620969337f6a3957ddceb589017a562d600bed0bb1da86ac48d"
+        "docs/COMPATIBILITY.md": "f720a30d83181456f704b13600c4fa62a5d938a5b0413fbef175118bf155d71c"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Require the latest exact-commit develop push CI run to succeed before alpha tag packaging; an older success cannot hide a pending or failed newer run. Existing platforms, asset publication, tag ancestry, application behavior, and compatibility remain unchanged.",
-      "source_sha256": "2f6c313459ffcf4cacba835bae2f161f2fa7a56e95c5a4614e855eacb9ef9f8e"
+      "note": "The Android update retains its application identifier and signing flow with source version 0.0.3 and version code 3.",
+      "source_sha256": "121e8d66ce25a24fb50365f6162170a9ddd59cfce4cdf336c6798809ba4a5f47"
     },
     "project-format": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
-        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
+        "docs/COMPATIBILITY.md": "f720a30d83181456f704b13600c4fa62a5d938a5b0413fbef175118bf155d71c"
       },
-      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
+      "migration": "",
       "no_impact": "",
-      "note": "Document bounded foreign DOCX expansion and unchanged manuscript schema, and require source-bound review for project-format changes.",
+      "note": "Android uses the existing archive and copy format; capability checks precede publication without changing book identities or stored format.",
       "source_sha256": "633eb04cbb992be4f186db0ed49f4ba7929e26aa0029d3512d17e3861292a724"
     },
     "schema": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "e784d95cb2f2ce078dabd7fd07dad5216d41249acd94adf399597ceb0d204ab2",
-        "docs/MAINTENANCE.md": "f17eb89476557b21172ec60262765ce990e0bcf177fd8b9a9a6a3d91a2fced75"
+        "docs/COMPATIBILITY.md": "f720a30d83181456f704b13600c4fa62a5d938a5b0413fbef175118bf155d71c"
       },
-      "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books.",
+      "migration": "",
       "no_impact": "",
-      "note": "Document current SQLite schema 17 and profile migration compatibility, backup, upgrade, and rollback limits; introduce conservative migration review obligations.",
+      "note": "SQLite remains schema 17; Android refuses newer schema before preset inspection and preserves existing databases without migration on refusal.",
       "source_sha256": "62d95aba766994ebe98af65fd148d822bf59daffd49ad561db365ed0b52c59c4"
     }
   },

@@ -1,4 +1,5 @@
 import { mobileMessages } from "./messages";
+import { showTransfer, transferError, type TransferStatus } from "./transfer";
 import { createIcon } from "../../ui/src/icons";
 import { openingScene, readWritingPosition, writeWritingPosition, type WritingPosition } from "./position";
 import type { MobileDocument, MobileScene, MobileWorkspace } from "./workspace";
@@ -6,7 +7,7 @@ import type { FlushAck } from "../../ui/src/store/flush";
 
 type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
 interface OpenBook { id: string; name: string; generation: number; scenes: MobileScene[] }
-interface Catalog { books: { id: string; name: string; unavailable?: boolean }[]; current_id?: string }
+interface Catalog { books: { id: string; name: string; unavailable?: boolean; unsupported?: boolean; newer_schema?: boolean; imported?: boolean }[]; current_id?: string; generation?: number; retained_transfers?: number; transfer?: TransferStatus }
 const locale = navigator.language.toLowerCase().startsWith("de") ? "de" : "en";
 window.__appLocale = locale;
 const m = mobileMessages(locale);
@@ -55,7 +56,7 @@ async function open(command: "mobile_open" | "mobile_create", args: Record<strin
     // Build before retiring the library, so malformed content leaves recovery UI.
     const container = element("div");
     workspace = createMobileWorkspace(container, {
-      bookTitle: book.name, locale, theme, scenes: book.scenes, initial,
+      bookTitle: book.name || m.unnamedBook, locale, theme, scenes: book.scenes, initial,
       initialPosition: position?.sceneId === first.id ? position : undefined,
       positionUnavailable,
       savePosition: position => writeWritingPosition(localStorage, book.id, position),
@@ -66,6 +67,7 @@ async function open(command: "mobile_open" | "mobile_create", args: Record<strin
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
       },
+      exportBook: () => showTransfer(container, { invoke: native.core.invoke, locale, theme, direction: "export", generation }),
       beforeLeave: () => native.core.invoke<void>("mobile_close", { generation }),
       onLeave: () => {
         workspace = undefined;
@@ -76,7 +78,9 @@ async function open(command: "mobile_open" | "mobile_create", args: Record<strin
     mount.replaceChildren(container);
     lifecycle.__mobileWriting = true;
   } catch (error) {
-    let failure = error instanceof Error && error.message === m.unsupported ? m.unsupported : m.operationError;
+    let failure = String(error) === "unsupported_schema" ? m.unsupportedSchema
+      : String(error) === "unsupported_project_preset" ? m.unsupportedPreset
+      : error instanceof Error && error.message === m.unsupported ? m.unsupported : m.operationError;
     if (opened) {
       try { await native.core.invoke("mobile_close", { generation: opened.generation }); }
       catch { failure = m.closeError; }
@@ -115,6 +119,12 @@ async function library(errorText?: string, resumeOpen = true) {
   setBusy(true);
   try {
     const catalog = await native.core.invoke<Catalog>("mobile_catalog");
+    if (catalog.transfer) {
+      setBusy(false);
+      await showTransfer(root, { invoke: native.core.invoke, locale, theme, direction: catalog.current_id ? "export" : "import", generation: catalog.generation ?? 0, existing: catalog.transfer });
+      await library();
+      return;
+    }
     if (catalog.current_id && resumeOpen) {
       setBusy(false);
       await open("mobile_open", { id: catalog.current_id });
@@ -128,8 +138,9 @@ async function library(errorText?: string, resumeOpen = true) {
       const cover = element("span", book.unavailable ? "" : (Array.from(book.name.trim())[0] ?? ""));
       cover.className = "mobile-book-cover";
       cover.setAttribute("aria-hidden", "true");
-      const bookTitle = element("span", book.unavailable ? m.unavailableBook : book.name);
+      const bookTitle = element("span", book.newer_schema ? m.unsupportedSchema : book.unsupported ? m.unsupportedPreset : book.unavailable ? m.unavailableBook : book.name || m.unnamedBook);
       bookTitle.className = "mobile-book-name";
+      if (book.imported) bookTitle.append(element("small", m.importedCopy));
       button.append(cover, bookTitle);
       if (book.unavailable) {
         button.dataset.unavailable = "true";
@@ -149,7 +160,15 @@ async function library(errorText?: string, resumeOpen = true) {
       const name = input.value.trim();
       if (name) void open("mobile_create", { name });
     });
-    root.append(form, list);
+    const transfer = element("button", m.importBook); transfer.type = "button";
+    transfer.addEventListener("click", () => {
+      if (busy) return;
+      setBusy(true);
+      void showTransfer(root, { invoke: native.core.invoke, locale, theme, direction: "import", generation: catalog.generation ?? 0 })
+        .then(() => library()).catch(error => message(transferError(error, locale))).finally(() => setBusy(false));
+    });
+    root.append(form, transfer, list);
+    if (catalog.retained_transfers) root.append(element("p", m.transferRetained));
   } catch { message(m.operationError); }
   finally { setBusy(false); }
 }

@@ -329,7 +329,13 @@ fn write_cipher(bundle: &Path, out: &Path, key: &Identity) -> Result<(), String>
             .ok_or("bundle payload size overflow")?;
         if total > TOTAL_LIMIT { return Err("bundle too large for encrypted archive".into()); }
     }
-    let file = OpenOptions::new().write(true).create_new(true).open(out)
+    let mut options = OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)] {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let file = options.open(out)
         .map_err(|e| format!("cannot create ciphertext staging: {e}"))?;
     let recipient = key.to_public();
     let encryptor = age::Encryptor::with_recipients(std::iter::once(&recipient as &dyn age::Recipient))
@@ -395,6 +401,10 @@ pub(crate) fn extract_verified_bundle(cipher: &Path, key: &Identity, stage: &Pat
 /// A mobile adapter admits storage before extraction and supplies its smaller
 /// ciphertext and plaintext budgets. Desktop limits remain the upper ceiling.
 pub(crate) fn extract_with_limits(cipher: &Path, key: &Identity, stage: &Path, max_cipher: u64, max_payload: u64) -> Result<PathBuf, String> {
+    extract_checked(cipher, key, stage, max_cipher, max_payload, |_| Ok(()))
+}
+
+pub(crate) fn extract_checked(cipher: &Path, key: &Identity, stage: &Path, max_cipher: u64, max_payload: u64, check: impl FnOnce(&Path) -> Result<(), String>) -> Result<PathBuf, String> {
     let input = safe_file(cipher, max_cipher)?;
     let cipher_size = input.metadata().map_err(|_| "encrypted archive metadata unreadable")?.len();
     let counted = Rc::new(Cell::new(0));
@@ -517,6 +527,8 @@ pub(crate) fn extract_with_limits(cipher: &Path, key: &Identity, stage: &Path, m
     backup_bundle::sync_directory(&pictures)?;
     if inventory_version == 2 { backup_bundle::sync_directory(&bundle.join(backup_bundle::RESEARCH_NAME))?; }
     backup_bundle::sync_directory(&bundle)?;
+    // The entire age stream is authenticated before inspecting client capabilities.
+    check(&bundle)?;
     backup_bundle::verify(&bundle).map_err(|e| format!("decrypted bundle verification failed: {e}"))?;
     Ok(bundle)
 }
