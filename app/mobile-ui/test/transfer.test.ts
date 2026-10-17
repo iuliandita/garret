@@ -13,7 +13,7 @@ test("import previews escape titles and publish only after the localized keep-bo
   for (const [locale, theme] of [["en", "light"], ["de", "dark"]] as const) {
     const mount = document.createElement("section"); document.body.append(mount);
     const m = mobileMessages(locale); const calls: string[] = [];
-    let status: TransferStatus = { token: "opaque-job", phase: "preview", preview: { title: "<img src=x>", related: ["Harbour"] } };
+    let status: TransferStatus = { token: "opaque-job", phase: "preview", preview: { title: "<img src=x>", related: ["Harbour"], unreadable_books: 1 } };
     const done = showTransfer(mount, { locale, theme, generation: 9, direction: "import", existing: status,
       invoke: async <T>(command: string, args?: Record<string, unknown>) => {
         calls.push(command); expect(args?.token).toBe("opaque-job");
@@ -26,6 +26,7 @@ test("import previews escape titles and publish only after the localized keep-bo
     expect(mount.querySelector("dialog")!.dataset.theme).toBe(theme);
     expect(mount.querySelector("img")).toBeNull();
     expect(mount.querySelector("h3")!.textContent).toBe("<img src=x>");
+    expect(mount.textContent).toContain(m.transferLibraryUnreadable);
     expect(calls).toEqual([]);
     press(mount, m.keepBoth); await settled();
     expect(calls).toEqual(["mobile_transfer_confirm", "mobile_transfer_status"]);
@@ -79,6 +80,40 @@ test("preset refusal and provider failure are localized without exposing native 
     expect(transferError("unsupported_schema", locale)).toBe(m.unsupportedSchema);
     expect(transferError("unsupported_project_preset", locale)).toBe(m.unsupportedPreset);
     expect(transferError("transfer_provider", locale)).toBe(m.transferProvider);
+    for (const [code, message] of Object.entries({ transfer_busy: m.transferBusy, transfer_publish: m.transferPublish,
+      transfer_library_unreadable: m.transferLibraryUnreadable, transfer_incomplete: m.transferIncomplete,
+      transfer_cancelled: m.transferCancelled, transfer_restart: m.transferRestart, transfer_disabled: m.transferDisabled })) {
+      expect(transferError(code, locale)).toBe(message);
+      expect(message).not.toBe(m.transferInvalid);
+    }
     expect(transferError("native provider internals", locale)).toBe(m.transferInvalid);
+  }
+});
+
+test("a provider close watchdog requires restart without admitting another action", async () => {
+  const mount = document.createElement("section"); document.body.append(mount);
+  const calls: string[] = [];
+  const addListener = window.addEventListener;
+  const handlers: EventListener[] = [];
+  const lifecycle = window as Window & { __mobileTransfer?: boolean };
+  const previousTransfer = lifecycle.__mobileTransfer;
+  window.addEventListener = (type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) => {
+    if (type === "mobile-back") handlers.push(listener as EventListener);
+    addListener.call(window, type, listener, options);
+  };
+  try {
+  void showTransfer(mount, { locale: "en", theme: "light", generation: 1, direction: "export",
+    existing: { token: "blocked-provider", phase: "restart_required", code: "transfer_restart" },
+    invoke: async <T>(command: string) => { calls.push(command); return undefined as T; },
+  });
+  expect(mount.textContent).toContain(mobileMessages("en").transferRestart);
+  expect(mount.querySelectorAll("button").length).toBe(0);
+  window.dispatchEvent(new Event("mobile-back")); await settled();
+  expect(calls).toEqual([]);
+  } finally {
+    window.addEventListener = addListener;
+    for (const handler of handlers) window.removeEventListener("mobile-back", handler, true);
+    lifecycle.__mobileTransfer = previousTransfer;
+    mount.remove();
   }
 });

@@ -164,7 +164,8 @@ The phone accepts archives up to 1 GiB and contents up to 512 MiB, with extra
 private storage required for verification and copying. This Android version
 supports only absent or `novel` project presets; other presets are refused
 before editable opening. See [compatibility and recovery](docs/COMPATIBILITY.md)
-for interrupted transfers, updates, and verification limits.
+for interrupted transfers, leftover-file disposal, updates, and verification
+limits. Android transfer is not certified on physical devices.
 
 ### If a backup was interrupted
 

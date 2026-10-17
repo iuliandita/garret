@@ -26,6 +26,7 @@ struct Session {
 struct MobileHost {
     books: PathBuf,
     transfers: PathBuf,
+    transfers_available: bool,
     session: Mutex<Session>,
 }
 
@@ -45,6 +46,7 @@ struct Catalog {
     books: Vec<BookName>,
     current_id: Option<String>,
     retained_transfers: usize,
+    transfers_available: bool,
     transfer: Option<TransferStatus>,
 }
 
@@ -186,7 +188,7 @@ fn mobile_catalog(host: State<'_, MobileHost>) -> Result<Catalog, String> {
             if !regular {
                 return Err("book path is not a regular file".into());
             }
-            transfer::read_supported(&path, &host.transfers, |store| {
+            transfer::probe(&path, |store| {
                 let name = store
                     .get_meta(NAME_KEY)
                     .map_err(|error| error.to_string())?
@@ -229,7 +231,8 @@ fn mobile_catalog(host: State<'_, MobileHost>) -> Result<Catalog, String> {
         generation: session.generation,
         books,
         current_id: session.open.as_ref().map(|book| book.id.clone()),
-        retained_transfers: transfer::retained(&host.transfers)?,
+        retained_transfers: transfer::retained(&host.transfers).unwrap_or(0),
+        transfers_available: host.transfers_available,
         transfer: session.transfer.as_ref().map(|job| job.status.clone()),
     })
 }
@@ -325,12 +328,16 @@ fn open_book(host: &MobileHost, id: &str) -> Result<Book, String> {
         return Err("close the current book before opening another".into());
     }
     let path = book_path(&host, &id)?;
-    transfer::read_supported(&path, &host.transfers, |_| Ok(()))?;
-    let reader = crate::mobile_core::open_supported(&path)?;
-    if crate::backup_bundle::marker_present(&path)? {
-        return Err("transfer_invalid".into());
-    }
-    drop(reader);
+    transfer::probe(&path, |reader| {
+        if reader
+            .get_meta(crate::backup_bundle::MARKER_KEY)
+            .map_err(|_| "transfer_invalid")?
+            .is_some()
+        {
+            return Err("transfer_invalid".into());
+        }
+        Ok(())
+    })?;
     let store = store::Store::open_existing(&path).map_err(|error| error.to_string())?;
     let name = store
         .get_meta(NAME_KEY)
@@ -359,6 +366,7 @@ fn mobile_scene_create(
         .session
         .lock()
         .map_err(|_| "book session unavailable")?;
+    idle(&session)?;
     let open = checked(&session, generation)?;
     let items = open.store.items().map_err(|error| error.to_string())?;
     let excluded = store::excluded_from_book(&items);
@@ -425,6 +433,7 @@ fn mobile_flush(
         .session
         .lock()
         .map_err(|_| "book session unavailable")?;
+    idle(&session)?;
     let open = current(&session)?;
     let allowed: std::collections::HashSet<_> = scenes(&open.store)?
         .into_iter()
@@ -466,11 +475,12 @@ pub fn run() {
             let data = app.path().app_data_dir()?;
             let books = data.join("books");
             let transfers = data.join("transfer");
-            transfer::private_dir(&transfers)?;
             fs::create_dir_all(&books)?;
+            let transfers_available = transfer::sweep(&transfers, false).is_ok();
             app.manage(MobileHost {
                 books,
                 transfers,
+                transfers_available,
                 session: Mutex::new(Session {
                     generation: 0,
                     open: None,
@@ -492,6 +502,7 @@ pub fn run() {
             mobile_transfer_cancel,
             mobile_transfer_confirm,
             mobile_transfer_finish,
+            mobile_transfer_discard,
         ])
         .run(tauri::generate_context!())
         .expect("mobile host failed to start");
@@ -524,6 +535,8 @@ struct Transfer {
     stage: PathBuf,
     canceled: Arc<AtomicBool>,
     running: bool,
+    direction: Direction,
+    uncertain_write: bool,
 }
 fn idle(session: &Session) -> Result<(), String> {
     if session.transfer.is_some() {
@@ -577,12 +590,43 @@ fn complete(
     token: &str,
     result: Result<Option<transfer::Preview>, String>,
 ) {
-    let host = app.state::<MobileHost>();
+    complete_transfer(&app.state::<MobileHost>(), token, result);
+}
+fn complete_transfer(
+    host: &MobileHost,
+    token: &str,
+    result: Result<Option<transfer::Preview>, String>,
+) {
+    let cleanup = if matches!(&result, Ok(Some(_))) {
+        Ok(())
+    } else {
+        let claim = host.session.lock().ok().and_then(|session| {
+            session
+                .transfer
+                .as_ref()
+                .filter(|job| job.status.token == token)
+                .map(|job| {
+                    (
+                        job.stage.clone(),
+                        job.direction == Direction::Export && job.uncertain_write,
+                    )
+                })
+        });
+        claim.map_or(Ok(()), |(stage, uncertain)| {
+            transfer::finish_stage(&stage, uncertain)
+        })
+    };
     let Ok(mut session) = host.session.lock() else {
         return;
     };
+    let result = if matches!(&result, Err(code) if code == "transfer_restart") {
+        result
+    } else {
+        cleanup.and(result)
+    };
     settle(&mut session, token, result);
 }
+
 fn settle(session: &mut Session, token: &str, result: Result<Option<transfer::Preview>, String>) {
     let ownership = admitted(session, token).map(|_| ());
     let Some(job) = session
@@ -593,20 +637,26 @@ fn settle(session: &mut Session, token: &str, result: Result<Option<transfer::Pr
         return;
     };
     job.running = false;
-    match ownership.and(result) {
+    let outcome = if matches!(&result, Err(code) if code == "transfer_restart") {
+        result
+    } else {
+        ownership.and(result)
+    };
+    match outcome {
         Ok(Some(preview)) => {
             job.status.preview = Some(preview);
             job.status.phase = "preview".into();
         }
         Ok(None) => job.status.phase = "done".into(),
         Err(code) => {
-            job.status.phase =
-                if job.canceled.load(Ordering::SeqCst) || code == "transfer_cancelled" {
-                    "cancelled"
-                } else {
-                    "failed"
-                }
-                .into();
+            job.status.phase = if code == "transfer_restart" {
+                "restart_required"
+            } else if job.canceled.load(Ordering::SeqCst) || code == "transfer_cancelled" {
+                "cancelled"
+            } else {
+                "failed"
+            }
+            .into();
             job.status.code = Some(code);
         }
     }
@@ -630,7 +680,7 @@ async fn pick_read(app: &tauri::AppHandle, token: &str, kind: Kind) -> Result<()
             },
         )
         .await
-        .map_err(|_| "transfer_provider")?
+        .map_err(provider_error)?
         .ok_or("transfer_cancelled")?;
     phase(app, token, "reading")?;
     let limit = if kind == Kind::Key {
@@ -639,7 +689,10 @@ async fn pick_read(app: &tauri::AppHandle, token: &str, kind: Kind) -> Result<()
         transfer::read_budget(&stage)?
     };
     let receipt = bridge.read(ticket, token, limit).await.map_err(|code| {
-        if matches!(code.as_str(), "transfer_too_large" | "transfer_storage") {
+        if matches!(
+            code.as_str(),
+            "transfer_too_large" | "transfer_storage" | "transfer_restart"
+        ) {
             code
         } else {
             "transfer_provider".into()
@@ -681,13 +734,20 @@ async fn pick_write(
             },
         )
         .await
-        .map_err(|_| "transfer_provider")?
+        .map_err(provider_error)?
         .ok_or("transfer_cancelled")?;
-    phase(app, token, "writing")?;
-    bridge
-        .write(ticket, token, digest.0, &digest.1)
-        .await
-        .map_err(|_| "transfer_unverified")?;
+    let stage = phase(app, token, "writing")?;
+    transfer::write_started(&stage)?;
+    write_state(&app.state::<MobileHost>(), token, true)?;
+    if let Err(code) = bridge.write(ticket, token, digest.0, &digest.1).await {
+        if code == "transfer_not_started" {
+            write_state(&app.state::<MobileHost>(), token, false)?;
+            transfer::write_verified(&stage)?;
+        }
+        return Err(provider_error(code));
+    }
+    write_state(&app.state::<MobileHost>(), token, false)?;
+    transfer::write_verified(&stage)?;
     phase(app, token, "preparing")?;
     Ok(())
 }
@@ -701,10 +761,10 @@ async fn export_book(
     let snapshot_token = token.to_string();
     let bundle = blocking(move || {
         let host = snapshot_app.state::<MobileHost>();
-        let session = host.session.lock().map_err(|_| "transfer_invalid")?;
-        let job = admitted(&session, &snapshot_token)?;
-        let book = current(&session)?;
-        transfer::snapshot(&book_path(&host, &book.id)?, &book.store, &job.stage)
+        snapshot_transfer(&host, &snapshot_token, |path, stage| {
+            let store = store::Store::open_existing(path).map_err(|_| "transfer_invalid")?;
+            transfer::snapshot(path, &store, stage)
+        })
     })
     .await?;
     phase(app, token, "preparing")?;
@@ -746,14 +806,49 @@ async fn import_book(
     phase(app, token, "preview")?;
     Ok(Some(preview))
 }
-#[tauri::command]
-fn mobile_transfer_start(
-    app: tauri::AppHandle,
-    host: State<'_, MobileHost>,
+fn write_state(host: &MobileHost, token: &str, uncertain: bool) -> Result<(), String> {
+    let mut session = host.session.lock().map_err(|_| "transfer_invalid")?;
+    if uncertain {
+        admitted(&session, token)?;
+    }
+    session
+        .transfer
+        .as_mut()
+        .filter(|job| job.status.token == token)
+        .ok_or("transfer_stale")?
+        .uncertain_write = uncertain;
+    Ok(())
+}
+fn provider_error(code: String) -> String {
+    if code == "transfer_restart" {
+        code
+    } else {
+        "transfer_provider".into()
+    }
+}
+fn snapshot_transfer<T>(
+    host: &MobileHost,
+    token: &str,
+    snapshot: impl FnOnce(&std::path::Path, &std::path::Path) -> Result<T, String>,
+) -> Result<T, String> {
+    let (path, stage) = {
+        let session = host.session.lock().map_err(|_| "transfer_invalid")?;
+        let job = admitted(&session, token)?;
+        (book_path(host, &current(&session)?.id)?, job.stage.clone())
+    };
+    let result = snapshot(&path, &stage)?;
+    let session = host.session.lock().map_err(|_| "transfer_invalid")?;
+    admitted(&session, token)?;
+    Ok(result)
+}
+fn start_transfer(
+    host: &MobileHost,
     direction: Direction,
     generation: u64,
-    key_choice: KeyChoice,
 ) -> Result<TransferStatus, String> {
+    if !host.transfers_available {
+        return Err("transfer_disabled".into());
+    }
     let mut session = host.session.lock().map_err(|_| "transfer_invalid")?;
     idle(&session)?;
     if generation != session.generation {
@@ -782,7 +877,21 @@ fn mobile_transfer_start(
         stage,
         canceled: Arc::new(AtomicBool::new(false)),
         running: true,
+        direction,
+        uncertain_write: false,
     });
+    Ok(status)
+}
+#[tauri::command]
+fn mobile_transfer_start(
+    app: tauri::AppHandle,
+    host: State<'_, MobileHost>,
+    direction: Direction,
+    generation: u64,
+    key_choice: KeyChoice,
+) -> Result<TransferStatus, String> {
+    let status = start_transfer(&host, direction, generation)?;
+    let token = status.token.clone();
     tauri::async_runtime::spawn(async move {
         let result = if direction == Direction::Export {
             export_book(&app, &token, key_choice).await
@@ -810,12 +919,7 @@ fn mobile_transfer_status(
         .map(|job| job.status.clone())
         .ok_or_else(|| "transfer_stale".into())
 }
-#[tauri::command]
-async fn mobile_transfer_cancel(
-    app: tauri::AppHandle,
-    host: State<'_, MobileHost>,
-    token: String,
-) -> Result<(), String> {
+fn cancel_transfer(host: &MobileHost, token: &str) -> Result<(), String> {
     {
         let mut session = host.session.lock().map_err(|_| "transfer_invalid")?;
         let job = session
@@ -825,7 +929,7 @@ async fn mobile_transfer_cancel(
             .ok_or("transfer_stale")?;
         if matches!(
             job.status.phase.as_str(),
-            "done" | "failed" | "cancelled" | "publishing"
+            "done" | "failed" | "cancelled" | "publishing" | "restart_required"
         ) {
             return Ok(());
         }
@@ -835,10 +939,60 @@ async fn mobile_transfer_cancel(
             job.status.phase = "cancelled".into();
         }
     }
+    Ok(())
+}
+#[tauri::command]
+async fn mobile_transfer_cancel(
+    app: tauri::AppHandle,
+    host: State<'_, MobileHost>,
+    token: String,
+) -> Result<(), String> {
+    cancel_transfer(&host, &token)?;
     app.state::<Bridge<tauri::Wry>>()
         .cancel(&token)
         .await
         .map_err(|_| "transfer_provider".into())
+}
+fn claim_publish(host: &MobileHost, token: &str) -> Result<(PathBuf, transfer::Preview), String> {
+    let mut session = host.session.lock().map_err(|_| "transfer_invalid")?;
+    let job = admitted(&session, token)?;
+    if job.running || job.status.phase != "preview" {
+        return Err("transfer_stale".into());
+    }
+    let claim = (
+        job.stage.clone(),
+        job.status.preview.clone().ok_or("transfer_stale")?,
+    );
+    let job = session.transfer.as_mut().unwrap();
+    job.running = true;
+    job.status.phase = "publishing".into();
+    Ok(claim)
+}
+fn publish_transfer(
+    host: &MobileHost,
+    token: &str,
+    claim: (PathBuf, transfer::Preview),
+    publish: impl FnOnce(
+        &std::path::Path,
+        &std::path::Path,
+        &transfer::Preview,
+    ) -> Result<String, String>,
+) {
+    let result = publish(&claim.0, &host.books, &claim.1);
+    let cleanup = transfer::finish_stage(&claim.0, false);
+    let Ok(mut session) = host.session.lock() else {
+        return;
+    };
+    let result = result.and_then(|id| {
+        admitted(&session, token)?;
+        let job = session.transfer.as_mut().unwrap();
+        job.status.book_id = Some(id);
+        if cleanup.is_err() {
+            job.status.code = Some("transfer_cleanup".into());
+        }
+        Ok(None)
+    });
+    settle(&mut session, token, result);
 }
 #[tauri::command]
 fn mobile_transfer_confirm(
@@ -846,51 +1000,54 @@ fn mobile_transfer_confirm(
     host: State<'_, MobileHost>,
     token: String,
 ) -> Result<(), String> {
-    {
-        let mut session = host.session.lock().map_err(|_| "transfer_invalid")?;
-        let job = admitted(&session, &token)?;
-        if job.running || job.status.phase != "preview" || job.status.preview.is_none() {
-            return Err("transfer_stale".into());
-        }
-        let job = session.transfer.as_mut().unwrap();
-        job.running = true;
-        job.status.phase = "publishing".into();
-    }
+    let claim = claim_publish(&host, &token)?;
     tauri::async_runtime::spawn_blocking(move || {
-        let result = (|| {
-            let host = app.state::<MobileHost>();
-            let mut session = host.session.lock().map_err(|_| "transfer_invalid")?;
-            let job = admitted(&session, &token)?;
-            let id = transfer::publish(
-                &job.stage,
-                &host.books,
-                job.status.preview.as_ref().ok_or("transfer_stale")?,
-            )?;
-            let job = session.transfer.as_mut().unwrap();
-            job.status.book_id = Some(id);
-            // Publication is complete even if later staging cleanup fails.
-            if fs::remove_dir_all(&job.stage).is_err() {
-                job.status.code = Some("transfer_cleanup".into());
-            }
-            Ok(None)
-        })();
-        complete(&app, &token, result);
+        publish_transfer(&app.state::<MobileHost>(), &token, claim, transfer::publish);
     });
+    Ok(())
+}
+fn finish_transfer(host: &MobileHost, token: &str) -> Result<(), String> {
+    let (stage, uncertain) = {
+        let mut session = host.session.lock().map_err(|_| "transfer_invalid")?;
+        let job = session
+            .transfer
+            .as_mut()
+            .filter(|job| job.status.token == token)
+            .ok_or("transfer_stale")?;
+        if job.running || !matches!(job.status.phase.as_str(), "done" | "failed" | "cancelled") {
+            return Err("transfer_busy".into());
+        }
+        job.running = true;
+        (
+            job.stage.clone(),
+            job.direction == Direction::Export && job.uncertain_write,
+        )
+    };
+    let result = transfer::finish_stage(&stage, uncertain);
+    let mut session = host.session.lock().map_err(|_| "transfer_invalid")?;
+    if let Some(job) = session
+        .transfer
+        .as_mut()
+        .filter(|job| job.status.token == token)
+    {
+        job.running = false;
+        result?;
+        session.transfer = None;
+    }
     Ok(())
 }
 #[tauri::command]
 fn mobile_transfer_finish(host: State<'_, MobileHost>, token: String) -> Result<(), String> {
-    let mut session = host.session.lock().map_err(|_| "transfer_invalid")?;
-    let job = session
-        .transfer
-        .as_ref()
-        .filter(|job| job.status.token == token)
-        .ok_or("transfer_stale")?;
-    if job.running || !matches!(job.status.phase.as_str(), "done" | "failed" | "cancelled") {
-        return Err("transfer_busy".into());
-    }
-    session.transfer = None;
-    Ok(())
+    finish_transfer(&host, &token)
+}
+#[tauri::command]
+fn mobile_transfer_discard(host: State<'_, MobileHost>) -> Result<(), String> {
+    discard_transfers(&host)
+}
+fn discard_transfers(host: &MobileHost) -> Result<(), String> {
+    let session = host.session.lock().map_err(|_| "transfer_invalid")?;
+    idle(&session)?;
+    transfer::sweep(&host.transfers, true)
 }
 
 #[cfg(test)]
@@ -913,6 +1070,7 @@ mod tests {
             MobileHost {
                 books,
                 transfers,
+                transfers_available: true,
                 session: Mutex::new(Session {
                     generation: 0,
                     open: None,
@@ -921,6 +1079,186 @@ mod tests {
             },
             id,
         )
+    }
+    #[test]
+    fn mobile_transfer_seventeen_picker_cancels_do_not_exhaust_admission() {
+        for direction in [Direction::Import, Direction::Export] {
+            let root = tempfile::tempdir().unwrap();
+            let (host, id) = host(root.path());
+            if direction == Direction::Export {
+                open_book(&host, &id).unwrap();
+            }
+            let generation = host.session.lock().unwrap().generation;
+            fs::create_dir(host.transfers.join("probe-orphan")).unwrap();
+            let mut stages = Vec::new();
+            for attempt in 0..17 {
+                let status = start_transfer(&host, direction, generation).unwrap();
+                let stage = host.transfers.join(&status.token);
+                fs::write(stage.join("key.in"), b"temporary recovery key").unwrap();
+                if attempt % 2 == 0 {
+                    cancel_transfer(&host, &status.token).unwrap();
+                }
+                assert!(finish_transfer(&host, &status.token).is_err());
+                complete_transfer(&host, &status.token, Err("transfer_cancelled".into()));
+                finish_transfer(&host, &status.token).unwrap();
+                stages.push(stage);
+            }
+            assert!(stages.iter().all(|stage| !stage.exists()));
+            assert_eq!(transfer::retained(&host.transfers).unwrap(), 0);
+            let next = start_transfer(&host, direction, generation).unwrap();
+            assert!(discard_transfers(&host).is_err());
+            cancel_transfer(&host, &next.token).unwrap();
+            complete_transfer(&host, &next.token, Err("transfer_cancelled".into()));
+            finish_transfer(&host, &next.token).unwrap();
+        }
+    }
+    #[test]
+    fn mobile_transfer_terminal_cleanup_retains_only_uncertain_ciphertext() {
+        let root = tempfile::tempdir().unwrap();
+        let (host, id) = host(root.path());
+        let generation = open_book(&host, &id).unwrap().generation;
+        let original = fs::read(book_path(&host, &id).unwrap()).unwrap();
+        for (uncertain, cipher) in [(false, true), (true, true), (true, false)] {
+            let status = start_transfer(&host, Direction::Export, generation).unwrap();
+            let stage = host.transfers.join(&status.token);
+            fs::write(stage.join("key.out"), b"new secret recovery key").unwrap();
+            fs::write(stage.join("key.in"), b"existing secret recovery key").unwrap();
+            fs::create_dir(stage.join("snapshot.point")).unwrap();
+            fs::write(
+                stage.join("snapshot.point/project.db"),
+                b"plaintext manuscript",
+            )
+            .unwrap();
+            if cipher {
+                fs::write(stage.join("archive.out"), b"encrypted archive").unwrap();
+            }
+            transfer::write_started(&stage).unwrap();
+            write_state(&host, &status.token, true).unwrap();
+            if !uncertain {
+                write_state(&host, &status.token, false).unwrap();
+                transfer::write_verified(&stage).unwrap();
+            }
+            complete_transfer(&host, &status.token, Err("transfer_provider".into()));
+            assert!(!stage.join("key.out").exists());
+            assert!(!stage.join("key.in").exists());
+            assert!(!stage.join("snapshot.point").exists());
+            finish_transfer(&host, &status.token).unwrap();
+            assert_eq!(stage.exists(), uncertain);
+            if uncertain {
+                if cipher {
+                    assert_eq!(
+                        fs::read(stage.join("archive.out")).unwrap(),
+                        b"encrypted archive"
+                    );
+                } else {
+                    assert!(!stage.join("archive.out").exists());
+                }
+                assert_eq!(
+                    fs::read_dir(&stage).unwrap().count(),
+                    if cipher { 2 } else { 1 }
+                );
+            }
+        }
+        let stale = transfer::stage(&host.transfers, &uuid::Uuid::now_v7().to_string()).unwrap();
+        fs::write(stale.join("key.out"), b"interrupted key").unwrap();
+        fs::create_dir(host.transfers.join("probe-stale")).unwrap();
+        transfer::sweep(&host.transfers, false).unwrap();
+        assert!(!stale.exists());
+        assert!(!host.transfers.join("probe-stale").exists());
+        assert_eq!(transfer::retained(&host.transfers).unwrap(), 2);
+        discard_transfers(&host).unwrap();
+        assert_eq!(transfer::retained(&host.transfers).unwrap(), 0);
+        assert_eq!(fs::read(book_path(&host, &id).unwrap()).unwrap(), original);
+    }
+    #[test]
+    fn mobile_transfer_low_storage_open_needs_no_temporary_space_or_transfer_size_limit() {
+        let root = tempfile::tempdir().unwrap();
+        let (mut host, id) = host(root.path());
+        fs::remove_dir(&host.transfers).unwrap();
+        fs::write(&host.transfers, b"temporary storage unavailable").unwrap();
+        host.transfers_available = false;
+        let path = book_path(&host, &id).unwrap();
+        fs::OpenOptions::new()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_len(transfer::PAYLOAD_LIMIT + 4096)
+            .unwrap();
+        let opened = open_book(&host, &id).unwrap();
+        assert_eq!(opened.name, "Harbour");
+        assert!(!opened.scenes.is_empty());
+        assert_eq!(
+            fs::read(&host.transfers).unwrap(),
+            b"temporary storage unavailable"
+        );
+        assert!(
+            matches!(start_transfer(&host, Direction::Export, opened.generation), Err(code) if code == "transfer_disabled")
+        );
+    }
+    #[test]
+    fn mobile_transfer_snapshot_and_publish_release_the_session_guard_but_keep_admission() {
+        let root = tempfile::tempdir().unwrap();
+        let (host, id) = host(root.path());
+        let generation = open_book(&host, &id).unwrap().generation;
+        let job = start_transfer(&host, Direction::Export, generation).unwrap();
+        snapshot_transfer(&host, &job.token, |path, stage| {
+            let session = host
+                .session
+                .try_lock()
+                .expect("snapshot holds the session guard");
+            assert!(idle(&session).is_err());
+            drop(session);
+            let store = store::Store::open_existing(path).unwrap();
+            transfer::snapshot(path, &store, stage)
+        })
+        .unwrap();
+        complete_transfer(&host, &job.token, Err("transfer_cancelled".into()));
+        finish_transfer(&host, &job.token).unwrap();
+        host.session.lock().unwrap().open = None;
+        let job = start_transfer(&host, Direction::Import, generation).unwrap();
+        let stage = host.transfers.join(&job.token);
+        let path = book_path(&host, &id).unwrap();
+        let store = store::Store::open_readonly(&path).unwrap();
+        let bundle = stage.join("point");
+        crate::backup_bundle::write(&path, &store, &bundle).unwrap();
+        let source = crate::transfer_copy::inspect(&bundle).unwrap();
+        fs::write(stage.join("archive.in"), b"unchanged archive").unwrap();
+        let (archive_bytes, archive_sha256) =
+            transfer::fingerprint(&stage.join("archive.in"), transfer::ARCHIVE_LIMIT).unwrap();
+        let preview = transfer::Preview {
+            title: source.title.clone(),
+            related: vec![],
+            unreadable_books: 0,
+            source,
+            archive_bytes,
+            archive_sha256,
+        };
+        complete_transfer(&host, &job.token, Ok(Some(preview)));
+        let claim = claim_publish(&host, &job.token).unwrap();
+        publish_transfer(&host, &job.token, claim, |stage, books, preview| {
+            let session = host
+                .session
+                .try_lock()
+                .expect("publish holds the session guard");
+            assert!(idle(&session).is_err());
+            drop(session);
+            cancel_transfer(&host, &job.token).unwrap();
+            assert!(!host
+                .session
+                .lock()
+                .unwrap()
+                .transfer
+                .as_ref()
+                .unwrap()
+                .canceled
+                .load(Ordering::SeqCst));
+            transfer::publish(stage, books, preview)
+        });
+        let session = host.session.lock().unwrap();
+        assert_eq!(session.transfer.as_ref().unwrap().status.phase, "done");
+        assert!(session.transfer.as_ref().unwrap().status.book_id.is_some());
+        drop(session);
+        finish_transfer(&host, &job.token).unwrap();
     }
     #[test]
     fn mobile_transfer_open_refuses_schema_before_preset_without_library_changes() {
@@ -969,11 +1307,16 @@ mod tests {
                 let session = host.session.lock().unwrap();
                 assert!(session.open.is_none());
                 assert_eq!(session.generation, 0);
+                let after = transfer::tests::contents(&host.books);
                 assert_eq!(
-                    transfer::tests::contents(&host.books),
-                    before,
-                    "{preset} {newer} WAL={wal}"
+                    after.keys().collect::<Vec<_>>(),
+                    before.keys().collect::<Vec<_>>()
                 );
+                for (path, bytes) in &before {
+                    if !path.to_string_lossy().ends_with("-shm") {
+                        assert_eq!(after.get(path), Some(bytes), "{preset} {newer} WAL={wal}");
+                    }
+                }
                 drop(connection);
             }
         }
@@ -999,6 +1342,8 @@ mod tests {
             stage: host.transfers.join(&token),
             canceled: Arc::new(AtomicBool::new(false)),
             running: true,
+            direction: Direction::Export,
+            uncertain_write: false,
         });
         assert!(idle(&session).is_err());
         assert!(admitted(&session, &token).is_ok());
@@ -1049,6 +1394,8 @@ mod tests {
             stage: host.transfers.join(&token),
             canceled: Arc::new(AtomicBool::new(false)),
             running: true,
+            direction: Direction::Export,
+            uncertain_write: false,
         });
         session.generation += 1;
         assert!(admitted(&session, &token).is_err());

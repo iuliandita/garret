@@ -5,7 +5,7 @@ export interface TransferStatus {
   token: string;
   phase: string;
   code?: string;
-  preview?: { title?: string; related: string[] };
+  preview?: { title?: string; related: string[]; unreadable_books?: number };
   book_id?: string;
 }
 export function transferError(code: unknown, locale: "en" | "de") {
@@ -17,6 +17,10 @@ export function transferError(code: unknown, locale: "en" | "de") {
     transfer_key: m.transferKeyError, transfer_provider: m.transferProvider,
     transfer_unverified: m.transferProvider, transfer_stale: m.transferStale,
     transfer_cleanup: m.transferCleanup, transfer_retained: m.transferRetained,
+    transfer_disabled: m.transferDisabled, transfer_restart: m.transferRestart,
+    transfer_busy: m.transferBusy, transfer_publish: m.transferPublish,
+    transfer_library_unreadable: m.transferLibraryUnreadable, transfer_incomplete: m.transferIncomplete,
+    transfer_cancelled: m.transferCancelled,
   };
   return messages[String(code)] ?? m.transferInvalid;
 }
@@ -71,7 +75,7 @@ export async function showTransfer(mount: HTMLElement, options: {
     if (["done", "failed", "cancelled"].includes(status.phase)) {
       await options.invoke("mobile_transfer_finish", { token: status.token }); close(); return;
     }
-    if (["publishing", "cancelling"].includes(status.phase)) return;
+    if (["publishing", "cancelling", "restart_required"].includes(status.phase)) return;
     await options.invoke("mobile_transfer_cancel", { token: status.token });
     await poll();
   }
@@ -102,7 +106,7 @@ export async function showTransfer(mount: HTMLElement, options: {
       key: m.transferKey, archive: m.transferArchive, save_key: m.transferSaveKey,
       save_archive: m.transferSaveArchive, reading: m.transferReading, writing: m.transferWriting,
       publishing: m.transferPublishing, cancelling: m.transferCancelling, preparing: m.transferPreparing,
-      cancelled: m.transferCancelled, done: status.book_id ? m.importDone : m.transferDone,
+      restart_required: m.transferRestart, cancelled: m.transferCancelled, done: status.book_id ? m.importDone : m.transferDone,
       failed: transferError(status.code, options.locale), preview: m.previewHint,
     };
     state.textContent = phaseMessages[status.phase] ?? m.transferPreparing;
@@ -110,6 +114,7 @@ export async function showTransfer(mount: HTMLElement, options: {
     if (status.phase === "preview" && status.preview) {
       const name = document.createElement("h3"); name.textContent = status.preview.title || m.unnamedBook;
       preview.append(name);
+      if (status.preview.unreadable_books) preview.append(Object.assign(document.createElement("p"), { textContent: m.transferLibraryUnreadable }));
       if (status.preview.related.length) {
         const label = document.createElement("p"); label.textContent = m.relatedBooks; preview.append(label);
         const list = document.createElement("ul");
@@ -122,7 +127,7 @@ export async function showTransfer(mount: HTMLElement, options: {
       button(m.cancel, cancel);
     } else if (["done", "failed", "cancelled"].includes(status.phase)) {
       button(m.close, async () => { await options.invoke("mobile_transfer_finish", { token: status!.token }); close(); });
-    } else {
+    } else if (status.phase !== "restart_required") {
       if (!["publishing", "cancelling"].includes(status.phase)) button(m.cancel, cancel);
       schedule();
     }

@@ -19,8 +19,12 @@ space needed for verification and a separate owned copy.
 
 Cancellation waits for the original native operation. Close an open system
 picker to let cancellation finish. Provider write, close or readback failures
-leave the destination unverified and retain the private staged copy. Interrupted
-staging survives restart; do not clear it before preserving recovery material.
+leave the destination unverified. The app attempts to delete documents it created
+on failure. Terminal cleanup removes keys and plaintext; only ciphertext from an
+uncertain provider write is retained. Startup sweeps disposable stages, and the
+library offers **Discard leftover transfer files** without deleting books. A
+blocked provider close requires restarting the app before another transfer.
+Android transfer is not certified on physical devices.
 See [compatibility and recovery](../../docs/COMPATIBILITY.md) for limits.
 
 Uninstalling or clearing app data deletes local books;

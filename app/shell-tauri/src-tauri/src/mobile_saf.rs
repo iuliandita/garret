@@ -166,7 +166,12 @@ impl<R: Runtime> Bridge<R> {
                         tauri::plugin::mobile::PluginInvokeError::InvokeRejected(reply)
                             if matches!(
                                 reply.code.as_deref(),
-                                Some("transfer_too_large" | "transfer_storage")
+                                Some(
+                                    "transfer_too_large"
+                                        | "transfer_storage"
+                                        | "transfer_restart"
+                                        | "transfer_not_started"
+                                )
                             ) =>
                         {
                             reply.code.unwrap()
@@ -240,7 +245,7 @@ impl<R: Runtime> Bridge<R> {
         if ticket.mode != Mode::Create || bytes > ticket.kind.limit() || !hash_ok(sha256) {
             return Err("invalid transfer write admission".into());
         }
-        let reply: Receipt = self.call("writeVerified", json!({"operation":ticket.operation,"ticket":ticket.ticket,"stageId":stage_id,"maxBytes":ticket.kind.limit(),"expectedBytes":bytes,"expectedSha256":sha256})).await.map_err(|_| "transfer export is unverified".to_string())?;
+        let reply: Receipt = self.call("writeVerified", json!({"operation":ticket.operation,"ticket":ticket.ticket,"stageId":stage_id,"maxBytes":ticket.kind.limit(),"expectedBytes":bytes,"expectedSha256":sha256})).await?;
         reply.validate_write(&ticket.operation, stage_id, bytes, sha256)?;
         Ok(reply)
     }

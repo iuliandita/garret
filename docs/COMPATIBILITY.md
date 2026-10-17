@@ -37,14 +37,14 @@ application identifier remains `cc.local.app`; profile migration is not sync.
 
 ## Android transfer and updates
 
-The 0.0.3 source keeps SQLite schema 17. The transfer-capable Android build
-keeps application ID `cc.local.app` and
-uses version code 3, higher than the preceding build's 2. Install it as an
-update signed with the same retained key. Do not uninstall or clear app data
-to update: both delete private books and temporary recovery copies. Android
-normally refuses a lower version code; rollback must preserve device data
-and use complete exported archives with their separate recovery keys on a
-compatible desktop build. Installing an older APK is not a recovery method.
+The source stays at version 0.0.2 and Android version code 2 until release
+preparation. The release-preparation change must raise both to 0.0.3/code 3
+before distributing an update. The application ID stays `cc.local.app`; install
+updates signed with the same retained key. Do not uninstall or clear app data
+to update: both delete private books. Android normally refuses a lower version
+code; rollback must preserve device data and use complete exported archives
+with their separate recovery keys on a compatible desktop build. Installing
+an older APK is not a recovery method.
 
 Transfer reuses the desktop binary age archive and complete point bundle.
 There is no new schema or archive format. Every import creates a fresh owned
@@ -53,9 +53,17 @@ a matching lineage never authorizes replacement. A changed archive or bundle
 invalidates its preview. Imported books use separate catalog entries.
 
 Before any writable opening or migration, Android refuses a newer database
-schema first, then checks the raw `project.preset` metadata. Library probes,
-including any pending SQLite WAL, run on private copies without adding library
-sidecars. Import checks authenticated archive metadata and the staged database
+schema first, then checks the raw `project.preset` metadata. Library probes read the SQLite header without copying the database. Closed
+books use immutable read-only connections; books with pending WAL data use a
+WAL-aware read-only connection with `readonly_shm=1` and require an existing
+shared index. They create no library sidecars and have no transfer-size or
+free-space admission limit. SQLite can update read marks in an already mapped
+shared index when another connection in this process owns it. Database bytes,
+originals and catalog entries stay unchanged on refusal. A WAL without its
+shared index, or a pending rollback journal, is reported as unavailable rather
+than repaired during a probe; preserve the complete files for desktop recovery.
+An unreadable library neighbor is flagged and skipped during related-copy
+inspection, so it cannot block a separate import. Import checks authenticated archive metadata and the staged database
 before creating any library file, originals directory or catalog entry. Only an absent value or exactly `novel` is supported.
 Empty, short-fiction, nonfiction, collection and unknown values are refused
 with an English/German explanation. Desktop leniency for unknown presets does
@@ -70,21 +78,33 @@ refuse publication. No existing book is overwritten.
 
 Cancellation keeps admission until the original picker callback, stream and
 cancellation closer have drained. If the system picker remains open, close it
-to finish cancellation. A failed, interrupted or cancelled transfer retains
-private staging for recovery; restarting keeps those files and existing books.
-The library reports retained staging. Preserve app data and ask for recovery
-help before deleting it. At most 16 retained transfers are admitted to bound
-accumulation; this release does not automatically delete uncertain copies.
-Any partially created provider document is unverified and remains under the
-writer's control. A later retry creates another separate copy.
+to finish cancellation. A provider that cannot close within 15 seconds puts
+transfer into a restart-required state; it cannot admit another operation.
+
+Finishing removes every import stage and any export stage that never reached
+a destination write. Failed exports delete recovery keys and plaintext
+snapshots as soon as the destination state is known. Only encrypted output
+and a small state marker survive an unverified provider write. Startup sweeps
+disposable stages and strips plaintext from uncertain export stages without
+touching books. The library's **Discard leftover transfer files** action deletes
+remaining transfer files, including uncertain ciphertext, without deleting books.
+Probe directories never count toward the 16-stage admission bound. Transfers
+are disabled with an explanation if temporary storage cannot be prepared;
+existing books remain available. The app requests truncating provider writes
+and attempts to delete documents it created if verification fails. A provider
+may refuse deletion; any such destination remains unverified. A later retry
+creates another separate copy.
 
 Focused host tests exercise preparation, complete archive restoration,
 copy-only publication with originals, schema-before-preset refusal precedence,
 unchanged libraries after refusal, changed/truncated
 input, free-space admission, cancellation and stale session completion. Mobile
 interface tests cover preview/confirmation, localization and delayed
-cancellation. These checks do not certify native providers, APK updates or an
-emulator/device round trip; those require separate runtime evidence.
+cancellation, restart-required states and leftover-file disposal. Android transfer
+is not certified on physical devices. Host/interface checks do not certify native
+providers, APK updates or an emulator round trip; those require separate runtime
+evidence. Local emulator runs without a tracked artifact are identified as such
+in the change review.
 
 ## Backup, restore, and rollback
 

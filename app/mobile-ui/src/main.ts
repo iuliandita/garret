@@ -7,7 +7,7 @@ import type { FlushAck } from "../../ui/src/store/flush";
 
 type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
 interface OpenBook { id: string; name: string; generation: number; scenes: MobileScene[] }
-interface Catalog { books: { id: string; name: string; unavailable?: boolean; unsupported?: boolean; newer_schema?: boolean; imported?: boolean }[]; current_id?: string; generation?: number; retained_transfers?: number; transfer?: TransferStatus }
+interface Catalog { books: { id: string; name: string; unavailable?: boolean; unsupported?: boolean; newer_schema?: boolean; imported?: boolean }[]; current_id?: string; generation?: number; retained_transfers?: number; transfers_available?: boolean; transfer?: TransferStatus }
 const locale = navigator.language.toLowerCase().startsWith("de") ? "de" : "en";
 window.__appLocale = locale;
 const m = mobileMessages(locale);
@@ -167,8 +167,22 @@ async function library(errorText?: string, resumeOpen = true) {
       void showTransfer(root, { invoke: native.core.invoke, locale, theme, direction: "import", generation: catalog.generation ?? 0 })
         .then(() => library()).catch(error => message(transferError(error, locale))).finally(() => setBusy(false));
     });
+    if (catalog.transfers_available === false) {
+      transfer.dataset.unavailable = "true"; transfer.disabled = true;
+      root.append(element("p", m.transferDisabled));
+    }
     root.append(form, transfer, list);
-    if (catalog.retained_transfers) root.append(element("p", m.transferRetained));
+    if (catalog.retained_transfers) {
+      root.append(element("p", m.transferRetained));
+      const discard = element("button", m.discardTransfers); discard.type = "button";
+      discard.addEventListener("click", () => {
+        if (busy) return;
+        setBusy(true);
+        void native.core.invoke("mobile_transfer_discard").then(() => library())
+          .catch(error => message(transferError(error, locale))).finally(() => setBusy(false));
+      });
+      root.append(discard);
+    }
   } catch { message(m.operationError); }
   finally { setBusy(false); }
 }

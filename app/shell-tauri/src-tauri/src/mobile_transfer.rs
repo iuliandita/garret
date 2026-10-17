@@ -19,6 +19,7 @@ const MAX_RETAINED: usize = 16;
 pub(crate) struct Preview {
     pub title: Option<String>,
     pub related: Vec<String>,
+    pub unreadable_books: usize,
     pub source: transfer_copy::Source,
     pub archive_bytes: u64,
     pub archive_sha256: String,
@@ -50,9 +51,78 @@ pub(crate) fn private_dir(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-pub(crate) fn retained(root: &Path) -> Result<usize, String> {
+fn stages(root: &Path) -> Result<Vec<PathBuf>, String> {
     private_dir(root)?;
-    Ok(fs::read_dir(root).map_err(|_| "transfer_storage")?.count())
+    let mut found = Vec::new();
+    for entry in fs::read_dir(root).map_err(|_| "transfer_storage")? {
+        let entry = entry.map_err(|_| "transfer_storage")?;
+        let name = entry.file_name();
+        let Some(name) = name.to_str() else {
+            continue;
+        };
+        if uuid::Uuid::parse_str(name).is_ok_and(|id| id.to_string() == name) {
+            private_dir(&entry.path())?;
+            found.push(entry.path());
+        }
+    }
+    Ok(found)
+}
+pub(crate) fn retained(root: &Path) -> Result<usize, String> {
+    Ok(stages(root)?.len())
+}
+
+pub(crate) const WRITE_MARKER: &str = "unverified-write";
+
+pub(crate) fn write_started(stage: &Path) -> Result<(), String> {
+    fs::write(
+        stage.join(WRITE_MARKER),
+        b"unverified provider destination\n",
+    )
+    .map_err(|_| "transfer_storage")?;
+    fs::File::open(stage.join(WRITE_MARKER))
+        .and_then(|file| file.sync_all())
+        .map_err(|_| "transfer_storage")?;
+    backup_bundle::sync_directory(stage).map_err(|_| "transfer_storage".into())
+}
+pub(crate) fn write_verified(stage: &Path) -> Result<(), String> {
+    fs::remove_file(stage.join(WRITE_MARKER)).map_err(|_| "transfer_cleanup")?;
+    backup_bundle::sync_directory(stage).map_err(|_| "transfer_cleanup".into())
+}
+pub(crate) fn finish_stage(stage: &Path, keep_uncertain: bool) -> Result<(), String> {
+    if !stage.exists() {
+        return Ok(());
+    }
+    if keep_uncertain && stage.join(WRITE_MARKER).is_file() {
+        for entry in fs::read_dir(stage).map_err(|_| "transfer_cleanup")? {
+            let entry = entry.map_err(|_| "transfer_cleanup")?;
+            if entry.file_name() == "archive.out" || entry.file_name() == WRITE_MARKER {
+                continue;
+            }
+            if entry.file_type().map_err(|_| "transfer_cleanup")?.is_dir() {
+                fs::remove_dir_all(entry.path()).map_err(|_| "transfer_cleanup")?;
+            } else {
+                fs::remove_file(entry.path()).map_err(|_| "transfer_cleanup")?;
+            }
+        }
+        backup_bundle::sync_directory(stage).map_err(|_| "transfer_cleanup")?;
+    } else {
+        fs::remove_dir_all(stage).map_err(|_| "transfer_cleanup")?;
+    }
+    Ok(())
+}
+pub(crate) fn sweep(root: &Path, discard: bool) -> Result<(), String> {
+    for stage in stages(root)? {
+        finish_stage(&stage, !discard)?;
+    }
+    for entry in fs::read_dir(root).map_err(|_| "transfer_cleanup")? {
+        let entry = entry.map_err(|_| "transfer_cleanup")?;
+        if entry.file_name().to_string_lossy().starts_with("probe-")
+            && entry.file_type().map_err(|_| "transfer_cleanup")?.is_dir()
+        {
+            fs::remove_dir_all(entry.path()).map_err(|_| "transfer_cleanup")?;
+        }
+    }
+    backup_bundle::sync_directory(root).map_err(|_| "transfer_cleanup".into())
 }
 
 pub(crate) fn stage(root: &Path, token: &str) -> Result<PathBuf, String> {
@@ -200,51 +270,15 @@ pub(crate) fn encrypt(
     fingerprint(&cipher, ARCHIVE_LIMIT)
 }
 
-/// Never let a refused library book create SQLite sidecars. Its WAL, if any,
-/// belongs in the private probe too, so crash recovery cannot hide metadata.
-pub(crate) fn read_supported<T>(
-    path: &std::path::Path,
-    root: &std::path::Path,
+pub(crate) fn probe<T>(
+    path: &Path,
     read: impl FnOnce(&Store) -> Result<T, String>,
 ) -> Result<T, String> {
-    let probe = tempfile::Builder::new()
-        .prefix("probe-")
-        .tempdir_in(root)
-        .map_err(|_| "transfer_storage")?;
-    let database = probe.path().join("book.db");
-    for (source, target) in [
-        (path.to_path_buf(), database.clone()),
-        (
-            path.with_extension("db-wal"),
-            database.with_extension("db-wal"),
-        ),
-    ] {
-        match std::fs::symlink_metadata(&source) {
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound && source != path => {
-                continue
-            }
-            Err(_) => return Err("transfer_invalid".into()),
-            Ok(_) => (),
-        }
-        let input = crate::backup_bundle::open_regular_with_limit(&source, PAYLOAD_LIMIT)
-            .map_err(|_| "transfer_invalid")?;
-        let mut output = std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(target)
-            .map_err(|_| "transfer_storage")?;
-        admit(
-            available(root)?,
-            input.metadata().map_err(|_| "transfer_invalid")?.len(),
-            1,
-        )?;
-        let copied = std::io::copy(&mut input.take(PAYLOAD_LIMIT + 1), &mut output)
-            .map_err(|_| "transfer_storage")?;
-        if copied > PAYLOAD_LIMIT {
-            return Err("transfer_too_large".into());
-        }
-    }
-    let reader = mobile_core::open_supported(&database)?;
+    let reader = Store::open_mobile_probe(path).map_err(|error| match error {
+        crate::store::StoreError::NewerSchema { .. } => "unsupported_schema".to_string(),
+        _ => "transfer_library_unreadable".to_string(),
+    })?;
+    mobile_core::supported(&reader)?;
     read(&reader)
 }
 
@@ -278,6 +312,7 @@ pub(crate) fn preview(stage: &Path, books: &Path) -> Result<Preview, String> {
     })?;
     let source = transfer_copy::inspect(&bundle).map_err(|_| "transfer_incomplete")?;
     let mut related = Vec::new();
+    let mut unreadable_books = 0;
     for entry in fs::read_dir(books).map_err(|_| "transfer_invalid")? {
         let entry = entry.map_err(|_| "transfer_invalid")?;
         if !entry.file_type().map_err(|_| "transfer_invalid")?.is_file()
@@ -285,18 +320,24 @@ pub(crate) fn preview(stage: &Path, books: &Path) -> Result<Preview, String> {
         {
             continue;
         }
-        // An unreadable book must not disappear from the conflict check.
-        let store =
-            Store::open_readonly(&entry.path()).map_err(|_| "transfer_library_unreadable")?;
-        if transfer_copy::lineage(&store).map_err(|_| "transfer_library_unreadable")?
-            == source.lineage
-        {
-            related.push(
-                store
-                    .get_meta(crate::core_constants::NAME_KEY)
-                    .map_err(|_| "transfer_invalid")?
-                    .unwrap_or_default(),
-            );
+        let related_name = probe(&entry.path(), |store| {
+            if transfer_copy::lineage(store).map_err(|_| "transfer_library_unreadable")?
+                == source.lineage
+            {
+                Ok(Some(
+                    store
+                        .get_meta(crate::core_constants::NAME_KEY)
+                        .map_err(|_| "transfer_library_unreadable")?
+                        .unwrap_or_default(),
+                ))
+            } else {
+                Ok(None)
+            }
+        });
+        match related_name {
+            Ok(Some(name)) => related.push(name),
+            Ok(None) => (),
+            Err(_) => unreadable_books += 1,
         }
     }
     related.sort();
@@ -305,6 +346,7 @@ pub(crate) fn preview(stage: &Path, books: &Path) -> Result<Preview, String> {
     Ok(Preview {
         title: source.title.clone(),
         related,
+        unreadable_books,
         source,
         archive_bytes,
         archive_sha256,
@@ -414,8 +456,10 @@ pub(crate) mod tests {
         fs::copy(&db, books.join("existing.db")).unwrap();
         let original = fs::read(&db).unwrap();
         let existing = fs::read(books.join("existing.db")).unwrap();
+        fs::write(books.join("unreadable.db"), b"damaged book").unwrap();
         let review = preview(&stage, &books).unwrap();
         assert_eq!(review.related, ["Harbour"]);
+        assert_eq!(review.unreadable_books, 1);
         assert_eq!(review.title.as_deref(), Some("Harbour"));
         let id = publish(&stage, &books, &review).unwrap();
         let copy = books.join(format!("{id}.db"));
