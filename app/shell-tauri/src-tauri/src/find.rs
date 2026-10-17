@@ -236,6 +236,17 @@ pub fn search(items: &[SearchItem<'_>], corpus: &Corpus, query: &str, limit: usi
 
     for item in items {
         let title_match = fold(item.title).contains(&needle);
+        if out.results.len() >= limit {
+            let text_match = match corpus.fields.get(item.id) {
+                Some(fields) => fields.iter().any(|field| fold(&field.text).contains(&needle)),
+                None => corpus.texts.get(item.id).is_some_and(|text| fold(text).contains(&needle)),
+            };
+            if title_match || text_match {
+                out.total += 1;
+                out.truncated = true;
+            }
+            continue;
+        }
 
         let mut locators = Vec::new();
         let mut field_snippet = None;

@@ -218,6 +218,8 @@ pub(crate) mod tests {
                 "{query}"
             );
         }
+        let capped = crate::find::search(&items, &corpus, "secret", 0);
+        assert_eq!((capped.total, capped.truncated, capped.results.len()), (1, true, 0));
         let result = crate::find::search(&items, &corpus, "secret", 10);
         assert_eq!(result.results[0].matches, 3);
         assert!(result.results[0]

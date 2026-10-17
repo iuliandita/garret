@@ -1640,13 +1640,8 @@ impl Store {
     /// not a violation of the standing "two rules, not two copies" note on
     /// `document_text`: the rule there is that the COUNTER and the EXPORTER
     /// answer different questions, because the exporter needs marks and block
-    /// boundaries and the counter must discard both. Search needs exactly what
-    /// the counter needs.
-    ///
-    /// Two consequences ride along and are recorded on the search gates rather
-    /// than hidden: a match can span a block boundary, since blocks are joined
-    /// by a single space; and marks are invisible to search, since `em` is an
-    /// attribute of a text node rather than a wrapper.
+    /// boundaries and the counter must discard both. Search uses separate
+    /// fields and positions through `document_search_fields`.
     ///
     /// `skipped` is the one figure saying the answer is an undercount.
     ///

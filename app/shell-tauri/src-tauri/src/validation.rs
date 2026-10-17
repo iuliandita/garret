@@ -110,16 +110,9 @@ pub fn validate(path: &Path) -> Result<Validation, String> {
         .map(|i| i.id.as_str())
         .collect();
 
-    // 2. Bodies that do not parse. The acceptance rule is
-    //    `store::document_text`'s -- the
-    //    root must be a `doc`. Reused rather than restated on purpose: a
-    //    validator with its own idea of a readable body would report scenes the
-    //    application reads fine, or stay silent about ones it does not.
-    //
-    //    A TIMELINE'S BODY IS NEVER "UNREADABLE": it is not a document at
-    //    all, by design -- `document_text` correctly returns None
-    //    for its opaque JSON, and reporting that as damage would tell an
-    //    operator every healthy timeline in the file is corrupt.
+    // 2. Structural integrity uses the write validator, rather than the
+    // permissive statistics projection. Unknown attributes and unsupported
+    // nodes must not count as complete. Timelines have their own format.
     let bodies = store.documents().map_err(|e| e.to_string())?;
     let mut unreadable: Vec<&String> = bodies
         .iter()
