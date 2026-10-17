@@ -23,6 +23,7 @@
 // to resolve -- see `store/seed.rs`.
 //
 // Usage: `bun app/harness/src/sample-build.ts [--check] [--src <dir>] [--out <dir>]`
+import { readLegacyDocument, legacyText } from "./document-read";
 import { Database } from "bun:sqlite";
 import {
   existsSync,
@@ -144,26 +145,11 @@ function withImportedWalk<T>(source: string, use: (walk: WalkRow[], name: string
  *  space before each block's content. Used only to total `manifest.json`'s
  *  word count. */
 function bodyText(body: string): string {
-  const root: unknown = JSON.parse(body);
-  let out = "";
-  const append = (node: unknown, isBlock: boolean): void => {
-    if (typeof node !== "object" || node === null) return;
-    const n = node as { type?: unknown; text?: unknown; content?: unknown };
-    if (n.type === "text") {
-      if (typeof n.text === "string") out += n.text;
-      return;
-    }
-    if (isBlock && out.length > 0) out += " ";
-    if (Array.isArray(n.content)) for (const child of n.content) append(child, false);
-  };
-  const top = root as { content?: unknown };
-  if (Array.isArray(top.content)) for (const block of top.content) append(block, true);
-  return out;
+  return legacyText(body);
 }
 
 function wordCount(text: string): number {
-  const trimmed = text.trim();
-  return trimmed === "" ? 0 : trimmed.split(/\s+/).length;
+  return text.split(/\p{White_Space}+/u).filter((word) => word.length > 0).length;
 }
 
 /** Assigns the next deterministic id under `prefix` and advances that
@@ -204,7 +190,7 @@ function buildManuscript(manuscriptPath: string, nextId: () => string): BuiltSec
       idMap.set(row.id, id);
       const parentId = row.parentId === null ? null : (idMap.get(row.parentId) ?? null);
       items.push({ id, type: row.type, title: row.title, parentId });
-      if (row.body !== null) scenes.push({ id, body: JSON.parse(row.body) });
+      if (row.body !== null) scenes.push({ id, body: readLegacyDocument(row.body) });
       if (row.type === "scene") sceneTitleToId.set(row.title, id);
     }
     return { items, scenes, sceneTitleToId, name };
@@ -245,7 +231,7 @@ function buildBible(srcDir: string, nextId: () => string): BuiltSection {
       }
       const id = nextId();
       items.push({ id, type: "note", title: note.title, parentId: bibleRootId });
-      scenes.push({ id, body: JSON.parse(note.body) });
+      scenes.push({ id, body: readLegacyDocument(note.body) });
     });
   }
   return { items, scenes, sceneTitleToId: new Map() };

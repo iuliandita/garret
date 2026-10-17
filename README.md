@@ -189,6 +189,10 @@ Android. See [upgrade compatibility](docs/COMPATIBILITY.md) for native
 profile preservation. Release-style packages come from `scripts/package-linux`,
 `scripts/package-windows`, `scripts/package-macos` and `scripts/package-android`.
 
+CLI search JSON now includes field locators with UTF-16 ranges alongside each
+item result. Exact-key consumers need to accept the additional `locators` member;
+see the [search output contract](docs/COMPATIBILITY.md).
+
 ## Checks
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, checks, and

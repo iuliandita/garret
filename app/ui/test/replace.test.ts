@@ -56,12 +56,7 @@ describe("locateMatches", () => {
   });
 
   test("crosses paragraphs the same way the search does", () => {
-    // The projection puts one synthetic space between blocks, so a query
-    // spanning the boundary matches. Pinned because replace-all must agree with
-    // the panel's count, and the panel's count comes from the host using the
-    // same rule.
-    const d = doc(["ends here"], ["here it goes"]);
-    expect(locateMatches(d, "here here").length).toBe(1);
+    expect(locateMatches(doc(["ends here"], ["here it goes"]), "here here").length).toBe(1);
   });
 
   test("is case-insensitive, like the panel", () => {
@@ -202,16 +197,14 @@ describe("nextMatchAfter", () => {
 });
 
 describe("a match spanning a paragraph break is REFUSED, not replaced", () => {
-  // The projection puts a synthetic space between blocks so the phrase matches,
-  // which is right for FIND. Replacing across it merges the two paragraphs, so a
-  // writer who typed a two-word phrase would lose a break they never touched.
+  // Find joins prose paragraphs, while replacement must preserve their breaks.
   const spanning = (): PmNode => doc(["one cat"], ["sat two"]);
 
-  test("locateMatches still finds it — this is a REPLACE rule, not a search one", () => {
+  test("locateMatches still finds the cross-paragraph range", () => {
     expect(locateMatches(spanning(), "cat sat").length).toBe(1);
   });
 
-  test("planReplacements leaves it alone and counts it", () => {
+  test("planReplacements leaves the paragraphs alone", () => {
     const plan = planReplacements(spanning(), "cat sat");
     expect(plan.replacements.length).toBe(0);
     expect(plan.spanning).toBe(1);
@@ -226,10 +219,10 @@ describe("a match spanning a paragraph break is REFUSED, not replaced", () => {
   });
 
   test("planSelected refuses it too", () => {
-    // The panel can put a selection on a spanning match, and replacing THAT
-    // merges the blocks just as surely.
     const d = spanning();
     const hit = locateMatches(d, "cat sat")[0]!;
+    expect(hit).toEqual({ from: 5, to: 13 });
+    expect(d.resolve(hit.from).sameParent(d.resolve(hit.to))).toBe(false);
     expect(planSelected(d, "cat sat", hit)).toBeNull();
   });
 

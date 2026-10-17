@@ -10,6 +10,10 @@ Restore and transfer preflights reject new nodes while retaining legacy bodies
 and history; only incoming history bodies and changed replacement candidates
 undergo strict write validation. Keep these recovery and mutation checks separate.
 
+Retained-body readers must accept legacy empty text runs and unknown text marks
+without rewriting stored bytes. Keep atom validation strict and test paragraph
+search joining separately from the refusal to replace across a paragraph break.
+
 Documentation is part of a change. The offline guard detects review obligations
 and verifiable drift. It cannot establish that prose is correct, an editor
 interaction works, or a live upgrade, restore, or rollback succeeds.

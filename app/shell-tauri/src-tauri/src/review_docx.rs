@@ -254,6 +254,14 @@ pub(crate) fn manifest(snapshot: &SceneSnapshot) -> Result<Manifest, String> {
         );
     }
     let source = review_document::parse_review_body(&snapshot.body)?;
+    if source
+        .iter()
+        .chain(snapshot.groups.iter().flat_map(|group| &group.hunks)
+            .flat_map(|hunk| hunk.original.before.iter().chain(&hunk.original.after)))
+        .any(|token| matches!(token, FragmentToken::Atom { .. }))
+    {
+        return Err("review DOCX does not support endnotes, figures or scene breaks".into());
+    }
     let canonical_body = body(&source)?;
     if snapshot.groups.len() > 500 {
         return Err("too many review groups".into());

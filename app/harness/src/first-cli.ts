@@ -36,6 +36,7 @@
 // called.
 //
 // Usage: APP_GUI=1 bun app/harness/src/first-cli.ts
+import { legacyText } from "./document-read";
 import { Database } from "bun:sqlite";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -189,25 +190,7 @@ function storedStarterItems(
  *  nothing had been typed. It took a real FAIL elsewhere in the same run to
  *  notice. The gate now reads text nodes, where an empty document is 0. */
 function proseIn(body: string): string {
-  const out: string[] = [];
-  const visit = (node: unknown): void => {
-    if (Array.isArray(node)) {
-      for (const child of node) visit(child);
-      return;
-    }
-    if (node === null || typeof node !== "object") return;
-    const record = node as Record<string, unknown>;
-    if (record.type === "text" && typeof record.text === "string") out.push(record.text);
-    if (record.content !== undefined) visit(record.content);
-  };
-  try {
-    visit(JSON.parse(body));
-  } catch {
-    // A body that is not JSON is not prose this rig can read, and reporting it
-    // as prose would be worse than reporting none.
-    return "";
-  }
-  return out.join(" ");
+  return legacyText(body);
 }
 
 /** Words across every stored body. Deliberately crude and deliberately NOT

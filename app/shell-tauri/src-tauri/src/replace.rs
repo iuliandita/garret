@@ -48,14 +48,11 @@ pub fn replace_in_body(body: &str, query: &str, replacement: &str) -> Option<Bod
             spanning: 0,
         });
     }
-    let mut root: serde_json::Value = serde_json::from_str(body).ok()?;
-    if root.get("type").and_then(|t| t.as_str()) != Some("doc") {
-        return None;
-    }
-    // The projection FIRST, so the spanning count is computed against the same
-    // text `project_find` searched -- the figure the writer was shown.
-    let projected = projected_text(&root);
-    let total = find::count_matches(&projected, query);
+    let mut root = crate::store::document_fields::read(body)?;
+    // Use the same prose runs and paragraph separators as field-aware find.
+    let fields = crate::store::document_fields::fields(body)?;
+    let total = fields.iter().filter(|field| field.field == "prose")
+        .map(|field| find::count_matches(&find::fold_with_offsets(&field.text).0, query)).sum::<usize>();
 
     let mut replaced = 0usize;
     rewrite_node(&mut root, query, replacement, &mut replaced);
@@ -77,16 +74,41 @@ pub fn replace_in_body(body: &str, query: &str, replacement: &str) -> Option<Bod
     })
 }
 
+/// Attribute replacement requires an explicit instance and field. The caller
+/// still validates the resulting body against its write policy before saving.
+#[cfg(test)]
+pub fn replace_in_field(body: &str, instance_id: &str, field: &str, query: &str, replacement: &str) -> Option<BodyReplacement> {
+    let mut root = crate::store::document_fields::read(body)?;
+    let projected = crate::store::document_fields::fields(body)?;
+    let target = projected.iter().find(|candidate| candidate.instance_id.as_deref() == Some(instance_id) && candidate.field == field)?;
+    if query.is_empty() { return Some(BodyReplacement { body: None, replaced: 0, spanning: 0 }); }
+    let (text, replaced) = replace_in_text(&target.text, query, replacement);
+    if replaced == 0 { return Some(BodyReplacement { body: None, replaced: 0, spanning: 0 }); }
+    let key = match field { "note" => "body", "caption" => "caption", "alt" => "alt", _ => return None };
+    for block in root["content"].as_array_mut()? {
+        if block["attrs"]["id"].as_str() == Some(instance_id) {
+            block["attrs"][key] = serde_json::Value::String(text.clone());
+        }
+        for node in block.get_mut("content").and_then(|value| value.as_array_mut()).into_iter().flatten() {
+            if node["attrs"]["id"].as_str() == Some(instance_id) { node["attrs"][key] = serde_json::Value::String(text.clone()); }
+        }
+    }
+    crate::store::document_fields::read(&root.to_string())?;
+    Some(BodyReplacement { body: Some(root.to_string()), replaced, spanning: 0 })
+}
+
 /// The same projection `store::document_text` builds, restated here because
 /// this module must not depend on the store and the store must not depend on
 /// this. Text nodes concatenated with nothing; one separator before each
 /// non-text node's content, none before the first.
+#[cfg(test)]
 fn projected_text(root: &serde_json::Value) -> String {
     let mut out = String::new();
     append(root, &mut out);
     out
 }
 
+#[cfg(test)]
 fn append(node: &serde_json::Value, out: &mut String) {
     if node.get("type").and_then(|t| t.as_str()) == Some("text") {
         if let Some(text) = node.get("text").and_then(|t| t.as_str()) {

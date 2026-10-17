@@ -31,7 +31,7 @@ function boundedText(value: unknown): void {
   }
 }
 
-export function validDocument(value: unknown, allowNew = false, assets: ReadonlySet<string> = new Set()): boolean {
+export function validDocument(value: unknown, allowNew = false, assets: ReadonlySet<string> | null = new Set()): boolean {
   try {
     const root = object(value, ["type", "content"]);
     if (root.type !== "doc") return false;
@@ -72,7 +72,8 @@ export function validDocument(value: unknown, allowNew = false, assets: Readonly
         object(raw, ["type", "attrs"]);
         const attrs = object(block.attrs, ["id", "asset_id", "width", "caption", "alt"]);
         instance(attrs.id);
-        if (!assets.has(uuid(attrs.asset_id)) || typeof attrs.width !== "string" || !["full", "half", "page"].includes(attrs.width)) return false;
+        const assetId = uuid(attrs.asset_id);
+        if ((assets !== null && !assets.has(assetId)) || typeof attrs.width !== "string" || !["full", "half", "page"].includes(attrs.width)) return false;
         boundedText(attrs.caption);
         boundedText(attrs.alt);
       } else if (block.type === "scene_break" && allowNew) {
@@ -83,4 +84,9 @@ export function validDocument(value: unknown, allowNew = false, assets: Readonly
   } catch {
     return false;
   }
+}
+
+/** Structural readers cannot resolve originals; the host validates asset ownership. */
+export function validDocumentShape(value: unknown): boolean {
+  return validDocument(value, true, null);
 }

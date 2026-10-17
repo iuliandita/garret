@@ -31,12 +31,11 @@
 // silently regrowing a scrape.
 //
 // Usage: APP_GUI=1 bun app/harness/src/words-cli.ts
+import { legacyMarkedRuns, proseWords, legacyBodyHash } from "./document-read";
 import { Database } from "bun:sqlite";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { countWordsIn, schema } from "../../ui/src/editor";
-import { bodyHash } from "../../ui/src/store/hash";
 import { PY_SELECT_APPS, pidListArg } from "./atspi";
 import { captureEnv } from "./env";
 import { evaluateWordsGates, type GateResult, type WordsMetrics } from "./gates";
@@ -262,37 +261,14 @@ function signatureOf(bodies: ReadonlyMap<string, string>): string {
     .join("\n");
 }
 
-/** The page's OWN per-scene word count, over a body as the store holds it.
- *
- *  countWordsIn and schema are IMPORTED from app/ui/src/editor.ts rather than
- *  restated, and that is the opposite of this harness's usual rule for a reason:
- *  the gate's claim is that the host's total equals the sum of THE PAGE'S
- *  counts. A restatement here would be a third implementation, and the three
- *  could then disagree in a way that hides which two were being compared. The
- *  thresholds gates.ts restates are specifications; this is not a specification,
- *  it is one of the two things under comparison. */
-function pageWordsOf(body: string): number {
-  return countWordsIn(schema.nodeFromJSON(JSON.parse(body) as Record<string, unknown>));
-}
-
-interface PmJson {
-  type: string;
-  text?: string;
-  marks?: { type: string }[];
-  content?: PmJson[];
+/** Independent prose count over the complete validated stored body. */
+function oracleWordsOf(body: string): number {
+  return proseWords(body);
 }
 
 /** Every text run in `body` carrying `mark`. */
 function markedRuns(body: string, mark: string): string[] {
-  const out: string[] = [];
-  const walk = (node: PmJson): void => {
-    if (node.type === "text" && (node.marks ?? []).some((m) => m.type === mark)) {
-      out.push(node.text ?? "");
-    }
-    for (const child of node.content ?? []) walk(child);
-  };
-  walk(JSON.parse(body) as PmJson);
-  return out;
+  return legacyMarkedRuns(body, mark);
 }
 
 function gitShortSha(): string {
@@ -981,7 +957,7 @@ if (finalReading !== null && finalReading.sceneWords === 0) {
 }
 
 const perScene = [...preKillBodies]
-  .map(([itemId, body]) => ({ item_id: itemId, words: pageWordsOf(body) }))
+  .map(([itemId, body]) => ({ item_id: itemId, words: oracleWordsOf(body) }))
   .sort((a, b) => a.item_id.localeCompare(b.item_id));
 if (perScene.length === 0) {
   abort(
@@ -992,7 +968,7 @@ if (perScene.length === 0) {
 }
 const sceneSum = perScene.reduce((a, d) => a + d.words, 0);
 console.log(
-  `  host ${String(finalReading?.projectWords)} vs page ${sceneSum} over ${perScene.length} document(s)`,
+  `  host ${String(finalReading?.projectWords)} vs oracle ${sceneSum} over ${perScene.length} document(s)`,
 );
 
 console.log("\n[4/4] reopen boot against the same project");
@@ -1022,11 +998,9 @@ const markPersisted = reopenedRuns.includes(markWord);
 // and every store-side reopen check is a tautology. This comparison is the only
 // thing in the run that can see the page's parse at all.
 //
-// bodyHash is IMPORTED from the page for the same reason countWordsIn is: it is
-// one of the two things being compared, and a restatement here could disagree
-// with the page's own hashing and hide which side drifted.
+// The harness evaluates the serialized-body checksum independently of the page.
 const reopenLoadedHash = reopen.payload.persist.body_hash;
-const storedHash = bodyHash(preKillBodies.get(sceneId) ?? "");
+const storedHash = legacyBodyHash(preKillBodies.get(sceneId) ?? "");
 
 const metrics: WordsMetrics = {
   // The word this run marked when it is there, and otherwise the first marked
@@ -1133,12 +1107,8 @@ const path = writeResult(
           "the scrape growing back: a regression in the markup now FAILs a gate rather than " +
           "quietly costing the rig its channel.",
         page_side_sum:
-          "countWordsIn and the ProseMirror schema are IMPORTED from app/ui/src/editor.ts, not " +
-          "restated. That is the opposite of this harness's usual rule and it is deliberate: the " +
-          "gate's claim is that the host's total equals the sum of THE PAGE'S counts, so a " +
-          "restatement would be a third implementation and a disagreement could no longer say " +
-          "which two of the three drifted. The thresholds gates.ts restates are specifications; " +
-          "this is one of the two things being compared.",
+          "An independent harness prose walker validates every stored node, excludes attribute " +
+          "text and inline references, and separates block prose before counting Unicode whitespace runs.",
         word_count_agrees:
           "One number against one number, over a store the rig has confirmed quiet: every " +
           "reading is taken after the stored bodies have been unchanged for 2000 ms, twice the " +
@@ -1187,8 +1157,8 @@ const path = writeResult(
         reopen_parse_intact:
           "The reopen half of the round trip, and the only part of this run that can see the " +
           "page's parse. FNV-1a over the marked scene's stored body against the hash the reopen " +
-          "boot reports for its own re-serialization of it (app/ui/src/store/hash.ts, imported " +
-          "rather than restated for the same reason countWordsIn is). A hash is sensitive to more " +
+          "boot reports for its own re-serialization of it. The harness independently evaluates " +
+          "the UTF-16 checksum. A hash is sensitive to more " +
           "than marks and that is accepted: a boot that re-serializes a manuscript differently " +
           "from how it was stored is a finding whatever caused it, and both hashes are recorded " +
           "so a FAIL can be diffed. Verified by sabotage on 2026-08-12: with `em` stripped from " +

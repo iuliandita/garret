@@ -2818,6 +2818,7 @@ mod tests {
             [
                 "item_id",
                 "kind",
+                "locators",
                 "matches",
                 "openable",
                 "snippet",
@@ -2825,6 +2826,17 @@ mod tests {
                 "title_match",
             ]
         );
+        let locators = hit["locators"].as_array().unwrap();
+        assert_eq!(locators.len(), 1);
+        assert_eq!(
+            keys_of(&locators[0]),
+            ["field", "from", "instance_id", "item_id", "to"]
+        );
+        assert_eq!(locators[0]["field"], "prose");
+        assert_eq!(locators[0]["item_id"], hit["item_id"]);
+        assert_eq!(locators[0]["instance_id"], serde_json::Value::Null);
+        assert_eq!(locators[0]["from"], 5);
+        assert_eq!(locators[0]["to"], 12);
     }
 
     // -------------------------------------------------------------- export

@@ -130,6 +130,7 @@ fn block_docx(node: &serde_json::Value) -> Option<String> {
 /// this build can read -- `store::document_text`'s acceptance rule: the root
 /// must be a `doc`, not merely an object.
 fn document_paragraphs(body: &str) -> Option<Vec<String>> {
+    if crate::figure_salvage::has_new_nodes(body) { return None; }
     let root: serde_json::Value = serde_json::from_str(body).ok()?;
     if root.get("type").and_then(|t| t.as_str()) != Some("doc") {
         return None;

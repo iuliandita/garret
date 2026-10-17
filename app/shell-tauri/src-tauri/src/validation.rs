@@ -110,21 +110,13 @@ pub fn validate(path: &Path) -> Result<Validation, String> {
         .map(|i| i.id.as_str())
         .collect();
 
-    // 2. Bodies that do not parse. The acceptance rule is
-    //    `store::document_text`'s -- the
-    //    root must be a `doc`. Reused rather than restated on purpose: a
-    //    validator with its own idea of a readable body would report scenes the
-    //    application reads fine, or stay silent about ones it does not.
-    //
-    //    A TIMELINE'S BODY IS NEVER "UNREADABLE": it is not a document at
-    //    all, by design -- `document_text` correctly returns None
-    //    for its opaque JSON, and reporting that as damage would tell an
-    //    operator every healthy timeline in the file is corrupt.
+    // 2. Retained bodies use read compatibility, independent of the write gate.
+    // Figure originals are checked separately by the copied-database inventory.
     let bodies = store.documents().map_err(|e| e.to_string())?;
     let mut unreadable: Vec<&String> = bodies
         .iter()
         .filter(|(id, _)| !timeline_ids.contains(id.as_str()))
-        .filter(|(_, body)| store::document_text(body).is_none())
+        .filter(|(_, body)| store::document_fields::read(body).is_none())
         .map(|(id, _)| id)
         .collect();
     unreadable.sort();
@@ -356,6 +348,50 @@ fn query_strings(conn: &rusqlite::Connection, sql: &str) -> Result<Vec<String>, 
 
 #[cfg(all(test, not(target_os = "android")))]
 mod tests {
+    #[test]
+    fn retained_read_validation_preserves_legacy_bytes_and_rejects_unknown_atom_data() {
+        let root = tempfile::tempdir().unwrap();
+        let db = root.path().join("book.db");
+        let store = crate::store::Store::open(&db).unwrap();
+        let item = store.item_create(None, "scene", "Scene").unwrap();
+        let conn = rusqlite::Connection::open(&db).unwrap();
+        let mut cases: Vec<(serde_json::Value, bool)> =
+            serde_json::from_str::<Vec<serde_json::Value>>(include_str!(
+                "../../../harness/fixtures/document-format.json"
+            ))
+            .unwrap()
+            .into_iter()
+            .map(|case| {
+                let readable = case["valid"].as_bool().unwrap()
+                    || matches!(
+                        case["id"].as_str().unwrap(),
+                        "unregistered-figure"
+                            | "empty-text"
+                            | "unknown-mark"
+                            | "mark-attributes"
+                            | "duplicate-mark"
+                            | "empty-text-unknown-mark"
+                    );
+                (case["body"].clone(), readable)
+            })
+            .collect();
+        cases.push((serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":[
+            {"type":"text","text":"","marks":[{"type":"future-mark"}]},
+            {"type":"text","text":"Legacy prose","marks":[{"type":"future-mark","attrs":{"value":"retained"}}]}
+        ]}]}), true));
+        for (body, expected) in cases {
+            let body = body.to_string();
+            conn.execute(
+                "UPDATE doc SET body=?1 WHERE item_id=?2",
+                rusqlite::params![body, item.id],
+            )
+            .unwrap();
+            let report = super::validate(&db).unwrap();
+            assert_eq!(report.ok, expected, "{body}: {:?}", report.findings);
+            assert_eq!(store.load_doc(&item.id).unwrap().body, body);
+        }
+    }
+
     #[test]
     fn validator_and_export_agree_which_bodies_are_documents() {
         for body in [

@@ -1566,8 +1566,12 @@ pub fn change_set(
         // the writer choosing one of two versions with nothing holding the
         // other. The check is the FILE and not a flag: a promise nobody can
         // open is not a preservation.
-        row.can_accept = row.file_body.is_some()
+        let unsupported = row.store_body.as_deref().is_some_and(crate::figure_salvage::has_new_nodes);
+        row.can_accept = !unsupported && row.file_body.is_some()
             && (state == PROSE || dir.join(from_project_path(&entry.path)).is_file());
+        if unsupported {
+            row.error = Some("This document contains content that cannot be accepted from the readable folder".into());
+        }
         row.store_underlined = row
             .store_body
             .as_deref()
@@ -4146,6 +4150,28 @@ mod tests {
         let heading = current.lines().find(|l| l.starts_with("# ")).unwrap();
         let next = format!("{}\n{}\n\n{}\n", head.join("\n"), heading, prose);
         std::fs::write(m.out.join(&entry.path), next).unwrap();
+    }
+
+    #[test]
+    fn atom_consumers_mirror_refuses_stored_atoms_after_marker_removal() {
+        let tmp = tempfile::tempdir().unwrap();
+        let m = mirrored(tmp.path());
+        let entry = prose_entry(&m);
+        rewrite_prose(&m, &entry, "external prose");
+        let store = crate::store::Store::open_readonly(&m.src).unwrap();
+        let items = crate::store::without_trashed(store.items().unwrap());
+        let mut bodies = store.documents().unwrap();
+        let revisions = store.document_revs().unwrap();
+        let found = detect(&m.out);
+        std::fs::write(m.out.join(from_project_path(&entry.path)), "preserved book copy").unwrap();
+        bodies.insert(entry.id.clone(), doc("changed in the book"));
+        let control = change_set(&m.out, &m.entries, &items, &bodies, &revisions, &found);
+        assert!(control[0].can_accept);
+        bodies.insert(entry.id.clone(), crate::store::document_fields::tests::mixed().to_string());
+        let rows = change_set(&m.out, &m.entries, &items, &bodies, &revisions, &found);
+        assert!(!rows[0].can_accept);
+        assert!(rows[0].error.as_deref().unwrap().contains("cannot be accepted"));
+        assert!(accept_plan(&rows, &revisions, &[entry.id.clone()]).is_err());
     }
 
     #[test]

@@ -14,9 +14,8 @@
 import { isCompositionKey } from "./composition-key";
 import { formatDate, formatNumber, plural, t } from "./i18n";
 import { createPanelShell } from "./panel-shell";
-import { diffWords, summarize } from "./diff";
+import { diffDocumentFields, type FieldDiff } from "./document-diff";
 import { renderPieces } from "./diff-view";
-import { bodyText } from "./editor";
 
 /** One past state, as the host lists it. Field names are the host's, snake_case
  *  by the recorded rule: command ARGUMENTS are camelCase, returned struct
@@ -577,8 +576,7 @@ export function createHistory(deps: HistoryDeps): History {
     // DRAIN, THEN READ, and in that order for the reason the dep records: the
     // "now" side is the store's, and until the pending keystrokes are in it the
     // store's answer is not the scene the writer is looking at.
-    let before: string;
-    let after: string;
+    let fields: FieldDiff[];
     try {
       if (itemId === null || itemId !== deps.activeDocId()) throw new Error(t("history.error.changed"));
       await deps.drain();
@@ -590,8 +588,7 @@ export function createHistory(deps: HistoryDeps): History {
       ]);
       if (destroyed || mine !== compareGeneration) return;
       if (itemId !== deps.activeDocId()) throw new Error(t("history.error.changed"));
-      before = bodyText(oldBody, "\n\n");
-      after = bodyText(newBody, "\n\n");
+      fields = diffDocumentFields(oldBody, newBody);
     } catch (err) {
       if (destroyed || mine !== compareGeneration) return;
       // NOT the "no difference" line, which is the designed empty state: a
@@ -606,9 +603,10 @@ export function createHistory(deps: HistoryDeps): History {
       button?.removeEventListener("blur", cancelReveal);
     }
 
-    const pieces = diffWords(before, after);
-    const totals = summarize(pieces);
-    diffSummary.textContent = diffSummaryLabel(totals.added, totals.removed);
+    const totals = fields.reduce((sum, field) => ({ added: sum.added + field.added, removed: sum.removed + field.removed }), { added: 0, removed: 0 });
+    const structureChanged = fields.some(field => field.field === "structure");
+    diffSummary.textContent = structureChanged && totals.added === 0 && totals.removed === 0
+      ? t("history.diff.structure-changed") : diffSummaryLabel(totals.added, totals.removed);
     // Built from the FIGURES, never by reading the rendered summary back out of
     // the DOM: the recorded word-count rule, which is what stops the visible
     // wording becoming load-bearing for what a screen reader hears.
@@ -623,13 +621,26 @@ export function createHistory(deps: HistoryDeps): History {
     // The legend explains two marks. With neither on screen it is a caption for
     // nothing, which reads as a diff that failed to paint its own body.
     diffLegend.hidden = totals.added === 0 && totals.removed === 0;
-    if (totals.added === 0 && totals.removed === 0) {
+    if (totals.added === 0 && totals.removed === 0 && !structureChanged) {
       // The summary already says it in words. Painting the whole unchanged
       // scene under a line that says nothing changed is a screenful of prose
       // asking to be read for a difference that is not there.
       diffBody.replaceChildren();
     } else {
-      renderPieces(diffBody, pieces);
+      diffBody.replaceChildren();
+      for (const field of fields) {
+        if (field.added === 0 && field.removed === 0 && field.field !== "structure") continue;
+        const section = document.createElement("section");
+        if (field.field !== "prose") {
+          const label = document.createElement("h4");
+          label.textContent = t(`document.field.${field.field}`);
+          section.append(label);
+        }
+        const content = document.createElement("div");
+        renderPieces(content, field.pieces);
+        section.append(content);
+        diffBody.append(section);
+      }
     }
     // Reveal the summary, then keep its adjacent control fully visible. The
     // whole diff may be taller than the available pane. A writer who moved

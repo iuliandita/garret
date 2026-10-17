@@ -1,9 +1,10 @@
 import { createDraftingTools, type MobileDrafting } from "./drafting";
-import { createEditor, schema, countWordsIn, readableBody, type Editor } from "../../ui/src/editor";
+import { createEditor, schema, countWordsIn, readableBody, plaintextLabels, type Editor } from "../../ui/src/editor";
 import { flushAnchorsFor, MAX_MAPPED_COMMENTS, type CommentAnchor } from "../../ui/src/comments";
 import { parseReviewBody } from "../../ui/src/review-fragments";
 import { createSession, type Session } from "../../ui/src/session";
 import { createFlushScheduler, type FlushEntry, type FlushAck, type FlushAttribution } from "../../ui/src/store/flush";
+import { plaintext } from "../../ui/src/document-projections";
 import { mobileMessages } from "./messages";
 import { refusedDocumentId } from "../../ui/src/document-format";
 import type { WritingPosition } from "./position";
@@ -149,7 +150,7 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
         const field = document.createElement("textarea"); field.readOnly = true;
         field.setAttribute("aria-label", m.recoverText);
         const doc = schema.nodeFromJSON(JSON.parse(editor.serialize()));
-        field.value = doc.textBetween(0, doc.content.size, "\n\n");
+        field.value = plaintext(doc.content, plaintextLabels());
         const dismiss = document.createElement("button"); dismiss.type = "button"; dismiss.textContent = m.close;
         dismiss.addEventListener("click", () => dialog.close());
         dialog.addEventListener("close", () => { dialog.remove(); recovery = undefined; }, { once: true });
@@ -180,6 +181,7 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
     for (const [key, button] of markButtons) button.setAttribute("aria-pressed", String(marks[key as keyof typeof marks]));
   }
   editor = createEditor(get(".mobile-prose"), { kind: "pmjson", json: initial }, {
+    onClipboardRefused: () => showError(m.clipboardRefused),
     onChange: change => {
       session.noteChange(change);
       if (countFrame === undefined) countFrame = requestAnimationFrame(() => {

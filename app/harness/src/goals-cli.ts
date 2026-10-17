@@ -14,12 +14,11 @@
 // two other numbers, and the claim is only that it is the true number.
 //
 // Usage: APP_GUI=1 bun app/harness/src/goals-cli.ts
+import { proseWords } from "./document-read";
 import { Database } from "bun:sqlite";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { countWordsIn, schema } from "../../ui/src/editor";
-import { localDate } from "../../ui/src/goals";
 import { PY_SELECT_APPS, pidListArg } from "./atspi";
 import { captureEnv } from "./env";
 import { evaluateGoalsGates, type GoalsMetrics } from "./gates";
@@ -229,15 +228,11 @@ function openRead(projectPath: string): Database {
   return new Database(projectPath, { readonly: true });
 }
 
-/** The manuscript's word count over the WALKED items only -- the same scope the
- *  host counts, so a `doc` row whose item is not in the tree contributes to
- *  neither figure.
- *
- *  `countWordsIn` is IMPORTED from the page rather than restated, deliberately
- *  and against this harness's usual rule: the claim is that the HOST's figure
- *  moves by what the PAGE would count, and those two are the pair under
- *  comparison. A third implementation here could disagree with either and hide
- *  which two were being checked. */
+function localDate(now: Date): string {
+  return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("-");
+}
+
+/** Independent prose count over walked documents; attribute text never contributes. */
 function storeWords(projectPath: string): number {
   const db = openRead(projectPath);
   try {
@@ -249,7 +244,7 @@ function storeWords(projectPath: string): number {
     let total = 0;
     for (const row of rows) {
       if (!walk.has(row.item_id)) continue;
-      total += countWordsIn(schema.nodeFromJSON(JSON.parse(row.body) as Record<string, unknown>));
+      total += proseWords(row.body);
     }
     return total;
   } finally {

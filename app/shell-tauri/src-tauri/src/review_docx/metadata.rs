@@ -416,6 +416,9 @@ pub(super) fn comment(root: &Element, styles: Option<&Element>) -> Result<String
     let mut text = String::new();
     for token in projection.tokens {
         match token {
+            super::FragmentToken::Atom { .. } => {
+                return Err("only plain immutable comments are supported".into());
+            }
             super::FragmentToken::Open => {}
             super::FragmentToken::Close => {
                 paragraphs.push(std::mem::take(&mut text));

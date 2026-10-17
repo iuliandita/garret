@@ -54,6 +54,7 @@
 // reason.
 //
 // Usage: APP_GUI=1 bun app/harness/src/preview-cli.ts <tiny|stress>
+import { legacyText } from "./document-read";
 import { Database } from "bun:sqlite";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -711,27 +712,11 @@ const WALK_SQL = `WITH RECURSIVE walk(id, parent_id, type, title, position, dept
    )
    SELECT id, parent_id, type, title, depth FROM walk ORDER BY path`;
 
-interface PmJson {
-  type: string;
-  text?: string;
-  content?: PmJson[];
-}
-
 /** The text a stored body holds, by this rig's own walk of the ProseMirror
  *  JSON. `export-cli`'s `storedText`, restated for the same recorded reason:
  *  a reader taken from either side of the comparison would grade a tautology. */
 function storedText(body: string): string {
-  let out = "";
-  const walk = (node: PmJson): void => {
-    if (node.type === "text") {
-      out += node.text ?? "";
-      return;
-    }
-    if (out.length > 0) out += " ";
-    for (const child of node.content ?? []) walk(child);
-  };
-  walk(JSON.parse(body) as PmJson);
-  return out;
+  return legacyText(body);
 }
 
 /** What the book IS, counted from the file: the walked items, and the words in

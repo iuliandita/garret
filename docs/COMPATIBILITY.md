@@ -35,11 +35,44 @@ readable notes and figure placeholders with relative original links, and retains
 registered originals even when automatic text versions are omitted. Salvage
 reports those omissions and layout losses; it is not an editable downgrade.
 Legacy bodies retain the existing readable Markdown fallback, including unknown
-marks. A damaged original is copied with a `corrupt_figure_original` loss and its
-recorded hash kept for diagnosis. An unreadable registry row or directory records
+marks. Read-only database integrity checks accept retained unknown text marks
+and empty runs without rewriting the bodies. Atom shapes and note formats remain
+strict; figure mapping and original completeness are checked separately against
+the copied database. Production writes and database restoration still enforce
+the disabled new-node policy. A damaged original is copied with a
+`corrupt_figure_original` loss and its recorded hash kept for diagnosis. An unreadable registry row or directory records
 a loss without stopping the remaining recovery. The salvage manifest adds
 `figure_assets_recovered` and `figure_originals_recovered` counts, plus `figures`
 for the relative registry filename, or null when no registry was recovered.
+
+Consumers are prepared for endnotes, figures, and scene breaks using isolated
+fixtures. Search keeps prose, note bodies, captions, and alternative text in
+separate fields. Adjacent prose paragraphs retain their searchable space;
+atoms and attribute fields stop a match. Replacement refuses matches spanning
+paragraph breaks and never edits attributes. Word counts
+exclude attribute text and count neither references nor block atoms as words.
+History compares note, caption, and alternative text separately from prose.
+Review proposals retain complete atoms and refuse affected review Word handoffs.
+Clipboard copies remint instance IDs and reject duplicate IDs; figure pastes and
+copied atom drops are refused until original transfer is available. Phone recovery
+copies retain note text, captions, alternative text, and figure placeholders, and
+state that formatting, structure, and originals are omitted. These reader changes
+keep the schema ceiling and disabled production writes described above.
+
+The default `garret search book.db QUERY --json` result adds a `locators` array
+to each hit, retaining the existing keys. Each locator contains `field`,
+`item_id`, `instance_id`, `from`, and `to`. Consumers that require an exact key
+set must accept this additive change. Ranges use UTF-16 code units, with an
+inclusive `from` and exclusive `to`. Prose ranges are absolute document positions,
+including structural positions, rather than offsets into flattened text or the
+snippet; prose locators have a null `instance_id`. Attribute ranges for `note`,
+`caption`, and `alt` are relative to the start of that field, and `instance_id`
+identifies the endnote or figure. This changes CLI output without a schema
+migration or book conversion.
+
+The command-line `design-apply` operation requires the exact current SQLite
+schema. Open older books in the application to upgrade them before applying a
+design; a preview token cannot bypass that requirement.
 
 ## Before upgrading
 

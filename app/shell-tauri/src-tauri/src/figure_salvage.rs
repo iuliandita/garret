@@ -214,7 +214,7 @@ pub(crate) fn document_markdown(
     if !has_new_nodes(body) {
         return crate::export::document_markdown(body);
     }
-    let mut root: Value = serde_json::from_str(body).ok()?;
+    let mut root = crate::store::document_fields::read(body)?;
     let mut notes = Vec::new();
     let mut markdown = String::new();
     let mut flattened = false;

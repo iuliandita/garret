@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { Schema, type Node as PmNode, type NodeSpec, type MarkSpec } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
 import { schema } from "../src/editor";
-import { parseReviewBody, proposalBetween, type FragmentToken, type ReviewHunk } from "../src/review-fragments";
+import { parseReviewBody, proposalBetween, type FragmentToken, type ReviewHunk, type ReviewAtom } from "../src/review-fragments";
 
 const doc = (...paragraphs: string[]): PmNode => schema.node("doc", null,
   paragraphs.map((text) => schema.node("paragraph", null, text ? schema.text(text) : undefined)));
@@ -13,8 +13,10 @@ const text = (value: string): FragmentToken => ({ kind: "text", text: value });
 function units(document: PmNode): FragmentToken[] {
   const out: FragmentToken[] = [];
   document.forEach((p) => {
+    if (p.type.name !== "paragraph") { out.push({ kind: "atom", node: p.toJSON() as ReviewAtom }); return; }
     out.push({ kind: "open" });
     p.forEach((n) => {
+      if (!n.isText) { out.push({ kind: "atom", node: n.toJSON() as ReviewAtom }); return; }
       const marks = n.marks.map((m) => m.type.name).sort();
       for (let i = 0; i < n.text!.length; i++) {
         out.push({ kind: "text", text: n.text![i], ...(marks.length ? { marks: marks as ("em" | "strong" | "underline")[] } : {}) });
@@ -167,4 +169,59 @@ describe("parseReviewBody", () => {
     expect(() => parseReviewBody("界".repeat(6 * 1024 * 1024), schema)).toThrow("exceeds limit");
     expect(() => parseReviewBody("{", schema)).toThrow(SyntaxError);
   });
+});
+
+// A fixture schema exercises the reader without enabling document authoring.
+const atomSchema = new Schema({ nodes: {
+  doc: { content: "(paragraph|figure|scene_break)+" },
+  paragraph: { content: "(text|endnote)*" }, text: {},
+  endnote: { inline: true, atom: true, marks: "", attrs: { id: {}, fmt: {}, body: {} } },
+  figure: { atom: true, marks: "", attrs: { id: {}, asset_id: {}, width: {}, caption: {}, alt: {} } },
+  scene_break: { atom: true, marks: "" },
+}, marks: schema.spec.marks });
+const note: ReviewAtom = { type: "endnote", attrs: { id: "11111111-1111-4111-8111-111111111111", fmt: "text", body: "note 😀\n<script>" } };
+const figure: ReviewAtom = { type: "figure", attrs: { id: "22222222-2222-4222-8222-222222222222",
+  asset_id: "33333333-3333-4333-8333-333333333333", width: "full", caption: "caption", alt: "alt" } };
+const atomBody = (n: unknown = note, f: unknown = figure) => ({ type: "doc", content: [
+  { type: "paragraph", content: [{ type: "text", text: "😀" }, n, { type: "text", text: "🦊" }] }, f,
+  { type: "scene_break" }, { type: "paragraph", content: [{ type: "text", text: "tail" }] },
+] });
+
+test("whole atom proposals preserve every attribute and one UTF-16 position beside astral text", () => {
+  const before = parseReviewBody(JSON.stringify(atomBody()), atomSchema);
+  expect(before.content.size).toBe(15);
+  expect(proposalBetween(before, before)).toBeNull();
+  for (const [which, field, value] of [
+    ["note", "body", "changed 🦊"], ["note", "id", "44444444-4444-4444-8444-444444444444"],
+    ["figure", "id", "44444444-4444-4444-8444-444444444444"],
+    ["figure", "asset_id", "55555555-5555-4555-8555-555555555555"],
+    ["figure", "width", "half"], ["figure", "caption", "new caption"], ["figure", "alt", "new alt"],
+  ]) {
+    const old = which === "note" ? note : figure;
+    const next = { ...old, attrs: { ...old.attrs, [field]: value } } as ReviewAtom;
+    const after = parseReviewBody(JSON.stringify(which === "note" ? atomBody(next) : atomBody(note, next)), atomSchema);
+    expect(verify(before, after)).toEqual({ from: which === "note" ? 3 : 7, to: which === "note" ? 4 : 8,
+      before: [{ kind: "atom", node: old }], after: [{ kind: "atom", node: next }] });
+  }
+  for (const [from, to] of [[3, 4], [7, 8], [8, 9], [1, 10]]) {
+    const after = EditorState.create({ doc: before }).tr.delete(from, to).doc;
+    verify(before, after); verify(after, before);
+  }
+});
+
+test("strict review atom reader rejects lossy attributes, formats, IDs, marks and placements", () => {
+  for (const n of [
+    { ...note, content: [] }, { ...note, marks: [{ type: "em" }] },
+    { ...note, attrs: { ...note.attrs, extra: "lost" } },
+    { ...note, attrs: { ...note.attrs, fmt: "html" } },
+    { ...note, attrs: { ...note.attrs, body: "\ud800" } },
+    { ...note, attrs: { ...note.attrs, body: "界".repeat(22_000) } },
+    { ...note, attrs: { ...note.attrs, id: "not-an-id" } }, figure,
+  ]) expect(() => parseReviewBody(JSON.stringify(atomBody(n)), atomSchema)).toThrow();
+  for (const f of [note, { type: "scene_break", attrs: {} },
+    { ...figure, attrs: { ...figure.attrs, id: note.attrs.id } },
+    { ...figure, attrs: { ...figure.attrs, width: ["full"] } },
+    { ...figure, attrs: { ...figure.attrs, asset_id: "missing" } },
+    { ...figure, attrs: { ...figure.attrs, alt: undefined } },
+  ]) expect(() => parseReviewBody(JSON.stringify(atomBody(note, f)), atomSchema)).toThrow();
 });
