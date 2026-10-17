@@ -49,18 +49,13 @@ export const SHELL_PROC_NAME = "garret";
 // project's name and changes again on every project switch, so a title match is
 // a match against data. The class is fixed by the binary.
 //
-// The two spellings are one recorded property of this app: native Wayland
-// reports the lowercase app_id `garret`, XWayland reports GTK3's
-// capitalized WM_CLASS `Garret`. Xvfb is plain X11, but hand-cli runs
-// on the live session, so both must match. `xdotool search` takes an extended
-// regex and has no case-insensitivity flag, hence the character class.
-export const SHELL_WINDOW_CLASS_PATTERN = "^[Gg]arret$";
+// X11 uses the application identifier for the manuscript window's class.
+// Keep the legacy class and app_id spellings for older binaries and sessions.
+export const SHELL_WINDOW_CLASS_PATTERN = "^(com[.]usegarret[.]app|[Gg]arret)$";
 
-// --onlyvisible, because GTK creates a second window carrying the same WM_CLASS:
-// an unmapped 10x10 group-leader beside the real 900x900 toplevel. The title
-// match never saw it (the leader is named after the binary, not the page), so
-// the class match needs the mapped-only filter to keep the exactly-one guard
-// meaningful. Measured under Xvfb on this app: 2 windows by class, 1 with it.
+// GTK also creates an unmapped 10x10 group leader with a legacy class.
+// Restrict the lookup to mapped windows and still refuse ambiguous matches,
+// such as a manuscript window with an open native dialog.
 const WINDOW_SEARCH_ARGS = ["search", "--onlyvisible", "--class", SHELL_WINDOW_CLASS_PATTERN];
 
 /** The one X window of the running shell on `display` (a raw DISPLAY value).
