@@ -109,6 +109,15 @@ sha256sum -c SHA256SUMS
 gh attestation verify <file> --repo iuliandita/garret
 ```
 
+If you downloaded only the files for your platform, check those present with:
+
+```sh
+sha256sum -c --ignore-missing SHA256SUMS
+```
+
+On macOS, use `shasum -a 256 -c --ignore-missing SHA256SUMS` instead.
+Missing files are skipped; confirm that each intended download reports `OK`.
+
 Replace `<file>` with each downloaded file, including the manifest and signature.
 The manifest covers all packaged downloads and checksum sidecars; it excludes
 itself and its detached signature. Checking the complete manifest requires all

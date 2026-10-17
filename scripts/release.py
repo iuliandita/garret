@@ -169,17 +169,32 @@ def sign_manifest(allow_unsigned: bool = False) -> None:
         env["GNUPGHOME"] = home
         command = ["gpg", "--batch", "--no-tty", "--no-options"]
         def gpg(args: list[str], data: str | None = None) -> None:
-            subprocess.run(command + args, input=data, text=True, env=env,
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+            try:
+                subprocess.run(command + args, input=data, text=True, env=env,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as error:
+                diagnostics = error.stderr or ""
+                for secret in (key, *key.splitlines(), os.environ.get("RELEASE_GPG_PASSPHRASE", "")):
+                    if secret:
+                        diagnostics = diagnostics.replace(secret, "[redacted]")
+                if diagnostics:
+                    print(diagnostics, file=sys.stderr)
+                raise
         try:
             gpg(["--import"], key)
             gpg(["--pinentry-mode", "loopback", "--passphrase-fd", "0", "--armor",
                  "--detach-sign", "--output", str(signature), str(folder / "SHA256SUMS")],
                 os.environ.get("RELEASE_GPG_PASSPHRASE", "") + "\n")
             gpg(["--verify", str(signature), str(folder / "SHA256SUMS")])
+            for name in ("SECURITY.md", "README.md"):
+                if "Release signing key fingerprint: not yet published" in (ROOT / name).read_text():
+                    raise ValueError(f"Publish the release signing key fingerprint in {name} before signed publication.")
         finally:
-            subprocess.run(["gpgconf", "--kill", "gpg-agent"], env=env,
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+            try:
+                subprocess.run(["gpgconf", "--kill", "gpg-agent"], env=env,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+            except OSError:
+                print("::warning::Could not stop the temporary GPG agent.", file=sys.stderr)
 
 
 def verify_remote_assets(names: set[str], complete: bool = False, allow_unsigned: bool = False) -> None:

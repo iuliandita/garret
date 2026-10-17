@@ -9,8 +9,10 @@ no account.
 ## Roles and approval
 
 The project owner, [iuliandita](https://github.com/iuliandita), is the release
-author and signing approver. The owner must use MFA for GitHub and any signing
-service account. Each release submitted for platform code signing requires
+author and signing approver. Before enrollment in a signing service or the first
+signed release, the owner must enable MFA for GitHub and any signing service
+account; this policy does not attest to the current account configuration.
+Each release submitted for platform code signing requires
 explicit manual approval by the owner after reviewing its source commit,
 successful checks, and proposed artifacts. Automated build completion alone
 does not approve code signing.
@@ -29,6 +31,25 @@ attestations for the downloads, manifest, and available signature. The manifest
 cannot include itself or its detached signature. See
 [release verification](../SECURITY.md#verifying-releases) for commands and the
 signing key's publication status.
+
+## Release signing environment
+
+Before the first signed tag, the owner must create the GitHub `release`
+environment and restrict deployment to release tags matching `v0.*` (or `v*`
+for the broader version series), with no branch deployments. Move
+`RELEASE_GPG_PRIVATE_KEY` and `RELEASE_GPG_PASSPHRASE` from repository secrets
+into that environment's secrets and remove the repository copies. A required
+reviewer can also be configured for manual approval of GPG release signing.
+These settings are owner actions, not controls provisioned by the workflow.
+
+The publish job references `environment: release`. If the owner has not created
+it beforehand, GitHub automatically creates an unprotected environment; the
+reference alone does not enforce tag restrictions, secret isolation, or review.
+Signed publication also fails while either SECURITY.md or README.md retains
+the unpublished fingerprint placeholder, even if unsigned publication is allowed.
+
+OIDC and attestation write permissions remain on the publish job because
+signing, attestation, and upload operate on the same finalized asset set.
 
 ## Planned Windows signing
 

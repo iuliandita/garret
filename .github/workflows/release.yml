@@ -53,6 +53,8 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.13.15'
+      - name: Require GPG for release signing tests
+        run: command -v gpg
       - run: python3 scripts/test-release.py
       - run: python3 scripts/test-collect-installers.py
       - name: Documentation release gate
@@ -223,6 +225,7 @@ jobs:
     needs: [prepare, desktop, android]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    environment: release
     permissions:
       contents: write
       id-token: write
@@ -283,7 +286,8 @@ jobs:
           the Android info ZIP contains instructions and build details. The phone app has fewer
           features than the desktop app and does not sync books automatically.
 
-          Verify SHA256SUMS.asc with the published GPG key, then run sha256sum -c SHA256SUMS.
+          Verify SHA256SUMS.asc with the key whose fingerprint is in SECURITY.md,
+          then run sha256sum -c SHA256SUMS.
           See SECURITY.md for the signing key status and GitHub attestation verification.
           Please report problems through GitHub Issues.
           NOTES
