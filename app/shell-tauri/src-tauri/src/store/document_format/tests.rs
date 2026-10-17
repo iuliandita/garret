@@ -162,6 +162,31 @@ fn format_gate_shared_corpus() {
 }
 
 #[test]
+fn format_retained_corpus_refuses_every_nonlegacy_document() {
+    let cases: Vec<_> = corpus().into_iter().filter(|case| case.valid && !case.legacy).collect();
+    assert!(!cases.is_empty());
+    for case in cases {
+        for history in [false, true] {
+            let dir = tempfile::tempdir().unwrap();
+            let (store, ids) = setup(&dir.path().join("book.db"));
+            if history {
+                let snapshot = store.snapshot_create("Retained draft").unwrap();
+                store.conn.execute("UPDATE blob SET body=?1 WHERE key=(SELECT blob_key FROM doc_version WHERE item_id=?2 AND snapshot_id=?3)",
+                    rusqlite::params![case.body.to_string(), ids[1], snapshot.id]).unwrap();
+            } else {
+                store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2",
+                    rusqlite::params![case.body.to_string(), ids[1]]).unwrap();
+            }
+            let before = state(&store);
+            let error = store.validate_retained_formats().unwrap_err();
+            assert!(matches!(error, StoreError::InvalidDocument(_)), "{}: {error}", case.id);
+            assert!(error.to_string().contains(&ids[1]), "{}: {error}", case.id);
+            assert_eq!(state(&store), before, "{} (history: {history})", case.id);
+        }
+    }
+}
+
+#[test]
 fn format_gate_save_desktop_mobile_and_mirror_batches_store_nothing() {
     for body in new_bodies() {
         for path in ["save", "desktop", "mobile", "mirror"] {
