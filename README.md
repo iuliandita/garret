@@ -23,7 +23,7 @@ or an internet connection to write. Your books stay on your own disk.
 
 > **Early alpha.** garret moves fast; keep backups of your work.
 
-The current published build is [0.0.2 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.2).
+The current published build is [0.0.3 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.3).
 See [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
 
@@ -99,8 +99,8 @@ or [build garret from source](#building-from-source-linux).
 
 Download alpha builds from [GitHub Releases](https://github.com/iuliandita/garret/releases).
 Choose the download for your device and follow the included instructions.
-The next release adds Windows `-setup.exe`, Linux `.deb`, `.rpm` and `.AppImage`,
-and macOS `.dmg` installers alongside the portable archives. See the
+Windows `-setup.exe`, Linux `.deb`, `.rpm` and `.AppImage`,
+and macOS `.dmg` installers are available alongside the portable archives. See the
 [installation guide](docs/INSTALLING.md) for setup, upgrades and removal. Android uses an APK; the phone app has fewer
 features and does not sync books automatically. Keep a backup before trying a
 new build.
@@ -145,7 +145,7 @@ release for you:
 
 1. Add `https://github.com/iuliandita/garret` as an app source.
 2. Pick the asset whose name ends in `-android.apk`, for example
-   `garret-0.0.2-android.apk`. The `-android-info.zip` asset holds instructions
+   `garret-0.0.3-android.apk`. The `-android-info.zip` asset holds instructions
    and build details; it is not installable.
 3. Check the signing certificate. Obtainium shows the certificate hash for the
    installed app on its app page; the SHA-256 digest must be

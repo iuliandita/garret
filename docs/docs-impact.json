@@ -15,7 +15,7 @@
     "backup-recovery": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "02dacbbe6528fa6082dd207a92d645d3e4dba2d397a5b7555a70a65ef1c3b91a"
+        "docs/COMPATIBILITY.md": "85307d84947dcf72bd53aa7b07200d50f0115316459c20546e79891ff4fc6a00"
       },
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Android retains schema 17 and the desktop archive format; update the same application with its retained signing key and preserve complete exported copies with separate keys for rollback. Newer schemas are refused before unsupported presets without changing the library. Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Preset metadata uses the existing meta table without a schema migration. Missing and unknown stored values retain novel behavior; unknown values remain stored verbatim. Backups, archive restores, transfer, and salvage preserve this metadata. Older builds need no preset conversion.",
       "no_impact": "",
@@ -25,11 +25,11 @@
     "editor": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "02dacbbe6528fa6082dd207a92d645d3e4dba2d397a5b7555a70a65ef1c3b91a"
+        "docs/COMPATIBILITY.md": "85307d84947dcf72bd53aa7b07200d50f0115316459c20546e79891ff4fc6a00"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Document Android root scene placement, current-container creation, and short fiction and nonfiction admission while preserving schema-first refusal and collection refusal.",
+      "note": "Document Android root scene placement, current-container creation, and short fiction and nonfiction admission while preserving schema-first refusal and collection refusal; version statements now record source 0.0.3/code 3.",
       "source_sha256": "d163552499542162452efffa4b884bc726ed5265f560f7603ff4304288eded40"
     },
     "encryption": {
@@ -43,27 +43,27 @@
     "maintenance": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "02dacbbe6528fa6082dd207a92d645d3e4dba2d397a5b7555a70a65ef1c3b91a"
+        "docs/COMPATIBILITY.md": "85307d84947dcf72bd53aa7b07200d50f0115316459c20546e79891ff4fc6a00"
       },
       "migration": "Desktop identifier changes leave books, settings, and SQLite schema 17 unchanged. Windows retains its previous WebView2 profile; Android retains its package. macOS starts fresh regenerable caches and native window restore state, leaving old entries untouched. Keep the normal closed-book and profile backup before upgrade; rollback uses the previous package and preserved files.",
       "no_impact": "",
       "note": "Document Android root scene placement, current-container creation, and short fiction and nonfiction admission while preserving schema-first refusal and collection refusal.",
-      "source_sha256": "f1c9bb4e2d9a680e721f46a5e409543bd6a2ecc150498148230fe7e6887cc7db"
+      "source_sha256": "0718db22649dc55f5b0017f243233243c7a31a9f6b815442b4ab5a09812fdc5b"
     },
     "native-packaging": {
       "breaking": "none",
       "docs": {
-        "README.md": "b1771ed188afc76eaa9af1f10219bdd4bccd370b841d0f665988150addfa65e6"
+        "README.md": "f6a63e8ac1c15b331e4c6e22bb27f7739e5a2957109448ae4bd7db2bf50b1044"
       },
       "migration": "Desktop identifier changes leave books, settings, and SQLite schema 17 unchanged. Windows retains its previous WebView2 profile; Android retains its package. macOS starts fresh regenerable caches and native window restore state, leaving old entries untouched. Keep the normal closed-book and profile backup before upgrade; rollback uses the previous package and preserved files.",
       "no_impact": "",
       "note": "Release preparation raises the source to 0.0.3 and the Android version code to 3 for an in-place update; the signing flow and identifiers are unchanged. README publishes the release signing key fingerprint and public key used to verify SHA256SUMS.asc.",
-      "source_sha256": "44244da1230ad5278131710953d7bf8c2a4e67463baa43d28c1307296301b8ac"
+      "source_sha256": "550ee8a4be3ebcc1460bcaddaf7bb216987e17586e3aff3c5da9e47284fb8f39"
     },
     "project-format": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "02dacbbe6528fa6082dd207a92d645d3e4dba2d397a5b7555a70a65ef1c3b91a"
+        "docs/COMPATIBILITY.md": "85307d84947dcf72bd53aa7b07200d50f0115316459c20546e79891ff4fc6a00"
       },
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Android retains schema 17 and the desktop archive format; update the same application with its retained signing key and preserve complete exported copies with separate keys for rollback. Newer schemas are refused before unsupported presets without changing the library. Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Preset metadata uses the existing meta table without a schema migration. Missing and unknown stored values retain novel behavior; unknown values remain stored verbatim. Backups, archive restores, transfer, and salvage preserve this metadata. Older builds need no preset conversion. Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Chapter openers add optional words (ornament-above, sink-third, sink-half) and three ornament names to the stored chapter options; older builds ignore them, so back up the closed book before upgrading as above and expect an older package to show the ornament below the title with no sink.",
       "no_impact": "",
@@ -73,7 +73,7 @@
     "schema": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "02dacbbe6528fa6082dd207a92d645d3e4dba2d397a5b7555a70a65ef1c3b91a"
+        "docs/COMPATIBILITY.md": "85307d84947dcf72bd53aa7b07200d50f0115316459c20546e79891ff4fc6a00"
       },
       "migration": "Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Android retains schema 17 and the desktop archive format; update the same application with its retained signing key and preserve complete exported copies with separate keys for rollback. Newer schemas are refused before unsupported presets without changing the library. Previous books remain compatible at SQLite schema 17. Back up the closed database with adjacent originals and the profile before upgrade. Open a disposable copy first; the desktop profile migration retains compatibility access and refuses unsafe collisions. For rollback, preserve upgraded files and restore the complete pre-upgrade copy with the previous package; later edits are absent. DOCX expansion limits can refuse oversized inputs without changing stored books. Preset metadata uses the existing meta table without a schema migration. Missing and unknown stored values retain novel behavior; unknown values remain stored verbatim. Backups, archive restores, transfer, and salvage preserve this metadata. Older builds need no preset conversion.",
       "no_impact": "",

@@ -26,7 +26,7 @@ Opening a supported older book can upgrade its SQLite schema. A newer schema
 is refused by an older build; do not edit `PRAGMA user_version` to bypass this.
 Static version checks do not establish that every legacy book upgrades correctly.
 
-Both 0.0.1 and 0.0.2 use SQLite schema 17. The 0.0.2 DOCX importer adds
+0.0.1, 0.0.2 and 0.0.3 use SQLite schema 17. The 0.0.2 DOCX importer adds
 archive expansion limits: 128 entries, 128 MiB combined, and 64 MiB per entry.
 An oversized foreign document can now be refused. Preserve the original and
 split or simplify a copy before retrying; do not bypass the limits. This does
@@ -107,9 +107,8 @@ is not applied during an installer upgrade.
 
 ## Android transfer and updates
 
-The source stays at version 0.0.2 and Android version code 2 until release
-preparation. The release-preparation change must raise both to 0.0.3/code 3
-before distributing an update. The application ID stays `cc.local.app`; install
+The source is at version 0.0.3 and Android version code 3. A later release
+must raise both before distributing an update. The application ID stays `cc.local.app`; install
 updates signed with the same retained key. Do not uninstall or clear app data
 to update: both delete private books. Android normally refuses a lower version
 code; rollback must preserve device data and use complete exported archives
