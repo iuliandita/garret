@@ -23,6 +23,20 @@ databases. Keep the production schema ceiling at 17 and new-node writes disabled
 Exercise history-only originals, canonical hashes, independent cast/cover
 ownership, recovery, transfer, and loss-aware salvage before enabling authoring.
 
+Scoped EPUB tests cover note restarts and placement, reference/backlink targets,
+contents order, escaped figure text, relative PNG/JPEG media, and explicit
+publication refusals. Set `GARRET_EPUB_TEST_OUTPUT` to a disposable directory
+when running the publication and legacy export tests, then validate every emitted
+file with epubcheck. The sample and three classic fixtures pin Markdown, Word,
+and EPUB byte hashes; do not recapture those hashes to hide an export change.
+Retained-body EPUB goldens exercise the destination writer with empty bodies,
+missing content, inline breaks, and paragraph attributes; only the modification
+timestamp is normalized. Mixed legacy/new-node fixtures keep tolerant prose
+rendering separate from strict atom validation. Two chapters in one story
+distinguish chapter and story numbering. Reject XML-forbidden characters in the
+publication plan, without changing stored prose validation or the legacy renderer.
+New-node publication fixtures do not enable production authoring or mirror output.
+
 ## Checks
 
 Run from the repository root with Python 3.11 or newer and Git:

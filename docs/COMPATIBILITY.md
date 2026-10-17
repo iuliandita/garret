@@ -59,6 +59,23 @@ copies retain note text, captions, alternative text, and figure placeholders, an
 state that formatting, structure, and originals are omitted. These reader changes
 keep the schema ceiling and disabled production writes described above.
 
+EPUB export prepares scoped endnotes, figures, and scene breaks through isolated
+fixtures. Notes use book, typed chapter, or collection-story numbering; selected
+stories include only their own notes and verified originals. Figure media uses
+relative hashed names and declared MIME types. Endnotes include reference links,
+backlinks, and contents entries; a page-width preference is a reflowable break
+hint. Bodies containing new nodes use strict publication validation, refusing
+unsupported content, unresolved figures, missing or changed originals, blank
+alternative text, and XML-forbidden characters in notes, captions, and alternative
+text. Bodies without new nodes keep the existing tolerant EPUB renderer, including
+empty bodies, missing content, inline breaks, and paragraph attributes. Unknown
+note-numbering metadata does not block legacy exports or preflight. Existing
+sample and classic Markdown, Word, and EPUB exports retain their byte hashes. This does not enable
+new-node saves, Markdown conversion, or new-format readable-folder output, and
+adds no production migration. Keep the closed-book backups described below;
+rollback uses the previous build and complete copy. Reader popup behavior and
+native reading-system qualification remain unverified.
+
 The default `garret search book.db QUERY --json` result adds a `locators` array
 to each hit, retaining the existing keys. Each locator contains `field`,
 `item_id`, `instance_id`, `from`, and `to`. Consumers that require an exact key

@@ -240,6 +240,7 @@ const EN_ENTRIES: &[(&str, &str)] = &[
     // navigation document and the PDF proof alike.
     ("backup.dialog.destination", "Choose encrypted backup folder"),
     ("book.contents", "Contents"),
+    ("book.notes", "Notes"),
     ("item.numbered.chapter", "Chapter {n}"),
     ("item.numbered.part", "Part {n}"),
     ("item.numbered.scene", "Scene {n}"),
@@ -384,6 +385,7 @@ const EN_ENTRIES: &[(&str, &str)] = &[
 const DE_ENTRIES: &[(&str, &str)] = &[
     ("backup.dialog.destination", "Ordner für verschlüsselte Sicherungen wählen"),
     ("book.contents", "Inhalt"),
+    ("book.notes", "Anmerkungen"),
     ("item.numbered.chapter", "Kapitel {n}"),
     ("item.numbered.part", "Teil {n}"),
     ("item.numbered.scene", "Szene {n}"),

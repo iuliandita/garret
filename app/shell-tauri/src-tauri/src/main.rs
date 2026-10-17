@@ -34,6 +34,7 @@ mod docx;
 mod docx_import;
 mod encrypted_archive;
 mod epub;
+mod publication_plan;
 mod export;
 mod find;
 mod identity;

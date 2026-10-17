@@ -427,7 +427,14 @@ fn render_scope_with(
                     media_type: f.mime(),
                     extension: f.extension(),
                 });
+            let plan = if items.iter().filter_map(|(id, _, _)| bodies.get(id))
+                .any(|body| crate::figure_salvage::has_new_nodes(body)) {
+                Some(crate::publication_plan::Plan::from_store(&book, &bodies, publication_scopes(&store)?, &store, path)?)
+            } else { None };
+            let notes_title = strings.t("book.notes");
             crate::epub::manuscript(&crate::epub::Epub {
+                plan: plan.as_ref(),
+                notes_title: &notes_title,
                 book: &book,
                 language: strings.tag(),
                 bodies: &bodies,
@@ -474,6 +481,14 @@ struct Walked {
     back: Vec<(String, String, i64)>,
     bodies: std::collections::HashMap<String, String>,
     openings: crate::export::ChapterOpenings,
+}
+
+fn publication_scopes(store: &store::Store) -> Result<crate::publication_plan::Scopes, String> {
+    let walk = store::book_walk(store.items().map_err(|e| e.to_string())?);
+    let collection = store.project_preset().map_err(|e| e.to_string())? == "collection";
+    let numbering = store.get_meta("notes.numbering").map_err(|e| e.to_string())?;
+    Ok(crate::publication_plan::Scopes::of(&walk,
+        crate::publication_plan::Numbering::parse(numbering.as_deref(), collection)?, collection))
 }
 
 fn walk_of(store: &store::Store) -> std::result::Result<Walked, String> {
@@ -3430,3 +3445,11 @@ mod project_presets_tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "export/format_golden.rs"]
+mod format_golden;
+
+#[cfg(test)]
+#[path = "export/publication_tests.rs"]
+mod publication_tests;
