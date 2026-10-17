@@ -260,6 +260,23 @@ pub fn reading_order(entries: &[(String, Vec<u8>)]) -> Vec<(String, String)> {
         .collect()
 }
 
+/// The EPUB structural semantic for a references page. It is set on the
+/// section, inside a body that stays `backmatter`.
+const BIBLIOGRAPHY_TYPE: &str = "bibliography";
+
+/// The titles the page gives a References back-matter page in each shipped
+/// language. A matter page has no kind of its own in the store, so the title
+/// is what says it is a references page; a writer who renames it gets a
+/// plain back-matter section.
+const REFERENCES_TITLES: [&str; 2] = ["References", "Literaturverzeichnis"];
+
+fn is_references_title(title: &str) -> bool {
+    let title = title.trim();
+    REFERENCES_TITLES
+        .iter()
+        .any(|known| known.eq_ignore_ascii_case(title))
+}
+
 /// `xhtml` with the language taken off the render's own input, so no call site
 /// can pass a different one from the package document's.
 fn xhtml_of(epub: &Epub, title: &str, epub_type: &str, body: &str) -> String {
@@ -352,6 +369,7 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
         href: String,
         title: String,
         epub_type: &'static str,
+        section_type: &'static str,
         body: String,
     }
     let mut docs: Vec<Doc> = Vec::new();
@@ -377,6 +395,11 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
                     href: format!("{:04}.xhtml", docs.len() + 1),
                     title: title.clone(),
                     epub_type,
+                    section_type: if run_index == 2 && is_references_title(title) {
+                        BIBLIOGRAPHY_TYPE
+                    } else {
+                        epub_type
+                    },
                     body: String::new(),
                 });
             }
@@ -577,7 +600,7 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
                 doc.epub_type,
                 &format!(
                     "<section epub:type=\"{}\">\n{}</section>",
-                    doc.epub_type, doc.body
+                    doc.section_type, doc.body
                 ),
             ),
         ));
@@ -1902,5 +1925,50 @@ mod tests {
         let text = opf(&render(&epub));
         assert!(text.contains("A &amp; &lt;B&gt;"), "{text}");
         assert!(!text.contains("<B>"), "{text}");
+    }
+
+    fn references_body() -> String {
+        serde_json::json!({"type":"doc","content":[
+            {"type":"paragraph","content":[{"type":"text","text":"Austen, J. Emma. 1815."}]},
+            {"type":"paragraph","content":[{"type":"text","text":"Woolf, V. The Waves. 1931."}]},
+        ]})
+        .to_string()
+    }
+
+    fn back_section(title: &str) -> String {
+        let body = chapters(&[("a", "One", 0)]);
+        let back = chapters(&[("r", title, 0)]);
+        let book = Book {
+            name: "N",
+            contents_title: "Contents",
+            front: &[],
+            chapters: &body,
+            back: &back,
+        };
+        let mut texts = bodies(&[]);
+        texts.insert("r".to_string(), references_body());
+        let archive = render(&input(&book, &texts));
+        let read = reading_order(&read_zip(&archive).unwrap());
+        read.last().unwrap().1.clone()
+    }
+
+    #[test]
+    fn a_references_page_is_a_bibliography_section_with_one_paragraph_per_entry() {
+        for title in ["References", "  references ", "Literaturverzeichnis"] {
+            let page = back_section(title);
+            assert!(page.contains("<body epub:type=\"backmatter\">"), "{page}");
+            assert!(page.contains("<section epub:type=\"bibliography\">"), "{page}");
+            assert!(page.contains("<p>Austen, J. Emma. 1815.</p>"), "{page}");
+            assert!(page.contains("<p>Woolf, V. The Waves. 1931.</p>"), "{page}");
+        }
+    }
+
+    #[test]
+    fn a_renamed_or_other_back_page_stays_plain_back_matter() {
+        for title in ["Sources", "Afterword"] {
+            let page = back_section(title);
+            assert!(page.contains("<section epub:type=\"backmatter\">"), "{page}");
+            assert!(!page.contains("bibliography"), "{page}");
+        }
     }
 }

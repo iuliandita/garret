@@ -52,7 +52,7 @@ to the text, and organize the next draft into revision passes and tasks.
 ### Prepare the book
 
 Export to Markdown, DOCX, or EPUB, or make a PDF proof copy. Set up book design,
-front and back matter, covers, and pen names before exporting.
+front and back matter (including a References page, marked as a bibliography in EPUB), covers, and pen names before exporting.
 
 ### Keep control of your work
 

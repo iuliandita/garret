@@ -1722,4 +1722,35 @@ mod tests {
         );
         assert!(!leaf.contains("<script>"), "{leaf}");
     }
+
+    fn references_body() -> String {
+        serde_json::json!({"type":"doc","content":[
+            {"type":"paragraph","content":[{"type":"text","text":"Austen, J. Emma. 1815."}]},
+            {"type":"paragraph","content":[{"type":"text","text":"Woolf, V. The Waves. 1931."}]},
+        ]})
+        .to_string()
+    }
+
+    #[test]
+    fn a_references_page_sets_a_heading_and_one_paragraph_per_entry() {
+        let chapters = [item("c", "Chapter One", 0)];
+        let back = [item("r", "References", 0)];
+        let b = Book {
+            name: "Book", contents_title: "Contents", front: &[],
+            chapters: &chapters, back: &back,
+        };
+        let bodies: HashMap<String, String> =
+            [("r".to_string(), references_body())].into_iter().collect();
+        let d = design();
+        let html = proof_document(&Proof {
+            language: "en", book: &b, bodies: &bodies, design: &d, style: plain(),
+            openings: test_openings(&b),
+            front_cover: None, back_cover: None, markup_limit: None, pin: None,
+        });
+        let flow = flow_of(&html);
+        assert!(heading_for(&html, "r").starts_with("<h2"), "{flow}");
+        assert!(flow.contains("References</h2>"), "{flow}");
+        assert!(flow.contains("<p>Austen, J. Emma. 1815.</p>"), "{flow}");
+        assert!(flow.contains("<p>Woolf, V. The Waves. 1931.</p>"), "{flow}");
+    }
 }
