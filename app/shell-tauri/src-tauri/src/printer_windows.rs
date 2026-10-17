@@ -97,6 +97,7 @@ pub fn serve(
     if !job.valid() {
         return refuse();
     }
+    crate::pdf_smoke::stage(&job.app, "protocol-served");
     tauri::http::Response::builder()
         .header("Content-Type", "text/html; charset=utf-8")
         .header("Cache-Control", "no-store")
@@ -213,6 +214,7 @@ pub fn render_via(
 }
 
 fn start_window(app: &tauri::AppHandle, job: Arc<Job>) {
+    crate::pdf_smoke::stage(app, "create-window");
     if !job.valid() {
         job.fail("proof render interrupted by privacy locking");
         return;
@@ -240,6 +242,14 @@ fn start_window(app: &tauri::AppHandle, job: Arc<Job>) {
     .on_navigation(move |url| printer::proof_navigation_allowed(url.as_str(), &allowed))
     .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
     .on_page_load(move |window, payload| {
+        crate::pdf_smoke::stage(
+            &loaded.app,
+            if payload.event() == PageLoadEvent::Finished {
+                "navigation-finished"
+            } else {
+                "navigation-started"
+            },
+        );
         if payload.event() == PageLoadEvent::Finished
             && printer::proof_navigation_allowed(payload.url().as_str(), &loaded.nonce)
             && payload.url().as_str() != "about:blank"
@@ -250,10 +260,13 @@ fn start_window(app: &tauri::AppHandle, job: Arc<Job>) {
     .build();
     if let Err(error) = result {
         job.fail(format!("proof window unavailable: {error}"));
+    } else {
+        crate::pdf_smoke::stage(app, "window-created");
     }
 }
 
 fn start_script(window: tauri::WebviewWindow, job: Arc<Job>) {
+    crate::pdf_smoke::stage(&job.app, "paginator-poll");
     if !job.valid() {
         job.fail("proof render interrupted by privacy locking");
         return;
@@ -295,6 +308,7 @@ fn start_script(window: tauri::WebviewWindow, job: Arc<Job>) {
                             .and_then(|json| printer::proof_report(&json));
                         match result {
                             Ok(report) if next.print => {
+                                crate::pdf_smoke::stage(&next.app, "paginator-ready");
                                 print_pdf(next.clone(), environment, view, report)
                             }
                             Ok(report) => next.finish(Ok(printer::Printed {
@@ -325,6 +339,7 @@ fn print_pdf(
     view: ICoreWebView2,
     report: crate::pdf::ProofReport,
 ) {
+    crate::pdf_smoke::stage(&job.app, "print-to-stream");
     if !job.valid() {
         job.fail("proof render interrupted by privacy locking");
         return;
@@ -354,6 +369,7 @@ fn print_pdf(
             }
             match (status, stream) {
                 (Ok(()), Some(stream)) => {
+                    crate::pdf_smoke::stage(&done.app, "stream-ready");
                     STREAMS.with(|reads| {
                         reads.borrow_mut().insert(
                             done.nonce.clone(),
@@ -414,6 +430,7 @@ fn read_step(nonce: &str) {
             return;
         }
         if read == 0 {
+            crate::pdf_smoke::stage(&state.job.app, "stream-read");
             state.job.finish(Ok(printer::Printed {
                 report: state.report,
                 bytes: Some(state.bytes),

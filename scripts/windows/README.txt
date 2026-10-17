@@ -61,7 +61,9 @@ cover different machines and workflows.
 
 Known Windows limitations
 -------------------------
-- PDF proof/preview is not implemented for Windows. Use another export format.
+- GUI PDF proof/preview uses WebView2. An advisory native Windows CI check covers
+  the sample book; other runtimes and font installations still need testing.
+  CLI PDF export remains Linux-only.
 - Application privacy locking is Linux-only in this preview. Its settings
   are unavailable on Windows. Do not copy a Linux privacy.json into this app.
 - The application's spelling settings and project dictionary integration

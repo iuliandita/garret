@@ -157,6 +157,19 @@ Interface and subprocess CLI notices cover zero, singular, and plural cleanup
 counts in writer-facing language. Replace-all's unknown-mark
 fixture pins atomic refusal and unchanged history.
 
+The advisory Windows PDF workflow builds the native host on `windows-2025` and
+seeds the sample through `--seed`. `GARRET_PDF_SMOKE` opts into a separate Tauri
+event loop without an editor or command bridge. Its existing absolute directory
+contains `sample.db`; the probe confines its WebView2 profile, phase log, result
+JSON, and `proof.pdf` to that directory and refuses preexisting outputs. It calls
+the GUI renderer with printing enabled and the normal replacement writer and
+page-count reader. The result must have one PDF page per proof leaf. The probe
+has a 240-second watchdog; the runner adds a 270-second process bound and retains
+the PDF, runtime facts, logs, and timeout process diagnostics as artifacts.
+This check does not provide Windows CLI PDF support. Inspect downloaded PDFs
+with `pdfinfo`, `pdftotext`, and rendered pages to verify trim size, folios, and
+any fixture cover; runner evidence does not qualify every machine or font set.
+
 macOS packaging retries the specific hdiutil resource-busy creation failure up
 to three attempts, waiting 10 seconds between attempts. It prints disk-image
 diagnostics and detaches only images from the current build's bundle directory.
