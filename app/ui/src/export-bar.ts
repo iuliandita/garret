@@ -146,7 +146,7 @@ export function createExportBar(deps: ExportBarDeps): ExportBar {
                 format: exportFormatName(result.format),
               });
       if (message !== null && (result?.xml_characters_removed ?? 0) > 0) {
-        message += ` ${plural("export.done.xmlCharacters", result!.xml_characters_removed!)}`;
+        message += " " + plural("export.done.xmlCharacters", result!.xml_characters_removed!);
       }
       if (message !== null && result?.format === "markdown" && result.assets_written === true) {
         message += ` ${t("export.done.assets")}`;
