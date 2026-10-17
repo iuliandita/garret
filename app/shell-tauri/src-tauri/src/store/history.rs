@@ -444,7 +444,7 @@ impl Store {
                     })
                 }
             }
-            let body = self.version_body(version_id)?;
+            let body = crate::replace::normalize_legacy_text(&self.version_body(version_id)?);
             self.validate_body_write(item_id, &body)?;
             let current: Option<(String, i64)> = self
                 .conn
@@ -462,7 +462,6 @@ impl Store {
                     item_id: item_id.to_string(),
                 });
             }
-            self.validate_body_write(item_id, &current_body)?;
             let movement = source_words::eligible(&self.conn, item_id)?.then(|| {
                 source_words::directional(
                     WordSource::Restored,
@@ -569,11 +568,6 @@ impl Store {
         let now = now_ms();
         self.conn.execute_batch("BEGIN IMMEDIATE")?;
         let outcome = (|| -> Result<ReplaceReport> {
-            for (id, body) in self.documents()? {
-                if !excluded.contains(&id) && self.item_type(&id)?.as_deref() != Some(super::TIMELINE_TYPE) {
-                    self.validate_body_write(&id, &body)?;
-                }
-            }
             self.conn.execute(
                 "INSERT INTO snapshot (label, created_at) VALUES (?1, ?2)",
                 rusqlite::params![label, now],
@@ -698,7 +692,6 @@ impl Store {
     ) -> Result<AcceptReport> {
         for (id, _, body) in accepts {
             self.validate_body_write(id, body)?;
-            self.validate_body_write(id, &self.load_doc(id)?.body)?;
         }
         let now = now_ms();
         self.conn.execute_batch("BEGIN IMMEDIATE")?;
@@ -834,6 +827,7 @@ impl Store {
             let body = body.ok_or(StoreError::NotFound {
                 item_id: format!("version {version_id} of {item_id} in snapshot {snapshot_id}"),
             })?;
+            let body = crate::replace::normalize_legacy_text(&body);
             self.validate_body_write(item_id, &body)?;
             let current: Option<(String, i64)> = self
                 .conn
@@ -851,7 +845,6 @@ impl Store {
                     item_id: item_id.to_string(),
                 });
             }
-            self.validate_body_write(item_id, &current_body)?;
             let movement = source_words::eligible(&self.conn, item_id)?.then(|| {
                 source_words::directional(
                     WordSource::Restored,
@@ -948,10 +941,6 @@ impl Store {
                     item_id: format!("snapshot {snapshot_id}"),
                 });
             }
-            for (id, was, current) in &rows {
-                self.validate_body_write(id, was)?;
-                self.validate_body_write(id, current)?;
-            }
             let covered = rows.len() as i64;
             let mut changed = 0i64;
             let mut source_movements: Vec<DatedMovement> = Vec::new();
@@ -959,11 +948,13 @@ impl Store {
                 if was == current {
                     continue;
                 }
+                let was = crate::replace::normalize_legacy_text(was);
+                self.validate_body_write(item_id, &was)?;
                 if source_words::eligible(&self.conn, item_id)? {
                     source_movements.push(source_words::directional(
                         WordSource::Restored,
                         Some(current),
-                        was,
+                        &was,
                     ));
                 }
                 self.insert_version(item_id, current, now, None)?;

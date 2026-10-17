@@ -101,12 +101,14 @@ function withoutEmptyText(parsed: unknown): unknown {
   // Replace-all in older books could leave empty text runs, which ProseMirror rejects.
   if (parsed && typeof parsed === "object" && "type" in parsed && parsed.type === "doc"
       && "content" in parsed && Array.isArray(parsed.content)) {
+    if (parsed.content.length === 0) parsed.content.push({ type: "paragraph" });
     for (const paragraph of parsed.content) {
       if (paragraph && typeof paragraph === "object" && paragraph.type === "paragraph"
           && Array.isArray(paragraph.content)) {
         paragraph.content = paragraph.content.filter((node: unknown) => !(
           node && typeof node === "object" && "type" in node && node.type === "text"
           && "text" in node && node.text === ""
+          && validDocument({ type: "doc", content: [{ type: "paragraph", content: [{ ...node, text: "x" }] }] })
         ));
       }
     }

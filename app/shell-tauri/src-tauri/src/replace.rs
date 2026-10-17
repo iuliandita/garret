@@ -127,30 +127,69 @@ fn rewrite_node(
         for child in children.iter_mut() {
             rewrite_node(child, query, replacement, replaced);
         }
-        let mut normalized: Vec<serde_json::Value> = Vec::with_capacity(children.len());
-        for child in std::mem::take(children) {
-            if child.get("type").and_then(|v| v.as_str()) == Some("text") {
-                let Some(text) = child.get("text").and_then(|v| v.as_str()) else {
-                    normalized.push(child);
-                    continue;
-                };
-                if text.is_empty() {
-                    continue;
-                }
-                if let Some(previous) = normalized.last_mut() {
-                    if previous.get("type").and_then(|v| v.as_str()) == Some("text")
-                        && previous.get("marks") == child.get("marks")
-                    {
-                        if let Some(value) = previous.get("text").and_then(|v| v.as_str()) {
-                            previous["text"] = serde_json::Value::String(format!("{value}{text}"));
-                            continue;
-                        }
+        normalize_children(children);
+    }
+}
+
+fn normalize_children(children: &mut Vec<serde_json::Value>) -> bool {
+    fn legacy_text(node: &serde_json::Value) -> bool {
+        let Some(object) = node.as_object() else { return false; };
+        object.keys().all(|key| ["type", "text", "marks"].contains(&key.as_str()))
+            && node.get("type").and_then(|v| v.as_str()) == Some("text")
+            && node.get("text").is_some_and(|v| v.is_string())
+            && node.get("marks").is_none_or(|value| value.as_array().is_some_and(|marks| {
+                let mut seen = std::collections::HashSet::new();
+                marks.iter().all(|mark| mark.as_object().is_some_and(|object| object.len() == 1)
+                    && mark.get("type").and_then(|v| v.as_str()).is_some_and(|name|
+                        ["em", "strong", "underline"].contains(&name) && seen.insert(name)))
+            }))
+    }
+    let original_len = children.len();
+    let mut normalized: Vec<serde_json::Value> = Vec::with_capacity(children.len());
+    for child in std::mem::take(children) {
+        if legacy_text(&child) {
+            let Some(text) = child.get("text").and_then(|v| v.as_str()) else {
+                normalized.push(child);
+                continue;
+            };
+            if text.is_empty() {
+                continue;
+            }
+            if let Some(previous) = normalized.last_mut() {
+                if legacy_text(previous)
+                    && previous.get("marks") == child.get("marks")
+                {
+                    if let Some(value) = previous.get("text").and_then(|v| v.as_str()) {
+                        previous["text"] = serde_json::Value::String(format!("{value}{text}"));
+                        continue;
                     }
                 }
             }
-            normalized.push(child);
         }
-        *children = normalized;
+        normalized.push(child);
+    }
+    *children = normalized;
+    children.len() != original_len
+}
+
+pub(crate) fn normalize_legacy_text(body: &str) -> String {
+    fn normalize(node: &mut serde_json::Value) -> bool {
+        let Some(children) = node.get_mut("content").and_then(|v| v.as_array_mut()) else {
+            return false;
+        };
+        let mut changed = false;
+        for child in children.iter_mut() {
+            changed |= normalize(child);
+        }
+        normalize_children(children) || changed
+    }
+    let Ok(mut value) = serde_json::from_str::<serde_json::Value>(body) else {
+        return body.to_owned();
+    };
+    if value.get("type").and_then(|v| v.as_str()) == Some("doc") && normalize(&mut value) {
+        value.to_string()
+    } else {
+        body.to_owned()
     }
 }
 

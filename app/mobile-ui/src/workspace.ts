@@ -5,6 +5,7 @@ import { parseReviewBody } from "../../ui/src/review-fragments";
 import { createSession, type Session } from "../../ui/src/session";
 import { createFlushScheduler, type FlushEntry, type FlushAck, type FlushAttribution } from "../../ui/src/store/flush";
 import { mobileMessages } from "./messages";
+import { refusedDocumentId } from "../../ui/src/document-format";
 import type { WritingPosition } from "./position";
 
 export interface MobileDocument {
@@ -162,7 +163,10 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
     commentsOf: id => flushAnchorsFor(session.activeDocId(), id, editor.commentsCapped(), editor.commentAnchors()),
     wordCountOf: body => countWordsIn(schema.nodeFromJSON(JSON.parse(body))),
     localDay: opts.localDay,
-    onFailure: () => showError(m.saveError),
+    onFailure: message => {
+      const refused = refusedDocumentId(message);
+      showError(refused === null ? m.saveError : m.formatRefused.replace("{scene}", scenes.find(scene => scene.id === refused)?.title || refused));
+    },
     onStateChange: state => { save.textContent = m[state]; save.dataset.state = state; },
   });
   function refreshCount() {

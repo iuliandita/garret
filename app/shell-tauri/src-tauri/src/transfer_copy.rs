@@ -44,9 +44,14 @@ pub(crate) fn lineage(store: &Store) -> Result<String, String> {
 }
 
 pub(crate) fn inspect(bundle: &Path) -> Result<Source, String> {
+    let (store, source) = read_source(bundle)?;
+    store.validate_retained_formats().map_err(|e| e.to_string())?;
+    Ok(source)
+}
+
+fn read_source(bundle: &Path) -> Result<(Store, Source), String> {
     backup_bundle::verify(bundle)?;
     let store = Store::open_readonly(&backup_bundle::db_path(bundle)).map_err(|e| e.to_string())?;
-    store.validate_document_writes().map_err(|e| e.to_string())?;
     let book_id = store
         .book_id()
         .map_err(|e| e.to_string())?
@@ -75,12 +80,12 @@ pub(crate) fn inspect(bundle: &Path) -> Result<Source, String> {
             .ok_or("transfer inventory grew beyond its limit")?;
         hash.update(&buffer[..size]);
     }
-    Ok(Source {
+    Ok((store, Source {
         book_id,
         lineage,
         title,
         snapshot: format!("{:x}", hash.finalize()),
-    })
+    }))
 }
 
 /// `parent` is a host-owned private stage. A failure retains its claimed copy
@@ -114,7 +119,7 @@ pub(crate) fn stage(bundle: &Path, parent: &Path, expected: &Source) -> Result<O
     backup_bundle::verify_database_copy(bundle, &database)?;
     backup_bundle::copy_assets(bundle, &database)?;
     // Bind copying to the reviewed source, including all asset metadata.
-    if inspect(bundle)? != source {
+    if read_source(bundle)?.1 != source {
         return Err("transfer source changed during copy".into());
     }
     backup_bundle::clear_marker(&database)?;

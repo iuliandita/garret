@@ -270,8 +270,8 @@
     "assets": [
       "0199ed16-8c00-7000-8000-000000000003"
     ],
-    "valid": false,
-    "legacy": false
+    "valid": true,
+    "legacy": true
   },
   {
     "id": "missing-document-content",
@@ -423,7 +423,8 @@
       "0199ed16-8c00-7000-8000-000000000003"
     ],
     "valid": false,
-    "legacy": false
+    "legacy": false,
+    "readable": true
   },
   {
     "id": "text-with-content",
@@ -1280,6 +1281,198 @@
     "assets": [
       "0199ed16-8c00-7000-8000-000000000003"
     ],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "legacy-mark-order-em-strong-underline",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Marked prose",
+              "marks": [
+                {
+                  "type": "em"
+                },
+                {
+                  "type": "strong"
+                },
+                {
+                  "type": "underline"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [],
+    "valid": true,
+    "legacy": true
+  },
+  {
+    "id": "legacy-mark-order-underline-strong-em",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Marked prose",
+              "marks": [
+                {
+                  "type": "underline"
+                },
+                {
+                  "type": "strong"
+                },
+                {
+                  "type": "em"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [],
+    "valid": true,
+    "legacy": true
+  },
+  {
+    "id": "legacy-mark-order-strong-underline-em",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Marked prose",
+              "marks": [
+                {
+                  "type": "strong"
+                },
+                {
+                  "type": "underline"
+                },
+                {
+                  "type": "em"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [],
+    "valid": true,
+    "legacy": true
+  },
+  {
+    "id": "legacy-empty-paragraph-array",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Before"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": []
+        },
+        {
+          "type": "paragraph"
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "After"
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [],
+    "valid": true,
+    "legacy": true
+  },
+  {
+    "id": "legacy-empty-paragraph-content",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": []
+        }
+      ]
+    },
+    "assets": [],
+    "valid": true,
+    "legacy": true
+  },
+  {
+    "id": "empty-text-unknown-attribute",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "",
+              "attrs": {
+                "future": "preserve"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [],
+    "valid": false,
+    "legacy": false
+  },
+  {
+    "id": "empty-text-unknown-mark",
+    "body": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "",
+              "marks": [
+                {
+                  "type": "future"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "assets": [],
     "valid": false,
     "legacy": false
   }

@@ -690,7 +690,6 @@ impl Store {
             let skip: HashSet<i64> = selected_ids.iter().copied().collect();
             let mut body = old_body.clone();
             if decision == ReviewDecision::Accept {
-                self.validate_body_write(&item_id, &old_body)?;
                 let mut candidate = body.clone();
                 for (_, hunk) in &selected {
                     candidate = review_document::apply_hunk(&candidate, hunk)
@@ -777,10 +776,6 @@ impl Store {
         plan: &ReviewPlan,
         authors: &ReviewReturnAuthors,
     ) -> Result<ReviewReturnResult> {
-        self.validate_body_write(
-            &plan.expected.item_id,
-            &self.load_doc(&plan.expected.item_id)?.body,
-        )?;
         self.validate_body_write(&plan.expected.item_id, &plan.rejected_projection)?;
         let now = now_ms();
         self.conn.execute_batch("BEGIN IMMEDIATE")?;

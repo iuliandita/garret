@@ -1307,7 +1307,7 @@ fn restore_point_impl(
     }
 
     Store::open_readonly(&source_db)
-        .and_then(|store| store.validate_document_writes())
+        .and_then(|store| store.validate_retained_formats())
         .map_err(|e| e.to_string())?;
 
     fs::create_dir_all(library).map_err(|e| format!("cannot create {}: {e}", library.display()))?;
@@ -1412,7 +1412,7 @@ fn restore_point_impl(
         fs::File::create(&staged).map_err(|e| format!("{}: {e}", staged.display()))?;
         copy(&source_db, &staged)?;
         Store::open_readonly(&staged)
-            .and_then(|store| store.validate_document_writes())
+            .and_then(|store| store.validate_retained_formats())
             .map_err(|e| e.to_string())?;
         if bundled {
             crate::backup_bundle::verify_database_copy(point, &staged)?;
@@ -2884,6 +2884,17 @@ mod tests {
         })
         .collect();
         (other, files)
+    }
+
+    #[test]
+    fn format_gate_import_refuses_before_claiming_a_book() {
+        let dir = tempdir().unwrap();
+        let created = std::cell::Cell::new(false);
+        let future = r#"{"type":"doc","content":[{"type":"scene_break"}]}"#;
+        let error = super::create_imported_with(dir.path(), "Book", &[(None, "scene", "Scene", Some(future))], &english(), |_| created.set(true)).unwrap_err();
+        assert!(error.contains("document format refused"));
+        assert!(!created.get());
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 0);
     }
 
     #[test]

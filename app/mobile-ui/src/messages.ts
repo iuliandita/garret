@@ -40,6 +40,7 @@ const en = {
   transferPublish: "The verified copy could not be added to your books. Your existing books and source archive are unchanged. Try importing again.",
   transferLibraryUnreadable: "Some local books could not be checked for related copies. They stay in your library; this import still creates a separate book.",
   transferIncomplete: "The archive is missing required book data or originals. No book was added. Export a complete archive on desktop.",
+  transferFormat: "Item {item} uses a document format this version cannot read. No book was added. Keep the original archive and use a compatible version.",
   unsupportedSchema: "This book needs a newer version of the Android app. Open it on desktop or update the app. Your books and source file are unchanged.",
   unsupportedPreset: "This version of the Android app supports novels, short fiction, nonfiction, and collections. Open books with unknown project presets on desktop.",
 
@@ -47,6 +48,7 @@ const en = {
   underline: "Underline", undo: "Undo", redo: "Redo", writing: "Writing tools",
   saved: "Saved on this device", pending: "Saving...", failed: "Not saved",
   saveError: "Your latest changes could not be saved. Keep this book open and copy your text before restarting.",
+  formatRefused: "Scene {scene} uses a document format this version cannot save. Keep this book open and copy your text before restarting.",
   openError: "This scene could not be opened. Your current scene is still here.",
   word: "word", words: "words", untitled: "Untitled scene", unsupported: "This scene contains content this version cannot safely edit.",
   libraryTitle: "Your books", libraryHint: "Write offline. Your books stay on this device.",
@@ -103,6 +105,7 @@ const de: typeof en = {
   transferPublish: "Die geprüfte Kopie konnte nicht zu deinen Büchern hinzugefügt werden. Vorhandene Bücher und Quellarchiv sind unverändert. Versuche den Import erneut.",
   transferLibraryUnreadable: "Einige lokale Bücher konnten nicht auf verwandte Kopien geprüft werden. Sie bleiben in deiner Bibliothek; dieser Import erstellt weiterhin ein separates Buch.",
   transferIncomplete: "Im Archiv fehlen erforderliche Buchdaten oder Originale. Kein Buch wurde hinzugefügt. Exportiere am Desktop ein vollständiges Archiv.",
+  transferFormat: "Eintrag {item} verwendet ein Dokumentformat, das diese Version nicht lesen kann. Kein Buch wurde hinzugefügt. Bewahre das Originalarchiv auf und verwende eine kompatible Version.",
   unsupportedSchema: "Dieses Buch benötigt eine neuere Version der Android-App. Öffne es am Desktop oder aktualisiere die App. Deine Bücher und die Quelldatei bleiben unverändert.",
   unsupportedPreset: "Diese Version der Android-App unterstützt Romane, Kurzgeschichten, Sachbücher und Sammlungen. Öffne Bücher mit unbekannten Projektvorlagen am Desktop.",
 
@@ -110,6 +113,7 @@ const de: typeof en = {
   underline: "Unterstrichen", undo: "Rückgängig", redo: "Wiederholen", writing: "Schreibwerkzeuge",
   saved: "Auf diesem Gerät gespeichert", pending: "Speichert...", failed: "Nicht gespeichert",
   saveError: "Deine letzten Änderungen konnten nicht gespeichert werden. Lass dieses Buch geöffnet und kopiere deinen Text vor einem Neustart.",
+  formatRefused: "Szene {scene} verwendet ein Dokumentformat, das diese Version nicht speichern kann. Lass dieses Buch geöffnet und kopiere deinen Text vor einem Neustart.",
   openError: "Diese Szene konnte nicht geöffnet werden. Deine aktuelle Szene ist weiterhin hier.",
   word: "Wort", words: "Wörter", untitled: "Unbenannte Szene", unsupported: "Diese Szene enthält Inhalte, die diese Version nicht sicher bearbeiten kann.",
   libraryTitle: "Deine Bücher", libraryHint: "Schreibe offline. Deine Bücher bleiben auf diesem Gerät.",

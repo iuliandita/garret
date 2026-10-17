@@ -3,7 +3,7 @@ import { expect, test } from "bun:test";
 import { MAX_ATTRIBUTE_BYTES, validDocument } from "../src/document-format";
 import { readableBody } from "../src/editor";
 
-type Case = { id: string; body: unknown; assets: string[]; valid: boolean; legacy: boolean };
+type Case = { id: string; body: unknown; assets: string[]; valid: boolean; legacy: boolean; readable?: boolean };
 const cases = JSON.parse(readFileSync(new URL("../../harness/fixtures/document-format.json", import.meta.url), "utf8")) as Case[];
 
 test("format corpus agrees on strict future validation and current refusal", () => {
@@ -11,7 +11,7 @@ test("format corpus agrees on strict future validation and current refusal", () 
   for (const fixture of cases) {
     expect(validDocument(fixture.body, true, new Set(fixture.assets)), fixture.id).toBe(fixture.valid);
     expect(validDocument(fixture.body), fixture.id).toBe(fixture.legacy);
-    expect(readableBody(JSON.stringify(fixture.body)) !== null, fixture.id).toBe(fixture.legacy);
+    expect(readableBody(JSON.stringify(fixture.body)) !== null, fixture.id).toBe(fixture.readable ?? fixture.legacy);
   }
 });
 

@@ -4,6 +4,12 @@ If an older book contains empty text runs from replace-all, the editor removes
 those runs on load. The original database body stays intact until the next save;
 no schema migration or manual repair is needed.
 
+Format-write refusals leave the entire save batch pending. The protocol has no
+per-entry refusal acknowledgement, so partial commits would lose unsaved buffers.
+Restore and transfer preflights reject new nodes while retaining legacy bodies
+and history; only incoming history bodies and changed replacement candidates
+undergo strict write validation. Keep these recovery and mutation checks separate.
+
 Documentation is part of a change. The offline guard detects review obligations
 and verifiable drift. It cannot establish that prose is correct, an editor
 interaction works, or a live upgrade, restore, or rollback succeeds.

@@ -62,9 +62,6 @@ pub fn validate(value: &Value, allow_new: bool, assets: &HashSet<String>) -> Res
         .get("content")
         .and_then(Value::as_array)
         .ok_or_else(|| invalid("expected document content"))?;
-    if blocks.is_empty() {
-        return Err(invalid("document needs a block"));
-    }
     let mut ids = HashSet::new();
     for block in blocks {
         match block.get("type").and_then(Value::as_str) {
@@ -185,12 +182,15 @@ impl Store {
                 serde_json::from_str(body).map_err(|_| invalid("invalid timeline JSON"))?;
             return validate_timeline(&value);
         }
-        validate_write(body)
+        validate_write(body).map_err(|error| match error {
+            StoreError::InvalidDocument(reason) => invalid(&format!("{item_id}: {reason}")),
+            other => other,
+        })
     }
 
-    pub(crate) fn validate_document_writes(&self) -> Result<()> {
+    pub(crate) fn validate_retained_formats(&self) -> Result<()> {
         for (id, body) in self.documents()? {
-            self.validate_body_write(&id, &body)?;
+            refuse_new_nodes(&id, &body)?;
         }
         if self.user_version()? >= 2 {
             let mut stmt = self.conn.prepare(
@@ -200,9 +200,26 @@ impl Store {
                 stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
             for row in rows {
                 let (id, body) = row?;
-                self.validate_body_write(&id, &body)?;
+                refuse_new_nodes(&id, &body)?;
             }
         }
         Ok(())
     }
+}
+
+fn refuse_new_nodes(item_id: &str, body: &str) -> Result<()> {
+    fn contains_new(value: &Value) -> bool {
+        match value {
+            Value::Object(object) => {
+                matches!(object.get("type").and_then(Value::as_str), Some("endnote" | "figure" | "scene_break"))
+                    || object.values().any(contains_new)
+            }
+            Value::Array(values) => values.iter().any(contains_new),
+            _ => false,
+        }
+    }
+    if !new_nodes_allowed() && serde_json::from_str::<Value>(body).is_ok_and(|value| contains_new(&value)) {
+        return Err(invalid(&format!("{item_id}: new document nodes are disabled")));
+    }
+    Ok(())
 }

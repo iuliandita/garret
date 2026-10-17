@@ -15,6 +15,7 @@ import { isCompositionKey } from "./composition-key";
 import { formatNumber, plural, t } from "./i18n";
 import { createBanner, type Tone } from "./banner";
 import { HostCommandError } from "./command-error";
+import { refusedDocumentId } from "./document-format";
 import { createEditor, type DocInput, type Editor, readableBody, bodyText } from "./editor";
 import type { FixtureSource } from "./fixture/source";
 import { createNavigator, type ManuscriptNavigator } from "./navigator/index";
@@ -892,6 +893,11 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   function raiseFailure(message: string, error?: unknown): void {
     if (persistError !== null) return;
     persistError = message;
+    const refused = refusedDocumentId(error instanceof HostCommandError ? error.detail : message);
+    if (refused !== null) {
+      banner("persist-error", t("project.error.format-refused", { scene: titleOf(refused) || refused }), "failure");
+      return;
+    }
     // The host's sentence names its own recovery; the diagnostic goes behind
     // Details rather than into the one line that says automatic saving stopped.
     if (error instanceof HostCommandError) {

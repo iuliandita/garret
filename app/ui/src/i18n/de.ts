@@ -2129,6 +2129,7 @@ export const DE = {
   "banner.dismiss": "diese Meldung schließen",
   "banner.details": "Details",
   "project.error.persist": "Nicht gesichert: {message} Das automatische Speichern wurde angehalten. Ihre letzten Änderungen gibt es nur in diesem Fenster.",
+  "project.error.format-refused": "Szene {scene} verwendet ein Dokumentformat, das diese Version nicht speichern kann. Das automatische Speichern wurde angehalten. Lassen Sie dieses Buch geöffnet und kopieren Sie Ihren Text vor einem Neustart.",
   "project.error.open-document": "Dieses Dokument konnte nicht geöffnet werden: {error}",
   "project.error.unreadable-body":
     "{item} wurde von einem anderen Build der Anwendung geschrieben und konnte nicht geöffnet werden. Ihre Arbeit steckt weiterhin in der Datei.",

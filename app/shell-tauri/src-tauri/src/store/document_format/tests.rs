@@ -276,7 +276,7 @@ fn format_gate_history_restores_store_nothing() {
 #[test]
 fn format_gate_review_acceptance_and_return_store_nothing() {
     use crate::review_document::{FragmentToken, ReviewHunk};
-    use crate::store::review::{ReviewDecision, ReviewReturnAuthors};
+    use crate::store::review::{ReviewDecision, ReviewReturnAuthors, ReviewAuthorChoice};
     for body in new_bodies() {
         let dir = tempfile::tempdir().unwrap();
         let (store, ids) = setup(&dir.path().join("book.db"));
@@ -304,31 +304,29 @@ fn format_gate_review_acceptance_and_return_store_nothing() {
         let expected = crate::review_docx::manifest(&snapshot).unwrap();
         let plan = crate::review_docx::ReviewPlan {
             expected: expected.clone(),
-            decisions: vec![],
+            decisions: vec![crate::review_docx::OldDecision::Accept(group.hunks[0].id)],
             new_hunks: vec![],
             new_messages: vec![],
             rejected_projection: body.clone(),
             accepted_projection: snapshot.body.clone(),
         };
         let before = state(&store);
-        refused(store.review_return_apply(&plan, &ReviewReturnAuthors::default()));
+        let authors = ReviewReturnAuthors { sources: vec![], deciding_actor: Some(ReviewAuthorChoice::Existing(author.id)) };
+        refused(store.review_return_apply(&plan, &authors));
         assert_eq!(state(&store), before);
-        store
-            .conn
-            .execute(
-                "UPDATE doc SET body=?1 WHERE item_id=?2",
-                rusqlite::params![body, ids[1]],
-            )
-            .unwrap();
-        let before = state(&store);
-        refused(store.review_decide(
+        let candidate_plan = crate::review_docx::ReviewPlan { rejected_projection: snapshot.body.clone(), ..plan };
+        crate::review_document::with_test_candidate(&body, || {
+            refused(store.review_return_apply(&candidate_plan, &authors));
+        });
+        assert_eq!(state(&store), before);
+        crate::review_document::with_test_candidate(&body, || refused(store.review_decide(
             group.id,
             group.rev,
             2,
             &[group.hunks[0].id],
             ReviewDecision::Accept,
             author.id,
-        ));
+        )));
         assert_eq!(state(&store), before);
     }
 }
@@ -464,6 +462,7 @@ fn format_gate_mobile_database_imports_store_nothing() {
             let bundle_before = mobile_transfer::tests::contents(&bundle);
             let error = transfer_copy::inspect(&bundle).unwrap_err();
             assert!(error.contains("document format refused"));
+            assert!(error.contains(&ids[1]));
             let private = dir.path().join("private");
             std::fs::create_dir(&private).unwrap();
             let error = transfer_copy::stage(&bundle, &private, &source).err().unwrap();
@@ -484,7 +483,7 @@ fn format_gate_mobile_database_imports_store_nothing() {
             retained.checkpoint().unwrap();
             drop(retained);
             let books_before = mobile_transfer::tests::contents(&books);
-            assert_eq!(mobile_transfer::preview(&incoming, &books).unwrap_err(), "transfer_incomplete");
+            assert_eq!(mobile_transfer::preview(&incoming, &books).unwrap_err(), format!("transfer_format:{}", ids[1]));
             backup_bundle::verify(&incoming.join("point")).unwrap();
             let (archive_bytes, archive_sha256) = mobile_transfer::fingerprint(
                 &incoming.join("archive.in"), mobile_transfer::ARCHIVE_LIMIT,
@@ -493,7 +492,7 @@ fn format_gate_mobile_database_imports_store_nothing() {
                 title: None, related: vec![], unreadable_books: 0,
                 source, archive_bytes, archive_sha256,
             };
-            assert_eq!(mobile_transfer::publish(&incoming, &books, &expected).unwrap_err(), "transfer_stale");
+            assert_eq!(mobile_transfer::publish(&incoming, &books, &expected).unwrap_err(), format!("transfer_format:{}", ids[1]));
             assert!(!incoming.join("owned-copy").exists());
             assert_eq!(mobile_transfer::tests::contents(&books), books_before);
             assert_eq!(mobile_transfer::tests::contents(&bundle), bundle_before);
@@ -527,7 +526,11 @@ fn format_gate_seed_replace_and_timeline_store_nothing() {
             .conn
             .execute(
                 "UPDATE doc SET body=?1 WHERE item_id=?2",
-                rusqlite::params![body, ids[1]],
+                rusqlite::params![{
+                    let mut value: Value = serde_json::from_str(&body).unwrap();
+                    value["content"].as_array_mut().unwrap().push(json!({"type":"paragraph","content":[{"type":"text","text":"prose"}]}));
+                    value.to_string()
+                }, ids[1]],
             )
             .unwrap();
         let before = state(&store);
@@ -537,5 +540,86 @@ fn format_gate_seed_replace_and_timeline_store_nothing() {
         let before = state(&store);
         refused(store.flush(&[entry(&timeline.id, 1, &body)]));
         assert_eq!(state(&store), before);
+    }
+}
+
+#[test]
+fn format_legacy_empty_runs_recover_through_backup_transfer_and_history() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = dir.path().join("old.db");
+    let (store, ids) = setup(&db);
+    let legacy = json!({"type":"doc","content":[{"type":"paragraph","content":[
+        {"type":"text","text":""},{"type":"text","text":"moon"}
+    ]}]}).to_string();
+    store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![legacy, ids[1]]).unwrap();
+    let retained = store.snapshot_create("Old draft").unwrap();
+    let bundle = dir.path().join("old.point");
+    assert!(crate::backup_bundle::write(&db, &store, &bundle).unwrap().verified);
+    let source = crate::transfer_copy::inspect(&bundle).unwrap();
+    let private = dir.path().join("private");
+    std::fs::create_dir(&private).unwrap();
+    let copy = crate::transfer_copy::stage(&bundle, &private, &source).unwrap();
+    let copied = Store::open_readonly(&copy.database).unwrap();
+    assert_eq!(copied.load_doc(&ids[1]).unwrap().body, legacy);
+    let restored = crate::projects::restore_point_into(&bundle, &dir.path().join("library"), "old", 1).unwrap();
+    let restored = Store::open_readonly(std::path::Path::new(&restored.path)).unwrap();
+    assert_eq!(restored.load_doc(&ids[1]).unwrap().body, legacy);
+
+    let report = store.replace_everywhere(&HashSet::new(), "moon", "changed", "Before replacing").unwrap();
+    assert_eq!(report.documents, 1);
+    assert_eq!(store.snapshot_restore(report.snapshot.id).unwrap().documents, 1);
+    let recovered = store.load_doc(&ids[1]).unwrap();
+    validate_write(&recovered.body).unwrap();
+    assert_eq!(recovered.body, prose("moon"));
+
+    store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![legacy, ids[1]]).unwrap();
+    let version: i64 = store.conn.query_row("SELECT id FROM doc_version WHERE item_id=?1 AND snapshot_id=?2", rusqlite::params![ids[1], retained.id], |row| row.get(0)).unwrap();
+    assert_eq!(store.doc_restore(&ids[1], version, recovered.rev).unwrap().body, prose("moon"));
+    store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![legacy, ids[1]]).unwrap();
+    let rev = store.load_doc(&ids[1]).unwrap().rev;
+    let accepted = store.accept_from_mirror(&[(ids[1].clone(), rev, prose("incoming"))], "Before accepting").unwrap();
+    let version: i64 = store.conn.query_row("SELECT id FROM doc_version WHERE item_id=?1 AND snapshot_id=?2", rusqlite::params![ids[1], accepted.snapshot.id], |row| row.get(0)).unwrap();
+    assert_eq!(store.undo_mirror_accept(&ids[1], version, accepted.snapshot.id, rev + 1).unwrap().body, prose("moon"));
+}
+
+#[test]
+fn format_replace_skips_untouched_invalid_documents_and_snapshot_rows() {
+    let dir = tempfile::tempdir().unwrap();
+    let (store, ids) = setup(&dir.path().join("book.db"));
+    let invalid = new_bodies()[0].clone();
+    store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![invalid, ids[0]]).unwrap();
+    let report = store.replace_everywhere(&HashSet::new(), "second", "Changed", "Before replacing").unwrap();
+    assert_eq!(report.documents, 1);
+    assert_eq!(store.snapshot_restore(report.snapshot.id).unwrap().documents, 1);
+    assert_eq!(store.load_doc(&ids[0]).unwrap().body, invalid);
+}
+
+#[test]
+fn format_import_parsers_keep_future_constructs_out_of_stored_documents() {
+    let markdown = crate::import::parse("# Book\n\n## Scene\n\nProse[^note]\n\n[^note]: A note\n\n![Figure](image.png)\n\n---\n", "book");
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Prose</w:t><w:endnoteReference w:id="1"/><w:drawing/></w:r></w:p></w:body></w:document>"#;
+    let bytes = crate::epub::zip(&[crate::epub::Entry::text("word/document.xml", xml)]);
+    let docx = crate::docx_import::parse(&bytes, "book").unwrap();
+    assert_eq!(docx.losses.notes, 1);
+    let dir = tempfile::tempdir().unwrap();
+    let db = dir.path().join("damaged.db");
+    let (store, ids) = setup(&db);
+    let mut future: Value = serde_json::from_str(&new_bodies()[0]).unwrap();
+    future["content"].as_array_mut().unwrap().push(json!({"type":"paragraph","content":[{"type":"text","text":"Salvaged prose"}]}));
+    store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![future.to_string(), ids[1]]).unwrap();
+    store.checkpoint().unwrap();
+    drop(store);
+    let out = dir.path().join("salvaged");
+    crate::salvage::salvage(&db, &out).unwrap();
+    let recovered = std::fs::read_to_string(out.join(crate::salvage::MANUSCRIPT_NAME)).unwrap();
+    assert!(recovered.contains("Salvaged prose"));
+    let salvage = crate::import::parse(&recovered, "salvaged");
+    for imported in [markdown, docx.imported, salvage] {
+        let bodies: Vec<_> = imported.items.iter().filter_map(|item| item.body.as_deref()).collect();
+        assert!(!bodies.is_empty());
+        for body in bodies { validate_write(body).unwrap(); }
+        let rows: Vec<_> = imported.items.iter().map(|item| (item.parent, item.item_type, item.title.as_str(), item.body.as_deref())).collect();
+        let library = tempfile::tempdir().unwrap();
+        crate::projects::create_imported(library.path(), &imported.name, &rows, &crate::strings::Strings::english()).unwrap();
     }
 }

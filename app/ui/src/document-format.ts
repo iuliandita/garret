@@ -1,5 +1,9 @@
 export const MAX_ATTRIBUTE_BYTES = 64 * 1024;
 
+export function refusedDocumentId(message: string): string | null {
+  return /document format refused: ([^:\n;]+): /.exec(message)?.[1] ?? null;
+}
+
 type ObjectValue = Record<string, unknown>;
 
 function object(value: unknown, keys: readonly string[]): ObjectValue {
@@ -32,7 +36,6 @@ export function validDocument(value: unknown, allowNew = false, assets: Readonly
     const root = object(value, ["type", "content"]);
     if (root.type !== "doc") return false;
     const blocks = array(root.content);
-    if (blocks.length === 0) return false;
     const ids = new Set<string>();
     const instance = (value: unknown): void => {
       const id = uuid(value);
