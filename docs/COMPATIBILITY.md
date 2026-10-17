@@ -106,15 +106,15 @@ carries them.
 The desktop profile now uses `garret` instead of `cc.local.app`, preserving a
 compatibility link after migration. Close older versions before first launch.
 If migration stops, preserve both folders named in the warning, close garret,
-and request recovery help. Do not merge, overwrite, or delete them. The Android
-application identifier remains `cc.local.app`; profile migration is not sync.
+and request recovery help. Do not merge, overwrite, or delete them. Android uses the separate package move described below; desktop profile
+migration is not sync.
 
 The desktop application identifier is `com.usegarret.app`. This changes the
 Linux menu-entry identity and macOS bundle identity without relocating books,
 `settings.json`, recovery copies, or single-instance ownership. Linux keeps its
 WebView data in the `garret` profile; Windows keeps its existing WebView2 data
-under the local application-data directory's `cc.local.app` folder. Android
-explicitly keeps `cc.local.app`, so installing an update preserves its sandbox.
+under the local application-data directory's `cc.local.app` folder. Android also uses `com.usegarret.app`, which creates a separate sandbox from
+the old Android package.
 
 On macOS, the new identifier starts fresh WebKit and HTTP caches, temporary
 caches, and native window positions and restore state. The previous native window
@@ -139,13 +139,21 @@ is not applied during an installer upgrade.
 
 ## Android transfer and updates
 
-The source is at version 0.0.3 and Android version code 3. A later release
-must raise both before distributing an update. The application ID stays `cc.local.app`; install
-updates signed with the same retained key. Do not uninstall or clear app data
-to update: both delete private books. Android normally refuses a lower version
-code; rollback must preserve device data and use complete exported archives
-with their separate recovery keys on a compatible desktop build. Installing
-an older APK is not a recovery method.
+Android now uses `com.usegarret.app` instead of `cc.local.app`, keeping the
+same signing key. It installs alongside the old app and cannot access its
+private books. First update the old package to the transfer-capable 0.0.3
+release, export every complete book archive and its separate recovery key,
+then install the new package and import. Compare manuscripts, notes and pictures
+before removing the old app. Preferences must be set again; there is no sync.
+See the [step-by-step move](../scripts/android/README.md#one-time-package-move).
+
+Release preparation must increase the version and Android version code without
+resetting the sequence for the new package. Updates within one package require
+the same signing key. Do not uninstall or clear app data to update: both delete
+private books. Keep exported archives and separate keys for rollback. Before
+new edits, the old app still holds the original books; later edits require a
+fresh export/import into a compatible transfer-capable build. Android normally
+refuses a lower version code; installing an older APK is not a recovery method.
 
 Transfer reuses the desktop binary age archive and complete point bundle.
 There is no new schema or archive format. Every import creates a fresh owned

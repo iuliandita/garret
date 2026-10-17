@@ -132,6 +132,13 @@ export interface VerifyPersistBlock {
 }
 
 export interface SinkPayload {
+  preview_rail?: {
+    state: "open" | "closed";
+    visible: boolean;
+    idle_refresh_enabled: boolean;
+    idle_renders: number;
+    pause_ms_per_complete_cycle: number;
+  } | null;
   ready: boolean;
   error?: string;
   /** The first slow frame of the run, blip or not. `onset` is the sustained one. */

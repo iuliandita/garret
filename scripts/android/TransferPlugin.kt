@@ -1,4 +1,4 @@
-package cc.local.app
+package com.usegarret.app
 
 import android.app.Activity
 import android.content.Intent

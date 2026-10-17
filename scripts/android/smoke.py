@@ -15,7 +15,7 @@ import time
 import xml.etree.ElementTree as ET
 
 
-PKG = "cc.local.app"
+PKG = "com.usegarret.app"
 IMAGE = "system-images;android-36;google_apis;x86_64"
 BOUNDS = re.compile(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]")
 

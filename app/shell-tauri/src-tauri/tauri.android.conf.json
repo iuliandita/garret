@@ -1,6 +1,5 @@
 {
   "productName": "garret",
-  "identifier": "cc.local.app",
   "build": { "frontendDist": "../../mobile-ui/dist" },
   "app": {
     "windows": [{ "label": "main", "title": "garret" }],

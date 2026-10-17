@@ -158,11 +158,12 @@ release for you:
    the reported certificate SHA-256 digest.
 
 An installed copy keeps updating in place only while the package name and the
-signing key stay the same. One package change is planned: the Android app moves
-from `cc.local.app` to `com.usegarret.app` in
-[#279](https://github.com/iuliandita/garret/issues/279). That build installs
-next to the existing app instead of updating it, so keep the current app
-installed; books cannot be moved between the two yet.
+signing key stay the same. Android now uses `com.usegarret.app`, with the same
+signing key as `cc.local.app`. It installs next to the old app. First update
+the old app to the transfer-capable 0.0.3 release and export each book with its
+separate recovery key, then install the new app and import those archives.
+Keep the old app until you have checked the imported books, notes and pictures.
+See the [one-time Android move](scripts/android/README.md#one-time-package-move).
 
 ## Building from source (Linux)
 
@@ -179,8 +180,8 @@ scripts/run-app
 
 `scripts/run-app` rebuilds the interface, builds the host on first use, and
 starts the app. `scripts/install-desktop-entry` adds a menu entry for that
-launcher, using desktop identifier `com.usegarret.app`. Android retains package
-`cc.local.app`. See [upgrade compatibility](docs/COMPATIBILITY.md) for native
+launcher, using application identifier `com.usegarret.app` on desktop and
+Android. See [upgrade compatibility](docs/COMPATIBILITY.md) for native
 profile preservation. Release-style packages come from `scripts/package-linux`,
 `scripts/package-windows`, `scripts/package-macos` and `scripts/package-android`.
 
