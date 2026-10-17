@@ -24,12 +24,10 @@
     },
     "editor": {
       "breaking": "none",
-      "docs": {
-        "docs/COMPATIBILITY.md": "85307d84947dcf72bd53aa7b07200d50f0115316459c20546e79891ff4fc6a00"
-      },
+      "docs": {},
       "migration": "",
-      "no_impact": "",
-      "note": "Document Android root scene placement, current-container creation, and short fiction and nonfiction admission while preserving schema-first refusal and collection refusal; version statements now record source 0.0.3/code 3. Read the actual host privacy status before the opt-in preview measurement; this initializes the same publishing guard used by interactive startup without changing locking, saved preferences or interactive behavior. CONTRIBUTING.md documents the measurement mode.",
+      "no_impact": "Document Android root scene placement, current-container creation, and short fiction and nonfiction admission while preserving schema-first refusal and collection refusal; version statements record source 0.0.3/code 3. The opt-in preview measurement reads actual host privacy status to initialize the publishing guard without changing locking, saved preferences or interactive behavior. CONTRIBUTING.md documents the measurement mode.",
+      "note": "Document Android root scene placement, current-container creation, and short fiction and nonfiction admission while preserving schema-first refusal and collection refusal; version statements record source 0.0.3/code 3. The opt-in preview measurement reads actual host privacy status to initialize the publishing guard without changing locking, saved preferences or interactive behavior. CONTRIBUTING.md documents the measurement mode.",
       "source_sha256": "c5891f26705d1e5bcc7aee4fd51566b44a1b19d9efe67af7e8c3c536ef6fe81d"
     },
     "encryption": {
