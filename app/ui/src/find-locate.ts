@@ -1,15 +1,7 @@
 // app/ui/src/find-locate.ts
 // Where in the open document is the word the search found?
 //
-// The host already knows the byte offset -- it needs one to cut the snippet --
-// and this module exists rather than that number being returned because the two
-// sides do not share a coordinate system. The host's offset is into a flat text
-// projection of the stored body; the editor needs a ProseMirror position. The
-// number would cross the boundary and leave the hard half of the problem
-// exactly where it was.
-//
-// Nothing here touches the DOM or the view. It is a pure function of a document
-// and a query, which is what makes the folding rule below testable at all.
+// Host locators use UTF-16 positions for prose and field offsets for attributes.
 import type { Node as PmNode } from "prosemirror-model";
 import { documentFields } from "./document-projections";
 

@@ -29,6 +29,23 @@ describe("bounded craft reports", () => {
     expect(report.metrics.english_readability).not.toBeNull();
   });
 
+  test("atom boundaries preserve prose metrics without inventing repeated phrases or positions", () => {
+    const report = createCraftReport(options({ watchlist: [{ text: "witched", mode: "literal" }] }));
+    const content = JSON.stringify({ type: "doc", content: [
+      { type: "paragraph", content: [
+        { type: "text", text: "😀be" },
+        { type: "endnote", attrs: { id: "0199ed16-8c00-7000-8000-000000000001", fmt: "text", body: "hidden words" } },
+        { type: "text", text: "witched tail be witched tail" },
+      ] }, { type: "scene_break" },
+    ] });
+    report.add({ item_id: "s", title: "Scene", rev: 1, body: content });
+    const result = report.finish();
+    expect(result.coverage.words).toBe(5);
+    expect(result.metrics.paragraph_words).toEqual([5]);
+    expect(result.findings.filter(finding => finding.kind === "repeated_phrase")).toEqual([]);
+    expect(result.findings.filter(finding => finding.kind === "watchlist").map(finding => finding.from)).toEqual([6, 22]);
+  });
+
   test("distinguishes literal and folded watchlist terms without cutting a surrogate or expanded fold", () => {
     const run = createCraftReport(options({ watchlist: [
       { text: "İ", mode: "folded" }, { text: "İ", mode: "literal" },

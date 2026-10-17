@@ -321,9 +321,10 @@ export function createCraftReport(input: ReportOptions): {
       }
       const seen = new Map<string, number>();
       for (let i = 0; i + 2 < tokens.length; i++) {
+        if (block.text.slice(tokens[i]!.from - block.from, tokens[i + 2]!.to - block.from).includes("\ufffc")) continue;
         const phrase = tokens.slice(i, i + 3).map((token) => token.folded).join("\u0000");
         const prior = seen.get(phrase);
-        if (prior !== undefined && i - prior <= 100 && !block.text.slice(tokens[i]!.from - block.from, tokens[i + 2]!.to - block.from).includes("\ufffc")) {
+        if (prior !== undefined && i - prior <= 100) {
           const first = tokens[i]!;
           const last = tokens[i + 2]!;
           finding({ kind: "repeated_phrase", class: "suggestion", item_id: source.item_id, rev: source.rev,

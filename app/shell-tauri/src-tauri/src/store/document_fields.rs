@@ -162,7 +162,7 @@ pub(crate) mod tests {
         );
         assert_eq!(
             super::super::knowledge::quote_at(&body, 2, 9).as_deref(),
-            Some("😀bewi")
+            Some("😀be\u{fffc}wi")
         );
         assert_eq!(super::super::knowledge::quote_at(&body, 2, 3), None);
         assert_eq!(

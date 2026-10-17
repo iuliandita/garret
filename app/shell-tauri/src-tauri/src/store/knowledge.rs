@@ -167,12 +167,10 @@ pub fn quote_at(body: &str, from: i64, to: i64) -> Option<String> {
             continue;
         }
         let mut units = Vec::new();
-        let mut atoms = HashSet::new();
         for node in block.get("content").and_then(serde_json::Value::as_array).into_iter().flatten() {
             if node["type"] == "text" {
                 units.extend(node["text"].as_str()?.encode_utf16());
             } else {
-                atoms.insert(units.len());
                 units.push(0xfffc);
             }
         }
@@ -181,11 +179,7 @@ pub fn quote_at(body: &str, from: i64, to: i64) -> Option<String> {
         if from >= start && to <= end {
             let from = (from - start) as usize;
             let to = (to - start) as usize;
-            // Atom positions survive, but attributes never become quote text.
-            let selected: Vec<_> = units[from..to].iter().enumerate()
-                .filter(|(offset, _)| !atoms.contains(&(from + offset)))
-                .map(|(_, unit)| *unit).collect();
-            return String::from_utf16(&selected).ok();
+            return String::from_utf16(&units[from..to]).ok();
         }
         paragraph_start = end + 1;
     }
@@ -611,6 +605,29 @@ mod tests {
         assert_eq!(quote_at(body, 9, 13).as_deref(), Some("last"));
         assert_eq!(quote_at(body, 2, 3), None); // half a surrogate pair
         assert_eq!(quote_at(body, 4, 9), None); // crosses paragraph boundary
+    }
+
+    #[test]
+    fn atom_consumers_passage_links_keep_placeholder_quotes_on_reopen() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = Store::open(&dir.path().join("book.db")).unwrap();
+        let scene = store.item_create(None, "scene", "Coast").unwrap();
+        let target = store.item_create(None, "scene", "Source").unwrap();
+        let body = crate::store::document_fields::tests::mixed().to_string();
+        store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", params![body, scene.id]).unwrap();
+        let draft = LinkDraft {
+            source: Endpoint { kind: "item".into(), id: scene.id.clone() },
+            target: Endpoint { kind: "item".into(), id: target.id },
+            label: "source".into(), note: String::new(), citation: String::new(),
+            anchor: Some(PassageAnchor {
+                item_id: scene.id.clone(), doc_rev: store.load_doc(&scene.id).unwrap().rev,
+                from: 2, to: 9, quote: "😀be\u{fffc}wi".into(),
+            }),
+        };
+        store.knowledge_link_create(&draft).unwrap();
+        let links = store.knowledge_links(Some(&draft.source), false).unwrap();
+        assert!(!links[0].anchor_stale);
+        assert_eq!(links[0].anchor.as_ref().unwrap().quote, "😀be\u{fffc}wi");
     }
 
     #[test]

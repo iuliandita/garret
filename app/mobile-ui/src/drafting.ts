@@ -141,8 +141,16 @@ export function createDraftingTools(opts: Options) {
         results.replaceChildren(); status.replaceChildren();
         for (const message of [found.results.length ? "" : m.noResults, found.truncated ? m.searchLimited : "", found.skipped ? m.searchSkipped : ""]) if (message) status.append(node("p", message));
         for (const hit of found.results) {
-          const result = button(hit.title || m.untitled, () => jump(hit.item_id, query, hit.locators?.[0]));
-          if (hit.snippet) result.append(node("small", [hit.locators?.[0] ? t(`document.field.${hit.locators[0].field}`) : "", hit.snippet].filter(Boolean).join(": "))); results.append(result);
+          const fields = new Set<string>();
+          const targets = hit.locators?.filter(locator => {
+            if (fields.has(locator.field)) return false;
+            fields.add(locator.field); return true;
+          });
+          for (const [index, locator] of (targets?.length ? targets : [undefined]).entries()) {
+            const result = button(hit.title || m.untitled, () => jump(hit.item_id, query, locator));
+            if (hit.snippet) result.append(node("small", [locator ? t(`document.field.${locator.field}`) : "", index ? query : hit.snippet].filter(Boolean).join(": ")));
+            results.append(result);
+          }
         }
       });
     }));

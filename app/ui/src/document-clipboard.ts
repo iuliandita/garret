@@ -20,17 +20,21 @@ export function validateClipboardHtml(html: string): void {
 export function remintClipboard(slice: Slice, mint: () => string = () => crypto.randomUUID(), assets: ReadonlySet<string> = new Set()): Slice {
   const originals = new Set<string>();
   const minted = new Set<string>();
+  slice.content.descendants(node => {
+    if (node.type.name !== "endnote" && node.type.name !== "figure") return;
+    const original = node.attrs.id as string;
+    if (originals.has(original)) throw new Error("duplicate clipboard instance ID");
+    originals.add(original);
+  });
   const walk = (node: PmNode): PmNode => {
     if (node.type.name === "endnote" || node.type.name === "figure") {
       const json = node.toJSON() as Record<string, unknown>;
       const content = node.isInline ? [{ type: "paragraph", content: [json] }] : [json];
       if (!validDocumentShape({ type: "doc", content })) throw new Error("invalid clipboard atom");
       const original = node.attrs.id as string;
-      if (originals.has(original)) throw new Error("duplicate clipboard instance ID");
-      originals.add(original);
       if (node.type.name === "figure" && !assets.has(node.attrs.asset_id as string)) throw new Error("clipboard figure asset unavailable");
       const id = mint();
-      if (id === original || minted.has(id)) throw new Error("clipboard identity collision");
+      if (id === original || originals.has(id) || minted.has(id)) throw new Error("clipboard identity collision");
       minted.add(id);
       const result = node.type.create({ ...node.attrs, id });
       const replacement = node.isInline ? [{ type: "paragraph", content: [result.toJSON()] }] : [result.toJSON()];

@@ -285,8 +285,12 @@ export function createFindBar(deps: FindBarDeps): FindBar {
     shownLocators.clear();
     const frag = document.createDocumentFragment();
     for (const hit of found.results) {
-      const locator = hit.locators?.[0];
-      if (locator) shownLocators.set(hit.item_id, locator);
+      const fields = new Set<string>();
+      const targets = hit.locators?.filter(locator => {
+        if (fields.has(locator.field)) return false;
+        fields.add(locator.field); return true;
+      });
+      for (const [index, locator] of (targets?.length ? targets : [undefined]).entries()) {
       const row = document.createElement("div");
       row.setAttribute("role", "option");
       row.setAttribute("aria-selected", "false");
@@ -296,7 +300,8 @@ export function createFindBar(deps: FindBarDeps): FindBar {
       // 2,292 of the 20,000 stress items share one -- the same reason the
       // navigator's rows carry `nav-row-<walkIndex>`. Carries the item id
       // rather than an ordinal so alignment is exact rather than positional.
-      row.id = `find-row-${hit.item_id}`;
+      row.id = `find-row-${hit.item_id}` + (index ? "-" + index : "");
+      if (locator) shownLocators.set(row.id, locator);
       // Read back on activation rather than recomputed from the row's text: the
       // text is a display string and reconstructing a flag from it would break
       // on any title containing the separator.
@@ -313,7 +318,7 @@ export function createFindBar(deps: FindBarDeps): FindBar {
       const titleOnly = hit.snippet === "";
       const snippet = document.createElement("span");
       snippet.className = "find-snippet";
-      snippet.textContent = titleOnly ? hit.kind : [locator ? t(`document.field.${locator.field}`) : "", hit.snippet].filter(Boolean).join(": ");
+      snippet.textContent = titleOnly ? hit.kind : [locator ? t(`document.field.${locator.field}`) : "", index ? shownQuery : hit.snippet].filter(Boolean).join(": ");
 
       // The whole row's accessible name, because WebKitGTK prunes untyped
       // generic containers -- the two spans above are exactly that, and the
@@ -324,11 +329,12 @@ export function createFindBar(deps: FindBarDeps): FindBar {
         "aria-label",
         titleOnly
           ? t("find.result.label.title", { title: hit.title, kind: hit.kind })
-          : t("find.result.label", { title: hit.title, kind: hit.kind, snippet: hit.snippet }),
+          : t("find.result.label", { title: hit.title, kind: hit.kind, snippet: snippet.textContent }),
       );
 
       row.append(title, snippet);
       frag.appendChild(row);
+      }
     }
     results.replaceChildren(frag);
     // A new list is a new set of rows, so the previous highlight names a row
@@ -632,7 +638,7 @@ export function createFindBar(deps: FindBarDeps): FindBar {
       // where it was, and the next result is ArrowDown + Return away. Working
       // through several results does not mean searching again.
       setOpen(false);
-      deps.openItem(itemId, shownQuery, shownLocators.get(itemId));
+      deps.openItem(itemId, shownQuery, shownLocators.get(row.id));
     } else {
       // STAYS OPEN here, deliberately. Nothing opened and the editor did not
       // move, so there is nothing behind the panel to look at - and closing it

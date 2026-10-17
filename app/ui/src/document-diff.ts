@@ -20,7 +20,7 @@ export function diffDocumentFields(before: string, after: string): FieldDiff[] {
   };
   const oldFields = fields(before);
   const newFields = fields(after);
-  const key = (field: { field: DocumentField; instance_id: string | null }) => `${field.field}:${field.instance_id ?? ""}`;
+  const key = (field: { field: DocumentField; instance_id: string | null }) => field.field + ":" + (field.instance_id ?? "");
   const oldById = new Map(oldFields.map(field => [key(field), field]));
   const newById = new Map(newFields.map(field => [key(field), field]));
   const keys = new Set([...oldById.keys(), ...newById.keys()]);

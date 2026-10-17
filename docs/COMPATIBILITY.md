@@ -53,6 +53,10 @@ copies retain note text, captions, alternative text, and figure placeholders, an
 state that formatting, structure, and originals are omitted. These reader changes
 keep the schema ceiling and disabled production writes described above.
 
+The command-line `design-apply` operation requires the exact current SQLite
+schema. Open older books in the application to upgrade them before applying a
+design; a preview token cannot bypass that requirement.
+
 ## Before upgrading
 
 Close every instance of garret. Make a separate copy of each manuscript's

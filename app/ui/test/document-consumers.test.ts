@@ -1,7 +1,7 @@
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { readFileSync } from "node:fs";
 import { expect, test } from "bun:test";
-import { Fragment, Slice } from "prosemirror-model";
+import { DOMSerializer, Fragment, Slice } from "prosemirror-model";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { bodyText, countWordsIn, createEditor, plaintextLabels, readableBody, schema, toggleMark } from "../src/editor";
 import { documentFields, plaintext, positionalText } from "../src/document-projections";
@@ -95,5 +95,34 @@ test("formatting and comment ranges preserve whole atoms beside astral character
     expect(editor.wordAtCaret()).toBeNull();
     expect(editor.revealMatch("source", locateFieldMatches(doc, "source")[0]!.locator)).toBe(true);
     expect(editor.selection()).toEqual({ from: 5, to: 6 });
+  } finally { editor.destroy(); mount.remove(); }
+});
+
+
+test("editor paste remints note IDs and refuses malformed or duplicate atom HTML", () => {
+  const mount = document.createElement("div"); document.body.append(mount);
+  let refused = 0;
+  const editor = createEditor(mount, { kind: "pmjson", json: readableBody(JSON.stringify(atomDoc()))! }, { onClipboardRefused: () => refused++ });
+  const html = document.createElement("div");
+  html.append(DOMSerializer.fromSchema(schema).serializeFragment(Fragment.from(schema.node("paragraph", null, note))));
+  const paste = (value: string): void => {
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", { value: { getData: (type: string) => type === "text/html" ? value : "", files: [] } });
+    mount.querySelector(".ProseMirror")!.dispatchEvent(event);
+  };
+  try {
+    paste(html.innerHTML);
+    const doc = schema.nodeFromJSON(JSON.parse(editor.serialize()));
+    const notes: string[] = [];
+    doc.descendants(node => { if (node.type.name === "endnote") notes.push(node.attrs.id as string); });
+    expect(notes.length).toBe(2);
+    expect(new Set(notes).size).toBe(2);
+    expect(notes).toContain(note.attrs.id as string);
+    const before = editor.serialize();
+    paste(html.innerHTML + html.innerHTML);
+    expect(editor.serialize()).toBe(before);
+    paste(`<sup data-garret-endnote='{"id":"bad","fmt":"html","body":"lost"}'>lost</sup>`);
+    expect(editor.serialize()).toBe(before);
+    expect(refused).toBe(2);
   } finally { editor.destroy(); mount.remove(); }
 });
