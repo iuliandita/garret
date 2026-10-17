@@ -2,7 +2,7 @@
 FROM rust:1.98.1-bookworm@sha256:c49256cbe5ea0188bc658a689500d70c41eb51f009a7a7be209caf60a944f3ec
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends openjdk-17-jdk-headless nodejs npm unzip python3 \
+ && apt-get install -y --no-install-recommends openjdk-17-jdk-headless unzip python3 \
  && rm -rf /var/lib/apt/lists/*
 
 ENV ANDROID_HOME=/opt/android-sdk
@@ -24,6 +24,15 @@ RUN curl --fail --location --retry 3 \
 
 RUN python3 -c 'import subprocess; subprocess.run(["sdkmanager", "--licenses"], input="y\n" * 100, text=True, check=True); subprocess.run(["sdkmanager", "platform-tools", "platforms;android-37.0", "build-tools;37.0.0", "ndk;30.0.16248370"], input="y\n" * 100, text=True, check=True)'
 RUN rustup target add aarch64-linux-android x86_64-linux-android
+RUN curl --fail --location --retry 3 https://nodejs.org/dist/v26.11.1/node-v26.11.1-linux-x64.tar.xz -o /tmp/node.tar.xz \
+ && echo '3883bfc73f9a680ca4eab04b196068aaaab1373ffa77d8fc1a4408222495b651  /tmp/node.tar.xz' | sha256sum -c - \
+ && tar -xJf /tmp/node.tar.xz --strip-components=1 -C /usr/local \
+ && rm /tmp/node.tar.xz
+RUN curl --fail --location --retry 3 https://github.com/oven-sh/bun/releases/download/bun-v1.4.2/bun-linux-x64.zip -o /tmp/bun.zip \
+ && echo '36368faef7527875d5ffa52e53cd48021741f2a83eb6208a8dd64068d422a913  /tmp/bun.zip' | sha256sum -c - \
+ && unzip -q /tmp/bun.zip -d /tmp \
+ && install /tmp/bun-linux-x64/bun /usr/local/bin/bun \
+ && rm -r /tmp/bun.zip /tmp/bun-linux-x64
 RUN npm install --global --ignore-scripts @tauri-apps/cli@2.11.5
 RUN useradd --create-home --uid 1000 builder
 

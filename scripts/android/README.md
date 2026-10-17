@@ -123,6 +123,18 @@ not reset the version-code sequence. This change does not bump either value.
 The same retained signing key is used for both package IDs. Native update and
 file-provider round trips require their own runtime checks.
 
+The builder also pins Bun 1.4.2 and Node 26.11.1 with archive checksums. The
+shared `scripts/android/build-release` installs the frozen Bun lockfile inside
+the container, remaps Rust/C/C++ source paths, fixes locale/timezone and derives
+`SOURCE_DATE_EPOCH` from the source commit. Generated Gradle archives use stable
+ordering and timestamps. `ANDROID_UNSIGNED=1 scripts/package-android` builds
+without opening signing material; `ANDROID_BUILD_ROOT` changes the container
+source path for independent reproducibility checks. See the
+[F-Droid draft and submission checklist](../../fastlane/fdroid/README.md).
+Before release assets are merged, Gradle canonicalizes the generated Tauri
+configuration after both Rust builds. This preserves its values while removing
+random key ordering from the embedded desktop packaging maps.
+
 
 ## Isolated runtime check
 
