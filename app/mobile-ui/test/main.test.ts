@@ -15,6 +15,7 @@ test("a long Library exposes New book before its list and loads the device's rem
   const app = document.createElement("div"); app.id = "app"; document.body.append(app);
   const original = Object.getOwnPropertyDescriptor(window, "__TAURI__");
   const requested: string[] = [];
+  const created: Record<string, unknown>[] = [];
   let retained = 1;
   let discarded = 0;
   const scenes = [{ id: "a", title: "Before", depth: 0 }, { id: "b", title: "After", depth: 0 }];
@@ -26,6 +27,10 @@ test("a long Library exposes New book before its list and loads the device's rem
       if (command === "mobile_document") {
         requested.push(String(args!.itemId));
         return { item_id: args!.itemId, rev: 1, comments: [], body: JSON.stringify({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "At sea after dawn" }] }] }) };
+      }
+      if (command === "mobile_scene_create") {
+        created.push(args!);
+        return { item_id: "next", scenes: [...scenes, { id: "next", title: args!.title, depth: 0 }] };
       }
       if (command === "mobile_close") return;
       throw new Error(`unexpected mobile command ${command}`);
@@ -59,6 +64,13 @@ test("a long Library exposes New book before its list and loads the device's rem
     await waitFor(() => app.querySelector(".mobile-prose") !== null);
     expect(requested).toEqual(["b"]);
     expect(app.querySelector(".mobile-scene-title")!.textContent).toBe("After");
+    app.querySelector<HTMLButtonElement>('[data-action="outline"]')!.click();
+    const addScene = app.querySelector(".mobile-outline form")!;
+    addScene.querySelector<HTMLInputElement>("input")!.value = "Next";
+    addScene.dispatchEvent(new Event("submit", { cancelable: true }));
+    await waitFor(() => app.querySelector(".mobile-scene-title")?.textContent === "Next");
+    expect(created).toEqual([{ generation: 1, title: "Next", currentSceneId: "b" }]);
+    expect(requested).toEqual(["b", "next"]);
     app.querySelector<HTMLButtonElement>('[data-action="books"]')!.click();
     await waitFor(() => app.querySelectorAll("nav button").length === 100);
   } finally {

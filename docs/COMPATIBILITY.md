@@ -134,10 +134,15 @@ shared index, or a pending rollback journal, is reported as unavailable rather
 than repaired during a probe; preserve the complete files for desktop recovery.
 An unreadable library neighbor is flagged and skipped during related-copy
 inspection, so it cannot block a separate import. Import checks authenticated archive metadata and the staged database
-before creating any library file, originals directory or catalog entry. Only an absent value or exactly `novel` is supported.
-Empty, short-fiction, nonfiction, collection and unknown values are refused
+before creating any library file, originals directory or catalog entry. Absent values and exactly `novel`, `short`, or `nonfiction` are supported.
+Empty, collection and unknown values are refused
 with an English/German explanation. Desktop leniency for unknown presets does
 not change this Android release's capability. Use desktop for those projects.
+
+New scenes follow the active scene in its current container. Chapterless short
+fiction keeps scenes at the manuscript root without creating chapters or parts.
+Nonfiction uses the same writing and reference data; its preset is preserved.
+This change adds no schema migration or preset conversion for rollback.
 
 Import is bounded while reading and extracting: at most 1 GiB ciphertext and
 512 MiB plaintext payload, plus a free-space allowance for verification and
