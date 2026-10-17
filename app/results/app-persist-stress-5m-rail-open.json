@@ -1,0 +1,7765 @@
+{
+  "run_id": "app-persist-stress-5m-rail-open",
+  "track": "app",
+  "candidate": "tauri",
+  "fixture": "stress",
+  "workload": "app-persist",
+  "environment": {
+    "kernel": "7.2.9-2-cachyos",
+    "cpu": "AMD Ryzen 7 Pro 7735U with Radeon Graphics",
+    "throttleScope": "none",
+    "loadAvg1m": 1.47,
+    "renderer": {
+      "dmabufDisabledByEnv": false,
+      "glesMapped": true,
+      "llvmpipe": true,
+      "gdkBackend": "x11",
+      "path": "dmabuf-llvmpipe",
+      "webProcesses": 1
+    },
+    "biasNotes": "Linux/ext4 only, per the 2026-07-26 scope narrowing. Development machine; latency and startup thresholds remain hypotheses until a real-hardware pass."
+  },
+  "method": "Tauri 2 host on WebKitGTK, UI served at runtime over a custom URI scheme; readiness reported by the page through the sink command. Summed process-tree RSS sampled from /proc. AT-SPI exposure probed via pyatspi when available, UNKNOWN when not. SCOPE: Linux/ext4 only; latency and startup gates are hypotheses until a real-hardware pass.",
+  "metrics": {
+    "peak_rss_mb": 1547,
+    "typing_p95_ms": 33,
+    "typing_p99_ms": 34,
+    "nav_p95_ms": 33,
+    "typing": {
+      "count": 5585,
+      "dispatch": {
+        "p50": 1,
+        "p95": 1,
+        "p99": 1
+      },
+      "frame": {
+        "p50": 32,
+        "p95": 33,
+        "p99": 34
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 5569,
+        "40-100": 12,
+        "500-2000": 0,
+        "<20": 4,
+        ">=2000": 0
+      },
+      "slowFrames": 0,
+      "stalls": 0
+    },
+    "nav": {
+      "count": 787,
+      "dispatch": {
+        "p50": 1,
+        "p95": 4,
+        "p99": 12
+      },
+      "frame": {
+        "p50": 32,
+        "p95": 33,
+        "p99": 37
+      },
+      "histogram": {
+        "100-500": 0,
+        "20-40": 779,
+        "40-100": 5,
+        "500-2000": 0,
+        "<20": 3,
+        ">=2000": 0
+      },
+      "slowFrames": 0,
+      "stalls": 0
+    },
+    "cycles": [
+      {
+        "atMs": 15822,
+        "charsTyped": 400,
+        "cycle": 1,
+        "partial": false,
+        "typingP95Ms": 34
+      },
+      {
+        "atMs": 38702,
+        "charsTyped": 800,
+        "cycle": 2,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 61878,
+        "charsTyped": 1200,
+        "cycle": 3,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 85049,
+        "charsTyped": 1600,
+        "cycle": 4,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 108197,
+        "charsTyped": 2000,
+        "cycle": 5,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 131338,
+        "charsTyped": 2400,
+        "cycle": 6,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 153644,
+        "charsTyped": 2800,
+        "cycle": 7,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 175982,
+        "charsTyped": 3200,
+        "cycle": 8,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 199174,
+        "charsTyped": 3600,
+        "cycle": 9,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 222419,
+        "charsTyped": 4000,
+        "cycle": 10,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 244740,
+        "charsTyped": 4400,
+        "cycle": 11,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 267072,
+        "charsTyped": 4800,
+        "cycle": 12,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 290313,
+        "charsTyped": 5200,
+        "cycle": 13,
+        "partial": false,
+        "typingP95Ms": 33
+      },
+      {
+        "atMs": 300025,
+        "charsTyped": 5253,
+        "cycle": 14,
+        "partial": true,
+        "typingP95Ms": 33
+      }
+    ],
+    "rows": 20000,
+    "workload_script": "writing-v1-preview-pauses-v1",
+    "a11y": {
+      "available": false,
+      "hasNavigator": false,
+      "exposedRows": 0,
+      "mountedRows": 0,
+      "treeRows": []
+    },
+    "preview_rail": {
+      "idle_refresh_enabled": true,
+      "idle_renders": 13,
+      "pause_ms_per_complete_cycle": 5000,
+      "state": "open",
+      "visible": true
+    },
+    "omitted_gates": "a11y_exposure: this comparison measures typing with the rail open or closed; no full accessibility walk through the rendered stress manuscript",
+    "startup_ms": 3132,
+    "soak_minutes": 5,
+    "fixture_floor": 20000,
+    "actions": 6372,
+    "onset": null,
+    "slow_actions": 0,
+    "persist": {
+      "restart_body_match": true,
+      "body_diverged_from_seed": true,
+      "flush_count": 207,
+      "flush_conflicts": 0,
+      "flush_errors": 0,
+      "flush_p50_ms": 3,
+      "flush_p95_ms": 4
+    },
+    "persist_error": null,
+    "rss": {
+      "samples": 1223,
+      "span_ms": 306814,
+      "peak_mb": 1547,
+      "peak_at_ms": 255370,
+      "boot_window_ms": 45000,
+      "peak_in_boot_window": false,
+      "boot_window_peak_mb": 1508,
+      "post_boot_samples": 1044,
+      "post_boot_median_mb": 1327,
+      "post_boot_max_mb": 1547,
+      "post_boot_slope_mb_per_min": 9.408922790462686
+    },
+    "rss_series": [
+      {
+        "atMs": 0,
+        "rssMb": 66
+      },
+      {
+        "atMs": 1000,
+        "rssMb": 66
+      },
+      {
+        "atMs": 2000,
+        "rssMb": 66
+      },
+      {
+        "atMs": 3000,
+        "rssMb": 715
+      },
+      {
+        "atMs": 4000,
+        "rssMb": 1031
+      },
+      {
+        "atMs": 5000,
+        "rssMb": 1096
+      },
+      {
+        "atMs": 6000,
+        "rssMb": 1332
+      },
+      {
+        "atMs": 7000,
+        "rssMb": 1329
+      },
+      {
+        "atMs": 8000,
+        "rssMb": 1273
+      },
+      {
+        "atMs": 9000,
+        "rssMb": 1279
+      },
+      {
+        "atMs": 10000,
+        "rssMb": 1291
+      },
+      {
+        "atMs": 11000,
+        "rssMb": 1293
+      },
+      {
+        "atMs": 12000,
+        "rssMb": 1283
+      },
+      {
+        "atMs": 13000,
+        "rssMb": 1288
+      },
+      {
+        "atMs": 14000,
+        "rssMb": 1292
+      },
+      {
+        "atMs": 15000,
+        "rssMb": 1298
+      },
+      {
+        "atMs": 16000,
+        "rssMb": 1304
+      },
+      {
+        "atMs": 17000,
+        "rssMb": 1310
+      },
+      {
+        "atMs": 18000,
+        "rssMb": 1311
+      },
+      {
+        "atMs": 19000,
+        "rssMb": 1278
+      },
+      {
+        "atMs": 20000,
+        "rssMb": 1280
+      },
+      {
+        "atMs": 21000,
+        "rssMb": 1278
+      },
+      {
+        "atMs": 22000,
+        "rssMb": 1279
+      },
+      {
+        "atMs": 23000,
+        "rssMb": 1274
+      },
+      {
+        "atMs": 24000,
+        "rssMb": 1274
+      },
+      {
+        "atMs": 25000,
+        "rssMb": 1274
+      },
+      {
+        "atMs": 26000,
+        "rssMb": 1444
+      },
+      {
+        "atMs": 27000,
+        "rssMb": 1508
+      },
+      {
+        "atMs": 28000,
+        "rssMb": 1253
+      },
+      {
+        "atMs": 29000,
+        "rssMb": 1437
+      },
+      {
+        "atMs": 30000,
+        "rssMb": 1437
+      },
+      {
+        "atMs": 31000,
+        "rssMb": 1326
+      },
+      {
+        "atMs": 32000,
+        "rssMb": 1332
+      },
+      {
+        "atMs": 33000,
+        "rssMb": 1337
+      },
+      {
+        "atMs": 34000,
+        "rssMb": 1327
+      },
+      {
+        "atMs": 35000,
+        "rssMb": 1324
+      },
+      {
+        "atMs": 36000,
+        "rssMb": 1325
+      },
+      {
+        "atMs": 37000,
+        "rssMb": 1325
+      },
+      {
+        "atMs": 38000,
+        "rssMb": 1324
+      },
+      {
+        "atMs": 39000,
+        "rssMb": 1324
+      },
+      {
+        "atMs": 40000,
+        "rssMb": 1323
+      },
+      {
+        "atMs": 41000,
+        "rssMb": 1326
+      },
+      {
+        "atMs": 42000,
+        "rssMb": 1325
+      },
+      {
+        "atMs": 43000,
+        "rssMb": 1325
+      },
+      {
+        "atMs": 44000,
+        "rssMb": 1324
+      },
+      {
+        "atMs": 45000,
+        "rssMb": 1324
+      },
+      {
+        "atMs": 46000,
+        "rssMb": 1319
+      },
+      {
+        "atMs": 47000,
+        "rssMb": 1319
+      },
+      {
+        "atMs": 48000,
+        "rssMb": 1319
+      },
+      {
+        "atMs": 49000,
+        "rssMb": 1476
+      },
+      {
+        "atMs": 50000,
+        "rssMb": 1447
+      },
+      {
+        "atMs": 51000,
+        "rssMb": 1263
+      },
+      {
+        "atMs": 52000,
+        "rssMb": 1441
+      },
+      {
+        "atMs": 53000,
+        "rssMb": 1407
+      },
+      {
+        "atMs": 54000,
+        "rssMb": 1296
+      },
+      {
+        "atMs": 55000,
+        "rssMb": 1301
+      },
+      {
+        "atMs": 56000,
+        "rssMb": 1309
+      },
+      {
+        "atMs": 57000,
+        "rssMb": 1320
+      },
+      {
+        "atMs": 58000,
+        "rssMb": 1326
+      },
+      {
+        "atMs": 59000,
+        "rssMb": 1326
+      },
+      {
+        "atMs": 60000,
+        "rssMb": 1297
+      },
+      {
+        "atMs": 61000,
+        "rssMb": 1298
+      },
+      {
+        "atMs": 62000,
+        "rssMb": 1298
+      },
+      {
+        "atMs": 63000,
+        "rssMb": 1297
+      },
+      {
+        "atMs": 64000,
+        "rssMb": 1298
+      },
+      {
+        "atMs": 65000,
+        "rssMb": 1298
+      },
+      {
+        "atMs": 66000,
+        "rssMb": 1297
+      },
+      {
+        "atMs": 67000,
+        "rssMb": 1298
+      },
+      {
+        "atMs": 68000,
+        "rssMb": 1299
+      },
+      {
+        "atMs": 69000,
+        "rssMb": 1293
+      },
+      {
+        "atMs": 70000,
+        "rssMb": 1293
+      },
+      {
+        "atMs": 71000,
+        "rssMb": 1293
+      },
+      {
+        "atMs": 72000,
+        "rssMb": 1300
+      },
+      {
+        "atMs": 73000,
+        "rssMb": 1516
+      },
+      {
+        "atMs": 74000,
+        "rssMb": 1460
+      },
+      {
+        "atMs": 75000,
+        "rssMb": 1387
+      },
+      {
+        "atMs": 76000,
+        "rssMb": 1436
+      },
+      {
+        "atMs": 77000,
+        "rssMb": 1296
+      },
+      {
+        "atMs": 78000,
+        "rssMb": 1300
+      },
+      {
+        "atMs": 79000,
+        "rssMb": 1304
+      },
+      {
+        "atMs": 80000,
+        "rssMb": 1317
+      },
+      {
+        "atMs": 81000,
+        "rssMb": 1318
+      },
+      {
+        "atMs": 82000,
+        "rssMb": 1293
+      },
+      {
+        "atMs": 83000,
+        "rssMb": 1294
+      },
+      {
+        "atMs": 84000,
+        "rssMb": 1295
+      },
+      {
+        "atMs": 85000,
+        "rssMb": 1295
+      },
+      {
+        "atMs": 86000,
+        "rssMb": 1295
+      },
+      {
+        "atMs": 87000,
+        "rssMb": 1294
+      },
+      {
+        "atMs": 88000,
+        "rssMb": 1298
+      },
+      {
+        "atMs": 89000,
+        "rssMb": 1297
+      },
+      {
+        "atMs": 90000,
+        "rssMb": 1298
+      },
+      {
+        "atMs": 91000,
+        "rssMb": 1297
+      },
+      {
+        "atMs": 92000,
+        "rssMb": 1293
+      },
+      {
+        "atMs": 93000,
+        "rssMb": 1283
+      },
+      {
+        "atMs": 94000,
+        "rssMb": 1283
+      },
+      {
+        "atMs": 95000,
+        "rssMb": 1291
+      },
+      {
+        "atMs": 96000,
+        "rssMb": 1505
+      },
+      {
+        "atMs": 97000,
+        "rssMb": 1442
+      },
+      {
+        "atMs": 98000,
+        "rssMb": 1368
+      },
+      {
+        "atMs": 99000,
+        "rssMb": 1446
+      },
+      {
+        "atMs": 100000,
+        "rssMb": 1337
+      },
+      {
+        "atMs": 101000,
+        "rssMb": 1341
+      },
+      {
+        "atMs": 102000,
+        "rssMb": 1344
+      },
+      {
+        "atMs": 103000,
+        "rssMb": 1342
+      },
+      {
+        "atMs": 104000,
+        "rssMb": 1339
+      },
+      {
+        "atMs": 105000,
+        "rssMb": 1339
+      },
+      {
+        "atMs": 106000,
+        "rssMb": 1339
+      },
+      {
+        "atMs": 107000,
+        "rssMb": 1340
+      },
+      {
+        "atMs": 108000,
+        "rssMb": 1339
+      },
+      {
+        "atMs": 109000,
+        "rssMb": 1338
+      },
+      {
+        "atMs": 110000,
+        "rssMb": 1340
+      },
+      {
+        "atMs": 111000,
+        "rssMb": 1342
+      },
+      {
+        "atMs": 112000,
+        "rssMb": 1341
+      },
+      {
+        "atMs": 113000,
+        "rssMb": 1343
+      },
+      {
+        "atMs": 114000,
+        "rssMb": 1344
+      },
+      {
+        "atMs": 115000,
+        "rssMb": 1339
+      },
+      {
+        "atMs": 116000,
+        "rssMb": 1337
+      },
+      {
+        "atMs": 117000,
+        "rssMb": 1337
+      },
+      {
+        "atMs": 118000,
+        "rssMb": 1337
+      },
+      {
+        "atMs": 119000,
+        "rssMb": 1505
+      },
+      {
+        "atMs": 120000,
+        "rssMb": 1456
+      },
+      {
+        "atMs": 121000,
+        "rssMb": 1317
+      },
+      {
+        "atMs": 122000,
+        "rssMb": 1452
+      },
+      {
+        "atMs": 123000,
+        "rssMb": 1386
+      },
+      {
+        "atMs": 124000,
+        "rssMb": 1307
+      },
+      {
+        "atMs": 125000,
+        "rssMb": 1310
+      },
+      {
+        "atMs": 126000,
+        "rssMb": 1307
+      },
+      {
+        "atMs": 127000,
+        "rssMb": 1305
+      },
+      {
+        "atMs": 128000,
+        "rssMb": 1303
+      },
+      {
+        "atMs": 129000,
+        "rssMb": 1303
+      },
+      {
+        "atMs": 130000,
+        "rssMb": 1303
+      },
+      {
+        "atMs": 131000,
+        "rssMb": 1304
+      },
+      {
+        "atMs": 132000,
+        "rssMb": 1303
+      },
+      {
+        "atMs": 133000,
+        "rssMb": 1304
+      },
+      {
+        "atMs": 134000,
+        "rssMb": 1303
+      },
+      {
+        "atMs": 135000,
+        "rssMb": 1303
+      },
+      {
+        "atMs": 136000,
+        "rssMb": 1303
+      },
+      {
+        "atMs": 137000,
+        "rssMb": 1303
+      },
+      {
+        "atMs": 138000,
+        "rssMb": 1300
+      },
+      {
+        "atMs": 139000,
+        "rssMb": 1298
+      },
+      {
+        "atMs": 140000,
+        "rssMb": 1298
+      },
+      {
+        "atMs": 141000,
+        "rssMb": 1513
+      },
+      {
+        "atMs": 142000,
+        "rssMb": 1457
+      },
+      {
+        "atMs": 143000,
+        "rssMb": 1282
+      },
+      {
+        "atMs": 144000,
+        "rssMb": 1462
+      },
+      {
+        "atMs": 145000,
+        "rssMb": 1458
+      },
+      {
+        "atMs": 146000,
+        "rssMb": 1313
+      },
+      {
+        "atMs": 147000,
+        "rssMb": 1321
+      },
+      {
+        "atMs": 148000,
+        "rssMb": 1334
+      },
+      {
+        "atMs": 149000,
+        "rssMb": 1337
+      },
+      {
+        "atMs": 150000,
+        "rssMb": 1311
+      },
+      {
+        "atMs": 151000,
+        "rssMb": 1314
+      },
+      {
+        "atMs": 152000,
+        "rssMb": 1313
+      },
+      {
+        "atMs": 153000,
+        "rssMb": 1314
+      },
+      {
+        "atMs": 154000,
+        "rssMb": 1312
+      },
+      {
+        "atMs": 155000,
+        "rssMb": 1314
+      },
+      {
+        "atMs": 156000,
+        "rssMb": 1312
+      },
+      {
+        "atMs": 157000,
+        "rssMb": 1314
+      },
+      {
+        "atMs": 158000,
+        "rssMb": 1314
+      },
+      {
+        "atMs": 159000,
+        "rssMb": 1313
+      },
+      {
+        "atMs": 160000,
+        "rssMb": 1311
+      },
+      {
+        "atMs": 161000,
+        "rssMb": 1308
+      },
+      {
+        "atMs": 162000,
+        "rssMb": 1308
+      },
+      {
+        "atMs": 163000,
+        "rssMb": 1372
+      },
+      {
+        "atMs": 164000,
+        "rssMb": 1526
+      },
+      {
+        "atMs": 165000,
+        "rssMb": 1462
+      },
+      {
+        "atMs": 166000,
+        "rssMb": 1437
+      },
+      {
+        "atMs": 167000,
+        "rssMb": 1467
+      },
+      {
+        "atMs": 168000,
+        "rssMb": 1352
+      },
+      {
+        "atMs": 169000,
+        "rssMb": 1320
+      },
+      {
+        "atMs": 170000,
+        "rssMb": 1323
+      },
+      {
+        "atMs": 171000,
+        "rssMb": 1316
+      },
+      {
+        "atMs": 172000,
+        "rssMb": 1314
+      },
+      {
+        "atMs": 173000,
+        "rssMb": 1315
+      },
+      {
+        "atMs": 174000,
+        "rssMb": 1318
+      },
+      {
+        "atMs": 175000,
+        "rssMb": 1318
+      },
+      {
+        "atMs": 176000,
+        "rssMb": 1318
+      },
+      {
+        "atMs": 177000,
+        "rssMb": 1317
+      },
+      {
+        "atMs": 178000,
+        "rssMb": 1318
+      },
+      {
+        "atMs": 179000,
+        "rssMb": 1318
+      },
+      {
+        "atMs": 180000,
+        "rssMb": 1319
+      },
+      {
+        "atMs": 181000,
+        "rssMb": 1319
+      },
+      {
+        "atMs": 182000,
+        "rssMb": 1318
+      },
+      {
+        "atMs": 183000,
+        "rssMb": 1312
+      },
+      {
+        "atMs": 184000,
+        "rssMb": 1309
+      },
+      {
+        "atMs": 185000,
+        "rssMb": 1308
+      },
+      {
+        "atMs": 186000,
+        "rssMb": 1318
+      },
+      {
+        "atMs": 187000,
+        "rssMb": 1521
+      },
+      {
+        "atMs": 188000,
+        "rssMb": 1468
+      },
+      {
+        "atMs": 189000,
+        "rssMb": 1371
+      },
+      {
+        "atMs": 190000,
+        "rssMb": 1468
+      },
+      {
+        "atMs": 191000,
+        "rssMb": 1415
+      },
+      {
+        "atMs": 192000,
+        "rssMb": 1364
+      },
+      {
+        "atMs": 193000,
+        "rssMb": 1368
+      },
+      {
+        "atMs": 194000,
+        "rssMb": 1380
+      },
+      {
+        "atMs": 195000,
+        "rssMb": 1359
+      },
+      {
+        "atMs": 196000,
+        "rssMb": 1362
+      },
+      {
+        "atMs": 197000,
+        "rssMb": 1361
+      },
+      {
+        "atMs": 198000,
+        "rssMb": 1361
+      },
+      {
+        "atMs": 199000,
+        "rssMb": 1361
+      },
+      {
+        "atMs": 200000,
+        "rssMb": 1361
+      },
+      {
+        "atMs": 201000,
+        "rssMb": 1360
+      },
+      {
+        "atMs": 202000,
+        "rssMb": 1360
+      },
+      {
+        "atMs": 203000,
+        "rssMb": 1361
+      },
+      {
+        "atMs": 204000,
+        "rssMb": 1361
+      },
+      {
+        "atMs": 205000,
+        "rssMb": 1360
+      },
+      {
+        "atMs": 206000,
+        "rssMb": 1355
+      },
+      {
+        "atMs": 207000,
+        "rssMb": 1355
+      },
+      {
+        "atMs": 208000,
+        "rssMb": 1355
+      },
+      {
+        "atMs": 209000,
+        "rssMb": 1355
+      },
+      {
+        "atMs": 210000,
+        "rssMb": 1543
+      },
+      {
+        "atMs": 211000,
+        "rssMb": 1471
+      },
+      {
+        "atMs": 212000,
+        "rssMb": 1353
+      },
+      {
+        "atMs": 213000,
+        "rssMb": 1476
+      },
+      {
+        "atMs": 214000,
+        "rssMb": 1458
+      },
+      {
+        "atMs": 215000,
+        "rssMb": 1325
+      },
+      {
+        "atMs": 216000,
+        "rssMb": 1328
+      },
+      {
+        "atMs": 217000,
+        "rssMb": 1323
+      },
+      {
+        "atMs": 218000,
+        "rssMb": 1321
+      },
+      {
+        "atMs": 219000,
+        "rssMb": 1319
+      },
+      {
+        "atMs": 220000,
+        "rssMb": 1320
+      },
+      {
+        "atMs": 221000,
+        "rssMb": 1321
+      },
+      {
+        "atMs": 222000,
+        "rssMb": 1321
+      },
+      {
+        "atMs": 223000,
+        "rssMb": 1322
+      },
+      {
+        "atMs": 224000,
+        "rssMb": 1323
+      },
+      {
+        "atMs": 225000,
+        "rssMb": 1323
+      },
+      {
+        "atMs": 226000,
+        "rssMb": 1324
+      },
+      {
+        "atMs": 227000,
+        "rssMb": 1324
+      },
+      {
+        "atMs": 228000,
+        "rssMb": 1323
+      },
+      {
+        "atMs": 229000,
+        "rssMb": 1321
+      },
+      {
+        "atMs": 230000,
+        "rssMb": 1317
+      },
+      {
+        "atMs": 231000,
+        "rssMb": 1316
+      },
+      {
+        "atMs": 232000,
+        "rssMb": 1438
+      },
+      {
+        "atMs": 233000,
+        "rssMb": 1543
+      },
+      {
+        "atMs": 234000,
+        "rssMb": 1418
+      },
+      {
+        "atMs": 235000,
+        "rssMb": 1449
+      },
+      {
+        "atMs": 236000,
+        "rssMb": 1478
+      },
+      {
+        "atMs": 237000,
+        "rssMb": 1369
+      },
+      {
+        "atMs": 238000,
+        "rssMb": 1376
+      },
+      {
+        "atMs": 239000,
+        "rssMb": 1386
+      },
+      {
+        "atMs": 240000,
+        "rssMb": 1371
+      },
+      {
+        "atMs": 241000,
+        "rssMb": 1367
+      },
+      {
+        "atMs": 242000,
+        "rssMb": 1366
+      },
+      {
+        "atMs": 243000,
+        "rssMb": 1368
+      },
+      {
+        "atMs": 244000,
+        "rssMb": 1368
+      },
+      {
+        "atMs": 245000,
+        "rssMb": 1368
+      },
+      {
+        "atMs": 246000,
+        "rssMb": 1368
+      },
+      {
+        "atMs": 247000,
+        "rssMb": 1368
+      },
+      {
+        "atMs": 248000,
+        "rssMb": 1367
+      },
+      {
+        "atMs": 249000,
+        "rssMb": 1368
+      },
+      {
+        "atMs": 250000,
+        "rssMb": 1367
+      },
+      {
+        "atMs": 251000,
+        "rssMb": 1367
+      },
+      {
+        "atMs": 252000,
+        "rssMb": 1362
+      },
+      {
+        "atMs": 253000,
+        "rssMb": 1362
+      },
+      {
+        "atMs": 254000,
+        "rssMb": 1362
+      },
+      {
+        "atMs": 255000,
+        "rssMb": 1547
+      },
+      {
+        "atMs": 256000,
+        "rssMb": 1480
+      },
+      {
+        "atMs": 257000,
+        "rssMb": 1412
+      },
+      {
+        "atMs": 258000,
+        "rssMb": 1482
+      },
+      {
+        "atMs": 259000,
+        "rssMb": 1331
+      },
+      {
+        "atMs": 260000,
+        "rssMb": 1343
+      },
+      {
+        "atMs": 261000,
+        "rssMb": 1342
+      },
+      {
+        "atMs": 262000,
+        "rssMb": 1336
+      },
+      {
+        "atMs": 263000,
+        "rssMb": 1333
+      },
+      {
+        "atMs": 264000,
+        "rssMb": 1333
+      },
+      {
+        "atMs": 265000,
+        "rssMb": 1333
+      },
+      {
+        "atMs": 266000,
+        "rssMb": 1333
+      },
+      {
+        "atMs": 267000,
+        "rssMb": 1333
+      },
+      {
+        "atMs": 268000,
+        "rssMb": 1334
+      },
+      {
+        "atMs": 269000,
+        "rssMb": 1339
+      },
+      {
+        "atMs": 270000,
+        "rssMb": 1337
+      },
+      {
+        "atMs": 271000,
+        "rssMb": 1334
+      },
+      {
+        "atMs": 272000,
+        "rssMb": 1336
+      },
+      {
+        "atMs": 273000,
+        "rssMb": 1333
+      },
+      {
+        "atMs": 274000,
+        "rssMb": 1328
+      },
+      {
+        "atMs": 275000,
+        "rssMb": 1327
+      },
+      {
+        "atMs": 276000,
+        "rssMb": 1327
+      },
+      {
+        "atMs": 277000,
+        "rssMb": 1336
+      },
+      {
+        "atMs": 278000,
+        "rssMb": 1536
+      },
+      {
+        "atMs": 279000,
+        "rssMb": 1473
+      },
+      {
+        "atMs": 280000,
+        "rssMb": 1389
+      },
+      {
+        "atMs": 281000,
+        "rssMb": 1477
+      },
+      {
+        "atMs": 282000,
+        "rssMb": 1417
+      },
+      {
+        "atMs": 283000,
+        "rssMb": 1341
+      },
+      {
+        "atMs": 284000,
+        "rssMb": 1343
+      },
+      {
+        "atMs": 285000,
+        "rssMb": 1341
+      },
+      {
+        "atMs": 286000,
+        "rssMb": 1335
+      },
+      {
+        "atMs": 287000,
+        "rssMb": 1333
+      },
+      {
+        "atMs": 288000,
+        "rssMb": 1335
+      },
+      {
+        "atMs": 289000,
+        "rssMb": 1336
+      },
+      {
+        "atMs": 290000,
+        "rssMb": 1336
+      },
+      {
+        "atMs": 291000,
+        "rssMb": 1337
+      },
+      {
+        "atMs": 292000,
+        "rssMb": 1337
+      },
+      {
+        "atMs": 293000,
+        "rssMb": 1338
+      },
+      {
+        "atMs": 294000,
+        "rssMb": 1338
+      },
+      {
+        "atMs": 295000,
+        "rssMb": 1337
+      },
+      {
+        "atMs": 296000,
+        "rssMb": 1337
+      },
+      {
+        "atMs": 297000,
+        "rssMb": 1334
+      },
+      {
+        "atMs": 298000,
+        "rssMb": 1332
+      },
+      {
+        "atMs": 299000,
+        "rssMb": 1331
+      },
+      {
+        "atMs": 300000,
+        "rssMb": 1331
+      },
+      {
+        "atMs": 301000,
+        "rssMb": 1533
+      },
+      {
+        "atMs": 302000,
+        "rssMb": 1486
+      },
+      {
+        "atMs": 303000,
+        "rssMb": 1342
+      },
+      {
+        "atMs": 304000,
+        "rssMb": 1483
+      },
+      {
+        "atMs": 305000,
+        "rssMb": 1314
+      },
+      {
+        "atMs": 306000,
+        "rssMb": 1206
+      },
+      {
+        "atMs": 307000,
+        "rssMb": 1222
+      }
+    ],
+    "rss_by_process": {
+      "xvfb-run": {
+        "rss": {
+          "samples": 1223,
+          "span_ms": 306814,
+          "peak_mb": 4,
+          "peak_at_ms": 268,
+          "boot_window_ms": 45000,
+          "peak_in_boot_window": true,
+          "boot_window_peak_mb": 4,
+          "post_boot_samples": 1044,
+          "post_boot_median_mb": 4,
+          "post_boot_max_mb": 4,
+          "post_boot_slope_mb_per_min": 0
+        },
+        "rss_series": [
+          {
+            "atMs": 0,
+            "rssMb": 4
+          },
+          {
+            "atMs": 1000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 2000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 3000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 4000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 5000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 6000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 7000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 8000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 9000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 10000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 11000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 12000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 13000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 14000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 15000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 16000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 17000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 18000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 19000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 20000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 21000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 22000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 23000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 24000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 25000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 26000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 27000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 28000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 29000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 30000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 31000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 32000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 33000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 34000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 35000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 36000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 37000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 38000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 39000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 40000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 41000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 42000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 43000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 44000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 45000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 46000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 47000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 48000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 49000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 50000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 51000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 52000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 53000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 54000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 55000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 56000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 57000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 58000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 59000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 60000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 61000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 62000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 63000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 64000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 65000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 66000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 67000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 68000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 69000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 70000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 71000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 72000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 73000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 74000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 75000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 76000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 77000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 78000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 79000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 80000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 81000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 82000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 83000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 84000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 85000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 86000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 87000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 88000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 89000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 90000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 91000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 92000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 93000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 94000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 95000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 96000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 97000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 98000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 99000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 100000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 101000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 102000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 103000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 104000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 105000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 106000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 107000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 108000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 109000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 110000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 111000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 112000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 113000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 114000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 115000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 116000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 117000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 118000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 119000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 120000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 121000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 122000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 123000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 124000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 125000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 126000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 127000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 128000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 129000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 130000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 131000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 132000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 133000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 134000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 135000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 136000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 137000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 138000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 139000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 140000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 141000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 142000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 143000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 144000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 145000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 146000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 147000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 148000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 149000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 150000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 151000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 152000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 153000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 154000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 155000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 156000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 157000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 158000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 159000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 160000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 161000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 162000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 163000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 164000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 165000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 166000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 167000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 168000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 169000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 170000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 171000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 172000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 173000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 174000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 175000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 176000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 177000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 178000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 179000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 180000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 181000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 182000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 183000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 184000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 185000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 186000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 187000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 188000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 189000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 190000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 191000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 192000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 193000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 194000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 195000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 196000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 197000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 198000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 199000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 200000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 201000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 202000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 203000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 204000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 205000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 206000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 207000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 208000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 209000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 210000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 211000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 212000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 213000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 214000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 215000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 216000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 217000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 218000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 219000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 220000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 221000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 222000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 223000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 224000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 225000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 226000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 227000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 228000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 229000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 230000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 231000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 232000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 233000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 234000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 235000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 236000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 237000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 238000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 239000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 240000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 241000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 242000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 243000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 244000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 245000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 246000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 247000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 248000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 249000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 250000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 251000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 252000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 253000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 254000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 255000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 256000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 257000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 258000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 259000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 260000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 261000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 262000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 263000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 264000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 265000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 266000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 267000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 268000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 269000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 270000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 271000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 272000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 273000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 274000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 275000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 276000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 277000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 278000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 279000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 280000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 281000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 282000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 283000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 284000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 285000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 286000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 287000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 288000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 289000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 290000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 291000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 292000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 293000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 294000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 295000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 296000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 297000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 298000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 299000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 300000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 301000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 302000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 303000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 304000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 305000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 306000,
+            "rssMb": 4
+          },
+          {
+            "atMs": 307000,
+            "rssMb": 4
+          }
+        ]
+      },
+      "sleep": {
+        "rss": {
+          "samples": 11,
+          "span_ms": 2513,
+          "peak_mb": 2,
+          "peak_at_ms": 268,
+          "boot_window_ms": 45000,
+          "peak_in_boot_window": true,
+          "boot_window_peak_mb": 2,
+          "post_boot_samples": 0,
+          "post_boot_median_mb": null,
+          "post_boot_max_mb": null,
+          "post_boot_slope_mb_per_min": null
+        },
+        "rss_series": [
+          {
+            "atMs": 0,
+            "rssMb": 2
+          },
+          {
+            "atMs": 1000,
+            "rssMb": 2
+          },
+          {
+            "atMs": 2000,
+            "rssMb": 2
+          }
+        ]
+      },
+      "Xvfb": {
+        "rss": {
+          "samples": 1223,
+          "span_ms": 306814,
+          "peak_mb": 73,
+          "peak_at_ms": 3801,
+          "boot_window_ms": 45000,
+          "peak_in_boot_window": true,
+          "boot_window_peak_mb": 73,
+          "post_boot_samples": 1044,
+          "post_boot_median_mb": 73,
+          "post_boot_max_mb": 73,
+          "post_boot_slope_mb_per_min": 0
+        },
+        "rss_series": [
+          {
+            "atMs": 0,
+            "rssMb": 61
+          },
+          {
+            "atMs": 1000,
+            "rssMb": 61
+          },
+          {
+            "atMs": 2000,
+            "rssMb": 61
+          },
+          {
+            "atMs": 3000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 4000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 5000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 6000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 7000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 8000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 9000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 10000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 11000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 12000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 13000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 14000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 15000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 16000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 17000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 18000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 19000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 20000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 21000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 22000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 23000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 24000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 25000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 26000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 27000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 28000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 29000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 30000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 31000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 32000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 33000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 34000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 35000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 36000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 37000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 38000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 39000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 40000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 41000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 42000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 43000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 44000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 45000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 46000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 47000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 48000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 49000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 50000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 51000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 52000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 53000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 54000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 55000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 56000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 57000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 58000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 59000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 60000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 61000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 62000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 63000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 64000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 65000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 66000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 67000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 68000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 69000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 70000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 71000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 72000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 73000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 74000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 75000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 76000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 77000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 78000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 79000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 80000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 81000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 82000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 83000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 84000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 85000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 86000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 87000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 88000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 89000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 90000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 91000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 92000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 93000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 94000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 95000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 96000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 97000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 98000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 99000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 100000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 101000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 102000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 103000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 104000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 105000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 106000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 107000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 108000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 109000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 110000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 111000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 112000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 113000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 114000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 115000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 116000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 117000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 118000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 119000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 120000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 121000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 122000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 123000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 124000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 125000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 126000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 127000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 128000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 129000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 130000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 131000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 132000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 133000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 134000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 135000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 136000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 137000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 138000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 139000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 140000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 141000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 142000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 143000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 144000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 145000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 146000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 147000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 148000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 149000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 150000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 151000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 152000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 153000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 154000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 155000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 156000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 157000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 158000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 159000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 160000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 161000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 162000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 163000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 164000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 165000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 166000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 167000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 168000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 169000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 170000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 171000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 172000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 173000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 174000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 175000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 176000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 177000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 178000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 179000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 180000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 181000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 182000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 183000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 184000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 185000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 186000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 187000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 188000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 189000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 190000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 191000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 192000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 193000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 194000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 195000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 196000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 197000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 198000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 199000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 200000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 201000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 202000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 203000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 204000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 205000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 206000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 207000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 208000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 209000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 210000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 211000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 212000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 213000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 214000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 215000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 216000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 217000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 218000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 219000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 220000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 221000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 222000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 223000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 224000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 225000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 226000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 227000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 228000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 229000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 230000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 231000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 232000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 233000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 234000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 235000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 236000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 237000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 238000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 239000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 240000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 241000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 242000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 243000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 244000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 245000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 246000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 247000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 248000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 249000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 250000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 251000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 252000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 253000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 254000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 255000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 256000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 257000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 258000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 259000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 260000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 261000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 262000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 263000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 264000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 265000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 266000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 267000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 268000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 269000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 270000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 271000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 272000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 273000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 274000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 275000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 276000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 277000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 278000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 279000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 280000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 281000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 282000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 283000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 284000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 285000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 286000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 287000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 288000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 289000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 290000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 291000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 292000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 293000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 294000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 295000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 296000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 297000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 298000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 299000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 300000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 301000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 302000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 303000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 304000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 305000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 306000,
+            "rssMb": 73
+          },
+          {
+            "atMs": 307000,
+            "rssMb": 73
+          }
+        ]
+      },
+      "garret": {
+        "rss": {
+          "samples": 1212,
+          "span_ms": 304049,
+          "peak_mb": 325,
+          "peak_at_ms": 49983,
+          "boot_window_ms": 45000,
+          "peak_in_boot_window": false,
+          "boot_window_peak_mb": 322,
+          "post_boot_samples": 1044,
+          "post_boot_median_mb": 275,
+          "post_boot_max_mb": 325,
+          "post_boot_slope_mb_per_min": 0.3395588517298761
+        },
+        "rss_series": [
+          {
+            "atMs": 3000,
+            "rssMb": 241
+          },
+          {
+            "atMs": 4000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 5000,
+            "rssMb": 303
+          },
+          {
+            "atMs": 6000,
+            "rssMb": 303
+          },
+          {
+            "atMs": 7000,
+            "rssMb": 303
+          },
+          {
+            "atMs": 8000,
+            "rssMb": 302
+          },
+          {
+            "atMs": 9000,
+            "rssMb": 302
+          },
+          {
+            "atMs": 10000,
+            "rssMb": 302
+          },
+          {
+            "atMs": 11000,
+            "rssMb": 302
+          },
+          {
+            "atMs": 12000,
+            "rssMb": 302
+          },
+          {
+            "atMs": 13000,
+            "rssMb": 302
+          },
+          {
+            "atMs": 14000,
+            "rssMb": 302
+          },
+          {
+            "atMs": 15000,
+            "rssMb": 302
+          },
+          {
+            "atMs": 16000,
+            "rssMb": 302
+          },
+          {
+            "atMs": 17000,
+            "rssMb": 302
+          },
+          {
+            "atMs": 18000,
+            "rssMb": 302
+          },
+          {
+            "atMs": 19000,
+            "rssMb": 299
+          },
+          {
+            "atMs": 20000,
+            "rssMb": 299
+          },
+          {
+            "atMs": 21000,
+            "rssMb": 299
+          },
+          {
+            "atMs": 22000,
+            "rssMb": 299
+          },
+          {
+            "atMs": 23000,
+            "rssMb": 299
+          },
+          {
+            "atMs": 24000,
+            "rssMb": 299
+          },
+          {
+            "atMs": 25000,
+            "rssMb": 299
+          },
+          {
+            "atMs": 26000,
+            "rssMb": 322
+          },
+          {
+            "atMs": 27000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 28000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 29000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 30000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 31000,
+            "rssMb": 313
+          },
+          {
+            "atMs": 32000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 33000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 34000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 35000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 36000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 37000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 38000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 39000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 40000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 41000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 42000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 43000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 44000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 45000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 46000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 47000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 48000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 49000,
+            "rssMb": 325
+          },
+          {
+            "atMs": 50000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 51000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 52000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 53000,
+            "rssMb": 276
+          },
+          {
+            "atMs": 54000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 55000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 56000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 57000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 58000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 59000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 60000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 61000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 62000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 63000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 64000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 65000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 66000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 67000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 68000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 69000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 70000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 71000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 72000,
+            "rssMb": 282
+          },
+          {
+            "atMs": 73000,
+            "rssMb": 325
+          },
+          {
+            "atMs": 74000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 75000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 76000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 77000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 78000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 79000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 80000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 81000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 82000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 83000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 84000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 85000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 86000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 87000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 88000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 89000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 90000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 91000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 92000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 93000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 94000,
+            "rssMb": 275
+          },
+          {
+            "atMs": 95000,
+            "rssMb": 283
+          },
+          {
+            "atMs": 96000,
+            "rssMb": 323
+          },
+          {
+            "atMs": 97000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 98000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 99000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 100000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 101000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 102000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 103000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 104000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 105000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 106000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 107000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 108000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 109000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 110000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 111000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 112000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 113000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 114000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 115000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 116000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 117000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 118000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 119000,
+            "rssMb": 324
+          },
+          {
+            "atMs": 120000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 121000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 122000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 123000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 124000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 125000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 126000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 127000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 128000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 129000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 130000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 131000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 132000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 133000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 134000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 135000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 136000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 137000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 138000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 139000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 140000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 141000,
+            "rssMb": 323
+          },
+          {
+            "atMs": 142000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 143000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 144000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 145000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 146000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 147000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 148000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 149000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 150000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 151000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 152000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 153000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 154000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 155000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 156000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 157000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 158000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 159000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 160000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 161000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 162000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 163000,
+            "rssMb": 323
+          },
+          {
+            "atMs": 164000,
+            "rssMb": 323
+          },
+          {
+            "atMs": 165000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 166000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 167000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 168000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 169000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 170000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 171000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 172000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 173000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 174000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 175000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 176000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 177000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 178000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 179000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 180000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 181000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 182000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 183000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 184000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 185000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 186000,
+            "rssMb": 283
+          },
+          {
+            "atMs": 187000,
+            "rssMb": 323
+          },
+          {
+            "atMs": 188000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 189000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 190000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 191000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 192000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 193000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 194000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 195000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 196000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 197000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 198000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 199000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 200000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 201000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 202000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 203000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 204000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 205000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 206000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 207000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 208000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 209000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 210000,
+            "rssMb": 324
+          },
+          {
+            "atMs": 211000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 212000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 213000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 214000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 215000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 216000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 217000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 218000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 219000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 220000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 221000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 222000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 223000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 224000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 225000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 226000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 227000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 228000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 229000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 230000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 231000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 232000,
+            "rssMb": 323
+          },
+          {
+            "atMs": 233000,
+            "rssMb": 323
+          },
+          {
+            "atMs": 234000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 235000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 236000,
+            "rssMb": 315
+          },
+          {
+            "atMs": 237000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 238000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 239000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 240000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 241000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 242000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 243000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 244000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 245000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 246000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 247000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 248000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 249000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 250000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 251000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 252000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 253000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 254000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 255000,
+            "rssMb": 323
+          },
+          {
+            "atMs": 256000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 257000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 258000,
+            "rssMb": 316
+          },
+          {
+            "atMs": 259000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 260000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 261000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 262000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 263000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 264000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 265000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 266000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 267000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 268000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 269000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 270000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 271000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 272000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 273000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 274000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 275000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 276000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 277000,
+            "rssMb": 283
+          },
+          {
+            "atMs": 278000,
+            "rssMb": 318
+          },
+          {
+            "atMs": 279000,
+            "rssMb": 310
+          },
+          {
+            "atMs": 280000,
+            "rssMb": 310
+          },
+          {
+            "atMs": 281000,
+            "rssMb": 310
+          },
+          {
+            "atMs": 282000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 283000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 284000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 285000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 286000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 287000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 288000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 289000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 290000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 291000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 292000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 293000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 294000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 295000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 296000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 297000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 298000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 299000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 300000,
+            "rssMb": 274
+          },
+          {
+            "atMs": 301000,
+            "rssMb": 323
+          },
+          {
+            "atMs": 302000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 303000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 304000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 305000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 306000,
+            "rssMb": 314
+          },
+          {
+            "atMs": 307000,
+            "rssMb": 318
+          }
+        ]
+      },
+      "WebKitWebProces": {
+        "rss": {
+          "samples": 1210,
+          "span_ms": 303536,
+          "peak_mb": 1073,
+          "peak_at_ms": 255370,
+          "boot_window_ms": 45000,
+          "peak_in_boot_window": false,
+          "boot_window_peak_mb": 1043,
+          "post_boot_samples": 1044,
+          "post_boot_median_mb": 891,
+          "post_boot_max_mb": 1073,
+          "post_boot_slope_mb_per_min": 9.083795914539786
+        },
+        "rss_series": [
+          {
+            "atMs": 3000,
+            "rssMb": 323
+          },
+          {
+            "atMs": 4000,
+            "rssMb": 577
+          },
+          {
+            "atMs": 5000,
+            "rssMb": 643
+          },
+          {
+            "atMs": 6000,
+            "rssMb": 878
+          },
+          {
+            "atMs": 7000,
+            "rssMb": 875
+          },
+          {
+            "atMs": 8000,
+            "rssMb": 820
+          },
+          {
+            "atMs": 9000,
+            "rssMb": 826
+          },
+          {
+            "atMs": 10000,
+            "rssMb": 838
+          },
+          {
+            "atMs": 11000,
+            "rssMb": 840
+          },
+          {
+            "atMs": 12000,
+            "rssMb": 830
+          },
+          {
+            "atMs": 13000,
+            "rssMb": 835
+          },
+          {
+            "atMs": 14000,
+            "rssMb": 839
+          },
+          {
+            "atMs": 15000,
+            "rssMb": 845
+          },
+          {
+            "atMs": 16000,
+            "rssMb": 851
+          },
+          {
+            "atMs": 17000,
+            "rssMb": 857
+          },
+          {
+            "atMs": 18000,
+            "rssMb": 859
+          },
+          {
+            "atMs": 19000,
+            "rssMb": 828
+          },
+          {
+            "atMs": 20000,
+            "rssMb": 830
+          },
+          {
+            "atMs": 21000,
+            "rssMb": 829
+          },
+          {
+            "atMs": 22000,
+            "rssMb": 830
+          },
+          {
+            "atMs": 23000,
+            "rssMb": 824
+          },
+          {
+            "atMs": 24000,
+            "rssMb": 824
+          },
+          {
+            "atMs": 25000,
+            "rssMb": 824
+          },
+          {
+            "atMs": 26000,
+            "rssMb": 971
+          },
+          {
+            "atMs": 27000,
+            "rssMb": 1043
+          },
+          {
+            "atMs": 28000,
+            "rssMb": 788
+          },
+          {
+            "atMs": 29000,
+            "rssMb": 972
+          },
+          {
+            "atMs": 30000,
+            "rssMb": 972
+          },
+          {
+            "atMs": 31000,
+            "rssMb": 862
+          },
+          {
+            "atMs": 32000,
+            "rssMb": 866
+          },
+          {
+            "atMs": 33000,
+            "rssMb": 871
+          },
+          {
+            "atMs": 34000,
+            "rssMb": 861
+          },
+          {
+            "atMs": 35000,
+            "rssMb": 858
+          },
+          {
+            "atMs": 36000,
+            "rssMb": 859
+          },
+          {
+            "atMs": 37000,
+            "rssMb": 859
+          },
+          {
+            "atMs": 38000,
+            "rssMb": 858
+          },
+          {
+            "atMs": 39000,
+            "rssMb": 858
+          },
+          {
+            "atMs": 40000,
+            "rssMb": 857
+          },
+          {
+            "atMs": 41000,
+            "rssMb": 860
+          },
+          {
+            "atMs": 42000,
+            "rssMb": 859
+          },
+          {
+            "atMs": 43000,
+            "rssMb": 859
+          },
+          {
+            "atMs": 44000,
+            "rssMb": 858
+          },
+          {
+            "atMs": 45000,
+            "rssMb": 858
+          },
+          {
+            "atMs": 46000,
+            "rssMb": 853
+          },
+          {
+            "atMs": 47000,
+            "rssMb": 853
+          },
+          {
+            "atMs": 48000,
+            "rssMb": 853
+          },
+          {
+            "atMs": 49000,
+            "rssMb": 999
+          },
+          {
+            "atMs": 50000,
+            "rssMb": 979
+          },
+          {
+            "atMs": 51000,
+            "rssMb": 796
+          },
+          {
+            "atMs": 52000,
+            "rssMb": 974
+          },
+          {
+            "atMs": 53000,
+            "rssMb": 981
+          },
+          {
+            "atMs": 54000,
+            "rssMb": 870
+          },
+          {
+            "atMs": 55000,
+            "rssMb": 876
+          },
+          {
+            "atMs": 56000,
+            "rssMb": 884
+          },
+          {
+            "atMs": 57000,
+            "rssMb": 895
+          },
+          {
+            "atMs": 58000,
+            "rssMb": 901
+          },
+          {
+            "atMs": 59000,
+            "rssMb": 901
+          },
+          {
+            "atMs": 60000,
+            "rssMb": 871
+          },
+          {
+            "atMs": 61000,
+            "rssMb": 873
+          },
+          {
+            "atMs": 62000,
+            "rssMb": 873
+          },
+          {
+            "atMs": 63000,
+            "rssMb": 871
+          },
+          {
+            "atMs": 64000,
+            "rssMb": 873
+          },
+          {
+            "atMs": 65000,
+            "rssMb": 873
+          },
+          {
+            "atMs": 66000,
+            "rssMb": 871
+          },
+          {
+            "atMs": 67000,
+            "rssMb": 872
+          },
+          {
+            "atMs": 68000,
+            "rssMb": 874
+          },
+          {
+            "atMs": 69000,
+            "rssMb": 868
+          },
+          {
+            "atMs": 70000,
+            "rssMb": 867
+          },
+          {
+            "atMs": 71000,
+            "rssMb": 867
+          },
+          {
+            "atMs": 72000,
+            "rssMb": 867
+          },
+          {
+            "atMs": 73000,
+            "rssMb": 1040
+          },
+          {
+            "atMs": 74000,
+            "rssMb": 993
+          },
+          {
+            "atMs": 75000,
+            "rssMb": 920
+          },
+          {
+            "atMs": 76000,
+            "rssMb": 987
+          },
+          {
+            "atMs": 77000,
+            "rssMb": 870
+          },
+          {
+            "atMs": 78000,
+            "rssMb": 875
+          },
+          {
+            "atMs": 79000,
+            "rssMb": 879
+          },
+          {
+            "atMs": 80000,
+            "rssMb": 891
+          },
+          {
+            "atMs": 81000,
+            "rssMb": 892
+          },
+          {
+            "atMs": 82000,
+            "rssMb": 867
+          },
+          {
+            "atMs": 83000,
+            "rssMb": 869
+          },
+          {
+            "atMs": 84000,
+            "rssMb": 869
+          },
+          {
+            "atMs": 85000,
+            "rssMb": 869
+          },
+          {
+            "atMs": 86000,
+            "rssMb": 869
+          },
+          {
+            "atMs": 87000,
+            "rssMb": 869
+          },
+          {
+            "atMs": 88000,
+            "rssMb": 872
+          },
+          {
+            "atMs": 89000,
+            "rssMb": 871
+          },
+          {
+            "atMs": 90000,
+            "rssMb": 872
+          },
+          {
+            "atMs": 91000,
+            "rssMb": 872
+          },
+          {
+            "atMs": 92000,
+            "rssMb": 868
+          },
+          {
+            "atMs": 93000,
+            "rssMb": 857
+          },
+          {
+            "atMs": 94000,
+            "rssMb": 857
+          },
+          {
+            "atMs": 95000,
+            "rssMb": 857
+          },
+          {
+            "atMs": 96000,
+            "rssMb": 1031
+          },
+          {
+            "atMs": 97000,
+            "rssMb": 976
+          },
+          {
+            "atMs": 98000,
+            "rssMb": 902
+          },
+          {
+            "atMs": 99000,
+            "rssMb": 981
+          },
+          {
+            "atMs": 100000,
+            "rssMb": 872
+          },
+          {
+            "atMs": 101000,
+            "rssMb": 877
+          },
+          {
+            "atMs": 102000,
+            "rssMb": 880
+          },
+          {
+            "atMs": 103000,
+            "rssMb": 877
+          },
+          {
+            "atMs": 104000,
+            "rssMb": 875
+          },
+          {
+            "atMs": 105000,
+            "rssMb": 875
+          },
+          {
+            "atMs": 106000,
+            "rssMb": 875
+          },
+          {
+            "atMs": 107000,
+            "rssMb": 875
+          },
+          {
+            "atMs": 108000,
+            "rssMb": 875
+          },
+          {
+            "atMs": 109000,
+            "rssMb": 873
+          },
+          {
+            "atMs": 110000,
+            "rssMb": 875
+          },
+          {
+            "atMs": 111000,
+            "rssMb": 877
+          },
+          {
+            "atMs": 112000,
+            "rssMb": 877
+          },
+          {
+            "atMs": 113000,
+            "rssMb": 878
+          },
+          {
+            "atMs": 114000,
+            "rssMb": 879
+          },
+          {
+            "atMs": 115000,
+            "rssMb": 874
+          },
+          {
+            "atMs": 116000,
+            "rssMb": 872
+          },
+          {
+            "atMs": 117000,
+            "rssMb": 872
+          },
+          {
+            "atMs": 118000,
+            "rssMb": 872
+          },
+          {
+            "atMs": 119000,
+            "rssMb": 1030
+          },
+          {
+            "atMs": 120000,
+            "rssMb": 989
+          },
+          {
+            "atMs": 121000,
+            "rssMb": 850
+          },
+          {
+            "atMs": 122000,
+            "rssMb": 986
+          },
+          {
+            "atMs": 123000,
+            "rssMb": 960
+          },
+          {
+            "atMs": 124000,
+            "rssMb": 882
+          },
+          {
+            "atMs": 125000,
+            "rssMb": 885
+          },
+          {
+            "atMs": 126000,
+            "rssMb": 882
+          },
+          {
+            "atMs": 127000,
+            "rssMb": 880
+          },
+          {
+            "atMs": 128000,
+            "rssMb": 877
+          },
+          {
+            "atMs": 129000,
+            "rssMb": 878
+          },
+          {
+            "atMs": 130000,
+            "rssMb": 878
+          },
+          {
+            "atMs": 131000,
+            "rssMb": 878
+          },
+          {
+            "atMs": 132000,
+            "rssMb": 877
+          },
+          {
+            "atMs": 133000,
+            "rssMb": 878
+          },
+          {
+            "atMs": 134000,
+            "rssMb": 878
+          },
+          {
+            "atMs": 135000,
+            "rssMb": 878
+          },
+          {
+            "atMs": 136000,
+            "rssMb": 878
+          },
+          {
+            "atMs": 137000,
+            "rssMb": 878
+          },
+          {
+            "atMs": 138000,
+            "rssMb": 875
+          },
+          {
+            "atMs": 139000,
+            "rssMb": 873
+          },
+          {
+            "atMs": 140000,
+            "rssMb": 872
+          },
+          {
+            "atMs": 141000,
+            "rssMb": 1040
+          },
+          {
+            "atMs": 142000,
+            "rssMb": 991
+          },
+          {
+            "atMs": 143000,
+            "rssMb": 816
+          },
+          {
+            "atMs": 144000,
+            "rssMb": 996
+          },
+          {
+            "atMs": 145000,
+            "rssMb": 993
+          },
+          {
+            "atMs": 146000,
+            "rssMb": 888
+          },
+          {
+            "atMs": 147000,
+            "rssMb": 896
+          },
+          {
+            "atMs": 148000,
+            "rssMb": 909
+          },
+          {
+            "atMs": 149000,
+            "rssMb": 912
+          },
+          {
+            "atMs": 150000,
+            "rssMb": 886
+          },
+          {
+            "atMs": 151000,
+            "rssMb": 889
+          },
+          {
+            "atMs": 152000,
+            "rssMb": 888
+          },
+          {
+            "atMs": 153000,
+            "rssMb": 889
+          },
+          {
+            "atMs": 154000,
+            "rssMb": 887
+          },
+          {
+            "atMs": 155000,
+            "rssMb": 889
+          },
+          {
+            "atMs": 156000,
+            "rssMb": 888
+          },
+          {
+            "atMs": 157000,
+            "rssMb": 889
+          },
+          {
+            "atMs": 158000,
+            "rssMb": 889
+          },
+          {
+            "atMs": 159000,
+            "rssMb": 889
+          },
+          {
+            "atMs": 160000,
+            "rssMb": 887
+          },
+          {
+            "atMs": 161000,
+            "rssMb": 883
+          },
+          {
+            "atMs": 162000,
+            "rssMb": 883
+          },
+          {
+            "atMs": 163000,
+            "rssMb": 898
+          },
+          {
+            "atMs": 164000,
+            "rssMb": 1053
+          },
+          {
+            "atMs": 165000,
+            "rssMb": 996
+          },
+          {
+            "atMs": 166000,
+            "rssMb": 971
+          },
+          {
+            "atMs": 167000,
+            "rssMb": 1001
+          },
+          {
+            "atMs": 168000,
+            "rssMb": 891
+          },
+          {
+            "atMs": 169000,
+            "rssMb": 896
+          },
+          {
+            "atMs": 170000,
+            "rssMb": 898
+          },
+          {
+            "atMs": 171000,
+            "rssMb": 891
+          },
+          {
+            "atMs": 172000,
+            "rssMb": 890
+          },
+          {
+            "atMs": 173000,
+            "rssMb": 891
+          },
+          {
+            "atMs": 174000,
+            "rssMb": 894
+          },
+          {
+            "atMs": 175000,
+            "rssMb": 893
+          },
+          {
+            "atMs": 176000,
+            "rssMb": 893
+          },
+          {
+            "atMs": 177000,
+            "rssMb": 892
+          },
+          {
+            "atMs": 178000,
+            "rssMb": 894
+          },
+          {
+            "atMs": 179000,
+            "rssMb": 893
+          },
+          {
+            "atMs": 180000,
+            "rssMb": 894
+          },
+          {
+            "atMs": 181000,
+            "rssMb": 895
+          },
+          {
+            "atMs": 182000,
+            "rssMb": 893
+          },
+          {
+            "atMs": 183000,
+            "rssMb": 888
+          },
+          {
+            "atMs": 184000,
+            "rssMb": 884
+          },
+          {
+            "atMs": 185000,
+            "rssMb": 884
+          },
+          {
+            "atMs": 186000,
+            "rssMb": 884
+          },
+          {
+            "atMs": 187000,
+            "rssMb": 1046
+          },
+          {
+            "atMs": 188000,
+            "rssMb": 1002
+          },
+          {
+            "atMs": 189000,
+            "rssMb": 905
+          },
+          {
+            "atMs": 190000,
+            "rssMb": 1002
+          },
+          {
+            "atMs": 191000,
+            "rssMb": 950
+          },
+          {
+            "atMs": 192000,
+            "rssMb": 899
+          },
+          {
+            "atMs": 193000,
+            "rssMb": 903
+          },
+          {
+            "atMs": 194000,
+            "rssMb": 915
+          },
+          {
+            "atMs": 195000,
+            "rssMb": 894
+          },
+          {
+            "atMs": 196000,
+            "rssMb": 897
+          },
+          {
+            "atMs": 197000,
+            "rssMb": 896
+          },
+          {
+            "atMs": 198000,
+            "rssMb": 896
+          },
+          {
+            "atMs": 199000,
+            "rssMb": 896
+          },
+          {
+            "atMs": 200000,
+            "rssMb": 896
+          },
+          {
+            "atMs": 201000,
+            "rssMb": 895
+          },
+          {
+            "atMs": 202000,
+            "rssMb": 895
+          },
+          {
+            "atMs": 203000,
+            "rssMb": 896
+          },
+          {
+            "atMs": 204000,
+            "rssMb": 896
+          },
+          {
+            "atMs": 205000,
+            "rssMb": 895
+          },
+          {
+            "atMs": 206000,
+            "rssMb": 890
+          },
+          {
+            "atMs": 207000,
+            "rssMb": 890
+          },
+          {
+            "atMs": 208000,
+            "rssMb": 890
+          },
+          {
+            "atMs": 209000,
+            "rssMb": 890
+          },
+          {
+            "atMs": 210000,
+            "rssMb": 1068
+          },
+          {
+            "atMs": 211000,
+            "rssMb": 1004
+          },
+          {
+            "atMs": 212000,
+            "rssMb": 886
+          },
+          {
+            "atMs": 213000,
+            "rssMb": 1009
+          },
+          {
+            "atMs": 214000,
+            "rssMb": 992
+          },
+          {
+            "atMs": 215000,
+            "rssMb": 900
+          },
+          {
+            "atMs": 216000,
+            "rssMb": 903
+          },
+          {
+            "atMs": 217000,
+            "rssMb": 898
+          },
+          {
+            "atMs": 218000,
+            "rssMb": 896
+          },
+          {
+            "atMs": 219000,
+            "rssMb": 894
+          },
+          {
+            "atMs": 220000,
+            "rssMb": 895
+          },
+          {
+            "atMs": 221000,
+            "rssMb": 896
+          },
+          {
+            "atMs": 222000,
+            "rssMb": 895
+          },
+          {
+            "atMs": 223000,
+            "rssMb": 897
+          },
+          {
+            "atMs": 224000,
+            "rssMb": 898
+          },
+          {
+            "atMs": 225000,
+            "rssMb": 898
+          },
+          {
+            "atMs": 226000,
+            "rssMb": 899
+          },
+          {
+            "atMs": 227000,
+            "rssMb": 899
+          },
+          {
+            "atMs": 228000,
+            "rssMb": 898
+          },
+          {
+            "atMs": 229000,
+            "rssMb": 896
+          },
+          {
+            "atMs": 230000,
+            "rssMb": 892
+          },
+          {
+            "atMs": 231000,
+            "rssMb": 891
+          },
+          {
+            "atMs": 232000,
+            "rssMb": 964
+          },
+          {
+            "atMs": 233000,
+            "rssMb": 1069
+          },
+          {
+            "atMs": 234000,
+            "rssMb": 952
+          },
+          {
+            "atMs": 235000,
+            "rssMb": 984
+          },
+          {
+            "atMs": 236000,
+            "rssMb": 1012
+          },
+          {
+            "atMs": 237000,
+            "rssMb": 904
+          },
+          {
+            "atMs": 238000,
+            "rssMb": 911
+          },
+          {
+            "atMs": 239000,
+            "rssMb": 921
+          },
+          {
+            "atMs": 240000,
+            "rssMb": 907
+          },
+          {
+            "atMs": 241000,
+            "rssMb": 902
+          },
+          {
+            "atMs": 242000,
+            "rssMb": 901
+          },
+          {
+            "atMs": 243000,
+            "rssMb": 903
+          },
+          {
+            "atMs": 244000,
+            "rssMb": 903
+          },
+          {
+            "atMs": 245000,
+            "rssMb": 903
+          },
+          {
+            "atMs": 246000,
+            "rssMb": 903
+          },
+          {
+            "atMs": 247000,
+            "rssMb": 903
+          },
+          {
+            "atMs": 248000,
+            "rssMb": 902
+          },
+          {
+            "atMs": 249000,
+            "rssMb": 903
+          },
+          {
+            "atMs": 250000,
+            "rssMb": 903
+          },
+          {
+            "atMs": 251000,
+            "rssMb": 902
+          },
+          {
+            "atMs": 252000,
+            "rssMb": 897
+          },
+          {
+            "atMs": 253000,
+            "rssMb": 897
+          },
+          {
+            "atMs": 254000,
+            "rssMb": 897
+          },
+          {
+            "atMs": 255000,
+            "rssMb": 1073
+          },
+          {
+            "atMs": 256000,
+            "rssMb": 1014
+          },
+          {
+            "atMs": 257000,
+            "rssMb": 946
+          },
+          {
+            "atMs": 258000,
+            "rssMb": 1015
+          },
+          {
+            "atMs": 259000,
+            "rssMb": 906
+          },
+          {
+            "atMs": 260000,
+            "rssMb": 918
+          },
+          {
+            "atMs": 261000,
+            "rssMb": 917
+          },
+          {
+            "atMs": 262000,
+            "rssMb": 911
+          },
+          {
+            "atMs": 263000,
+            "rssMb": 908
+          },
+          {
+            "atMs": 264000,
+            "rssMb": 908
+          },
+          {
+            "atMs": 265000,
+            "rssMb": 908
+          },
+          {
+            "atMs": 266000,
+            "rssMb": 909
+          },
+          {
+            "atMs": 267000,
+            "rssMb": 909
+          },
+          {
+            "atMs": 268000,
+            "rssMb": 909
+          },
+          {
+            "atMs": 269000,
+            "rssMb": 914
+          },
+          {
+            "atMs": 270000,
+            "rssMb": 912
+          },
+          {
+            "atMs": 271000,
+            "rssMb": 909
+          },
+          {
+            "atMs": 272000,
+            "rssMb": 911
+          },
+          {
+            "atMs": 273000,
+            "rssMb": 909
+          },
+          {
+            "atMs": 274000,
+            "rssMb": 903
+          },
+          {
+            "atMs": 275000,
+            "rssMb": 902
+          },
+          {
+            "atMs": 276000,
+            "rssMb": 902
+          },
+          {
+            "atMs": 277000,
+            "rssMb": 902
+          },
+          {
+            "atMs": 278000,
+            "rssMb": 1067
+          },
+          {
+            "atMs": 279000,
+            "rssMb": 1013
+          },
+          {
+            "atMs": 280000,
+            "rssMb": 928
+          },
+          {
+            "atMs": 281000,
+            "rssMb": 1016
+          },
+          {
+            "atMs": 282000,
+            "rssMb": 992
+          },
+          {
+            "atMs": 283000,
+            "rssMb": 917
+          },
+          {
+            "atMs": 284000,
+            "rssMb": 918
+          },
+          {
+            "atMs": 285000,
+            "rssMb": 916
+          },
+          {
+            "atMs": 286000,
+            "rssMb": 911
+          },
+          {
+            "atMs": 287000,
+            "rssMb": 908
+          },
+          {
+            "atMs": 288000,
+            "rssMb": 910
+          },
+          {
+            "atMs": 289000,
+            "rssMb": 911
+          },
+          {
+            "atMs": 290000,
+            "rssMb": 911
+          },
+          {
+            "atMs": 291000,
+            "rssMb": 912
+          },
+          {
+            "atMs": 292000,
+            "rssMb": 912
+          },
+          {
+            "atMs": 293000,
+            "rssMb": 913
+          },
+          {
+            "atMs": 294000,
+            "rssMb": 913
+          },
+          {
+            "atMs": 295000,
+            "rssMb": 912
+          },
+          {
+            "atMs": 296000,
+            "rssMb": 912
+          },
+          {
+            "atMs": 297000,
+            "rssMb": 909
+          },
+          {
+            "atMs": 298000,
+            "rssMb": 907
+          },
+          {
+            "atMs": 299000,
+            "rssMb": 907
+          },
+          {
+            "atMs": 300000,
+            "rssMb": 907
+          },
+          {
+            "atMs": 301000,
+            "rssMb": 1059
+          },
+          {
+            "atMs": 302000,
+            "rssMb": 1020
+          },
+          {
+            "atMs": 303000,
+            "rssMb": 876
+          },
+          {
+            "atMs": 304000,
+            "rssMb": 1017
+          },
+          {
+            "atMs": 305000,
+            "rssMb": 848
+          },
+          {
+            "atMs": 306000,
+            "rssMb": 741
+          },
+          {
+            "atMs": 307000,
+            "rssMb": 753
+          }
+        ]
+      },
+      "WebKitNetworkPr": {
+        "rss": {
+          "samples": 1210,
+          "span_ms": 303536,
+          "peak_mb": 74,
+          "peak_at_ms": 3801,
+          "boot_window_ms": 45000,
+          "peak_in_boot_window": true,
+          "boot_window_peak_mb": 74,
+          "post_boot_samples": 1044,
+          "post_boot_median_mb": 74,
+          "post_boot_max_mb": 74,
+          "post_boot_slope_mb_per_min": 0
+        },
+        "rss_series": [
+          {
+            "atMs": 3000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 4000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 5000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 6000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 7000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 8000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 9000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 10000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 11000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 12000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 13000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 14000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 15000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 16000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 17000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 18000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 19000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 20000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 21000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 22000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 23000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 24000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 25000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 26000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 27000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 28000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 29000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 30000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 31000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 32000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 33000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 34000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 35000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 36000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 37000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 38000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 39000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 40000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 41000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 42000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 43000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 44000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 45000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 46000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 47000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 48000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 49000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 50000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 51000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 52000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 53000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 54000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 55000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 56000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 57000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 58000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 59000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 60000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 61000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 62000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 63000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 64000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 65000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 66000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 67000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 68000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 69000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 70000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 71000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 72000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 73000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 74000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 75000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 76000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 77000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 78000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 79000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 80000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 81000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 82000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 83000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 84000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 85000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 86000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 87000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 88000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 89000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 90000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 91000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 92000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 93000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 94000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 95000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 96000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 97000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 98000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 99000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 100000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 101000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 102000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 103000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 104000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 105000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 106000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 107000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 108000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 109000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 110000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 111000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 112000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 113000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 114000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 115000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 116000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 117000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 118000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 119000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 120000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 121000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 122000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 123000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 124000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 125000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 126000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 127000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 128000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 129000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 130000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 131000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 132000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 133000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 134000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 135000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 136000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 137000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 138000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 139000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 140000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 141000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 142000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 143000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 144000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 145000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 146000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 147000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 148000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 149000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 150000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 151000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 152000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 153000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 154000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 155000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 156000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 157000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 158000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 159000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 160000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 161000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 162000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 163000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 164000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 165000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 166000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 167000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 168000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 169000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 170000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 171000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 172000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 173000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 174000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 175000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 176000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 177000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 178000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 179000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 180000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 181000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 182000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 183000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 184000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 185000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 186000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 187000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 188000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 189000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 190000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 191000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 192000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 193000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 194000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 195000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 196000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 197000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 198000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 199000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 200000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 201000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 202000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 203000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 204000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 205000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 206000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 207000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 208000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 209000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 210000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 211000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 212000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 213000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 214000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 215000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 216000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 217000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 218000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 219000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 220000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 221000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 222000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 223000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 224000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 225000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 226000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 227000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 228000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 229000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 230000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 231000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 232000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 233000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 234000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 235000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 236000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 237000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 238000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 239000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 240000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 241000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 242000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 243000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 244000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 245000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 246000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 247000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 248000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 249000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 250000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 251000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 252000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 253000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 254000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 255000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 256000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 257000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 258000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 259000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 260000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 261000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 262000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 263000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 264000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 265000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 266000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 267000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 268000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 269000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 270000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 271000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 272000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 273000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 274000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 275000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 276000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 277000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 278000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 279000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 280000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 281000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 282000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 283000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 284000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 285000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 286000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 287000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 288000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 289000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 290000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 291000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 292000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 293000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 294000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 295000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 296000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 297000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 298000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 299000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 300000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 301000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 302000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 303000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 304000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 305000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 306000,
+            "rssMb": 74
+          },
+          {
+            "atMs": 307000,
+            "rssMb": 74
+          }
+        ]
+      }
+    }
+  },
+  "verdicts": [
+    {
+      "gate": "peak_rss_mb",
+      "value": 1547,
+      "threshold": "< 750",
+      "verdict": "FAIL"
+    },
+    {
+      "gate": "typing_p95_ms",
+      "value": 33,
+      "threshold": "< 50",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_p99_ms",
+      "value": 34,
+      "threshold": "< 100",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "nav_p95_ms",
+      "value": 33,
+      "threshold": "< 150",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "no_typing_cliff",
+      "value": 0.971,
+      "threshold": "last decile / first decile < 1.5 (min 10 cycles)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "typing_stall_rate",
+      "value": 0,
+      "threshold": "< 0.01 (stalled + frameMs > 100 ms, over sample count)",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "a11y_exposure",
+      "value": "probe unavailable",
+      "threshold": "advertised rows == 20000",
+      "verdict": "UNKNOWN"
+    },
+    {
+      "gate": "restart_body_match",
+      "value": "match",
+      "threshold": "reopened body hash == pre-kill body hash",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_conflicts",
+      "value": 0,
+      "threshold": "== 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_errors",
+      "value": 0,
+      "threshold": "== 0",
+      "verdict": "PASS"
+    },
+    {
+      "gate": "flush_p95_ms",
+      "value": 4,
+      "threshold": "< 50",
+      "verdict": "PASS"
+    }
+  ],
+  "seed": "app-v1",
+  "rig_commit": "9fd2a003"
+}
