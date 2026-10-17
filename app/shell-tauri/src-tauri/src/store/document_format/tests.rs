@@ -441,6 +441,10 @@ fn format_gate_seed_replace_and_timeline_store_nothing() {
         let db = dir.path().join("new.db");
         refused(crate::store::seed::seed_project(&fixture, &db));
         assert!(!db.exists());
+        std::fs::write(fixture.join("scenes.ndjson"), json!({"id":"scene","body":serde_json::from_str::<Value>(crate::store::EMPTY_DOC_BODY).unwrap()}).to_string()).unwrap();
+        std::fs::write(fixture.join("timelines.ndjson"), json!({"id":"timeline","title":"Timeline","body":serde_json::from_str::<Value>(&body).unwrap()}).to_string()).unwrap();
+        refused(crate::store::seed::seed_project(&fixture, &db));
+        assert!(!db.exists());
         let (store, ids) = setup(&dir.path().join("book.db"));
         store
             .conn

@@ -171,15 +171,19 @@ pub fn validate_import(rows: &[super::ImportRow<'_>]) -> Result<()> {
     Ok(())
 }
 
+pub(crate) fn validate_timeline(value: &Value) -> Result<()> {
+    if value.get("type").and_then(Value::as_str) == Some("doc") {
+        return Err(invalid("a timeline cannot hold a prose document"));
+    }
+    Ok(())
+}
+
 impl Store {
     pub(crate) fn validate_body_write(&self, item_id: &str, body: &str) -> Result<()> {
         if self.item_type(item_id)?.as_deref() == Some(TIMELINE_TYPE) {
             let value: Value =
                 serde_json::from_str(body).map_err(|_| invalid("invalid timeline JSON"))?;
-            if value.get("type").and_then(Value::as_str) == Some("doc") {
-                return Err(invalid("a timeline cannot hold a prose document"));
-            }
-            return Ok(());
+            return validate_timeline(&value);
         }
         validate_write(body)
     }

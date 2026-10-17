@@ -221,6 +221,28 @@ pub fn seed_project(fixture_dir: &Path, db_path: &Path) -> Result<usize> {
         bodies.insert(scene.id, doc);
     }
 
+    let timelines_path = fixture_dir.join("timelines.ndjson");
+    let timelines = if timelines_path.exists() {
+        let raw = fs::read_to_string(&timelines_path).map_err(|e| {
+            StoreError::Seed(format!("reading {}: {e}", timelines_path.display()))
+        })?;
+        Some(
+            raw.lines()
+                .filter(|line| !line.is_empty())
+                .enumerate()
+                .map(|(n, line)| {
+                    let timeline: FixtureTimeline = serde_json::from_str(line).map_err(|e| {
+                        StoreError::Seed(format!("parsing timelines.ndjson line {}: {e}", n + 1))
+                    })?;
+                    super::document_format::validate_timeline(&timeline.body)?;
+                    Ok(timeline)
+                })
+                .collect::<Result<Vec<_>>>()?,
+        )
+    } else {
+        None
+    };
+
     let store = Store::open(db_path)?;
     store.conn.execute_batch("BEGIN IMMEDIATE")?;
 
@@ -546,20 +568,8 @@ pub fn seed_project(fixture_dir: &Path, db_path: &Path) -> Result<usize> {
     // line makes a NEW `timeline` item under the bible, never one of
     // `project.json`'s own: unlike a synopsis, a timeline has nowhere in that
     // list to belong.
-    let timelines_path = fixture_dir.join("timelines.ndjson");
-    if timelines_path.exists() {
-        let raw = match fs::read_to_string(&timelines_path) {
-            Ok(s) => s,
-            Err(e) => {
-                let _ = store.conn.execute_batch("ROLLBACK");
-                return Err(StoreError::Seed(format!(
-                    "reading {}: {e}",
-                    timelines_path.display()
-                )));
-            }
-        };
-        let mut lines = raw.lines().filter(|l| !l.is_empty()).peekable();
-        if lines.peek().is_some() {
+    if let Some(timelines) = timelines {
+        if !timelines.is_empty() {
             // The bible root, made if this fixture's own item list holds none
             // -- `note_in_bible`'s fallback (main.rs), restated here: a
             // fixture with a timeline and no note or synopsis is legal and
@@ -616,17 +626,7 @@ pub fn seed_project(fixture_dir: &Path, db_path: &Path) -> Result<usize> {
                     return Err(e.into());
                 }
             };
-            for (n, line) in lines.enumerate() {
-                let tl: FixtureTimeline = match serde_json::from_str(line) {
-                    Ok(t) => t,
-                    Err(e) => {
-                        let _ = store.conn.execute_batch("ROLLBACK");
-                        return Err(StoreError::Seed(format!(
-                            "parsing timelines.ndjson line {}: {e}",
-                            n + 1
-                        )));
-                    }
-                };
+            for tl in timelines {
                 // Appended, following whatever the bible already holds --
                 // `item_create`'s own rule, restated here because that
                 // command opens its own transaction and cannot be called
