@@ -741,7 +741,9 @@ impl Store {
     pub fn items(&self) -> Result<Vec<Item>> {
         // The walk and the count must see one snapshot: a row landing between
         // them would report Corrupt on a healthy file.
-        let tx = self.conn.unchecked_transaction()?;
+        // Atomic edits already own the snapshot used to validate the tree.
+        let tx = self.conn.is_autocommit().then(|| self.conn.unchecked_transaction()).transpose()?;
+        let conn = tx.as_deref().unwrap_or(&self.conn);
         // The state column arrived in v3, and `open_readonly` deliberately does
         // NOT migrate: the CLI's read-only subcommands walk a v1 or v2 file in
         // place, and a walk naming a column that file does not have fails with
@@ -758,7 +760,7 @@ impl Store {
         } else {
             ("NULL", "NULL")
         };
-        let mut stmt = tx.prepare(&format!(
+        let mut stmt = conn.prepare(&format!(
             "WITH RECURSIVE walk(id, parent_id, type, title, position, rev, state, depth, path) AS (
                SELECT id, parent_id, type, title, position, rev, {state}, 0, position
                  FROM item
@@ -791,7 +793,7 @@ impl Store {
             out.push(row?);
         }
 
-        let total: i64 = tx.query_row("SELECT count(*) FROM item", [], |r| r.get(0))?;
+        let total: i64 = conn.query_row("SELECT count(*) FROM item", [], |r| r.get(0))?;
         if out.len() as i64 != total {
             return Err(StoreError::Corrupt(format!(
                 "walk reached {} of {total} item(s): an orphaned parent_id, a cycle, \
