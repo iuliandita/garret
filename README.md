@@ -107,13 +107,13 @@ new build.
 
 ### Verify a download
 
-The next release adds a signed `SHA256SUMS` manifest and GitHub artifact
-attestations. Older releases may have only per-file checksums.
+Releases from 0.0.3 include a signed `SHA256SUMS` manifest and GitHub artifact
+attestations. Older releases have only per-file checksums.
 
-Release signing key fingerprint: not yet published
+Release signing key fingerprint: `8270 74C7 C4A2 9486 FB48  BC00 8B54 EB1A DBE5 8725`
 
-Once the public key is published, import it and compare its full fingerprint
-with this page and [SECURITY.md](SECURITY.md). Download `SHA256SUMS`,
+Import the [public key](docs/release-signing-key.asc) and compare its full
+fingerprint with this page and [SECURITY.md](SECURITY.md). Download `SHA256SUMS`,
 `SHA256SUMS.asc`, and the release files with their `.sha256` sidecars into
 one directory, then run:
 

@@ -32,17 +32,19 @@ receive security fixes.
 
 ## Verifying releases
 
-Release signing key fingerprint: not yet published
+Release signing key fingerprint: `8270 74C7 C4A2 9486 FB48  BC00 8B54 EB1A DBE5 8725`
 
-The next release adds `SHA256SUMS`, its detached GPG signature `SHA256SUMS.asc`,
-and GitHub build provenance attestations. Existing releases may provide only
-per-file checksums. No release GPG key has been published yet. Do not trust a
-key supplied only alongside a download: compare its full fingerprint with this
-page and the README before importing it.
+The public key is [docs/release-signing-key.asc](docs/release-signing-key.asc)
+(`iuliandita (garret release signing) <iulian.dita@gmail.com>`). Releases from
+0.0.3 add `SHA256SUMS`, its detached GPG signature `SHA256SUMS.asc`, and GitHub
+build provenance attestations. Earlier releases provide only per-file checksums.
+Do not trust a key supplied only alongside a download: compare its full
+fingerprint with this page and the README before importing it.
 
 Download the manifest, signature, all packaged downloads and their `.sha256`
-sidecars from the same release into one directory. After importing the verified
-public key, run:
+sidecars from the same release into one directory. Import the key with
+`gpg --import release-signing-key.asc`, check `gpg --fingerprint` against the
+fingerprint above, then run:
 
 ```sh
 gpg --verify SHA256SUMS.asc SHA256SUMS
