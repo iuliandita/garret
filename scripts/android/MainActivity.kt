@@ -1,4 +1,4 @@
-package cc.local.app
+package com.usegarret.app
 
 import android.os.Bundle
 import android.content.res.Configuration
