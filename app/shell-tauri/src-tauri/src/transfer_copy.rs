@@ -46,6 +46,7 @@ pub(crate) fn lineage(store: &Store) -> Result<String, String> {
 pub(crate) fn inspect(bundle: &Path) -> Result<Source, String> {
     backup_bundle::verify(bundle)?;
     let store = Store::open_readonly(&backup_bundle::db_path(bundle)).map_err(|e| e.to_string())?;
+    store.validate_document_writes().map_err(|e| e.to_string())?;
     let book_id = store
         .book_id()
         .map_err(|e| e.to_string())?

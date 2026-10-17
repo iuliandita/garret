@@ -427,6 +427,83 @@ fn format_gate_restore_rechecks_the_staged_copy_before_publication() {
 }
 
 #[test]
+fn format_gate_mobile_database_imports_store_nothing() {
+    use crate::{backup_bundle, encrypted_archive, mobile_transfer, transfer_copy};
+    use sha2::{Digest, Sha256};
+
+    for body in new_bodies() {
+        for history in [false, true] {
+            let dir = tempfile::tempdir().unwrap();
+            let db = dir.path().join("source.db");
+            let (store, ids) = setup(&db);
+            if history {
+                let snapshot = store.snapshot_create("Retained draft").unwrap();
+                store.conn.execute("UPDATE blob SET body=?1 WHERE key=(SELECT blob_key FROM doc_version WHERE item_id=?2 AND snapshot_id=?3)",
+                    rusqlite::params![body, ids[1], snapshot.id]).unwrap();
+            } else {
+                store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2",
+                    rusqlite::params![body, ids[1]]).unwrap();
+            }
+            let export = mobile_transfer::stage(
+                &dir.path().join("export"), &uuid::Uuid::now_v7().to_string(),
+            ).unwrap();
+            let bundle = export.join("snapshot.point");
+            assert!(backup_bundle::write(&db, &store, &bundle).unwrap().verified);
+            let book_id = store.book_id().unwrap().unwrap();
+            let source = transfer_copy::Source {
+                lineage: transfer_copy::lineage(&store).unwrap(),
+                book_id,
+                title: None,
+                snapshot: format!("{:x}", Sha256::digest(
+                    std::fs::read(bundle.join(backup_bundle::INVENTORY_NAME)).unwrap(),
+                )),
+            };
+            store.checkpoint().unwrap();
+            let before = state(&store);
+            let original = std::fs::read(&db).unwrap();
+            let bundle_before = mobile_transfer::tests::contents(&bundle);
+            let error = transfer_copy::inspect(&bundle).unwrap_err();
+            assert!(error.contains("document format refused"));
+            let private = dir.path().join("private");
+            std::fs::create_dir(&private).unwrap();
+            let error = transfer_copy::stage(&bundle, &private, &source).err().unwrap();
+            assert!(error.contains("document format refused"));
+            assert_eq!(std::fs::read_dir(&private).unwrap().count(), 0);
+
+            let key = export.join("key.in");
+            encrypted_archive::generate_key(&key).unwrap();
+            mobile_transfer::encrypt(&bundle, &export, &key).unwrap();
+            let incoming = mobile_transfer::stage(
+                &dir.path().join("incoming"), &uuid::Uuid::now_v7().to_string(),
+            ).unwrap();
+            std::fs::copy(&key, incoming.join("key.in")).unwrap();
+            std::fs::copy(export.join("archive.out"), incoming.join("archive.in")).unwrap();
+            let books = dir.path().join("books");
+            std::fs::create_dir(&books).unwrap();
+            let (retained, _) = setup(&books.join("retained.db"));
+            retained.checkpoint().unwrap();
+            drop(retained);
+            let books_before = mobile_transfer::tests::contents(&books);
+            assert_eq!(mobile_transfer::preview(&incoming, &books).unwrap_err(), "transfer_incomplete");
+            backup_bundle::verify(&incoming.join("point")).unwrap();
+            let (archive_bytes, archive_sha256) = mobile_transfer::fingerprint(
+                &incoming.join("archive.in"), mobile_transfer::ARCHIVE_LIMIT,
+            ).unwrap();
+            let expected = mobile_transfer::Preview {
+                title: None, related: vec![], unreadable_books: 0,
+                source, archive_bytes, archive_sha256,
+            };
+            assert_eq!(mobile_transfer::publish(&incoming, &books, &expected).unwrap_err(), "transfer_stale");
+            assert!(!incoming.join("owned-copy").exists());
+            assert_eq!(mobile_transfer::tests::contents(&books), books_before);
+            assert_eq!(mobile_transfer::tests::contents(&bundle), bundle_before);
+            assert_eq!(std::fs::read(&db).unwrap(), original);
+            assert_eq!(state(&store), before);
+        }
+    }
+}
+
+#[test]
 fn format_gate_seed_replace_and_timeline_store_nothing() {
     for body in new_bodies() {
         let dir = tempfile::tempdir().unwrap();

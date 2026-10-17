@@ -19,8 +19,8 @@
       },
       "migration": "none: ceiling unchanged, writes refused. Existing schema-17 books stay compatible; no migration or upgrade is introduced. Keep complete closed-book backups; rollback restores the previous copy and omits later edits.",
       "no_impact": "",
-      "note": "Restore validates supported prose and the schema ceiling before publishing a copy; recovery output and asset formats are unchanged.",
-      "source_sha256": "ca9d71978abdb01930eeb2a169eabe79fc8511857e48dea3cf0a268288ce4e0d"
+      "note": "Desktop restore and mobile whole-book import validate supported live prose and retained history before publication; the schema ceiling and asset formats are unchanged.",
+      "source_sha256": "12596eaadd352856b09ab1afb292d66326db1677070b2600107e142adbb1082d"
     },
     "editor": {
       "breaking": "none",
@@ -50,7 +50,7 @@
       "migration": "none: ceiling unchanged, writes refused. Existing schema-17 books stay compatible; no migration or upgrade is introduced. Keep complete closed-book backups; rollback restores the previous copy and omits later edits.",
       "no_impact": "",
       "note": "Validate complete prose batches before mutation, including fixture prose disguised as a timeline; future nodes remain disabled at schema 17.",
-      "source_sha256": "ec32a5bb75f070688dd61fc925a61a57bc59d920becf46f8c2e13f328829aced"
+      "source_sha256": "e7dd4e0f182e4a2fa907c878225e77e1df341d611b0b6223817ca3b946391d88"
     },
     "native-packaging": {
       "breaking": "none",
@@ -69,7 +69,7 @@
       },
       "migration": "none: ceiling unchanged, writes refused. Existing schema-17 books stay compatible; no migration or upgrade is introduced. Keep complete closed-book backups; rollback restores the previous copy and omits later edits.",
       "no_impact": "",
-      "note": "Validate complete prose batches before mutation, including fixture prose disguised as a timeline; future nodes remain disabled at schema 17.",
+      "note": "Validate complete prose batches and mobile transfer copies before mutation; future nodes remain disabled at schema 17.",
       "source_sha256": "d412a12d8de86db83279ebe8c6a30a85d35352542ab71abaa733203f930ebb32"
     },
     "schema": {
