@@ -1,0 +1,20 @@
+garret ist eine lokale Schreib-App für Romanautorinnen und Romanautoren. Die Android-App ist für das Schreiben unterwegs gedacht.
+
+Was die Android-App heute kann:
+
+* Bücher öffnen und neue anlegen.
+* Die Gliederung mit Teilen und Kapiteln anzeigen.
+* Szenen mit einfacher Formatierung, Rückgängig und Wiederholen bearbeiten.
+* Automatisch speichern und den Text auf dem Gerät behalten.
+* Die Wörter der aktuellen Szene zählen.
+* Der Gerätesprache folgen: Deutsch und Englisch.
+* Ein helles und ein dunkles Erscheinungsbild anbieten.
+
+Alles funktioniert offline. Die Bücher bleiben auf dem Gerät, ein Konto ist nicht nötig. Zwischen Desktop-App und Telefon gibt es keine automatische Synchronisierung; ein Buch wird von Hand übertragen.
+
+Dies ist eine frühe Alpha eines größeren Projekts. Die Android-App hat weniger Funktionen als die Desktop-App: kein Import und Export, keine Story-Bibel, keine Redaktionsfunktionen und keine Werkzeuge zum Veröffentlichen.
+
+Der Code wird mit KI-Coding-Agenten geschrieben und menschlich geprüft und getestet. garret ist freie Software unter der GNU General Public License, Version 3 oder später.
+
+Quellcode: https://github.com/iuliandita/garret
+Probleme melden: https://github.com/iuliandita/garret/issues

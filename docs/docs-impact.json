@@ -26,11 +26,11 @@
     "editor": {
       "breaking": "none",
       "docs": {
-        "README.md": "c124fff0e0ddfbc28757426e5ad184c897bfff59fff6c81ea5e46c85097a8b96"
+        "README.md": "e2bbb27439357be926203c96e7d5fd497cd48b45bd9a07e8d482659047725570"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Document grouped navigation, contextual creation, quieter word counts and custom goals in the published release, and refresh all 23 desktop and Android gallery images with version-bound provenance. Repository alignment adds help, security, contribution, and creator links only; application behavior, screenshots, packaging, compatibility, and validation exceptions remain unchanged.",
+      "note": "Document the Obtainium update channel for the Android app in the README: the GitHub source URL, the release APK asset to pick, the signing certificate SHA-256 fingerprint to compare, and the one-time package move that ends in-place updates.",
       "source_sha256": "0e4f0d0a283e6d20ed949c9cf1571526fe34324d91603deeffdb00f7c1d408fc"
     },
     "encryption": {
@@ -46,24 +46,22 @@
     },
     "maintenance": {
       "breaking": "none",
-      "docs": {
-        "CONTRIBUTING.md": "272888b63e282071b5f8c40e627910c1064d4fe6d422f5967dab9dd6fa456d11"
-      },
+      "docs": {},
       "migration": "",
-      "no_impact": "",
-      "note": "Contributor guidance retains documentation checks and native-test exceptions; release admission now checks the latest develop push CI run instead of accepting any historical success. Documentation guard commands, application behavior, and recovery contracts are unchanged.",
-      "source_sha256": "f38f6d6a0678d7ffd0a4bf023ae6f9aac685727c2507728ae4188fac8b518e9b"
+      "no_impact": "Rewrite only the Android preview guide's update instructions and the README; the documentation guard, its tests, and CI behavior are unchanged.",
+      "note": "Rewrite only the Android preview guide's update instructions and the README; the documentation guard, its tests, and CI behavior are unchanged.",
+      "source_sha256": "e16d101ae29d7d10955c23394ed470977c7d5e96b081cd46c4bbb2b4da27ebda"
     },
     "native-packaging": {
       "breaking": "none",
       "docs": {
-        "CONTRIBUTING.md": "272888b63e282071b5f8c40e627910c1064d4fe6d422f5967dab9dd6fa456d11",
-        "docs/RELEASES.md": "a89c23cedc46f620969337f6a3957ddceb589017a562d600bed0bb1da86ac48d"
+        "README.md": "e2bbb27439357be926203c96e7d5fd497cd48b45bd9a07e8d482659047725570",
+        "scripts/android/README.md": "2c1e1bb647734d6bb19f102d8349484446b79d9e04b20be5c47d2e550b153237"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Require the latest exact-commit develop push CI run to succeed before alpha tag packaging; an older success cannot hide a pending or failed newer run. Existing platforms, asset publication, tag ancestry, application behavior, and compatibility remain unchanged.",
-      "source_sha256": "2f6c313459ffcf4cacba835bae2f161f2fa7a56e95c5a4614e855eacb9ef9f8e"
+      "note": "Point the Android preview guide at the new Obtainium update instructions and state that in-place updates depend on the unchanged package name and signing key.",
+      "source_sha256": "fcc4f4f3c483c3835437571e65d8070031719a95d8d910b3cf1595466aaf21e1"
     },
     "project-format": {
       "breaking": "none",

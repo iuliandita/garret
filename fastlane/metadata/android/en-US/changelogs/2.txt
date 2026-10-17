@@ -1,0 +1,5 @@
+0.0.2 alpha, version code 2.
+
+This preview has no Android-specific changes since 0.0.1. The storage reliability fixes and packaging updates from the desktop release apply to the same source.
+
+The Android app opens and creates books, edits scenes with automatic saving, and keeps the books on the device. Light and dark themes, English and German. No import, export, or sync.
