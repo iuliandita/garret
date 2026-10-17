@@ -30,7 +30,7 @@
       "migration": "",
       "no_impact": "",
       "note": "Android adds localized archive preview, explicit separate-copy confirmation and guarded transfer admission through cancellation.",
-      "source_sha256": "5868d8475bce650d27617d30c9874381f596f041e3c2ba8db3357ac52223d3f0"
+      "source_sha256": "5aefee17ee9bea94249653ec39ed05d7313039ad92739e135c1a237341c4924c"
     },
     "encryption": {
       "breaking": "none",
@@ -50,7 +50,7 @@
       "migration": "",
       "no_impact": "",
       "note": "Compatibility guidance documents Android resource limits, ordered capability refusals, retained staging and the limits of automated verification.",
-      "source_sha256": "6de15044d87980a3681a5b11d7d7afb3b69f478b7d2c1c8bbd6e6c2c2030281f"
+      "source_sha256": "e3ac81e3becb73a06c02a46fdc45b42d914eca9306af10615a0035170bf28495"
     },
     "native-packaging": {
       "breaking": "none",

@@ -5,8 +5,11 @@ use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 use tauri::{
     plugin::{Builder, PluginHandle, TauriPlugin},
-    Manager, Runtime,
+    Runtime,
 };
+
+#[cfg(target_os = "android")]
+use tauri::Manager;
 
 pub(crate) const ARCHIVE_LIMIT: u64 = 1024 * 1024 * 1024;
 pub(crate) const KEY_LIMIT: u64 = 512;

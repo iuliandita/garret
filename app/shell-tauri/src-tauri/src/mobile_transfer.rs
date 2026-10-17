@@ -226,7 +226,7 @@ pub(crate) fn read_supported<T>(
             Err(_) => return Err("transfer_invalid".into()),
             Ok(_) => (),
         }
-        let mut input = crate::backup_bundle::open_regular_with_limit(&source, PAYLOAD_LIMIT)
+        let input = crate::backup_bundle::open_regular_with_limit(&source, PAYLOAD_LIMIT)
             .map_err(|_| "transfer_invalid")?;
         let mut output = std::fs::OpenOptions::new()
             .write(true)
@@ -370,8 +370,9 @@ pub(crate) mod tests {
             .into_iter()
             .find(|item| item.item_type == "scene")
             .unwrap();
+        let revision = store.load_doc(&scene.id).unwrap().rev;
         let entry = crate::store::FlushEntry {
-            item_id: scene.id, base_rev: scene.doc_rev.unwrap(), comments: None,
+            item_id: scene.id, base_rev: revision, comments: None,
             body: r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"The tide waited."}]}]}"#.into(),
         };
         store.flush(&[entry.clone()]).unwrap();
