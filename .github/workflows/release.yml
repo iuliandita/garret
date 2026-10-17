@@ -18,6 +18,7 @@ on:
       - scripts/linux/**
       - scripts/windows/**
       - scripts/macos/**
+      - app/shell-tauri/src-tauri/src/main.rs
       - app/shell-tauri/src-tauri/Cargo.toml
       - app/shell-tauri/src-tauri/Cargo.lock
       - app/shell-tauri/src-tauri/tauri*.conf.json
