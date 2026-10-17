@@ -111,7 +111,7 @@ export const EN = {
   "help.guide.annotate.title": "Annotate a passage",
   "help.guide.annotate.body": "Select prose, then choose Edit > Add comment or press Ctrl+Alt+M. Edit > Comments lists the notes for the open scene and lets you return to a passage or resolve a note. Outline > Planning > Synopsis describes the selected scene or chapter rather than a passage.",
   "help.guide.export.title": "Export the manuscript",
-  "help.guide.export.body": "File > Publishing offers Markdown for readable text and Word for an editor. EPUB preview and PDF proof show the book with its publishing layout. Set Book design, Covers and Pen names before preparing a publication. Exports are copies; writing continues in the original book.",
+  "help.guide.export.body": "File > Publishing offers Markdown for readable text and Word for an editor. EPUB preview and PDF proof show the book with its publishing layout. Set Book design, Covers and Pen names before preparing a publication. Keep a Markdown file with its adjacent assets folder when sharing. New-format conversion is disabled in this build. Exports are copies; writing continues in the original book.",
   "help.guide.protect.title": "Protect copies of your work",
   "help.guide.protect.body": "garret saves your writing as you work. File > Copies > Create recovery point keeps a recovery copy on this device.\n\nTo protect against losing your computer, open File > Copies > Encrypted backups. Create a recovery key, keep a spare copy separately, then make an encrypted archive. Choose a backup folder in Google Drive, Dropbox or on a USB drive, or copy the archive there afterward. Repeat regularly and keep a few older copies.\n\nVerify encrypted archive checks your backup; Restore encrypted archive creates a separate book. Open it from your library.\n\nKeep your working book outside cloud folders. A readable folder is not a complete backup. Privacy lock hides the window; it does not encrypt your book.",
   "menu.outline.group.create": "Add to the book",
@@ -1661,6 +1661,7 @@ export const EN = {
   "stats.export.csv": "Export for a spreadsheet (CSV)\u2026",
   "stats.export.json": "Export as data (JSON)\u2026",
   "export.done": "Exported {format} to {path}",
+  "export.done.assets": "Keep the Markdown file with its adjacent assets folder when sharing.",
   // THE COUNTED LOSS, said in the writer's own words. The host counts the
   // underlined runs it dropped and the count rides back with the path; a drop
   // nobody is told about is the class of silent loss this repo has spent four

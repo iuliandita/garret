@@ -99,12 +99,15 @@ usage:
   garret validate  <project.db> [--json]
   garret export    <project.db> <dest> [--format markdown|epub|pdf|docx] [--story ID]
                             (pdf is laid out by a web engine and needs a display)
+                            (keep Markdown with its adjacent assets folder when sharing)
   garret history   <project.db> [--item ID] [--json]
   garret knowledge <project.db> [--json]
   garret salvage   <project.db> <out-dir> [--json]
   garret restore   <point.point|legacy-point.db> <library-dir> [--allow-picture-gaps]
   garret import    <manuscript> <library-dir> [--json]
                             (manuscript is Markdown or DOCX, decided by content)
+                            (keep Markdown with its adjacent assets folder when sharing)
+                            (new-format conversion is disabled in this build)
   garret preflight <project.db> [--json] [--format markdown|epub|pdf|docx]
                             (the export safety check, without writing a file)
   garret keygen <recovery-key.txt>

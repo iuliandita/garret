@@ -875,6 +875,8 @@ pub(crate) async fn project_export_as(
     let vault = crate::commands::export::vault_for(&data_home.0)?;
     let strings = crate::commands::export::strings_for(&data_home.0);
 
+    crate::commands::export::check_save_as(&path, &name, format, &vault, strings, story_id.as_deref())?;
+
     let dir = export_dir(&data_home.0);
     fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
 

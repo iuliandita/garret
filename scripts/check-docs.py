@@ -18,7 +18,7 @@ DOMAINS = {
         "docs": ["README.md", "docs/COMPATIBILITY.md", "docs/screenshots/README.md", "docs/screenshots/manifest.json", "docs/MAINTENANCE.md"],
     },
     "project-format": {
-        "sources": [HOST + "src/store*", HOST + "src/*import*.rs", HOST + "src/*export*.rs", HOST + "src/mirror*.rs", HOST + "src/package_format.rs", HOST + "src/projects.rs", HOST + "src/design_transfer.rs", HOST + "src/review_docx/*"],
+        "sources": [HOST + "src/store*", HOST + "src/*import*.rs", HOST + "src/*export*.rs", HOST + "src/mirror*.rs", HOST + "src/markdown*.rs", HOST + "src/package_format.rs", HOST + "src/projects.rs", HOST + "src/design_transfer.rs", HOST + "src/review_docx/*"],
         "docs": ["README.md", "docs/COMPATIBILITY.md", "docs/MAINTENANCE.md"],
     },
     "schema": {

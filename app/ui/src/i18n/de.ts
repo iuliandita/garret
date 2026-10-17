@@ -107,7 +107,7 @@ export const DE = {
   "help.guide.annotate.title": "Eine Textstelle kommentieren",
   "help.guide.annotate.body": "Markieren Sie Text und wählen Sie Bearbeiten > Notiz anlegen oder drücken Sie Ctrl+Alt+M. Bearbeiten > Notizen zeigt die Notizen der offenen Szene und lässt Sie zur Textstelle zurückkehren oder eine Notiz erledigen. Gliederung > Planung > Inhaltsangabe beschreibt die ausgewählte Szene oder das Kapitel statt einer Textstelle.",
   "help.guide.export.title": "Das Manuskript exportieren",
-  "help.guide.export.body": "Datei > Veröffentlichen bietet Markdown für lesbaren Text und Word für die Redaktion. EPUB-Vorschau und PDF-Korrektur zeigen das Buch im Veröffentlichungslayout. Legen Sie Buchgestaltung, Umschläge und Pseudonyme vor einer Veröffentlichung fest. Exporte sind Kopien; Sie schreiben im ursprünglichen Buch weiter.",
+  "help.guide.export.body": "Datei > Veröffentlichen bietet Markdown für lesbaren Text und Word für die Redaktion. EPUB-Vorschau und PDF-Korrektur zeigen das Buch im Veröffentlichungslayout. Legen Sie Buchgestaltung, Umschläge und Pseudonyme vor einer Veröffentlichung fest. Geben Sie eine Markdown-Datei zusammen mit dem benachbarten Ordner assets weiter. Die Umwandlung des neuen Formats ist in dieser Version deaktiviert. Exporte sind Kopien; Sie schreiben im ursprünglichen Buch weiter.",
   "help.guide.protect.title": "Kopien Ihrer Arbeit schützen",
   "help.guide.protect.body": "garret speichert Ihre Texte während des Schreibens. Datei > Sicherungskopien > Wiederherstellungspunkt erstellen bewahrt eine Wiederherstellungskopie auf diesem Gerät auf.\n\nZum Schutz bei Verlust Ihres Computers öffnen Sie Datei > Sicherungskopien > Verschlüsselte Sicherungen. Erstellen Sie einen Wiederherstellungsschlüssel, bewahren Sie eine Ersatzkopie getrennt auf und erstellen Sie dann ein verschlüsseltes Archiv. Wählen Sie einen Sicherungsordner in Google Drive, Dropbox oder auf einem USB-Laufwerk, oder kopieren Sie das Archiv später dorthin. Wiederholen Sie dies regelmäßig und behalten Sie einige ältere Kopien.\n\nVerschlüsseltes Archiv prüfen überprüft Ihre Sicherung; Verschlüsseltes Archiv wiederherstellen erstellt ein separates Buch. Öffnen Sie es aus Ihrer Bibliothek.\n\nBewahren Sie Ihr Arbeitsbuch außerhalb von Cloud-Ordnern auf. Ein lesbarer Ordner ist keine vollständige Sicherung. Die Privatsphärensperre verbirgt das Fenster; sie verschlüsselt Ihr Buch nicht.",
   "menu.outline.group.create": "Zum Buch hinzufügen",
@@ -1467,6 +1467,7 @@ export const DE = {
   "stats.export.csv": "Für eine Tabellenkalkulation exportieren (CSV)…",
   "stats.export.json": "Als Daten exportieren (JSON)…",
   "export.done": "{format} nach {path} exportiert",
+  "export.done.assets": "Geben Sie die Markdown-Datei zusammen mit dem benachbarten Ordner assets weiter.",
   "export.done.underlined.one":
     "{format} nach {path} exportiert. {format} kennt kein Unterstrichen, {count} unterstrichene Stelle wurde deshalb als einfacher Text geschrieben.",
   "export.done.underlined.other":

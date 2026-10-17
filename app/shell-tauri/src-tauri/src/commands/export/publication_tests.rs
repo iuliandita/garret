@@ -531,3 +531,134 @@ fn unknown_note_numbering_does_not_block_legacy_exports_or_preflight() {
         preflight_of_store(&store, "Book", format, &vault).unwrap();
     }
 }
+
+#[test]
+fn scoped_markdown_uses_the_publication_plan_and_round_trips_its_package() {
+    fn sequence(documents: &[serde_json::Value]) -> Vec<serde_json::Value> {
+        let mut result = Vec::new();
+        for block in documents.iter().flat_map(|doc| doc["content"].as_array().unwrap()) {
+            if block["type"] == "scene_break" {
+                result.push(block.clone());
+            }
+            for note in block.get("content").and_then(serde_json::Value::as_array).into_iter().flatten()
+                .filter(|node| node["type"] == "endnote") {
+                result.push(json!({"type":"endnote", "fmt":note["attrs"]["fmt"], "body":note["attrs"]["body"]}));
+            }
+        }
+        result
+    }
+    let fixture = fixture();
+    for numbering in ["book", "story", "chapter"] {
+        fixture.store.set_meta("notes.numbering", numbering).unwrap();
+        for story in [None, Some(fixture.stories[0].as_str())] {
+            let (written, _, _, _) = render_scope_policy(&fixture.db, "Collected", crate::export::Format::Markdown,
+                &crate::identity::Vault::default(), crate::strings::Strings::english(), None, story, true).unwrap();
+            let text = written.text();
+            assert!(text.starts_with(crate::markdown::MARKER));
+            assert!(text.contains(r"\[^1\]"));
+            assert!(text.contains("\n\n---\n"));
+            assert!(text.contains("garret-figure:"));
+            assert!(text.contains("caption 0"));
+            check_destination_mode(&written, Dest::New).unwrap();
+            let refusal = check_destination_mode(&written, Dest::Replace).unwrap_err();
+            assert!(refusal.contains("cannot use Export as or replace files"), "{refusal}");
+            let expected = with_plan(&fixture, story, |_, walk, plan| {
+                let documents: Vec<_> = walk.front.iter().chain(&walk.chapters).chain(&walk.back)
+                    .filter_map(|(id, _, _)| plan.documents.get(id).cloned()).collect();
+                sequence(&documents)
+            });
+            assert_eq!(written.assets.len(), if story.is_some() { 1 } else { 2 });
+            if story.is_some() { assert!(!text.contains("note 1")); assert!(!text.contains("caption 1")); }
+            let package = tempfile::tempdir().unwrap();
+            let dest = package.path().join("book.md");
+            crate::markdown_package::publish(&dest, &written.bytes, &written.assets).unwrap();
+            for (path, bytes) in &written.assets {
+                assert!(path.starts_with("assets/")); assert!(!Path::new(path).is_absolute());
+                assert_eq!(std::fs::read(package.path().join(path)).unwrap(), *bytes);
+            }
+            let parsed = crate::import::read_package(text, "book", package.path()).unwrap();
+            assert_eq!(parsed.assets, written.assets);
+            assert_eq!(parsed.asset_ids.len(), written.assets.len());
+            let bodies: Vec<serde_json::Value> = parsed.imported.items.iter().filter_map(|item|
+                item.body.as_ref().map(|body| serde_json::from_str(body).unwrap())).collect();
+            assert_eq!(sequence(&bodies), expected);
+            for figure in bodies.iter().flat_map(|doc| doc["content"].as_array().unwrap()).filter(|node| node["type"] == "figure") {
+                assert!(parsed.asset_ids.values().any(|id| figure["attrs"]["asset_id"] == *id));
+                assert!(!fixture.assets.iter().any(|asset| figure["attrs"]["asset_id"] == asset.id));
+            }
+            let serialized = serde_json::to_string(&bodies).unwrap();
+            assert!(serialized.contains("A literal [^1] & 😀"));
+            assert!(serialized.contains("second <line>"));
+            assert!(serialized.contains("A \\\"quoted\\\" <view> & sky"));
+            assert!(serialized.contains("\"width\":\"page\""));
+            let notes: Vec<_> = bodies.iter().flat_map(|doc| doc["content"].as_array().unwrap()).flat_map(|block|
+                block.get("content").and_then(serde_json::Value::as_array).into_iter().flatten())
+                .filter(|node| node["type"] == "endnote").collect();
+            assert_eq!(notes.len(), if story.is_some() { 4 } else { 6 });
+            let ids: std::collections::HashSet<_> = notes.iter().map(|node| node["attrs"]["id"].as_str().unwrap()).collect();
+            assert_eq!(ids.len(), notes.len());
+            assert!(!ids.contains("0199ed16-8c00-7000-8000-000000000001"));
+            let third = text.lines().any(|line| line.starts_with("[^s") && line.split_once("]: ").is_some_and(|(key, _)| key.ends_with("-3")));
+            if numbering == "chapter" { assert!(!third); }
+            if numbering == "story" { assert!(third); }
+        }
+    }
+}
+
+#[test]
+fn markdown_conversion_stays_disabled_before_any_publication_or_import_writes() {
+    let fixture = fixture();
+    let dest = fixture.root.path().join("refused.md");
+    let before = fixture.store.documents().unwrap();
+    assert!(export_as(&fixture.db, "Collected", &dest, crate::export::Format::Markdown,
+        &crate::identity::Vault::default(), crate::strings::Strings::english()).is_err());
+    assert!(!dest.exists()); assert!(!fixture.root.path().join("assets").exists());
+    assert!(check_save_as(&fixture.db, "Collected", crate::export::Format::Markdown,
+        &crate::identity::Vault::default(), crate::strings::Strings::english(), None).is_err());
+    let source = fixture.root.path().join("source.md");
+    std::fs::write(&source, format!("{}# Book\n\n## Scene\n\ntext[^s1-1]\n\n[^s1-1]: note\n", crate::markdown::MARKER)).unwrap();
+    let library = fixture.root.path().join("library");
+    let home = fixture.root.path().join("home");
+    let error = crate::import_path(&home, &library, &source, &crate::strings::Strings::english()).err().unwrap();
+    assert!(error.contains("new-format Markdown conversion is disabled"), "{error}");
+    assert!(!library.exists()); assert!(!home.exists());
+    assert_eq!(fixture.store.documents().unwrap(), before);
+    assert_eq!(fixture.store.user_version().unwrap(), 17);
+    assert!(!store::document_format::new_nodes_allowed());
+}
+
+#[test]
+fn mirror_fixture_copies_require_the_new_schema_and_use_relative_hashed_assets() {
+    let fixture = fixture();
+    with_plan(&fixture, Some(&fixture.stories[0]), |_, _, plan| {
+        let item = fixture.store.items().unwrap().into_iter().find(|item| item.id == fixture.scenes[0]).unwrap();
+        assert!(crate::mirror::planned_file(&item, 17, plan).is_err());
+        assert!(crate::mirror::planned_file(&item, 19, plan).is_err());
+        rusqlite::Connection::open(&fixture.db).unwrap().pragma_update(None, "user_version", 18).unwrap();
+        let schema = fixture.store.user_version().unwrap();
+        assert_eq!(schema, 18);
+        let copy = crate::mirror::planned_file(&item, schema, plan).unwrap();
+        assert!(copy.text().contains("document_format: 18\n"));
+        assert_eq!(copy.assets.len(), 1);
+        for path in copy.assets.keys() {
+            assert!(path.starts_with("assets/"));
+            assert!(path.contains(&fixture.assets[0].sha256));
+            assert!(!Path::new(path).is_absolute());
+        }
+        let out = tempfile::tempdir().unwrap();
+        crate::markdown_package::publish(&out.path().join("scene.md"), &copy.bytes, &copy.assets).unwrap();
+        let old = crate::mirror::read_file(copy.text()).unwrap();
+        assert_eq!(old.extra, ["document_format"]);
+        let body = copy.text().split_once("---\n\n").unwrap().1;
+        let package = format!("{}{body}", crate::markdown::MARKER);
+        let parsed = crate::import::read_package(&package, "scene", out.path()).unwrap();
+        assert_eq!(parsed.assets, copy.assets);
+        assert!(parsed.imported.items.iter().filter_map(|item| item.body.as_ref()).any(|body| body.contains("endnote")));
+        let legacy = crate::mirror::file_body(&item, Some(&fixture.store.load_doc(&item.id).unwrap().body));
+        assert!(!legacy.contains("document_format:"));
+        assert!(!store::document_format::new_nodes_allowed());
+        let disabled = fixture.root.path().join("production-mirror");
+        assert!(crate::mirror::pass(&fixture.db, "book", "Book", &disabled, 0, &Default::default()).is_err());
+        assert!(!disabled.exists());
+    });
+}
