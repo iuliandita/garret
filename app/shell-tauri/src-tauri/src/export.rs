@@ -292,6 +292,10 @@ pub struct ChapterOpenings {
 }
 
 impl<'a> Book<'a> {
+    pub fn suppresses_heading(&self, run_index: usize, title: &str) -> bool {
+        self.single_scene && run_index == 1 && title.trim().is_empty()
+    }
+
     /// The three runs in emission order. One place states it, so the contents
     /// and the body cannot disagree about what comes first.
     fn runs(&self) -> [&'a [(String, String, i64)]; 3] {
@@ -299,15 +303,15 @@ impl<'a> Book<'a> {
     }
 }
 
-/// Every heading the file will carry, in file order, excluding the H1 and the
-/// contents' own heading.
+/// Navigable headings in file order, excluding the H1 and contents heading.
+/// A single-scene manuscript leaves only its front and back matter in navigation.
 ///
 /// Built from the SAME runs and the SAME `heading_level` the body uses, so a
 /// contents entry cannot name a level the heading below it does not have.
 pub fn contents_of(book: &Book) -> Vec<TocEntry> {
-    if book.single_scene { return Vec::new(); }
     let mut out = Vec::new();
-    for run in book.runs() {
+    for (run_index, run) in book.runs().into_iter().enumerate() {
+        if book.single_scene && run_index == 1 { continue; }
         for (id, title, depth) in run {
             out.push(TocEntry {
                 id: id.clone(),
@@ -381,7 +385,7 @@ pub fn manuscript(book: &Book, bodies: &HashMap<String, String>) -> Manuscript {
     // A book with no items at all gets NO contents section rather than an empty
     // one: a heading over nothing is a section the writer did not ask for and
     // cannot fill from this screen.
-    if !contents.is_empty() {
+    if !book.single_scene && !contents.is_empty() {
         push_block(
             &mut out,
             format!(
@@ -395,7 +399,7 @@ pub fn manuscript(book: &Book, bodies: &HashMap<String, String>) -> Manuscript {
     }
     for (run_index, run) in book.runs().into_iter().enumerate() {
         for (id, title, depth) in run {
-            if !(book.single_scene && run_index == 1) {
+            if !book.suppresses_heading(run_index, title) {
                 push_block(
                     &mut out,
                     format!(

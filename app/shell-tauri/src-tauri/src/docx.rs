@@ -281,7 +281,7 @@ fn document_xml(book: &Book, bodies: &HashMap<String, String>) -> String {
     let mut body = styled_paragraph("Title", &heading_text(book.name));
     for (run_index, run) in [book.front, book.chapters, book.back].into_iter().enumerate() {
         for (id, title, depth) in run {
-            if !(book.single_scene && run_index == 1) {
+            if !book.suppresses_heading(run_index, title) {
                 body.push_str(&styled_paragraph(&heading_style(*depth), &heading_text(title)));
             }
             // An item with no body, and an item whose body this build cannot

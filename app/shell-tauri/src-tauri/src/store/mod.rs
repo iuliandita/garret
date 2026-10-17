@@ -1073,7 +1073,7 @@ impl Store {
     }
 
     pub fn project_preset(&self) -> Result<&'static str> {
-        Ok(match self.get_meta("project.preset")?.as_deref() {
+        Ok(match self.get_meta(crate::core_constants::PRESET_KEY)?.as_deref() {
             Some("short") => "short",
             Some("nonfiction") => "nonfiction",
             _ => "novel",

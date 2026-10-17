@@ -247,15 +247,17 @@ fn wrap_marks(text: &str, node: &serde_json::Value) -> String {
 /// The documents of the reading order, in it, out of a read-back archive.
 ///
 /// THE PREVIEW'S OWN RULE, and it is a prefix test rather than a parse of the
-/// package document. Every spine document lives under `OEBPS/text/` and nothing
-/// else does, so archive order IS spine order by construction -- and the
-/// preview is then the file, read back, with no second statement of what the
-/// book opens to.
+/// package document. Archive order is spine order, except that a single-scene
+/// book keeps its required navigation document outside the spine.
 pub fn reading_order(entries: &[(String, Vec<u8>)]) -> Vec<(String, String)> {
     let prefix = format!("{OEBPS}/{TEXT_DIR}/");
+    let nav = format!("{OEBPS}/{NAV_HREF}");
+    let nav_in_spine = entries.iter().find(|(name, _)| name == OPF_PATH)
+        .is_some_and(|(_, bytes)| String::from_utf8_lossy(bytes).contains("<itemref idref=\"nav\"/>"));
     entries
         .iter()
-        .filter(|(name, _)| name.starts_with(&prefix) && name.ends_with(".xhtml"))
+        .filter(|(name, _)| name.starts_with(&prefix) && name.ends_with(".xhtml")
+            && (name != &nav || nav_in_spine))
         .map(|(name, bytes)| (name.clone(), String::from_utf8_lossy(bytes).into_owned()))
         .collect()
 }
@@ -295,7 +297,7 @@ fn stylesheet(font: &str, style: &ChapterStyle) -> String {
          h1, h2, h3, h4, h5, h6 {{ font-weight: normal; text-align: center; \
          margin: 2em 0 1em; page-break-after: avoid; break-after: avoid; }}\n\
          p {{ margin: 0; text-indent: 1.2em; text-align: justify; }}\n\
-         h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p, .{ORNAMENT_CLASS} + p \
+         p.{OPENING_CLASS}, h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p, .{ORNAMENT_CLASS} + p \
          {{ text-indent: 0; }}\n\
          .{ORNAMENT_CLASS} {{ text-align: center; text-indent: 0; margin: 1.5em 0; }}\n\
          .{UNDERLINE_CLASS} {{ text-decoration: underline; }}\n\
@@ -370,7 +372,7 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
             anchor += 1;
             let level = crate::export::heading_level(*depth);
             let opens = *depth <= 0 || docs.is_empty();
-            let scaffold_free = epub.book.single_scene && run_index == 1;
+            let scaffold_free = epub.book.suppresses_heading(run_index, title);
             let styled = !scaffold_free && run_index == 1 && epub.openings.styled.contains(id);
             let page = !scaffold_free && run_index == 1 && epub.openings.page.contains(id);
             if opens {
@@ -381,7 +383,9 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
                     body: String::new(),
                 });
             }
-            if opens || styled || page { opening_pending = styled; }
+            if epub.book.single_scene && run_index == 1 {
+                opening_pending = run.last().is_some_and(|(last, _, _)| last == id);
+            } else if opens || styled || page { opening_pending = styled; }
             let doc = docs.last_mut().expect("a document was opened above");
             let fragment = format!("h{anchor}");
             targets.insert(id.clone(), format!("{}#{fragment}", doc.href));

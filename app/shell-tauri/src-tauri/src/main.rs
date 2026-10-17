@@ -1178,6 +1178,7 @@ fn project_create(
     // INTO THE REMEMBERED FOLDER, which is `<Documents>/Books` until a writer
     // chooses otherwise. The plain create is still one act with no
     // dialog.
+    projects::validate_preset(preset.as_deref())?;
     let dir = new_book_dir(&data_home.0)?;
     create_into_dir(&data_home.0, &dir, &name, &strings.0, preset.as_deref())
 }

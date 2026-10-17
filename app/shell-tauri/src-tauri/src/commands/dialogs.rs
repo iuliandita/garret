@@ -574,6 +574,7 @@ pub(crate) async fn project_create_pick(
     name: String,
     preset: Option<String>,
 ) -> std::result::Result<Option<projects::ProjectSummary>, String> {
+    projects::validate_preset(preset.as_deref())?;
     let start = new_book_dir(&data_home.0)?;
     fs::create_dir_all(&start).map_err(|e| format!("{}: {e}", start.display()))?;
     let Some(dir) = ask_for_book_folder(&app, &start).await else {

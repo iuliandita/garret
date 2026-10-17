@@ -298,7 +298,7 @@ pub fn proof_document(proof: &Proof) -> String {
     // the numbers in after pagination cannot move a single line -- if the cell
     // grew when the number arrived, the contents would repaginate and the
     // numbers would be about the previous layout.
-    if !contents.is_empty() {
+    if !proof.book.single_scene && !contents.is_empty() {
         flow.push_str(&format!(
             "<h2 {BREAK_ATTR}=\"page\">{}</h2>\n",
             xml_escape(proof.book.contents_title)
@@ -327,10 +327,11 @@ pub fn proof_document(proof: &Proof) -> String {
     let mut first_division = true;
     for (run_index, run) in runs.into_iter().enumerate() {
         let mut opening_pending = false;
+        let mut running_pending = None;
         for (id, title, depth) in run {
             let level = crate::export::heading_level(*depth);
             let opens = *depth <= 0;
-            let scaffold_free = proof.book.single_scene && run_index == 1;
+            let scaffold_free = proof.book.suppresses_heading(run_index, title);
             let styled = !scaffold_free && run_index == 1 && proof.openings.styled.contains(id);
             let page = !scaffold_free && run_index == 1 && proof.openings.page.contains(id);
             // The first division does not request an extra break: that once
@@ -344,7 +345,9 @@ pub fn proof_document(proof: &Proof) -> String {
             if opens {
                 first_division = false;
             }
-            if opens || styled || page { opening_pending = styled; }
+            if proof.book.single_scene && run_index == 1 {
+                opening_pending = run.last().is_some_and(|(last, _, _)| last == id);
+            } else if opens || styled || page { opening_pending = styled; }
             // The running head this heading installs. A top-level division
             // names the recto's head; anything under it leaves it alone, so a
             // scene title does not become the head of the chapter it is in.
@@ -353,6 +356,9 @@ pub fn proof_document(proof: &Proof) -> String {
             } else {
                 String::new()
             };
+            if scaffold_free && opens {
+                running_pending = Some(proof.book.name);
+            }
             if !scaffold_free {
                 flow.push_str(&format!(
                     "<h{level} id=\"{anchor}\"{class}{running}>{}</h{level}>\n",
@@ -384,7 +390,9 @@ pub fn proof_document(proof: &Proof) -> String {
                 } else {
                     String::new()
                 };
-                flow.push_str(&format!("<p{class}>{block}</p>\n"));
+                let running = running_pending.take().map(|title|
+                    format!(" data-proof-running=\"{}\"", xml_escape(title))).unwrap_or_default();
+                flow.push_str(&format!("<p{class}{running}>{block}</p>\n"));
             }
         }
     }
@@ -530,6 +538,7 @@ pub const PAGINATOR_JS: &str = r#"
     var own = block.getAttribute("data-proof-leaf");
     if (block.hasAttribute("data-proof-running")) {
       running = block.getAttribute("data-proof-running");
+      if (block.tagName === "P") current.querySelector(".proof-runhead").textContent = running;
     }
     if (own !== null) {
       // Its own leaf. A cover and a title page are not prose and share nothing

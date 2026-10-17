@@ -1031,16 +1031,24 @@ pub fn create_in(
     create_in_with(dir, name, strings, |_| {})
 }
 
+pub fn validate_preset(preset: Option<&str>) -> Result<(), String> {
+    match preset {
+        None | Some("novel" | "short" | "nonfiction") => Ok(()),
+        Some(_) => Err("unknown project preset".into()),
+    }
+}
+
 pub fn create_in_preset(
     dir: &Path,
     name: &str,
     strings: &crate::strings::Strings,
     preset: Option<&str>,
 ) -> Result<ProjectSummary, String> {
+    validate_preset(preset)?;
     create_book_with(dir, name, |_| {}, |store, _| {
         if let Some(value) = preset.filter(|value| *value != "novel") {
             store
-                .set_meta("project.preset", value)
+                .set_meta(crate::core_constants::PRESET_KEY, value)
                 .map_err(|e| e.to_string())?;
         }
         if store.project_preset().map_err(|e| e.to_string())? == "nonfiction" {
@@ -6458,18 +6466,25 @@ mod project_presets_tests {
     use super::*;
 
     #[test]
-    fn project_presets_survive_backup_transfer_and_salvage_verbatim() {
+    fn project_presets_survive_backup_archive_restore_transfer_and_salvage_verbatim() {
         for value in ["short", "nonfiction", "future-preset"] {
             let dir = tempfile::tempdir().unwrap();
             let made = create_in_preset(
                 dir.path(),
                 "Draft",
                 &crate::strings::Strings::english(),
-                Some(value),
+                Some(if value == "future-preset" {
+                    "novel"
+                } else {
+                    value
+                }),
             )
             .unwrap();
             let path = Path::new(&made.path);
-            let store = Store::open_readonly(path).unwrap();
+            let store = Store::open(path).unwrap();
+            store
+                .set_meta(crate::core_constants::PRESET_KEY, value)
+                .unwrap();
             let point = dir.path().join("copy.point");
             assert!(
                 crate::backup_bundle::write(path, &store, &point)
@@ -6478,7 +6493,9 @@ mod project_presets_tests {
             );
             let copy = Store::open_readonly(&crate::backup_bundle::db_path(&point)).unwrap();
             assert_eq!(
-                copy.get_meta("project.preset").unwrap().as_deref(),
+                copy.get_meta(crate::core_constants::PRESET_KEY)
+                    .unwrap()
+                    .as_deref(),
                 Some(value)
             );
             let expected = crate::transfer_copy::inspect(&point).unwrap();
@@ -6487,7 +6504,29 @@ mod project_presets_tests {
             let transferred = crate::transfer_copy::stage(&point, &stage, &expected).unwrap();
             let copy = Store::open_readonly(&transferred.database).unwrap();
             assert_eq!(
-                copy.get_meta("project.preset").unwrap().as_deref(),
+                copy.get_meta(crate::core_constants::PRESET_KEY)
+                    .unwrap()
+                    .as_deref(),
+                Some(value)
+            );
+            let archives = dir.path().join("archives");
+            let archive =
+                crate::recovery::take_archive(path, "draft", "Draft", &archives, 1_700_000_000_000)
+                    .unwrap();
+            assert!(archive.verified);
+            let restored = restore_point_into(
+                &archives.join(archive.file),
+                &dir.path().join("restored"),
+                "draft",
+                1_700_000_100_000,
+            )
+            .unwrap();
+            let restored_store = Store::open_readonly(Path::new(&restored.path)).unwrap();
+            assert_eq!(
+                restored_store
+                    .get_meta(crate::core_constants::PRESET_KEY)
+                    .unwrap()
+                    .as_deref(),
                 Some(value)
             );
             let recovered = crate::salvage::salvage(path, &dir.path().join("salvage")).unwrap();
@@ -6495,7 +6534,7 @@ mod project_presets_tests {
                 recovered
                     .meta
                     .unwrap()
-                    .get("project.preset")
+                    .get(crate::core_constants::PRESET_KEY)
                     .map(String::as_str),
                 Some(value)
             );
@@ -6516,10 +6555,15 @@ mod project_presets_tests {
                 dir.path(),
                 "Draft",
                 &crate::strings::Strings::english(),
-                value,
+                value.filter(|value| *value != "future-preset"),
             )
             .unwrap();
-            let store = Store::open_readonly(Path::new(&made.path)).unwrap();
+            let store = Store::open(Path::new(&made.path)).unwrap();
+            if value == Some("future-preset") {
+                store
+                    .set_meta(crate::core_constants::PRESET_KEY, "future-preset")
+                    .unwrap();
+            }
             let items = store.items().unwrap();
             let scenes: Vec<_> = items
                 .iter()
@@ -6541,7 +6585,10 @@ mod project_presets_tests {
                 );
             }
             let stored = value.filter(|value| *value != "novel").map(str::to_owned);
-            assert_eq!(store.get_meta("project.preset").unwrap(), stored);
+            assert_eq!(
+                store.get_meta(crate::core_constants::PRESET_KEY).unwrap(),
+                stored
+            );
             assert_eq!(
                 store.project_preset().unwrap(),
                 match value {
@@ -6556,6 +6603,20 @@ mod project_presets_tests {
                     crate::design::preset(crate::design::PRESET_NON_FICTION).unwrap()
                 );
             }
+        }
+    }
+    #[test]
+    fn project_presets_creation_refuses_unknown_and_reserved_values() {
+        for value in ["collection", "future-preset", "", "SHORT"] {
+            let dir = tempfile::tempdir().unwrap();
+            assert!(create_in_preset(
+                dir.path(),
+                "Draft",
+                &crate::strings::Strings::english(),
+                Some(value)
+            )
+            .is_err());
+            assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 0);
         }
     }
 }
