@@ -169,5 +169,12 @@ actual text after a scene switch and after force-stop/reopen. ASCII input is
 not a composition test. Failure diagnostics use only the temporary emulator's
 synthetic books. Run this serialized with other heavy checks.
 
+Scene buttons match their English or German name, including a preceding chapter
+label. A hidden control gets at most four swipes within its dialog or scrollable
+ancestor, with a fresh hierarchy after each swipe. Missing and ambiguous labels
+are refused before any tap. Run the offline hierarchy regressions with
+`python3 scripts/test-android-smoke.py`; CI runs them with the script tests.
+Each scroll hierarchy has a unique filename so later taps retain earlier evidence.
+
 Sources: [Android command-line tools](https://developer.android.com/studio#command-tools)
 and [Tauri Android prerequisites](https://v2.tauri.app/start/prerequisites/#android).

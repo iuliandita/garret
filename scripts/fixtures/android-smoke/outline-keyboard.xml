@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='utf-8'?>
+<hierarchy rotation="0">
+  <node text="" class="android.widget.FrameLayout" content-desc="" enabled="true" scrollable="false" bounds="[0,0][1080,2400]">
+    <node text="" class="android.widget.LinearLayout" content-desc="" enabled="true" scrollable="false" bounds="[0,0][1080,2400]">
+      <node text="" class="android.widget.FrameLayout" content-desc="" enabled="true" scrollable="false" bounds="[0,0][1080,2400]">
+        <node text="" class="android.widget.LinearLayout" content-desc="" enabled="true" scrollable="false" bounds="[0,0][1080,2400]">
+          <node text="" class="android.widget.FrameLayout" content-desc="" enabled="true" scrollable="false" bounds="[0,0][1080,2400]">
+            <node text="" class="android.webkit.WebView" content-desc="" enabled="true" scrollable="false" bounds="[0,128][1080,1517]">
+              <node text="garret" class="android.webkit.WebView" content-desc="" enabled="true" scrollable="false" bounds="[0,128][1080,1520]">
+                <node text="Outline" class="android.app.Dialog" content-desc="" enabled="true" scrollable="true" bounds="[0,403][1080,1520]">
+                  <node text="" class="android.view.View" content-desc="" enabled="true" scrollable="false" bounds="[42,1075][1042,1325]">
+                    <node text="Chapter 1, Scene 1" class="android.widget.Button" content-desc="" enabled="true" scrollable="false" bounds="[42,1193][1042,1325]" />
+                  </node>
+                  <node text="" class="android.view.View" content-desc="" enabled="true" scrollable="false" bounds="[42,1361][1042,1520]">
+                    <node text="Add scene" class="android.widget.Button" content-desc="" enabled="true" scrollable="false" bounds="[42,1520][1042,1520]" />
+                  </node>
+                </node>
+              </node>
+            </node>
+          </node>
+        </node>
+      </node>
+    </node>
+  </node>
+</hierarchy>
