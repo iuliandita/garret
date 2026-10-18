@@ -64,7 +64,7 @@ class AndroidSmokeTests(unittest.TestCase):
 
     def test_scroll_decision_uses_visible_dialog_bounds(self):
         hidden = hidden_dialog()
-        visible = dump("outline-scrolled")
+        visible = dump("outline-visible")
         button = next(n for n in hidden if n.get("text") == "Add scene")
         dialog = next(n for n in hidden if n.get("class") == "android.app.Dialog")
         swipe = smoke.scroll_swipe(hidden, button)
@@ -80,7 +80,7 @@ class AndroidSmokeTests(unittest.TestCase):
                 self.assertEqual(start < end, downward)
 
     def test_scroll_refreshes_before_tap_and_stops_when_unreachable(self):
-        hidden, visible = hidden_dialog(), dump("outline-scrolled")
+        hidden, visible = hidden_dialog(), dump("outline-visible")
         with patch.object(smoke, "hierarchy", return_value=visible), patch.object(smoke, "adb") as adb:
             smoke.tap_text(hidden, "Add scene", out=Path("."))
             self.assertEqual([call.args[2] for call in adb.call_args_list], ["swipe", "tap"])
