@@ -183,26 +183,27 @@ describe("project", () => {
     expect(collapsed.every((r) => r.depth <= 1)).toBe(true);
   });
 
-  // Self-normalizing: a wall-clock budget would only measure the machine, and
-  // this repo has burned enough time on that. Quadratic growth costs ~16x at 4x
-  // the input, so a ratio bounded well above 4 catches it and tolerates noise.
+  // Count node-field reads without timing scheduler pauses or instrumenting
+  // production code. At 4x the input, linear work costs 4x and quadratic 16x.
   test("cost grows linearly, not quadratically, with manuscript size", () => {
-    const small = manuscript(25);
-    const big = manuscript(100);
+    const small = manuscript(1);
+    const big = manuscript(4);
     expect(big.length).toBe(small.length * 4);
 
-    const best = (nodes: TreeNode[]): number => {
-      let min = Infinity;
-      for (let i = 0; i < 5; i++) {
-        const started = performance.now();
-        project(nodes, new Set());
-        min = Math.min(min, performance.now() - started);
-      }
-      return min;
+    const reads = (nodes: TreeNode[]): number => {
+      let count = 0;
+      const counted = nodes.map((node) => new Proxy(node, {
+        get(target, key, receiver) {
+          count++;
+          return Reflect.get(target, key, receiver);
+        },
+      }));
+      expect(project(counted, new Set()).length).toBe(nodes.length);
+      expect(count).toBeGreaterThan(0);
+      return count;
     };
 
-    best(big); // warm the JIT so the first sample is not the slow one
-    expect(best(big) / Math.max(best(small), 0.01)).toBeLessThan(10);
+    expect(reads(big) / reads(small)).toBeLessThan(10);
   });
 });
 
