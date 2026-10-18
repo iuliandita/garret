@@ -30,8 +30,8 @@ The current published build is [0.0.6 alpha](https://github.com/iuliandita/garre
 See [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
 
-Development builds upgrade books to schema 18 after consent and a verified
-pre-upgrade copy. Apps 0.0.5 and earlier refuse the upgraded book; 0.0.6 reads it.
+From 0.0.7, desktop upgrades books to schema 18 after consent and a verified
+pre-upgrade copy; Android keeps schema-17 books at 17. Apps 0.0.5 and earlier refuse the upgraded book; 0.0.6 reads it.
 See the compatibility guide before upgrading or transferring a book.
 
 ![garret writing view](docs/screenshots/editor-light.png)
@@ -161,7 +161,7 @@ release for you:
 
 1. Add `https://github.com/iuliandita/garret` as an app source.
 2. Pick the asset whose name ends in `-android.apk`, for example
-   `garret-0.0.6-android.apk`. The `-android-info.zip` asset holds instructions
+   `garret-0.0.7-android.apk`. The `-android-info.zip` asset holds instructions
    and build details; it is not installable.
 3. Check the signing certificate. Obtainium shows the certificate hash for the
    installed app on its app page; the SHA-256 digest must be

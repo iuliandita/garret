@@ -196,12 +196,12 @@ displayed geometry. EPUB retains the original PNG and DOCX uses its raw drawing
 dimensions. Preview reports include per-placement `figures`
 with item and instance IDs, DPI, warning, and flag values. Existing schema-18
 books can publish these nodes. Release 0.0.6 keeps authoring disabled and creates
-schema 17; the current activation described above creates schema 18 and requires
+schema 17; release 0.0.7 activates authoring on desktop, creates schema 18 and requires
 consent before upgrading existing writable books. Native Linux output is exercised under a virtual
 display; Windows and macOS layout qualification remains external.
 
 Release 0.0.6 imports DOCX as prose and reports omitted notes and pictures.
-Current activation converts footnotes and endnotes to owned plain-text endnotes;
+Release 0.0.7 converts footnotes and endnotes to owned plain-text endnotes;
 note formatting and unsupported pictures remain counted losses. Keep the original
 DOCX to retain its formatting and pictures. Import creates a separate current-format
 book. Back up closed books and adjacent originals; rollback uses the previous
@@ -374,7 +374,7 @@ Opening a supported older book can upgrade its SQLite schema. A newer schema
 is refused by an older build; do not edit `PRAGMA user_version` to bypass this.
 Static version checks do not establish that every legacy book upgrades correctly.
 
-0.0.1 through 0.0.6 create SQLite schema 17; 0.0.6 also opens and preserves schema-18 books. The 0.0.2 DOCX importer adds
+0.0.1 through 0.0.6 create SQLite schema 17; 0.0.6 also opens and preserves schema-18 books. Desktop 0.0.7 creates schema 18 and upgrades existing books only after consent; Android 0.0.7 keeps schema-17 books at 17. The 0.0.2 DOCX importer adds
 archive expansion limits: 128 entries, 128 MiB combined, and 64 MiB per entry.
 An oversized foreign document can now be refused. Preserve the original and
 split or simplify a copy before retrying; do not bypass the limits. This does
