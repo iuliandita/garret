@@ -28,11 +28,15 @@ writing.
 ## Checks
 
 ```sh
-bun run check:docs
-bunx tsc --noEmit -p app/tsconfig.json   # typecheck
-bun test ./app/ui                        # interface tests
-bun test ./app/harness                   # harness unit tests
-cd app/shell-tauri/src-tauri && cargo test --bin garret
+(
+  export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
+  export HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)"
+  bun run check:docs
+  bunx tsc --noEmit -p app/tsconfig.json   # typecheck
+  bun test ./app/ui                       # interface tests
+  bun test ./app/harness                  # harness unit tests
+  cd app/shell-tauri/src-tauri && cargo test --bin garret
+)
 ```
 
 Documentation checks require Python 3.11 or newer, Git, and full history with
@@ -42,8 +46,11 @@ no-impact assessment. See [documentation maintenance](docs/MAINTENANCE.md)
 for the commands, migration requirements, optional hook, and limits.
 
 The host tests need the built interface in `app/shell-tauri/dist`
-(`cd app/ui && bun run build`, then copy `app/ui/dist` there). A few host tests
-are known to fail; CI skips exactly those and links the tracking issue.
+(`cd app/ui && bun run build`, then copy `app/ui/dist` there). Keep tests and
+CLI checks in temporary home and data directories, as above. CI runs the
+ordinary host tests without exact-name skips; display-gated proof tests run
+separately under Xvfb. Build the release CLI before `bun test ./app` so the
+sample-building and CLI tests run too.
 
 The GUI rigs in `app/harness` drive the real app under Xvfb and AT-SPI and need
 `xvfb`, `xdotool` and the AT-SPI bus. Run them on an isolated display, never on

@@ -50,26 +50,30 @@ describe("rss", () => {
     }
   });
 
-  // Skipped on GitHub Actions: https://github.com/iuliandita/garret/issues/3
-  test.skipIf(!!process.env.GITHUB_ACTIONS)("two processes with one name are SUMMED under it, not overwritten", async () => {
+  test("two processes with one name are SUMMED under it, not overwritten", async () => {
     // A child of this process running the same binary shares its comm. With
     // it alive, the figure under that name must exceed anything this process
     // alone could read -- which is what separates a sum from a last-writer.
-    const child = Bun.spawn(["bun", "-e", "setTimeout(() => {}, 20000)"], { stdout: "ignore", stderr: "ignore" });
+    const child = Bun.spawn([process.execPath, "-e", 'console.log("ready"); setTimeout(() => {}, 20000)'], { stdout: "pipe", stderr: "ignore" });
     try {
-      // Let the child map its runtime; a just-forked process reads a few MB.
-      const childStart = Date.now();
-      while (readRssKb(child.pid) < 10_000 && Date.now() - childStart < 5000) await Bun.sleep(50);
+      // RSS can exceed the old threshold before exec has mapped the runtime.
+      const reader = child.stdout.getReader();
+      const ready = await reader.read();
+      reader.releaseLock();
+      expect(new TextDecoder().decode(ready.value).trim()).toBe("ready");
+      expect(treePids(process.pid)).toContain(child.pid);
       const own = readFileSync(`/proc/${process.pid}/comm`, "utf8").trim();
       const ownKb = readRssKb(process.pid);
       const childKb = readRssKb(child.pid);
       expect(childKb).toBeGreaterThan(0);
       const split = treeRssByCommKb(process.pid);
+      const ownAfterKb = readRssKb(process.pid);
+      const childAfterKb = readRssKb(child.pid);
       const childComm = readFileSync(`/proc/${child.pid}/comm`, "utf8").trim();
       expect(childComm).toBe(own);
       // Above the parent alone by at least half of what the child reads: the
       // two readings are not simultaneous, hence the slack.
-      expect(split[own]!).toBeGreaterThan(ownKb + childKb / 2);
+      expect(split[own]!).toBeGreaterThan(Math.min(ownKb, ownAfterKb) + Math.min(childKb, childAfterKb) / 2);
     } finally {
       child.kill();
       await child.exited;

@@ -24,6 +24,7 @@ jobs:
         env:
           DOCS_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
+          export HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)"
           python3 scripts/test-release.py
           python3 scripts/test-docs.py
           python3 scripts/test-docs-facts.py
@@ -43,9 +44,9 @@ jobs:
           restore-keys: bun-${{ runner.os }}-
       - run: bun install --frozen-lockfile
       - run: bunx tsc --noEmit -p app/tsconfig.json
-      - run: bun test ./app/ui
-      - run: bun test ./app/harness
-      - run: bun test ./app/mobile-ui/test
+      - run: HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)" bun test ./app/ui
+      - run: HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)" bun test ./app/harness
+      - run: HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)" bun test ./app/mobile-ui/test
       - run: bun run build
         working-directory: app/ui
 
@@ -75,20 +76,10 @@ jobs:
           workspaces: app/shell-tauri/src-tauri
       - name: Host tests
         working-directory: app/shell-tauri/src-tauri
-        # Skipped tests are tracked in https://github.com/iuliandita/garret/issues/1
         run: |
-          cargo test --locked --bin garret -- --exact \
-            --skip recovery::tests::a_snapshot_of_a_file_older_than_the_picture_column_reports_no_pictures \
-            --skip salvage::tests::a_file_that_predates_the_tables_salvages_exactly_as_it_did \
-            --skip salvage::tests::a_v1_file_recovers_its_prose_and_is_not_asked_about_a_history \
-            --skip salvage::tests::a_v2_file_recovers_its_history_and_is_not_asked_about_comments \
-            --skip salvage::tests::a_v3_file_recovers_its_prose_and_is_not_asked_about_comments \
-            --skip salvage::tests::a_v4_file_recovers_its_comments_and_is_not_asked_about_a_wordlist \
-            --skip salvage::tests::a_v5_file_recovers_its_wordlist_and_is_not_asked_about_synopses \
-            --skip salvage::tests::a_v6_file_recovers_its_synopses_and_is_not_asked_about_a_cast \
-            --skip salvage::tests::a_v7_file_recovers_its_cast_and_is_not_asked_about_a_picture \
-            --skip salvage::tests::a_v8_file_recovers_its_cast_and_is_not_asked_about_appearances \
-            --skip salvage::tests::a_v9_file_recovers_its_cast_and_is_not_asked_about_aliases
+          export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
+          export HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)"
+          cargo test --locked --bin garret -- --exact
       # The proof paginator runs in a web view and needs a display, so it is
       # ignored by default. Run the paginator fixtures under a virtual one.
       - name: Install a virtual display
@@ -103,6 +94,8 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: "1"
           NO_AT_BRIDGE: "1"
         run: |
+          export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
+          export HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)"
           # The outer bound also covers compilation and startup (#324).
           if env -u WAYLAND_DISPLAY timeout --verbose --signal=TERM --kill-after=30s 420s \
             xvfb-run -a sh -c '

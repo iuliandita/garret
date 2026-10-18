@@ -132,6 +132,18 @@ fn check_figure(path: &Path, figures: &BTreeMap<String, crate::store::figure_ass
 
 fn research_expectations(db: &Path) -> Result<BTreeMap<String, u64>, String> {
     let store = Store::open_readonly(db).map_err(|_| "database unreadable".to_string())?;
+    if store.user_version().map_err(|e| e.to_string())? < 16 {
+        let conn = rusqlite::Connection::open_with_flags(db, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+            .map_err(|e| e.to_string())?;
+        let present: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'research_resource' COLLATE NOCASE)",
+            [],
+            |row| row.get(0),
+        ).map_err(|e| e.to_string())?;
+        if !present {
+            return Ok(BTreeMap::new());
+        }
+    }
     let mut names = BTreeMap::new();
     for resource in store.research_resources()? {
         if let Some(previous) = names.insert(resource.sha256, resource.bytes) {
@@ -980,6 +992,34 @@ mod tests {
         assert!(gaps.iter().any(|gap| gap.contains(&asset.id)));
         assert!(!pictures::dir_for(&dest).join(&asset.stored_name).exists());
         assert!(pictures::dir_for(&dest).join(&f.assets[0].stored_name).exists());
+    }
+
+    #[test]
+    fn research_inventory_distinguishes_pre_sixteen_files_from_a_lost_table() {
+        let root = tempfile::tempdir().unwrap();
+        let db = root.path().join("book.db");
+        drop(crate::store::historical_test_store(&db, 14));
+        let conn = rusqlite::Connection::open(&db).unwrap();
+        conn.execute_batch(crate::store::analytics::SCHEMA_V15).unwrap();
+        conn.pragma_update(None, "user_version", 15).unwrap();
+        assert!(research_expectations(&db).unwrap().is_empty());
+
+        conn.execute_batch(crate::store::knowledge::SCHEMA_V16).unwrap();
+        conn.pragma_update(None, "user_version", 16).unwrap();
+        assert!(research_expectations(&db).unwrap().is_empty());
+        let hash = "a".repeat(64);
+        conn.execute(
+            "INSERT INTO research_resource (id, title, original_name, media_type, bytes, sha256, source_note, citation, created_at)
+             VALUES (?1, 'Notes', 'notes.txt', 'text/plain', 7, ?2, '', '', 0)",
+            rusqlite::params![uuid::Uuid::now_v7().to_string(), hash],
+        ).unwrap();
+        conn.pragma_update(None, "user_version", 15).unwrap();
+        assert_eq!(research_expectations(&db).unwrap(), BTreeMap::from([(hash, 7)]));
+        conn.pragma_update(None, "user_version", 16).unwrap();
+        conn.execute_batch("DROP TABLE research_resource;").unwrap();
+        assert!(research_expectations(&db)
+            .unwrap_err()
+            .contains("no such table: research_resource"));
     }
 
     fn project() -> (tempfile::TempDir, PathBuf, String) {
