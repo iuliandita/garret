@@ -37,7 +37,7 @@ in-place downgrade or a complete replacement for a verified backup.
 Before upgrading the application, close it and retain the complete database,
 adjacent originals and profile. Test a disposable copy first. Existing schema-17
 books remain usable by the previous build. A schema-18 book requires this reader
-release on both desktop and phone; 0.0.5 and earlier refuse it. To roll back,
+release (0.0.6 or later) on both desktop and phone; 0.0.5 and earlier refuse it. To roll back,
 keep the schema-18 book separately and open a complete pre-activation schema-17
 copy with the older package. Later writing is absent from that copy. Never
 manually lower `user_version`, overwrite the newer book or remove its originals.
@@ -314,7 +314,7 @@ Opening a supported older book can upgrade its SQLite schema. A newer schema
 is refused by an older build; do not edit `PRAGMA user_version` to bypass this.
 Static version checks do not establish that every legacy book upgrades correctly.
 
-0.0.1 through 0.0.5 use SQLite schema 17. The 0.0.2 DOCX importer adds
+0.0.1 through 0.0.6 create SQLite schema 17; 0.0.6 also opens and preserves schema-18 books. The 0.0.2 DOCX importer adds
 archive expansion limits: 128 entries, 128 MiB combined, and 64 MiB per entry.
 An oversized foreign document can now be refused. Preserve the original and
 split or simplify a copy before retrying; do not bypass the limits. This does
