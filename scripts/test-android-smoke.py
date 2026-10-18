@@ -50,11 +50,16 @@ class AndroidSmokeTests(unittest.TestCase):
     def test_missing_and_ambiguous_controls_never_tap_or_scroll(self):
         nodes = dump("outline-keyboard")
         button = next(n for n in nodes if n.get("text") == "Add scene")
-        for candidates, label, error in ((nodes, "Absent", "missing"),
-                                         (nodes + [copy.deepcopy(button)], "Add scene", "ambiguous")):
+        first = copy.deepcopy(next(n for n in nodes if n.get("text") == "Scene 1"))
+        second = copy.deepcopy(first)
+        first.set("text", "Chapter 1, Scene 1")
+        second.set("text", "Chapter 2, Scene 1")
+        for candidates, label, scene, error in ((nodes, "Absent", False, "missing"),
+                                               (nodes + [copy.deepcopy(button)], "Add scene", False, "ambiguous"),
+                                               ([first, second], "Scene 1", True, "ambiguous")):
             with self.subTest(error=error), patch.object(smoke, "adb") as adb:
                 with self.assertRaisesRegex(RuntimeError, f"UI control {error}"):
-                    smoke.tap_text(candidates, label, out=Path("."))
+                    smoke.tap_text(candidates, label, out=Path("."), scene=scene)
                 adb.assert_not_called()
 
     def test_scroll_decision_uses_visible_dialog_bounds(self):
