@@ -53,6 +53,8 @@ jobs:
   host:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: 8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install WebKitGTK build dependencies
@@ -87,30 +89,6 @@ jobs:
       - name: Proof paginator
         timeout-minutes: 8
         working-directory: app/shell-tauri/src-tauri
-        env:
-          GDK_BACKEND: x11
-          WEBKIT_DISABLE_COMPOSITING_MODE: "1"
-          WEBKIT_DISABLE_DMABUF_RENDERER: "1"
-          LIBGL_ALWAYS_SOFTWARE: "1"
-          NO_AT_BRIDGE: "1"
         run: |
-          export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
-          export HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)"
-          # The outer bound also covers compilation and startup (#324).
-          if env -u WAYLAND_DISPLAY timeout --verbose --signal=TERM --kill-after=30s 420s \
-            xvfb-run -a sh -c '
-              cargo test --locked --bin garret -- --ignored --exact --test-threads=1 \
-                printer::tests::rich_paragraphs_keep_text_and_marks_and_oversized_headings_refuse &&
-              cargo test --locked --bin garret -- --ignored --exact --test-threads=1 \
-                printer::tests::notes_figures_and_plates_decode_before_layout_and_print_intact &&
-              cargo test --locked --bin garret -- --ignored --exact --test-threads=1 \
-                printer::tests::typed_dashes_stay_on_one_line_and_page'; then
-            exit 0
-          else
-            status=$?
-            if [ "$status" -eq 124 ] || [ "$status" -eq 137 ]; then
-              echo '::error::Proof paginator exceeded 420 seconds (30-second kill grace); see #324.'
-              ps -eo pid,ppid,stat,etime,wchan:32,comm
-            fi
-            exit "$status"
-          fi
+          export TMPDIR="$(mktemp -d)"
+          bash ../../../scripts/test-proof-paginator

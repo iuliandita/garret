@@ -84,6 +84,18 @@ pub struct Printed {
     pub bytes: Option<Vec<u8>>,
 }
 
+#[cfg(test)]
+fn proof_test_phase(phase: &str) {
+    use std::io::Write;
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("system clock");
+    // Direct stderr writes bypass libtest's per-test output capture.
+    let _ = std::io::stderr().write_all(
+        format!("proof-phase ts={:.3} pid={} {phase}\n", timestamp.as_secs_f64(), std::process::id()).as_bytes(),
+    );
+}
+
 /// Load `html`, let it paginate itself, and optionally print it.
 ///
 /// MUST RUN ON THE THREAD OWNING THE GTK MAIN CONTEXT. Both callers arrange
@@ -112,8 +124,12 @@ fn render_with_timeout(
     use webkit2gtk::{PrintOperationExt, WebViewExt};
 
     // A timed-out proof must be terminable without touching the editor's process.
+    #[cfg(test)]
+    proof_test_phase("creating WebKit context");
     let context = webkit2gtk::WebContext::new_ephemeral();
     let view = webkit2gtk::WebView::with_context(&context);
+    #[cfg(test)]
+    proof_test_phase("webview created");
     // A REAL TOPLEVEL, NOT AN OFFSCREEN ONE. `Gtk::OffscreenWindow` forces the
     // GL path and WebKitGTK aborts on it under Xvfb -- "GDK is not able to
     // create a GL context: The current backend does not support OpenGL", a core
@@ -156,12 +172,16 @@ fn render_with_timeout(
             // The view and its window outlive this function and are dropped
             // exactly once, when the work is over or abandoned. Dropping them
             // earlier destroys the web process mid-print.
+            #[cfg(test)]
+            proof_test_phase("WebKit teardown starting");
             let operation = parked.borrow_mut().take();
             drop(operation);
             let kept = keep.borrow_mut().take();
             if let Some((_, window)) = kept {
                 unsafe { window.destroy() };
             }
+            #[cfg(test)]
+            proof_test_phase("WebKit teardown done");
             // The CLI quits its main loop here, after cleanup has finished.
             callback(result);
         }
@@ -220,6 +240,8 @@ fn render_with_timeout(
         {
             return;
         }
+        #[cfg(test)]
+        proof_test_phase("load finished");
         printing.set(true);
         let answer = answer.clone();
         let dest = dest.clone();
@@ -240,6 +262,8 @@ fn render_with_timeout(
                 let Some(view) = weak_view.upgrade() else {
                     return;
                 };
+                #[cfg(test)]
+                proof_test_phase("paginator done");
                 let report = match value
                     .map_err(|e| e.to_string())
                     .map(|v| v.to_string())
@@ -430,6 +454,7 @@ mod tests {
 
     impl TestWatchdog {
         fn start(timeout: std::time::Duration) -> Self {
+            proof_test_phase("test process entered; starting watchdog");
             #[cfg(target_os = "linux")]
             rustix::process::setrlimit(
                 rustix::process::Resource::Core,
@@ -442,6 +467,7 @@ mod tests {
             let (progress, receiver) = std::sync::mpsc::channel();
             let deadline = std::time::Instant::now() + timeout;
             std::thread::spawn(move || {
+                proof_test_phase("watchdog thread running");
                 let mut phase = "initializing GTK";
                 loop {
                     match receiver.recv_timeout(
@@ -452,37 +478,38 @@ mod tests {
                         Err(std::sync::mpsc::RecvTimeoutError::Timeout) => break,
                     }
                 }
-                eprintln!(
-                    "proof test watchdog expired after {timeout:?}: {phase}; pid={}",
-                    std::process::id()
-                );
+                proof_test_phase(&format!("watchdog expired after {timeout:?}: {phase}"));
                 if let Ok(threads) = std::fs::read_dir("/proc/self/task") {
                     for thread in threads.flatten() {
                         let name = std::fs::read_to_string(thread.path().join("comm"))
                             .unwrap_or_else(|error| error.to_string());
                         let wait = std::fs::read_to_string(thread.path().join("wchan"))
                             .unwrap_or_else(|error| error.to_string());
-                        eprintln!(
+                        proof_test_phase(&format!(
                             "thread {:?}: {}: {}",
                             thread.file_name(),
                             name.trim(),
                             wait.trim()
-                        );
+                        ));
                     }
                 }
                 std::process::abort();
             });
+            proof_test_phase("watchdog armed");
             Self { progress }
         }
 
         fn phase(&self, phase: &'static str) {
+            proof_test_phase(phase);
             self.progress.send(Some(phase)).expect("watchdog is running");
         }
     }
 
     impl Drop for TestWatchdog {
         fn drop(&mut self) {
+            proof_test_phase("test body end; cancelling watchdog");
             let _ = self.progress.send(None);
+            proof_test_phase("test teardown done");
         }
     }
 
@@ -510,7 +537,6 @@ mod tests {
             let mut child = Command::new(std::env::current_exe().unwrap())
                 .args([
                     "--exact",
-                    "--nocapture",
                     "printer::tests::proof_watchdog_bounds_a_blocked_thread_and_cancels_after_completion",
                 ])
                 .env(CHILD, mode)
@@ -536,6 +562,7 @@ mod tests {
                     "{diagnostics}"
                 );
                 assert!(diagnostics.contains("thread "), "{diagnostics}");
+                assert!(diagnostics.contains("watchdog expired after 1s"), "{diagnostics}");
             } else {
                 assert!(output.status.success(), "{diagnostics}");
             }
@@ -641,7 +668,9 @@ mod tests {
     #[ignore = "requires an isolated X display, WebKit and Poppler tools"]
     fn typed_dashes_stay_on_one_line_and_page() {
         let watchdog = TestWatchdog::start(std::time::Duration::from_secs(90));
+        watchdog.phase("GTK init starting");
         gtk::init().unwrap();
+        watchdog.phase("GTK init done");
         let token = format!("{}--{}", "1".repeat(39), "123456789--".repeat(20));
         let flow = format!("<p>123456789-- tail</p><p>123456789-<em>-</em> tail</p><p>123456789--- tail</p><p data-proof-break=\"page\">{token}</p>");
         let shell = r#"<!doctype html><html><head><style>
@@ -791,7 +820,9 @@ mod tests {
             text
         }
 
+        watchdog.phase("GTK init starting");
         gtk::init().unwrap();
+        watchdog.phase("GTK init done");
         let before = "before  ".repeat(35);
         let marked = "café\tinside  marks ".repeat(35);
         let after = "after  ".repeat(35);
@@ -964,7 +995,9 @@ mod tests {
     fn notes_figures_and_plates_decode_before_layout_and_print_intact() {
         use std::process::Command;
         let watchdog = TestWatchdog::start(std::time::Duration::from_secs(180));
+        watchdog.phase("GTK init starting");
         gtk::init().unwrap();
+        watchdog.phase("GTK init done");
         let directory = tempfile::tempdir().unwrap();
         let dest = directory.path().join("notes-figures.pdf");
         let design = crate::design::default_design();
@@ -1144,7 +1177,9 @@ mod tests {
         use std::process::Command;
 
         let watchdog = TestWatchdog::start(std::time::Duration::from_secs(90));
+        watchdog.phase("GTK init starting");
         gtk::init().unwrap();
+        watchdog.phase("GTK init done");
         let chapters = vec![("chapter".to_string(), "Chapter".to_string(), 0)];
         let book = Book {
             publication: None,
@@ -1318,7 +1353,9 @@ mod tests {
         use gtk::prelude::*;
         use javascriptcore::ValueExt;
         use webkit2gtk::WebViewExt;
+        proof_test_phase("GTK init starting");
         gtk::init().unwrap();
+        proof_test_phase("GTK init done");
         // Avoid the process-global default context: libtest runs this on a
         // worker, but drops globals on its main thread after that worker exits.
         let other_context = webkit2gtk::WebContext::new_ephemeral();
