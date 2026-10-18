@@ -191,12 +191,32 @@ and [Tauri Android prerequisites](https://v2.tauri.app/start/prerequisites/#andr
 
 For the schema-18 reader smoke, additionally mount the generated directory at
 `/test/reader:ro` and append `--reader-fixture /test/reader` to the driver command.
-The fresh emulator is rooted only to seed its app-private book directory and
-retrieve its saved database. It checks a note body, a loaded figure and caption,
-captures the scene break for visual inspection, enters surrounding prose, waits
-for save, force-stops, verifies
-`user_version` and every atom/registry/original, then reopens and checks the edit
-and note again. Inspect `reader18-displayed.png` for the three-asterisk separator;
-Android omits CSS-generated separator text from its accessibility tree. This seed route tests native reading and persistence; the host
-generator verifies the encrypted import, while system-picker behavior still
-requires the physical-phone import check.
+The smoke selects both files through **Import archive** and Android's system
+picker, reviews the preview and confirms a separate book. It explicitly restarts
+the fresh app after installation, isolating transfer checks from
+[first-launch activity recreation](https://github.com/iuliandita/garret/issues/403).
+It first verifies
+that selecting the archive as the recovery key reports a key error rather than
+a book-size failure. Root access only retrieves app-private databases for
+verification; no book is seeded. The smoke checks a note body, a loaded figure
+and caption, captures the scene break for visual inspection, edits surrounding
+prose, waits for save, force-stops, verifies `user_version` and every
+atom/registry/original, then reopens and checks the edit and note again.
+Inspect `reader18-displayed.png` for the three-asterisk separator; Android omits
+CSS-generated separator text from its accessibility tree.
+
+For a schema-17 import check, generate a separate synthetic pair with the
+ignored host fixture test after building and embedding the UI as described in
+[CONTRIBUTING.md](../../CONTRIBUTING.md):
+
+```sh
+GARRET_TRANSFER_FIXTURE_OUT="$fixture" cargo test --bin garret \
+  mobile_transfer::tests::write_schema17_phone_fixture -- --ignored --exact
+```
+
+Run that command from `app/shell-tauri/src-tauri` with an isolated HOME, XDG and
+temporary directory; `$fixture` must name a new directory. Mount it at
+`/test/schema17:ro` in a fresh emulator and pass `--schema17-fixture /test/schema17`
+instead of `--reader-fixture`. This imports `book.age` with `recovery-key.txt`,
+displays the retained prose and verifies that the imported database stays at
+schema 17. Keep all generated archives and keys outside version control.

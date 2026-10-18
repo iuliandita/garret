@@ -59,9 +59,15 @@ def wait_nodes(out: Path, name: str, predicate, timeout: int = 30) -> list[ET.El
     while time.monotonic() < deadline:
         try:
             nodes = hierarchy(out, name)
-            if has(nodes, "This action could not be completed", "Diese Aktion konnte nicht abgeschlossen werden"):
+            errors = ("This action could not be completed", "Diese Aktion konnte nicht abgeschlossen werden",
+                      "This book exceeds", "Dieses Buch überschreitet",
+                      "The archive could not be verified", "Das Archiv konnte nicht geprüft werden",
+                      "The file provider did not finish", "Der Dateianbieter hat seinen Vorgang nicht fertig")
+            failures = [node.get("text", "") for node in nodes if any(
+                node.get("text", "").startswith(error) for error in errors)]
+            if failures:
                 screenshot(out, f"{name}-operation-error")
-                raise RuntimeError(f"app displayed operation error at {name}")
+                raise RuntimeError(f"app displayed operation error at {name}: {failures}")
             if predicate(nodes):
                 return nodes
         except RuntimeError as error:
@@ -200,24 +206,62 @@ def verify_reader_copy(books: Path, fixture: dict, *, edited: bool) -> None:
             raise RuntimeError("reader changed figure original")
 
 
+def pick_download(out: Path, file: Path, name: str) -> None:
+    nodes = checkpoint(out, f"{name}-picker", "Downloads", "Recent", "Zuletzt")
+    # Open the provider root explicitly; recent files depend on media indexing.
+    menus = [node for node in nodes if node.get("content-desc") in ("Show roots", "Wurzeln anzeigen")]
+    if menus:
+        tap_node(menus[0])
+        nodes = wait_nodes(out, f"{name}-roots", lambda found: any(
+            node.get("resource-id") == "android:id/title" and node.get("text") == "Downloads"
+            for node in found), 45)
+        roots = [node for node in nodes if node.get("resource-id") == "android:id/title"]
+        tap_text(roots, "Downloads", out=out)
+    nodes = checkpoint(out, f"{name}-files", file.name)
+    tap_text(nodes, file.name, out=out)
+
+
+def import_archive(out: Path, archive: Path, key: Path, name: str, *, reject_key: bool = False) -> None:
+    for file in (archive, key):
+        adb("push", str(file), f"/sdcard/Download/{file.name}")
+    nodes = checkpoint(out, f"{name}-start", "Import archive", "Archiv importieren")
+    tap_text(nodes, "Import archive", "Archiv importieren", out=out, scene=True)
+    nodes = checkpoint(out, f"{name}-dialog", "Phone limit:", "Handy-Limit:")
+    tap_text(nodes, "Import archive", "Archiv importieren", out=out, scene=True)
+    pick_download(out, archive, f"{name}-archive")
+    pick_download(out, key, f"{name}-key")
+    if reject_key:
+        nodes = checkpoint(out, f"{name}-key-refused", "This recovery key could not be read", "Dieser Wiederherstellungsschlüssel konnte nicht gelesen werden")
+        tap_text(nodes, "Close", "Schließen", out=out)
+        return
+    nodes = checkpoint(out, f"{name}-preview", "Import as a separate book", "Als separates Buch importieren")
+    tap_text(nodes, "Import as a separate book", "Als separates Buch importieren", out=out)
+    nodes = checkpoint(out, f"{name}-done", "The imported copy is in", "Die importierte Kopie steht")
+    tap_text(nodes, "Close", "Schließen", out=out)
+
+
 def reader_smoke(out: Path, source: Path, steps: list[str]) -> None:
     fixture = json.loads((source / "fixture.json").read_text())
     verify_reader_copy(source / "books", fixture, edited=False)
-    adb("shell", "am", "force-stop", PKG)
+    # Selecting an archive in the key picker must report a key error, never a
+    # book-size failure. This also verifies that refusal adds no library book.
+    import_archive(out, source / "reader-18.age", source / "reader-18.age", "reader18-wrong-key", reject_key=True)
+    steps.append("oversized key selection refused as a recovery-key error")
+    import_archive(out, source / "reader-18.age", source / "reader-18-recovery-key.txt", "reader18")
     adb("root")
     adb("wait-for-device")
     roots = adb("shell", "find", f"/data/user/0/{PKG}", "-type", "d", "-name", "books").splitlines()
     if len(roots) != 1:
-        raise RuntimeError(f"expected one fresh app book directory, found {roots}")
+        raise RuntimeError(f"expected one app book directory, found {roots}")
     remote = roots[0].strip()
-    uid = adb("shell", "stat", "-c", "%u", f"/data/user/0/{PKG}").strip()
-    if not uid.isdecimal():
-        raise RuntimeError("app UID unavailable")
-    adb("push", f"{source / 'books'}/.", remote)
-    adb("shell", "chown", "-R", f"{uid}:{uid}", remote)
-    adb("shell", "restorecon", "-R", remote)
-    steps.append("verified schema-18 transferred copy seeded into fresh emulator")
-    adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
+    imported = out / "reader18-imported"
+    adb("pull", remote, str(imported))
+    candidates = list(imported.glob("*.db"))
+    if len(candidates) != 1:
+        raise RuntimeError(f"expected one imported book, found {len(candidates)}")
+    fixture["book_id"] = candidates[0].stem
+    verify_reader_copy(imported, fixture, edited=False)
+    steps.append("schema-18 archive imported through system picker, preview and confirmation")
     nodes = checkpoint(out, "reader18-library", fixture["title"])
     labels = (f"{fixture['title']} Imported copy", f"{fixture['title']} Importierte Kopie")
     tap_text(nodes, *labels, out=out)
@@ -262,11 +306,35 @@ def reader_smoke(out: Path, source: Path, steps: list[str]) -> None:
     steps.append("surrounding edit, endnote and loaded figure survived process death and reopen")
 
 
+def schema17_smoke(out: Path, source: Path, steps: list[str]) -> None:
+    import_archive(out, source / "book.age", source / "recovery-key.txt", "schema17")
+    nodes = checkpoint(out, "schema17-library", "Harbour")
+    tap_text(nodes, "Harbour Imported copy", "Harbour Importierte Kopie", out=out)
+    checkpoint(out, "schema17-prose", "The tide waited.")
+    adb("shell", "am", "force-stop", PKG)
+    adb("root")
+    adb("wait-for-device")
+    roots = adb("shell", "find", f"/data/user/0/{PKG}", "-type", "d", "-name", "books").splitlines()
+    if len(roots) != 1:
+        raise RuntimeError(f"expected one app book directory, found {roots}")
+    pulled = out / "schema17-imported"
+    adb("pull", roots[0].strip(), str(pulled))
+    databases = list(pulled.glob("*.db"))
+    if len(databases) != 1:
+        raise RuntimeError("schema-17 import did not publish exactly one book")
+    with closing(sqlite3.connect(databases[0])) as connection:
+        if connection.execute("PRAGMA user_version").fetchone()[0] != 17:
+            raise RuntimeError("schema-17 import changed user_version")
+    steps.append("schema-17 archive imported through picker and confirmation, prose displayed, user_version remains 17")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("apk", type=Path)
     parser.add_argument("evidence", type=Path)
-    parser.add_argument("--reader-fixture", type=Path, help="reader-fixture output directory (fresh emulator only)")
+    fixtures = parser.add_mutually_exclusive_group()
+    fixtures.add_argument("--reader-fixture", type=Path, help="reader-fixture output directory (fresh emulator only)")
+    fixtures.add_argument("--schema17-fixture", type=Path, help="schema-17 transfer fixture directory (fresh emulator only)")
     args = parser.parse_args()
     if not Path("/.dockerenv").is_file():
         parser.error("run in the isolated garret-android-emulator Docker container")
@@ -319,8 +387,17 @@ def main() -> int:
             nodes = checkpoint(out, "01-library", "Your books", "Deine Bücher")
             steps.append("APK installed; book library rendered")
 
-            if args.reader_fixture:
-                reader_smoke(out, args.reader_fixture.resolve(strict=True), steps)
+            if args.reader_fixture or args.schema17_fixture:
+                # Initial installation can recreate the activity while the native
+                # runtime survives. Isolate transfer checks from that startup case.
+                adb("shell", "am", "force-stop", PKG)
+                adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
+                checkpoint(out, "02-transfer-library", "Your books", "Deine Bücher")
+                steps.append("app restarted after installation before transfer checks")
+                if args.reader_fixture:
+                    reader_smoke(out, args.reader_fixture.resolve(strict=True), steps)
+                else:
+                    schema17_smoke(out, args.schema17_fixture.resolve(strict=True), steps)
                 result["status"] = "PASS"
                 return 0
 

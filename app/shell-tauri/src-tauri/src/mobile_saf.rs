@@ -169,6 +169,7 @@ impl<R: Runtime> Bridge<R> {
                                 reply.code.as_deref(),
                                 Some(
                                     "transfer_too_large"
+                                        | "transfer_key"
                                         | "transfer_storage"
                                         | "transfer_restart"
                                         | "transfer_not_started"
