@@ -25,7 +25,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { captureEnv } from "./env";
 import { buildResult, writeResult } from "./results";
-import { findWindowId, runShell, SHELL_PROC_NAME } from "./shell";
+import { findWindowId, matchesShellWindowClass, runShell, SHELL_WINDOW_CLASS_PATTERN } from "./shell";
 
 /** Typed first, then left alone for longer than prosemirror-history's group
  *  delay, so the second sentence is a separate undo step. */
@@ -128,19 +128,14 @@ function hyprClients(): HyprClient[] {
 // aren't subject to it, which is the whole reason this rig forces
 // GDK_BACKEND=x11.
 //
-// Case-insensitive on class: confirmed live that Hyprland reports the SAME
-// binary's WM_CLASS differently depending on backend — "garret"
-// native-Wayland (app_id, lowercase), "Garret" over XWayland
-// (WM_CLASS class component, GTK3-style capitalized). Title is "app" either
-// way (the WebviewWindowBuilder .title() call in main.rs).
 function findSessionWindow(): HyprClient {
-  const matches = hyprClients().filter((c) => c.class.toLowerCase() === SHELL_PROC_NAME);
+  const matches = hyprClients().filter((c) => matchesShellWindowClass(c.class));
   if (matches.length === 0) {
-    throw new Error(`no Hyprland client with class "${SHELL_PROC_NAME}" (any case) found`);
+    throw new Error(`no Hyprland client with class matching ${SHELL_WINDOW_CLASS_PATTERN} found`);
   }
   if (matches.length > 1) {
     throw new Error(
-      `expected exactly 1 Hyprland client with class "${SHELL_PROC_NAME}" (any case), found ` +
+      `expected exactly 1 Hyprland client with class matching ${SHELL_WINDOW_CLASS_PATTERN}, found ` +
         `${matches.length}: the close request could hit the wrong window`,
     );
   }

@@ -25,7 +25,7 @@
 # must already be bound to the output (`hyprctl keyword workspace "<n>,
 # monitor:<output>"`) and a window rule must send the app there
 # (`hyprctl keyword windowrule "workspace <n> silent, match:class
-# ^([Gg]arret)$"`); both are session-only and neither is set here.
+# ^(com[.]usegarret[.]app|[Gg]arret)$"`); both are session-only and neither is set here.
 # WIDE_FIXTURE=<dir> seeds that fixture instead of the stress one
 # (`app/fixtures/sample` for the sample's own timeline), and
 # WIDE_OPEN=<title> opens that document through Quick Open (Ctrl+P, the
@@ -86,7 +86,8 @@ if [[ -n "${WIDE_OPEN:-}" ]]; then
   wtype -k Return
   sleep 2.5
 fi
-geom=$(hyprctl clients -j | python3 -c "import json,sys; c=[c for c in json.load(sys.stdin) if c['class'].lower()=='garret'][0]; print(f\"{c['at'][0]},{c['at'][1]} {c['size'][0]}x{c['size'][1]}\")")
+window_class=$(bun -e 'import { SHELL_WINDOW_CLASS_PATTERN } from "./app/harness/src/shell"; console.log(SHELL_WINDOW_CLASS_PATTERN)')
+geom=$(hyprctl clients -j | python3 -c "import json,re,sys; c=[c for c in json.load(sys.stdin) if re.fullmatch(sys.argv[1], c['class'])][0]; print(f\"{c['at'][0]},{c['at'][1]} {c['size'][0]}x{c['size'][1]}\")" "$window_class")
 grim -g "$geom" "$out"
 hyprctl dispatch workspace "$prev" >/dev/null
 kill "$pid" || true
