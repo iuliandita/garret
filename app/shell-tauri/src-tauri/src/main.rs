@@ -4921,7 +4921,7 @@ fn report_migration_failure(data_home: &Path, error: &str) {
         let dialog = gtk::MessageDialog::new(
             None::<&gtk::Window>,
             gtk::DialogFlags::MODAL,
-            gtk::MessageType::Error,
+            gtk::MessageType::Warning,
             gtk::ButtonsType::Ok,
             &body,
         );
@@ -4933,7 +4933,7 @@ fn report_migration_failure(data_home: &Path, error: &str) {
     let _ = rfd::MessageDialog::new()
         .set_title("garret")
         .set_description(body)
-        .set_level(rfd::MessageLevel::Error)
+        .set_level(rfd::MessageLevel::Warning)
         .set_buttons(rfd::MessageButtons::Ok)
         .show();
 }
