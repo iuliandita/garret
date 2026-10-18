@@ -132,15 +132,31 @@ reproducibility. Follow the [F-Droid maintainer checklist](../fastlane/fdroid/RE
 before submitting or enabling the disabled draft recipe.
 
 The display-gated proof tests have per-test watchdogs on a separate OS thread:
-90 seconds for rich paragraphs and 180 seconds for notes, figures, and plates,
-armed before GTK initialization. It reports the last phase and thread wait
-channels before aborting, even if GTK stops dispatching. Core dumps are disabled
-in these isolated test processes. The paginator CI step runs both fixtures in
+90 seconds for rich paragraphs and typed dashes, and 180 seconds for notes, figures, and plates,
+armed before GTK initialization and kept alive through process exit. The fixtures
+run separately: a completed test body must not cancel protection while libtest
+joins its worker and WebKit tears down thread-local run-loop state. Each render
+leaves GTK from a low-priority idle callback so queued WebKit callbacks can
+release their references before the worker exits. The watchdog reports the last
+phase and thread wait channels before aborting, even if GTK stops dispatching
+or thread teardown stalls. Core dumps are disabled
+in these isolated test processes. Timestamped phase markers write directly to
+stderr, bypassing libtest capture, including watchdog reports. The CI runner
+uses `--nocapture` and prints its phase log on success or failure. Markers cover
+compilation, Xvfb startup, test-process entry, GTK initialization, the watchdog,
+WebKit creation, loading, pagination, render cleanup, test return, and Xvfb exit.
+The paginator CI step runs the three fixtures in
 separate processes under the same X display, with a 420-second
 process timeout and 30-second kill grace, including compilation and startup.
+Run `bash ../../../scripts/test-proof-paginator` from the host crate directory;
+optional arguments select individual fixture names. Each invocation uses a fresh
+HOME and XDG_DATA_HOME. Its diagnostic directory is printed before startup and
+retains the phase log and Xvfb errors. Failures are not retried.
 It uses an isolated X display, software rendering, disabled compositing and
 DMA-BUF rendering, and no accessibility bridge.
-The underlying intermittent hang remains unconfirmed and tracked in #324.
+CI native stacks locate the intermittent stall after the test body, in WebKit
+run-loop thread teardown while libtest joins its worker. Deferring GTK exit
+avoids the observed stall; #324 tracks the remaining native teardown risk.
 
 Install Poppler tools for PDF text and image inspection. The publication fixture
 checks delayed, rejected, and stalled figure decoding; damaged PNG/JPEG covers
