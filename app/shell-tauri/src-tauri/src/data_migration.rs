@@ -187,6 +187,7 @@ pub(crate) fn refusal(data_home: &Path, detail: &str) -> String {
             .to_owned();
     }
     let strings = locale.strings();
+    let new_missing = matches!(metadata(&new), Ok(None));
     let old_count = book_count(&old);
     let new_count = book_count(&new);
     let count = |value| match value {
@@ -202,6 +203,7 @@ pub(crate) fn refusal(data_home: &Path, detail: &str) -> String {
         && real_directory(&new).unwrap_or(false)
         && !migration_started(data_home);
     let location = match (old_count, new_count) {
+        _ if new_missing => String::new(),
         (Some(n), Some(0)) if n > 0 => strings.t("startup.data_migration_location_old"),
         (Some(0), Some(n)) if n > 0 => strings.t("startup.data_migration_location_new"),
         _ => String::new(),
@@ -212,7 +214,11 @@ pub(crate) fn refusal(data_home: &Path, detail: &str) -> String {
         format!("\n\n{location}")
     };
     let guidance = strings.f(
-        "startup.data_migration",
+        if new_missing {
+            "startup.data_migration_single"
+        } else {
+            "startup.data_migration"
+        },
         &[
             (
                 "status",
@@ -397,7 +403,14 @@ fn harmless_folder(root: &Path) -> Result<bool, String> {
     for entry in fs::read_dir(root).map_err(|error| error.to_string())? {
         let path = entry.map_err(|error| error.to_string())?.path();
         let meta = metadata(&path)?.ok_or("leftover folder changed during inspection")?;
-        let allowed = if meta.is_dir() {
+        let allowed = if meta.is_dir() && path.file_name().is_some_and(|name| name == "spell") {
+            fs::read_dir(&path)
+                .map_err(|error| error.to_string())?
+                .next()
+                .transpose()
+                .map_err(|error| error.to_string())?
+                .is_none()
+        } else if meta.is_dir() {
             matches!(
                 path.file_name().and_then(|name| name.to_str()),
                 Some(
@@ -421,6 +434,9 @@ fn harmless_folder(root: &Path) -> Result<bool, String> {
             match path.file_name().and_then(|name| name.to_str()) {
                 Some("settings.json") => harmless_settings(root)?,
                 Some("instance.lock" | "focus.request") => true,
+                Some(
+                    "hsts-storage.sqlite" | "hsts-storage.sqlite-wal" | "hsts-storage.sqlite-shm",
+                ) => true,
                 _ => false,
             }
         };
@@ -1326,59 +1342,83 @@ mod tests {
             return;
         }
         for copy in modes() {
-            let temp = tempdir().unwrap();
-            profile(temp.path());
-            let new = temp.path().join(crate::APP_DIR);
-            for name in [
-                "WebKitCache/Version 17",
-                "CacheStorage",
-                "mediakeys/v1",
-                "storage",
-            ] {
-                fs::create_dir_all(new.join(name)).unwrap();
-                fs::write(new.join(name).join("salt"), b"cache").unwrap();
+            for companions in [false, true] {
+                let temp = tempdir().unwrap();
+                profile(temp.path());
+                let new = temp.path().join(crate::APP_DIR);
+                for name in [
+                    "WebKitCache/Version 17",
+                    "CacheStorage",
+                    "mediakeys/v1",
+                    "storage",
+                ] {
+                    fs::create_dir_all(new.join(name)).unwrap();
+                    fs::write(new.join(name).join("salt"), b"cache").unwrap();
+                }
+                fs::create_dir_all(new.join("WebKitCache/Version 17/Blobs")).unwrap();
+                fs::write(new.join("settings.json"), br#"{"locale":"de","books":[]}"#).unwrap();
+                fs::create_dir(new.join("spell")).unwrap();
+                fs::write(new.join("hsts-storage.sqlite"), b"HSTS cache").unwrap();
+                if companions {
+                    for name in [
+                        "hsts-storage.sqlite-wal",
+                        "hsts-storage.sqlite-shm",
+                        "instance.lock",
+                        "focus.request",
+                    ] {
+                        fs::write(new.join(name), b"").unwrap();
+                    }
+                }
+                assert!(check_cli(temp.path()).is_err());
+                assert!(refusal(temp.path(), &check_cli(temp.path()).unwrap_err())
+                    .contains("ungenutzter Ordner aus einer früheren Installation"));
+                assert_eq!(check_copy_cli(temp.path()).unwrap_err(), CLI_PENDING);
+                let pending = refusal(temp.path(), CLI_PENDING);
+                assert!(!pending.contains("CLI"));
+                assert!(leftovers(temp.path()).is_empty());
+                migrate(temp.path(), copy).unwrap();
+                let saved = leftovers(temp.path());
+                assert_eq!(saved.len(), 1);
+                assert_eq!(
+                    fs::read(saved[0].join("hsts-storage.sqlite")).unwrap(),
+                    b"HSTS cache"
+                );
+                assert!(fs::read_dir(saved[0].join("spell"))
+                    .unwrap()
+                    .next()
+                    .is_none());
+                if companions {
+                    assert!(saved[0].join("hsts-storage.sqlite-wal").is_file());
+                    assert!(saved[0].join("hsts-storage.sqlite-shm").is_file());
+                }
+                assert_eq!(
+                    fs::read(saved[0].join("settings.json")).unwrap(),
+                    br#"{"locale":"de","books":[]}"#
+                );
+                assert_eq!(
+                    fs::read(saved[0].join("WebKitCache/Version 17/salt")).unwrap(),
+                    b"cache"
+                );
+                assert_eq!(
+                    fs::read(new.join("projects/book.db")).unwrap(),
+                    b"manuscript"
+                );
+                assert_eq!(
+                    fs::read(new.join("projects/book.db-wal")).unwrap(),
+                    b"uncheckpointed writing"
+                );
+                let receipt = temp.path().join(format!(
+                    ".{}.json",
+                    saved[0].file_name().unwrap().to_str().unwrap()
+                ));
+                let value: Value = serde_json::from_slice(&fs::read(receipt).unwrap()).unwrap();
+                assert_eq!(
+                    value["destination"],
+                    saved[0].file_name().unwrap().to_str().unwrap()
+                );
+                migrate(temp.path(), copy).unwrap();
+                assert_eq!(leftovers(temp.path()), saved);
             }
-            fs::create_dir_all(new.join("WebKitCache/Version 17/Blobs")).unwrap();
-            fs::write(new.join("settings.json"), br#"{"locale":"de","books":[]}"#).unwrap();
-            fs::write(new.join("instance.lock"), b"").unwrap();
-            fs::write(new.join("focus.request"), b"").unwrap();
-            assert!(check_cli(temp.path()).is_err());
-            assert!(refusal(temp.path(), &check_cli(temp.path()).unwrap_err())
-                .contains("ungenutzter Restordner"));
-            assert_eq!(check_copy_cli(temp.path()).unwrap_err(), CLI_PENDING);
-            let pending = refusal(temp.path(), CLI_PENDING);
-            assert!(!pending.contains("CLI"));
-            assert!(leftovers(temp.path()).is_empty());
-            migrate(temp.path(), copy).unwrap();
-            let saved = leftovers(temp.path());
-            assert_eq!(saved.len(), 1);
-            assert_eq!(
-                fs::read(saved[0].join("settings.json")).unwrap(),
-                br#"{"locale":"de","books":[]}"#
-            );
-            assert_eq!(
-                fs::read(saved[0].join("WebKitCache/Version 17/salt")).unwrap(),
-                b"cache"
-            );
-            assert_eq!(
-                fs::read(new.join("projects/book.db")).unwrap(),
-                b"manuscript"
-            );
-            assert_eq!(
-                fs::read(new.join("projects/book.db-wal")).unwrap(),
-                b"uncheckpointed writing"
-            );
-            let receipt = temp.path().join(format!(
-                ".{}.json",
-                saved[0].file_name().unwrap().to_str().unwrap()
-            ));
-            let value: Value = serde_json::from_slice(&fs::read(receipt).unwrap()).unwrap();
-            assert_eq!(
-                value["destination"],
-                saved[0].file_name().unwrap().to_str().unwrap()
-            );
-            migrate(temp.path(), copy).unwrap();
-            assert_eq!(leftovers(temp.path()), saved);
         }
     }
 
@@ -1425,7 +1465,11 @@ mod tests {
                 "recovery/",
                 "exports/",
                 "imports/",
-                "spell/",
+                "spell/en_US.dic",
+                "spell/en_US.exc",
+                "spell/personal.dic",
+                "spell/unknown",
+                "spell/nested/",
                 "identities.json",
                 "book.db",
                 "unknown",
@@ -1440,7 +1484,10 @@ mod tests {
                 "WebKit/book.localstorage",
                 "WebKitCache/book.sqlite3",
                 "storage/book.localstorage",
-                "hsts-storage.sqlite",
+                "other.sqlite",
+                "hsts-storage.sqlite3",
+                "HSTS-storage.sqlite",
+                "WebKit/hsts-storage.sqlite",
             ] {
                 let temp = tempdir().unwrap();
                 let old = profile(temp.path());
@@ -1450,7 +1497,7 @@ mod tests {
                     fs::create_dir_all(new.join(name)).unwrap();
                 } else {
                     fs::create_dir_all(new.join(name).parent().unwrap()).unwrap();
-                    fs::write(new.join(name), b"keep").unwrap();
+                    fs::write(new.join(name), b"Personalword377\n").unwrap();
                 }
                 assert!(migrate(temp.path(), copy).is_err(), "{name}, copy={copy}");
                 assert!(new.join(name).exists());
@@ -1540,6 +1587,50 @@ mod tests {
     }
 
     #[test]
+    fn missing_newer_folder_is_omitted_in_both_languages() {
+        for (locale, heading, keep, absent) in [
+            (
+                "en",
+                "Older folder (1 book):",
+                "Please keep this folder",
+                "Newer folder",
+            ),
+            (
+                "de",
+                "Bisheriger Ordner (1 Buch):",
+                "Bitte bewahren Sie diesen Ordner auf",
+                "Neuer Ordner",
+            ),
+        ] {
+            let temp = tempdir().unwrap();
+            let old = profile(temp.path());
+            let settings = serde_json::to_vec(&json!({"locale": locale})).unwrap();
+            fs::write(old.join("settings.json"), &settings).unwrap();
+            for detail in [
+                "settings migration refused: invalid JSON",
+                "application data identity is a reparse point",
+            ] {
+                let message = refusal(temp.path(), detail);
+                assert!(message.contains(heading), "{message}");
+                assert!(message.contains(keep), "{message}");
+                assert!(message.contains(old.to_str().unwrap()), "{message}");
+                assert!(!message.contains(absent), "{message}");
+                assert!(
+                    !message.contains(temp.path().join(crate::APP_DIR).to_str().unwrap()),
+                    "{message}"
+                );
+                assert!(
+                    !message.contains("both folders") && !message.contains("beide Ordner"),
+                    "{message}"
+                );
+                assert!(message.ends_with(detail));
+            }
+            assert_eq!(fs::read(old.join("settings.json")).unwrap(), settings);
+            assert!(!temp.path().join(crate::APP_DIR).exists());
+        }
+    }
+
+    #[test]
     fn conflict_explanation_counts_books_in_both_languages_without_writing() {
         for (locale, opening, count) in [
             (
@@ -1574,6 +1665,14 @@ mod tests {
                 "Neuer Ordner (1 Buch):"
             }));
             assert!(message.contains("github.com/iuliandita/garret/issues"));
+            assert!(
+                message.contains(if locale == "en" {
+                    "Please keep both folders"
+                } else {
+                    "Bitte bewahren Sie beide Ordner auf"
+                }),
+                "{message}"
+            );
             assert!(message.ends_with(&detail));
             assert!(!temp.path().join(INTENT).exists());
             assert!(leftovers(temp.path()).is_empty());
@@ -1976,7 +2075,7 @@ mod tests {
         assert!(message.contains("github.com/iuliandita/garret/issues"));
         assert!(message.contains("Technische Details (Englisch)"));
         assert!(message.contains(&old.to_string_lossy().to_string()));
-        assert!(message.contains(
+        assert!(!message.contains(
             &temp
                 .path()
                 .join(crate::APP_DIR)

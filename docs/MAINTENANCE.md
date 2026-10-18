@@ -11,6 +11,9 @@ paths and temporary directories containing the home or profile must refuse.
 Keep completed Windows migrations out of the set-aside path and count only books
 that exist when explaining conflicts. Migration records prevent claiming that
 nothing changed after a move or set-aside has started.
+Pin the observed launch layout, the exact top-level HSTS cache exception, and
+empty-only `spell/` handling; personally learned dictionary words must refuse.
+Capture single-folder and two-folder guidance in both languages.
 
 If an older book contains empty text runs from replace-all, the editor removes
 those runs on load. The original database body stays intact until the next save;

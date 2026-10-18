@@ -348,19 +348,23 @@ compatibility link after migration. Close older versions before first launch.
 On Linux, macOS and Windows, an unused newer folder is kept as a dated sibling
 named `garret.set-aside-...` before normal migration continues. Only settings
 without non-temporary book references, lock/focus files and explicitly
-recognized browser cache/storage directories qualify. Unknown entries, database
+recognized browser cache/storage directories qualify. The exact top-level HSTS
+cache `hsts-storage.sqlite` and its `-wal`/`-shm` companions also qualify, as does
+an empty `spell/` directory. Any file in `spell/` refuses: rendered project
+dictionaries and personally learned words share that location. Unknown entries, other database
 files (including SQLite and local-storage suffixes), book/recovery/import/export folders, dictionaries, identities and encrypted
 backup preferences still stop migration. The CLI only explains; open the app to
 perform the move. A synced, append-only sibling receipt records each attempted
 set-aside before an exclusive atomic rename. Interrupted attempts retain all
 folders and receipts, and normal migration resumes on the next app launch.
 The success notice is logged without interrupting startup. Real conflicts show
-the two folders and counts of books found on disk in English or German, with an
+the existing folders and counts of books found on disk in English or German, with an
 explanation when books cannot be counted. Missing paths on disconnected storage
 still stop migration; only missing paths whose nearest resolvable ancestor is
 temporary qualify. Temporary storage must not contain the home or profile folder.
 A completed Windows migration is never set aside again. Keep both folders and
-request recovery help at the address shown.
+request recovery help at the address shown. When the newer folder does not exist,
+the message names only the older folder and asks you to keep that folder.
 Back up both closed profiles before upgrade or recovery. For rollback, retain the
 set-aside folder and complete migrated profile, then use a separate pre-upgrade
 backup with the previous package; do not overwrite newer writing.
