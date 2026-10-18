@@ -132,8 +132,9 @@ determine whether pixel axes swap before calculation. WebKit applies JPEG EXIF
 rotation but retains raw PNG dimensions for PNG eXIf; the proof follows that
 displayed geometry. EPUB retains the original PNG and DOCX uses its raw drawing
 dimensions. Preview reports include per-placement `figures`
-with item and instance IDs, DPI, warning, and flag values. Authoring, publication
-of new nodes, and their activation interface remain disabled; creation stays at
+with item and instance IDs, DPI, warning, and flag values. Existing schema-18
+books can publish these nodes. Authoring and its activation interface remain
+disabled; creation stays at
 schema 17, existing schema-18 books retain their version, and no new migration runs. Native Linux output is exercised under a virtual
 display; Windows and macOS layout qualification remains external.
 
