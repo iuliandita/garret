@@ -248,11 +248,6 @@ function bodyText(body: string): string {
   return legacyText(body);
 }
 
-/** Every run of text in a body that carries at least one mark. */
-function markedRuns(body: string): string[] {
-  return legacyMarkedRuns(body);
-}
-
 if (process.env.APP_GUI !== "1") {
   console.log("APP_GUI=1 not set; import run skipped (needs a display and a built shell).");
   process.exit(0);
@@ -446,7 +441,10 @@ for (const { section, stored } of paired) {
     oracleProseSections++;
     if (stored.body !== null && normalizeText(bodyText(stored.body)) === wanted) proseMatches++;
   }
-  if (stored.body !== null) foundMarks.push(...markedRuns(stored.body));
+  if (stored.body !== null) {
+    const body = stored.body;
+    foundMarks.push(...legacyMarkedRuns(body));
+  }
 }
 
 const marksFound = oracleMarks.filter((run) => foundMarks.includes(run)).length;

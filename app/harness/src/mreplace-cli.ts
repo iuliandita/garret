@@ -79,10 +79,6 @@ interface WalkRow {
   depth: number;
 }
 
-function projectText(body: string): string {
-  return legacyText(body);
-}
-
 /** ONE CODE POINT AT A TIME, never `String.prototype.toLowerCase` on a whole
  *  string: JS implements Unicode SpecialCasing (Final_Sigma) and the host folds
  *  per character, so a whole-string fold here would make the rig and the
@@ -166,7 +162,7 @@ function readBodies(path: string): Map<string, string> {
 function readTexts(path: string): Map<string, string> {
   const out = new Map<string, string>();
   for (const [id, body] of readBodies(path)) {
-    const text = projectText(body);
+    const text = legacyText(body);
     if (text !== null) out.set(id, text);
   }
   return out;

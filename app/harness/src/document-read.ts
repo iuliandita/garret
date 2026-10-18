@@ -1,10 +1,10 @@
 // Independent readers for stored manuscript JSON. No editor or store imports.
-export interface TextRun {
+interface TextRun {
   type: "text";
   text: string;
   marks?: { type: string }[];
 }
-export interface Paragraph {
+interface Paragraph {
   type: "paragraph";
   content?: TextRun[];
 }

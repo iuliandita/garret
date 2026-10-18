@@ -82,23 +82,36 @@ fn fixture() -> Fixture {
     }
 }
 
+fn book_of<'a>(name: &'a str, walk: &'a Walked) -> crate::export::Book<'a> {
+    crate::export::Book {
+        publication: None,
+        single_scene: walk.single_scene,
+        name,
+        contents_title: "Contents",
+        front: &walk.front,
+        chapters: &walk.chapters,
+        back: &walk.back,
+    }
+}
+
+fn plan_of(
+    fixture: &Fixture,
+    book: &crate::export::Book,
+    bodies: &HashMap<String, String>,
+    scopes: crate::publication_plan::Scopes,
+) -> Result<Plan, String> {
+    Plan::from_store(book, bodies, scopes, &fixture.store, &fixture.db)
+}
+
 fn with_plan<T>(
     fixture: &Fixture,
     story: Option<&str>,
     f: impl FnOnce(&crate::export::Book, &Walked, &Plan) -> T,
 ) -> T {
     let walk = walk_scope(&fixture.store, story).unwrap();
-    let book = crate::export::Book {
-        publication: None,
-        single_scene: walk.single_scene,
-        name: "Collected",
-        contents_title: "Contents",
-        front: &walk.front,
-        chapters: &walk.chapters,
-        back: &walk.back,
-    };
+    let book = book_of("Collected", &walk);
     let scopes = publication_scopes(&fixture.store).unwrap();
-    let plan = Plan::from_store(&book, &walk.bodies, scopes, &fixture.store, &fixture.db).unwrap();
+    let plan = plan_of(fixture, &book, &walk.bodies, scopes).unwrap();
     f(&book, &walk, &plan)
 }
 
@@ -134,9 +147,9 @@ fn docx_publication_uses_native_notes_scopes_and_inline_media() {
         fixture.store.set_meta("notes.numbering", numbering).unwrap();
         with_plan(&fixture, selected.then_some(fixture.stories[0].as_str()), |_book, _walk, plan| {
             assert_eq!(plan.notes.iter().map(|note| note.number).collect::<Vec<_>>(), expected_numbers);
-            let bytes = render_scope_policy(&fixture.db, "Collected", crate::export::Format::Docx,
+            let bytes = publishing_fixture(|| render_scope_with(&fixture.db, "Collected", crate::export::Format::Docx,
                 &crate::identity::Vault::default(), crate::strings::Strings::english(), None,
-                selected.then_some(fixture.stories[0].as_str()), true).unwrap().0.bytes;
+                selected.then_some(fixture.stories[0].as_str()))).unwrap().0.bytes;
             let entries = crate::epub::read_zip(&bytes).unwrap();
             let part = |name: &str| String::from_utf8(entries.iter().find(|(path, _)| path == name).unwrap().1.clone()).unwrap();
             for (path, bytes) in &entries {
@@ -469,23 +482,9 @@ fn publication_refusals_preserve_unknown_content_and_missing_originals() {
         .contains("unsupported note numbering"));
     fixture.store.delete_meta("notes.numbering").unwrap();
     let walk = walk_scope(&fixture.store, Some(&fixture.stories[0])).unwrap();
-    let book = crate::export::Book {
-        publication: None,
-        single_scene: false,
-        name: "N",
-        contents_title: "Contents",
-        front: &walk.front,
-        chapters: &walk.chapters,
-        back: &walk.back,
-    };
+    let book = crate::export::Book { single_scene: false, ..book_of("N", &walk) };
     let build = |bodies: &HashMap<String, String>| {
-        Plan::from_store(
-            &book,
-            bodies,
-            crate::publication_plan::Scopes::book(&book),
-            &fixture.store,
-            &fixture.db,
-        )
+        plan_of(&fixture, &book, bodies, crate::publication_plan::Scopes::book(&book))
     };
     assert!(build(&walk.bodies).is_ok());
     let original: serde_json::Value =
@@ -588,15 +587,7 @@ fn disabled_new_node_epub_refuses_before_publishing_a_destination() {
 fn publication_rejects_xml_forbidden_note_caption_and_alt_characters() {
     let fixture = fixture();
     let walk = walk_scope(&fixture.store, Some(&fixture.stories[0])).unwrap();
-    let book = crate::export::Book {
-        publication: None,
-        single_scene: false,
-        name: "N",
-        contents_title: "Contents",
-        front: &walk.front,
-        chapters: &walk.chapters,
-        back: &walk.back,
-    };
+    let book = crate::export::Book { single_scene: false, ..book_of("N", &walk) };
     let original: serde_json::Value =
         serde_json::from_str(&walk.bodies[&fixture.scenes[0]]).unwrap();
     for (field, pointer) in [
@@ -610,13 +601,7 @@ fn publication_rejects_xml_forbidden_note_caption_and_alt_characters() {
             let mut document = original.clone();
             *document.pointer_mut(pointer).unwrap() = json!(format!("before{invalid}after"));
             let bodies = HashMap::from([(fixture.scenes[0].clone(), document.to_string())]);
-            let error = Plan::from_store(
-                &book,
-                &bodies,
-                crate::publication_plan::Scopes::book(&book),
-                &fixture.store,
-                &fixture.db,
-            )
+            let error = plan_of(&fixture, &book, &bodies, crate::publication_plan::Scopes::book(&book))
             .err()
             .unwrap();
             assert!(
@@ -674,8 +659,8 @@ fn scoped_markdown_uses_the_publication_plan_and_round_trips_its_package() {
     for numbering in ["book", "story", "chapter"] {
         fixture.store.set_meta("notes.numbering", numbering).unwrap();
         for story in [None, Some(fixture.stories[0].as_str())] {
-            let (written, _, _, _, _) = render_scope_policy(&fixture.db, "Collected", crate::export::Format::Markdown,
-                &crate::identity::Vault::default(), crate::strings::Strings::english(), None, story, true).unwrap();
+            let (written, _, _, _, _) = publishing_fixture(|| render_scope_with(&fixture.db, "Collected", crate::export::Format::Markdown,
+                &crate::identity::Vault::default(), crate::strings::Strings::english(), None, story)).unwrap();
             let text = written.text();
             assert!(text.starts_with(crate::markdown::MARKER));
             assert!(text.contains(r"\[^1\]"));
@@ -794,8 +779,8 @@ fn pdf_publication_reuses_scopes_assets_and_refuses_disabled_production() {
         for selected in [false, true] {
             let story = selected.then_some(fixture.stories[0].as_str());
             with_plan(&fixture, story, |book, _, plan| {
-                let (written, _, _, _, _) = render_scope_policy(&fixture.db, "Collected", crate::export::Format::Pdf,
-                    &crate::identity::Vault::default(), crate::strings::Strings::english(), None, story, true).unwrap();
+                let (written, _, _, _, _) = publishing_fixture(|| render_scope_with(&fixture.db, "Collected", crate::export::Format::Pdf,
+                    &crate::identity::Vault::default(), crate::strings::Strings::english(), None, story)).unwrap();
                 let html = written.text();
                 let flow = html.split("<div id=\"proof-flow\">\n").nth(1).unwrap().split("</div>\n<div id=\"proof-leaves\">").next().unwrap();
                 for note in &plan.notes {
@@ -917,8 +902,8 @@ fn xml_export_cleanup_covers_publication_attributes_and_note_scope_titles() {
     let conn = rusqlite::Connection::open(&fixture.db).unwrap();
     conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![source, scene.id]).unwrap();
     for format in [crate::export::Format::Epub, crate::export::Format::Docx] {
-        let (written, _, _, _, removed) = render_scope_policy(&fixture.db, "Book", format,
-            &crate::identity::Vault::default(), crate::strings::Strings::new(&LOCALE), None, None, true).unwrap();
+        let (written, _, _, _, removed) = publishing_fixture(|| render_scope_with(&fixture.db, "Book", format,
+            &crate::identity::Vault::default(), crate::strings::Strings::new(&LOCALE), None, None)).unwrap();
         assert_eq!(removed, if format == crate::export::Format::Epub { 10 } else { 8 });
         let xml = super::xml_metadata_tests::xml_parts(&written);
         for text in ["Section title", "Note body", "Caption text", "Alt text"] {
