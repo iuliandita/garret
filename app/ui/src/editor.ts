@@ -22,7 +22,7 @@ import { EditSourceTracker, type EditSourceChange } from "./edit-source";
 import { t } from "./i18n";
 import { validDocument, validDocumentShape } from "./document-format";
 import { clipboardPlaintext, positionalText, proseText, type PlaintextLabels } from "./document-projections";
-import { remintClipboard, validateClipboardHtml } from "./document-clipboard";
+import { refusesPicture, remintClipboard, validateClipboardHtml } from "./document-clipboard";
 import type { FieldLocator } from "./find-locate";
 
 export const schema = new Schema({
@@ -550,7 +550,7 @@ export interface EditorOptions {
    *  rule "a caret jump must never mark the document dirty", now enforced by
    *  ProseMirror instead of by a lookup table. */
   onChange?: (change: EditSourceChange) => void;
-  onClipboardRefused?: () => void;
+  onClipboardRefused?: (reason?: "picture") => void;
   /** Called after EVERY applied transaction, a selection move included.
    *
    *  A SECOND CALLBACK, deliberately: the flush is armed by onChange, and the
@@ -636,6 +636,20 @@ export function createEditor(
     state: EditorState.create({ doc, plugins: editorPlugins() }),
     attributes: { role: "textbox", "aria-multiline": "true", "aria-label": t("editor.name"), lang: "" },
     clipboardTextSerializer: slice => clipboardPlaintext(slice.content, plaintextLabels()),
+    handleDOMEvents: {
+      paste(_view, event) {
+        if (!refusesPicture(event.clipboardData)) return false;
+        event.preventDefault();
+        opts.onClipboardRefused?.("picture");
+        return true;
+      },
+      drop(_view, event) {
+        if (!refusesPicture(event.dataTransfer)) return false;
+        event.preventDefault();
+        opts.onClipboardRefused?.("picture");
+        return true;
+      },
+    },
     handlePaste(_view, event, slice) {
       try {
         validateClipboardHtml(event.clipboardData?.getData("text/html") ?? "");
