@@ -318,7 +318,7 @@ def schema17_smoke(out: Path, source: Path, steps: list[str]) -> None:
     nodes = checkpoint(out, "schema17-library", "Harbour")
     tap_text(nodes, "Harbour Imported copy", "Harbour Importierte Kopie", out=out)
     nodes = checkpoint(out, "schema17-prose", "The tide waited.")
-    tap_text(nodes, "The tide waited.", out=out)
+    tap_editable(nodes)
     adb("shell", "input", "keyevent", "KEYCODE_MOVE_HOME")
     type_token("PhoneEdit17")
     checkpoint(out, "schema17-edited", "PhoneEdit17")
@@ -430,11 +430,13 @@ def main() -> int:
             steps.append("APK installed; book library rendered")
 
             if args.reader_fixture or args.schema17_fixture:
+                checkpoint(out, "01-ready-library", "Import archive", "Archiv importieren")
                 # Initial installation can recreate the activity while the native
                 # runtime survives. Isolate transfer checks from that startup case.
                 adb("shell", "am", "force-stop", PKG)
+                time.sleep(2)
                 adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
-                checkpoint(out, "02-transfer-library", "Your books", "Deine Bücher")
+                checkpoint(out, "02-transfer-library", "Import archive", "Archiv importieren")
                 steps.append("app restarted after installation before transfer checks")
                 if args.reader_fixture:
                     reader_smoke(out, args.reader_fixture.resolve(strict=True), steps)
