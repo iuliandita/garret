@@ -1,5 +1,12 @@
 # Keeping documentation current
 
+Desktop profile migration tests exercise both Unix moves and the Windows copy
+path. Keep the unused-folder allow-list conservative, preserve every set-aside
+folder and its append-only receipt, and cover restart before and after the rename.
+The CLI must remain read-only. Conflict guidance uses the host's English and
+German catalogs and reports unknown book counts explicitly. Native Windows and
+macOS verification remains separate from copy-path tests on Linux.
+
 If an older book contains empty text runs from replace-all, the editor removes
 those runs on load. The original database body stays intact until the next save;
 no schema migration or manual repair is needed.

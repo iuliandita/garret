@@ -338,9 +338,23 @@ carries them.
 
 The desktop profile now uses `garret` instead of `cc.local.app`, preserving a
 compatibility link after migration. Close older versions before first launch.
-If migration stops, preserve both folders named in the warning, close garret,
-and request recovery help. Do not merge, overwrite, or delete them. Android uses the separate package move described below; desktop profile
-migration is not sync.
+On Linux, macOS and Windows, an unused newer folder is kept as a dated sibling
+named `garret.set-aside-...` before normal migration continues. Only settings
+without live non-temporary book references, lock/focus files and explicitly
+recognized browser cache/storage directories qualify. Unknown entries, database
+files, book/recovery/import/export folders, dictionaries, identities and encrypted
+backup preferences still stop migration. The CLI only explains; open the app to
+perform the move. A synced, append-only sibling receipt records each attempted
+set-aside before an exclusive atomic rename. Interrupted attempts retain all
+folders and receipts, and normal migration resumes on the next app launch.
+The success notice is logged without interrupting startup. Real conflicts show
+the two folders and recorded book counts (or `?` when unreadable) in English or
+German. Keep both folders and request recovery help at the address shown.
+Back up both closed profiles before upgrade or recovery. For rollback, retain the
+set-aside folder and complete migrated profile, then use a separate pre-upgrade
+backup with the previous package; do not overwrite newer writing.
+Android uses the separate package move described below; desktop profile migration
+is not sync. Windows and macOS native upgrade behavior still needs platform testing.
 
 The desktop application identifier is `com.usegarret.app`. This changes the
 Linux menu-entry identity and macOS bundle identity without relocating books,

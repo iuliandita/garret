@@ -5,12 +5,12 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::fs::{self, OpenOptions};
 use std::io::{Read, Write};
-#[cfg(any(windows, test))]
 use std::path::PathBuf;
 use std::path::{Component, Path};
 
 pub(crate) const LEGACY_DIR: &str = "cc.local.app";
 const INTENT: &str = ".garret-data-migration.json";
+const CLI_PENDING: &str = "open garret to set aside an empty leftover folder before using the CLI";
 #[cfg(any(windows, test))]
 const STAGE: &str = ".garret-data-migration";
 #[cfg(any(windows, test))]
@@ -182,11 +182,223 @@ pub(crate) fn refusal(data_home: &Path, detail: &str) -> String {
         .and_then(|body| serde_json::from_slice::<crate::projects::Settings>(&body).ok())
         .map(|settings| settings.locale)
         .unwrap_or_default();
+    if detail == CLI_PENDING {
+        return locale
+            .strings()
+            .t("startup.data_migration_pending")
+            .to_owned();
+    }
     let guidance = locale.strings().f(
         "startup.data_migration",
-        &[("old", &old.to_string_lossy()), ("new", &new.to_string_lossy())],
+        &[
+            (
+                "status",
+                &locale.strings().t(
+                    if real_directory(&old).unwrap_or(false)
+                        && real_directory(&new).unwrap_or(false)
+                    {
+                        "startup.data_migration_unchanged"
+                    } else {
+                        "startup.data_migration_preserved"
+                    },
+                ),
+            ),
+            ("old", &old.to_string_lossy()),
+            ("new", &new.to_string_lossy()),
+            (
+                "old_count",
+                &book_count(&old).map_or_else(|| "?".into(), |n| n.to_string()),
+            ),
+            (
+                "new_count",
+                &book_count(&new).map_or_else(|| "?".into(), |n| n.to_string()),
+            ),
+        ],
     );
     format!("{guidance}\n{detail}")
+}
+
+fn book_paths(value: &Value) -> Result<Vec<&str>, String> {
+    let mut paths = Vec::new();
+    if let Some(value) = value.get("last_project").filter(|v| !v.is_null()) {
+        paths.push(value.as_str().ok_or("unrecognized last book path")?);
+    }
+    for field in ["books", "recent", "book_locations"] {
+        if let Some(entries) = value.get(field) {
+            for entry in entries.as_array().ok_or("unrecognized book list")? {
+                let path = if field == "books" {
+                    entry
+                } else {
+                    entry.get("path").ok_or("missing book path")?
+                };
+                paths.push(path.as_str().ok_or("unrecognized book path")?);
+            }
+        }
+    }
+    Ok(paths)
+}
+
+fn expanded_path(raw: &str) -> Result<PathBuf, String> {
+    let path = if raw == "~" || raw.starts_with("~/") {
+        let home = crate::projects::home_dir().ok_or("cannot determine the home directory")?;
+        PathBuf::from(crate::projects::expand_home(raw, &home))
+    } else {
+        PathBuf::from(raw)
+    };
+    if !path.is_absolute() || path.components().any(|part| part == Component::ParentDir) {
+        return Err("book path is not an unambiguous absolute path".into());
+    }
+    Ok(path)
+}
+
+fn book_count(root: &Path) -> Option<usize> {
+    let mut paths = std::collections::BTreeSet::new();
+    if metadata(&root.join("settings.json")).ok()?.is_some() {
+        let value: Value =
+            serde_json::from_slice(&bytes(&root.join("settings.json")).ok()?).ok()?;
+        for raw in book_paths(&value).ok()? {
+            let path = expanded_path(raw).ok()?;
+            paths.insert(fs::canonicalize(&path).unwrap_or(path));
+        }
+    }
+    let projects = root.join("projects");
+    if real_directory(&projects).ok()? {
+        for entry in fs::read_dir(projects).ok()? {
+            let path = entry.ok()?.path();
+            if path.extension().is_some_and(|ext| ext == "db") {
+                paths.insert(fs::canonicalize(&path).unwrap_or(path));
+            }
+        }
+    }
+    Some(paths.len())
+}
+
+fn harmless_settings(root: &Path) -> Result<bool, String> {
+    let value: Value = serde_json::from_slice(&bytes(&root.join("settings.json"))?)
+        .map_err(|error| error.to_string())?;
+    let object = value.as_object().ok_or("settings must be an object")?;
+    let known = serde_json::to_value(crate::projects::Settings::default())
+        .map_err(|error| error.to_string())?;
+    if object.keys().any(|key| known.get(key).is_none()) {
+        return Ok(false);
+    }
+    for field in [
+        "encrypted_backup_dir",
+        "mirrored",
+        "mirrored_book_ids",
+        "protection_claims",
+    ] {
+        if let Some(value) = object.get(field) {
+            if !value.is_null() && !value.as_array().is_some_and(Vec::is_empty) {
+                return Ok(false);
+            }
+        }
+    }
+    let temp = fs::canonicalize(std::env::temp_dir()).map_err(|error| error.to_string())?;
+    for raw in book_paths(&value)? {
+        let path = expanded_path(raw)?;
+        match fs::canonicalize(path) {
+            Ok(path) if !path.starts_with(&temp) => return Ok(false),
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.to_string()),
+        }
+    }
+    Ok(true)
+}
+
+fn harmless_folder(root: &Path) -> Result<bool, String> {
+    validate_tree(root, 0)?;
+    for entry in fs::read_dir(root).map_err(|error| error.to_string())? {
+        let path = entry.map_err(|error| error.to_string())?.path();
+        let meta = metadata(&path)?.ok_or("leftover folder changed during inspection")?;
+        let allowed = if meta.is_dir() {
+            matches!(
+                path.file_name().and_then(|name| name.to_str()),
+                Some(
+                    "WebKit"
+                        | "webkitgtk"
+                        | "WebView2"
+                        | "EBWebView"
+                        | "GPUCache"
+                        | "Cache"
+                        | "Code Cache"
+                        | "Local Storage"
+                        | "IndexedDB"
+                        | "Session Storage"
+                )
+            ) && cache_only(&path)?
+        } else {
+            match path.file_name().and_then(|name| name.to_str()) {
+                Some("settings.json") => harmless_settings(root)?,
+                Some("instance.lock" | "focus.request") => true,
+                _ => false,
+            }
+        };
+        if !allowed {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+fn cache_only(root: &Path) -> Result<bool, String> {
+    for entry in fs::read_dir(root).map_err(|error| error.to_string())? {
+        let path = entry.map_err(|error| error.to_string())?.path();
+        let name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or("unrecognized cache filename")?
+            .to_ascii_lowercase();
+        if [".db", ".db-wal", ".db-shm"]
+            .iter()
+            .any(|ending| name.ends_with(*ending))
+        {
+            return Ok(false);
+        }
+        if metadata(&path)?.ok_or("cache disappeared")?.is_dir() && !cache_only(&path)? {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+fn set_aside(data_home: &Path) -> Result<(), String> {
+    let new = data_home.join(crate::APP_DIR);
+    if !data_home.is_absolute() || !harmless_folder(&new)? {
+        return Err("both application data folders need to be kept".into());
+    }
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|error| error.to_string())?
+        .as_millis();
+    let stamp = crate::recovery::point_id(i64::try_from(now).map_err(|error| error.to_string())?);
+    for ordinal in 0..1000 {
+        let name = format!("{}.set-aside-{stamp}-{ordinal}", crate::APP_DIR);
+        let destination = data_home.join(&name);
+        let receipt = data_home.join(format!(".{name}.json"));
+        if metadata(&destination)?.is_some() || metadata(&receipt)?.is_some() {
+            continue;
+        }
+        let identity = source_identity(&new)?;
+        write_new(
+            &receipt,
+            &serde_json::to_vec(&serde_json::json!({
+                "version": 1, "source": crate::APP_DIR, "destination": name,
+                "source_identity": identity,
+            }))
+            .map_err(|error| error.to_string())?,
+        )?;
+        crate::backup_bundle::sync_directory(data_home)?;
+        if source_identity(&new)? != identity || !harmless_folder(&new)? {
+            return Err("leftover folder changed before it could be set aside".into());
+        }
+        move_new(&new, &destination)?;
+        crate::backup_bundle::sync_directory(data_home)?;
+        eprintln!("An empty leftover folder was set aside as {name}.");
+        return Ok(());
+    }
+    Err("cannot reserve a name for the leftover folder".into())
 }
 
 fn prepare_settings(
@@ -334,6 +546,9 @@ pub(crate) fn check_cli(data_home: &Path) -> Result<(), String> {
     }
     let old_exists = real_directory(&old)?;
     let new_exists = real_directory(&new)?;
+    if old_exists && new_exists && harmless_folder(&new).unwrap_or(false) {
+        return Err(CLI_PENDING.into());
+    }
     #[cfg(windows)]
     {
         if old_exists && has_payload(&old)? {
@@ -353,7 +568,7 @@ pub(crate) fn check_cli(data_home: &Path) -> Result<(), String> {
     }
     #[cfg(unix)]
     if old_exists {
-        return Err(if new_exists { "both application data directories exist; preserve both and resolve the conflict before continuing" } else {
+        return Err(if new_exists { "both application data folders need to be kept" } else {
             "application data must be moved first; close older garret versions and open garret before using the CLI" }.into());
     }
     let _ = new_exists;
@@ -381,8 +596,8 @@ pub(crate) fn prepare(data_home: &Path) -> Result<(), String> {
         if !old_exists {
             return Ok(());
         }
-        if new_exists {
-            return Err("both application data directories exist; neither was changed".into());
+        if new_exists && !harmless_folder(&new)? {
+            return Err("both application data folders need to be kept".into());
         }
         if !data_home.is_absolute() {
             return Err("application data migration requires an absolute data home".into());
@@ -397,9 +612,6 @@ pub(crate) fn prepare(data_home: &Path) -> Result<(), String> {
         intent
     };
     if !legacy_alias(&old, &new)? && real_directory(&old)? {
-        if real_directory(&new)? {
-            return Err("both application data directories exist; neither was changed".into());
-        }
         // Recheck the saved settings before the only operation that moves source data.
         let current = prepare_settings(&old, &old, &new, crate::projects::home_dir().as_deref())?;
         if current.source_identity != intent.source_identity
@@ -407,6 +619,9 @@ pub(crate) fn prepare(data_home: &Path) -> Result<(), String> {
             || current.settings_after != intent.settings_after
         {
             return Err("settings changed after application data migration was prepared".into());
+        }
+        if real_directory(&new)? {
+            set_aside(data_home)?;
         }
         move_new(&old, &new)?;
         crate::backup_bundle::sync_directory(data_home)?;
@@ -652,16 +867,24 @@ fn prepare_copy(data_home: &Path, guard: &crate::instance_file::Guard) -> Result
     let stage = data_home.join(STAGE);
     real_directory(&old)?;
     if real_directory(&new)? {
-        if has_payload(&old)? {
-            let record = completed_record(&new)?
-                .ok_or("both application data directories exist; neither was changed")?;
-            if !guard.migrated()? {
-                return Err("both application data directories exist; neither was changed".into());
+        if has_payload(&old)? && harmless_folder(&new)? {
+            validate_profile(&old)?;
+            prepare_settings(&old, &old, &new, crate::projects::home_dir().as_deref())?;
+            set_aside(data_home)?;
+        } else {
+            if has_payload(&old)? {
+                let record = completed_record(&new)?
+                    .ok_or("both application data directories exist; neither was changed")?;
+                if !guard.migrated()? {
+                    return Err(
+                        "both application data directories exist; neither was changed".into(),
+                    );
+                }
+                verify_completed(&old, &new, &record)?;
             }
-            verify_completed(&old, &new, &record)?;
+            guard.mark_migrated()?;
+            return Ok(());
         }
-        guard.mark_migrated()?;
-        return Ok(());
     }
     if !has_payload(&old)? {
         if metadata(&stage)?.is_some() {
@@ -738,6 +961,237 @@ mod tests {
     use super::*;
     use serde_json::json;
     use tempfile::tempdir;
+
+    fn migrate(home: &Path, copy: bool) -> Result<(), String> {
+        if copy {
+            let guard = match crate::instance_file::claim(home) {
+                crate::instance_file::Claim::Owned(guard) => guard,
+                _ => panic!("ownership"),
+            };
+            prepare_copy(home, &guard)
+        } else {
+            #[cfg(unix)]
+            return prepare(home);
+            #[cfg(windows)]
+            unreachable!()
+        }
+    }
+
+    fn modes() -> Vec<bool> {
+        #[cfg(unix)]
+        return vec![false, true];
+        #[cfg(windows)]
+        return vec![true];
+    }
+
+    fn leftovers(home: &Path) -> Vec<PathBuf> {
+        fs::read_dir(home)
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .filter(|path| {
+                path.file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .starts_with("garret.set-aside-")
+            })
+            .collect()
+    }
+
+    #[test]
+    fn harmless_destination_is_preserved_and_books_migrate_on_both_paths() {
+        for copy in modes() {
+            let temp = tempdir().unwrap();
+            profile(temp.path());
+            let new = temp.path().join(crate::APP_DIR);
+            fs::create_dir_all(new.join("WebKit/Cache")).unwrap();
+            fs::write(new.join("WebKit/Cache/data"), b"cache").unwrap();
+            fs::write(new.join("settings.json"), br#"{"locale":"de","books":[]}"#).unwrap();
+            fs::write(new.join("instance.lock"), b"").unwrap();
+            fs::write(new.join("focus.request"), b"").unwrap();
+            assert!(check_cli(temp.path()).is_err());
+            assert!(refusal(temp.path(), &check_cli(temp.path()).unwrap_err())
+                .contains("Öffnen Sie garret einmal"));
+            assert!(leftovers(temp.path()).is_empty());
+            migrate(temp.path(), copy).unwrap();
+            let saved = leftovers(temp.path());
+            assert_eq!(saved.len(), 1);
+            assert_eq!(
+                fs::read(saved[0].join("settings.json")).unwrap(),
+                br#"{"locale":"de","books":[]}"#
+            );
+            assert_eq!(
+                fs::read(saved[0].join("WebKit/Cache/data")).unwrap(),
+                b"cache"
+            );
+            assert_eq!(
+                fs::read(new.join("projects/book.db")).unwrap(),
+                b"manuscript"
+            );
+            assert_eq!(
+                fs::read(new.join("projects/book.db-wal")).unwrap(),
+                b"uncheckpointed writing"
+            );
+            let receipt = temp.path().join(format!(
+                ".{}.json",
+                saved[0].file_name().unwrap().to_str().unwrap()
+            ));
+            let value: Value = serde_json::from_slice(&fs::read(receipt).unwrap()).unwrap();
+            assert_eq!(
+                value["destination"],
+                saved[0].file_name().unwrap().to_str().unwrap()
+            );
+            migrate(temp.path(), copy).unwrap();
+            assert_eq!(leftovers(temp.path()), saved);
+        }
+    }
+
+    #[test]
+    fn real_and_unknown_destination_entries_are_never_set_aside() {
+        for copy in modes() {
+            for name in [
+                "projects/",
+                "recovery/",
+                "exports/",
+                "imports/",
+                "spell/",
+                "identities.json",
+                "book.db",
+                "unknown",
+                "WebKit/book.db",
+                "WebKit/.db",
+            ] {
+                let temp = tempdir().unwrap();
+                let old = profile(temp.path());
+                let new = temp.path().join(crate::APP_DIR);
+                fs::create_dir_all(&new).unwrap();
+                if name.ends_with('/') {
+                    fs::create_dir_all(new.join(name)).unwrap();
+                } else {
+                    fs::create_dir_all(new.join(name).parent().unwrap()).unwrap();
+                    fs::write(new.join(name), b"keep").unwrap();
+                }
+                assert!(migrate(temp.path(), copy).is_err(), "{name}, copy={copy}");
+                assert!(new.join(name).exists());
+                assert_eq!(
+                    fs::read(old.join("projects/book.db")).unwrap(),
+                    b"manuscript"
+                );
+                assert!(leftovers(temp.path()).is_empty());
+            }
+        }
+    }
+
+    #[test]
+    fn settings_with_live_books_or_uncertain_data_refuse_on_both_paths() {
+        let book = Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml");
+        let original = fs::read(&book).unwrap();
+        assert!(!book.starts_with(fs::canonicalize(std::env::temp_dir()).unwrap()));
+        for copy in modes() {
+            for value in [
+                json!({"books":[book]}),
+                json!({"last_project":book}),
+                json!({"recent":[{"path":book}]}),
+                json!({"book_locations":[{"path":book}]}),
+                json!({"encrypted_backup_dir":"/archives"}),
+                json!({"books":[7]}),
+                json!({"books":["relative.db"]}),
+                json!({"future_setting":true}),
+                json!([]),
+            ] {
+                let temp = tempdir().unwrap();
+                profile(temp.path());
+                let new = temp.path().join(crate::APP_DIR);
+                fs::create_dir(&new).unwrap();
+                let body = serde_json::to_vec(&value).unwrap();
+                fs::write(new.join("settings.json"), &body).unwrap();
+                assert!(migrate(temp.path(), copy).is_err(), "{value}, copy={copy}");
+                assert_eq!(fs::read(new.join("settings.json")).unwrap(), body);
+                assert!(leftovers(temp.path()).is_empty());
+            }
+        }
+        assert_eq!(fs::read(book).unwrap(), original);
+    }
+
+    #[test]
+    fn set_aside_interruption_and_stale_receipt_resume_without_overwriting() {
+        for copy in modes() {
+            for moved in [false, true] {
+                let temp = tempdir().unwrap();
+                profile(temp.path());
+                let new = temp.path().join(crate::APP_DIR);
+                fs::create_dir(&new).unwrap();
+                fs::write(new.join("settings.json"), b"{}").unwrap();
+                #[cfg(unix)]
+                if !copy {
+                    let intent = prepare_settings(
+                        &temp.path().join(LEGACY_DIR),
+                        &temp.path().join(LEGACY_DIR),
+                        &new,
+                        crate::projects::home_dir().as_deref(),
+                    )
+                    .unwrap();
+                    write_new(
+                        &temp.path().join(INTENT),
+                        &serde_json::to_vec(&intent).unwrap(),
+                    )
+                    .unwrap();
+                }
+                let stale = temp.path().join(".garret.set-aside-interrupted.json");
+                fs::write(&stale, b"receipt retained before rename").unwrap();
+                if moved {
+                    set_aside(temp.path()).unwrap();
+                }
+                migrate(temp.path(), copy).unwrap();
+                assert_eq!(leftovers(temp.path()).len(), 1);
+                assert_eq!(fs::read(stale).unwrap(), b"receipt retained before rename");
+                assert_eq!(
+                    fs::read(new.join("projects/book.db")).unwrap(),
+                    b"manuscript"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn conflict_explanation_counts_books_in_both_languages_without_writing() {
+        for (locale, opening, count) in [
+            (
+                "en",
+                "Nothing was lost or changed.",
+                "Older folder (books: 1):",
+            ),
+            (
+                "de",
+                "Nichts ist verloren gegangen oder verändert worden.",
+                "Bisheriger Ordner (Bücher: 1):",
+            ),
+        ] {
+            let temp = tempdir().unwrap();
+            let old = profile(temp.path());
+            fs::write(old.join("settings.json"), br#"{}"#).unwrap();
+            let new = temp.path().join(crate::APP_DIR);
+            fs::create_dir_all(new.join("projects")).unwrap();
+            fs::write(new.join("projects/other.db"), b"other book").unwrap();
+            fs::write(
+                new.join("settings.json"),
+                serde_json::to_vec(&json!({"locale":locale})).unwrap(),
+            )
+            .unwrap();
+            let detail = check_cli(temp.path()).unwrap_err();
+            let message = refusal(temp.path(), &detail);
+            assert!(message.starts_with(opening), "{message}");
+            assert!(message.contains(count), "{message}");
+            assert!(message.contains(if locale == "en" {
+                "Newer folder (books: 1):"
+            } else {
+                "Neuer Ordner (Bücher: 1):"
+            }));
+            assert!(message.contains("github.com/iuliandita/garret/issues"));
+            assert!(message.ends_with(&detail));
+            assert!(!temp.path().join(INTENT).exists());
+            assert!(leftovers(temp.path()).is_empty());
+        }
+    }
 
     fn profile(home: &Path) -> PathBuf {
         let root = home.join(LEGACY_DIR);
@@ -899,7 +1353,7 @@ mod tests {
         assert!(!temp.path().join(crate::APP_DIR).exists());
         let temp = tempdir().unwrap();
         let old = profile(temp.path());
-        fs::create_dir(temp.path().join(crate::APP_DIR)).unwrap();
+        fs::create_dir_all(temp.path().join(crate::APP_DIR).join("projects")).unwrap();
         assert!(prepare(temp.path()).is_err());
         assert_eq!(
             fs::read(old.join("projects/book.db")).unwrap(),
@@ -952,7 +1406,7 @@ mod tests {
         ));
         let conflict = tempdir().unwrap();
         profile(conflict.path());
-        fs::create_dir(conflict.path().join(crate::APP_DIR)).unwrap();
+        fs::create_dir_all(conflict.path().join(crate::APP_DIR).join("projects")).unwrap();
         let guard = match crate::instance_file::claim(conflict.path()) {
             crate::instance_file::Claim::Owned(guard) => guard,
             _ => panic!("ownership"),
@@ -1086,11 +1540,17 @@ mod tests {
         let old = profile(temp.path());
         fs::write(old.join("settings.json"), br#"{"locale":"de"}"#).unwrap();
         let message = refusal(temp.path(), "detail");
-        assert!(message.contains("Ihre vorhandenen Daten wurden erhalten"));
+        assert!(message.contains("Ihre Bücher wurden aufbewahrt"));
         assert!(message.contains("github.com/iuliandita/garret/issues"));
         assert!(message.contains("Technische Details (Englisch)"));
         assert!(message.contains(&old.to_string_lossy().to_string()));
-        assert!(message.contains(&temp.path().join(crate::APP_DIR).to_string_lossy().to_string()));
+        assert!(message.contains(
+            &temp
+                .path()
+                .join(crate::APP_DIR)
+                .to_string_lossy()
+                .to_string()
+        ));
         assert!(message.ends_with("detail"));
         assert!(!temp.path().join(crate::APP_DIR).exists());
     }

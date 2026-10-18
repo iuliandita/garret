@@ -373,7 +373,10 @@ const EN_ENTRIES: &[(&str, &str)] = &[
     ("salvage.title.snapshots", "{name} - snapshots"),
     ("salvage.title.synopses", "{name} - synopses"),
     ("salvage.title.wordlist", "{name} - wordlist"),
-    ("startup.data_migration", "garret could not safely prepare its application data. Your existing data has been preserved.\n\nOlder folder:\n{old}\n\nNewer folder:\n{new}\n\nClose every version of garret and back up both folders separately. Do not delete, merge or overwrite them. For recovery help, open github.com/iuliandita/garret/issues and include the details below, removing personal paths before posting publicly.\n\nTechnical details (English):"),
+    ("startup.data_migration_pending", "An empty leftover folder is beside your books. Open garret once to finish moving your books before using the CLI. No folders were changed."),
+    ("startup.data_migration_unchanged", "Nothing was lost or changed. Your books and both folders have been kept."),
+    ("startup.data_migration_preserved", "Your books have been kept. garret could not finish preparing its library."),
+    ("startup.data_migration", "{status}\n\nThese folders may contain your books (counts include saved book locations; ? means unknown):\n\nOlder folder (books: {old_count}):\n{old}\n\nNewer folder (books: {new_count}):\n{new}\n\nFor help opening the right library, contact github.com/iuliandita/garret/issues. Remove personal paths before posting. Please keep both folders until this is sorted out.\n\nTechnical details (English):"),
     ("startup.detail", "Technical details:"),
     ("startup.help", "The application could not open its window. On Windows, check that the Microsoft Edge WebView2 Evergreen Runtime is installed: https://developer.microsoft.com/microsoft-edge/webview2/ . An installed runtime does not rule out another startup problem. Keep the technical details below when reporting the failure."),
 ];
@@ -519,7 +522,10 @@ const DE_ENTRIES: &[(&str, &str)] = &[
     ("salvage.title.snapshots", "{name} - Schnappschüsse"),
     ("salvage.title.synopses", "{name} - Inhaltsangaben"),
     ("salvage.title.wordlist", "{name} - Wortliste"),
-    ("startup.data_migration", "garret konnte seine Anwendungsdaten nicht sicher vorbereiten. Ihre vorhandenen Daten wurden erhalten.\n\nBisheriger Ordner:\n{old}\n\nNeuer Ordner:\n{new}\n\nSchließen Sie alle Versionen von garret und sichern Sie beide Ordner getrennt. Löschen, verbinden oder überschreiben Sie sie nicht. Hilfe bei der Wiederherstellung erhalten Sie unter github.com/iuliandita/garret/issues. Geben Sie die folgenden Details an und entfernen Sie persönliche Pfade vor einer öffentlichen Meldung.\n\nTechnische Details (Englisch):"),
+    ("startup.data_migration_pending", "Neben Ihren Büchern liegt ein leerer Restordner. Öffnen Sie garret einmal, damit Ihre Bücher vor der Nutzung der CLI an den richtigen Ort verschoben werden. Es wurden keine Ordner verändert."),
+    ("startup.data_migration_unchanged", "Nichts ist verloren gegangen oder verändert worden. Ihre Bücher und beide Ordner wurden aufbewahrt."),
+    ("startup.data_migration_preserved", "Ihre Bücher wurden aufbewahrt. garret konnte die Bibliothek nicht fertig vorbereiten."),
+    ("startup.data_migration", "{status}\n\nDiese Ordner können Ihre Bücher enthalten (gezählt werden auch gespeicherte Buchpfade; ? bedeutet unbekannt):\n\nBisheriger Ordner (Bücher: {old_count}):\n{old}\n\nNeuer Ordner (Bücher: {new_count}):\n{new}\n\nHilfe beim Öffnen der richtigen Bibliothek erhalten Sie unter github.com/iuliandita/garret/issues. Entfernen Sie persönliche Pfade vor einer öffentlichen Meldung. Bitte behalten Sie beide Ordner, bis dies geklärt ist.\n\nTechnische Details (Englisch):"),
     ("startup.detail", "Technische Details:"),
     ("startup.help", "Die Anwendung konnte ihr Fenster nicht öffnen. Prüfen Sie unter Windows, ob die Microsoft Edge WebView2 Evergreen Runtime installiert ist: https://developer.microsoft.com/microsoft-edge/webview2/ . Eine installierte Runtime schließt andere Startprobleme nicht aus. Bewahren Sie die folgenden technischen Details für einen Fehlerbericht auf."),
 ];
