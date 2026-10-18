@@ -634,36 +634,35 @@ pub(crate) fn restore_inventory_version(bundle: &Path) -> Result<u32, String> {
     Ok(verify_database(bundle)?.version)
 }
 
+pub(crate) fn check_space(free: std::io::Result<u64>, needed: u64) -> Result<(), String> {
+    // Unknown capacity must not disable recovery; writes still fail atomically.
+    if let Ok(free) = free {
+        if free < needed { return Err(format!("insufficient backup space: need {needed} bytes, available {free}")); }
+    }
+    Ok(())
+}
+
 pub fn write(source: &Path, reader: &Store, final_path: &Path) -> Result<Written, String> {
     let parent = final_path.parent().ok_or("bundle has no parent")?;
-    for entry in fs::read_dir(parent).map_err(|e| format!("backup directory unreadable: {e}"))? {
-        let entry = entry.map_err(|e| format!("backup directory entry unreadable: {e}"))?;
-        let name = entry.file_name().to_string_lossy().into_owned();
-        if name.starts_with('.') && name.contains(".stage-") {
-            return Err(format!(
-                "unfinished backup staging directory {name}; inspect it before another backup"
-            ));
-        }
-    }
-    let stem = final_path
-        .file_name()
-        .ok_or("bundle has no name")?
-        .to_string_lossy();
-    let stage = loop {
-        let mut selected = None;
-        for n in 1u32..=1024 {
-            let path = parent.join(format!(".{stem}.stage-{}-{n}", std::process::id()));
-            match fs::create_dir(&path) {
-                Ok(()) => {
-                    selected = Some(path);
-                    break;
-                }
-                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
-                Err(e) => return Err(format!("cannot reserve staging directory: {e}")),
+    let mut needed = fs::metadata(source).map_err(|e| e.to_string())?.len()
+        .checked_mul(2).ok_or("backup size overflow")?;
+    for dir in [pictures::dir_for(source), research::dir_for(source)] {
+        if !real_directory(&dir) { continue; }
+        for entry in fs::read_dir(&dir).map_err(|e| e.to_string())? {
+            let meta = entry.map_err(|e| e.to_string())?.path().symlink_metadata()
+                .map_err(|e| e.to_string())?;
+            if meta.is_file() && !meta.file_type().is_symlink() {
+                needed = needed.checked_add(meta.len()).ok_or("backup size overflow")?;
             }
         }
-        break selected.ok_or("too many retained staging directories")?;
-    };
+    }
+    let needed = needed.checked_add(16 * 1024 * 1024).ok_or("backup size overflow")?;
+    check_space(fs2::available_space(parent), needed)?;
+    // Each attempt owns its stage. Stale or unrelated stages are never followed
+    // or removed and cannot block subsequent attempts.
+    let stage_owner = tempfile::Builder::new().prefix(".garret-backup.stage-")
+        .tempdir_in(parent).map_err(|e| format!("cannot reserve staging directory: {e}"))?;
+    let stage = stage_owner.path().to_path_buf();
     let db = db_path(&stage);
     if let Err(e) = reader.vacuum_into(&db) {
         let _ = fs::remove_dir_all(&stage);

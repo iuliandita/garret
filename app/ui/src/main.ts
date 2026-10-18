@@ -1,3 +1,4 @@
+import { askUpgrade } from "./upgrade-prompt";
 import { localizedInvoke } from "./command-error";
 import { createPrivacyStartupInvoke, waitForPrivacyUnlock, type PrivacyStatus } from "./privacy";
 // app/ui/src/main.ts
@@ -366,6 +367,7 @@ async function main(): Promise<void> {
       });
       const bookCopyPrompt = createBookCopyPrompt(document.body);
 
+      let upgradeConfirmed = false;
       const performProjectSwitch = createProjectSwitcher<MountedProject>({
         current: () => current,
         setCurrent: (next) => {
@@ -373,6 +375,11 @@ async function main(): Promise<void> {
         },
         currentPath: () => currentPath,
         prepareOpen: async (path) => {
+          upgradeConfirmed = false;
+          if (await invoke("project_upgrade_check", { path })) {
+            if (!await askUpgrade(t("format-upgrade.prompt"), t("book-copy.cancel"), t("format-upgrade.accept"))) return null;
+            upgradeConfirmed = true;
+          }
           dictionarySwitch += 1;
           preferences?.invalidateDictionary();
           await preferences?.drainDictionary();
@@ -380,7 +387,7 @@ async function main(): Promise<void> {
           return conflict === null ? undefined : bookCopyPrompt.choose(conflict);
         },
         openProject: async (path, decision) =>
-          (await invoke("project_open", { path, decision: decision ?? null })) as {
+          (await invoke("project_open", { path, decision: decision ?? null, upgradeConfirmed })) as {
             path: string;
             name: string;
             generation: number;

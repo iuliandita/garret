@@ -262,7 +262,7 @@ fn mobile_create(host: State<'_, MobileHost>, name: String) -> Result<Book, Stri
         .create_new(true)
         .open(&stage)
         .map_err(|error| format!("cannot claim book stage: {error}"))?;
-    let store = store::Store::open(&stage).map_err(|error| error.to_string())?;
+    let store = store::Store::open_restored(&stage).map_err(|error| error.to_string())?;
     store
         .set_meta(NAME_KEY, name)
         .map_err(|error| error.to_string())?;
@@ -293,7 +293,7 @@ fn mobile_create(host: State<'_, MobileHost>, name: String) -> Result<Book, Stri
             }
         });
     }
-    let store = match store::Store::open_existing(&path) {
+    let store = match store::Store::open_restored(&path) {
         Ok(store) => store,
         Err(error) => {
             let rollback = crate::mobile_core::move_new(&path, &stage);
@@ -341,7 +341,8 @@ fn open_book(host: &MobileHost, id: &str) -> Result<Book, String> {
         }
         Ok(())
     })?;
-    let store = store::Store::open_existing(&path).map_err(|error| error.to_string())?;
+    // Android authors prose only; opening a legacy book must not activate atoms.
+    let store = store::Store::open_restored(&path).map_err(|error| error.to_string())?;
     let name = store
         .get_meta(NAME_KEY)
         .map_err(|error| error.to_string())?
@@ -1227,7 +1228,7 @@ async fn export_book(
     let bundle = blocking(move || {
         let host = snapshot_app.state::<MobileHost>();
         snapshot_transfer(&host, &snapshot_token, |path, stage| {
-            let store = store::Store::open_existing(path).map_err(|_| "transfer_invalid")?;
+            let store = store::Store::open_restored(path).map_err(|_| "transfer_invalid")?;
             transfer::snapshot(path, &store, stage)
         })
     })
@@ -1532,7 +1533,9 @@ mod tests {
         let transfers = root.join("transfer");
         transfer::private_dir(&transfers).unwrap();
         let id = uuid::Uuid::now_v7().to_string();
-        let store = store::Store::open(&books.join(format!("{id}.db"))).unwrap();
+        let path = books.join(format!("{id}.db"));
+        fs::File::create(&path).unwrap();
+        let store = store::Store::open_restored(&path).unwrap();
         store.set_meta(NAME_KEY, "Harbour").unwrap();
         store
             .ensure_starter_structure(&strings::Strings::new(&strings::EN))
@@ -1558,6 +1561,34 @@ mod tests {
         let (host, id) = host(root.path());
         let book = open_book(&host, &id).unwrap();
         (root, host, book)
+    }
+
+    #[test]
+    fn mobile_schema17_open_edit_save_and_reopen_never_upgrade_or_copy() {
+        let root = tempfile::tempdir().unwrap();
+        let (host, id) = host(root.path());
+        let path = book_path(&host, &id).unwrap();
+        let book = open_book(&host, &id).unwrap();
+        let mut session = host.session.lock().unwrap();
+        let open = checked(&session, book.generation).unwrap();
+        assert_eq!(open.store.user_version().unwrap(), 17);
+        let scene = &book.scenes[0].id;
+        let loaded = open.store.load_doc(scene).unwrap();
+        let body = r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Phone prose stays at format 17"}]}]}"#;
+        crate::mobile_core::flush(&open.store, book.generation, book.generation,
+            &[store::FlushEntry { item_id: scene.clone(), base_rev: loaded.rev, body: body.into(), comments: None }], &[]).unwrap();
+        open.store.checkpoint().unwrap();
+        session.open = None;
+        drop(session);
+        let reader = store::Store::open_readonly(&path).unwrap();
+        assert_eq!(reader.user_version().unwrap(), 17);
+        assert_eq!(reader.load_doc(scene).unwrap().body, body);
+        drop(reader);
+        open_book(&host, &id).unwrap();
+        assert!(fs::read_dir(&host.books).unwrap().all(|entry| {
+            let name = entry.unwrap().file_name().to_string_lossy().into_owned();
+            [format!("{id}.db"), format!("{id}.db-wal"), format!("{id}.db-shm")].contains(&name)
+        }));
     }
     #[test]
     fn mobile_transferred_presets_create_scenes_in_order_without_scaffolding() {

@@ -9409,3 +9409,7 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 .document-endnote-body[hidden] { display: none; }
 .document-figure img { display: block; max-width: 100%; max-height: 24rem; margin: auto; object-fit: contain; }
 .document-figure[data-width="half"] { width: 50%; }
+
+.upgrade-prompt { max-width: min(34rem, calc(100vw - 3rem)); padding: 1.25rem; color: inherit; background: Canvas; border: 1px solid GrayText; border-radius: .5rem; line-height: 1.5; }
+.upgrade-prompt::backdrop { background: #0008; }
+.upgrade-prompt > div { display: flex; gap: .75rem; justify-content: flex-end; }

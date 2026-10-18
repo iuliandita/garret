@@ -33,6 +33,8 @@
 // UNKNOWN once. Change a string here only with a rig run behind it.
 
 export const EN = {
+  "format-upgrade.accept": "Upgrade book",
+  "format-upgrade.prompt": "Upgrade this book to format 18? Desktop and phone apps 0.0.5 and earlier cannot open it afterward. A complete verified pre-upgrade copy, including originals, will be kept beside the book in a .point folder. To roll back, restore that copy as a separate book and open it with the previous package; later writing will be absent. Cancel keeps this book unchanged.",
   "preset.collection": "Story collection",
   "item.numbered.story": "Story {n}",
   "collection.new-story": "New story",
