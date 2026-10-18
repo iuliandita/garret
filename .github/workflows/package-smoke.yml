@@ -1,7 +1,5 @@
 name: Package smoke
 on:
-  push:
-    branches: [codex/package-smoke]
   workflow_dispatch:
     inputs:
       tag:
