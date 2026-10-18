@@ -454,7 +454,8 @@ pub(crate) mod tests {
 
     fn book(root: &Path) -> PathBuf {
         let path = root.join("original.db");
-        let store = Store::open(&path).unwrap();
+        fs::File::create(&path).unwrap();
+        let store = Store::open_restored(&path).unwrap();
         store
             .set_meta(crate::core_constants::NAME_KEY, "Harbour")
             .unwrap();
@@ -495,7 +496,7 @@ pub(crate) mod tests {
         let stage = stage(&root.join("transfer"), &uuid::Uuid::now_v7().to_string()).unwrap();
         let key = stage.join("key.in");
         encrypted_archive::generate_key(&key).unwrap();
-        let store = Store::open_existing(db).unwrap();
+        let store = Store::open_restored(db).unwrap();
         let bundle = snapshot(db, &store, &stage).unwrap();
         encrypt(&bundle, &stage, &key).unwrap();
         fs::copy(stage.join("archive.out"), stage.join("archive.in")).unwrap();

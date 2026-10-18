@@ -2377,6 +2377,10 @@ mod tests {
                 let root = tempfile::tempdir().unwrap();
                 let (host, id) = host(root.path());
                 let path = book_path(&host, &id).unwrap();
+                if version >= 18 {
+                    // A claimed reader schema needs its real registry, not just a header change.
+                    store::Store::open_existing(&path).unwrap().checkpoint().unwrap();
+                }
                 let connection = rusqlite::Connection::open(&path).unwrap();
                 connection
                     .pragma_update(None, "journal_mode", "WAL")
