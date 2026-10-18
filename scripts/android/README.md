@@ -192,9 +192,11 @@ and [Tauri Android prerequisites](https://v2.tauri.app/start/prerequisites/#andr
 For the schema-18 reader smoke, additionally mount the generated directory at
 `/test/reader:ro` and append `--reader-fixture /test/reader` to the driver command.
 The fresh emulator is rooted only to seed its app-private book directory and
-retrieve its saved database. It checks a note body, a loaded figure, caption and
-scene break, enters surrounding prose, waits for save, force-stops, verifies
+retrieve its saved database. It checks a note body, a loaded figure and caption,
+captures the scene break for visual inspection, enters surrounding prose, waits
+for save, force-stops, verifies
 `user_version` and every atom/registry/original, then reopens and checks the edit
-and note again. This seed route tests native reading and persistence; the host
+and note again. Inspect `reader18-displayed.png` for the three-asterisk separator;
+Android omits CSS-generated separator text from its accessibility tree. This seed route tests native reading and persistence; the host
 generator verifies the encrypted import, while system-picker behavior still
 requires the physical-phone import check.

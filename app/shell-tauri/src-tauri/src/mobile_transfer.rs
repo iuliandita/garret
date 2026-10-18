@@ -592,6 +592,7 @@ pub(crate) mod tests {
     fn write_schema18_phone_fixture() {
         let out = PathBuf::from(std::env::var_os("GARRET_READER_FIXTURE_OUT").expect("fixture output required"));
         fs::create_dir(&out).expect("fixture output must not exist");
+        // Transfer publication renames exclusively, so staging shares its filesystem.
         let source = tempfile::tempdir_in(&out).unwrap();
         let db = source.path().join("source.db");
         let pixels: Vec<u8> = (0..160).flat_map(|_| (0..320).flat_map(|x| {
