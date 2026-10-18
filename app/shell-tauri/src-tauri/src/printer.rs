@@ -644,7 +644,7 @@ mod tests {
         gtk::init().unwrap();
         let token = format!("{}--{}", "1".repeat(39), "123456789--".repeat(20));
         let flow = format!("<p>123456789-- tail</p><p>123456789-<em>-</em> tail</p><p>123456789--- tail</p><p data-proof-break=\"page\">{token}</p>");
-        let html = r#"<!doctype html><html><head><style>
+        let shell = r#"<!doctype html><html><head><style>
           @page { size: 180px 150px; margin: 0; }
           html,body { margin: 0; font: 16px/20px monospace; }
           .proof-leaf { width: 180px; height: 150px; box-sizing: border-box;
@@ -679,8 +679,8 @@ mod tests {
             }).length;
             window.__proof.pages.push(JSON.stringify({text:text, marked:marked, splits:splits}));
           }
-          </script></body></html>"#
-            .replace("__FLOW__", &flow)
+          </script></body></html>"#;
+        let html = shell.replace("__FLOW__", &flow)
             .replace("__SCRIPT__", crate::pdf::PAGINATOR_JS);
         let directory = tempfile::tempdir().unwrap();
         let dest = directory.path().join("dashes.pdf");
@@ -696,6 +696,37 @@ mod tests {
         assert_eq!(probe["text"], format!("123456789-- tail123456789-- tail123456789--- tail{token}"));
         assert_eq!(probe["marked"], "-");
         assert_eq!(probe["splits"], 0, "a typed dash split across lines or pages: {probe}");
+        for flow in [
+            format!("<p>{}</p>", "-".repeat(400)),
+            format!("<p>before {} after</p>", "-".repeat(400)),
+            format!("<h2>Heading {}</h2>", "-".repeat(90)),
+        ] {
+            let html = shell.replace("__FLOW__", &flow)
+                .replace("__SCRIPT__", crate::pdf::PAGINATOR_JS)
+                .replace("150px", "350px")
+                .replace("p {", "p,h2 { font: inherit;");
+            let mut printed = render_for_test(&html, None, (47_625, 92_604), &watchdog)
+                .unwrap_or_else(|error| panic!("long hyphen run refused: {flow}: {error:?}"));
+            let probe: serde_json::Value = serde_json::from_str(&printed.report.pages.pop().unwrap()).unwrap();
+            let expected = flow.replace("<p>", "").replace("</p>", "")
+                .replace("<h2>", "").replace("</h2>", "");
+            assert_eq!(probe["text"], expected);
+        }
+        if let Some(output) = std::env::var_os("GARRET_DASH_TEST_OUTPUT") {
+            let mut design = crate::design::default_design();
+            design.page.width_um = 127_000;
+            design.page.height_um = 203_200;
+            design.font = "Liberation Serif".into();
+            let prose = "The rain had stopped by the time Anna arrived--and the platform still shone under the lamps. She remembered the promise--a small thing, made on an ordinary morning--and waited beside the empty track. ";
+            let flow = format!("<p>{prose}{prose}</p><p>{}</p><p>{prose}{prose}</p><p>{prose}{prose}</p>", "-".repeat(100));
+            let start = shell.find("<style>").unwrap() + "<style>".len();
+            let end = shell.find("</style>").unwrap();
+            let html = format!("{}{}{}", &shell[..start],
+                crate::pdf::print_stylesheet(&design, &Default::default()), &shell[end..])
+                .replace("__FLOW__", &flow).replace("__SCRIPT__", crate::pdf::PAGINATOR_JS);
+            let dest = std::path::PathBuf::from(output).join("realistic.pdf");
+            render_for_test(&html, Some(&dest), (127_000, 203_200), &watchdog).unwrap();
+        }
     }
 
     #[test]

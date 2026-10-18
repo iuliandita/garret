@@ -811,9 +811,15 @@ pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), include_str!(
     }
     function codepoints() {
       var breaks = [], offset = 0;
+      var guarded = new Set(), dashes = /-{2,}/g, dash;
+      while ((dash = dashes.exec(whole)) !== null) {
+        if (dash[0].length <= 3) {
+          for (var i = 1; i < dash[0].length; i++) guarded.add(dash.index + i);
+        }
+      }
       for (var character of whole) {
         offset += character.length;
-        if (offset < whole.length && !(whole[offset - 1] === "-" && whole[offset] === "-")) breaks.push(offset);
+        if (offset < whole.length && !guarded.has(offset)) breaks.push(offset);
       }
       return breaks;
     }
