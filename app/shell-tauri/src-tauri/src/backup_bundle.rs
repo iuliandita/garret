@@ -634,8 +634,11 @@ pub(crate) fn restore_inventory_version(bundle: &Path) -> Result<u32, String> {
     Ok(verify_database(bundle)?.version)
 }
 
-pub(crate) fn check_space(free: u64, needed: u64) -> Result<(), String> {
-    if free < needed { return Err(format!("insufficient backup space: need {needed} bytes, available {free}")); }
+pub(crate) fn check_space(free: std::io::Result<u64>, needed: u64) -> Result<(), String> {
+    // Unknown capacity must not disable recovery; writes still fail atomically.
+    if let Ok(free) = free {
+        if free < needed { return Err(format!("insufficient backup space: need {needed} bytes, available {free}")); }
+    }
     Ok(())
 }
 
@@ -654,8 +657,7 @@ pub fn write(source: &Path, reader: &Store, final_path: &Path) -> Result<Written
         }
     }
     let needed = needed.checked_add(16 * 1024 * 1024).ok_or("backup size overflow")?;
-    let free = fs2::available_space(parent).map_err(|e| format!("cannot check backup free space: {e}"))?;
-    check_space(free, needed)?;
+    check_space(fs2::available_space(parent), needed)?;
     // Each attempt owns its stage. Stale or unrelated stages are never followed
     // or removed and cannot block subsequent attempts.
     let stage_owner = tempfile::Builder::new().prefix(".garret-backup.stage-")

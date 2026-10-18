@@ -35,33 +35,6 @@ pub(crate) fn retain(path: &Path, target: i64, consent: bool) -> Result<Option<P
     Ok(Some(copy))
 }
 
-/// Android retains at most one complete private safety copy per book. It is
-/// not an export or a user-accessible rollback workflow.
-pub(crate) fn retain_mobile(path: &Path, target: i64, consent: bool) -> Result<Option<PathBuf>, String> {
-    let kept = retain(path, target, consent)?;
-    if let Some(copy) = &kept {
-        let prefix = format!("{}.before-format-{target}-", path.file_stem().ok_or("book has no filename")?.to_string_lossy());
-        for entry in std::fs::read_dir(path.parent().ok_or("book has no parent")?).map_err(|e| e.to_string())? {
-            let entry = entry.map_err(|e| e.to_string())?;
-            let candidate = entry.path();
-            if candidate == *copy { continue; }
-            let name = entry.file_name();
-            let name = name.to_string_lossy();
-            let Some(id) = name.strip_prefix(&prefix).and_then(|s| s.strip_suffix(".point")) else { continue; };
-            if uuid::Uuid::parse_str(id).is_err() { continue; }
-            let meta = entry.file_type().map_err(|e| e.to_string())?;
-            if !meta.is_dir() || meta.is_symlink() { continue; }
-            backup_bundle::verify(&candidate)?;
-            let older = Store::open_readonly(&backup_bundle::db_path(&candidate)).map_err(|e| e.to_string())?;
-            let current = Store::open_readonly(path).map_err(|e| e.to_string())?;
-            if older.book_id().map_err(|e| e.to_string())? != current.book_id().map_err(|e| e.to_string())? { continue; }
-            drop(older);
-            std::fs::remove_dir_all(&candidate).map_err(|e| format!("{}: {e}", candidate.display()))?;
-        }
-    }
-    Ok(kept)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -180,20 +153,10 @@ mod tests {
     }
 
     #[test]
-    fn mobile_keeps_only_the_newest_complete_private_copy() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("book.db");
-        book(&path);
-        let old = retain_mobile(&path, 18, true).unwrap().unwrap();
-        let newest = retain_mobile(&path, 18, true).unwrap().unwrap();
-        assert!(!old.exists());
-        backup_bundle::verify(&newest).unwrap();
-    }
-
-    #[test]
     fn stale_stages_do_not_block_copy_and_failed_attempts_clean_up() {
-        assert!(backup_bundle::check_space(99, 100).is_err());
-        assert!(backup_bundle::check_space(100, 100).is_ok());
+        assert!(backup_bundle::check_space(Ok(99), 100).is_err());
+        assert!(backup_bundle::check_space(Ok(100), 100).is_ok());
+        assert!(backup_bundle::check_space(Err(std::io::ErrorKind::Unsupported.into()), 100).is_ok());
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("book.db");
         book(&path);

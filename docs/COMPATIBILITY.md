@@ -1,12 +1,17 @@
 Upgrade preparation retains a complete verified `.point` bundle beside a book
-before the upcoming 17-to-18 activation. The desktop open flow and Android open
-flow have a separate upgrade decision; startup defers books needing that decision
+before the upcoming 17-to-18 activation. The desktop open flow has a separate
+upgrade decision; startup defers books needing that decision
 until the interface can ask. A missing original blocks upgrade; failed attempts clean up their own
 staging and incomplete output. Copies include manuscript history, cast/cover
 originals and retained research. Unrelated stages are left untouched and do not block retries. Free space is
-checked before copying. Android retains only the newest verified private safety
-copy per book; that copy has no in-app restore or export path. For Android rollback,
-export a complete archive to a compatible desktop before upgrading.
+checked before copying when available; an unavailable capacity query leaves
+write-time failure handling in charge. A process crash can leave a private
+`.garret-backup.stage-*` directory. It does not block retries and is not reaped
+automatically. After closing every garret process, inspect abandoned stages and
+remove only stages whose contents are no longer needed; they can contain plaintext
+writing and originals. Completed `.point` bundles are separate and must be kept.
+Android creates and opens schema-17 books without upgrading or writing an upgrade
+copy; existing schema-18 books remain 18. It has no upgrade consent prompt.
 
 This preparation does not activate the migration or authoring: new books and
 production migrations still stop at 17, and the write gate remains off. Once
@@ -14,8 +19,9 @@ activated, 0.0.5 and earlier will refuse schema 18; 0.0.6 reads and preserves it
 Rollback requires restoring the complete pre-upgrade copy as a separate book
 with a supporting previous package. Restores preserve format 17 (older schemas
 advance only to 17 for recovery bookkeeping); opening that restored book in the
-new application asks again before upgrading. Transfer imports deliberately create
-a current-format copy without modifying the archive or source book. Writing after the upgrade is absent from
+new desktop application asks again before upgrading. Android transfer imports
+preserve the source schema (17 stays 17; 18 stays 18), without modifying the archive
+or source book. Writing after the upgrade is absent from
 that copy. Never lower `user_version` manually. Android continues to read notes,
 figures and breaks and edit surrounding prose; it cannot author those nodes.
 

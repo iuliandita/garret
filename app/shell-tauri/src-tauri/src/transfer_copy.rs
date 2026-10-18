@@ -123,7 +123,7 @@ pub(crate) fn stage(bundle: &Path, parent: &Path, expected: &Source) -> Result<O
         return Err("transfer source changed during copy".into());
     }
     backup_bundle::clear_marker(&database)?;
-    let store = Store::open_existing(&database).map_err(|e| e.to_string())?;
+    let store = Store::open_restored(&database).map_err(|e| e.to_string())?;
     let book_id = store
         .fork_transferred_book_identity(&source.book_id, &source.lineage, &source.snapshot)
         .map_err(|e| e.to_string())?;
@@ -167,7 +167,8 @@ mod tests {
     fn repeated_transfer_forks_ownership_and_preserves_lineage_and_originals() {
         let root = tempfile::tempdir().unwrap();
         let database = root.path().join("original.db");
-        let store = Store::open(&database).unwrap();
+        fs::File::create(&database).unwrap();
+        let store = Store::open_restored(&database).unwrap();
         store
             .set_meta(crate::core_constants::NAME_KEY, "Harbour")
             .unwrap();
@@ -206,6 +207,7 @@ mod tests {
         assert_ne!(twice.book_id, copied.book_id);
         assert_ne!(twice.book_id, original_id);
         let read = Store::open_readonly(&twice.database).unwrap();
+        assert_eq!(read.user_version().unwrap(), 17);
         assert_eq!(read.load_doc(&scene.id).unwrap().body, body);
         assert!(!read.doc_versions(&scene.id).unwrap().is_empty());
         assert_eq!(lineage(&read).unwrap(), original_id);
