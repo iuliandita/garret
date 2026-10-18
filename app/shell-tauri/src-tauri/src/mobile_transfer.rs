@@ -661,7 +661,6 @@ pub(crate) mod tests {
         fs::create_dir(&diagnostic).unwrap();
         let extracted = encrypted_archive::extract_checked(&stage.join("archive.in"), &key, &diagnostic,
             ARCHIVE_LIMIT, PAYLOAD_LIMIT, |bundle| mobile_core::open_supported(&backup_bundle::db_path(bundle)).map(|_| ()));
-        eprintln!("raw extraction result: {extracted:?}");
         let books = root.path().join("books");
         fs::create_dir(&books).unwrap();
         let review = preview(&stage, &books).unwrap();

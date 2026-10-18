@@ -1039,7 +1039,7 @@ const MAX_PACKAGE_EXPANDED_BYTES: usize = 128 * 1024 * 1024;
 /// `stem` is the file's own name without its extension, used exactly as
 /// `import::parse`'s is: when the document does not name itself.
 pub fn parse(bytes: &[u8], stem: &str) -> Result<DocxImported, String> {
-    parse_with_policy(bytes, stem, crate::store::document_format::new_nodes_allowed())
+    parse_with_policy(bytes, stem, true)
 }
 
 fn parse_with_policy(bytes: &[u8], stem: &str, allow_new: bool) -> Result<DocxImported, String> {
@@ -1110,6 +1110,7 @@ mod tests {
         assert_eq!(parsed.losses.missing_note_bodies, 1);
         assert_eq!(parsed.losses.note_drawings, 1);
         assert_eq!(parsed.losses.notes, 0);
+        assert_eq!(serde_json::to_value(&parsed.losses).unwrap()["notes"], 0);
         let legacy = parse_with_policy(&bytes, "notes", false).unwrap();
         assert_eq!(legacy.losses.notes, 4);
         assert!(owned_notes(&legacy).is_empty());

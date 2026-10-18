@@ -70,8 +70,6 @@ mod mobile_saf;
 #[cfg(target_os = "android")]
 mod mobile_transfer;
 #[cfg(target_os = "android")]
-mod format_upgrade;
-#[cfg(target_os = "android")]
 mod recipient_compatibility;
 
 #[cfg(target_os = "android")]

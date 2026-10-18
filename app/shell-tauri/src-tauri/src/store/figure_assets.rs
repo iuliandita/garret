@@ -1,5 +1,5 @@
 //! Retained, immutable figure originals. No deletion or update API.
-use super::{document_format, Result, Store, StoreError, READ_SCHEMA_VERSION, TIMELINE_TYPE};
+use super::{Result, Store, StoreError, READ_SCHEMA_VERSION, TIMELINE_TYPE};
 use rusqlite::Connection;
 use std::collections::{BTreeMap, HashSet};
 
@@ -157,7 +157,7 @@ impl Store {
     }
 
     pub(crate) fn register_figure_asset(&self, asset: &FigureAsset) -> Result<()> {
-        if !document_format::new_nodes_allowed() || self.user_version()? < READ_SCHEMA_VERSION {
+        if self.user_version()? < READ_SCHEMA_VERSION {
             return Err(StoreError::InvalidDocument(
                 "figure registration is disabled".into(),
             ));

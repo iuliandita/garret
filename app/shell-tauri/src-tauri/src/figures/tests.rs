@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
     covers, research,
-    store::{document_format, figure_assets, Store},
+    store::{figure_assets, Store},
 };
 use std::path::PathBuf;
 
@@ -80,7 +80,6 @@ fn activation_migration_preserves_prose_history_and_states() {
     let store = Store::open_existing(&db).unwrap();
     assert_eq!(store.user_version().unwrap(), 18);
     assert_eq!(crate::store::SCHEMA_VERSION, 18);
-    assert!(document_format::new_nodes_allowed());
     assert_eq!(store.load_doc(&item.id).unwrap().body, before.body);
     assert_eq!(store.items().unwrap()[0].state.as_deref(), Some("draft"));
     assert_eq!(store.snapshots().unwrap()[0].id, snapshot.id);

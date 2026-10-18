@@ -553,7 +553,6 @@ fn publication_refusals_preserve_unknown_content_and_missing_originals() {
         assert!(build(&walk.bodies).is_ok());
     }
     assert_eq!(fixture.store.user_version().unwrap(), 18);
-    assert!(store::document_format::new_nodes_allowed());
     assert!(fixture.root.path().exists());
 }
 
@@ -686,7 +685,7 @@ fn scoped_markdown_uses_the_publication_plan_and_round_trips_its_package() {
             }
             let parsed = crate::import::read_package(text, "book", package.path()).unwrap();
             assert_eq!(parsed.assets, written.assets);
-            assert_eq!(parsed.asset_ids.len(), written.assets.len());
+            assert_eq!(parsed.inspected_assets.len(), written.assets.len());
             let imported_dir = tempfile::tempdir().unwrap();
             let made = crate::projects::create_imported_package(imported_dir.path(), &parsed, &crate::strings::Strings::english()).unwrap();
             let reopened = store::Store::open_readonly(Path::new(&made.path)).unwrap();
@@ -699,7 +698,7 @@ fn scoped_markdown_uses_the_publication_plan_and_round_trips_its_package() {
                 item.body.as_ref().map(|body| serde_json::from_str(body).unwrap())).collect();
             assert_eq!(sequence(&bodies), expected);
             for figure in bodies.iter().flat_map(|doc| doc["content"].as_array().unwrap()).filter(|node| node["type"] == "figure") {
-                assert!(parsed.asset_ids.values().any(|id| figure["attrs"]["asset_id"] == *id));
+                assert!(parsed.inspected_assets.values().any(|asset| figure["attrs"]["asset_id"] == asset.id));
                 assert!(!fixture.assets.iter().any(|asset| figure["attrs"]["asset_id"] == asset.id));
             }
             let serialized = serde_json::to_string(&bodies).unwrap();
@@ -741,7 +740,6 @@ fn activated_markdown_conversion_publishes_and_imports_notes() {
     assert!(store.documents().unwrap().values().any(|body| body.contains("endnote")));
     assert_eq!(fixture.store.documents().unwrap(), before);
     assert_eq!(fixture.store.user_version().unwrap(), 18);
-    assert!(store::document_format::new_nodes_allowed());
 }
 
 #[test]
@@ -773,7 +771,6 @@ fn mirror_fixture_copies_require_the_new_schema_and_use_relative_hashed_assets()
         assert!(parsed.imported.items.iter().filter_map(|item| item.body.as_ref()).any(|body| body.contains("endnote")));
         let legacy = crate::mirror::file_body(&item, Some(&fixture.store.load_doc(&item.id).unwrap().body));
         assert!(!legacy.contains("document_format:"));
-        assert!(store::document_format::new_nodes_allowed());
         let destination = fixture.root.path().join("production-mirror");
         crate::mirror::pass(&fixture.db, "book", "Book", &destination, 0, &Default::default()).unwrap();
         let manifest: crate::recovery::Manifest<crate::mirror::MirrorEntry> = crate::recovery::read_manifest(&destination).unwrap();
@@ -848,7 +845,6 @@ fn pdf_publication_reuses_scopes_assets_in_production() {
         &crate::identity::Vault::default(), crate::strings::Strings::english()).unwrap();
     assert!(written.text().contains("proof-noteref"));
     assert_eq!(fixture.store.user_version().unwrap(), 18);
-    assert!(store::document_format::new_nodes_allowed());
 }
 
 fn publishing_fixture<T>(run: impl FnOnce() -> T) -> T {
@@ -965,5 +961,4 @@ fn schema18_reader_exports_existing_nodes_without_the_fixture_override() {
     }
     assert_eq!(store.load_doc(&id).unwrap().body, body);
     assert_eq!(store.user_version().unwrap(), 18);
-    assert!(store::document_format::new_nodes_allowed());
 }

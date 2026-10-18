@@ -34,6 +34,12 @@ export function preserveAtoms(authoring = false): Plugin {
   });
 }
 
+export function noteNumberAt(doc: PmNode, pos: number | undefined, offset = 0): number {
+  let number = offset + 1;
+  if (pos !== undefined) doc.nodesBetween(0, pos, node => { if (node.type.name === "endnote") number++; });
+  return number;
+}
+
 export function readerViews(load?: LoadFigurePreview, options: {
   editFigure?: (pos: number) => void;
   editNote?: (pos: number) => void;
@@ -47,9 +53,7 @@ export function readerViews(load?: LoadFigurePreview, options: {
       const button = document.createElement("button");
       button.type = "button";
       button.dataset.endnoteId = node.attrs.id as string;
-      let number = (options.noteOffset?.() ?? 0) + 1;
-      const pos = getPos();
-      if (pos !== undefined) view.state.doc.nodesBetween(0, pos, child => { if (child.type.name === "endnote") number++; });
+      const number = noteNumberAt(view.state.doc, getPos(), options.noteOffset?.() ?? 0);
       button.textContent = formatNumber(number);
       button.setAttribute("aria-label", t(options.editNote ? "authoring.reference" : "document.note-reference", { number: formatNumber(number) }));
       button.setAttribute("aria-expanded", "false");

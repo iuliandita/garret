@@ -87,7 +87,6 @@ pub(crate) fn document(id: &str, doc: &Value, plan: &Plan) -> (String, u64) {
 pub(crate) struct Parsed {
     pub imported: crate::import::Imported,
     pub assets: BTreeMap<String, Vec<u8>>,
-    pub asset_ids: HashMap<String, String>,
     pub inspected_assets: BTreeMap<String, crate::store::figure_assets::FigureAsset>,
 }
 
@@ -144,8 +143,7 @@ pub(crate) fn parse(
         }
     }
     let mut assets = BTreeMap::new();
-    let mut asset_ids = HashMap::new();
-    let mut inspected_assets = BTreeMap::new();
+    let mut inspected_assets: BTreeMap<String, crate::store::figure_assets::FigureAsset> = BTreeMap::new();
     let mut asset_bytes = 0usize;
     let mut blocks = HashMap::new();
     let mut clean = String::new();
@@ -175,18 +173,18 @@ pub(crate) fn parse(
             if visible != figure_text(&figure) {
                 return Err("figure metadata and readable caption or image disagree".into());
             }
-            let id = asset_ids
-                .entry(figure.path.clone())
-                .or_insert_with(uuid)
-                .clone();
-            if !assets.contains_key(&figure.path) {
+            let id = if let Some(asset) = inspected_assets.get(&figure.path) {
+                asset.id.clone()
+            } else {
+                let id = uuid();
                 admit_assets(assets.len() + 1, asset_bytes)?;
                 let bytes = resolve(&figure.path)?;
                 asset_bytes = asset_bytes.checked_add(bytes.len()).ok_or("Markdown package asset limit exceeded")?;
                 admit_assets(assets.len() + 1, asset_bytes)?;
                 inspected_assets.insert(figure.path.clone(), crate::figures::prepare_asset(&bytes, id.clone())?);
                 assets.insert(figure.path, bytes);
-            }
+                id
+            };
             Some(
                 json!({"type":"figure","attrs":{"id":uuid(),"asset_id":id,"width":figure.width,"caption":figure.caption,"alt":figure.alt}}),
             )
@@ -259,7 +257,7 @@ pub(crate) fn parse(
             return Ok(None);
         }
         let doc = json!({"type":"doc","content":content});
-        crate::store::document_format::validate(&doc, true, &asset_ids.values().cloned().collect())
+        crate::store::document_format::validate(&doc, true, &inspected_assets.values().map(|asset| asset.id.clone()).collect())
             .map_err(|e| e.to_string())?;
         Ok(Some(doc.to_string()))
     })?;
@@ -269,7 +267,6 @@ pub(crate) fn parse(
     Ok(Parsed {
         imported,
         assets,
-        asset_ids,
         inspected_assets,
     })
 }
@@ -278,12 +275,30 @@ pub(crate) fn parse(
 mod tests {
     use super::*;
 
+    fn import_source(source: &str) -> crate::import::Imported {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("book.md");
+        std::fs::write(&path, source).unwrap();
+        let library = root.path().join("books");
+        std::fs::create_dir(&library).unwrap();
+        let outcome = crate::import_path(root.path(), &library, &path, &crate::strings::Strings::english()).unwrap();
+        let store = crate::store::Store::open_readonly(std::path::Path::new(&outcome.summary.path)).unwrap();
+        let items = store.items().unwrap();
+        let imported = items.iter().map(|item| crate::import::ImportedItem {
+            parent: item.parent_id.as_ref().map(|id| items.iter().position(|item| &item.id == id).unwrap()),
+            item_type: match item.item_type.as_str() { "part" => "part", "chapter" => "chapter", "scene" => "scene", _ => panic!("unexpected imported item") },
+            title: item.title.clone(),
+            body: (item.item_type == "scene").then(|| store.load_doc(&item.id).unwrap().body),
+        }).collect();
+        crate::import::Imported { name: outcome.summary.name, items: imported, derived_contents: outcome.derived_contents }
+    }
+
     #[test]
     fn unmarked_garret_comments_import_as_ordinary_prose() {
         for comment in ["<!-- garret-figure: arbitrary comment -->", "<!-- garret-document-format: 18 -->"] {
             let source = format!("# Book\n\n## Scene\n\nprose\n{comment}\n");
             assert!(!is_dialect(&source));
-            assert_eq!(crate::import::parse_package(&source, "book", std::path::Path::new(".")).unwrap(), crate::import::parse(&source, "book"));
+            assert_eq!(import_source(&source), crate::import::parse(&source, "book"));
         }
         assert!(is_dialect("<!-- garret-document-format: 19 -->\n# Book"));
     }
@@ -313,7 +328,7 @@ mod tests {
                 doc["content"][0]["content"][1]["attrs"]["body"],
                 "note*\nnext"
             );
-            let activated = crate::import::parse_package(&source, "book", std::path::Path::new(".")).unwrap();
+            let activated = import_source(&source);
             assert!(activated.items[0].body.as_ref().unwrap().contains("endnote"));
         }
         let ordinary = "# Book\n\n## Scene\n\nordinary [^1]\n\n---\n\n![image](assets/image.png)\n";
@@ -325,7 +340,7 @@ mod tests {
         ] {
             assert!(!is_dialect(&source));
             assert_eq!(
-                crate::import::parse_package(&source, "book", std::path::Path::new(".")).unwrap(),
+                import_source(&source),
                 crate::import::parse(&source, "book")
             );
         }
