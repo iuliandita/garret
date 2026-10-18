@@ -96,6 +96,21 @@ test("a failed save keeps the draft; retry updates the same note and document re
   expect(notes(editor)[0].attrs.id).toBe(id);
 });
 
+test("Cancel after a failed Save restores the original document and preceding undo history", async () => {
+  const { editor } = rig(async () => false);
+  const original = editor.serialize();
+  editor.typeChar("X");
+  const typed = editor.serialize();
+  editor.editEndnote(); field().value = "Discard this failed attempt";
+  press("authoring.save"); await tick();
+  expect(notes(editor)).toHaveLength(1);
+  press("authoring.cancel");
+  expect(editor.serialize()).toBe(typed);
+  editor.undo(); expect(editor.serialize()).toBe(original);
+  editor.redo(); expect(editor.serialize()).toBe(typed);
+  editor.redo(); expect(editor.serialize()).toBe(typed);
+});
+
 test("scene breaks insert and delete explicitly with undo/redo; literal asterisks remain prose", () => {
   const mount = document.createElement("div"); document.body.append(mount);
   const doc = schema.node("doc", null, schema.node("paragraph", null, schema.text("* * *")));

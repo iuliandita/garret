@@ -637,3 +637,9 @@ Synopsis edits the desktop synopsis panel field with explicit Save; closing the 
 Only scene mutations are exposed; parts and chapters remain read-only on mobile.
 Unsupported project presets remain refused before opening. Android relies on the
 system lock screen for device privacy; an application privacy lock is not provided.
+
+Ordinary desktop Delete, replacement and Select All edits cannot remove document
+atoms. Use the explicit deletion action; its undo/redo remains available. Android
+enforces atom preservation at the host save boundary, independently of desktop
+authoring. Encrypted archives remain backups; their interface warns to use the
+recipient-checked device export for transfers.

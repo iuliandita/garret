@@ -1639,7 +1639,6 @@ fn project_upgrade_check(
     if !may_open(&library.0, explicit.0.as_deref(), &projects::known(&data_home.0), &requested) {
         return Err("not a project this application knows about".into());
     }
-    if store::SCHEMA_VERSION < store::READ_SCHEMA_VERSION { return Ok(false); }
     format_upgrade::required(&requested, store::SCHEMA_VERSION)
 }
 

@@ -217,14 +217,20 @@ impl Store {
                 StoreError::InvalidDocument(reason) => invalid(&format!("{item_id}: {reason}")),
                 other => other,
             })?;
-        if context.schema >= READ_SCHEMA_VERSION && !new_nodes_allowed() {
-            let current = match self.load_doc(item_id) {
+        Ok(())
+    }
+
+    /// Clients without atom authoring must preserve payloads, order and count,
+    /// independently of the desktop activation gate.
+    pub(crate) fn validate_reader_saves(&self, entries: &[super::FlushEntry]) -> Result<()> {
+        for entry in entries {
+            let current = match self.load_doc(&entry.item_id) {
                 Ok(doc) => atoms(&doc.body)?,
                 Err(StoreError::NotFound { .. }) => Vec::new(),
                 Err(error) => return Err(error),
             };
-            if current != atoms_in(&value) {
-                return Err(invalid(&format!("{item_id}: existing document atoms are read-only in this build")));
+            if current != atoms(&entry.body)? {
+                return Err(invalid(&format!("{}: document atoms are read-only on this client", entry.item_id)));
             }
         }
         Ok(())

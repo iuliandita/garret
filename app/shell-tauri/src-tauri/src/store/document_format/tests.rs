@@ -727,6 +727,8 @@ fn schema18_authoring_opens_preserves_history_and_changes_atoms() {
     assert_eq!(store.figure_assets().unwrap(), assets);
     for changed in [edited.replace("Retained note", "Changed note"), edited.replace("Retained caption", "Changed caption"), prose("Lost atoms"), edited.replacen("\"content\":[", "\"content\":[{\"type\":\"scene_break\"},", 1)] {
         let rev = store.load_doc(&id).unwrap().rev;
+        assert!(crate::mobile_core::flush(&store, 1, 1, &[entry(&id, rev, &changed)], &[]).is_err());
+        assert_eq!(store.load_doc(&id).unwrap().rev, rev);
         store.flush(&[entry(&id, rev, &changed)]).unwrap();
         assert_eq!(store.load_doc(&id).unwrap().body, changed);
     }

@@ -1,5 +1,5 @@
 import { closeHistory } from "prosemirror-history";
-import { NodeSelection, TextSelection, type Transaction } from "prosemirror-state";
+import { NodeSelection, TextSelection, type Transaction, type EditorState } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 import { MAX_ATTRIBUTE_BYTES, validDocumentShape } from "./document-format";
 import { createPanelShell } from "./panel-shell";
@@ -19,6 +19,7 @@ export function createDocumentAuthoring(view: EditorView, options: {
   committed(): Promise<boolean>;
   draftChanged(): void;
   noteOffset(): number;
+  restoreDraft?(state: EditorState): void;
 }): DocumentAuthoring {
   const panel = document.createElement("section");
   panel.id = "endnote-editor";
@@ -28,7 +29,7 @@ export function createDocumentAuthoring(view: EditorView, options: {
   let alive = true;
   let busy = false;
   let hintSeen = false;
-  let target: { pos: number; id: string; inserted: boolean; doc: typeof view.state.doc } | null = null;
+  let target: { pos: number; id: string; inserted: boolean; doc: typeof view.state.doc; before: EditorState } | null = null;
   let leaving: ((allowed: boolean) => void) | null = null;
   let leavePromise: Promise<boolean> | null = null;
   const shell = createPanelShell({ panel, title: t("authoring.endnote"), footer: true,
@@ -74,8 +75,13 @@ export function createDocumentAuthoring(view: EditorView, options: {
     if (!allowed && target) field.focus();
     resolve?.(allowed);
   }
-  function finish(allowed: boolean): void {
+  function finish(allowed: boolean, discardDraft = true): void {
+    const captured = target;
     target = null;
+    if (discardDraft && captured && !view.state.doc.eq(captured.before.doc)) {
+      if (options.restoreDraft) options.restoreDraft(captured.before);
+      else view.updateState(captured.before);
+    }
     panel.hidden = true;
     options.draftChanged();
     answer(allowed);
@@ -98,18 +104,18 @@ export function createDocumentAuthoring(view: EditorView, options: {
     const tr = view.state.tr;
     if (captured.inserted) {
       if (tr.doc.nodeAt(captured.pos)?.attrs.id !== captured.id) { error.textContent = t("authoring.failed"); return; }
-      tr.setNodeMarkup(captured.pos, undefined, attrs);
+      if (JSON.stringify(tr.doc.nodeAt(captured.pos)!.attrs) !== JSON.stringify(attrs)) tr.setNodeMarkup(captured.pos, undefined, attrs);
     } else {
       tr.insert(captured.pos, view.state.schema.nodes.endnote.create(attrs));
     }
-    if (!isolated(tr)) { error.textContent = t("authoring.failed"); return; }
+    if (tr.docChanged && !isolated(tr)) { error.textContent = t("authoring.failed"); return; }
     captured.inserted = true;
     captured.doc = view.state.doc;
     busy = true;
     save.disabled = cancel.disabled = discard.disabled = field.disabled = true;
     try {
       if (!await options.committed()) throw new Error("endnote save failed");
-      if (alive && target === captured) finish(true);
+      if (alive && target === captured) finish(true, false);
     } catch {
       if (alive && target === captured) error.textContent = t("authoring.failed");
     } finally {
@@ -133,7 +139,7 @@ export function createDocumentAuthoring(view: EditorView, options: {
       shell.setTitle(title);
       label.textContent = t("authoring.body", { number: formatNumber(number) });
       field.value = editing ? node.attrs.body as string : "";
-      target = { pos: at, id: editing ? node.attrs.id as string : crypto.randomUUID(), inserted: editing, doc: view.state.doc };
+      target = { pos: at, id: editing ? node.attrs.id as string : crypto.randomUUID(), inserted: editing, doc: view.state.doc, before: view.state };
       error.textContent = "";
       hint.hidden = hintSeen;
       hintSeen = true;
@@ -156,7 +162,7 @@ export function createDocumentAuthoring(view: EditorView, options: {
     },
     remove() {
       const selection = view.state.selection;
-      if (target || !(selection instanceof NodeSelection) || !["endnote", "figure", "scene_break"].includes(selection.node.type.name)) return;
+      if (target || !(selection instanceof NodeSelection) || !["endnote", "scene_break"].includes(selection.node.type.name)) return;
       isolated(view.state.tr.deleteSelection());
     },
     pending: () => target !== null,

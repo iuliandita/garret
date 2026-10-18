@@ -2343,7 +2343,7 @@ export const EN = {
   "switcher.archive.destination.error": "The backup folder could not be read.",
   "switcher.archive.destination.note": "garret remembers this folder for encrypted archives. Make a new archive regularly; backups are not automatic.",
   "switcher.archive.encrypted.heading": "Encrypted backups",
-  "switcher.archive.encrypted.note": "Keep a protected copy of your whole book somewhere else. Create a recovery key first and keep a spare copy separately; without it, you cannot open your backups. Then make an encrypted archive. Choose a Google Drive or Dropbox folder, or a USB drive, and check that the copy reaches it. Keep your working book outside cloud folders. Only the archive is encrypted; your working book and ordinary recovery copies are not.",
+  "switcher.archive.encrypted.note": "Keep a protected copy of your whole book somewhere else. Create a recovery key first and keep a spare copy separately; without it, you cannot open your backups. Then make an encrypted archive. Choose a Google Drive or Dropbox folder, or a USB drive, and check that the copy reaches it. Keep your working book outside cloud folders. Only the archive is encrypted; your working book and ordinary recovery copies are not. For transfer to another device, use the device export and check the receiving app first.",
   "switcher.archive.key.action": "Create recovery key",
   "switcher.archive.key.done": "Recovery key created. Keep a spare copy separate from your backups.",
   "switcher.archive.encrypted.action": "Make encrypted archive",

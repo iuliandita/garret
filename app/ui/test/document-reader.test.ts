@@ -10,8 +10,8 @@ const note = schema.nodes.endnote.create({ id: "01900000-0000-7000-8000-00000000
 const figure = schema.nodes.figure.create({ id: "01900000-0000-7000-8000-000000000002", asset_id: "01900000-0000-7000-8000-000000000003", width: "half", caption: "Caption", alt: "Description" });
 const doc = schema.node("doc", null, [schema.node("paragraph", null, [schema.text("Prose"), note]), figure, schema.nodes.scene_break.create(), schema.node("paragraph", null, schema.text("After"))]);
 
-test("reader prose edits and undo retain atoms; changes, deletion, and insertion refuse", () => {
-  let state = EditorState.create({ doc, plugins: [...editorPlugins(), preserveAtoms()] });
+test.each([false, true])("prose edits preserve atoms and ordinary replacement refuses, authoring=%s", authoring => {
+  let state = EditorState.create({ doc, plugins: [...editorPlugins(), preserveAtoms(authoring)] });
   const original = atomSignature(state.doc);
   const dispatch = (tr: Parameters<typeof state.apply>[0]) => { state = state.apply(tr); };
   dispatch(state.tr.insertText("Edited ", 1));
@@ -31,6 +31,24 @@ test("reader prose edits and undo retain atoms; changes, deletion, and insertion
     if (node.type.name === "endnote") dispatch(state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, body: "changed" }));
   });
   expect(state).toBe(before);
+});
+
+test("desktop authoring refuses ordinary Delete and Select All removal of existing figures", () => {
+  const mount = document.createElement("div"); document.body.append(mount);
+  let refused = 0;
+  const editor = createEditor(mount, { kind: "pmjson", json: doc.toJSON() }, {
+    authoring: true, onAtomEditRefused: () => refused++,
+  });
+  try {
+    const original = editor.serialize();
+    editor.restoreSelection(0, doc.content.size);
+    mount.querySelector(".ProseMirror")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", code: "Backspace", keyCode: 8, bubbles: true, cancelable: true }));
+    expect(editor.serialize()).toBe(original);
+    editor.restoreSelection(7, 7);
+    editor.erasePrev();
+    expect(editor.serialize()).toBe(original);
+    expect(refused).toBe(2);
+  } finally { editor.destroy(); mount.remove(); }
 });
 
 test("reader displays note body and bounded figure preview; late previews stay retired", async () => {

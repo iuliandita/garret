@@ -1,5 +1,5 @@
 import { createDocumentAuthoring, type DocumentAuthoring } from "./document-authoring";
-import { atomSignature, preserveAtoms, readerViews, refreshNoteReferences, type LoadFigurePreview } from "./document-reader";
+import { atomSignature, mayChangeAtoms, preserveAtoms, readerViews, refreshNoteReferences, type LoadFigurePreview } from "./document-reader";
 // app/ui/src/editor.ts
 // A single-scene ProseMirror surface: typing latency needs a real typing
 // target, but manuscript virtualization is a second independent variable.
@@ -647,7 +647,7 @@ export function createEditor(
   let noteOffset = 0;
   const editSources = new EditSourceTracker();
   const view: EditorView = new EditorView(mount, {
-    state: EditorState.create({ doc, plugins: [...editorPlugins(), ...(opts.authoring ? [] : [preserveAtoms()])] }),
+    state: EditorState.create({ doc, plugins: [...editorPlugins(), preserveAtoms(opts.authoring)] }),
     nodeViews: readerViews(opts.figurePreview, {
       noteOffset: () => noteOffset,
       editNote: opts.authoring ? pos => authoring?.note(pos) : undefined,
@@ -697,7 +697,7 @@ export function createEditor(
     dispatchTransaction(tr) {
       if (tr.docChanged && (!editable || (authoring?.pending() && !tr.getMeta("documentAuthoring")))) return;
       const before = view.state;
-      if (!opts.authoring && tr.docChanged && atomSignature(tr.doc) !== atomSignature(before.doc)) {
+      if (!mayChangeAtoms(tr, opts.authoring) && tr.docChanged && atomSignature(tr.doc) !== atomSignature(before.doc)) {
         if (opts.onAtomEditRefused) opts.onAtomEditRefused();
         else opts.onClipboardRefused?.();
         return;
@@ -725,6 +725,15 @@ export function createEditor(
     committed: opts.onAtomCommit ?? (async () => true),
     draftChanged: () => view.setProps({ editable: () => editable && !authoring?.pending() }),
     noteOffset: () => noteOffset,
+    restoreDraft(state) {
+      const before = view.state;
+      const tr = before.tr.replaceWith(0, before.doc.content.size, state.doc.content);
+      editSources.prepare(tr);
+      view.updateState(state);
+      refreshNoteReferences(view, noteOffset, opts.authoring);
+      opts.onChange?.(editSources.record(tr, before, state, () => countWordsIn(before.doc)));
+      opts.onStateChange?.();
+    },
   });
   const onFocus = (): void => opts.onFocus?.();
   const onBlur = (event: FocusEvent): void => opts.onBlur?.(event);
@@ -754,7 +763,7 @@ export function createEditor(
     replaceDoc(input: DocInput): void {
       if (authoring?.pending()) throw new Error("an endnote draft is still open");
       const next = schema.nodeFromJSON(docJsonFrom(input) as unknown as Record<string, unknown>);
-      view.updateState(EditorState.create({ doc: next, plugins: [...editorPlugins(), ...(opts.authoring ? [] : [preserveAtoms()])] }));
+      view.updateState(EditorState.create({ doc: next, plugins: [...editorPlugins(), preserveAtoms(opts.authoring)] }));
       editSources.reset();
       refreshNoteReferences(view, noteOffset, opts.authoring);
     },

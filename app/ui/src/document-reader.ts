@@ -1,4 +1,6 @@
 import { Plugin } from "prosemirror-state";
+import { isHistoryTransaction } from "prosemirror-history";
+import type { Transaction } from "prosemirror-state";
 import type { Node as PmNode } from "prosemirror-model";
 import type { EditorView, NodeViewConstructor } from "prosemirror-view";
 import { t, formatNumber } from "./i18n";
@@ -22,9 +24,13 @@ export function atomSignature(doc: PmNode): string {
 }
 
 /** Reader builds permit prose edits, but never manufacture or change atoms. */
-export function preserveAtoms(): Plugin {
+export function mayChangeAtoms(tr: Transaction, authoring = false): boolean {
+  return authoring && (tr.getMeta("documentAuthoring") === true || isHistoryTransaction(tr));
+}
+
+export function preserveAtoms(authoring = false): Plugin {
   return new Plugin({
-    filterTransaction: (tr, state) => !tr.docChanged || atomSignature(tr.doc) === atomSignature(state.doc),
+    filterTransaction: (tr, state) => !tr.docChanged || mayChangeAtoms(tr, authoring) || atomSignature(tr.doc) === atomSignature(state.doc),
   });
 }
 
