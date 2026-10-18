@@ -51,8 +51,6 @@ jobs:
         working-directory: app/ui
 
   host:
-    env:
-      CARGO_BUILD_JOBS: "8"
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
