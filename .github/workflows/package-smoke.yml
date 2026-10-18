@@ -60,7 +60,7 @@ jobs:
           case "$KIND" in
             deb) $sudo apt-get install -y "./$file"; cmd=/usr/bin/garret ;;
             rpm) dnf install -y "./$file"; cmd=/usr/bin/garret ;;
-            appimage) chmod +x "$file"; $sudo apt-get install -y -qq libfuse2t64; cmd="$PWD/$file" ;;
+            appimage) chmod +x "$file"; $sudo apt-get install -y -qq libfuse2t64 libegl1; cmd="$PWD/$file" ;;
             tar) $sudo apt-get install -y -qq libwebkit2gtk-4.1-0; tar -xzf "$file"; cmd="$(find "$PWD" -type f -name garret -perm -u+x | head -n1)" ;;
           esac
           echo "CMD=$cmd" >> "$GITHUB_ENV"
@@ -113,7 +113,7 @@ jobs:
           curl -fsSLO "$base/$file"
           curl -fsSLO "$base/SHA256SUMS"
           awk -v f="$file" '$2 == f' SHA256SUMS | shasum -a 256 -c -
-          mnt="$(hdiutil attach -nobrowse -readonly "$file" | awk -F'\t' '/\/Volumes\//{print $NF}')"
+          mnt="$({ yes || true; } | PAGER=cat hdiutil attach -nobrowse -readonly "$file" | awk -F'\t' '/\/Volumes\//{print $NF}')"
           ls "$mnt" | tee "$out/dmg-contents.txt"
           cp -R "$mnt/garret.app" /Applications/
           hdiutil detach "$mnt"
@@ -188,7 +188,26 @@ jobs:
           $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
           $g = [System.Drawing.Graphics]::FromImage($bmp)
           $g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
-          $bmp.Save((Join-Path $out "windows-${{ matrix.name }}.png"))
+          $bmp.Save((Join-Path $out "windows-${{ matrix.name }}-screen.png"))
+          $p.Refresh()
+          "title: $($p.MainWindowTitle)" | Tee-Object (Join-Path $out 'window.txt')
+          if ($p.MainWindowHandle -eq 0) { throw 'garret has no main window' }
+          Add-Type @'
+          using System; using System.Runtime.InteropServices;
+          public static class Win {
+            [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
+            [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+            [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr dc, uint f);
+          }
+          '@
+          $r = New-Object Win+RECT
+          [void][Win]::GetWindowRect($p.MainWindowHandle, [ref]$r)
+          $wb = New-Object System.Drawing.Bitmap ($r.R - $r.L), ($r.B - $r.T)
+          $wg = [System.Drawing.Graphics]::FromImage($wb)
+          $dc = $wg.GetHdc()
+          [void][Win]::PrintWindow($p.MainWindowHandle, $dc, 2)
+          $wg.ReleaseHdc($dc)
+          $wb.Save((Join-Path $out "windows-${{ matrix.name }}-window.png"))
           Stop-Process -Id $p.Id
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -201,13 +220,11 @@ jobs:
     name: Android ${{ matrix.arch }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 40
-    continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { arch: x86_64, runner: ubuntu-24.04, experimental: false }
-          - { arch: arm64-v8a, runner: ubuntu-24.04-arm, experimental: true }
+          - { arch: x86_64, runner: ubuntu-24.04 }
     steps:
       - name: Download and verify the APK
         run: |
