@@ -7,12 +7,16 @@ import android.view.View
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : TauriActivity() {
+    private val transferPicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        TransferPlugin.pickerResult(it)
+    }
     private var writingView: WebView? = null
     private val appearance by lazy { getSharedPreferences("appearance", MODE_PRIVATE) }
 
@@ -52,6 +56,7 @@ class MainActivity : TauriActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        TransferPlugin.attachActivity(this, transferPicker)
         applyAppearance()
         val content = findViewById<View>(android.R.id.content)
         ViewCompat.setOnApplyWindowInsetsListener(content) { view, insets ->
