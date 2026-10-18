@@ -1108,6 +1108,35 @@ fn commit_picked_picture<T>(
     }
 }
 
+/// Retain and register a picked figure before the page can place it.
+#[command_boundary::command]
+pub(crate) async fn figure_pick(
+    app: tauri::AppHandle,
+    state: State<'_, StoreState>,
+    generation: u64,
+) -> Result<Option<crate::store::figure_assets::FigureAsset>, String> {
+    let owner = {
+        let guard = locked(&state);
+        let project = open_project(&guard)?;
+        if project.generation != generation { return Err("figure selection belongs to another book".into()); }
+        crate::figures::authoring_allowed(&project.store)?;
+        PictureOwner::capture(project, &app)
+    };
+    let start = dirs::home_dir().unwrap_or_else(|| crate::pictures::dir_for(&owner.path));
+    let Some(source) = ask_for_picture_path(&app, &start).await else { return Ok(None); };
+    {
+        let guard = locked(&state);
+        owner.check_app(guard.as_ref(), &app)?;
+    }
+    // Retain the original even if the book closes while decoding. Registration
+    // is the final step, and a cancelled placement never deletes its original.
+    crate::figures::import_original(&owner.path, &source, |asset| {
+        let guard = locked(&state);
+        let project = owner.check_app(guard.as_ref(), &app)?;
+        project.store.register_figure_asset(asset).map_err(|error| error.to_string())
+    }).map(Some)
+}
+
 /// Attach a picture the WRITER picks, through the operating system's own open
 /// dialog.
 ///

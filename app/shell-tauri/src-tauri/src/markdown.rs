@@ -88,6 +88,15 @@ pub(crate) struct Parsed {
     pub imported: crate::import::Imported,
     pub assets: BTreeMap<String, Vec<u8>>,
     pub asset_ids: HashMap<String, String>,
+    pub inspected_assets: BTreeMap<String, crate::store::figure_assets::FigureAsset>,
+}
+
+pub(crate) const MAX_PACKAGE_ASSETS: usize = 128;
+pub(crate) const MAX_PACKAGE_BYTES: usize = 256 * 1024 * 1024;
+
+pub(crate) fn admit_assets(count: usize, total: usize) -> Result<(), String> {
+    if count > MAX_PACKAGE_ASSETS || total > MAX_PACKAGE_BYTES { return Err("Markdown package asset limit exceeded".into()); }
+    Ok(())
 }
 
 pub(crate) fn is_dialect(source: &str) -> bool {
@@ -136,6 +145,8 @@ pub(crate) fn parse(
     }
     let mut assets = BTreeMap::new();
     let mut asset_ids = HashMap::new();
+    let mut inspected_assets = BTreeMap::new();
+    let mut asset_bytes = 0usize;
     let mut blocks = HashMap::new();
     let mut clean = String::new();
     let mut lines = remaining.into_iter().peekable();
@@ -169,8 +180,11 @@ pub(crate) fn parse(
                 .or_insert_with(uuid)
                 .clone();
             if !assets.contains_key(&figure.path) {
+                admit_assets(assets.len() + 1, asset_bytes)?;
                 let bytes = resolve(&figure.path)?;
-                crate::pictures::inspect_original(&bytes).map_err(|e| e.to_string())?;
+                asset_bytes = asset_bytes.checked_add(bytes.len()).ok_or("Markdown package asset limit exceeded")?;
+                admit_assets(assets.len() + 1, asset_bytes)?;
+                inspected_assets.insert(figure.path.clone(), crate::figures::prepare_asset(&bytes, id.clone())?);
                 assets.insert(figure.path, bytes);
             }
             Some(
@@ -256,6 +270,7 @@ pub(crate) fn parse(
         imported,
         assets,
         asset_ids,
+        inspected_assets,
     })
 }
 
@@ -275,6 +290,9 @@ mod tests {
 
     #[test]
     fn dialect_refuses_unknown_metadata_unresolved_notes_and_unbounded_placements() {
+        assert!(admit_assets(MAX_PACKAGE_ASSETS, MAX_PACKAGE_BYTES).is_ok());
+        assert!(admit_assets(MAX_PACKAGE_ASSETS + 1, 0).is_err());
+        assert!(admit_assets(1, MAX_PACKAGE_BYTES + 1).is_err());
         let read =
             |source: &str| parse(source, "book", |_| Ok(crate::figures::tests::PNG.to_vec()));
         let valid = format!("{MARKER}# Book\n\n## Scene\n\nliteral \\[^1\\] [^s1-1]\n\n[^s1-1]: note\\*\n    next\n");
@@ -334,6 +352,15 @@ mod tests {
         };
         let text = format!("{MARKER}# Book\n\n## Scene\n\n{}\n", figure_text(&figure));
         assert!(read(&text).is_ok());
+        let oversized = format!("{MARKER}# Book\n\n## Scene\n\n{}", (0..=MAX_PACKAGE_ASSETS)
+            .map(|i| figure_text(&Figure { path: format!("assets/{i}.png"), width: "half".into(), caption: "".into(), alt: "View".into() }))
+            .collect::<Vec<_>>().join("\n\n"));
+        let mut resolved = 0;
+        assert!(parse(&oversized, "book", |_| {
+            resolved += 1;
+            Ok(crate::figures::tests::PNG.to_vec())
+        }).is_err());
+        assert_eq!(resolved, MAX_PACKAGE_ASSETS);
         assert!(parse(&text, "book", |_| Ok(b"not an image".to_vec())).is_err());
         let resolved = std::cell::Cell::new(false);
         let invalid = parse(&text.replace("half", "float"), "book", |_| {

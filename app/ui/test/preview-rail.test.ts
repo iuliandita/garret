@@ -721,12 +721,20 @@ describe("the proof copy", () => {
     const h = mount({}, preview(), styleView(), proofView({
       leaves: 312, items: 40, words: 90000,
       font_resolved: false, gutter_minimum_um: 15875, inner_um: 9525,
+      figures: [
+        { id: "a", item: "scene", dpi: 250, warning: true, flag: false },
+        { id: "b", item: "scene", dpi: 150, warning: true, flag: true },
+        { id: "c", item: "scene", dpi: 300, warning: false, flag: false },
+      ],
     }));
     await h.rail.open("pdf");
     const label = summary()?.getAttribute("aria-label") ?? "";
     expect(label).toContain("312 pages");
     expect(label).toContain("Crimson Text is not installed");
     expect(label).toContain("15.88 mm");
+    expect(label).toContain("Figure 1: 250 DPI at the placed print size, below 300.");
+    expect(label).toContain("Low print resolution, figure 2: 150 DPI at the placed print size, below 200.");
+    expect(label).not.toContain("Figure 3");
     // Painted and announced are the same words: the spans joined in order.
     expect(label).toBe(
       [...(summary()?.children ?? [])].map((c) => c.textContent).join(" "),

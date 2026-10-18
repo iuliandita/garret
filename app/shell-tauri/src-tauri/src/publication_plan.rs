@@ -211,8 +211,16 @@ impl Plan {
         book: &crate::export::Book,
         bodies: &HashMap<String, String>,
         scopes: Scopes,
-        mut resolve: impl FnMut(&str) -> Result<Asset, String>,
+        resolve: impl FnMut(&str) -> Result<Asset, String>,
     ) -> Result<Self, String> {
+        Self::build_mode(book, bodies, scopes, resolve, true)
+    }
+
+    fn build_mode(book: &crate::export::Book, bodies: &HashMap<String, String>, scopes: Scopes,
+        mut resolve: impl FnMut(&str) -> Result<Asset, String>, publication: bool) -> Result<Self, String> {
+        let xml_text = |text: &str, item: &str, field: &str| {
+            if publication { xml_text(text, item, field) } else { Ok(()) }
+        };
         let mut result = Self {
             documents: HashMap::new(),
             notes: Vec::new(),
@@ -299,7 +307,7 @@ impl Plan {
                             id,
                             "alternative text",
                         )?;
-                        if block["attrs"]["alt"].as_str().unwrap().trim().is_empty() {
+                        if publication && block["attrs"]["alt"].as_str().unwrap().trim().is_empty() {
                             return Err(format!("item {id}: figure needs alternative text"));
                         }
                         let asset = block["attrs"]["asset_id"].as_str().unwrap();
@@ -323,13 +331,23 @@ impl Plan {
         store: &store::Store,
         db: &std::path::Path,
     ) -> Result<Self, String> {
+        Self::from_store_mode(book, bodies, scopes, store, db, true)
+    }
+
+    pub(crate) fn for_copy(book: &crate::export::Book, bodies: &HashMap<String, String>, scopes: Scopes,
+        store: &store::Store, db: &std::path::Path) -> Result<Self, String> {
+        Self::from_store_mode(book, bodies, scopes, store, db, false)
+    }
+
+    fn from_store_mode(book: &crate::export::Book, bodies: &HashMap<String, String>, scopes: Scopes,
+        store: &store::Store, db: &std::path::Path, publication: bool) -> Result<Self, String> {
         let records: HashMap<_, _> = store
             .figure_assets()
             .map_err(|e| e.to_string())?
             .into_iter()
             .map(|asset| (asset.id.clone(), asset))
             .collect();
-        Self::build(book, bodies, scopes, |id| {
+        Self::build_mode(book, bodies, scopes, |id| {
             let record = records
                 .get(id)
                 .ok_or_else(|| format!("figure {id}: unregistered asset"))?;
@@ -352,7 +370,7 @@ impl Plan {
                 .read_to_end(&mut bytes)
                 .map_err(|e| e.to_string())?;
             Asset::verified(record, bytes)
-        })
+        }, publication)
     }
 }
 

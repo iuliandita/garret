@@ -365,6 +365,27 @@ pub fn create_imported(
     create_imported_with(library, name, rows, strings, |_| {})
 }
 
+pub(crate) fn create_imported_package(
+    library: &Path, parsed: &crate::markdown::Parsed, strings: &crate::strings::Strings,
+) -> Result<ProjectSummary, String> {
+    let rows: Vec<_> = parsed.imported.items.iter().map(|item|
+        (item.parent, item.item_type, item.title.as_str(), item.body.as_deref())).collect();
+    let ids = parsed.asset_ids.values().cloned().collect();
+    crate::store::document_format::validate_import_assets(&rows, &ids).map_err(|error| error.to_string())?;
+    create_book_with(library, &parsed.imported.name, |_| {}, |store, path| {
+        for (href, bytes) in &parsed.assets {
+            let id = parsed.asset_ids.get(href).ok_or("missing imported figure identity")?;
+            let asset = parsed.inspected_assets.get(href).ok_or("missing inspected figure")?;
+            if asset.id != *id { return Err("imported figure identity changed".into()); }
+            crate::figures::retain_prepared(path, bytes, asset.clone(), |asset|
+                store.register_figure_asset(asset).map_err(|error| error.to_string()))?;
+        }
+        store.import_tree(&rows).map_err(|error| error.to_string())?;
+        store.ensure_starter_structure(strings).map_err(|error| error.to_string())?;
+        Ok(())
+    })
+}
+
 fn create_imported_with(
     library: &Path,
     name: &str,
@@ -1106,12 +1127,25 @@ fn create_book_with_cleanup(
     let slug = slugify(name)
         .ok_or_else(|| format!("\"{name}\" has no characters that can name a file"))?;
     fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
-    let path = dir.join(format!("{slug}.db"));
+    let mut path = dir.join(format!("{slug}.db"));
     if path.exists() {
         return Err(format!(
             "a project named \"{name}\" already exists at {}",
             path.display()
         ));
+    }
+    // A crash can publish originals before its database. Preserve that evidence
+    // and choose another name instead of adopting or deleting those originals.
+    let mut ordinal = 1u64;
+    loop {
+        let pictures_present = match fs::symlink_metadata(crate::pictures::dir_for(&path)) {
+            Ok(_) => true,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+            Err(error) => return Err(format!("{}: cannot check originals: {error}", path.display())),
+        };
+        if !path.exists() && !pictures_present { break; }
+        ordinal = ordinal.checked_add(1).ok_or("project name suffix exhausted")?;
+        path = dir.join(format!("{slug}-{ordinal}.db"));
     }
     before_create(&path);
     let mut builder = tempfile::Builder::new();
@@ -1125,13 +1159,19 @@ fn create_book_with_cleanup(
         .tempdir_in(dir)
         .map_err(|e| format!("{}: cannot prepare a new book: {e}", path.display()))?;
     let retained_stage = stage.path().to_path_buf();
+    let final_pictures = crate::pictures::dir_for(&path);
+    let mut pictures_published = false;
+    let mut database_published = false;
     let result = (|| {
+        if fs::symlink_metadata(&final_pictures).is_ok() {
+            return Err(format!("{}: originals destination already exists", final_pictures.display()));
+        }
         let staged = stage.path().join("project.db");
         let store = Store::open(&staged).map_err(|e| format!("{}: {e}", path.display()))?;
         store
             .set_meta(NAME_KEY, name)
             .map_err(|e| format!("{}: cannot record the project name: {e}", path.display()))?;
-        fill(&store, &path)?;
+        fill(&store, &staged)?;
         store
             .checkpoint()
             .map_err(|e| format!("{}: cannot finish the new book: {e}", path.display()))?;
@@ -1159,17 +1199,31 @@ fn create_book_with_cleanup(
             .and_then(|file| file.sync_all())
             .map_err(|e| format!("{}: cannot sync the new book: {e}", path.display()))?;
         refuse_destination_logs(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+        let staged_pictures = crate::pictures::dir_for(&staged);
+        if fs::symlink_metadata(&staged_pictures).is_ok() {
+            rename_without_replace(&staged_pictures, &final_pictures)
+                .map_err(|e| format!("{}: cannot publish originals: {e}", final_pictures.display()))?;
+            pictures_published = true;
+        }
         rename_without_replace(&staged, &path).map_err(|e| {
             format!(
                 "{}: cannot publish the new book without replacing an existing file: {e}",
                 path.display()
             )
         })?;
+        database_published = true;
         if let Ok(parent) = fs::File::open(dir) {
             let _ = parent.sync_all();
         }
         Ok(summarize(&path))
     })();
+    let result = if pictures_published && !database_published {
+        match fs::remove_dir_all(&final_pictures) {
+            Ok(()) => result,
+            Err(error) => Err(format!("{}; cannot clean owned originals at {}: {error}",
+                result.unwrap_err(), final_pictures.display())),
+        }
+    } else { result };
     match (result, cleanup(stage)) {
         (result, Ok(())) => result,
         (Err(error), Err(cleanup)) => Err(format!(
@@ -2983,7 +3037,7 @@ mod tests {
             "Book",
             |_| {},
             |store, path| {
-                assert!(!path.exists(), "the incomplete book must not be published");
+                assert!(!dir.path().join("book.db").exists(), "the incomplete book must not be published");
                 let stage = fs::read_dir(dir.path())
                     .unwrap()
                     .next()
@@ -3004,6 +3058,7 @@ mod tests {
                     );
                 }
                 assert!(stage.join("project.db").is_file());
+                assert_eq!(path, stage.join("project.db"));
                 store
                     .set_meta("partial_import", "owned temporary data")
                     .unwrap();

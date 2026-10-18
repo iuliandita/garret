@@ -1453,6 +1453,7 @@ fn import_path(
     // The stem, for a file that does not name itself. `file_stem` and not a
     // split on '.', so "part 2.md" keeps its space and "a.b.md" keeps "a.b".
     let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or(shown);
+    let mut package = None;
     let (imported, losses) = if bytes.starts_with(ZIP_SIGNATURE) {
         let parsed =
             docx_import::parse(&bytes, stem).map_err(|e| format!("{}: {e}", path.display()))?;
@@ -1460,14 +1461,23 @@ fn import_path(
     } else {
         let source = String::from_utf8(bytes)
             .map_err(|_| format!("{}: not valid UTF-8 text", path.display()))?;
-        (import::parse_package(&source, stem, path.parent().ok_or("missing Markdown package root")?)?, docx_import::Losses::default())
+        if markdown::is_dialect(&source) {
+            let parsed = import::read_package(&source, stem, path.parent().ok_or("missing Markdown package root")?)?;
+            let imported = parsed.imported.clone();
+            package = Some(parsed);
+            (imported, docx_import::Losses::default())
+        } else { (import::parse(&source, stem), docx_import::Losses::default()) }
     };
     let rows: Vec<store::ImportRow<'_>> = imported
         .items
         .iter()
         .map(|i| (i.parent, i.item_type, i.title.as_str(), i.body.as_deref()))
         .collect();
-    create_imported_into_dir(data_home, dest_dir, &imported.name, &rows, strings).map(|summary| {
+    let made = if let Some(package) = package {
+        projects::create_imported_package(dest_dir, &package, strings)
+            .map(|summary| book_registration::remember(data_home, dest_dir, summary))
+    } else { create_imported_into_dir(data_home, dest_dir, &imported.name, &rows, strings) };
+    made.map(|summary| {
         ImportOutcome {
             summary,
             losses,
@@ -4432,6 +4442,8 @@ fn main() {
             commands::cast::__wire_cast_remove,
             commands::cast::__wire_cast_picture_view,
             commands::figures::__wire_figure_preview,
+            commands::figures::__wire_figure_details,
+            commands::dialogs::__wire_figure_pick,
             commands::authoring::__wire_endnote_context,
             commands::authoring::__wire_endnote_numbering_set,
             commands::cast::__wire_cast_picture_clear,
@@ -8017,6 +8029,42 @@ mod tests {
             &crate::projects::known(home.path()),
             &PathBuf::from(&made.path),
         ));
+    }
+
+    #[test]
+    fn native_markdown_package_import_retains_originals_before_publishing_the_book() {
+        let home = tempdir().unwrap();
+        let dest = tempdir().unwrap();
+        let source = home.path().join("package.md");
+        let bytes = include_bytes!("../fixtures/two-halves.png");
+        std::fs::create_dir(home.path().join("assets")).unwrap();
+        std::fs::write(home.path().join("assets/view.png"), bytes).unwrap();
+        let text = format!("{}# Illustrated book\n\n<!-- garret-figure: {{\"path\":\"assets/view.png\",\"width\":\"half\",\"caption\":\"Summit\",\"alt\":\"A mountain\"}} -->\n![A mountain](assets/view.png)\n*Summit*\n", crate::markdown::MARKER);
+        std::fs::write(&source, &text).unwrap();
+        // A crash may publish originals before the database. Keep those bytes and skip the name.
+        let orphan = dest.path().join("illustrated-book.pictures");
+        std::fs::create_dir(&orphan).unwrap();
+        std::fs::write(orphan.join("retained.png"), b"orphaned original").unwrap();
+        let made = import_path(home.path(), dest.path(), &source).unwrap().summary;
+        assert_eq!(Path::new(&made.path).file_name().unwrap(), "illustrated-book-2.db");
+        assert_eq!(std::fs::read(orphan.join("retained.png")).unwrap(), b"orphaned original");
+        let store = store::Store::open_readonly(Path::new(&made.path)).unwrap();
+        let assets = store.figure_assets().unwrap();
+        assert_eq!(assets.len(), 1);
+        assert_eq!(std::fs::read(crate::pictures::dir_for(Path::new(&made.path)).join(&assets[0].stored_name)).unwrap(), bytes);
+        assert!(store.documents().unwrap().values().any(|body| body.contains(&assets[0].id)));
+        assert!(crate::validation::validate(Path::new(&made.path)).unwrap().ok);
+        let failed = tempdir().unwrap();
+        let double = format!("{text}\n{}", text.strip_prefix(crate::markdown::MARKER).unwrap().replace("assets/view.png", "assets/second.png"));
+        let mut parsed = crate::markdown::parse(&double, "book", |_| Ok(bytes.to_vec())).unwrap();
+        // The second sorted asset fails after the first original is retained.
+        parsed.inspected_assets.get_mut("assets/view.png").unwrap().id = uuid::Uuid::now_v7().to_string();
+        assert!(projects::create_imported_package(failed.path(), &parsed, &crate::strings::Strings::english()).is_err());
+        assert_eq!(std::fs::read_dir(failed.path()).unwrap().count(), 0);
+        std::fs::remove_file(home.path().join("assets/view.png")).unwrap();
+        let refused = tempdir().unwrap();
+        assert!(import_path(home.path(), refused.path(), &source).is_err());
+        assert_eq!(std::fs::read_dir(refused.path()).unwrap().count(), 0);
     }
 
     #[test]

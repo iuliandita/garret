@@ -48,7 +48,10 @@ Choose light or dark mode, in English or German.
 
 On desktop, Edit > Insert or edit endnote (Ctrl+Alt+N) opens a plain-text note
 with Save/Cancel and isolated undo. Choose book, chapter or story numbering in
-the Edit menu. Insert scene break adds an explicit `* * *` separator. Android
+the Edit menu. Insert scene break adds an explicit `* * *` separator. Insert or
+edit figure opens the native PNG/JPEG picker, with full/half/page placement,
+caption, alternative text and print-resolution warnings. Empty alternative text
+blocks publication. Android
 reads these nodes and edits surrounding prose; atom authoring stays on desktop.
 
 ### Keep the story straight

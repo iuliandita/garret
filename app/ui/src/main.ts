@@ -886,6 +886,7 @@ async function main(): Promise<void> {
         openMirrorChanges: () => current.menuActions.openMirrorChanges(),
         openComments: () => current.menuActions.openComments(),
         addComment: () => current.menuActions.addComment(),
+        editFigure: () => current.menuActions.editFigure(),
         editEndnote: () => current.menuActions.editEndnote(),
         insertSceneBreak: () => current.menuActions.insertSceneBreak(),
         deleteSelectedAtom: () => current.menuActions.deleteSelectedAtom(),

@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
     covers, research,
-    store::{figure_assets, Store},
+    store::{document_format, figure_assets, Store},
 };
 use std::path::PathBuf;
 
@@ -111,7 +111,7 @@ fn figure_names_are_strict_and_registration_is_disabled_before_any_file_write() 
     let source = root.path().join("photo.png");
     fs::write(&source, PNG).unwrap();
     assert_eq!(
-        import_copy(&db, &store, &source).unwrap_err(),
+        authoring_allowed(&store).unwrap_err(),
         "figure registration is disabled"
     );
     assert!(!pictures::dir_for(&db).exists());
@@ -205,6 +205,22 @@ fn failed_registration_keeps_original_for_salvage_and_never_reuses_it() {
         fs::read(pictures::dir_for(&db).join(failed.stored_name)).unwrap(),
         PNG
     );
+    #[cfg(unix)]
+    {
+        let link = root.path().join("linked.png");
+        std::os::unix::fs::symlink(&source, &link).unwrap();
+        assert_eq!(import_original(&db, &link, |_| panic!("symlink registered")).unwrap_err(), "figure_symlink");
+    }
+    let dir = pictures::dir_for(&db);
+    for i in 2..1024 { fs::write(dir.join(format!("fig-abandoned-{i}.png")), []).unwrap(); }
+    assert_eq!(import_original(&db, &source, |_| panic!("over-limit original registered")).unwrap_err(), "figure_retention_limit");
+    assert_eq!(fs::read_dir(&dir).unwrap().count(), 1024);
+    assert_eq!(retain_bytes(&db, b"not an image", uuid::Uuid::now_v7().to_string(), |_| panic!("over-limit bytes decoded")).unwrap_err(), "figure_retention_limit");
+    // Sparse bytes exercise total-size admission without allocating 2 GiB.
+    fs::remove_file(dir.join("fig-abandoned-2.png")).unwrap();
+    fs::OpenOptions::new().write(true).open(dir.join("fig-abandoned-3.png")).unwrap().set_len(2 * 1024 * 1024 * 1024).unwrap();
+    assert_eq!(import_original(&db, &source, |_| panic!("over-size original registered")).unwrap_err(), "figure_retention_limit");
+    assert_eq!(retain_bytes(&db, b"not an image", uuid::Uuid::now_v7().to_string(), |_| panic!("over-size bytes decoded")).unwrap_err(), "figure_retention_limit");
 }
 
 #[test]

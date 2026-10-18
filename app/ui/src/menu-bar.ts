@@ -63,6 +63,7 @@ export interface MenuSpec {
 export type ProjectsFocus = "list" | "create" | "import" | "backups";
 
 export interface MenuBarDeps {
+  editFigure?: () => void;
   editEndnote?: () => void;
   insertSceneBreak?: () => void;
   deleteSelectedAtom?: () => void;
@@ -325,6 +326,7 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
           label: () => t("menu.add-to-dictionary"),
           run: deps.addToDictionary,
         },
+        { id: "menu-insert-figure", opensDialog: true, label: () => t("figure.insert"), run: () => deps.editFigure?.() },
         { id: "menu-insert-endnote", opensDialog: true, label: () => t("authoring.insert-note"), shortcut: t("authoring.shortcut"), run: () => deps.editEndnote?.() },
         { id: "menu-insert-scene-break", label: () => t("authoring.insert-break"), run: () => deps.insertSceneBreak?.() },
         { id: "menu-delete-atom", label: () => t("authoring.delete"), run: () => deps.deleteSelectedAtom?.() },

@@ -43,9 +43,21 @@ default to story numbering. Identifiers remain stable through edit and undo.
 Edit > Insert scene break creates an explicit block rendered as `* * *`.
 Literal typed asterisks remain ordinary prose. Select a note or break and choose
 Edit > Delete selected note, figure or scene break to delete it; undo and redo retain
-its content. Desktop figure authoring is the next activation layer. Existing
-figures remain readable and preserved, with bounded lazy previews, captions,
-alternative text and registered orientation.
+its content. Edit > Insert or edit figure opens the native PNG/JPEG picker;
+each insertion retains an independent, durable original and registers it before
+placing the figure. Cancel leaves no placement and retains an already copied
+original. Figure properties are available on the figure and through the Edit
+menu. Full text width, half text width and a separate interior page are supported,
+with caption and alternative text. Saving or editing is one isolated undo step.
+Empty alternative text may be saved as a draft, but blocks publication.
+Properties estimate print DPI from the oriented pixels and book dimensions;
+the PDF proof measures the actual placed size, including caption space. Below
+300 DPI warns; below 200 DPI is flagged. Originals are never automatically removed.
+Retention checks count and total bytes before decoding a newly picked image.
+A crashed import can leave originals without a database; a later creation skips
+that occupied name and preserves the orphaned originals for inspection. A figure
+preview blocked by a failed save reports that save failure rather than claiming
+the original is missing.
 
 Android can read notes, figures and scene breaks; open a numbered note to read
 its body; edit surrounding prose; save, close and reopen; and import/export a
@@ -69,10 +81,14 @@ Complete backups, encrypted archives, restores and transfers retain schema 18,
 exact atom payloads, history and registered originals. Markdown packages, EPUB,
 DOCX and PDF use the shared publication plan. Empty figure alternative text
 blocks publication; missing or changed originals refuse. DOCX and marked
-Markdown imports preserve plain-text endnotes and explicit breaks. Picture
-import and new-format readable-folder output remain reserved for the figure
-activation layer; refusal leaves destinations unpublished. Ordinary readable
-folders continue to work. Salvage retains readable notes, figure links, breaks,
+Markdown imports preserve plain-text endnotes and explicit breaks. Figure-package
+import verifies and retains relative originals before publishing the separate book.
+New-format readable-folder copies require schema 18 and carry `document_format: 18`,
+notes, captions and relative hashed originals beside each scene. They are one-way:
+marker removal does not allow inbound replacement of atom-bearing scenes. Ordinary
+scenes remain bidirectional. Pauses, conflict copies and undo protections remain;
+changed asset bytes are retained and refuse replacement. Blank-alt drafts remain
+readable-folder copies while publication still refuses them. Salvage retains readable notes, figure links, breaks,
 verbatim JSON for affected current/named documents and registered originals;
 automatic-version drops remain reported. Salvage is not a downgrade route.
 
@@ -179,19 +195,17 @@ rotation but retains raw PNG dimensions for PNG eXIf; the proof follows that
 displayed geometry. EPUB retains the original PNG and DOCX uses its raw drawing
 dimensions. Preview reports include per-placement `figures`
 with item and instance IDs, DPI, warning, and flag values. Existing schema-18
-books can publish these nodes. Authoring and its activation interface remain
-disabled; creation stays at
-schema 17, existing schema-18 books retain their version, and no new migration runs. Native Linux output is exercised under a virtual
+books can publish these nodes. Release 0.0.6 keeps authoring disabled and creates
+schema 17; the current activation described above creates schema 18 and requires
+consent before upgrading existing writable books. Native Linux output is exercised under a virtual
 display; Windows and macOS layout qualification remains external.
 
-DOCX import keeps its existing prose-only behavior while new-node conversion is
-disabled. Footnote and endnote references and pictures are omitted with separate
-loss counts in the interface and CLI; no atoms are stored. Note-body parts are
-not parsed in this mode, including malformed parts that previous builds ignored.
-Keep the original DOCX to retain its notes and pictures. No migration runs, and
-existing books remain unchanged. Back up closed books and adjacent originals;
-rollback uses the previous package with a separate complete copy and the same
-counted-loss import behavior.
+Release 0.0.6 imports DOCX as prose and reports omitted notes and pictures.
+Current activation converts footnotes and endnotes to owned plain-text endnotes;
+note formatting and unsupported pictures remain counted losses. Keep the original
+DOCX to retain its formatting and pictures. Import creates a separate current-format
+book. Back up closed books and adjacent originals; rollback uses the previous
+package with a separate complete pre-upgrade copy.
 
 Prepared DOCX publication uses the shared plan for native endnotes, scoped
 numbering, inline pictures, captions, alternative text, and scene breaks. Legacy
@@ -627,8 +641,9 @@ certify a live upgrade or restore.
 ### Android drafting data
 
 Android drafting tools reuse the existing item revisions and positions, synopsis,
-cast, Bible documents, comments and saved-typing ledger. New books stay at schema 17;
-existing schema-18 books use the reader and transfer policy above. Old day-baseline metadata is retained
+cast, Bible documents, comments and saved-typing ledger. New Android books use
+schema 17; existing 17 books remain 17, and existing 18 books remain 18. Android
+never upgrades a book and needs no upgrade consent or private rollback copy. Old day-baseline metadata is retained
 and is not reclassified as typed progress. Daily targets use the desktop
 `daily_target` string encoding in application settings; they are device preferences
 and do not travel with a book. Text size is stored with Android appearance settings.
@@ -642,3 +657,15 @@ atoms. Use the explicit deletion action; its undo/redo remains available. Androi
 enforces atom preservation at the host save boundary, independently of desktop
 authoring. Encrypted archives remain backups; their interface warns to use the
 recipient-checked device export for transfers.
+
+Figure package imports admit at most 128 distinct originals and 256 MiB of
+original bytes. Each image is inspected once before retention. Originals and
+their database are staged together; failed publication cleans up originals
+owned by that attempt and refuses an existing destination pictures folder.
+Cancelled figure insertions retain their original for recovery, with admission
+limited to 1,024 retained figure files and 2 GiB per book. Nothing is deleted
+automatically to make room. Missing or changed originals produce a properties
+warning; caption and alternative text remain editable, while publication still
+requires valid originals. DPI estimates precede caption and heading layout;
+the proof checks the final placed size. Figure copy/paste is refused, including
+within the same book; use insertion and explicit deletion with undo instead.
