@@ -18,7 +18,7 @@ export function refusesPicture(data: DataTransfer | null): boolean {
   // line wrapping) qualify; spaces/punctuation in prose keep its normal path.
   if (imagePayload(plain) || imagePayload(html)) return true;
   const hasProse = plain.trim() !== "" || html.replace(/<[^>]*>/g, "").trim() !== "";
-  return !hasProse && (Array.from(data.types ?? []).some(type => /^image\//i.test(type) || type === "Files") || data.files.length > 0);
+  return !hasProse && (Array.from(data.types).some(type => /^image\//i.test(type) || type === "Files") || data.files.length > 0);
 }
 
 export function validateClipboardHtml(html: string): void {

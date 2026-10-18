@@ -273,7 +273,7 @@ fn refuse_new_nodes(item_id: &str, body: &str) -> Result<()> {
             _ => false,
         }
     }
-    if !new_nodes_allowed() && serde_json::from_str::<Value>(body).is_ok_and(|value| contains_new(&value)) {
+    if serde_json::from_str::<Value>(body).is_ok_and(|value| contains_new(&value)) {
         return Err(invalid(&format!("{item_id}: new document nodes are disabled")));
     }
     Ok(())
