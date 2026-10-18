@@ -26,6 +26,7 @@
 //   boot 2  restore the snapshot, whole manuscript    ZERO walks
 //
 // Usage: APP_GUI=1 bun app/harness/src/mreplace-cli.ts <tiny|stress>
+import { legacyText } from "./document-read";
 import { Database } from "bun:sqlite";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -76,30 +77,6 @@ interface WalkRow {
   type: string;
   title: string;
   depth: number;
-}
-
-function projectText(body: string): string | null {
-  let root: unknown;
-  try {
-    root = JSON.parse(body);
-  } catch {
-    return null;
-  }
-  if (typeof root !== "object" || root === null) return null;
-  if ((root as { type?: unknown }).type !== "doc") return null;
-  let out = "";
-  const walk = (node: unknown): void => {
-    if (typeof node !== "object" || node === null) return;
-    const n = node as { type?: unknown; text?: unknown; content?: unknown };
-    if (n.type === "text") {
-      if (typeof n.text === "string") out += n.text;
-      return;
-    }
-    if (out !== "") out += " ";
-    if (Array.isArray(n.content)) for (const child of n.content) walk(child);
-  };
-  walk(root);
-  return out;
 }
 
 /** ONE CODE POINT AT A TIME, never `String.prototype.toLowerCase` on a whole
@@ -185,7 +162,7 @@ function readBodies(path: string): Map<string, string> {
 function readTexts(path: string): Map<string, string> {
   const out = new Map<string, string>();
   for (const [id, body] of readBodies(path)) {
-    const text = projectText(body);
+    const text = legacyText(body);
     if (text !== null) out.set(id, text);
   }
   return out;

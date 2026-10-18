@@ -1,8 +1,12 @@
 import type { ProjectPreset } from "../src/project-preset";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
+
+afterEach(() => {
+  document.body.replaceChildren();
+});
 
 import {
   createSwitcher,
@@ -28,6 +32,9 @@ const ZERO_LOSSES: ImportLosses = {
   tables: 0,
   pictures: 0,
   notes: 0,
+  note_formatting: 0,
+  missing_note_bodies: 0,
+  note_drawings: 0,
   comments: 0,
   links: 0,
   fields: 0,
@@ -3115,4 +3122,12 @@ test.each(["short", "nonfiction", "collection"] as const)("switcher forwards %s 
   await settle();
   expect(calls).toEqual([["Draft", preset], ["Draft", preset]]);
   teardown(r);
+});
+
+
+test("note import notices count plain-text formatting, missing bodies and drawings separately", () => {
+  const notice = lossesNotice({ ...ZERO_LOSSES, note_formatting: 2, missing_note_bodies: 1, note_drawings: 3 });
+  expect(notice).toContain("formatting in 2 notes (plain text retained)");
+  expect(notice).toContain("1 missing note body (empty reference retained)");
+  expect(notice).toContain("drawings in 3 notes");
 });

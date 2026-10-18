@@ -267,6 +267,9 @@ fn fragment(raw: &str) -> Result<Vec<FragmentToken>, String> {
     }
     let mut bytes = 0usize;
     for token in &tokens {
+        if let FragmentToken::Atom { node } = token {
+            bytes += node.to_string().len();
+        }
         if let FragmentToken::Text { text, marks } = token {
             if text.is_empty() {
                 return Err("empty fragment text".into());
@@ -297,6 +300,8 @@ fn contexts(tokens: &[FragmentToken]) -> u8 {
                 FragmentToken::Open if depth == 0 => depth = 1,
                 FragmentToken::Close if depth == 1 => depth = 0,
                 FragmentToken::Text { .. } if depth == 1 => {}
+                FragmentToken::Atom { node } if depth == 1 && node["type"] == "endnote" => {}
+                FragmentToken::Atom { node } if depth == 0 && matches!(node["type"].as_str(), Some("figure" | "scene_break")) => {}
                 _ => {
                     valid = false;
                     break;
@@ -676,6 +681,23 @@ mod tests {
     #[cfg(not(target_os = "android"))]
     use crate::store::Store;
     use tempfile::tempdir;
+
+    #[test]
+    fn atom_consumers_review_integrity_checks_atom_context_and_payload_limits() {
+        let body = crate::store::document_fields::tests::mixed();
+        let note = FragmentToken::Atom { node: body["content"][0]["content"][1].clone() };
+        let figure = FragmentToken::Atom { node: body["content"][1].clone() };
+        let scene_break = FragmentToken::Atom { node: json!({"type":"scene_break"}) };
+        assert_eq!(contexts(&[note.clone()]), 1 << 3);
+        assert_eq!(contexts(&[figure.clone(), scene_break]), 1);
+        assert_eq!(contexts(&[FragmentToken::Open, figure, FragmentToken::Close]), 0);
+        assert_eq!(contexts(&[FragmentToken::Open, note, FragmentToken::Close]), 1);
+        let mut large = body["content"][0]["content"][1].clone();
+        large["attrs"]["body"] = json!("x".repeat(64 * 1024));
+        let token = FragmentToken::Atom { node: large };
+        assert!(fragment(&serde_json::to_string(&vec![token.clone(); 255]).unwrap()).is_ok());
+        assert!(fragment(&serde_json::to_string(&vec![token; 256]).unwrap()).unwrap_err().contains("exceeds limit"));
+    }
 
     #[test]
     fn review_integrity_preserves_historical_states_and_checks_pending_against_prose() {

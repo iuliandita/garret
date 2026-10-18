@@ -1,6 +1,7 @@
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { afterEach, describe, expect, test } from "bun:test";
 import { t } from "../src/i18n";
+import type { FieldLocator } from "../src/find-locate";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
@@ -81,6 +82,7 @@ interface Rig {
   dones: () => string[];
   opened: () => string[];
   openedWith: () => string[];
+  openedLocators: () => (FieldLocator | undefined)[];
   selected: () => string[];
   /** How many times the panel asked the page to take focus back. A COUNT, not
    *  the element it landed on: the unit no longer owns a focus target, and
@@ -122,6 +124,7 @@ function mount(options: RigOptions = {}): Rig {
   const opened: string[] = [];
   // The query each open was told to reveal.
   const openedWith: string[] = [];
+  const openedLocators: (FieldLocator | undefined)[] = [];
   const selectedIds: string[] = [];
   const replacements: { kind: string; query: string; replacement: string }[] = [];
   let dismissals = 0;
@@ -137,9 +140,10 @@ function mount(options: RigOptions = {}): Rig {
       queries.push({ query, limit });
       return options.find?.(query, limit) ?? Promise.resolve(results());
     },
-    openItem: (id, query) => {
+    openItem: (id, query, locator) => {
       opened.push(id);
       openedWith.push(query);
+      openedLocators.push(locator);
     },
     selectItem: (id) => selectedIds.push(id),
     replaceMatch: (query, replacement) => {
@@ -220,6 +224,7 @@ function mount(options: RigOptions = {}): Rig {
     dones: () => [...dones],
     opened: () => [...opened],
     openedWith: () => [...openedWith],
+    openedLocators: () => [...openedLocators],
     selected: () => [...selectedIds],
     dismissals: () => dismissals,
   };
@@ -1510,4 +1515,34 @@ describe("replacing throughout the manuscript", () => {
     expect(rig.dones()).toEqual([]);
     expect(rig.notices().join(" ")).toContain("Could not replace throughout the manuscript");
   });
+});
+
+
+test("each matching field has an accessible target that forwards its exact locator", async () => {
+  const locators: FieldLocator[] = [
+    { item_id: "s1", instance_id: null, field: "prose", from: 1, to: 4 },
+    { item_id: "s1", instance_id: "note", field: "note", from: 2, to: 5 },
+    { item_id: "s1", instance_id: "figure", field: "alt", from: 8, to: 11 },
+  ];
+  const rig = mount({ find: async () => results({ results: [hit({ locators, matches: 3 })] }) });
+  rig.type("inn"); rig.runSearch(); await settle();
+  expect(rig.rows().length).toBe(3);
+  expect(rig.rows().map(row => row.getAttribute("aria-label")).join(" ")).toContain("Alternative text");
+  rig.rows()[2]!.click();
+  expect(rig.openedLocators()).toEqual([locators[2]]);
+});
+
+
+test("prose snippets omit the field label while note, caption and alt keep it", async () => {
+  const locators: FieldLocator[] = ["prose", "note", "caption", "alt"].map(field => ({
+    item_id: "s1", instance_id: field === "prose" ? null : field,
+    field: field as FieldLocator["field"], from: 1, to: 4,
+  }));
+  const rig = mount({ find: async () => results({ results: [hit({ locators })] }) });
+  rig.type("inn"); rig.runSearch(); await settle();
+  expect(rig.rows().map(row => row.querySelector(".find-snippet")?.textContent)).toEqual([
+    "she reached the inn at dusk", `${t("document.field.note")}: inn`,
+    `${t("document.field.caption")}: inn`, `${t("document.field.alt")}: inn`,
+  ]);
+  expect(rig.rows()[0]!.getAttribute("aria-label")).not.toContain(`${t("document.field.prose")}:`);
 });

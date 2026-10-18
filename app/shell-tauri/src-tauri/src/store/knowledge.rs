@@ -159,29 +159,27 @@ pub fn quote_at(body: &str, from: i64, to: i64) -> Option<String> {
     if from < 0 || to <= from {
         return None;
     }
-    let value: serde_json::Value = serde_json::from_str(body).ok()?;
-    if value.get("type")?.as_str()? != "doc" {
-        return None;
-    }
+    let value = super::document_fields::read(body)?;
     let mut paragraph_start = 0i64;
     for block in value.get("content")?.as_array()? {
-        if block.get("type")?.as_str()? != "paragraph" {
-            return None;
+        if block["type"] != "paragraph" {
+            paragraph_start += 1;
+            continue;
         }
-        let mut content = String::new();
-        if let Some(nodes) = block.get("content") {
-            for node in nodes.as_array()? {
-                if node.get("type")?.as_str()? != "text" {
-                    return None;
-                }
-                content.push_str(node.get("text")?.as_str()?);
+        let mut units = Vec::new();
+        for node in block.get("content").and_then(serde_json::Value::as_array).into_iter().flatten() {
+            if node["type"] == "text" {
+                units.extend(node["text"].as_str()?.encode_utf16());
+            } else {
+                units.push(0xfffc);
             }
         }
-        let units: Vec<u16> = content.encode_utf16().collect();
         let start = paragraph_start + 1;
         let end = start + units.len() as i64;
         if from >= start && to <= end {
-            return String::from_utf16(&units[(from - start) as usize..(to - start) as usize]).ok();
+            let from = (from - start) as usize;
+            let to = (to - start) as usize;
+            return String::from_utf16(&units[from..to]).ok();
         }
         paragraph_start = end + 1;
     }
@@ -607,6 +605,29 @@ mod tests {
         assert_eq!(quote_at(body, 9, 13).as_deref(), Some("last"));
         assert_eq!(quote_at(body, 2, 3), None); // half a surrogate pair
         assert_eq!(quote_at(body, 4, 9), None); // crosses paragraph boundary
+    }
+
+    #[test]
+    fn atom_consumers_passage_links_keep_placeholder_quotes_on_reopen() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = Store::open(&dir.path().join("book.db")).unwrap();
+        let scene = store.item_create(None, "scene", "Coast").unwrap();
+        let target = store.item_create(None, "scene", "Source").unwrap();
+        let body = crate::store::document_fields::tests::mixed().to_string();
+        store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", params![body, scene.id]).unwrap();
+        let draft = LinkDraft {
+            source: Endpoint { kind: "item".into(), id: scene.id.clone() },
+            target: Endpoint { kind: "item".into(), id: target.id },
+            label: "source".into(), note: String::new(), citation: String::new(),
+            anchor: Some(PassageAnchor {
+                item_id: scene.id.clone(), doc_rev: store.load_doc(&scene.id).unwrap().rev,
+                from: 2, to: 9, quote: "😀be\u{fffc}wi".into(),
+            }),
+        };
+        store.knowledge_link_create(&draft).unwrap();
+        let links = store.knowledge_links(Some(&draft.source), false).unwrap();
+        assert!(!links[0].anchor_stale);
+        assert_eq!(links[0].anchor.as_ref().unwrap().quote, "😀be\u{fffc}wi");
     }
 
     #[test]

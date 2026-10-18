@@ -60,7 +60,7 @@ fn stages(root: &Path) -> Result<Vec<PathBuf>, String> {
         let Some(name) = name.to_str() else {
             continue;
         };
-        if uuid::Uuid::parse_str(name).is_ok_and(|id| id.to_string() == name) {
+        if crate::mobile_core::is_canonical_uuid(name) {
             private_dir(&entry.path())?;
             found.push(entry.path());
         }
@@ -126,8 +126,7 @@ pub(crate) fn sweep(root: &Path, discard: bool) -> Result<(), String> {
 }
 
 pub(crate) fn stage(root: &Path, token: &str) -> Result<PathBuf, String> {
-    let id = uuid::Uuid::parse_str(token).map_err(|_| "transfer_stale")?;
-    if id.to_string() != token {
+    if !crate::mobile_core::is_canonical_uuid(token) {
         return Err("transfer_stale".into());
     }
     if retained(root)? >= MAX_RETAINED {

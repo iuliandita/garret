@@ -14,6 +14,10 @@ Move changes only a scene (including any existing children); parts and chapters
 have no editing actions. Choose an existing destination and the preceding item,
 or First. Search results open the scene and select a matching passage.
 
+Prose search retains matches across paragraph breaks. Search context stays near
+the match; note, caption and alternative-text results identify their field.
+New-node fixtures exercise these targets without enabling new-node writes.
+
 Synopsis edits the same field as the desktop synopsis panel and uses explicit Save;
 closing discards an unsaved synopsis draft. Comments retain their quoted passages and
 can be resolved. Bible/cast lookup is read-only. Daily progress uses the desktop
@@ -37,6 +41,10 @@ Schema-17 transfers retain legacy empty text runs and history. New document
 nodes are refused before preview or publication, with the affected item ID in
 English or German. A refused save names the scene and keeps its text pending;
 use the recovery-copy action before restarting.
+
+Figure-original retention uses shared archive verification, but this preparation
+does not enable new document nodes or raise the phone's schema ceiling above 17.
+A future format upgrade still requires a compatible Android release.
 
 Cancellation waits for the original native operation. Close an open system
 picker to let cancellation finish. Provider write, close or readback failures
@@ -160,6 +168,13 @@ The driver records the APK hash, UI checkpoints and screenshots. It verifies
 actual text after a scene switch and after force-stop/reopen. ASCII input is
 not a composition test. Failure diagnostics use only the temporary emulator's
 synthetic books. Run this serialized with other heavy checks.
+
+Scene buttons match their English or German name, including a preceding chapter
+label. A hidden control gets at most four swipes within its dialog or scrollable
+ancestor, with a fresh hierarchy after each swipe. Missing and ambiguous labels
+are refused before any tap. Run the offline hierarchy regressions with
+`python3 scripts/test-android-smoke.py`; CI runs them with the script tests.
+Each scroll hierarchy has a unique filename so later taps retain earlier evidence.
 
 Sources: [Android command-line tools](https://developer.android.com/studio#command-tools)
 and [Tauri Android prerequisites](https://v2.tauri.app/start/prerequisites/#android).

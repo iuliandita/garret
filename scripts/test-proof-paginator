@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+phase() { printf 'proof-phase ts=%s pid=%s %s\n' "$(date -u +%FT%T.%3NZ)" "$$" "$*" >&2; }
+
+if [[ ${1:-} == --inside ]]; then
+  shift
+  phase "inside xvfb-run; display ready: $DISPLAY"
+  binary=$1
+  shift
+  for fixture in "$@"; do
+    phase "test process starting: $fixture"
+    "$binary" --ignored --exact --nocapture --test-threads=1 "printer::tests::$fixture"
+    phase "test process exited: $fixture"
+  done
+  phase "before xvfb-run shutdown"
+  exit 0
+fi
+
+if [[ ${1:-} == --run ]]; then
+  shift
+  diagnostics=$1
+  shift
+  export CARGO_HOME=${CARGO_HOME:-$HOME/.cargo}
+  export RUSTUP_HOME=${RUSTUP_HOME:-$HOME/.rustup}
+  export HOME="$diagnostics/home" XDG_DATA_HOME="$diagnostics/data"
+  mkdir -p "$HOME" "$XDG_DATA_HOME"
+  phase "compiling test process"
+  cargo test --locked --bin garret --no-run --message-format=json > "$diagnostics/build.json"
+  binary=$(python3 -c 'import json,sys; print(next(x["executable"] for line in open(sys.argv[1]) if (x:=json.loads(line)).get("executable") and x.get("profile",{}).get("test")))' "$diagnostics/build.json")
+  export GDK_BACKEND=x11 WEBKIT_DISABLE_COMPOSITING_MODE=1
+  export WEBKIT_DISABLE_DMABUF_RENDERER=1 LIBGL_ALWAYS_SOFTWARE=1 NO_AT_BRIDGE=1
+  phase "before xvfb-run"
+  env -u WAYLAND_DISPLAY xvfb-run -a -e "$diagnostics/xvfb.log" bash "$0" --inside "$binary" "$@"
+  phase "xvfb-run shutdown done"
+  exit 0
+fi
+
+if [[ $# == 0 ]]; then
+  set -- rich_paragraphs_keep_text_and_marks_and_oversized_headings_refuse \
+    notes_figures_and_plates_decode_before_layout_and_print_intact \
+    typed_dashes_stay_on_one_line_and_page
+fi
+diagnostics=$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/garret-proof.XXXXXX")
+phase "runner starting; diagnostics: $diagnostics"
+status=0
+timeout --verbose --signal=TERM --kill-after=30s 420s \
+  bash "$0" --run "$diagnostics" "$@" > "$diagnostics/phases.log" 2>&1 || status=$?
+cat "$diagnostics/phases.log"
+if [[ $status != 0 ]]; then
+  phase "runner failed: status=$status"
+  if [[ -f $diagnostics/xvfb.log ]]; then cat "$diagnostics/xvfb.log"; fi
+  ps -eo pid,ppid,stat,etime,wchan:32,comm
+fi
+exit "$status"

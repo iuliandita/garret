@@ -42,6 +42,12 @@ struct PaginatorOutcome {
     error: Option<String>,
 }
 
+#[cfg(any(windows, test))]
+pub(crate) fn proof_pending(json: &str) -> bool {
+    serde_json::from_str::<PaginatorOutcome>(json)
+        .is_ok_and(|outcome| outcome.report.is_none() && outcome.error.is_none())
+}
+
 pub(crate) fn proof_report(json: &str) -> Result<ProofReport, String> {
     let outcome: PaginatorOutcome = serde_json::from_str(json)
         .map_err(|e| format!("{e}: the proof reported nothing this build can read"))?;
@@ -78,6 +84,23 @@ pub struct Printed {
     pub bytes: Option<Vec<u8>>,
 }
 
+#[cfg(test)]
+fn proof_test_phase(phase: &str) {
+    use std::io::Write;
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("system clock");
+    // Direct stderr writes bypass libtest's per-test output capture.
+    let _ = std::io::stderr().write_all(
+        format!(
+            "proof-phase ts={:.3} pid={} {phase}\n",
+            timestamp.as_secs_f64(),
+            std::process::id()
+        )
+        .as_bytes(),
+    );
+}
+
 /// Load `html`, let it paginate itself, and optionally print it.
 ///
 /// MUST RUN ON THE THREAD OWNING THE GTK MAIN CONTEXT. Both callers arrange
@@ -106,8 +129,12 @@ fn render_with_timeout(
     use webkit2gtk::{PrintOperationExt, WebViewExt};
 
     // A timed-out proof must be terminable without touching the editor's process.
+    #[cfg(test)]
+    proof_test_phase("creating WebKit context");
     let context = webkit2gtk::WebContext::new_ephemeral();
     let view = webkit2gtk::WebView::with_context(&context);
+    #[cfg(test)]
+    proof_test_phase("webview created");
     // A REAL TOPLEVEL, NOT AN OFFSCREEN ONE. `Gtk::OffscreenWindow` forces the
     // GL path and WebKitGTK aborts on it under Xvfb -- "GDK is not able to
     // create a GL context: The current backend does not support OpenGL", a core
@@ -150,12 +177,16 @@ fn render_with_timeout(
             // The view and its window outlive this function and are dropped
             // exactly once, when the work is over or abandoned. Dropping them
             // earlier destroys the web process mid-print.
+            #[cfg(test)]
+            proof_test_phase("WebKit teardown starting");
             let operation = parked.borrow_mut().take();
             drop(operation);
             let kept = keep.borrow_mut().take();
             if let Some((_, window)) = kept {
                 unsafe { window.destroy() };
             }
+            #[cfg(test)]
+            proof_test_phase("WebKit teardown done");
             // The CLI quits its main loop here, after cleanup has finished.
             callback(result);
         }
@@ -214,6 +245,8 @@ fn render_with_timeout(
         {
             return;
         }
+        #[cfg(test)]
+        proof_test_phase("load finished");
         printing.set(true);
         let answer = answer.clone();
         let dest = dest.clone();
@@ -221,11 +254,9 @@ fn render_with_timeout(
         let parked = parked.clone();
         let timed_out = timed_out.clone();
         let completed = completed.clone();
-        // The paginator has already run by the time the load finishes -- it is
-        // a classic synchronous script at the end of the body -- so this reads
-        // a result rather than waiting for one.
-        view.evaluate_javascript(
-            "JSON.stringify({report:window.__proof || null,error:window.__proofError || null})",
+        view.call_async_javascript_function(
+            "await window.__proofReady; return JSON.stringify({report:window.__proof || null,error:window.__proofError || null})",
+            None,
             None,
             None,
             None::<&gio::Cancellable>,
@@ -236,6 +267,8 @@ fn render_with_timeout(
                 let Some(view) = weak_view.upgrade() else {
                     return;
                 };
+                #[cfg(test)]
+                proof_test_phase("paginator done");
                 let report = match value
                     .map_err(|e| e.to_string())
                     .map(|v| v.to_string())
@@ -420,6 +453,159 @@ pub fn render_standalone(
 mod tests {
     use super::*;
 
+    struct TestWatchdog {
+        progress: std::sync::mpsc::Sender<Option<&'static str>>,
+    }
+
+    impl TestWatchdog {
+        fn start(timeout: std::time::Duration) -> Self {
+            Self::with_process_exit(timeout, false)
+        }
+
+        fn for_process(timeout: std::time::Duration) -> Self {
+            Self::with_process_exit(timeout, true)
+        }
+
+        fn with_process_exit(timeout: std::time::Duration, wait_for_process_exit: bool) -> Self {
+            proof_test_phase("test process entered; starting watchdog");
+            #[cfg(target_os = "linux")]
+            rustix::process::setrlimit(
+                rustix::process::Resource::Core,
+                rustix::process::Rlimit {
+                    current: Some(0),
+                    maximum: Some(0),
+                },
+            )
+            .expect("disable core dumps for the isolated proof test");
+            let (progress, receiver) = std::sync::mpsc::channel();
+            let deadline = std::time::Instant::now() + timeout;
+            std::thread::spawn(move || {
+                proof_test_phase("watchdog thread running");
+                let mut phase = "initializing GTK";
+                loop {
+                    match receiver
+                        .recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()))
+                    {
+                        Ok(Some(next)) => phase = next,
+                        Ok(None) | Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                            if !wait_for_process_exit {
+                                return;
+                            }
+                            phase = "test body returned; waiting for process teardown";
+                            proof_test_phase(phase);
+                            std::thread::sleep(
+                                deadline.saturating_duration_since(std::time::Instant::now()),
+                            );
+                            break;
+                        }
+                        Err(std::sync::mpsc::RecvTimeoutError::Timeout) => break,
+                    }
+                }
+                proof_test_phase(&format!("watchdog expired after {timeout:?}: {phase}"));
+                if let Ok(threads) = std::fs::read_dir("/proc/self/task") {
+                    for thread in threads.flatten() {
+                        let name = std::fs::read_to_string(thread.path().join("comm"))
+                            .unwrap_or_else(|error| error.to_string());
+                        let wait = std::fs::read_to_string(thread.path().join("wchan"))
+                            .unwrap_or_else(|error| error.to_string());
+                        proof_test_phase(&format!(
+                            "thread {:?}: {}: {}",
+                            thread.file_name(),
+                            name.trim(),
+                            wait.trim()
+                        ));
+                    }
+                }
+                std::process::abort();
+            });
+            proof_test_phase("watchdog armed");
+            Self { progress }
+        }
+
+        fn phase(&self, phase: &'static str) {
+            proof_test_phase(phase);
+            self.progress
+                .send(Some(phase))
+                .expect("watchdog is running");
+        }
+    }
+
+    impl Drop for TestWatchdog {
+        fn drop(&mut self) {
+            proof_test_phase("test body end; notifying watchdog");
+            let _ = self.progress.send(None);
+            proof_test_phase("test body guard dropped");
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn proof_watchdog_bounds_a_blocked_thread_and_cancels_after_completion() {
+        use std::os::unix::process::ExitStatusExt;
+        use std::process::{Command, Stdio};
+        use std::time::{Duration, Instant};
+
+        const CHILD: &str = "GARRET_PROOF_WATCHDOG_TEST";
+        if let Ok(mode) = std::env::var(CHILD) {
+            let watchdog = if mode == "teardown" {
+                TestWatchdog::for_process(Duration::from_secs(1))
+            } else {
+                TestWatchdog::start(Duration::from_secs(1))
+            };
+            watchdog.phase("deliberately blocked test thread");
+            if mode == "blocked" {
+                loop {
+                    std::thread::park();
+                }
+            }
+            drop(watchdog);
+            std::thread::sleep(Duration::from_millis(1250));
+            return;
+        }
+        for mode in ["blocked", "completed", "teardown"] {
+            let mut child = Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "printer::tests::proof_watchdog_bounds_a_blocked_thread_and_cancels_after_completion",
+                ])
+                .env(CHILD, mode)
+                .stdout(Stdio::null())
+                .stderr(Stdio::piped())
+                .spawn()
+                .unwrap();
+            let deadline = Instant::now() + Duration::from_secs(10);
+            while child.try_wait().unwrap().is_none() {
+                if Instant::now() >= deadline {
+                    child.kill().unwrap();
+                    child.wait().unwrap();
+                    panic!("watchdog child did not finish: {mode}");
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            let output = child.wait_with_output().unwrap();
+            let diagnostics = String::from_utf8_lossy(&output.stderr);
+            if mode != "completed" {
+                assert_eq!(output.status.signal(), Some(6), "{diagnostics}");
+                assert!(
+                    diagnostics.contains("deliberately blocked test thread"),
+                    "{diagnostics}"
+                );
+                assert!(diagnostics.contains("thread "), "{diagnostics}");
+                let phase = if mode == "teardown" {
+                    "test body returned; waiting for process teardown"
+                } else {
+                    "deliberately blocked test thread"
+                };
+                assert!(
+                    diagnostics.contains(&format!("watchdog expired after 1s: {phase}")),
+                    "{diagnostics}"
+                );
+            } else {
+                assert!(output.status.success(), "{diagnostics}");
+            }
+        }
+    }
+
     #[test]
     fn proof_document_requires_its_own_window_and_exact_nonce() {
         assert!(proof_request_authorized(
@@ -469,16 +655,46 @@ mod tests {
         html: &str,
         dest: Option<&std::path::Path>,
         page_um: (i64, i64),
+        watchdog: &TestWatchdog,
     ) -> Result<Printed, String> {
+        render_for_test_with_timeout(html, dest, page_um, watchdog, 15)
+    }
+
+    #[cfg(target_os = "linux")]
+    fn render_for_test_with_timeout(
+        html: &str,
+        dest: Option<&std::path::Path>,
+        page_um: (i64, i64),
+        watchdog: &TestWatchdog,
+        timeout_seconds: u32,
+    ) -> Result<Printed, String> {
+        watchdog.phase("setting up WebKit render");
         let result = std::rc::Rc::new(std::cell::RefCell::new(None));
         let done = result.clone();
-        render_with_timeout(html, dest, page_um, 15, move |value| {
+        render_with_timeout(html, dest, page_um, timeout_seconds, move |value| {
             *done.borrow_mut() = Some(value);
-            gtk::main_quit();
+            proof_test_phase("render answered; draining WebKit callbacks");
+            // WebKit's thread-exit queue cleanup can deadlock with IPC dispatch.
+            // Let queued callbacks release their references before libtest joins us.
+            glib::idle_add_local_full(glib::Priority::LOW, || {
+                proof_test_phase("WebKit callbacks drained; leaving GTK");
+                gtk::main_quit();
+                glib::ControlFlow::Break
+            });
         });
+        watchdog.phase("dispatching GTK or cleaning up WebKit");
         gtk::main();
+        watchdog.phase("checking render result");
         let answer = result.borrow_mut().take().expect("render answered");
         answer
+    }
+
+    #[test]
+    fn only_an_unfinished_paginator_is_retried() {
+        assert!(proof_pending(r#"{"report":null,"error":null}"#));
+        assert!(!proof_pending(r#"{"report":null,"error":"image failed"}"#));
+        assert!(!proof_pending(r#"{"report":{"leaves":1,"truncated":false,"fontResolved":true,"pages":[]},"error":null}"#));
+        assert!(!proof_pending("unreadable"));
     }
 
     #[test]
@@ -493,8 +709,103 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires an isolated X display, WebKit and Poppler tools"]
+    fn typed_dashes_stay_on_one_line_and_page() {
+        let watchdog = TestWatchdog::for_process(std::time::Duration::from_secs(90));
+        watchdog.phase("GTK init starting");
+        gtk::init().unwrap();
+        watchdog.phase("GTK init done");
+        let token = format!("{}--{}", "1".repeat(39), "123456789--".repeat(20));
+        let flow = format!("<p>123456789-- tail</p><p>123456789-<em>-</em> tail</p><p>123456789--- tail</p><p data-proof-break=\"page\">{token}</p>");
+        let shell = r#"<!doctype html><html><head><style>
+          @page { size: 180px 150px; margin: 0; }
+          html,body { margin: 0; font: 16px/20px monospace; }
+          .proof-leaf { width: 180px; height: 150px; box-sizing: border-box;
+            padding: 10px; display: flex; flex-direction: column; break-after: page; }
+          .proof-runhead,.proof-folio { height: 20px; flex: 0 0 auto; }
+          .proof-text { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+          p { width: 10.5ch; margin: 0; overflow-wrap: anywhere; hyphens: auto; }
+          </style><script type="application/json" id="proof-meta">
+          {"book":"Typed dashes","font":"monospace","newPage":false,"markupLimit":null}
+          </script></head><body><div id="proof-flow">__FLOW__</div>
+          <div id="proof-leaves"></div><script>__SCRIPT__</script><script>
+          if (window.__proof) {
+            var glyphs = [], text = '', marked = '';
+            document.querySelectorAll('.proof-text').forEach(function(column, page) {
+              var walk = document.createTreeWalker(column, NodeFilter.SHOW_TEXT);
+              while (walk.nextNode()) {
+                var node = walk.currentNode;
+                text += node.data;
+                for (var i = 0; i < node.length; i++) {
+                  var range = document.createRange();
+                  range.setStart(node, i); range.setEnd(node, i + 1);
+                  var box = range.getBoundingClientRect();
+                  glyphs.push({ch:node.data[i], page:page, y:box.top});
+                }
+              }
+              column.querySelectorAll('em').forEach(function(em) { marked += em.textContent; });
+            });
+            var splits = glyphs.filter(function(glyph, i) {
+              var previous = glyphs[i - 1];
+              return previous && previous.ch === '-' && glyph.ch === '-' &&
+                (previous.page !== glyph.page || Math.abs(previous.y - glyph.y) > 1);
+            }).length;
+            window.__proof.pages.push(JSON.stringify({text:text, marked:marked, splits:splits}));
+          }
+          </script></body></html>"#;
+        let html = shell.replace("__FLOW__", &flow)
+            .replace("__SCRIPT__", crate::pdf::PAGINATOR_JS);
+        let directory = tempfile::tempdir().unwrap();
+        let dest = directory.path().join("dashes.pdf");
+        let mut printed = render_for_test(&html, Some(&dest), (47_625, 39_688), &watchdog).unwrap();
+        let probe: serde_json::Value = serde_json::from_str(&printed.report.pages.pop().unwrap()).unwrap();
+        if let Some(output) = std::env::var_os("GARRET_DASH_TEST_OUTPUT") {
+            let output = std::path::PathBuf::from(output);
+            std::fs::create_dir_all(&output).unwrap();
+            std::fs::copy(&dest, output.join("dashes.pdf")).unwrap();
+            std::fs::write(output.join("geometry.json"), serde_json::to_string_pretty(&probe).unwrap()).unwrap();
+        }
+        assert!(printed.report.leaves > 1);
+        assert_eq!(probe["text"], format!("123456789-- tail123456789-- tail123456789--- tail{token}"));
+        assert_eq!(probe["marked"], "-");
+        assert_eq!(probe["splits"], 0, "a typed dash split across lines or pages: {probe}");
+        for flow in [
+            format!("<p>{}</p>", "-".repeat(400)),
+            format!("<p>before {} after</p>", "-".repeat(400)),
+            format!("<h2>Heading {}</h2>", "-".repeat(90)),
+        ] {
+            let html = shell.replace("__FLOW__", &flow)
+                .replace("__SCRIPT__", crate::pdf::PAGINATOR_JS)
+                .replace("150px", "350px")
+                .replace("p {", "p,h2 { font: inherit;");
+            let mut printed = render_for_test(&html, None, (47_625, 92_604), &watchdog)
+                .unwrap_or_else(|error| panic!("long hyphen run refused: {flow}: {error:?}"));
+            let probe: serde_json::Value = serde_json::from_str(&printed.report.pages.pop().unwrap()).unwrap();
+            let expected = flow.replace("<p>", "").replace("</p>", "")
+                .replace("<h2>", "").replace("</h2>", "");
+            assert_eq!(probe["text"], expected);
+        }
+        if let Some(output) = std::env::var_os("GARRET_DASH_TEST_OUTPUT") {
+            let mut design = crate::design::default_design();
+            design.page.width_um = 127_000;
+            design.page.height_um = 203_200;
+            design.font = "Liberation Serif".into();
+            let prose = "The rain had stopped by the time Anna arrived--and the platform still shone under the lamps. She remembered the promise--a small thing, made on an ordinary morning--and waited beside the empty track. ";
+            let flow = format!("<p>{prose}{prose}</p><p>{}</p><p>{prose}{prose}</p><p>{prose}{prose}</p>", "-".repeat(100));
+            let start = shell.find("<style>").unwrap() + "<style>".len();
+            let end = shell.find("</style>").unwrap();
+            let html = format!("{}{}{}", &shell[..start],
+                crate::pdf::print_stylesheet(&design, &Default::default()), &shell[end..])
+                .replace("__FLOW__", &flow).replace("__SCRIPT__", crate::pdf::PAGINATOR_JS);
+            let dest = std::path::PathBuf::from(output).join("realistic.pdf");
+            render_for_test(&html, Some(&dest), (127_000, 203_200), &watchdog).unwrap();
+        }
+    }
+
+    #[test]
     #[ignore = "requires an isolated X display and a live WebKit process"]
     fn rich_paragraphs_keep_text_and_marks_and_oversized_headings_refuse() {
+        let watchdog = TestWatchdog::for_process(std::time::Duration::from_secs(90));
         fn document(flow: &str) -> String {
             let shell = r#"<!doctype html><html><head><style>
               html,body{margin:0}body{font:16px/20px serif}
@@ -531,9 +842,7 @@ mod tests {
                 .replace("__FLOW__", flow)
                 .replace("__SCRIPT__", crate::pdf::PAGINATOR_JS)
         }
-        fn paginate(html: String) -> Result<Printed, String> {
-            render_for_test(&html, None, (152_400, 228_600))
-        }
+        let paginate = |html: String| render_for_test(&html, None, (152_400, 228_600), &watchdog);
         fn text_column(page: &str) -> &str {
             let start = page.find("class=\"proof-text\"").expect("text column");
             let start = page[start..].find('>').unwrap() + start + 1;
@@ -555,7 +864,9 @@ mod tests {
             text
         }
 
+        watchdog.phase("GTK init starting");
         gtk::init().unwrap();
+        watchdog.phase("GTK init done");
         let before = "before  ".repeat(35);
         let marked = "café\tinside  marks ".repeat(35);
         let after = "after  ".repeat(35);
@@ -725,6 +1036,183 @@ mod tests {
 
     #[test]
     #[ignore = "requires an isolated X display, WebKit and Poppler tools"]
+    fn notes_figures_and_plates_decode_before_layout_and_print_intact() {
+        use std::process::Command;
+        let watchdog = TestWatchdog::for_process(std::time::Duration::from_secs(180));
+        watchdog.phase("GTK init starting");
+        gtk::init().unwrap();
+        watchdog.phase("GTK init done");
+        let directory = tempfile::tempdir().unwrap();
+        let dest = directory.path().join("notes-figures.pdf");
+        let design = crate::design::default_design();
+        let page = (design.page.width_um, design.page.height_um);
+        let document = crate::pdf::publication_tests::document("Platecaption: the complete survey occupies its own interior leaf.");
+        let delayed = document.replace("<script>function proofFigureDpi", r#"<script>
+            var originalDecode = HTMLImageElement.prototype.decode;
+            var decodeCalls = 0, decoded = 0;
+            HTMLImageElement.prototype.decode = function() {
+                decodeCalls += 1;
+                var image = this;
+                return new Promise(function(resolve) { setTimeout(resolve, 120); })
+                  .then(function() { return originalDecode.call(image); })
+                  .then(function() { decoded += 1; });
+            };
+            function proofFigureDpi"#);
+        let delayed = delayed.replace("  try {\n  var current", "  try {\n  if (decoded !== 3) throw new Error('pagination started before decode');\n  var current");
+        assert_ne!(delayed, document, "decode probe was not installed");
+        let probe = r#"<script>
+          window.__proofReady.then(function() {
+            if (decodeCalls !== 3 || decoded !== 3) throw new Error('decode barrier missing');
+            var geometry = [];
+            document.querySelectorAll('figure').forEach(function(figure) {
+              var box = figure.closest('.proof-text').getBoundingClientRect();
+              var image = figure.querySelector('img').getBoundingClientRect();
+              var caption = figure.querySelector('figcaption').getBoundingClientRect();
+              var page = figure.closest('.proof-leaf');
+              if (image.bottom > caption.top + 1 || caption.bottom > box.bottom + 1 || image.top < box.top - 1 || image.left < box.left - 1 || image.right > box.right + 1) throw new Error('figure containment failed');
+              var preceding = figure.previousElementSibling;
+              if (preceding && preceding.tagName === 'P' && image.top - preceding.getBoundingClientRect().bottom < parseFloat(getComputedStyle(figure).fontSize) * 0.59) throw new Error('figure top spacing missing');
+              var captionSize = parseFloat(getComputedStyle(figure.querySelector('figcaption')).fontSize);
+              var bodySize = parseFloat(getComputedStyle(figure).fontSize);
+              if (Math.abs(captionSize / bodySize - 0.9) > 0.01 || caption.top - image.bottom < captionSize * 0.39) throw new Error('caption size or spacing missing');
+              geometry.push({id:figure.getAttribute('data-instance'), page:Number(page.getAttribute('data-folio')), kind:page.getAttribute('data-kind'), image:{x:image.left-box.left,y:image.top-box.top,width:image.width,height:image.height}, caption:{y:caption.top-box.top,height:caption.height}, column:{width:box.width,height:box.height}, decoded:decoded});
+            });
+            window.__proof.pages.push(JSON.stringify(geometry));
+          }).catch(function(error) { window.__proofError = error.message; });
+        </script>"#;
+        let delayed = delayed.replace("</body>", &format!("{probe}</body>"));
+        let mut printed = render_for_test(&delayed, Some(&dest), page, &watchdog).unwrap();
+        let geometry: serde_json::Value = serde_json::from_str(&printed.report.pages.pop().unwrap()).unwrap();
+        assert_eq!(geometry.as_array().unwrap().len(), 3);
+        assert_eq!(printed.report.figures.len(), 3);
+        for check in &printed.report.figures {
+            assert!(check.dpi > 0.0);
+            assert_eq!(check.warning, check.dpi < 300.0);
+            assert_eq!(check.flag, check.dpi < 200.0);
+        }
+        let plate = printed.report.pages.iter().find(|p| p.contains("data-kind=\"interior\"")).unwrap();
+        assert!(plate.contains("Platecaption:"));
+        assert!(!plate.contains("Afterplate:"));
+        assert!(!plate.contains("The river"));
+        assert!(plate.contains("class=\"proof-folio\">"));
+        let last = printed.report.pages.last().unwrap();
+        assert!(last.contains("Crossingnote:"), "book notes must follow the last chapter");
+        assert_eq!(crate::pdf::pdf_page_count(printed.bytes.as_ref().unwrap()), Some(printed.report.leaves));
+        let outside = |program: &str, args: &[&str]| {
+            let output = Command::new(program).args(args).output().unwrap();
+            assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+            String::from_utf8(output.stdout).unwrap()
+        };
+        let text = outside("pdftotext", &["-layout", dest.to_str().unwrap(), "-"]);
+        let pages: Vec<_> = text.split('\u{c}').collect();
+        let plate_page = pages.iter().position(|text| text.contains("Platecaption:")).unwrap() + 1;
+        let images = outside("pdfimages", &["-list", dest.to_str().unwrap()]);
+        assert!(images.lines().skip(2).any(|line| line.split_whitespace().next().and_then(|s| s.parse::<usize>().ok()) == Some(plate_page)));
+        assert!(!pages[plate_page - 1].contains("Afterplate:"));
+        assert!(text.find("Arrivalprose:") < text.find("Crossingnote:"));
+        assert!(text.contains("Second line retained."));
+        if let Some(out) = std::env::var_os("GARRET_PDF_TEST_OUTPUT") {
+            let out = std::path::PathBuf::from(out);
+            std::fs::create_dir_all(&out).unwrap();
+            std::fs::copy(&dest, out.join("notes-figures.pdf")).unwrap();
+            std::fs::write(out.join("geometry.json"), serde_json::to_string_pretty(&geometry).unwrap()).unwrap();
+            std::fs::write(out.join("report.json"), serde_json::to_string_pretty(&printed.report).unwrap()).unwrap();
+            std::fs::write(out.join("images.txt"), images).unwrap();
+            std::fs::write(out.join("text.txt"), &text).unwrap();
+        }
+        assert!(text.contains("***"), "scene separator missing from the PDF");
+        let start = document.find("<figure class=\"proof-figure\"").unwrap();
+        let end = start + document[start..].find("</figure>").unwrap() + "</figure>".len();
+        let flow_start = document.find("<div id=\"proof-flow\">\n").unwrap() + "<div id=\"proof-flow\">\n".len();
+        let flow_end = flow_start + document[flow_start..].find("</div>\n<div id=\"proof-leaves\">").unwrap();
+        let heading_figure = format!("{}<h2>Survey</h2>{}{}", &document[..flow_start], &document[start..end], &document[flow_end..]);
+        let heading_figure = render_for_test(&heading_figure, None, page, &watchdog).unwrap();
+        assert_eq!(heading_figure.report.leaves, 1, "the image must shrink below its heading");
+        assert!(heading_figure.report.pages[0].contains("Fullcaption:"));
+        let plate_start = document.find("<figure class=\"proof-figure\" data-proof-leaf=\"interior\"").unwrap();
+        let plate_end = plate_start + document[plate_start..].find("</figure>").unwrap() + "</figure>".len();
+        for prose in ["", "<p>Beforeplateheading: preceding prose stays behind.</p>"] {
+            let heading_plate = format!("{}{prose}<h2>Platepart</h2><div class=\"ornament\">*</div><h3>Platesurvey</h3>{}{}", &document[..flow_start], &document[plate_start..plate_end], &document[flow_end..]);
+            let heading_plate = render_for_test(&heading_plate, None, page, &watchdog).unwrap();
+            assert_eq!(heading_plate.report.leaves, if prose.is_empty() { 1 } else { 2 });
+            let plate = heading_plate.report.pages.last().unwrap();
+            assert!(plate.contains("Platepart") && plate.contains("Platesurvey") && plate.contains("Platecaption:"));
+            assert!(!plate.contains("Beforeplateheading:"));
+        }
+        let rotated = crate::pdf::publication_tests::exif_document();
+        let rotated = rotated.replace("</body>", r#"<script>
+          window.__proofReady.then(function() {
+            document.querySelectorAll('figure').forEach(function(figure) {
+              var image = figure.querySelector('img').getBoundingClientRect();
+              var width = Number(figure.getAttribute('data-pixels-width'));
+              var height = Number(figure.getAttribute('data-pixels-height'));
+              if (figure.getAttribute('data-orientation') !== '6' || Math.abs(image.width / image.height - height / width) > 0.001) throw new Error('EXIF print geometry is not oriented');
+              var expected = Math.min(height / (image.width / 96), width / (image.height / 96));
+              if (Math.abs(Number(figure.getAttribute('data-dpi')) - expected) > 0.01) throw new Error('EXIF DPI is not oriented');
+            });
+          }).catch(function(error) { window.__proofError = error.message; });
+        </script></body>"#);
+        let rotated = render_for_test(&rotated, None, page, &watchdog).unwrap();
+        assert_eq!(rotated.report.figures.len(), 3);
+        assert!(rotated.report.figures.iter().all(|figure| figure.warning && figure.flag));
+        let png = crate::pdf::publication_tests::png_exif_document();
+        let png = png.replace("</body>", r#"<script>
+          window.__proofReady.then(function() {
+            document.querySelectorAll('figure').forEach(function(figure) {
+              var image = figure.querySelector('img');
+              var box = image.getBoundingClientRect();
+              if (figure.getAttribute('data-orientation') !== '6' || image.naturalWidth !== 300 || image.naturalHeight !== 200) throw new Error('PNG eXIf fixture did not retain raw geometry');
+              if (Math.abs(box.width / box.height - 1.5) > 0.001) throw new Error('PNG eXIf distorted the proof');
+              var expected = Math.min(300 / (box.width / 96), 200 / (box.height / 96));
+              if (Math.abs(Number(figure.getAttribute('data-dpi')) - expected) > 0.01) throw new Error('PNG eXIf DPI does not match displayed pixels');
+            });
+          }).catch(function(error) { window.__proofError = error.message; });
+        </script></body>"#);
+        let png = render_for_test(&png, None, page, &watchdog).unwrap();
+        assert_eq!(png.report.figures.len(), 3);
+        for (bytes, mime) in [
+            (&include_bytes!("../fixtures/black-and-clear.png")[..40], "image/png"),
+            (&include_bytes!("../fixtures/two-halves.jpg")[..40], "image/jpeg"),
+        ] {
+            let legacy = crate::pdf::publication_tests::legacy_cover_document(bytes, mime).replace("</body>", r#"<script>
+              Promise.resolve(window.__proofReady).then(function() {
+                if (document.querySelector('.proof-plate img').naturalWidth !== 0) throw new Error('damaged cover fixture decoded');
+              }).catch(function(error) { window.__proofError = error.message; });
+            </script></body>"#);
+            let legacy = render_for_test(&legacy, Some(&dest), page, &watchdog).unwrap();
+            assert!(legacy.report.figures.is_empty());
+            assert!(legacy.report.pages[0].contains("data-kind=\"plate\""));
+            assert!(outside("pdftotext", &["-layout", dest.to_str().unwrap(), "-"]).contains("Legacycoverprose:"));
+            assert_eq!(crate::pdf::pdf_page_count(legacy.bytes.as_ref().unwrap()), Some(legacy.report.leaves));
+        }
+        for (bytes, mime) in [
+            (include_bytes!("../fixtures/partial-cover.png").as_slice(), "image/png"),
+            (include_bytes!("../fixtures/partial-cover.jpg").as_slice(), "image/jpeg"),
+        ] {
+            let legacy = crate::pdf::publication_tests::legacy_cover_document(bytes, mime);
+            let legacy = render_for_test(&legacy, Some(&dest), page, &watchdog).unwrap();
+            assert!(legacy.report.figures.is_empty());
+            let images = outside("pdfimages", &["-list", dest.to_str().unwrap()]);
+            assert!(images.lines().skip(2).any(|line| {
+                let columns: Vec<_> = line.split_whitespace().collect();
+                columns.first() == Some(&"1") && columns.get(3) == Some(&"1200") && columns.get(4) == Some(&"1800")
+            }), "partial {mime} cover lost its image: {images}");
+            assert!(outside("pdftotext", &["-layout", dest.to_str().unwrap(), "-"]).contains("Legacycoverprose:"));
+        }
+        let refused = crate::pdf::publication_tests::document(&"Caption line\n".repeat(100));
+        let error = match render_for_test(&refused, None, page, &watchdog) { Ok(_) => panic!("unfit caption printed"), Err(error) => error };
+        assert_eq!(error, "proof layout failed: a proof figure caption exceeds the page");
+        let broken = document.replace("<script>function proofFigureDpi", "<script>HTMLImageElement.prototype.decode = function() { return Promise.reject(new Error('broken figure')); }; function proofFigureDpi");
+        assert_ne!(broken, document);
+        let error = match render_for_test(&broken, None, page, &watchdog) { Ok(_) => panic!("undecoded image printed"), Err(error) => error };
+        assert_eq!(error, "proof layout failed: a proof image did not decode");
+        let stalled = document.replace("<script>function proofFigureDpi", "<script>HTMLImageElement.prototype.decode = function() { return new Promise(function() {}); }; function proofFigureDpi");
+        let error = match render_for_test_with_timeout(&stalled, None, page, &watchdog, 2) { Ok(_) => panic!("stalled decode printed"), Err(error) => error };
+        assert_eq!(error, "the proof did not finish within 2 seconds");
+    }
+
+    #[test]
+    #[ignore = "requires an isolated X display, WebKit and Poppler tools"]
     fn printed_rich_paragraph_is_readable_from_the_pdf() {
         use crate::covers::CoverFit;
         use crate::design::{default_design, ChapterStyle};
@@ -732,7 +1220,10 @@ mod tests {
         use crate::pdf::{pdf_page_count, proof_document, Cover, Proof};
         use std::process::Command;
 
+        let watchdog = TestWatchdog::for_process(std::time::Duration::from_secs(90));
+        watchdog.phase("GTK init starting");
         gtk::init().unwrap();
+        watchdog.phase("GTK init done");
         let chapters = vec![("chapter".to_string(), "Chapter".to_string(), 0)];
         let book = Book {
             publication: None,
@@ -788,6 +1279,7 @@ mod tests {
             &html,
             Some(&dest),
             (design.page.width_um, design.page.height_um),
+            &watchdog,
         )
         .unwrap();
         let bytes = printed.bytes.expect("printed bytes");
@@ -905,7 +1397,9 @@ mod tests {
         use gtk::prelude::*;
         use javascriptcore::ValueExt;
         use webkit2gtk::WebViewExt;
+        proof_test_phase("GTK init starting");
         gtk::init().unwrap();
+        proof_test_phase("GTK init done");
         // Avoid the process-global default context: libtest runs this on a
         // worker, but drops globals on its main thread after that worker exits.
         let other_context = webkit2gtk::WebContext::new_ephemeral();

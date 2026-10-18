@@ -26,7 +26,7 @@ or an internet connection to write. Your books stay on your own disk.
 
 > **Early alpha.** garret moves fast; keep backups of your work.
 
-The current published build is [0.0.3 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.3).
+The current published build is [0.0.4 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.4).
 See [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
 
@@ -109,7 +109,8 @@ Windows `-setup.exe`, Linux `.deb`, `.rpm` and `.AppImage`,
 and macOS `.dmg` installers are available alongside the portable archives. See the
 [installation guide](docs/INSTALLING.md) for setup, upgrades and removal. Android uses an APK; the phone app has fewer
 features and does not sync books automatically. Keep a backup before trying a
-new build.
+new build. See [compatibility and recovery](docs/COMPATIBILITY.md) for stored-format
+limits and salvage output.
 
 ### Verify a download
 
@@ -151,7 +152,7 @@ release for you:
 
 1. Add `https://github.com/iuliandita/garret` as an app source.
 2. Pick the asset whose name ends in `-android.apk`, for example
-   `garret-0.0.4-android.apk`. The `-android-info.zip` asset holds instructions
+   `garret-0.0.5-android.apk`. The `-android-info.zip` asset holds instructions
    and build details; it is not installable.
 3. Check the signing certificate. Obtainium shows the certificate hash for the
    installed app on its app page; the SHA-256 digest must be
@@ -188,6 +189,10 @@ Android. See [upgrade compatibility](docs/COMPATIBILITY.md) for native
 profile preservation. Release-style packages come from `scripts/package-linux`,
 `scripts/package-windows`, `scripts/package-macos` and `scripts/package-android`.
 
+CLI search JSON now includes field locators with UTF-16 ranges alongside each
+item result. Exact-key consumers need to accept the additional `locators` member;
+see the [search output contract](docs/COMPATIBILITY.md).
+
 ## Checks
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, checks, and
@@ -201,11 +206,14 @@ Migrated profiles retain a compatibility link at the former `cc.local.app`
 location. Pictures and research originals sit next to each book, so back up a book's
 `.db` file together with those folders, with the app closed.
 
-If garret stops while preparing its application data, keep both folders named in
-the warning. Close every version of garret and back up both folders separately
-before attempting recovery. Do not delete, merge or overwrite either folder.
-Request recovery help and include the warning, removing personal paths before
-posting it publicly. A symbolic link inside the old profile also stops the move;
+If a new profile contains only unused settings, locks or browser caches, garret
+keeps it in a dated `garret.set-aside-...` folder and moves your existing library
+automatically. Nothing is deleted. The CLI asks you to open the app to do this.
+If both folders may hold work, garret keeps them and shows their book counts.
+Request recovery help using the address in the message, removing personal paths
+before posting. Please keep both folders until this is sorted out, and back up
+both with every version of garret closed before recovery.
+A symbolic link inside the old profile also stops the move;
 garret does not follow it or remove it for you.
 
 ### Keep a safe copy of your book

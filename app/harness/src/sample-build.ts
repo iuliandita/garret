@@ -23,6 +23,7 @@
 // to resolve -- see `store/seed.rs`.
 //
 // Usage: `bun app/harness/src/sample-build.ts [--check] [--src <dir>] [--out <dir>]`
+import { readLegacyDocument, legacyText } from "./document-read";
 import { Database } from "bun:sqlite";
 import {
   existsSync,
@@ -123,7 +124,7 @@ function withImportedWalk<T>(source: string, use: (walk: WalkRow[], name: string
     const dataHome = join(library, "application-data");
     mkdirSync(dataHome);
     const proc = Bun.spawnSync([BIN, "import", source, library, "--json"], {
-      env: { ...process.env, XDG_DATA_HOME: dataHome, LOCALAPPDATA: dataHome },
+      env: { ...process.env, XDG_DATA_HOME: dataHome, APPDATA: dataHome },
       stdout: "pipe",
       stderr: "pipe",
     });
@@ -139,31 +140,8 @@ function withImportedWalk<T>(source: string, use: (walk: WalkRow[], name: string
   }
 }
 
-/** A stored ProseMirror body reduced to its words, restated from
- *  `import-cli.ts`'s `bodyText`: inline text concatenated with nothing, one
- *  space before each block's content. Used only to total `manifest.json`'s
- *  word count. */
-function bodyText(body: string): string {
-  const root: unknown = JSON.parse(body);
-  let out = "";
-  const append = (node: unknown, isBlock: boolean): void => {
-    if (typeof node !== "object" || node === null) return;
-    const n = node as { type?: unknown; text?: unknown; content?: unknown };
-    if (n.type === "text") {
-      if (typeof n.text === "string") out += n.text;
-      return;
-    }
-    if (isBlock && out.length > 0) out += " ";
-    if (Array.isArray(n.content)) for (const child of n.content) append(child, false);
-  };
-  const top = root as { content?: unknown };
-  if (Array.isArray(top.content)) for (const block of top.content) append(block, true);
-  return out;
-}
-
 function wordCount(text: string): number {
-  const trimmed = text.trim();
-  return trimmed === "" ? 0 : trimmed.split(/\s+/).length;
+  return text.split(/\p{White_Space}+/u).filter((word) => word.length > 0).length;
 }
 
 /** Assigns the next deterministic id under `prefix` and advances that
@@ -204,7 +182,7 @@ function buildManuscript(manuscriptPath: string, nextId: () => string): BuiltSec
       idMap.set(row.id, id);
       const parentId = row.parentId === null ? null : (idMap.get(row.parentId) ?? null);
       items.push({ id, type: row.type, title: row.title, parentId });
-      if (row.body !== null) scenes.push({ id, body: JSON.parse(row.body) });
+      if (row.body !== null) scenes.push({ id, body: readLegacyDocument(row.body) });
       if (row.type === "scene") sceneTitleToId.set(row.title, id);
     }
     return { items, scenes, sceneTitleToId, name };
@@ -245,7 +223,7 @@ function buildBible(srcDir: string, nextId: () => string): BuiltSection {
       }
       const id = nextId();
       items.push({ id, type: "note", title: note.title, parentId: bibleRootId });
-      scenes.push({ id, body: JSON.parse(note.body) });
+      scenes.push({ id, body: readLegacyDocument(note.body) });
     });
   }
   return { items, scenes, sceneTitleToId: new Map() };
@@ -443,7 +421,10 @@ function build(srcDir: string): Built {
           },
         ];
 
-  const totalWords = scenes.reduce((sum, s) => sum + wordCount(bodyText(JSON.stringify(s.body))), 0);
+  const totalWords = scenes.reduce((sum, s) => {
+    const body = JSON.stringify(s.body);
+    return sum + wordCount(legacyText(body));
+  }, 0);
 
   const project = {
     meta: { name: manuscript.name ?? "sample", seed: "sample-v1" },
@@ -540,7 +521,7 @@ export {
   buildBible,
   idAssigner,
   wordCount,
-  bodyText,
+  legacyText as bodyText,
   resolveTimelineBody,
 };
 

@@ -7,11 +7,15 @@
 // stylesheet half is read as TEXT, the way nav-row-type.test.ts and
 // theme.test.ts read it.
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
+
+afterEach(() => {
+  document.body.replaceChildren();
+});
 
 import { t } from "../src/i18n";
 import { createNavigator } from "../src/navigator/index";

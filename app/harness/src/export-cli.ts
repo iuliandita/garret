@@ -21,6 +21,7 @@
 // the run a test of that parser.
 //
 // Usage: APP_GUI=1 bun app/harness/src/export-cli.ts <tiny|stress>
+import { legacyMarkedRuns, legacyText } from "./document-read";
 import { Database } from "bun:sqlite";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -199,45 +200,9 @@ function signatureOf(walk: readonly WalkRow[]): string {
   return walk.map((r) => `${r.id}|${r.parent_id ?? ""}|${r.title}|${r.depth}`).join("\n");
 }
 
-interface PmJson {
-  type: string;
-  text?: string;
-  marks?: { type: string }[];
-  content?: PmJson[];
-}
-
-/** The text a stored body holds, by this rig's own walk of the ProseMirror JSON.
- *
- *  Restated here rather than taken from either side of the comparison. It is
- *  `store::document_text`'s rule: inline text concatenated with nothing, one
- *  space before a block node's content. Everything is whitespace-normalized
- *  afterwards anyway, so the only property that has to hold exactly is that no
- *  text is lost and no text is invented. */
-function storedText(body: string): string {
-  let out = "";
-  const walk = (node: PmJson): void => {
-    if (node.type === "text") {
-      out += node.text ?? "";
-      return;
-    }
-    if (out.length > 0) out += " ";
-    for (const child of node.content ?? []) walk(child);
-  };
-  walk(JSON.parse(body) as PmJson);
-  return out;
-}
-
 /** Every text run in `body` carrying `mark`. */
 function markedRuns(body: string, mark: string): string[] {
-  const out: string[] = [];
-  const walk = (node: PmJson): void => {
-    if (node.type === "text" && (node.marks ?? []).some((m) => m.type === mark)) {
-      out.push(node.text ?? "");
-    }
-    for (const child of node.content ?? []) walk(child);
-  };
-  walk(JSON.parse(body) as PmJson);
-  return out;
+  return legacyMarkedRuns(body, mark);
 }
 
 function gitShortSha(): string {
@@ -955,7 +920,7 @@ if (aligned) {
   for (const [index, item] of walk0.entries()) {
     const body = bodies.get(item.id);
     if (body === undefined) continue;
-    const expected = normalizeText(storedText(body));
+    const expected = normalizeText(legacyText(body));
     if (expected.length === 0) {
       abort(
         `VACUITY GUARD: ${item.id} has a stored body holding no text, and comparing empty to ` +

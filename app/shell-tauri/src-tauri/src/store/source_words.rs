@@ -642,6 +642,17 @@ fn unavailable(reason: &str, collecting: bool) -> SourceWordSummary {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn atom_consumers_attribute_edits_have_no_source_word_movement() {
+        let body = crate::store::document_fields::tests::mixed();
+        let mut changed = body.clone();
+        changed["content"][0]["content"][1]["attrs"]["body"] = serde_json::json!("many more words in a note");
+        changed["content"][1]["attrs"]["caption"] = serde_json::json!("changed caption words");
+        changed["content"][1]["attrs"]["alt"] = serde_json::json!("changed alt words");
+        let movement = directional(WordSource::Restored, Some(&body.to_string()), &changed.to_string());
+        assert_eq!((movement.added, movement.deleted), (0, 0));
+    }
+
     use super::*;
     use crate::store::{FlushEntry, Store};
     use std::collections::HashSet;

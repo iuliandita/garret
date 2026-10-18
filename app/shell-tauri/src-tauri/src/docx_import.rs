@@ -62,10 +62,14 @@ pub struct Losses {
     pub tables: u64,
     /// `w:drawing` / `w:pict`.
     pub pictures: u64,
-    /// `w:footnoteReference` / `w:endnoteReference`: the reference mark is
-    /// dropped; the note's own text lives in a part this build does not
-    /// read.
+    /// Legacy dropped-note count; supported references now retain owned bodies.
     pub notes: u64,
+    /// Notes whose run formatting or rich structures became plain text.
+    pub note_formatting: u64,
+    /// References with no matching note body; retained as empty owned notes.
+    pub missing_note_bodies: u64,
+    /// Notes containing drawings that could not be retained.
+    pub note_drawings: u64,
     /// `w:commentRangeStart`: the anchor is dropped. Word comments becoming
     /// this application's comments is its own slice.
     pub comments: u64,
@@ -450,10 +454,83 @@ fn resolve_heading(style_id: Option<&str>, own_outline: Option<u32>, styles: &St
 /// A break carries its run's marks just like the surrounding text.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct RunOut {
+    note: Option<String>,
     text: String,
     strong: bool,
     em: bool,
     underline: bool,
+}
+
+struct NoteBody {
+    body: String,
+    formatted: bool,
+    drawings: bool,
+    paragraphs: usize,
+}
+
+type NoteBodies = HashMap<(String, String), NoteBody>;
+
+fn flatten_note(nodes: &[Node], result: &mut NoteBody) {
+    for node in nodes {
+        let Node::Element { name, children, .. } = node else { continue; };
+        match name.as_str() {
+            "del" | "moveFrom" | "Fallback" | "footnoteRef" | "endnoteRef" => {},
+            "drawing" | "pict" => result.drawings = true,
+            "t" => result.body.extend(children.iter().filter_map(text_of)),
+            "br" => result.body.push('\n'),
+            "tab" if !result.body.is_empty() => result.body.push(' '),
+            "tab" => {},
+            "p" => {
+                if result.paragraphs > 0 { result.body.push('\n'); }
+                result.paragraphs += 1;
+                flatten_note(children, result);
+            },
+            "r" if children.iter().any(|node| matches!(node, Node::Element { name, .. } if matches!(name.as_str(), "footnoteRef" | "endnoteRef"))) => {
+                for child in children {
+                    if !matches!(child, Node::Element { name, .. } if name == "rPr") {
+                        flatten_note(std::slice::from_ref(child), result);
+                    }
+                }
+            },
+            "rPr" | "pPr" => {
+                result.formatted |= children.iter().any(|node| matches!(node, Node::Element { name, .. } if !matches!(name.as_str(), "pStyle")));
+            },
+            "footnoteReference" | "endnoteReference" => result.formatted = true,
+            _ => {
+                result.formatted |= matches!(name.as_str(), "hyperlink" | "fldSimple" | "instrText" | "tbl");
+                flatten_note(children, result);
+            },
+        }
+    }
+}
+
+fn note_bodies(entries: &[(String, Vec<u8>)]) -> Result<NoteBodies, String> {
+    let mut result = HashMap::new();
+    for (part, element, reference) in [
+        ("word/footnotes.xml", "footnote", "footnoteReference"),
+        ("word/endnotes.xml", "endnote", "endnoteReference"),
+    ] {
+        let Some((_, bytes)) = entries.iter().find(|(name, _)| name == part) else { continue; };
+        let tree = build_tree(&String::from_utf8_lossy(bytes))?;
+        let Some(Node::Element { children, .. }) = tree.iter().find(|node| matches!(node, Node::Element { name, .. } if name == &format!("{element}s"))) else { return Err(format!("{part}: missing note root")); };
+        for node in children {
+            let Node::Element { name, attrs, children } = node else { continue; };
+            if name != element { continue; }
+            match attr_val(attrs, "type") {
+                Some("separator" | "continuationSeparator" | "continuationNotice") => continue,
+                None | Some("normal") => {},
+                Some(_) => return Err(format!("{part}: unsupported note type")),
+            }
+            let Some(id) = attr_val(attrs, "id") else { return Err(format!("{part}: note without ID")); };
+            let mut note = NoteBody { body: String::new(), formatted: false, drawings: false, paragraphs: 0 };
+            flatten_note(children, &mut note);
+            if note.body.len() > crate::store::document_format::MAX_ATTRIBUTE_BYTES {
+                return Err(format!("{part}: note {id} exceeds the plain-text note limit"));
+            }
+            if result.insert((reference.to_string(), id.to_string()), note).is_some() { return Err(format!("{part}: duplicate note ID {id}")); }
+        }
+    }
+    Ok(result)
 }
 
 /// A run's marks, from its own `w:rPr` (`w:b`, `w:i`, `w:u`), each read
@@ -507,7 +584,7 @@ fn text_of(node: &Node) -> Option<&str> {
 /// content (a drawing, most often) that the fallback restates for an older
 /// reader -- walking both would count one picture, hyperlink or field
 /// twice for the one thing Word actually put on the page.
-fn walk_para_content(nodes: &[Node], out: &mut Vec<RunOut>, losses: &mut Losses) {
+fn walk_para_content(nodes: &[Node], out: &mut Vec<RunOut>, losses: &mut Losses, notes: Option<&NoteBodies>) {
     for node in nodes {
         let Node::Element { name, children, .. } = node else {
             continue;
@@ -516,32 +593,52 @@ fn walk_para_content(nodes: &[Node], out: &mut Vec<RunOut>, losses: &mut Losses)
             "pPr" => {}
             "r" => {
                 let (strong, em, underline) = run_marks(children);
+                let mut custom_mark = false;
                 for c in children {
-                    let Node::Element { name: n2, children: cc, .. } = c else {
+                    let Node::Element { name: n2, attrs, children: cc } = c else {
                         continue;
                     };
                     match n2.as_str() {
                         "rPr" => {}
+                        "t" if custom_mark => { custom_mark = false; }
                         "t" => {
                             let text: String = cc.iter().filter_map(text_of).collect();
                             if !text.is_empty() {
-                                out.push(RunOut { text, strong, em, underline });
+                                out.push(RunOut { note: None, text, strong, em, underline });
                             }
                         }
                         "br" => out.push(RunOut {
+                            note: None,
                             text: "\n".to_string(),
                             strong,
                             em,
                             underline,
                         }),
                         "tab" => out.push(RunOut {
+                            note: None,
                             text: " ".to_string(),
                             strong,
                             em,
                             underline,
                         }),
                         "drawing" | "pict" => losses.pictures += 1,
-                        "footnoteReference" | "endnoteReference" => losses.notes += 1,
+                        "footnoteReference" | "endnoteReference" => {
+                            let Some(notes) = notes else {
+                                losses.notes += 1;
+                                continue;
+                            };
+                            custom_mark = attr_val(attrs, "customMarkFollows").is_some_and(|value| matches!(value, "1" | "true" | "on"));
+                            let key = (n2.clone(), attr_val(attrs, "id").unwrap_or("").to_string());
+                            let body = if let Some(note) = notes.get(&key) {
+                                losses.note_formatting += u64::from(note.formatted);
+                                losses.note_drawings += u64::from(note.drawings);
+                                note.body.clone()
+                            } else {
+                                losses.missing_note_bodies += 1;
+                                String::new()
+                            };
+                            out.push(RunOut { note: Some(body), text: String::new(), strong: false, em: false, underline: false });
+                        },
                         "instrText" => losses.fields += 1,
                         _ => {}
                     }
@@ -549,17 +646,17 @@ fn walk_para_content(nodes: &[Node], out: &mut Vec<RunOut>, losses: &mut Losses)
             }
             "hyperlink" => {
                 losses.links += 1;
-                walk_para_content(children, out, losses);
+                walk_para_content(children, out, losses, notes);
             }
             "fldSimple" => {
                 losses.fields += 1;
-                walk_para_content(children, out, losses);
+                walk_para_content(children, out, losses, notes);
             }
-            "ins" => walk_para_content(children, out, losses),
+            "ins" => walk_para_content(children, out, losses, notes),
             "del" | "moveFrom" => {}
             "Fallback" => {}
             "commentRangeStart" => losses.comments += 1,
-            _ => walk_para_content(children, out, losses),
+            _ => walk_para_content(children, out, losses, notes),
         }
     }
 }
@@ -570,7 +667,7 @@ fn merge_runs(runs: Vec<RunOut>) -> Vec<RunOut> {
     let mut out: Vec<RunOut> = Vec::new();
     for r in runs {
         if let Some(previous) = out.last_mut() {
-            if previous.strong == r.strong && previous.em == r.em && previous.underline == r.underline {
+            if previous.note.is_none() && r.note.is_none() && previous.strong == r.strong && previous.em == r.em && previous.underline == r.underline {
                 previous.text.push_str(&r.text);
                 continue;
             }
@@ -586,7 +683,12 @@ fn merge_runs(runs: Vec<RunOut>) -> Vec<RunOut> {
 fn build_pm_paragraph(merged: &[RunOut]) -> Option<serde_json::Value> {
     let mut content = Vec::new();
     let mut has_content = false;
-    for RunOut { text, strong, em, underline } in merged {
+    for RunOut { note, text, strong, em, underline } in merged {
+        if let Some(body) = note {
+            content.push(json!({"type":"endnote","attrs":{"id":uuid::Uuid::now_v7().to_string(),"fmt":"text","body":body}}));
+            has_content = true;
+            continue;
+        }
         if text.is_empty() {
             continue;
         }
@@ -631,7 +733,7 @@ struct ParaClass {
     list_text: Option<String>,
 }
 
-fn parse_p(children: &[Node], styles: &StyleMap, losses: &mut Losses) -> ParaClass {
+fn parse_p(children: &[Node], styles: &StyleMap, losses: &mut Losses, notes: Option<&NoteBodies>) -> ParaClass {
     let mut style_id: Option<String> = None;
     let mut own_outline: Option<u32> = None;
     let mut is_list = false;
@@ -658,7 +760,7 @@ fn parse_p(children: &[Node], styles: &StyleMap, losses: &mut Losses) -> ParaCla
     }
     let kind = resolve_heading(style_id.as_deref(), own_outline, styles);
     let mut runs = Vec::new();
-    walk_para_content(children, &mut runs, losses);
+    walk_para_content(children, &mut runs, losses, notes);
     let merged = merge_runs(runs);
     match kind {
         Some(_) => ParaClass {
@@ -667,7 +769,7 @@ fn parse_p(children: &[Node], styles: &StyleMap, losses: &mut Losses) -> ParaCla
             // heading back: a run of leading/trailing spaces a writer left
             // around a heading's text is not part of the title.
             heading_text: Some(plain_text(&merged).trim().to_string()),
-            prose: None,
+            prose: notes.and_then(|_| build_pm_paragraph(&merged.iter().filter(|run| run.note.is_some()).cloned().collect::<Vec<_>>())),
             list_text: None,
         },
         None => ParaClass {
@@ -684,17 +786,17 @@ fn parse_p(children: &[Node], styles: &StyleMap, losses: &mut Losses) -> ParaCla
 /// moved paragraphs are kept only at their destination. Every other wrapper --
 /// `w:body` itself, `w:sdt`, `w:sectPr`'s siblings -- is walked through, on
 /// decision 2's rule.
-fn walk_body(nodes: &[Node], styles: &StyleMap, losses: &mut Losses, out: &mut Vec<ParaClass>) {
+fn walk_body(nodes: &[Node], styles: &StyleMap, losses: &mut Losses, out: &mut Vec<ParaClass>, notes: Option<&NoteBodies>) {
     for node in nodes {
         let Node::Element { name, children, .. } = node else {
             continue;
         };
         match name.as_str() {
-            "p" => out.push(parse_p(children, styles, losses)),
+            "p" => out.push(parse_p(children, styles, losses, notes)),
             "tbl" => losses.tables += 1,
             "sectPr" => {}
             "moveFrom" => {}
-            _ => walk_body(children, styles, losses, out),
+            _ => walk_body(children, styles, losses, out, notes),
         }
     }
 }
@@ -747,7 +849,7 @@ fn group_sections(paras: Vec<ParaClass>) -> Vec<DocxSection> {
             Some(kind) => out.push(DocxSection {
                 kind: Some(kind),
                 heading_text: p.heading_text,
-                paragraphs: Vec::new(),
+                paragraphs: p.prose.into_iter().collect(),
                 list_entries: Some(Vec::new()),
             }),
             None => {
@@ -937,6 +1039,10 @@ const MAX_PACKAGE_EXPANDED_BYTES: usize = 128 * 1024 * 1024;
 /// `stem` is the file's own name without its extension, used exactly as
 /// `import::parse`'s is: when the document does not name itself.
 pub fn parse(bytes: &[u8], stem: &str) -> Result<DocxImported, String> {
+    parse_with_policy(bytes, stem, crate::store::document_format::new_nodes_allowed())
+}
+
+fn parse_with_policy(bytes: &[u8], stem: &str, allow_new: bool) -> Result<DocxImported, String> {
     let entries = crate::package_format::read_zip_bounded(bytes, MAX_PACKAGE_ENTRIES, MAX_PACKAGE_EXPANDED_BYTES)?;
     let document = entries
         .iter()
@@ -951,10 +1057,11 @@ pub fn parse(bytes: &[u8], stem: &str) -> Result<DocxImported, String> {
         .unwrap_or_default();
 
     let tree = build_tree(&document_text)?;
+    let notes = if allow_new { Some(note_bodies(&entries)?) } else { None };
     let mut losses = Losses::default();
     losses.revisions = count_revisions(&tree);
     let mut paras: Vec<ParaClass> = Vec::new();
-    walk_body(&tree, &styles, &mut losses, &mut paras);
+    walk_body(&tree, &styles, &mut losses, &mut paras, notes.as_ref());
 
     let mut sections = group_sections(paras);
     let derived_contents = drop_generated_contents(&mut sections, &mut losses);
@@ -970,6 +1077,127 @@ pub fn parse(bytes: &[u8], stem: &str) -> Result<DocxImported, String> {
 mod tests {
     use super::*;
     use std::collections::HashMap as StdHashMap;
+
+    fn owned_notes(parsed: &DocxImported) -> Vec<serde_json::Value> {
+        parsed.imported.items.iter().filter_map(|item| item.body.as_deref())
+            .flat_map(|body| {
+                let body: serde_json::Value = serde_json::from_str(body).unwrap();
+                crate::store::document_format::validate(&body, true, &Default::default()).unwrap();
+                body["content"].as_array().unwrap().iter().flat_map(|block| {
+                    block["content"].as_array().into_iter().flatten().filter(|node| node["type"] == "endnote").cloned()
+                }).collect::<Vec<_>>()
+            }).collect()
+    }
+
+    #[test]
+    fn owned_notes_remint_repeated_references_and_count_losses_separately() {
+        let document = doc(r#"<w:p><w:r><w:t>Before</w:t><w:footnoteReference w:id="1"/><w:endnoteReference w:id="1" w:customMarkFollows="1"/><w:t>1</w:t><w:footnoteReference w:id="1"/><w:endnoteReference w:id="99"/></w:r></w:p>"#);
+        let footnotes = format!(r#"<w:footnotes xmlns:w="{W_NS}"><w:footnote w:type="separator" w:id="-1"><w:p><w:r><w:t>skip separator</w:t></w:r></w:p></w:footnote><w:footnote w:type="continuationSeparator" w:id="0"><w:p/></w:footnote><w:footnote w:id="1"><w:p><w:r><w:rPr><w:b/><w:i/></w:rPr><w:t>Rich footnote</w:t></w:r></w:p><w:p><w:r><w:t>Second line</w:t></w:r></w:p></w:footnote></w:footnotes>"#);
+        let endnotes = format!(r#"<w:endnotes xmlns:w="{W_NS}"><w:endnote w:id="1"><w:p><w:r><w:endnoteRef/><w:t>Plain endnote</w:t><w:drawing/><w:drawing/></w:r></w:p></w:endnote></w:endnotes>"#);
+        let bytes = crate::epub::zip(&[
+            crate::epub::Entry::text("word/document.xml", &document),
+            crate::epub::Entry::text("word/footnotes.xml", &footnotes),
+            crate::epub::Entry::text("word/endnotes.xml", &endnotes),
+        ]);
+        let parsed = parse_with_policy(&bytes, "notes", true).unwrap();
+        let notes = owned_notes(&parsed);
+        assert_eq!(notes.iter().map(|note| note["attrs"]["body"].as_str().unwrap()).collect::<Vec<_>>(), ["Rich footnote\nSecond line", "Plain endnote", "Rich footnote\nSecond line", ""]);
+        let ids: std::collections::HashSet<_> = notes.iter().map(|note| note["attrs"]["id"].as_str().unwrap()).collect();
+        assert_eq!(ids.len(), 4);
+        let again = owned_notes(&parse_with_policy(&bytes, "notes", true).unwrap());
+        assert!(again.iter().all(|note| !ids.contains(note["attrs"]["id"].as_str().unwrap())));
+        assert_eq!(parsed.losses.note_formatting, 2);
+        assert_eq!(parsed.losses.missing_note_bodies, 1);
+        assert_eq!(parsed.losses.note_drawings, 1);
+        assert_eq!(parsed.losses.notes, 0);
+        let legacy = parse(&bytes, "notes").unwrap();
+        assert_eq!(legacy.losses.notes, 4);
+        assert!(owned_notes(&legacy).is_empty());
+    }
+
+    #[test]
+    fn closed_gate_imports_prose_and_counts_notes_and_pictures_without_reading_note_parts() {
+        let document = doc(r#"<w:p><w:pPr><w:outlineLvl w:val="0"/></w:pPr><w:r><w:t>Scene</w:t><w:footnoteReference w:id="1"/></w:r></w:p><w:p><w:r><w:t>Before</w:t><w:footnoteReference w:id="1"/><w:t> after</w:t><w:endnoteReference w:id="2"/><w:drawing/><w:pict/></w:r></w:p>"#);
+        for notes in ["", "<broken", "<w:wrong/>"] {
+            let bytes = crate::epub::zip(&[
+                crate::epub::Entry::text("word/document.xml", &document),
+                crate::epub::Entry::text("word/footnotes.xml", notes),
+                crate::epub::Entry::text("word/endnotes.xml", notes),
+                crate::epub::Entry::text("word/media/unused.png", "unused"),
+            ]);
+            let parsed = parse(&bytes, "book").unwrap();
+            assert_eq!(parsed.losses, Losses { notes: 3, pictures: 2, ..Losses::default() });
+            assert_eq!(parsed.imported.items.len(), 1);
+            assert_eq!(parsed.imported.items[0].title, "Scene");
+            assert_eq!(parsed.imported.items[0].body.as_deref(), Some(r#"{"content":[{"content":[{"text":"Before after","type":"text"}],"type":"paragraph"}],"type":"doc"}"#));
+            assert!(owned_notes(&parsed).is_empty());
+        }
+        let document = doc("<w:p><w:r><w:t>Ordinary manuscript</w:t></w:r></w:p>");
+        let separators = format!(r#"<w:endnotes xmlns:w="{W_NS}"><w:endnote w:type="separator" w:id="-1"><w:p/></w:endnote><w:endnote w:type="continuationSeparator" w:id="0"><w:p/></w:endnote></w:endnotes>"#);
+        let bytes = crate::epub::zip(&[
+            crate::epub::Entry::text("word/document.xml", &document),
+            crate::epub::Entry::text("word/endnotes.xml", &separators),
+        ]);
+        assert_eq!(parse(&bytes, "book").unwrap().losses, Losses::default());
+    }
+
+    #[test]
+    fn libreoffice_note_fixture_preserves_plain_bodies_and_discloses_losses() {
+        let bytes = include_bytes!("docx/fixtures/notes.docx");
+        let parsed = parse_with_policy(bytes, "notes", true).unwrap();
+        let notes = owned_notes(&parsed);
+        assert_eq!(notes.iter().map(|note| note["attrs"]["body"].as_str().unwrap()).collect::<Vec<_>>(), ["Foot italic body.\nSecond paragraph.", "End bold body.", "Plain note body."]);
+        assert_eq!(parsed.losses.note_formatting, 3);
+        assert_eq!(parsed.losses.note_drawings, 1);
+        assert_eq!(parsed.losses.missing_note_bodies, 0);
+        assert_eq!(notes.len(), 3);
+        let legacy = parse(bytes, "notes").unwrap();
+        assert_eq!(legacy.losses, Losses { notes: 3, ..Losses::default() });
+        assert!(owned_notes(&legacy).is_empty());
+    }
+
+    #[test]
+    fn native_scoped_note_round_trip_keeps_exact_body_whitespace_and_no_literal_marks() {
+        let chapters = [("a".into(), "One".into(), 0), ("b".into(), "Two".into(), 0)];
+        let book = crate::export::Book { publication: None, single_scene: false, name: "Notes", contents_title: "Contents", front: &[], chapters: &chapters, back: &[] };
+        let bodies = HashMap::from_iter(chapters.iter().map(|(id, _, _)| (id.clone(), json!({"type":"doc","content":[{"type":"paragraph","content":[
+            {"type":"text","text":"Prose"},
+            {"type":"endnote","attrs":{"id":"0199ed16-8c00-7000-8000-000000000001","fmt":"text","body":"\n leading & <text>\ntrailing \n"}}
+        ]}]}).to_string())));
+        let scopes = crate::publication_plan::Scopes {
+            by_item: HashMap::from([("a".into(), 0), ("b".into(), 1)]),
+            rows: vec![crate::publication_plan::Scope { label: "One".into(), end: "a".into() }, crate::publication_plan::Scope { label: "Two".into(), end: "b".into() }],
+        };
+        let plan = crate::publication_plan::Plan::build(&book, &bodies, scopes, |_| unreachable!()).unwrap();
+        let bytes = crate::docx::render_planned(&book, &bodies, "en", Some(&plan)).unwrap().bytes;
+        let imported = parse_with_policy(&bytes, "notes", true).unwrap();
+        let notes = owned_notes(&imported);
+        assert_eq!(notes.len(), 2);
+        assert!(notes.iter().all(|note| note["attrs"]["body"] == "\n leading & <text>\ntrailing \n"));
+        for item in &imported.imported.items {
+            if let Some(body) = &item.body {
+                assert_eq!(crate::store::document_text(body).as_deref(), Some("Prose"));
+            }
+        }
+    }
+
+    #[test]
+    fn invalid_note_parts_refuse_without_truncating_or_guessing_bodies() {
+        for (notes, reason) in [
+            (String::new(), "missing note root"),
+            ("<w:wrong/>".into(), "missing note root"),
+            ("<w:endnotes><w:endnote w:id=\"1\" w:type=\"unknown\"/></w:endnotes>".into(), "unsupported note type"),
+            ("<w:endnotes><w:endnote><w:p/></w:endnote></w:endnotes>".into(), "note without ID"),
+            ("<w:endnotes><w:endnote w:id=\"1\"/><w:endnote w:id=\"1\"/></w:endnotes>".into(), "duplicate note ID"),
+            (format!("<w:endnotes><w:endnote w:id=\"1\"><w:p><w:r><w:t>{}</w:t></w:r></w:p></w:endnote></w:endnotes>", "x".repeat(crate::store::document_format::MAX_ATTRIBUTE_BYTES + 1)), "exceeds the plain-text note limit"),
+        ] {
+            let bytes = crate::epub::zip(&[
+                crate::epub::Entry::text("word/document.xml", &doc("<w:p><w:r><w:endnoteReference w:id=\"1\"/></w:r></w:p>")),
+                crate::epub::Entry::text("word/endnotes.xml", &notes),
+            ]);
+            assert!(parse_with_policy(&bytes, "notes", true).unwrap_err().contains(reason));
+        }
+    }
 
     /// One-entry `[Content_Types].xml` and `_rels` are not needed to make a
     /// package `read_zip` accepts and this module reads: only the two named
@@ -1297,9 +1525,9 @@ mod tests {
             ),
             None,
         );
-        let out = parse(&bytes, "stem").unwrap();
+        let out = parse_with_policy(&bytes, "stem", true).unwrap();
         assert_eq!(out.losses.pictures, 1);
-        assert_eq!(out.losses.notes, 1);
+        assert_eq!(out.losses.missing_note_bodies, 1);
         assert_eq!(out.losses.comments, 1);
         let body: serde_json::Value = serde_json::from_str(out.imported.items[0].body.as_deref().unwrap()).unwrap();
         assert!(body.to_string().contains("prose"), "{body}");
@@ -1637,7 +1865,7 @@ mod tests {
             ),
             None,
         );
-        let out = parse(&bytes, "stem").unwrap();
+        let out = parse_with_policy(&bytes, "stem", true).unwrap();
         assert_eq!(out.losses.pictures, 1, "{:?}", out.losses);
     }
 

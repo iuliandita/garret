@@ -94,9 +94,10 @@ pub(crate) fn init<R: Runtime>() -> TauriPlugin<R> {
         .build()
 }
 fn canonical_uuid(value: &str) -> Result<(), String> {
-    match uuid::Uuid::parse_str(value) {
-        Ok(id) if id.to_string() == value => Ok(()),
-        _ => Err("invalid transfer identifier".into()),
+    if crate::mobile_core::is_canonical_uuid(value) {
+        Ok(())
+    } else {
+        Err("invalid transfer identifier".into())
     }
 }
 fn hash_ok(value: &str) -> bool {

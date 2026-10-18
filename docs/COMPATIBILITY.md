@@ -2,6 +2,118 @@
 
 SQLite schema: 17.
 
+Proof paginator test diagnostics use isolated temporary profiles and timestamped
+phase logs. They do not change PDF output, stored books, profile migration, or
+the application's rendering settings.
+
+Shared restore normalization, preset validation, and canonical UUID checks retain
+their existing acceptance rules and errors. These helper cleanups add no migration
+and leave stored books, transfer formats, and rollback requirements unchanged.
+
+EPUB and DOCX exports replace vertical tabs and form feeds with spaces and remove
+the other XML 1.0-forbidden characters from prose, item and book titles, contents
+labels, collection bylines, and EPUB author, sort name, publisher, and rights in
+the exported copy. Front and back matter, including References, use the same
+cleanup. Prepared publication exports also clean note bodies, captions,
+alternative text, and note headings; production activation remains disabled.
+The export result adds `xml_characters_removed`, counting both replacements and
+deletions; the interface and CLI explain a nonzero count in plain language.
+Stored prose, titles, metadata, marks, history, and ordinary XML
+whitespace remain unchanged. Fixtures without these characters retain identical
+output bytes. Identity preflight inspects cleaned prose, titles, names, and metadata. Export
+word counts inspect the cleaned prose.
+Markdown and PDF prose are unchanged by this cleanup.
+Each source field is counted once even when repeated in headings, navigation,
+or OPF metadata. DOCX emits no core/app properties, headers, or footers.
+Markdown and PDF titles and metadata are unchanged by this cleanup.
+
+Backup reports figure references in live, bin, and retained history bodies even
+when a schema-17 database lacks the registry table. An unreadable row with a
+safe figure UUID retains both PNG and JPEG filename candidates in the incomplete
+inventory so any available originals are copied. Missing candidates remain gaps;
+this never certifies damaged metadata. Salvage reports an existing unsafe or
+unreadable pictures directory even with no registered figures. Without a registry
+table, bodies without the substring `figure` bypass reference parsing.
+
+Only a format marker on the first line selects the garret Markdown dialect
+(with an optional BOM). Unmarked files containing garret comments import as
+ordinary Markdown. A Markdown package requires filesystem hard links; the host
+probes support before staging originals or creating the published assets folder.
+An unsupported filesystem produces a plain refusal and leaves no probe debris.
+Probe-file cleanup failures also attempt to remove the empty staging directory.
+Existing uncertain publication stages remain retained for inspection.
+
+Replace-all still refuses a body with unknown marks and rolls back the whole
+transaction, including its snapshot and history rows. Readability fixtures pin
+explicit exceptions independently of the structural validator.
+
+PDF figures have a 0.6em top margin, included in their page-fit calculation.
+EPUB already gives figures 1.5em vertical margins. Legacy proof output is unchanged.
+
+Prepared PDF publication reuses the shared scoped publication plan for endnotes,
+figures, captions, and scene breaks. Notes follow their scope, never the bottom
+of a page. Full and half figures fit within the text column; page figures use a
+separate interior leaf with normal margins and a folio. Images preserve their
+decoded aspect ratio without crop or bleed. Captions have 0.4em of space above
+and use 0.9em type in PDF and EPUB. Images shrink to retain that caption size,
+and an unfit caption refuses the proof. Pagination waits only for figure image
+decoding; failed figure decoding refuses the proof under the existing timeout.
+Covers are never passed to `decode()`, preserving legacy partial-image painting
+for truncated originals. Damaged legacy covers remain non-fatal. A heading group
+directly before an interior plate travels with it.
+Legacy prose rendering and existing proof fixtures retain their behavior.
+
+An advisory native Windows CI probe exercises the existing GUI PDF renderer and
+destination writer on a disposable seeded sample. It records page and leaf
+counts, requested trim dimensions, font resolution, and bounded diagnostics;
+downloaded output still needs geometry, text, and visual inspection. This adds
+no book migration or Windows CLI PDF support. Keep closed-book backups and
+adjacent originals before upgrading; rollback uses the previous package with a
+separate complete copy. Runner verification does not qualify other WebView2
+versions, font installations, or individual machines.
+
+The paginator reports effective DPI for each figure from oriented pixels and its
+actual placed size. Below 300 DPI is a warning; below 200 DPI is also flagged.
+These advisories do not block publication. A 1200 by 1800 image is 300 DPI at
+4 by 6 inches, 200 DPI at 6 by 9, and 150 DPI at 8 by 12. Decoded image dimensions
+determine whether pixel axes swap before calculation. WebKit applies JPEG EXIF
+rotation but retains raw PNG dimensions for PNG eXIf; the proof follows that
+displayed geometry. EPUB retains the original PNG and DOCX uses its raw drawing
+dimensions. Preview reports include per-placement `figures`
+with item and instance IDs, DPI, warning, and flag values. Authoring, publication
+of new nodes, and their activation interface remain disabled; SQLite stays at
+schema 17 and no migration runs. Native Linux output is exercised under a virtual
+display; Windows and macOS layout qualification remains external.
+
+DOCX import keeps its existing prose-only behavior while new-node conversion is
+disabled. Footnote and endnote references and pictures are omitted with separate
+loss counts in the interface and CLI; no atoms are stored. Note-body parts are
+not parsed in this mode, including malformed parts that previous builds ignored.
+Keep the original DOCX to retain its notes and pictures. No migration runs, and
+existing books remain unchanged. Back up closed books and adjacent originals;
+rollback uses the previous package with a separate complete copy and the same
+counted-loss import behavior.
+
+Prepared DOCX publication uses the shared plan for native endnotes, scoped
+numbering, inline pictures, captions, alternative text, and scene breaks. Legacy
+DOCX bytes remain unchanged. New-node publication and conversion remain disabled
+in production. Scoped publications include section restart settings and native
+custom note marks so readers that ignore those settings still display the plan's
+numbers. Those custom labels are fixed at export; after editing notes, export
+again to derive their numbering. LibreOffice opens native notes with these
+labels but collects them at the document end rather than each section end.
+Microsoft Word placement and editing behavior still need native qualification.
+
+The prepared importer keeps Word footnotes and endnotes as independent owned
+plain-text notes with new IDs. Prepared export/import preserves note-body
+whitespace and line breaks without adding marker text. It reports affected-note
+counts separately for
+flattened formatting, missing bodies (empty notes retained), and dropped note
+drawings. It does not preserve rich-note formatting. The interoperability fixture
+was written by LibreOffice, not Microsoft Word; native Word import qualification
+remains external. The CLI JSON loss object adds `note_formatting`,
+`missing_note_bodies`, and `note_drawings`; human-readable notices name each loss.
+
 Restoring a backup or transferring a book preserves legacy document bodies and
 history, including empty text runs. The copy is refused if a stored document or
 version contains the new node types, and the refusal names its item ID. History
@@ -22,6 +134,104 @@ the book. Endnotes, figures, and scene-break nodes remain disabled. The schema
 ceiling stays at 17; this adds no migration or upgrade. Existing supported
 documents remain compatible. Keep closed-book backups using the steps below;
 rollback uses the previous application and a complete backup copy.
+
+Figure-original retention is prepared without enabling figure authoring or a
+schema upgrade. The proposed registry migration runs only in isolated tests.
+Shared backup checks include every registered original, even when abandoned or
+referenced only by the bin or automatic history, and compare its SHA-256 against
+the copied database. Missing mappings, unreadable references, missing files, and
+hash mismatches make a copy incomplete. Cast and cover deletion cannot remove
+figure-owned originals. The archive envelope remains version 2; legacy archives
+remain readable. Supporting salvage preserves unknown bodies verbatim, writes
+readable notes and figure placeholders with relative original links, and retains
+registered originals even when automatic text versions are omitted. Salvage
+reports those omissions and layout losses; it is not an editable downgrade.
+Legacy bodies retain the existing readable Markdown fallback, including unknown
+marks. Read-only database integrity checks accept retained unknown text marks
+and empty runs without rewriting the bodies. Atom shapes and note formats remain
+strict; figure mapping and original completeness are checked separately against
+the copied database. Production writes and database restoration still enforce
+the disabled new-node policy. A damaged original is copied with a
+`corrupt_figure_original` loss and its recorded hash kept for diagnosis. An unreadable registry row or directory records
+a loss without stopping the remaining recovery. The salvage manifest adds
+`figure_assets_recovered` and `figure_originals_recovered` counts, plus `figures`
+for the relative registry filename, or null when no registry was recovered.
+
+Consumers are prepared for endnotes, figures, and scene breaks using isolated
+fixtures. Search keeps prose, note bodies, captions, and alternative text in
+separate fields. Adjacent prose paragraphs retain their searchable space;
+atoms and attribute fields stop a match. Replacement refuses matches spanning
+paragraph breaks and never edits attributes. Word counts
+exclude attribute text and count neither references nor block atoms as words.
+History compares note, caption, and alternative text separately from prose.
+Review proposals retain complete atoms and refuse affected review Word handoffs.
+Clipboard copies remint instance IDs and reject duplicate IDs; figure pastes and
+copied atom drops are refused until original transfer is available. Phone recovery
+copies retain note text, captions, alternative text, and figure placeholders, and
+state that formatting, structure, and originals are omitted. These reader changes
+keep the schema ceiling and disabled production writes described above.
+
+EPUB export prepares scoped endnotes, figures, and scene breaks through isolated
+fixtures. Notes use book, typed chapter, or collection-story numbering; selected
+stories include only their own notes and verified originals. Figure media uses
+relative hashed names and declared MIME types. Endnotes include reference links,
+backlinks, and contents entries; a page-width preference is a reflowable break
+hint. Bodies containing new nodes use strict publication validation, refusing
+unsupported content, unresolved figures, missing or changed originals, blank
+alternative text. Direct publication-plan inputs still refuse XML-forbidden
+characters; EPUB/DOCX export copies clean them before building that plan. Bodies without new nodes keep the existing tolerant EPUB renderer, including
+empty bodies, missing content, inline breaks, and paragraph attributes. Unknown
+note-numbering metadata does not block legacy exports or preflight. Existing
+sample and classic Markdown, Word, and EPUB exports retain their byte hashes. This does not enable
+new-node saves, Markdown conversion, or new-format readable-folder output, and
+adds no production migration. Keep the closed-book backups described below;
+rollback uses the previous build and complete copy. Reader popup behavior and
+native reading-system qualification remain unverified.
+
+Markdown publication fixtures reuse the scoped publication plan for footnote
+references and definitions, relative hashed PNG/JPEG assets, captions, scene
+breaks, and bounded figure placement metadata. Literal footnote syntax remains
+escaped prose. The matching package reader remints instance and asset IDs and
+resolves originals only below the selected Markdown file's parent directory;
+the selected parent is canonicalized once, so a symlinked user folder works,
+while absolute paths, traversal, URLs, and symbolic links below it are refused. The desktop and
+CLI refuse marked new-format conversion before creating a book while authoring
+is disabled, including marked files with a leading UTF-8 BOM or CRLF line endings.
+Ordinary Markdown keeps its existing BOM and line-ending behavior, and ordinary
+Markdown and Word output retains its existing byte hashes.
+
+Keep a Markdown file and its adjacent `assets` folder together when sharing.
+A package export stages originals beside the destination, publishes them before
+the Markdown file, and refuses existing destinations or asset folders. Asset-bearing
+packages refuse Export as during the pre-save check, before the native dialog can
+ask about replacing a file; use Export manuscript in a folder without `assets`.
+A failure after staging keeps the stage and reports its location and any partially
+published assets folder; preserve both until the
+outcome is known. It never overwrites an existing package to resolve a collision.
+
+New-format readable-folder copies are tested only with matching-schema fixtures.
+They carry relative hashed assets and a `document_format: 18` front-matter marker.
+Production output remains disabled. The existing reader retains unknown keys and
+refuses inbound acceptance for every document-format marker. Stored atoms also
+prevent acceptance after marker removal. Ordinary documents keep their existing
+bidirectional, pause, conflict-copy, and undo behavior. Removing a marker and
+importing the file as ordinary Markdown is a lossy conversion, not a mirror
+round-trip. No schema upgrade or production activation is included.
+
+The default `garret search book.db QUERY --json` result adds a `locators` array
+to each hit, retaining the existing keys. Each locator contains `field`,
+`item_id`, `instance_id`, `from`, and `to`. Consumers that require an exact key
+set must accept this additive change. Ranges use UTF-16 code units, with an
+inclusive `from` and exclusive `to`. Prose ranges are absolute document positions,
+including structural positions, rather than offsets into flattened text or the
+snippet; prose locators have a null `instance_id`. Attribute ranges for `note`,
+`caption`, and `alt` are relative to the start of that field, and `instance_id`
+identifies the endnote or figure. This changes CLI output without a schema
+migration or book conversion.
+
+The command-line `design-apply` operation requires the exact current SQLite
+schema. Open older books in the application to upgrade them before applying a
+design; a preview token cannot bypass that requirement.
 
 ## Before upgrading
 
@@ -44,7 +254,7 @@ Opening a supported older book can upgrade its SQLite schema. A newer schema
 is refused by an older build; do not edit `PRAGMA user_version` to bypass this.
 Static version checks do not establish that every legacy book upgrades correctly.
 
-0.0.1 through 0.0.4 use SQLite schema 17. The 0.0.2 DOCX importer adds
+0.0.1 through 0.0.5 use SQLite schema 17. The 0.0.2 DOCX importer adds
 archive expansion limits: 128 entries, 128 MiB combined, and 64 MiB per entry.
 An oversized foreign document can now be refused. Preserve the original and
 split or simplify a copy before retrying; do not bypass the limits. This does
@@ -82,9 +292,12 @@ is handled separately; do not assume an older Android build understands it.
 Collections use ordinary chapter containers as stories. The outermost chapters
 in the manuscript are stories; nested chapters remain sections. New story follows
 the selected story in the same parent, without an automatic part. Scenes stay in
-the selected story or section. Outside a story, a new scene goes into the nearest
-preceding story in outline order (the last story when nothing is selected). If
-none precedes it, a new story holds the scene, inside the selected part if any.
+the selected story or section, or follow a selected scene in its container.
+With a part selected, a new scene appends to the last story inside that part.
+An empty part uses the nearest preceding story in outline order. Other selections
+outside a story use this fallback too; no selection uses the last story. If the
+fallback finds no story, a new story holds the scene, inside the selected part
+if any.
 Each story keeps its existing title and revision status; navigator counts sum
 its scenes. Right-click a story (or press Shift+F10) and choose Story details to
 edit its title, optional public author, and status, or save and export it alone.
@@ -136,9 +349,31 @@ carries them.
 
 The desktop profile now uses `garret` instead of `cc.local.app`, preserving a
 compatibility link after migration. Close older versions before first launch.
-If migration stops, preserve both folders named in the warning, close garret,
-and request recovery help. Do not merge, overwrite, or delete them. Android uses the separate package move described below; desktop profile
-migration is not sync.
+On Linux, macOS and Windows, an unused newer folder is kept as a dated sibling
+named `garret.set-aside-...` before normal migration continues. Only settings
+without non-temporary book references, lock/focus files and explicitly
+recognized browser cache/storage directories qualify. The exact top-level HSTS
+cache `hsts-storage.sqlite` and its `-wal`/`-shm` companions also qualify, as does
+an empty `spell/` directory. Any file in `spell/` refuses: rendered project
+dictionaries and personally learned words share that location. Unknown entries, other database
+files (including SQLite and local-storage suffixes), book/recovery/import/export folders, dictionaries, identities and encrypted
+backup preferences still stop migration. The CLI only explains; open the app to
+perform the move. A synced, append-only sibling receipt records each attempted
+set-aside before an exclusive atomic rename. Interrupted attempts retain all
+folders and receipts, and normal migration resumes on the next app launch.
+The success notice is logged without interrupting startup. Real conflicts show
+the existing folders and counts of books found on disk in English or German, with an
+explanation when books cannot be counted. Missing paths on disconnected storage
+still stop migration; only missing paths whose nearest resolvable ancestor is
+temporary qualify. Temporary storage must not contain the home or profile folder.
+A completed Windows migration is never set aside again. Keep both folders and
+request recovery help at the address shown. When the newer folder does not exist,
+the message names only the older folder and asks you to keep that folder.
+Back up both closed profiles before upgrade or recovery. For rollback, retain the
+set-aside folder and complete migrated profile, then use a separate pre-upgrade
+backup with the previous package; do not overwrite newer writing.
+Android uses the separate package move described below; desktop profile migration
+is not sync. Windows and macOS native upgrade behavior still needs platform testing.
 
 The desktop application identifier is `com.usegarret.app`. This changes the
 Linux menu-entry identity and macOS bundle identity without relocating books,

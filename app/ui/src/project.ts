@@ -32,6 +32,7 @@ import { parseTimeline } from "./timeline-model";
 import {
   createOutline,
   chapterItemsIn,
+  isReferencesPage,
   isTrashedIn,
   liveItemsIn,
   readingOrderItems,
@@ -91,7 +92,7 @@ import { createStatusDot, type StatusDot } from "./status-dot";
 import { createTooltip } from "./tooltip";
 import { createWordCount, type WordCountView } from "./word-count";
 import { DEFAULT_DAILY_TARGET, localDate, type DailyTarget } from "./goals";
-import { createStoryPanel } from "./story-panel";
+import { createStoryPanel, type StoryFields } from "./story-panel";
 import { storyIds } from "./collection";
 import { createExportBar, type ExportBar, type ExportWritten } from "./export-bar";
 import { createDesignPanel, type DesignPanel, type DesignTransferPreview } from "./design-panel";
@@ -616,6 +617,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     // is nowhere it could say the writer is.
     sceneNameEl.hidden = text === "";
     sceneHeadingEl.textContent = text;
+    editorEl.classList.toggle("references-open", isReferencesPage(latestItems, itemId));
   };
   const navigator = createNavigator({
     sidebarWordCounts: deps.sidebarWordCounts?.(),
@@ -686,6 +688,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // alike, rather than four places that could disagree about it.
   let timelineMount: TimelineMount | null = null;
   const editor = createEditor(editorEl, editorInput, {
+    onClipboardRefused: () => raiseNotice(t("document.clipboard-refused")),
     onChange: (change) => {
       // Once per document-changing transaction, same as the word count
       // above: the module arms once and returns early after, so the
@@ -1730,7 +1733,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       // second opener: everything already true about opening -- the fixed
       // order in session.switchTo, the undo scope, the word-count refresh --
       // stays true and is not restated here.
-      openItem: (itemId, query) => {
+      openItem: (itemId, query, locator) => {
         navigator.selectById(itemId);
         void openDocument?.(itemId)
           .then(() => {
@@ -1742,7 +1745,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
             // The return value is deliberately dropped. A miss is not something
             // to tell the writer about: they asked to go to a scene and they
             // are in that scene, with the caret where it was.
-            editor.revealMatch(query);
+            editor.revealMatch(query, locator);
           })
           .catch((err: unknown) => {
             raiseNotice(t("project.error.open-document", { error: String(err) }));
@@ -2971,7 +2974,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   }
 
   const storyPanel = preset === "collection" ? createStoryPanel({
-    read: async (id) => await invoke("story_get", { id, generation: deps.generation }) as import("./story-panel").StoryFields,
+    read: async (id) => await invoke("story_get", { id, generation: deps.generation }) as StoryFields,
     save: async (story) => {
       if (projectDestroyed || projectLeaving || deps.privacyLocked?.()) throw new Error("the book is no longer available");
       await invoke("story_save", { id: story.id, title: story.title, author: story.author ?? "", status: story.state, baseRev: story.rev, generation: deps.generation });
@@ -3519,6 +3522,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       sceneNameTip.anchor.replaceWith(sceneNameEl);
       sceneNameTip.destroy();
       sceneHeadingEl.textContent = "";
+      editorEl.classList.remove("references-open");
       navigator.destroy();
       editor.destroy();
       mounted.flusher = null;

@@ -34,10 +34,13 @@ mod docx;
 mod docx_import;
 mod encrypted_archive;
 mod epub;
+mod publication_plan;
 mod export;
 mod find;
 mod identity;
 mod import;
+mod markdown;
+mod markdown_package;
 #[cfg(unix)]
 mod instance;
 #[cfg(any(windows, test))]
@@ -48,9 +51,13 @@ mod mirror_identity;
 mod package_format;
 mod pdf;
 mod pictures;
+mod figures;
+mod figure_salvage;
 mod printer;
 #[cfg(windows)]
 mod printer_windows;
+#[cfg(all(windows, feature = "pdf-smoke"))]
+mod pdf_smoke;
 mod privacy;
 mod privacy_host;
 #[cfg(target_os = "linux")]
@@ -93,6 +100,10 @@ mod zoom;
 
 #[cfg(windows)]
 fn legacy_webview_data_dir(app: &tauri::AppHandle) -> tauri::Result<PathBuf> {
+    #[cfg(feature = "pdf-smoke")]
+    if let Some(smoke) = app.try_state::<std::sync::Arc<pdf_smoke::Smoke>>() {
+        return Ok(smoke.root.join("webview"));
+    }
     app.path().resolve(data_migration::LEGACY_DIR, tauri::path::BaseDirectory::LocalData)
 }
 
@@ -1447,7 +1458,7 @@ fn import_path(
     } else {
         let source = String::from_utf8(bytes)
             .map_err(|_| format!("{}: not valid UTF-8 text", path.display()))?;
-        (import::parse(&source, stem), docx_import::Losses::default())
+        (import::parse_package(&source, stem, path.parent().ok_or("missing Markdown package root")?)?, docx_import::Losses::default())
     };
     let rows: Vec<store::ImportRow<'_>> = imported
         .items
@@ -2180,7 +2191,7 @@ fn find_in(
     // by item id and read through these items, so a trashed body is unreachable
     // rather than merely unlisted.
     let items = store::without_trashed(store.items().map_err(|e| e.to_string())?);
-    let (texts, scanned, skipped) = store.document_texts().map_err(|e| e.to_string())?;
+    let (fields, scanned, skipped) = store.document_search_fields().map_err(|e| e.to_string())?;
     let search_items: Vec<find::SearchItem<'_>> = items
         .iter()
         .map(|i| find::SearchItem {
@@ -2190,7 +2201,8 @@ fn find_in(
         })
         .collect();
     let corpus = find::Corpus {
-        texts,
+        texts: Default::default(),
+        fields,
         scanned,
         skipped,
     };
@@ -3691,6 +3703,10 @@ const DEFAULT_PROJECT: &str = "default.db";
 /// opened. That is the same failure the recorded `last_project` hazard
 /// describes, except it splits the whole library rather than one setting.
 pub(crate) fn data_home() -> PathBuf {
+    // Test builds refuse ambient profiles; callers must pass a temporary data home.
+    #[cfg(test)]
+    panic!("tests must pass an isolated data home instead of resolving the application profile");
+    #[cfg(not(test))]
     if cfg!(windows) {
         windows_data_home_from(
             std::env::var_os("APPDATA").as_deref(),
@@ -4008,6 +4024,11 @@ fn main() {
                 process::exit(1);
             }
         }
+    }
+
+    #[cfg(all(windows, feature = "pdf-smoke"))]
+    if let Some(root) = std::env::var_os("GARRET_PDF_SMOKE").filter(|root| !root.is_empty()) {
+        process::exit(pdf_smoke::run(Path::new(&root)));
     }
 
     // The noninteractive CLI, dispatched BEFORE tauri::Builder for the reason
@@ -4900,7 +4921,7 @@ fn report_migration_failure(data_home: &Path, error: &str) {
         let dialog = gtk::MessageDialog::new(
             None::<&gtk::Window>,
             gtk::DialogFlags::MODAL,
-            gtk::MessageType::Error,
+            gtk::MessageType::Warning,
             gtk::ButtonsType::Ok,
             &body,
         );
@@ -4912,7 +4933,7 @@ fn report_migration_failure(data_home: &Path, error: &str) {
     let _ = rfd::MessageDialog::new()
         .set_title("garret")
         .set_description(body)
-        .set_level(rfd::MessageLevel::Error)
+        .set_level(rfd::MessageLevel::Warning)
         .set_buttons(rfd::MessageButtons::Ok)
         .show();
 }
@@ -8821,6 +8842,28 @@ mod tests {
             assert_eq!(outcome.losses, crate::docx_import::Losses::default());
             assert_eq!(std::fs::read_to_string(&path).unwrap(), source);
             assert_eq!(serde_json::to_value(&outcome).unwrap()["derived_contents"], "My contents");
+        }
+    }
+
+    #[test]
+    fn note_and_figure_docx_import_preserves_legacy_prose_and_losses_in_both_destinations() {
+        for picked in [false, true] {
+            let (dir, library, drop_dir) = import_fixture("Source remains");
+            let path = drop_dir.join("book.docx");
+            let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Manuscript</w:t><w:footnoteReference w:id="1"/><w:endnoteReference w:id="2"/><w:footnoteReference w:id="3"/><w:drawing/></w:r></w:p></w:body></w:document>"#;
+            let bytes = crate::epub::zip(&[crate::epub::Entry::text("word/document.xml", xml)]);
+            std::fs::write(&path, &bytes).unwrap();
+            let outcome = if picked { import_path(dir.path(), &library, &path) }
+                else { import_named(dir.path(), &library, &drop_dir, "book.docx") }.unwrap();
+            assert_eq!(outcome.losses, crate::docx_import::Losses { notes: 3, pictures: 1, ..Default::default() });
+            let store = crate::store::Store::open_readonly(Path::new(&outcome.summary.path)).unwrap();
+            let bodies = store.documents().unwrap();
+            assert_eq!(bodies.len(), 1);
+            for body in bodies.values() {
+                assert!(!crate::figure_salvage::has_new_nodes(body));
+                assert_eq!(serde_json::from_str::<serde_json::Value>(body).unwrap(), serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Manuscript"}]}]}));
+            }
+            assert_eq!(std::fs::read(&path).unwrap(), bytes);
         }
     }
 

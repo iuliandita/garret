@@ -18,6 +18,7 @@
 // (c) could not tell "the scan works" from "the scan always says blocker".
 //
 // Usage: bun app/harness/src/preflight-cli.ts <tiny|stress>
+import { readLegacyDocument } from "./document-read";
 import { Database, type SQLQueryBindings } from "bun:sqlite";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -291,7 +292,7 @@ let plantTitle: string | null = null;
 let plantIndex = -1;
 for (let i = plantCandidates.length - 1; i >= 0; i--) {
   const row = plantCandidates[i]!;
-  const parsed = JSON.parse(row.body) as unknown;
+  const parsed = readLegacyDocument(row.body) as unknown;
   if (firstTextNode(parsed) !== null) {
     plantItemId = row.item_id;
     originalBody = row.body;
@@ -359,7 +360,7 @@ console.log(
 );
 plantDemoIdentities(dataHome, projectPath);
 {
-  const parsed = JSON.parse(originalBody) as unknown;
+  const parsed = readLegacyDocument(originalBody) as unknown;
   const node = firstTextNode(parsed);
   if (node === null) {
     abort("the plant site's body no longer parses to a text node just before rewriting it.", cleanup);

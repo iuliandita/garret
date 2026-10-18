@@ -459,6 +459,16 @@ fn format_gate_mobile_database_imports_store_nothing() {
             let dir = tempfile::tempdir().unwrap();
             let db = dir.path().join("source.db");
             let (store, ids) = setup(&db);
+            let mut body = body.clone();
+            let mut value: Value = serde_json::from_str(&body).unwrap();
+            if value["content"][0]["type"] == "figure" {
+                crate::store::figure_assets::test_support::install(&store);
+                let image = dir.path().join("figure.png");
+                std::fs::write(&image, include_bytes!("../../../fixtures/two-halves.png")).unwrap();
+                let asset = crate::figures::test_support::import(&db, &store, &image);
+                value["content"][0]["attrs"]["asset_id"] = asset.id.into();
+                body = value.to_string();
+            }
             if history {
                 let snapshot = store.snapshot_create("Retained draft").unwrap();
                 store.conn.execute("UPDATE blob SET body=?1 WHERE key=(SELECT blob_key FROM doc_version WHERE item_id=?2 AND snapshot_id=?3)",
@@ -625,7 +635,8 @@ fn format_import_parsers_keep_future_constructs_out_of_stored_documents() {
     let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Prose</w:t><w:endnoteReference w:id="1"/><w:drawing/></w:r></w:p></w:body></w:document>"#;
     let bytes = crate::epub::zip(&[crate::epub::Entry::text("word/document.xml", xml)]);
     let docx = crate::docx_import::parse(&bytes, "book").unwrap();
-    assert_eq!(docx.losses.notes, 1);
+    assert_eq!(docx.losses, crate::docx_import::Losses { notes: 1, pictures: 1, ..Default::default() });
+    assert_eq!(docx.imported.items[0].body.as_deref(), Some(prose("Prose").as_str()));
     let dir = tempfile::tempdir().unwrap();
     let db = dir.path().join("damaged.db");
     let (store, ids) = setup(&db);
@@ -642,9 +653,16 @@ fn format_import_parsers_keep_future_constructs_out_of_stored_documents() {
     for imported in [markdown, docx.imported, salvage] {
         let bodies: Vec<_> = imported.items.iter().filter_map(|item| item.body.as_deref()).collect();
         assert!(!bodies.is_empty());
-        for body in bodies { validate_write(body).unwrap(); }
+        for body in bodies { assert!(!crate::figure_salvage::has_new_nodes(body)); validate_write(body).unwrap(); }
         let rows: Vec<_> = imported.items.iter().map(|item| (item.parent, item.item_type, item.title.as_str(), item.body.as_deref())).collect();
         let library = tempfile::tempdir().unwrap();
-        crate::projects::create_imported(library.path(), &imported.name, &rows, &crate::strings::Strings::english()).unwrap();
+        let summary = crate::projects::create_imported(library.path(), &imported.name, &rows, &crate::strings::Strings::english()).unwrap();
+        let stored = Store::open_readonly(std::path::Path::new(&summary.path)).unwrap().documents().unwrap();
+        for body in stored.values() { assert!(!crate::figure_salvage::has_new_nodes(body)); }
+        let mut expected: Vec<_> = rows.iter().filter_map(|row| row.3).collect();
+        let mut actual: Vec<_> = stored.values().map(String::as_str).collect();
+        expected.sort_unstable();
+        actual.sort_unstable();
+        assert_eq!(actual, expected);
     }
 }

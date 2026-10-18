@@ -650,6 +650,15 @@ pub struct PlanningText {
 /// and no pin on this project is the highest-risk state and not the lowest. What
 /// changes without a pin is the SEVERITY, not the scan: see `check`.
 fn needles(vault: &Vault, pin: Option<&Pin>) -> Vec<String> {
+    needles_for(vault, pin, false)
+}
+
+fn needles_for(vault: &Vault, pin: Option<&Pin>, xml: bool) -> Vec<String> {
+    let clean = |name: &str| {
+        let mut name = name.to_string();
+        if xml { crate::export::strip_xml_text(&mut name); }
+        name.trim().to_string()
+    };
     let mine = pin.map(|p| p.identity_id.as_str());
     let mut out: Vec<String> = Vec::new();
     let owned: std::collections::HashSet<String> = vault
@@ -661,7 +670,7 @@ fn needles(vault: &Vault, pin: Option<&Pin>) -> Vec<String> {
                 .into_iter()
                 .chain(identity.aliases.iter())
         })
-        .map(|name| crate::find::fold_with_offsets(name.trim()).0)
+        .map(|name| crate::find::fold_with_offsets(&clean(name)).0)
         .collect();
     let mut seen = std::collections::HashSet::new();
     for identity in &vault.identities {
@@ -672,7 +681,8 @@ fn needles(vault: &Vault, pin: Option<&Pin>) -> Vec<String> {
             .into_iter()
             .chain(identity.aliases.iter())
         {
-            let trimmed = candidate.trim();
+            let candidate = clean(candidate);
+            let trimmed = candidate.as_str();
             // A one-character name would match half the manuscript. Two is the
             // shortest thing a person is called; below it the check would be
             // noise a writer learns to ignore, which is worse than no check.
@@ -791,7 +801,7 @@ pub fn check(subject: &Subject<'_>) -> Preflight {
     //    project with no pin -- and with an empty vault it reports that it had
     //    nothing to compare against, which is a different answer from "there is
     //    nothing to find" and must never be spelled the same way.
-    let needles = needles(subject.vault, subject.pin);
+    let needles = needles_for(subject.vault, subject.pin, matches!(subject.format, crate::export::Format::Epub | crate::export::Format::Docx));
     let nothing_to_scan = subject.project_name.trim().is_empty()
         && subject.titles.is_empty()
         && subject.bodies.is_empty()

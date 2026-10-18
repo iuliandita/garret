@@ -1,3 +1,5 @@
+import { chapterItemsIn, itemsExcludingRoots } from "./outline-items";
+export { chapterItemsIn } from "./outline-items";
 import type { ProjectPreset } from "./project-preset";
 // app/ui/src/outline.ts
 // Neighbour arithmetic for outline moves: the pure half of "move this row up /
@@ -16,7 +18,7 @@ import type { ProjectPreset } from "./project-preset";
 // contain - is the store and the page disagreeing about the shape of the
 // manuscript, and reporting it as "nothing to do" makes it invisible. Hence a
 // tagged plan rather than a nullable target.
-import { t } from "./i18n";
+import { CATALOGS, t } from "./i18n";
 import { bibleParentFor } from "./bible-rows";
 import {
   BACK_MATTER_TYPE,
@@ -137,6 +139,20 @@ export function readingOrderItems(
     ...groups.filter((_, index) => index === bible || index === trash),
   ];
   return order.flat();
+}
+
+export function isReferencesPage(items: readonly ProjectItem[], id: string | undefined): boolean {
+  const item = items.find(row => row.id === id);
+  if (item?.type !== "matter" || !Object.values(CATALOGS).some(catalog => catalog["item.matter.references"].toLowerCase() === item.title.trim().toLowerCase())) return false;
+  const back = items.find(row => row.parent_id === null && row.type === BACK_MATTER_TYPE);
+  let parent = item.parent_id;
+  const seen = new Set<string>();
+  while (parent !== null && !seen.has(parent)) {
+    if (parent === back?.id) return true;
+    seen.add(parent);
+    parent = items.find(row => row.id === parent)?.parent_id ?? null;
+  }
+  return false;
 }
 
 export type MovePlan =
@@ -359,51 +375,6 @@ export function liveItemsIn(items: readonly ProjectItem[]): ProjectItem[] {
  *  search, `manuscript_items` for export and the mirror). */
 export function manuscriptItemsIn(items: readonly ProjectItem[]): ProjectItem[] {
   return readingOrderItems(itemsExcludingRoots(items, NON_MANUSCRIPT_ROOT_TYPES), items);
-}
-
-/** The walk with EVERY reserved section removed: the bin, the bible, and both
- *  matter sections. What the CHAPTER SEQUENCE is.
- *
- *  A THIRD FILTER, and it exists because the second one stopped being enough the
- *  moment front matter joined the book. `manuscriptItemsIn` answers "what does
- *  this book contain", and front matter is in that answer. This one answers
- *  "what is the book's structure", and a dedication is not structure: it has no
- *  chapter number, it is not adopted into a part, and it must not decide whether
- *  a book already has one.
- *
- *  The concrete defect this exists to prevent is restored by a fourth
- *  root: a `part` a writer parked in their front matter would satisfy
- *  `planAdoption`'s "this book already has a part" and suppress adoption for the
- *  life of the manuscript. Pinned by `placement.test.ts`. */
-export function chapterItemsIn(items: readonly ProjectItem[]): ProjectItem[] {
-  return itemsExcludingRoots(items, RESERVED_ROOT_TYPES);
-}
-
-/** One forward pass dropping every named root and its whole subtree.
- *
- *  FIRST ROOT OF EACH TYPE ONLY, matching the host's `root_subtree_ids`, so a
- *  nested or duplicate row of one of those types is an ordinary book row.
- *  The first draft keyed on the type alone,
- *  which is what the bin's version did -- correct only because nothing could
- *  produce a nested bin, and no longer correct once a second type joined it. */
-function itemsExcludingRoots(
-  items: readonly ProjectItem[],
-  types: readonly string[],
-): ProjectItem[] {
-  const dropped = new Set<string>();
-  const usedRoots = new Set<string>();
-  const out: ProjectItem[] = [];
-  for (const item of items) {
-    const parent = item.parent_id;
-    const firstRoot = parent === null && types.includes(item.type) && !usedRoots.has(item.type);
-    if (firstRoot) usedRoots.add(item.type);
-    if (firstRoot || (parent !== null && dropped.has(parent))) {
-      dropped.add(item.id);
-      continue;
-    }
-    out.push(item);
-  }
-  return out;
 }
 
 export interface OutlineDeps {

@@ -1,5 +1,6 @@
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { describe, expect, test } from "bun:test";
+import { diffDocumentFields } from "../src/document-diff";
 import {
   createHistory,
   diffSummaryLabel,
@@ -1279,4 +1280,38 @@ describe("comparison result visibility", () => {
       expect(button.closest(".history-row")?.nextElementSibling).toBe(null);
     } finally { reply.release(body("late first version")); rig.destroy(); }
   });
+});
+
+test("history detects scene breaks, figure changes, and endnote moves without text changes", async () => {
+  const note = { type: "endnote", attrs: { id: "0199ed16-8c00-7000-8000-000000000001", fmt: "text", body: "A source" } };
+  const figure = { type: "figure", attrs: { id: "0199ed16-8c00-7000-8000-000000000002", asset_id: "0199ed16-8c00-7000-8000-000000000003", width: "full", caption: "Caption", alt: "Description" } };
+  const paragraph = (content: object[]) => ({ type: "paragraph", content });
+  const text = (value: string) => ({ type: "text", text: value });
+  const before = [paragraph([text("alpha"), note, text(" beta")]), figure];
+  const serialize = (content: object[]) => JSON.stringify({ type: "doc", content });
+  for (const after of [
+    [...before, { type: "scene_break" }],
+    [before[0], { ...figure, attrs: { ...figure.attrs, width: "half" } }],
+    [before[0], { ...figure, attrs: { ...figure.attrs, asset_id: "0199ed16-8c00-7000-8000-000000000004" } }],
+    [paragraph([text("alpha beta"), note]), figure],
+  ]) {
+    for (const [oldBody, newBody] of [[before, after], [after, before]]) {
+      const diffs = diffDocumentFields(serialize(oldBody), serialize(newBody));
+      expect(diffs.filter(field => field.field === "structure")).toHaveLength(1);
+      expect(diffs.every(field => field.added === 0 && field.removed === 0)).toBe(true);
+      expect(diffs.find(field => field.field === "structure")!.pieces).toHaveLength(1);
+    }
+  }
+  expect(diffDocumentFields(serialize(before), serialize(before)).some(field => field.field === "structure")).toBe(false);
+  const captionChange = [before[0], { ...figure, attrs: { ...figure.attrs, caption: "New caption" } }];
+  expect(diffDocumentFields(serialize(before), serialize(captionChange)).some(field => field.field === "structure")).toBe(false);
+  const rig = mount({}, { versions: rows(), versionBody: serialize(before), currentBody: serialize([...before, { type: "scene_break" }]) });
+  try {
+    await rig.history.open();
+    rig.container.querySelector<HTMLButtonElement>(".history-compare")!.click();
+    await settle(12);
+    expect(rig.container.querySelector("#history-diff-summary")!.textContent).toBe("Scene structure changed.");
+    expect(rig.container.querySelector("#history-diff-body")!.textContent).toContain("Scene structure changed.");
+    expect(rig.container.querySelector("#history-diff")!.textContent).not.toContain("No difference");
+  } finally { rig.destroy(); }
 });

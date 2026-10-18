@@ -2,9 +2,13 @@
 // The indicator's one claim is that it never says `Saved` when the writer's
 // work is not in the file. Most of these tests exist to attack that.
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
+
+afterEach(() => {
+  document.body.replaceChildren();
+});
 
 import { createSaveIndicator, SAVE_NAME, SAVE_TEXT } from "../src/save-indicator";
 import { createFlushScheduler, type FlushAck, type SaveState } from "../src/store/flush";

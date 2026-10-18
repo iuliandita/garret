@@ -1,4 +1,4 @@
-# Draft: copy to fdroiddata/metadata/ only after a post-package-move release.
+# Copy to fdroiddata/metadata/ after completing the submission checks.
 # Tauri 2 precedent: https://gitlab.com/fdroid/fdroiddata/-/blob/7a9b76e699384cd6cd0136cfd18a894a31df9499/metadata/com.thomas.pedot.gitlalchemy.yml
 Categories:
   - Writing
@@ -29,12 +29,10 @@ AllowedAPKSigningKeys:
 Builds:
   - versionName: 0.0.4
     versionCode: 4
-    disable: Draft placeholder; select the first published com.usegarret.app tag and verify reproducibility
     commit: v0.0.4
     sudo:
       - apt-get update
-      # Current Trixie buildserver lacks this package; resolve JDK 17 provisioning before enabling.
-      - apt-get install -y gcc libc6-dev openjdk-17-jdk-headless rustup curl unzip xz-utils python3
+      - apt-get install -y gcc libc6-dev openjdk-21-jdk-headless rustup curl unzip xz-utils python3 disorderfs
       - curl -fL https://nodejs.org/dist/v26.11.1/node-v26.11.1-linux-x64.tar.xz -o /tmp/node.tar.xz
       - echo '3883bfc73f9a680ca4eab04b196068aaaab1373ffa77d8fc1a4408222495b651  /tmp/node.tar.xz' | sha256sum -c -
       - tar -xJf /tmp/node.tar.xz --strip-components=1 -C /usr/local
@@ -44,22 +42,32 @@ Builds:
       - install /tmp/bun-linux-x64/bun /usr/local/bin/bun
       - npm install --global --ignore-scripts @tauri-apps/cli@2.11.5
     init:
+      # Tauri embeds CSP script hashes in filesystem traversal order.
+      - cd ..
+      - mv com.usegarret.app com.usegarret.app.build
+      - mkdir com.usegarret.app
+      - disorderfs --sort-dirents=yes --reverse-dirents=no com.usegarret.app.build com.usegarret.app
+      - cd com.usegarret.app
       - rustup default 1.98.1
       - rustup target add aarch64-linux-android x86_64-linux-android
       # Tauri drives Cargo directly; cargo-ndk is not invoked or installed.
-    output: app/shell-tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+    srclibs:
+      - reproducible-apk-tools@9401d827a2404827ec3de6cb90a879d9fbd3f60d
+    output: fdroid-unsigned.apk
     build:
       - export PATH=/usr/local/bin:$HOME/.cargo/bin:$PATH
       - export ANDROID_HOME=$$SDK$$
       - export NDK_HOME=$$NDK$$
-      - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+      - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
       - export CARGO_BUILD_JOBS=8
       - export JAVA_TOOL_OPTIONS=-XX:ActiveProcessorCount=8
       - bash scripts/android/build-release
+      # apksigner 35+ replaces AGP's zero padding with alignment extra fields.
+      - python3 $$reproducible-apk-tools$$/zipalign.py --page-size 16 --pad-like-apksigner --replace app/shell-tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk fdroid-unsigned.apk
     ndk: 30.0.16248370
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+\.[0-9]+$
 UpdateCheckData: app/shell-tauri/src-tauri/tauri.android.conf.json|"versionCode":\s*(\d+)|app/shell-tauri/src-tauri/tauri.conf.json|"version":\s*"([0-9.]+)"
-CurrentVersion: 0.0.3
-CurrentVersionCode: 3
+CurrentVersion: 0.0.4
+CurrentVersionCode: 4

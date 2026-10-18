@@ -58,6 +58,7 @@ import { probeRenderer, type RendererRecord } from "./renderer";
 import {
   BIN,
   SHELL_PROC_NAME,
+  SHELL_WINDOW_CLASS_PATTERN,
   assertAtspiBridgeEnabled,
   freeDisplayNumber,
   killShellAndReap,
@@ -75,7 +76,6 @@ if (!["tiny", "stress"].includes(fixture) || !["light", "dark"].includes(scheme)
 }
 const FIXTURE = `lab/fixtures/out/${fixture}`;
 const RESULTS = "app/results";
-const CLASS = "^[Aa]pp-shell-tauri$";
 
 /** `mirror::STALENESS_BOUND_MS` is 10 s and a pass is owed once it has passed;
  *  this is that plus room for the write itself. */
@@ -188,7 +188,7 @@ function xdo(args: string[]): string {
 }
 
 function windowId(): string | null {
-  const p = Bun.spawnSync(["xdotool", "search", "--onlyvisible", "--class", CLASS], {
+  const p = Bun.spawnSync(["xdotool", "search", "--onlyvisible", "--class", SHELL_WINDOW_CLASS_PATTERN], {
     env: { ...process.env, DISPLAY: display },
     stdout: "pipe",
     stderr: "pipe",

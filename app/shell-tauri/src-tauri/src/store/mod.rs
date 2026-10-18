@@ -11,6 +11,8 @@ pub mod comments;
 pub mod crash_child;
 pub mod dict;
 pub mod document_format;
+pub mod document_fields;
+pub mod figure_assets;
 pub mod history;
 pub mod knowledge;
 pub mod position;
@@ -22,6 +24,8 @@ pub mod series;
 pub mod source_words;
 pub mod synopsis;
 pub mod watchlist;
+#[cfg(test)]
+pub(crate) mod test_support;
 
 use crate::words;
 use rusqlite::{Connection, OptionalExtension};
@@ -1638,13 +1642,8 @@ impl Store {
     /// not a violation of the standing "two rules, not two copies" note on
     /// `document_text`: the rule there is that the COUNTER and the EXPORTER
     /// answer different questions, because the exporter needs marks and block
-    /// boundaries and the counter must discard both. Search needs exactly what
-    /// the counter needs.
-    ///
-    /// Two consequences ride along and are recorded on the search gates rather
-    /// than hidden: a match can span a block boundary, since blocks are joined
-    /// by a single space; and marks are invisible to search, since `em` is an
-    /// attribute of a text node rather than a wrapper.
+    /// boundaries and the counter must discard both. Search uses separate
+    /// fields and positions through `document_search_fields`.
     ///
     /// `skipped` is the one figure saying the answer is an undercount.
     ///
@@ -1884,11 +1883,10 @@ fn append_node(node: &serde_json::Value, out: &mut String, separator: char) {
         }
         return;
     }
-    // Every non-text node in the page's schema is a block, so its content begins
-    // a new run. That is a PRECONDITION, not a property of this function -- see
-    // the divergence spelled out on document_text. `marks` never gets here: it
-    // is an attribute of a text node, not a child, which is exactly why marks
-    // cannot change the count.
+    // References have no prose width; their attributes never enter counts.
+    if matches!(node.get("type").and_then(|t| t.as_str()), Some("endnote" | "figure" | "scene_break")) {
+        return;
+    }
     if !out.is_empty() {
         out.push(separator);
     }

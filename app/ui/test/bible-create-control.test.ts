@@ -26,15 +26,21 @@ test("Bible create follows the root outside recycled rows and releases its subsc
   const nav = createNavigator({ container, source, rowHeight: 24, overscan: 2, mode: "virtual" });
   let opened = 0;
   const control = createBibleCreateControl(container, () => { opened++; });
-  const flush = async (): Promise<void> => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    const pending = [...frames.values()]; frames.clear();
-    for (const callback of pending) callback(0);
+  const flushUntil = async (label: string, ready: () => boolean): Promise<void> => {
+    const deadline = performance.now() + 1000;
+    do {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const pending = [...frames.values()]; frames.clear();
+      for (const callback of pending) callback(0);
+      await Promise.resolve();
+      if (frames.size === 0 && ready()) return;
+    } while (performance.now() < deadline);
+    throw new Error(`Bible create control timed out waiting for ${label} with no queued frames`);
   };
   try {
-    await flush();
     const button = document.getElementById("bible-create")!;
     const anchor = button.parentElement!;
+    await flushUntil("the control at the initial root position", () => !anchor.hidden && anchor.style.top === "40px");
     expect(container.contains(button)).toBe(false);
     expect(anchor.hidden).toBe(false);
     expect(anchor.style.top).toBe("40px");
@@ -42,20 +48,22 @@ test("Bible create follows the root outside recycled rows and releases its subsc
     button.click();
     expect(opened).toBe(1);
     expect(nav.activeTitle()).toBe(selected);
-    top = 120; container.dispatchEvent(new Event("scroll")); await flush();
+    top = 120; container.dispatchEvent(new Event("scroll")); await flushUntil("the control hidden after scrolling", () => anchor.hidden);
     expect(anchor.hidden).toBe(true);
-    top = 60; window.dispatchEvent(new Event("resize")); await flush();
+    top = 60; window.dispatchEvent(new Event("resize")); await flushUntil("the control at the resized root position", () => !anchor.hidden && anchor.style.top === "60px");
     expect(anchor.style.top).toBe("60px");
-    nav.reload({ ...source, count: 1 }); await flush();
+    // A mounted observer must retain its callback across garbage collection.
+    await Bun.sleep(0); Bun.gc(true);
+    nav.reload({ ...source, count: 1 }); await flushUntil("the control hidden without the Bible root", () => anchor.hidden);
     expect(anchor.hidden).toBe(true);
-    nav.reload(source); await flush();
+    nav.reload(source); await flushUntil("the control visible after restoring the Bible root", () => !anchor.hidden);
     expect(anchor.hidden).toBe(false);
     const listener = add.mock.calls.find(([event]) => event === "resize")?.[1];
     control.destroy();
     expect(disconnected.mock.calls.length).toBeGreaterThan(0);
     if (resized) expect(resized.mock.calls.length).toBeGreaterThan(0);
     expect(remove.mock.calls.some(([event, handler]) => event === "resize" && handler === listener)).toBe(true);
-    button.click(); window.dispatchEvent(new Event("resize")); await flush();
+    button.click(); window.dispatchEvent(new Event("resize")); await flushUntil("the destroyed control removed", () => document.getElementById("bible-create") === null);
     expect(opened).toBe(1);
     expect(document.getElementById("bible-create")).toBeNull();
   } finally {

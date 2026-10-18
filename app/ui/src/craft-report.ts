@@ -1,4 +1,4 @@
-import { schema } from "./editor";
+import { readableBody, schema } from "./editor";
 import { foldForFind } from "./find-locate";
 import { messages, t } from "./i18n";
 
@@ -113,6 +113,7 @@ export function knowledgeConsistency(input: {
 }
 
 interface Block {
+  prose?: string;
   text: string;
   from: number;
 }
@@ -152,11 +153,15 @@ export function validateReportOptions(options: ReportOptions): ReportOptions {
 
 /** ProseMirror block positions count UTF-16 units; marks add no positions. */
 function blocksOf(body: string): Block[] {
-  const doc = schema.nodeFromJSON(JSON.parse(body) as object);
+  const json = readableBody(body);
+  if (json === null) throw new Error("unsupported document");
+  const doc = schema.nodeFromJSON(json);
   doc.check();
   const blocks: Block[] = [];
   doc.descendants((node, pos) => {
-    if (node.type.name === "paragraph") blocks.push({ text: node.textContent, from: pos + 1 });
+    if (node.type.name === "paragraph") blocks.push({
+      text: node.textBetween(0, node.content.size, "", "\ufffc"), prose: node.textContent, from: pos + 1,
+    });
   });
   return blocks;
 }
@@ -283,7 +288,8 @@ export function createCraftReport(input: ReportOptions): {
       return true;
     }
     const tokenBlocks = blocks.map(tokensOf);
-    const words = tokenBlocks.reduce((sum, tokens) => sum + tokens.length, 0);
+    const proseTokens = blocks.map(block => tokensOf({ ...block, text: block.prose ?? block.text }));
+    const words = proseTokens.reduce((sum, tokens) => sum + tokens.length, 0);
     if (report.coverage.words + words > options.max_words) {
       report.coverage.truncated_by = "words";
       return false;
@@ -293,11 +299,13 @@ export function createCraftReport(input: ReportOptions): {
     report.coverage.words += words;
     for (const [index, block] of blocks.entries()) {
       const tokens = tokenBlocks[index] ?? [];
-      report.metrics.paragraph_words.push(tokens.length);
-      report.metrics.sentence_words.push(...sentenceCounts(block.text));
-      const dialogue = dialogueRanges(block.text, options.quote_convention);
+      const metricTokens = proseTokens[index] ?? [];
+      const metricText = block.prose ?? block.text;
+      report.metrics.paragraph_words.push(metricTokens.length);
+      report.metrics.sentence_words.push(...sentenceCounts(metricText));
+      const dialogue = dialogueRanges(metricText, options.quote_convention);
       report.metrics.unmatched_quotes += dialogue.unmatched;
-      for (const token of tokens) {
+      for (const token of metricTokens) {
         syllableTotal += syllables(token.text);
         const localStart = token.from - block.from;
         const localEnd = token.to - block.from;
@@ -313,6 +321,7 @@ export function createCraftReport(input: ReportOptions): {
       }
       const seen = new Map<string, number>();
       for (let i = 0; i + 2 < tokens.length; i++) {
+        if (block.text.slice(tokens[i]!.from - block.from, tokens[i + 2]!.to - block.from).includes("\ufffc")) continue;
         const phrase = tokens.slice(i, i + 3).map((token) => token.folded).join("\u0000");
         const prior = seen.get(phrase);
         if (prior !== undefined && i - prior <= 100) {

@@ -1,16 +1,9 @@
 // app/ui/src/find-locate.ts
 // Where in the open document is the word the search found?
 //
-// The host already knows the byte offset -- it needs one to cut the snippet --
-// and this module exists rather than that number being returned because the two
-// sides do not share a coordinate system. The host's offset is into a flat text
-// projection of the stored body; the editor needs a ProseMirror position. The
-// number would cross the boundary and leave the hard half of the problem
-// exactly where it was.
-//
-// Nothing here touches the DOM or the view. It is a pure function of a document
-// and a query, which is what makes the folding rule below testable at all.
+// Host locators use UTF-16 positions for prose and field offsets for attributes.
 import type { Node as PmNode } from "prosemirror-model";
+import type { TextField } from "./document-projections";
 
 /** Fold one string for comparison, ONE CODE POINT AT A TIME.
  *
@@ -40,130 +33,104 @@ export interface MatchRange {
   to: number;
 }
 
-/** The folded projection of a document, plus a document position for every
- *  folded UTF-16 code unit.
- *
- *  Two parallel arrays rather than one offset map, because folding is not
- *  length-preserving: `İ` folds to two code units, so an index into the folded
- *  text is not an index into the original and a match's end cannot be derived
- *  by adding the query's length to its start. The host's `fold_with_offsets`
- *  carries the same structure for the same reason -- there a wrong index cuts a
- *  string off a character boundary and PANICS, which poisons the store mutex
- *  and closes the writer's window. Here it would quietly select the wrong span,
- *  which is no better for being quiet. */
-interface Projection {
-  folded: string;
-  starts: number[];
-  ends: number[];
+export interface FieldLocator {
+  item_id?: string;
+  instance_id: string | null;
+  field: "prose" | "note" | "caption" | "alt";
+  from: number;
+  to: number;
 }
 
-/** RESTATES `store::append_node`, which reads: a text node contributes its
- *  text; any other node contributes one space before its content, unless
- *  nothing has been emitted yet, and then its children.
- *
- *  Restated and not shared, like the word-count rule in `words.ts`/`words.rs`:
- *  there is no build step joining the page and the host, so a change to one
- *  without the other must break a test rather than pass silently.
- *
- *  The separator is SYNTHETIC -- it is not in the document and holds no
- *  position. Both of its bounds are the position where the block's content
- *  starts, so a match beginning at a paragraph boundary selects from the first
- *  real character rather than from somewhere a caret cannot go. */
-function project(doc: PmNode): Projection {
-  const out: Projection = { folded: "", starts: [], ends: [] };
-
-  const push = (text: string, from: number, to: number): void => {
-    const folded = foldForFind(text);
-    out.folded += folded;
-    for (let i = 0; i < folded.length; i++) {
-      out.starts.push(from);
-      out.ends.push(to);
-    }
-  };
-
-  const walk = (node: PmNode, pos: number): void => {
-    if (node.isText) {
-      const text = node.text ?? "";
-      // Per CODE POINT, so that a fold which changes length still maps every
-      // unit it produces back to the character it came from. `offset` walks
-      // UTF-16 units because that is what a ProseMirror text node's size counts
-      // and therefore what its positions step by.
-      let offset = 0;
-      for (const codePoint of text) {
-        push(codePoint, pos + offset, pos + offset + codePoint.length);
-        offset += codePoint.length;
-      }
-      return;
-    }
-    // The block separator. `pos + 1` is inside the node, where its content
-    // begins - the node itself occupies `pos`.
-    if (out.folded.length > 0) push(" ", pos + 1, pos + 1);
-    node.forEach((child, childOffset) => {
-      // +1 for the opening token of `node`. The document node is at position -1
-      // by this arithmetic, which is correct: its first child starts at 0.
-      walk(child, pos + 1 + childOffset);
-    });
-  };
-
-  walk(doc, -1);
-  return out;
+export interface FieldMatch extends MatchRange {
+  locator: FieldLocator;
+  text: string;
+  textFrom: number;
+  textTo: number;
 }
 
-/** Every non-overlapping occurrence of `query` in `doc`, left to right.
- *
- *  Non-overlapping and left-to-right because that is what replace-all has to
- *  mean: "aa" in "aaaa" is two replacements, not three. The scan advances past
- *  the whole match rather than past its first unit, so a query that is a prefix
- *  of itself cannot make the result depend on how the caller iterates.
- *
- *  ONE PROJECTION for the whole scan. `locateFirstMatch` projects the document
- *  too, so calling it in a loop would re-project once per match - O(n * matches)
- *  over a scene that could be the longest chapter in the book. */
-export function locateMatches(doc: PmNode, query: string): MatchRange[] {
+function offsets(text: string): { folded: string; starts: number[]; ends: number[] } {
+  let folded = "";
+  let offset = 0;
+  const starts: number[] = [], ends: number[] = [];
+  for (const codePoint of text) {
+    const value = foldForFind(codePoint);
+    folded += value;
+    for (let i = 0; i < value.length; i++) { starts.push(offset); ends.push(offset + codePoint.length); }
+    offset += codePoint.length;
+  }
+  return { folded, starts, ends };
+}
+
+interface SearchField extends TextField {
+  positions: MatchRange[];
+}
+
+function searchFields(doc: PmNode): SearchField[] {
+  const fields: SearchField[] = [];
+  let prose: SearchField | undefined;
+  const finish = (): void => {
+    if (prose) fields.push(prose);
+    prose = undefined;
+  };
+  const append = (text: string, from: number, synthetic = false): void => {
+    prose ??= { instance_id: null, field: "prose", text: "", from, to: from, positions: [] };
+    prose.text += text;
+    for (let i = 0; i < text.length; i++) prose.positions.push({ from: from + (synthetic ? 0 : i), to: from + (synthetic ? 0 : i + 1) });
+    prose.to = from + (synthetic ? 0 : text.length);
+  };
+  const attribute = (field: "note" | "caption" | "alt", text: string, id: string, from: number): void => {
+    fields.push({ instance_id: id, field, text, from, to: from + 1, positions: [] });
+  };
+  doc.forEach((block, pos) => {
+    if (block.type.name === "paragraph") {
+      // The separator has no manuscript width; either bound maps inside the next paragraph.
+      if (prose?.text) append(" ", pos + 1, true);
+      block.forEach((child, offset) => {
+        if (child.isText) append(child.text ?? "", pos + 1 + offset);
+        else {
+          finish();
+          attribute("note", child.attrs.body as string, child.attrs.id as string, pos + 1 + offset);
+        }
+      });
+    } else {
+      finish();
+      if (block.type.name === "figure") for (const field of ["caption", "alt"] as const) attribute(field, block.attrs[field] as string, block.attrs.id as string, pos);
+    }
+  });
+  finish();
+  return fields;
+}
+
+export function locateFieldMatches(doc: PmNode, query: string): FieldMatch[] {
   const needle = foldForFind(query);
-  // A TERMINATION guard, and this is where it differs from the identical-looking
-  // line in `locateFirstMatch` below - that one is a cost guard and says so.
-  // Here the scan advances by `needle.length`, so an empty needle advances by
-  // ZERO and `indexOf("")` keeps returning the same index: the loop never ends
-  // and the window locks up. Proven by mutation - deleting this line does not
-  // fail the suite, it HANGS it.
-  if (needle.length === 0) return [];
-  const { folded, starts, ends } = project(doc);
-  const out: MatchRange[] = [];
-  let at = folded.indexOf(needle);
-  while (at >= 0) {
-    const from = starts[at];
-    const to = ends[at + needle.length - 1];
-    // A unit with no position is a fold that produced more units than the
-    // projection mapped, which would be a bug in `project`. Skipping the match
-    // rather than throwing keeps a replace-all from taking the window down over
-    // one unlocatable occurrence; the count the caller reports is then honestly
-    // lower than the panel's total, which is the visible symptom.
-    if (from !== undefined && to !== undefined) out.push({ from, to });
-    at = folded.indexOf(needle, at + needle.length);
+  if (!needle) return [];
+  const out: FieldMatch[] = [];
+  for (const field of searchFields(doc)) {
+    const { folded, starts, ends } = offsets(field.text);
+    let at = folded.indexOf(needle);
+    while (at >= 0) {
+      const start = starts[at], end = ends[at + needle.length - 1];
+      if (start !== undefined && end !== undefined) {
+        const prose = field.field === "prose";
+        const from = prose ? field.positions[start]!.from : field.from;
+        const to = prose ? field.positions[end - 1]!.to : field.to;
+        out.push({ from, to, text: field.text, textFrom: start, textTo: end, locator: { instance_id: field.instance_id, field: field.field,
+          from: prose ? from : start, to: prose ? to : end } });
+      }
+      at = folded.indexOf(needle, at + needle.length);
+    }
   }
   return out;
 }
 
-/** The first occurrence of `query` in `doc`, or null.
- *
- *  Null is a real answer and not an error. The page can fail to locate what the
- *  host found - a query spanning a paragraph boundary, a body edited between
- *  the search and the click - and the correct response is to open the document
- *  and leave the caret alone. */
-export function locateFirstMatch(doc: PmNode, query: string): MatchRange | null {
-  const needle = foldForFind(query);
-  // A COST guard, not a correctness one, and mutation-tested as such: removing
-  // it does not change any answer, because `indexOf("")` returns 0 and the end
-  // lookup below then reads index -1 and finds nothing. What it buys is not
-  // projecting a whole scene to answer a question with no answer. Stated rather
-  // than left to look like a null check that no test can fail.
-  if (needle.length === 0) return null;
-  const { folded, starts, ends } = project(doc);
-  const at = folded.indexOf(needle);
-  if (at < 0) return null;
-  const from = starts[at];
-  const to = ends[at + needle.length - 1];
-  if (from === undefined || to === undefined) return null;
-  return { from, to };
+export function locateMatches(doc: PmNode, query: string): MatchRange[] {
+  return locateFieldMatches(doc, query).filter(hit => hit.locator.field === "prose").map(({ from, to }) => ({ from, to }));
+}
+
+export function locateFirstMatch(doc: PmNode, query: string, locator?: FieldLocator): MatchRange | null {
+  if (locator === undefined) return locateMatches(doc, query)[0] ?? null;
+  const hit = locateFieldMatches(doc, query).find(hit =>
+    hit.locator.field === locator.field && hit.locator.instance_id === locator.instance_id
+      && hit.locator.from === locator.from && hit.locator.to === locator.to);
+  return hit ? { from: hit.from, to: hit.to } : null;
 }

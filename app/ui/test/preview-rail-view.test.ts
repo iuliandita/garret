@@ -588,6 +588,14 @@ describe("resizing with the pointer", () => {
 
 
 describe("lazy EPUB documents", () => {
+  async function waitFor(label: string, ready: () => boolean): Promise<void> {
+    const deadline = performance.now() + 1000;
+    while (!ready()) {
+      if (performance.now() >= deadline) throw new Error(`EPUB reader timed out waiting for ${label}`);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  }
+
   const book = (): EpubPreview => ({
     ...EPUB,
     documents: Array.from({ length: 1572 }, (_, i) => ({
@@ -626,24 +634,40 @@ describe("lazy EPUB documents", () => {
     layout(300, 1572 * 300);
     Object.defineProperty(pages(), "scrollWidth", { configurable: true, get: () =>
       (1572 + (pages().querySelector('[data-epub-name="1571.xhtml"].epub-document') ? lastPages - 1 : 0)) * 300 });
+    const indices = new WeakMap<Element, number>();
     const geometry = spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
-      const index = this.hasAttribute("data-epub-name") ? [...this.parentElement!.children].indexOf(this) : 0;
-      const left = this.hasAttribute("data-epub-name") ? index * 300 - pages().scrollLeft : 0;
+      const isDocument = this.hasAttribute("data-epub-name");
+      if (isDocument && !indices.has(this)) {
+        [...this.parentElement!.children].forEach((element, index) => indices.set(element, index));
+      }
+      const index = isDocument ? indices.get(this)! : 0;
+      const left = isDocument ? index * 300 - pages().scrollLeft : 0;
       const width = index === 1571 ? lastPages * 300 : 300;
       return { top: 0, bottom: 600, height: 600, left, right: left + width, width } as DOMRect;
     });
     try {
       press("#preview-frame-toggle");
       key(pages(), "End");
+      await waitFor("the last EPUB document to mount", () =>
+        pages().querySelector('[data-epub-name="1571.xhtml"].epub-document') !== null);
       expect(pages().querySelector('[data-epub-name="1571.xhtml"]')?.classList.contains("epub-document")).toBe(true);
       expect(pages().querySelectorAll(".epub-document")).toHaveLength(3);
       key(pages(), "End");
+      const lastPageLabel = lastPages === 1 ? "Page 1,572 of 1,572" : "Page 1,574 of 1,574";
+      await waitFor(lastPageLabel, () => label() === lastPageLabel);
       expect(label()).toBe(lastPages === 1 ? "Page 1,572 of 1,572" : "Page 1,574 of 1,574");
+      const lastDocument = pages().querySelector('[data-epub-name="1571.xhtml"].epub-document');
       press("#preview-refresh");
-      await settle();
+      await waitFor(`a refreshed reader at ${lastPageLabel}`, () => {
+        const refreshed = pages().querySelector('[data-epub-name="1571.xhtml"].epub-document');
+        return refreshed !== null && refreshed !== lastDocument
+          && pages().scrollLeft === (1571 + lastPages - 1) * 300 && label() === lastPageLabel;
+      });
       expect(pages().scrollLeft).toBe((1571 + lastPages - 1) * 300);
       expect(label()).toBe(lastPages === 1 ? "Page 1,572 of 1,572" : "Page 1,574 of 1,574");
       key(pages(), "Home");
+      await waitFor("the first EPUB document at offset zero", () =>
+        pages().querySelector('[data-epub-name="0.xhtml"].epub-document') !== null && pages().scrollLeft === 0);
       expect(pages().querySelector('[data-epub-name="0.xhtml"]')?.classList.contains("epub-document")).toBe(true);
       expect(pages().scrollLeft).toBe(0);
     } finally { geometry.mockRestore(); }

@@ -5328,6 +5328,13 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   text-indent: 1.5em;
 }
 
+#editor.references-open .ProseMirror p {
+  text-align: left;
+  padding-left: 1.5em;
+  text-indent: -1.5em;
+  margin-bottom: 0.75em;
+}
+
 /* The selection under long text was left to the platform for a while; the
    calm-panels record now themes it per palette (::selection near the top): a
    translucent accent under the ink, whose contrast was checked per palette. */
@@ -6129,10 +6136,11 @@ body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="t
 }
 
 .stat-group-heading {
+  display: block;
   font-size: var(--text-sm);
   font-weight: 500;
   color: var(--muted);
-  margin-bottom: 6px;
+  margin: 0 0 6px;
 }
 
 .stat-row {
@@ -9387,3 +9395,10 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 #story-panel p { margin: var(--space-2) 0; color: var(--muted); }
 #story-panel h3 { margin: var(--space-3) 0 0; font-size: var(--text-sm); }
 #story-panel .story-exports { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+.document-endnote { color: var(--accent-strong, var(--fg)); font: 0.65em system-ui, sans-serif; padding-inline: 0.2em; }
+.document-figure { border: 1px solid var(--border); margin: 1.5em 0; padding: 1em; color: var(--muted); }
+.document-figure > span, .document-figure figcaption { display: block; }
+.document-figure-alt { font-size: 0.85em; }
+.document-scene-break { text-align: center; margin: 1.5em 0; color: var(--muted); }
+.document-scene-break::before { content: "* * *"; }

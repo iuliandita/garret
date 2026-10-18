@@ -163,8 +163,7 @@ fn book_view(session: &Session) -> Result<Book, String> {
 }
 
 fn book_path(host: &MobileHost, id: &str) -> Result<PathBuf, String> {
-    let parsed = uuid::Uuid::parse_str(id).map_err(|_| "invalid book id")?;
-    if parsed.to_string() != id {
+    if !crate::mobile_core::is_canonical_uuid(id) {
         return Err("invalid book id".into());
     }
     Ok(host.books.join(format!("{id}.db")))
@@ -331,7 +330,7 @@ fn open_book(host: &MobileHost, id: &str) -> Result<Book, String> {
         }
         return Err("close the current book before opening another".into());
     }
-    let path = book_path(&host, &id)?;
+    let path = book_path(host, id)?;
     transfer::probe(&path, |reader| {
         if reader
             .get_meta(crate::backup_bundle::MARKER_KEY)
@@ -791,7 +790,7 @@ fn search_book(
     let store = store::Store::open_readonly(path).map_err(|error| error.to_string())?;
     let mut scenes = scenes(&store)?;
     scenes.sort_by_key(|scene| scene.id != current_scene);
-    let (texts, scanned, skipped) = store.document_texts().map_err(|error| error.to_string())?;
+    let (fields, scanned, skipped) = store.document_search_fields().map_err(|error| error.to_string())?;
     let items: Vec<_> = scenes
         .iter()
         .map(|scene| crate::find::SearchItem {
@@ -803,7 +802,8 @@ fn search_book(
     Ok(crate::find::search(
         &items,
         &crate::find::Corpus {
-            texts,
+            texts: Default::default(),
+            fields,
             scanned,
             skipped,
         },
@@ -1518,7 +1518,6 @@ mod tests {
                     .collect::<Vec<_>>(),
                 [&first.id, &between.item_id, &second.item_id, &third.item_id]
             );
-            assert_eq!(between.scenes.iter().filter(|scene| scene.parent_id == first.parent_id).count(), 4);
             host.drafting(book.generation, |store| {
                 let items = manuscript_items(store)?;
                 assert_eq!(

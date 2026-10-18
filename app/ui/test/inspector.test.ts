@@ -48,17 +48,26 @@ function host(): { rails: number; prose: HTMLButtonElement } {
   const prose = document.createElement("button");
   document.body.append(prose);
   const state = { rails: 0, prose };
-  uninstalls.push(setInspectorHost({
+  const uninstall = setInspectorHost({
     closeRails: () => {
       state.rails += 1;
     },
     focusProse: () => prose.focus(),
-  }));
+  });
+  uninstalls.push(() => {
+    uninstall();
+    prose.remove();
+  });
   return state;
 }
 
-/** The observer is a microtask. */
-const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
+async function waitFor(label: string, ready: () => boolean): Promise<void> {
+  const deadline = performance.now() + 1000;
+  while (!ready()) {
+    if (performance.now() >= deadline) throw new Error(`inspector timed out waiting for ${label}`);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+}
 
 function open(r: Rig): void {
   r.panel.hidden = false;
@@ -71,14 +80,13 @@ afterEach(() => {
     r.panel.remove();
   }
   for (const u of uninstalls.splice(0)) u();
-  document.body.replaceChildren();
 });
 
 describe("the inspector", () => {
   test("an outside click leaves it open", async () => {
     const a = rig("a");
     open(a);
-    await settle();
+    await waitFor("panel a to become the open inspector", () => openInspector() === a.panel);
     document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(a.panel.hidden).toBe(false);
   });
@@ -88,10 +96,10 @@ describe("the inspector", () => {
     const a = rig("a");
     const b = rig("b");
     open(a);
-    await settle();
+    await waitFor("panel a to become the open inspector", () => openInspector() === a.panel);
     expect(document.body.dataset.inspectorOpen).toBe("true");
     open(b);
-    await settle();
+    await waitFor("panel b to replace panel a", () => openInspector() === b.panel && a.panel.hidden);
     expect(a.panel.hidden).toBe(true);
     expect(a.returns).toBe(0);
     expect(document.activeElement).toBe(b.field);
@@ -105,9 +113,9 @@ describe("the inspector", () => {
     const a = rig("a", () => !refuse);
     const b = rig("b");
     open(a);
-    await settle();
+    await waitFor("panel a to become the open inspector", () => openInspector() === a.panel);
     open(b);
-    await settle();
+    await waitFor("both panels to close after replacement is refused", () => b.panel.hidden && a.panel.hidden);
     expect(b.panel.hidden).toBe(true);
     expect(a.panel.hidden).toBe(true);
     // The holder's close is its leave question; this one simply closes.
@@ -123,15 +131,16 @@ describe("the inspector", () => {
       return true;
     });
     open(a);
-    await settle();
+    await waitFor("panel a to become the open inspector", () => openInspector() === a.panel);
     expect(yieldInspector()).toBe(true);
     expect(a.panel.hidden).toBe(true);
-    await settle();
     expect(document.body.dataset.inspectorOpen).toBeUndefined();
 
     refuse = true;
+    // Reopening still has to be observed after the previous delivery is collected.
+    await Bun.sleep(0); Bun.gc(true);
     open(a);
-    await settle();
+    await waitFor("panel a to become the open inspector", () => openInspector() === a.panel);
     expect(yieldInspector()).toBe(false);
     expect(a.closes).toBe(1);
   });
@@ -144,7 +153,7 @@ describe("the inspector", () => {
     expect(idle.defaultPrevented).toBe(false);
 
     open(a);
-    await settle();
+    await waitFor("panel a to become the open inspector", () => openInspector() === a.panel);
     state.prose.focus();
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "F6", bubbles: true, cancelable: true }));
     expect(document.activeElement).toBe(a.panel);
@@ -155,7 +164,7 @@ describe("the inspector", () => {
   test("destroy undocks: a destroyed panel no longer counts as open", async () => {
     const a = rig("a");
     open(a);
-    await settle();
+    await waitFor("panel a to become the open inspector", () => openInspector() === a.panel);
     a.shell.destroy();
     expect(openInspector()).toBeNull();
     expect(document.body.dataset.inspectorOpen).toBeUndefined();

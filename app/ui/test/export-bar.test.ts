@@ -69,7 +69,7 @@ function mount(options: RigOptions = {}): Rig {
       calls.push("export");
       exportCount++;
       return (
-        options.exportProject?.() ?? Promise.resolve({ path: "/exports/novel.md", underlined: 0, format: "markdown" })
+        options.exportProject?.() ?? Promise.resolve({ path: "/exports/novel.md", underlined: 0, assets_written: false, format: "markdown" })
       );
     },
     exportProjectAs: options.withoutDialog === true
@@ -79,7 +79,7 @@ function mount(options: RigOptions = {}): Rig {
           exportCount++;
           return (
             options.exportProjectAs?.() ??
-            Promise.resolve({ path: "/chosen/novel.md", underlined: 0, format: "markdown" })
+            Promise.resolve({ path: "/chosen/novel.md", underlined: 0, assets_written: false, format: "markdown" })
           );
         },
     onNotice: (message) => notices.push(message),
@@ -118,7 +118,7 @@ describe("exporting the manuscript", () => {
     // count and said nothing would satisfy every other test in this file --
     // which is exactly the silent loss the decision record refuses.
     const rig = mount({
-      exportProject: () => Promise.resolve({ path: "/exports/novel.md", underlined: 3, format: "markdown" }),
+      exportProject: () => Promise.resolve({ path: "/exports/novel.md", underlined: 3, assets_written: false, format: "markdown" }),
     });
     rig.bar.run("markdown");
     await settle();
@@ -134,7 +134,7 @@ describe("exporting the manuscript", () => {
 
   test("one underlined run is reported in the singular", async () => {
     const rig = mount({
-      exportProject: () => Promise.resolve({ path: "/exports/novel.md", underlined: 1, format: "markdown" }),
+      exportProject: () => Promise.resolve({ path: "/exports/novel.md", underlined: 1, assets_written: false, format: "markdown" }),
     });
     rig.bar.run("markdown");
     await settle();
@@ -153,7 +153,7 @@ describe("exporting the manuscript", () => {
     // id this page has no name for renders as itself rather than as Markdown.
     const rig = mount({
       exportProject: () =>
-        Promise.resolve({ path: "/exports/novel.epub", underlined: 0, format: "epub" }),
+        Promise.resolve({ path: "/exports/novel.epub", underlined: 0, assets_written: false, format: "epub" }),
     });
     rig.bar.run("markdown");
     await settle();
@@ -168,7 +168,7 @@ describe("exporting the manuscript", () => {
     // than one that is always wrong: nobody looks for it.
     const rig = mount({
       exportProject: () =>
-        Promise.resolve({ path: "/exports/novel.epub", underlined: 2, format: "epub" }),
+        Promise.resolve({ path: "/exports/novel.epub", underlined: 2, assets_written: false, format: "epub" }),
     });
     rig.bar.run("markdown");
     await settle();
@@ -196,7 +196,7 @@ describe("exporting the manuscript", () => {
     // The control. A message that mentioned the loss unconditionally would tell
     // a writer who has never pressed the control that something went wrong.
     const rig = mount({
-      exportProject: () => Promise.resolve({ path: "/exports/novel.md", underlined: 0, format: "markdown" }),
+      exportProject: () => Promise.resolve({ path: "/exports/novel.md", underlined: 0, assets_written: false, format: "markdown" }),
     });
     rig.bar.run("markdown");
     await settle();
@@ -207,12 +207,45 @@ describe("exporting the manuscript", () => {
     );
   });
 
+  test.each([0, 1, 31])("reports replaced or removed control characters: %s", async (count) => {
+    const rig = mount({ exportProject: () => Promise.resolve({
+      path: "/exports/book.epub", underlined: 0, assets_written: false, format: "epub", xml_characters_removed: count,
+    }) });
+    rig.bar.run("epub");
+    await settle();
+    const message = rig.dones()[0];
+    expect(message).toContain("/exports/book.epub");
+    if (count === 0) expect(message).not.toContain("control character");
+    else {
+      expect(message).toContain(`Replaced or removed ${count} invisible control character${count === 1 ? "" : "s"} that EPUB and Word files cannot hold`);
+      expect(message).toContain("your manuscript is unchanged");
+    }
+  });
+
+  test.each([false, true])("asset guidance follows the host's publication result: %s", async (assets_written) => {
+    for (const underlined of [0, 2]) {
+      const rig = mount({
+        exportProject: () => Promise.resolve({
+          path: "/exports/novel.md", underlined, assets_written, format: "markdown",
+        }),
+      });
+      rig.bar.run("markdown");
+      await settle();
+      const base = underlined === 0 ? EN["export.done"] : EN["export.done.underlined.other"];
+      const message = base?.replaceAll("{path}", "/exports/novel.md")
+        .replaceAll("{format}", "Markdown").replaceAll("{count}", "2");
+      expect(rig.dones()).toEqual([message + (assets_written ? ` ${EN["export.done.assets"]}` : "")]);
+      expect(rig.notices()).toEqual([]);
+      rig.bar.destroy();
+    }
+  });
+
   test("the dialog route reports the same loss", async () => {
     // Two routes to one file. A count carried on one of them only is a loss
     // that is silent half the time, which is worse than one that is silent
     // always: nobody would look for it.
     const rig = mount({
-      exportProjectAs: () => Promise.resolve({ path: "/chosen/novel.md", underlined: 2, format: "markdown" }),
+      exportProjectAs: () => Promise.resolve({ path: "/chosen/novel.md", underlined: 2, assets_written: false, format: "markdown" }),
     });
     rig.bar.runAs("markdown");
     await settle();
@@ -221,7 +254,7 @@ describe("exporting the manuscript", () => {
   });
 
   test("reports the returned path", async () => {
-    const rig = mount({ exportProject: () => Promise.resolve({ path: "/exports/my-novel-2.md", underlined: 0, format: "markdown" }) });
+    const rig = mount({ exportProject: () => Promise.resolve({ path: "/exports/my-novel-2.md", underlined: 0, assets_written: false, format: "markdown" }) });
     rig.bar.run("markdown");
     await settle();
 
@@ -249,7 +282,7 @@ describe("exporting the manuscript", () => {
     const failing = { fail: true };
     const rig = mount({
       exportProject: () =>
-        failing.fail ? Promise.reject(new Error("disk full")) : Promise.resolve({ path: "/x.md", underlined: 0, format: "markdown" }),
+        failing.fail ? Promise.reject(new Error("disk full")) : Promise.resolve({ path: "/x.md", underlined: 0, assets_written: false, format: "markdown" }),
     });
     rig.bar.run("markdown");
     await settle();
@@ -275,7 +308,7 @@ describe("exporting the manuscript", () => {
     // fifth dep is a deliberate act.
     const deps: ExportBarDeps = {
       drain: () => Promise.resolve(),
-      exportProject: () => Promise.resolve({ path: "/x.md", underlined: 0, format: "markdown" }),
+      exportProject: () => Promise.resolve({ path: "/x.md", underlined: 0, assets_written: false, format: "markdown" }),
       onNotice: () => undefined,
       onDone: () => undefined,
     };
@@ -301,7 +334,7 @@ describe("exporting the manuscript", () => {
     await settle();
     expect(rig.exportCount()).toBe(1);
 
-    gate.resolve({ path: "/exports/novel.md", underlined: 0, format: "markdown" });
+    gate.resolve({ path: "/exports/novel.md", underlined: 0, assets_written: false, format: "markdown" });
     await settle();
     expect(rig.exportCount()).toBe(1);
     expect(rig.dones()).toHaveLength(1);
@@ -332,7 +365,7 @@ describe("exporting the manuscript", () => {
     await settle();
 
     rig.bar.destroy();
-    gate.resolve({ path: "/exports/novel.md", underlined: 0, format: "markdown" });
+    gate.resolve({ path: "/exports/novel.md", underlined: 0, assets_written: false, format: "markdown" });
     await settle();
 
     // Both channels belong to a project that is gone; the next project has
@@ -448,7 +481,7 @@ describe("exporting to a destination the writer picks", () => {
   });
 
   test("a chosen path is reported like any other", async () => {
-    const rig = mount({ exportProjectAs: () => Promise.resolve({ path: "/home/w/book.md", underlined: 0, format: "markdown" }) });
+    const rig = mount({ exportProjectAs: () => Promise.resolve({ path: "/home/w/book.md", underlined: 0, assets_written: false, format: "markdown" }) });
     rig.bar.runAs("markdown");
     await settle();
     expect(rig.dones()).toEqual(["Exported Markdown to /home/w/book.md"]);
@@ -516,7 +549,7 @@ describe("which channel a message goes down", () => {
   // list alone survives a unit that reports down both.
 
   test("a success goes down onDone and NOT down onNotice", async () => {
-    const rig = mount({ exportProject: () => Promise.resolve({ path: "/exports/a.md", underlined: 0, format: "markdown" }) });
+    const rig = mount({ exportProject: () => Promise.resolve({ path: "/exports/a.md", underlined: 0, assets_written: false, format: "markdown" }) });
     rig.bar.run("markdown");
     await settle();
     expect(rig.dones()).toEqual(["Exported Markdown to /exports/a.md"]);
@@ -540,7 +573,7 @@ describe("which channel a message goes down", () => {
       exportProject: () =>
         failing.fail
           ? Promise.reject(new Error("read-only"))
-          : Promise.resolve({ path: "/exports/b.md", underlined: 0, format: "markdown" }),
+          : Promise.resolve({ path: "/exports/b.md", underlined: 0, assets_written: false, format: "markdown" }),
     });
     rig.bar.run("markdown");
     await settle();

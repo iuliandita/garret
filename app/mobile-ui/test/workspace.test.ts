@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { expect, test } from "bun:test";
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
@@ -413,4 +414,37 @@ test("New scene sends the active scene for root and chapter outlines in both loc
     expect([...outline.querySelectorAll("h3")].map(node => node.textContent)).toEqual(chaptered ? ["Chapter a", "Chapter b"] : []);
     await f.workspace.close(); f.mount.remove();
   }
+});
+
+
+test("fixture atoms survive mobile flush, reopen and refused-save recovery", async () => {
+  const cases = JSON.parse(readFileSync(new URL("../../harness/fixtures/document-format.json", import.meta.url), "utf8")) as { id: string; body: object }[];
+  const body = JSON.stringify(cases.find(row => row.id === "mixed")!.body);
+  let saved = body;
+  let refuse = false;
+  const f = fixture({ initial: { ...doc("a", ""), body },
+    loadDoc: async item_id => ({ ...doc(item_id, ""), body: saved }),
+    flush: async entries => {
+      if (refuse) throw new Error("document format refused: a: new document nodes are disabled");
+      saved = entries[0].body;
+      return entries.map(entry => ({ item_id: entry.item_id, rev: entry.base_rev + 1 }));
+    },
+  });
+  try {
+    expect(f.workspace.editor.wordCount()).toBe(1);
+    f.workspace.editor.typeChar("😀");
+    await f.workspace.drain();
+    expect(saved).toContain('"body":"A source.');
+    expect(saved).toContain('"caption":"Figure caption"');
+    expect(saved).toContain('"alt":"Figure description"');
+    expect(saved).toContain('"type":"scene_break"');
+    expect(await f.workspace.openScene("b")).toBe(true);
+    expect(f.workspace.editor.serialize()).toBe(saved);
+    expect(await f.workspace.openScene("a")).toBe(true);
+    refuse = true; f.workspace.editor.typeChar("unsaved");
+    expect(await f.workspace.close()).toBe(false);
+    f.mount.querySelector<HTMLButtonElement>(".mobile-error button")!.click();
+    const recovery = f.mount.querySelector<HTMLTextAreaElement>(".mobile-recovery textarea")!.value;
+    for (const text of ["unsaved", "A source.", "Second line: café 😀.", "Figure caption", "Figure description", "* * *", "originals are not included"]) expect(recovery).toContain(text);
+  } finally { f.workspace.editor.destroy(); f.mount.remove(); }
 });

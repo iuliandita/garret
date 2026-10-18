@@ -22,6 +22,22 @@
 
 use std::collections::HashMap;
 
+pub(crate) fn strip_xml_text(text: &mut String) -> u64 {
+    let mut removed = 0;
+    *text = text.chars().filter_map(|c| match c {
+        '\u{b}' | '\u{c}' => {
+            removed += 1;
+            Some(' ')
+        }
+        '\t' | '\n' | '\r' | '\u{20}'..='\u{d7ff}' | '\u{e000}'..='\u{fffd}' | '\u{10000}'..='\u{10ffff}' => Some(c),
+        _ => {
+            removed += 1;
+            None
+        }
+    }).collect();
+    removed
+}
+
 /// Characters that can open inline markup or be misread as it. `&` is
 /// deliberately absent, and so is the rest of the CommonMark ASCII-punctuation
 /// set: escaping all of it makes a manuscript unreadable as plain text, which is
@@ -127,6 +143,8 @@ pub fn document_markdown(body: &str) -> Option<String> {
 /// Runs inside a block that renders to nothing are not counted -- nothing of
 /// that block reached the file, so nothing of it was lost here.
 pub fn document_markdown_counted(body: &str) -> Option<(String, u64)> {
+    // This renderer cannot yet retain atoms or their attribute text.
+    if crate::figure_salvage::has_new_nodes(body) { return None; }
     let root: serde_json::Value = serde_json::from_str(body).ok()?;
     if root.get("type").and_then(|t| t.as_str()) != Some(ROOT_TYPE) {
         return None;
@@ -171,7 +189,7 @@ fn block_markdown(node: &serde_json::Value, underlined: &mut u64) -> Option<Stri
     (!trimmed.is_empty()).then(|| trimmed.to_string())
 }
 
-fn append_inline(node: &serde_json::Value, out: &mut String, underlined: &mut u64) {
+pub(crate) fn append_inline(node: &serde_json::Value, out: &mut String, underlined: &mut u64) {
     if node.get("type").and_then(|t| t.as_str()) == Some("text") {
         if let Some(text) = node.get("text").and_then(|t| t.as_str()) {
             // The block markers bind at the start of a line: the start of the
@@ -404,6 +422,10 @@ fn contents_block(entries: &[TocEntry], plain_titles: bool) -> String {
 /// gate. Whether the remaining single copy needs streaming is what the graded
 /// `export_ms` run at `stress` decides.
 pub fn manuscript(book: &Book, bodies: &HashMap<String, String>) -> Manuscript {
+    manuscript_planned(book, bodies, None)
+}
+
+pub(crate) fn manuscript_planned(book: &Book, bodies: &HashMap<String, String>, plan: Option<&crate::publication_plan::Plan>) -> Manuscript {
     let mut underlined_runs = 0u64;
     let mut out = String::new();
     push_block(
@@ -441,18 +463,31 @@ pub fn manuscript(book: &Book, bodies: &HashMap<String, String>) -> Manuscript {
                 );
             }
             if let Some(author) = book.byline(id) { push_block(&mut out, &escape(author, true)); }
-            if let Some((prose, underlined)) =
-                bodies.get(id).and_then(|b| document_markdown_counted(b))
+            let rendered = plan.and_then(|plan| plan.documents.get(id).map(|doc|
+                crate::markdown::document(id, doc, plan)));
+            if let Some((prose, underlined)) = rendered.or_else(||
+                bodies.get(id).and_then(|b| document_markdown_counted(b)))
             {
                 underlined_runs += underlined;
                 if !prose.is_empty() {
                     push_block(&mut out, &prose);
                 }
             }
+            if let Some(plan) = plan {
+                if let Some(scopes) = plan.endnotes.get(id) {
+                    for indices in scopes.values() {
+                        for index in indices {
+                            push_block(&mut out, &crate::markdown::definition(&plan.notes[*index]));
+                        }
+                    }
+                }
+            }
         }
     }
+    if plan.is_some_and(|p| p.has_new) { out.insert_str(0, crate::markdown::MARKER); }
     out.push('\n');
     Manuscript {
+        assets: plan.map(|p| p.assets.values().map(|a| (a.href.clone(), a.bytes.clone())).collect()).unwrap_or_default(),
         bytes: out.into_bytes(),
         format: Format::Markdown,
         underlined_runs,
@@ -544,6 +579,7 @@ impl Format {
 /// The Markdown renderer still builds a `String` internally and hands over its
 /// UTF-8: nothing about the emitted bytes changed when this type did.
 pub struct Manuscript {
+    pub assets: std::collections::BTreeMap<String, Vec<u8>>,
     pub bytes: Vec<u8>,
     /// What `bytes` is. Carried rather than assumed, because the caller writes
     /// the file, names it and reports it, and all three answers differ per

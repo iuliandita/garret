@@ -17,7 +17,8 @@ import xml.etree.ElementTree as ET
 
 PKG = "com.usegarret.app"
 IMAGE = "system-images;android-36;google_apis;x86_64"
-BOUNDS = re.compile(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]")
+SERIAL = "emulator-5554"
+BOUNDS = re.compile(r"\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]")
 
 
 def run(*args: str, env: dict[str, str] | None = None, timeout: int = 30,
@@ -30,12 +31,12 @@ def run(*args: str, env: dict[str, str] | None = None, timeout: int = 30,
 
 
 def adb(*args: str, timeout: int = 30) -> str:
-    return run("adb", *args, timeout=timeout)
+    return run("adb", "-s", SERIAL, *args, timeout=timeout)
 
 
 def screenshot(out: Path, name: str) -> None:
     with (out / f"{name}.png").open("wb") as file:
-        done = subprocess.run(("adb", "exec-out", "screencap", "-p"), stdout=file, stderr=subprocess.PIPE, timeout=30)
+        done = subprocess.run(("adb", "-s", SERIAL, "exec-out", "screencap", "-p"), stdout=file, stderr=subprocess.PIPE, timeout=30)
     if done.returncode:
         raise RuntimeError(f"screencap failed: {done.stderr.decode(errors='replace')[-500:]}")
 
@@ -85,12 +86,67 @@ def tap_node(node: ET.Element) -> None:
     adb("shell", "input", "tap", str((x1 + x2) // 2), str((y1 + y2) // 2))
 
 
-def tap_text(nodes: list[ET.Element], *texts: str) -> None:
-    for node in nodes:
-        if any(text == node.attrib.get("text") or text == node.attrib.get("content-desc") for text in texts):
+def matches_text(node: ET.Element, texts: tuple[str, ...], *, scene: bool = False) -> bool:
+    if scene and node.get("class") != "android.widget.Button":
+        return False
+    return any(label == text or (scene and label.endswith(f", {text}"))
+               for label in (node.get("text", ""), node.get("content-desc", ""))
+               for text in texts)
+
+
+def bounds(node: ET.Element) -> tuple[int, int, int, int]:
+    match = BOUNDS.fullmatch(node.get("bounds", ""))
+    if match is None:
+        raise RuntimeError(f"UI node has no bounds: {node.attrib}")
+    return tuple(map(int, match.groups()))
+
+
+def scroll_swipe(nodes: list[ET.Element], node: ET.Element) -> tuple[int, int, int, int] | None:
+    ancestors = [parent for parent in nodes if parent is not node and node in parent.iter("node")]
+    x1, y1, x2, y2 = bounds(node)
+    regions = [bounds(parent) for parent in ancestors]
+    if x2 > x1 and y2 > y1 and all(
+            left <= x1 < x2 <= right and top <= y1 < y2 <= bottom
+            for left, top, right, bottom in regions):
+        return None
+    containers = [parent for parent in ancestors if parent.get("scrollable") == "true"
+                  or parent.get("class") == "android.app.Dialog"]
+    if not containers:
+        raise RuntimeError("UI control is off-screen without a scrollable ancestor or dialog")
+    container = containers[-1]
+    left, top, right, bottom = bounds(container)
+    for parent in ancestors:
+        if parent is container or container not in parent.iter("node"):
+            continue
+        region = bounds(parent)
+        left, top = max(left, region[0]), max(top, region[1])
+        right, bottom = min(right, region[2]), min(bottom, region[3])
+    if right <= left or bottom - top < 4:
+        raise RuntimeError("UI control has no visible scroll region")
+    x = (left + right) // 2
+    high, low = top + (bottom - top) // 4, bottom - (bottom - top) // 4
+    return (x, high, x, low) if y1 <= top else (x, low, x, high)
+
+
+def tap_text(nodes: list[ET.Element], *texts: str, out: Path,
+             scene: bool = False, max_scrolls: int = 4) -> None:
+    for attempt in range(max_scrolls + 1):
+        matches = [node for node in nodes if matches_text(node, texts, scene=scene)]
+        if not matches:
+            raise RuntimeError(f"UI control missing: {texts}")
+        if len(matches) != 1:
+            raise RuntimeError(f"UI control ambiguous: {texts}; found {len(matches)} matches")
+        node = matches[0]
+        if node.get("enabled") == "false":
+            raise RuntimeError(f"UI control disabled: {texts}")
+        swipe = scroll_swipe(nodes, node)
+        if swipe is None:
             tap_node(node)
             return
-    raise RuntimeError(f"UI control missing: {texts}")
+        if attempt == max_scrolls:
+            raise RuntimeError(f"UI control not visible after {max_scrolls} scrolls: {texts}")
+        adb("shell", "input", "swipe", *(str(value) for value in swipe), "300")
+        nodes = hierarchy(out, f"scroll-{time.monotonic_ns()}-{attempt + 1}")
 
 
 def tap_editable(nodes: list[ET.Element], *, last: bool = False) -> None:
@@ -149,7 +205,7 @@ def main() -> int:
             with (out / "emulator.log").open("w") as log:
                 emulator = subprocess.Popen(("emulator", "@write227", "-no-window", "-no-audio",
                     "-no-boot-anim", "-no-snapshot", "-no-snapshot-save", "-gpu", "software",
-                    "-memory", "3072"), env=env, stdout=log, stderr=subprocess.STDOUT)
+                    "-memory", "3072", "-cores", "8", "-port", "5554"), env=env, stdout=log, stderr=subprocess.STDOUT)
             adb("wait-for-device", timeout=180)
             deadline = time.monotonic() + 180
             while time.monotonic() < deadline:
@@ -172,7 +228,7 @@ def main() -> int:
             tap_editable(nodes)
             type_token(book)
             nodes = hierarchy(out, "02-book-title")
-            tap_text(nodes, "Create book", "Buch erstellen")
+            tap_text(nodes, "Create book", "Buch erstellen", out=out)
             nodes = checkpoint(out, "03-created-book", "Outline", "Gliederung")
             steps.append("book created and opened")
             tap_editable(nodes)
@@ -182,12 +238,12 @@ def main() -> int:
             steps.append("first scene text entered and saved")
 
             nodes = hierarchy(out, "06-before-outline")
-            tap_text(nodes, "Outline", "Gliederung")
+            tap_text(nodes, "Outline", "Gliederung", out=out)
             nodes = checkpoint(out, "07-outline", "Add scene", "Szene hinzufügen")
             tap_editable(nodes, last=True)
             type_token(second_title)
             nodes = hierarchy(out, "08-scene-title")
-            tap_text(nodes, "Add scene", "Szene hinzufügen")
+            tap_text(nodes, "Add scene", "Szene hinzufügen", out=out)
             nodes = checkpoint(out, "09-created-scene", second_title)
             steps.append("second scene created and selected")
             tap_editable(nodes)
@@ -195,9 +251,9 @@ def main() -> int:
             checkpoint(out, "10-second-text", second)
             checkpoint(out, "11-second-saved", "Saved on this device", "Auf diesem Gerät gespeichert")
             nodes = hierarchy(out, "12-second-outline-ready")
-            tap_text(nodes, "Outline", "Gliederung")
+            tap_text(nodes, "Outline", "Gliederung", out=out)
             nodes = checkpoint(out, "13-scene-switch", "Scene 1", "Szene 1")
-            tap_text(nodes, "Scene 1", "Szene 1")
+            tap_text(nodes, "Scene 1", "Szene 1", out=out, scene=True)
             checkpoint(out, "14-first-scene-restored", first)
             steps.append("scene switch restored first scene text")
 
@@ -207,12 +263,12 @@ def main() -> int:
             steps.append("app backgrounded and force-stopped")
             adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
             nodes = checkpoint(out, "15-reopened-library", book)
-            tap_text(nodes, book)
+            tap_text(nodes, book, out=out)
             checkpoint(out, "16-reopened-first", first)
             nodes = hierarchy(out, "17-reopened-outline-ready")
-            tap_text(nodes, "Outline", "Gliederung")
+            tap_text(nodes, "Outline", "Gliederung", out=out)
             nodes = checkpoint(out, "18-reopened-scenes", second_title)
-            tap_text(nodes, second_title)
+            tap_text(nodes, second_title, out=out, scene=True)
             checkpoint(out, "19-reopened-second", second)
             steps.append("both scenes and text survived process death and reopen")
             result["status"] = "PASS"

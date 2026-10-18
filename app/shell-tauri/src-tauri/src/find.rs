@@ -40,8 +40,18 @@ pub struct SearchItem<'a> {
 #[derive(Debug, Default)]
 pub struct Corpus {
     pub texts: HashMap<String, String>,
+    pub fields: HashMap<String, Vec<crate::store::document_fields::Field>>,
     pub scanned: usize,
     pub skipped: usize,
+}
+
+#[derive(Debug, serde::Serialize, PartialEq, Eq)]
+pub struct FieldLocator {
+    pub item_id: String,
+    pub instance_id: Option<String>,
+    pub field: &'static str,
+    pub from: usize,
+    pub to: usize,
 }
 
 #[derive(Debug, serde::Serialize, PartialEq, Eq)]
@@ -53,6 +63,7 @@ pub struct FindHit {
     /// Occurrences in this item's prose. 0 for a title-only hit.
     pub matches: usize,
     pub title_match: bool,
+    pub locators: Vec<FieldLocator>,
     /// Whether the row can be OPENED rather than merely selected. A part or
     /// chapter that matched is still shown and still selects its navigator row.
     ///
@@ -225,20 +236,51 @@ pub fn search(items: &[SearchItem<'_>], corpus: &Corpus, query: &str, limit: usi
 
     for item in items {
         let title_match = fold(item.title).contains(&needle);
-
-        // Containment is tested on the cheap folded copy; the offset map is
-        // built only for the documents that actually matched.
-        let text = corpus.texts.get(item.id);
-        let prose = text.and_then(|t| {
-            let folded = fold(t);
-            if folded.contains(&needle) {
-                Some(t.as_str())
-            } else {
-                None
+        if out.results.len() >= limit {
+            let text_match = match corpus.fields.get(item.id) {
+                Some(fields) => fields.iter().any(|field| fold(&field.text).contains(&needle)),
+                None => corpus.texts.get(item.id).is_some_and(|text| fold(text).contains(&needle)),
+            };
+            if title_match || text_match {
+                out.total += 1;
+                out.truncated = true;
             }
-        });
+            continue;
+        }
 
-        if !title_match && prose.is_none() {
+        let mut locators = Vec::new();
+        let mut field_snippet = None;
+        if let Some(fields) = corpus.fields.get(item.id) {
+            for field in fields {
+                let (folded, map) = fold_with_offsets(&field.text);
+                for (at, _) in folded.match_indices(&needle) {
+                    let start = map[at];
+                    let mut end_at = at + needle.len();
+                    // A fold can expand a character. Include its whole source.
+                    while end_at < folded.len() && map[end_at] == map[end_at - 1] {
+                        end_at += 1;
+                    }
+                    let end = map[end_at];
+                    field_snippet.get_or_insert_with(|| snippet(&field.text, start, end));
+                    locators.push(FieldLocator {
+                        item_id: item.id.into(),
+                        instance_id: field.instance_id.clone(),
+                        field: field.field,
+                        from: field.position(start, false),
+                        to: field.position(end, true),
+                    });
+                }
+            }
+        }
+        let text = corpus
+            .texts
+            .get(item.id)
+            .filter(|_| !corpus.fields.contains_key(item.id));
+        let prose = text
+            .filter(|t| fold(t).contains(&needle))
+            .map(String::as_str);
+
+        if !title_match && prose.is_none() && locators.is_empty() {
             continue;
         }
         out.total += 1;
@@ -247,26 +289,30 @@ pub fn search(items: &[SearchItem<'_>], corpus: &Corpus, query: &str, limit: usi
             continue;
         }
 
-        let (snippet_text, matches) = match prose {
-            // The prose snippet is preferred over the title even when both
-            // matched: it carries the context a writer is actually looking for.
-            Some(original) => {
-                let (folded, map) = fold_with_offsets(original);
-                // `contains` above already answered this; `unwrap_or(0)` is a
-                // total function rather than a claim that a miss is impossible.
-                let at = folded.find(&needle).unwrap_or(0);
-                (
-                    snippet(original, map[at], map[at + needle.len()]),
-                    count_matches(&folded, &needle),
-                )
+        let (snippet_text, matches) = if let Some(snippet) = field_snippet {
+            (snippet, locators.len())
+        } else {
+            match prose {
+                // The prose snippet is preferred over the title even when both
+                // matched: it carries the context a writer is actually looking for.
+                Some(original) => {
+                    let (folded, map) = fold_with_offsets(original);
+                    // `contains` above already answered this; `unwrap_or(0)` is a
+                    // total function rather than a claim that a miss is impossible.
+                    let at = folded.find(&needle).unwrap_or(0);
+                    (
+                        snippet(original, map[at], map[at + needle.len()]),
+                        count_matches(&folded, &needle),
+                    )
+                }
+                // EMPTY, not the title. A title-only hit has no prose to excerpt,
+                // and returning the title as its own snippet renders as the same
+                // string twice in one result row -- which a screenshot showed
+                // immediately and no test could, because "the snippet equals the
+                // title" was exactly what the test asserted. The page shows the
+                // item's type in that slot instead, which says why it matched.
+                None => (String::new(), 0),
             }
-            // EMPTY, not the title. A title-only hit has no prose to excerpt,
-            // and returning the title as its own snippet renders as the same
-            // string twice in one result row -- which a screenshot showed
-            // immediately and no test could, because "the snippet equals the
-            // title" was exactly what the test asserted. The page shows the
-            // item's type in that slot instead, which says why it matched.
-            None => (String::new(), 0),
         };
 
         out.results.push(FindHit {
@@ -276,6 +322,7 @@ pub fn search(items: &[SearchItem<'_>], corpus: &Corpus, query: &str, limit: usi
             snippet: snippet_text,
             matches,
             title_match,
+            locators,
             openable: crate::store::carries_document(item.kind),
         });
     }
@@ -298,6 +345,7 @@ mod tests {
                 .collect(),
             scanned: entries.len(),
             skipped: 0,
+            fields: HashMap::new(),
         }
     }
 
@@ -680,6 +728,7 @@ mod tests {
             texts: HashMap::new(),
             scanned: 12,
             skipped: 5,
+            fields: HashMap::new(),
         };
         let out = search(&[], &c, "anything", DEFAULT_LIMIT);
         assert_eq!(out.scanned, 12);

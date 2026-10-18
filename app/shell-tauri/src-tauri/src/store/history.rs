@@ -196,6 +196,12 @@ pub fn thin(now: i64, created: &[i64]) -> Vec<usize> {
     thin_with_cap(now, created, MAX_AUTO_VERSIONS)
 }
 
+fn normalized_restore_body(body: &str, validate: impl FnOnce(&str) -> Result<()>) -> Result<String> {
+    let body = crate::replace::normalize_legacy_text(body);
+    validate(&body)?;
+    Ok(body)
+}
+
 impl Store {
     /// The key a body is stored under, inserting the blob if it is new.
     ///
@@ -418,6 +424,13 @@ impl Store {
         version_id: i64,
         base_rev: i64,
     ) -> Result<RestoredDoc> {
+        self.doc_restore_validated(item_id, version_id, base_rev, |body| self.validate_body_write(item_id, body))
+    }
+
+    fn doc_restore_validated(
+        &self, item_id: &str, version_id: i64, base_rev: i64,
+        validate: impl FnOnce(&str) -> Result<()>,
+    ) -> Result<RestoredDoc> {
         let now = now_ms();
         self.conn.execute_batch("BEGIN IMMEDIATE")?;
         let outcome = (|| -> Result<RestoredDoc> {
@@ -444,8 +457,7 @@ impl Store {
                     })
                 }
             }
-            let body = crate::replace::normalize_legacy_text(&self.version_body(version_id)?);
-            self.validate_body_write(item_id, &body)?;
+            let body = normalized_restore_body(&self.version_body(version_id)?, validate)?;
             let current: Option<(String, i64)> = self
                 .conn
                 .query_row(
@@ -827,8 +839,7 @@ impl Store {
             let body = body.ok_or(StoreError::NotFound {
                 item_id: format!("version {version_id} of {item_id} in snapshot {snapshot_id}"),
             })?;
-            let body = crate::replace::normalize_legacy_text(&body);
-            self.validate_body_write(item_id, &body)?;
+            let body = normalized_restore_body(&body, |body| self.validate_body_write(item_id, body))?;
             let current: Option<(String, i64)> = self
                 .conn
                 .query_row(
@@ -948,8 +959,7 @@ impl Store {
                 if was == current {
                     continue;
                 }
-                let was = crate::replace::normalize_legacy_text(was);
-                self.validate_body_write(item_id, &was)?;
+                let was = normalized_restore_body(was, |body| self.validate_body_write(item_id, body))?;
                 if source_words::eligible(&self.conn, item_id)? {
                     source_movements.push(source_words::directional(
                         WordSource::Restored,
@@ -1038,6 +1048,31 @@ mod tests {
             .conn
             .query_row("SELECT COUNT(*) FROM blob", [], |r| r.get(0))
             .unwrap()
+    }
+
+    #[test]
+    fn atom_consumers_restore_retains_overwritten_notes_and_refuses_production_writes() {
+        let (_dir, store, id, rev) = seeded("first");
+        let original = crate::store::document_fields::tests::mixed().to_string();
+        // Fixture-only storage; the live flush/restore policy remains disabled.
+        store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![original, id]).unwrap();
+        let comment = store.comment_create(&id, "spanning an atom", 2, 9, "😀be￼wi").unwrap();
+        let anchors = store.comments(&id).unwrap();
+        assert_eq!((anchors[0].anchor_from, anchors[0].anchor_to, anchors[0].quote.as_str()), (2, 9, "😀be￼wi"));
+        let target = store.insert_version(&id, &body("replacement"), 0, None).unwrap();
+        let restored = store.doc_restore(&id, target, rev).unwrap();
+        assert!(store.comments(&id).unwrap().iter().find(|saved| saved.id == comment.id).unwrap().orphaned);
+        let retained = store.doc_versions(&id).unwrap().into_iter().find(|version| store.version_body(version.id).unwrap() == original).unwrap();
+        assert_eq!(retained.words, 3);
+        let versions = store.doc_versions(&id).unwrap();
+        assert!(store.doc_restore(&id, retained.id, restored.rev).is_err());
+        assert_eq!(store.load_doc(&id).unwrap().body, body("replacement"));
+        assert_eq!(store.doc_versions(&id).unwrap().len(), versions.len());
+        let back = store.doc_restore_validated(&id, retained.id, restored.rev, |body| {
+            crate::store::document_fields::read(body).ok_or_else(|| StoreError::InvalidDocument("invalid fixture".into())).map(|_| ())
+        }).unwrap();
+        assert_eq!(back.body, original);
+        assert!(store.doc_versions(&id).unwrap().iter().any(|version| store.version_body(version.id).unwrap() == body("replacement")));
     }
 
     // ---- thin: the retention policy, over timestamps alone ----
@@ -1565,6 +1600,23 @@ mod tests {
         let after = store.comments(&id).unwrap();
         assert_eq!(after.len(), 1);
         assert!(after[0].orphaned, "the anchor must read as an orphan");
+    }
+
+    #[test]
+    fn unknown_marks_refuse_replace_everywhere_and_roll_back_the_whole_history() {
+        let (_dir, store, id, _) = seeded("moon");
+        let good = store.item_create(None, "scene", "Readable").unwrap();
+        write(&store, &good.id, "moon", good.doc_rev.unwrap());
+        let damaged = r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"moon","marks":[{"type":"future-mark"}]}]}]}"#;
+        store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![damaged, id]).unwrap();
+        let before = store.documents().unwrap();
+        let rows = |table: &str| store.conn.query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |r| r.get::<_, i64>(0)).unwrap();
+        let counts = (rows("snapshot"), rows("doc_version"), rows("blob"));
+        assert!(crate::replace::replace_in_body(damaged, "moon", "sun").unwrap().body.is_some());
+        let error = store.replace_everywhere(&std::collections::HashSet::new(), "moon", "sun", "Before replacement").unwrap_err();
+        assert!(matches!(error, StoreError::InvalidDocument(_)), "{error}");
+        assert_eq!(store.documents().unwrap(), before);
+        assert_eq!((rows("snapshot"), rows("doc_version"), rows("blob")), counts);
     }
 
     fn empty_replacement_leaves_readable_runs(runs: serde_json::Value, expected: serde_json::Value) {

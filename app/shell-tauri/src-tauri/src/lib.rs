@@ -28,6 +28,9 @@ mod encrypted_archive;
 #[path = "pictures.rs"]
 mod pictures;
 #[cfg(target_os = "android")]
+#[path = "figures.rs"]
+mod figures;
+#[cfg(target_os = "android")]
 #[path = "research.rs"]
 mod research;
 #[cfg(target_os = "android")]

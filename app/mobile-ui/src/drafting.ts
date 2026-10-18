@@ -1,5 +1,7 @@
+import { element as node } from "./element";
 import { schema, type Editor } from "../../ui/src/editor";
-import { locateMatches } from "../../ui/src/find-locate";
+import { locateFieldMatches, type FieldLocator } from "../../ui/src/find-locate";
+import { t } from "../../ui/src/i18n";
 import { mobileMessages } from "./messages";
 import type { MobileScene } from "./workspace";
 
@@ -11,7 +13,7 @@ export interface MobileDrafting {
   structure(): Promise<StructureItem[]>;
   rename(itemId: string, title: string, baseRev: number): Promise<MobileScene[]>;
   move(itemId: string, newParentId: string | null, afterId: string | null, baseRev: number): Promise<MobileScene[]>;
-  find(query: string, currentScene: string): Promise<{ results: { item_id: string; title: string; snippet: string; matches: number }[]; truncated: boolean; skipped: number }>;
+  find(query: string, currentScene: string): Promise<{ results: { item_id: string; title: string; snippet: string; matches: number; locators?: FieldLocator[] }[]; truncated: boolean; skipped: number }>;
   goals(day: string, target?: string): Promise<MobileGoals>;
   notes(itemId: string): Promise<{ body: string } | null>;
   saveNotes(itemId: string, body: string): Promise<unknown>;
@@ -26,11 +28,6 @@ interface Options {
   lock(value: boolean): void; available(): boolean;
   reload(scenes: MobileScene[]): void; openScene(id: string): Promise<boolean>;
   textSize: number; saveTextSize(size: number): boolean;
-}
-function node<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) {
-  const result = document.createElement(tag);
-  if (text !== undefined) result.textContent = text;
-  return result;
 }
 function button(text: string, action: () => void) {
   const result = node("button", text); result.type = "button";
@@ -127,10 +124,10 @@ export function createDraftingTools(opts: Options) {
     const form = node("form"); const input = node("input"); input.type = "search"; input.required = true; input.maxLength = 1000;
     const scene = node("button", m.searchScene); scene.type = "submit";
     const results = node("nav"); const status = node("div"); status.setAttribute("role", "status");
-    function jump(id: string, query: string, range?: { from: number; to: number }) {
+    function jump(id: string, query: string, locator?: FieldLocator) {
       close();
       void opts.openScene(id).then(ok => {
-        if (ok) { if (range) opts.editor.selectRange(range.from, range.to); else opts.editor.revealMatch(query); opts.editor.focus(); }
+        if (ok) { opts.editor.revealMatch(query, locator); opts.editor.focus(); }
       });
     }
     form.append(field(m.query, input), scene, button(m.searchBook, () => {
@@ -140,19 +137,33 @@ export function createDraftingTools(opts: Options) {
         results.replaceChildren(); status.replaceChildren();
         for (const message of [found.results.length ? "" : m.noResults, found.truncated ? m.searchLimited : "", found.skipped ? m.searchSkipped : ""]) if (message) status.append(node("p", message));
         for (const hit of found.results) {
-          const result = button(hit.title || m.untitled, () => jump(hit.item_id, query));
-          if (hit.snippet) result.append(node("small", hit.snippet)); results.append(result);
+          const fields = new Set<string>();
+          const targets = hit.locators?.filter(locator => {
+            if (fields.has(locator.field)) return false;
+            fields.add(locator.field); return true;
+          });
+          for (const [index, locator] of (targets?.length ? targets : [undefined]).entries()) {
+            const result = button(hit.title || m.untitled, () => jump(hit.item_id, query, locator));
+            if (hit.snippet) result.append(node("small", [locator && locator.field !== "prose" ? t(`document.field.${locator.field}`) : "", index ? query : hit.snippet].filter(Boolean).join(": ")));
+            results.append(result);
+          }
         }
       });
     }));
     form.addEventListener("submit", event => {
       event.preventDefault(); const query = input.value.trim(); if (!query) return;
-      const doc = schema.nodeFromJSON(JSON.parse(opts.editor.serialize())); const matches = locateMatches(doc, query);
+      const doc = schema.nodeFromJSON(JSON.parse(opts.editor.serialize())); const matches = locateFieldMatches(doc, query);
       results.replaceChildren(); status.replaceChildren(node("p", matches.length ? m.searchMatches.replace("{n}", matches.length.toLocaleString(opts.locale)) : m.noResults));
       if (matches.length > 200) status.append(node("p", m.sceneSearchLimited));
       for (const range of matches.slice(0, 200)) {
-        const snippet = doc.textBetween(Math.max(0, range.from - 35), Math.min(doc.content.size, range.to + 35), " ");
-        results.append(button(snippet, () => jump(opts.activeId(), query, range)));
+        const prose = range.locator.field === "prose";
+        const from = Math.max(0, range.textFrom - 35);
+        const limit = range.text.length;
+        const to = Math.min(limit, range.textTo + 35);
+        const context = range.text.slice(from, to);
+        const snippet = [prose ? "" : t(`document.field.${range.locator.field}`),
+          `${from ? "…" : ""}${context}${to < limit ? "…" : ""}`].filter(Boolean).join(": ");
+        results.append(button(snippet, () => jump(opts.activeId(), query, range.locator)));
       }
     });
     content.append(form, status, results); input.focus();
