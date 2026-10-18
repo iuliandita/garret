@@ -24,6 +24,8 @@ pub mod series;
 pub mod source_words;
 pub mod synopsis;
 pub mod watchlist;
+#[cfg(test)]
+pub(crate) mod test_support;
 
 use crate::words;
 use rusqlite::{Connection, OptionalExtension};

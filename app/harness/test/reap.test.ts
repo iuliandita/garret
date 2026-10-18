@@ -99,7 +99,8 @@ case "$RUN_SHELL_SCENARIO" in
     ;;
   stdout)
     if [ -n "$TEST_STDOUT_TARGET" ]; then
-      readlink "/proc/$$/fd/1" > "$TEST_STDOUT_TARGET"
+      stdout_target=$(readlink "/proc/$$/fd/1")
+      printf '%s\\n' "$stdout_target" > "$TEST_STDOUT_TARGET"
     fi
     head -c 1048576 /dev/zero
     printf '%s' 'synthetic stderr' >&2
@@ -352,8 +353,7 @@ describe("runShell failure cleanup", () => {
     }
   });
 
-  // Skipped on GitHub Actions: https://github.com/iuliandita/garret/issues/3
-  test.skipIf(!!process.env.GITHUB_ACTIONS)("discards unused stdout so a pipe-sized synthetic payload can report", async () => {
+  test("discards unused stdout so a pipe-sized synthetic payload can report", async () => {
     const dir = mkdtempSync(join(tmpdir(), "run-shell-stdout-"));
     try {
       const synthetic = syntheticRun(dir, "stdout");

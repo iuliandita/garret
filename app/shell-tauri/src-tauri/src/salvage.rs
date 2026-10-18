@@ -4751,11 +4751,7 @@ pub(crate) mod tests {
         let dir = tempdir().unwrap();
         let db = dir.path().join("book.db");
         let scenes = fixture(&db);
-        damage(
-            &db,
-            "DROP TABLE synopsis; DROP TABLE cast_field; DROP TABLE cast_member;
-             PRAGMA user_version = 5;",
-        );
+        crate::store::test_support::legacy_fixture(&db, 5);
         let out = dir.path().join("out");
         let v = salvage(&db, &out).unwrap();
         assert!(v.complete, "{:?}", v.losses);
@@ -4782,10 +4778,7 @@ pub(crate) mod tests {
         let dir = tempdir().unwrap();
         let db = dir.path().join("book.db");
         fixture_with_everything(&db);
-        damage(
-            &db,
-            "DROP TABLE cast_field; DROP TABLE cast_member; PRAGMA user_version = 6;",
-        );
+        crate::store::test_support::legacy_fixture(&db, 6);
         let out = dir.path().join("out");
         let v = salvage(&db, &out).unwrap();
         assert!(v.complete, "{:?}", v.losses);
@@ -5152,10 +5145,7 @@ pub(crate) mod tests {
         let dir = tempdir().unwrap();
         let db = dir.path().join("book.db");
         fixture_with_everything(&db);
-        damage(
-            &db,
-            "ALTER TABLE cast_member DROP COLUMN picture_path; PRAGMA user_version = 7;",
-        );
+        crate::store::test_support::legacy_fixture(&db, 7);
         let out = dir.path().join("out");
 
         let v = salvage(&db, &out).unwrap();
@@ -5658,7 +5648,7 @@ pub(crate) mod tests {
         let dir = tempdir().unwrap();
         let db = dir.path().join("book.db");
         fixture_with_appearances(&db);
-        damage(&db, "DROP TABLE appearance; PRAGMA user_version = 8;");
+        crate::store::test_support::legacy_fixture(&db, 8);
         let out = dir.path().join("out");
         let v = salvage(&db, &out).unwrap();
         assert!(v.complete, "{:?}", v.losses);
@@ -5675,7 +5665,7 @@ pub(crate) mod tests {
         let dir = tempdir().unwrap();
         let db = dir.path().join("book.db");
         fixture_with_everything(&db);
-        damage(&db, "DROP TABLE cast_alias; PRAGMA user_version = 9;");
+        crate::store::test_support::legacy_fixture(&db, 9);
         let out = dir.path().join("out");
         let v = salvage(&db, &out).unwrap();
         assert!(v.complete, "{:?}", v.losses);
@@ -6481,12 +6471,7 @@ pub(crate) mod tests {
         let dir = tempdir().unwrap();
         let db = dir.path().join("book.db");
         let scenes = fixture(&db);
-        damage(
-            &db,
-            "DROP TABLE appearance; DROP TABLE cast_field; DROP TABLE cast_member;
-             DROP TABLE synopsis; DROP TABLE dict_word; DROP TABLE comment;
-             PRAGMA user_version = 3;",
-        );
+        crate::store::test_support::legacy_fixture(&db, 3);
         let out = dir.path().join("out");
         let v = salvage(&db, &out).unwrap();
 
@@ -6510,12 +6495,7 @@ pub(crate) mod tests {
         let dir = tempdir().unwrap();
         let db = dir.path().join("book.db");
         fixture_with_comments(&db);
-        damage(
-            &db,
-            "DROP TABLE appearance; DROP TABLE cast_field; DROP TABLE cast_member;
-             DROP TABLE synopsis; DROP TABLE dict_word;
-             PRAGMA user_version = 4;",
-        );
+        crate::store::test_support::legacy_fixture(&db, 4);
         let out = dir.path().join("out");
         let v = salvage(&db, &out).unwrap();
 
@@ -6537,12 +6517,7 @@ pub(crate) mod tests {
         let db = dir.path().join("book.db");
         fixture_with_comments(&db);
         with_wordlist(&db);
-        damage(
-            &db,
-            "DROP TABLE appearance; DROP TABLE cast_field; DROP TABLE cast_member;
-             DROP TABLE synopsis;
-             PRAGMA user_version = 5;",
-        );
+        crate::store::test_support::legacy_fixture(&db, 5);
         let out = dir.path().join("out");
         let v = salvage(&db, &out).unwrap();
 
@@ -7118,13 +7093,7 @@ pub(crate) mod tests {
         let dir = tempdir().unwrap();
         let db = dir.path().join("book.db");
         fixture_with_history(&db);
-        damage(
-            &db,
-            "DROP TABLE appearance; DROP TABLE cast_field; DROP TABLE cast_member;
-             DROP TABLE synopsis; DROP TABLE comment; DROP TABLE dict_word;
-             DROP TABLE doc_version; DROP TABLE snapshot; DROP TABLE blob;
-             PRAGMA user_version = 1;",
-        );
+        crate::store::test_support::legacy_fixture(&db, 1);
         let out = dir.path().join("out");
         let v = salvage(&db, &out).unwrap();
 
@@ -7147,12 +7116,7 @@ pub(crate) mod tests {
         let dir = tempdir().unwrap();
         let db = dir.path().join("book.db");
         fixture_with_history(&db);
-        damage(
-            &db,
-            "DROP TABLE appearance; DROP TABLE cast_field; DROP TABLE cast_member;
-             DROP TABLE synopsis; DROP TABLE comment; DROP TABLE dict_word;
-             PRAGMA user_version = 2;",
-        );
+        crate::store::test_support::legacy_fixture(&db, 2);
         let out = dir.path().join("out");
         let v = salvage(&db, &out).unwrap();
 

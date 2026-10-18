@@ -2251,20 +2251,12 @@ mod tests {
 
     #[test]
     fn a_snapshot_of_a_file_older_than_the_picture_column_reports_no_pictures() {
-        // A v7 file has no `picture_path` column, and that is AGE, not damage --
-        // `missing_blobs`' rule, including the `unwrap_or(0)`. The exclusion
-        // sentence still stands, because it is about what a recovery point IS
-        // rather than about what this book happens to hold.
+        // A real v7 file has neither picture_path nor research tables. Neither
+        // absence is damage or a reason to mark its recovery point incomplete.
         let dir = tempfile::tempdir().unwrap();
         let src = dir.path().join("v7.db");
         crate::test_support::seeded_project(&src);
-        {
-            let conn = rusqlite::Connection::open(&src).unwrap();
-            conn.execute_batch(
-                "ALTER TABLE cast_member DROP COLUMN picture_path; PRAGMA user_version = 7;",
-            )
-            .unwrap();
-        }
+        crate::store::test_support::legacy_fixture(&src, 7);
         let out = dir.path().join("recovery");
 
         take_point(&src, "v7", "V7", &out, NOW).unwrap();
@@ -2273,7 +2265,7 @@ mod tests {
             serde_json::from_slice(&std::fs::read(out.join("manifest.json")).unwrap()).unwrap();
         assert_eq!(m.project.schema_version, 7);
         assert_eq!(m.completeness.pictures, 0);
-        assert!(m.exclusions.is_empty());
+        assert!(m.exclusions.is_empty(), "{:?}", m.entries);
     }
 
     #[test]
