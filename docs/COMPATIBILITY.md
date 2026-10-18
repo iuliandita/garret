@@ -3,14 +3,20 @@
 SQLite schema: 17.
 
 EPUB and DOCX exports replace vertical tabs and form feeds with spaces and remove
-the other XML 1.0-forbidden characters from scene prose in the exported copy.
+the other XML 1.0-forbidden characters from prose, item and book titles, contents
+labels, collection bylines, and EPUB author, sort name, publisher, and rights in
+the exported copy. Front and back matter, including References, use the same
+cleanup. Prepared publication exports also clean note bodies, captions,
+alternative text, and note headings; production activation remains disabled.
 The export result adds `xml_characters_removed`, counting both replacements and
 deletions; the interface and CLI explain a nonzero count in plain language.
-Stored prose, marks, history, and ordinary XML
+Stored prose, titles, metadata, marks, history, and ordinary XML
 whitespace remain unchanged. Fixtures without these characters retain identical
 output bytes. Identity preflight and export word counts inspect the cleaned prose.
 Markdown and PDF prose are unchanged by this cleanup.
-Title and metadata handling is separate from this scene-prose cleanup.
+Each source field is counted once even when repeated in headings, navigation,
+or OPF metadata. DOCX emits no core/app properties, headers, or footers.
+Markdown and PDF titles and metadata are unchanged by this cleanup.
 
 Backup reports figure references in live, bin, and retained history bodies even
 when a schema-17 database lacks the registry table. An unreadable row with a
@@ -163,8 +169,8 @@ relative hashed names and declared MIME types. Endnotes include reference links,
 backlinks, and contents entries; a page-width preference is a reflowable break
 hint. Bodies containing new nodes use strict publication validation, refusing
 unsupported content, unresolved figures, missing or changed originals, blank
-alternative text, and XML-forbidden characters in notes, captions, and alternative
-text. Bodies without new nodes keep the existing tolerant EPUB renderer, including
+alternative text. Direct publication-plan inputs still refuse XML-forbidden
+characters; EPUB/DOCX export copies clean them before building that plan. Bodies without new nodes keep the existing tolerant EPUB renderer, including
 empty bodies, missing content, inline breaks, and paragraph attributes. Unknown
 note-numbering metadata does not block legacy exports or preflight. Existing
 sample and classic Markdown, Word, and EPUB exports retain their byte hashes. This does not enable

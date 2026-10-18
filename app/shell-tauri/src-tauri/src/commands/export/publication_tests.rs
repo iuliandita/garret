@@ -891,3 +891,43 @@ fn planned_xml_exports_strip_prose_including_whole_runs_and_count_only_the_selec
         }
     });
 }
+
+
+#[test]
+fn xml_export_cleanup_covers_publication_attributes_and_note_scope_titles() {
+    static LOCALE: crate::strings::Locale = crate::strings::Locale::new("en", &[
+        ("book.contents", "Contents"),
+        ("book.notes", "No\u{1}tes\u{b}heading"),
+    ]);
+    let fixture = fixture();
+    fixture.store.set_meta("notes.numbering", "chapter").unwrap();
+    let items = fixture.store.items().unwrap();
+    let scene = items.iter().find(|item| item.id == fixture.scenes[0]).unwrap();
+    let chapter = items.iter().find(|item| Some(&item.id) == scene.parent_id.as_ref()).unwrap();
+    fixture.store.item_rename(&chapter.id, "Sec\u{1}tion\u{b}title", chapter.rev).unwrap();
+    let mut document: serde_json::Value = serde_json::from_str(&fixture.store.load_doc(&scene.id).unwrap().body).unwrap();
+    for (pointer, text) in [
+        ("/content/0/content/1/attrs/body", "No\u{1}te\u{b}body"),
+        ("/content/1/attrs/caption", "Cap\u{1}tion\u{b}text"),
+        ("/content/1/attrs/alt", "Al\u{1}t\u{b}text"),
+    ] {
+        *document.pointer_mut(pointer).unwrap() = json!(text);
+    }
+    let source = document.to_string();
+    let conn = rusqlite::Connection::open(&fixture.db).unwrap();
+    conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![source, scene.id]).unwrap();
+    for format in [crate::export::Format::Epub, crate::export::Format::Docx] {
+        let (written, _, _, _, removed) = render_scope_policy(&fixture.db, "Book", format,
+            &crate::identity::Vault::default(), crate::strings::Strings::new(&LOCALE), None, None, true).unwrap();
+        assert_eq!(removed, if format == crate::export::Format::Epub { 10 } else { 8 });
+        let xml = super::xml_metadata_tests::xml_parts(&written);
+        for text in ["Section title", "Note body", "Caption text", "Alt text"] {
+            assert!(xml.contains(text), "{format:?}: missing {text}");
+        }
+        if format == crate::export::Format::Epub {
+            assert!(xml.contains("Notes heading: Section title"));
+        }
+        assert_eq!(fixture.store.load_doc(&scene.id).unwrap().body, source);
+        assert_eq!(fixture.store.items().unwrap().into_iter().find(|item| item.id == chapter.id).unwrap().title, "Sec\u{1}tion\u{b}title");
+    }
+}
