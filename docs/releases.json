@@ -1,8 +1,8 @@
 {
   "version": 1,
   "published": {
-    "tag": "v0.0.5",
-    "source_revision": "00e795051f169086c32d090c6c9c568bf088237c",
+    "tag": "v0.0.6",
+    "source_revision": "5b5c5068b774606d3b1faef80061443bf12d4791",
     "downloads": ["linux-x86_64", "windows-x86_64", "android", "macos-arm64", "macos-x86_64"],
     "android_scope": "library-and-scene-editor-manual-transfer"
   },
