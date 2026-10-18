@@ -1034,7 +1034,8 @@ pub fn create_in(
 
 pub fn validate_preset(preset: Option<&str>) -> Result<(), String> {
     match preset {
-        None | Some("novel" | "short" | "nonfiction" | "collection") => Ok(()),
+        None => Ok(()),
+        Some(preset) if crate::core_constants::PROJECT_PRESETS.contains(&preset) => Ok(()),
         Some(_) => Err("unknown project preset".into()),
     }
 }

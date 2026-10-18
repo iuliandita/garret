@@ -1,5 +1,10 @@
 # Keeping documentation current
 
+Release manifest signing checks for the published key fingerprint before invoking
+GPG. A missing fingerprint leaves no detached signature, including when a stale
+signature existed. Checksum collection, download verification, and the manifest
+share the same SHA-256 file reader.
+
 Desktop profile migration tests exercise both Unix moves and the Windows copy
 path. Keep the unused-folder allow-list conservative, preserve every set-aside
 folder and its append-only receipt, and cover restart before and after the rename.

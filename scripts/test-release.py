@@ -232,10 +232,13 @@ class ReleaseTests(unittest.TestCase):
             guide = self.root / name
             published = guide.read_text()
             guide.write_text("Release signing key fingerprint: not yet published\n")
+            asc = self.root / "app/dist-release/downloads/SHA256SUMS.asc"
+            asc.write_text("stale signature\n")
             with patch.dict(os.environ, {"RELEASE_GPG_PRIVATE_KEY": "test-input"}), patch.object(release.subprocess, "run") as run:
                 with self.assertRaisesRegex(ValueError, f"fingerprint in {name}"):
                     release.sign_manifest(allow_unsigned=True)
-                self.assertIn("--verify", run.call_args_list[-2].args[0])
+                run.assert_not_called()
+                self.assertFalse(asc.exists())
             guide.write_text(published)
 
     @unittest.skipUnless(shutil.which("gpg"), "GPG is not installed")

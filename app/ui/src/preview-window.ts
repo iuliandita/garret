@@ -130,7 +130,7 @@ export function createPreviewWindow(
     for (const index of mounted) {
       if (index >= start && index < end) continue;
       const height = extent(index);
-      if (height >= 0) heights.set(view.documents[index]!.name, height);
+      heights.set(view.documents[index]!.name, height);
       elements[index]!.replaceChildren();
       placeholder(index);
       mounted.delete(index);

@@ -464,6 +464,15 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
 
   const framed = (): boolean => frameOn && showing !== null && !rail.hidden;
 
+  function destroyEpubWindow(): void {
+    epubWindow?.destroy();
+    epubWindow = null;
+  }
+
+  function pageFromScroll(): number {
+    return Math.round(pages.scrollLeft / (pages.clientWidth || 1));
+  }
+
   function leaves(): HTMLElement[] {
     return [...pages.children].filter(
       (child): child is HTMLElement => child instanceof HTMLElement && child.classList.contains("proof-leaf"),
@@ -524,7 +533,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     }
     epubWindow?.update();
     const count = pageTotal();
-    if (showing === "epub") pageIndex = Math.round(pages.scrollLeft / (pages.clientWidth || 1));
+    if (showing === "epub") pageIndex = pageFromScroll();
     pageIndex = clampPage(pageIndex, count);
     if (showing === "pdf") {
       leaves().forEach((leaf, index) => leaf.classList.toggle("is-current", index === pageIndex));
@@ -533,7 +542,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       // The columns are one page wide, so a page is one clientWidth.
       pages.scrollLeft = pageIndex * pages.clientWidth;
       epubWindow?.update();
-      pageIndex = Math.round(pages.scrollLeft / (pages.clientWidth || 1));
+      pageIndex = pageFromScroll();
     }
     paintPager(count);
   }
@@ -589,7 +598,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     pageIndex = 0;
     placeFrame();
     epubWindow?.resetLayout(position);
-    pageIndex = Math.round(pages.scrollLeft / (pages.clientWidth || 1));
+    pageIndex = pageFromScroll();
     relayout();
   }
 
@@ -708,7 +717,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     styleElement.textContent = scoped ?? "";
     const painted: Node[] = [];
     if (scoped === null) painted.push(line(t("preview.error.stylesheet")));
-    epubWindow?.destroy();
+    destroyEpubWindow();
     epubWindow = createPreviewWindow(pages, view, {
       framed,
       problem: (name) => line(t("preview.error.document", { name })),
@@ -721,7 +730,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     pages.replaceChildren(...painted, ...epubWindow.elements);
     placeFrame();
     epubWindow.restore(position);
-    if (framed()) pageIndex = Math.round(pages.scrollLeft / (pages.clientWidth || 1));
+    if (framed()) pageIndex = pageFromScroll();
     relayout();
   }
 
@@ -732,8 +741,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
    *  serialised out of its own DOM, so parsing it as XML would fail on an
    *  `<img>` and report the writer's book as broken when nothing is. */
   function paintProof(view: PdfPreview): void {
-    epubWindow?.destroy();
-    epubWindow = null;
+    destroyEpubWindow();
     const lines: string[] = [
       plural("preview.pdf.summary", view.leaves, {
         leaves: formatNumber(view.leaves),
@@ -937,8 +945,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       // NOT AN EMPTY RAIL. A catch that painted the no-documents state would
       // report a host that could not answer as a book with nothing in it --
       // the recorded `renderImports([])` defect.
-      epubWindow?.destroy();
-      epubWindow = null;
+      destroyEpubWindow();
       pages.replaceChildren();
       deps.onNotice(t("preview.error.load", { error: messageOf(error) }));
     }
@@ -1057,8 +1064,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     generation += 1;
     lifecycle += 1;
     pageSetup?.hide();
-    epubWindow?.destroy();
-    epubWindow = null;
+    destroyEpubWindow();
     pages.replaceChildren();
     rail.hidden = true;
     divider.hidden = true;
@@ -1093,8 +1099,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       // left its accessible name would announce the PREVIOUS book's figures
       // over the one the writer just asked for.
       saySummary([]);
-      epubWindow?.destroy();
-      epubWindow = null;
+      destroyEpubWindow();
       pages.replaceChildren();
       styleElement.textContent = "";
       rail.hidden = false;
@@ -1163,8 +1168,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       cancelIdle();
       window.removeEventListener("resize", onWindowResize);
       observer?.disconnect();
-      epubWindow?.destroy();
-      epubWindow = null;
+      destroyEpubWindow();
       pages.removeEventListener("keydown", onPagesKeyDown);
       pages.removeEventListener("load", relayout, true);
       rail.removeEventListener("click", onClick);

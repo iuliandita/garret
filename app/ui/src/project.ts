@@ -92,7 +92,7 @@ import { createStatusDot, type StatusDot } from "./status-dot";
 import { createTooltip } from "./tooltip";
 import { createWordCount, type WordCountView } from "./word-count";
 import { DEFAULT_DAILY_TARGET, localDate, type DailyTarget } from "./goals";
-import { createStoryPanel } from "./story-panel";
+import { createStoryPanel, type StoryFields } from "./story-panel";
 import { storyIds } from "./collection";
 import { createExportBar, type ExportBar, type ExportWritten } from "./export-bar";
 import { createDesignPanel, type DesignPanel, type DesignTransferPreview } from "./design-panel";
@@ -2974,7 +2974,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   }
 
   const storyPanel = preset === "collection" ? createStoryPanel({
-    read: async (id) => await invoke("story_get", { id, generation: deps.generation }) as import("./story-panel").StoryFields,
+    read: async (id) => await invoke("story_get", { id, generation: deps.generation }) as StoryFields,
     save: async (story) => {
       if (projectDestroyed || projectLeaving || deps.privacyLocked?.()) throw new Error("the book is no longer available");
       await invoke("story_save", { id: story.id, title: story.title, author: story.author ?? "", status: story.state, baseRev: story.rev, generation: deps.generation });

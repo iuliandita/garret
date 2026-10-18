@@ -1,3 +1,4 @@
+import { element } from "./element";
 import type { MobileDrafting } from "./drafting";
 import { mobileMessages } from "./messages";
 import { showTransfer, transferError, type TransferStatus } from "./transfer";
@@ -24,11 +25,6 @@ let theme: "light" | "dark" = savedTheme === "light" || savedTheme === "dark"
 let busy = false;
 const mount = document.querySelector<HTMLElement>("#app")!;
 
-function element<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) {
-  const node = document.createElement(tag);
-  if (text !== undefined) node.textContent = text;
-  return node;
-}
 function message(text: string) {
   const alert = mount.querySelector<HTMLElement>("[role=alert]");
   if (alert) { alert.textContent = text; alert.hidden = false; }

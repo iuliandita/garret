@@ -1,3 +1,4 @@
+import { element } from "./element";
 import { mobileMessages } from "./messages";
 
 type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
@@ -18,7 +19,7 @@ export function transferError(code: unknown, locale: "en" | "de") {
     unsupported_project_preset: m.unsupportedPreset,
     transfer_storage: m.transferStorage, transfer_too_large: m.transferTooLarge,
     transfer_key: m.transferKeyError, transfer_provider: m.transferProvider,
-    transfer_unverified: m.transferProvider, transfer_stale: m.transferStale,
+    transfer_stale: m.transferStale,
     transfer_cleanup: m.transferCleanup, transfer_retained: m.transferRetained,
     transfer_disabled: m.transferDisabled, transfer_restart: m.transferRestart,
     transfer_busy: m.transferBusy, transfer_publish: m.transferPublish,
@@ -32,16 +33,16 @@ export async function showTransfer(mount: HTMLElement, options: {
   direction: "import" | "export"; generation: number; existing?: TransferStatus;
 }): Promise<void> {
   const m = mobileMessages(options.locale);
-  const dialog = document.createElement("dialog");
+  const dialog = element("dialog");
   dialog.className = "mobile-transfer mobile-workspace";
   dialog.dataset.theme = options.theme;
   dialog.setAttribute("aria-label", m.transfer);
-  const title = document.createElement("h2"); title.textContent = options.direction === "export" ? m.exportBook : m.importBook;
-  const hint = document.createElement("p"); hint.textContent = m.transferHint;
-  const limits = document.createElement("p"); limits.textContent = m.transferLimits;
-  const state = document.createElement("p"); state.setAttribute("role", "status"); state.setAttribute("aria-live", "polite");
-  const preview = document.createElement("div");
-  const actions = document.createElement("div"); actions.className = "mobile-transfer-actions";
+  const title = element("h2", options.direction === "export" ? m.exportBook : m.importBook);
+  const hint = element("p", m.transferHint);
+  const limits = element("p", m.transferLimits);
+  const state = element("p"); state.setAttribute("role", "status"); state.setAttribute("aria-live", "polite");
+  const preview = element("div");
+  const actions = element("div"); actions.className = "mobile-transfer-actions";
   dialog.append(title, hint, limits, state, preview, actions);
   const lifecycle = window as Window & { __mobileTransfer?: boolean };
   lifecycle.__mobileTransfer = true;
@@ -52,7 +53,7 @@ export async function showTransfer(mount: HTMLElement, options: {
   let resolveClose: () => void;
   const closed = new Promise<void>(resolve => { resolveClose = resolve; });
   function button(label: string, action: () => Promise<void>) {
-    const node = document.createElement("button"); node.type = "button"; node.textContent = label;
+    const node = element("button", label); node.type = "button";
     node.addEventListener("click", () => {
       if (pending || finished) return;
       pending = true;
@@ -115,13 +116,13 @@ export async function showTransfer(mount: HTMLElement, options: {
     state.textContent = phaseMessages[status.phase] ?? m.transferPreparing;
     if (status.phase === "done" && status.code) state.textContent += ` ${transferError(status.code, options.locale)}`;
     if (status.phase === "preview" && status.preview) {
-      const name = document.createElement("h3"); name.textContent = status.preview.title || m.unnamedBook;
+      const name = element("h3", status.preview.title || m.unnamedBook);
       preview.append(name);
-      if (status.preview.unreadable_books) preview.append(Object.assign(document.createElement("p"), { textContent: m.transferLibraryUnreadable }));
+      if (status.preview.unreadable_books) preview.append(element("p", m.transferLibraryUnreadable));
       if (status.preview.related.length) {
-        const label = document.createElement("p"); label.textContent = m.relatedBooks; preview.append(label);
-        const list = document.createElement("ul");
-        for (const related of status.preview.related) { const row = document.createElement("li"); row.textContent = related || m.unnamedBook; list.append(row); }
+        const label = element("p", m.relatedBooks); preview.append(label);
+        const list = element("ul");
+        for (const related of status.preview.related) { const row = element("li", related || m.unnamedBook); list.append(row); }
         preview.append(list);
       }
       button(status.preview.related.length ? m.keepBoth : m.importCopy, async () => {

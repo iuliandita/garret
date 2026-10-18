@@ -1,3 +1,4 @@
+import { element as node } from "./element";
 import { schema, type Editor } from "../../ui/src/editor";
 import { locateFieldMatches, type FieldLocator } from "../../ui/src/find-locate";
 import { t } from "../../ui/src/i18n";
@@ -27,11 +28,6 @@ interface Options {
   lock(value: boolean): void; available(): boolean;
   reload(scenes: MobileScene[]): void; openScene(id: string): Promise<boolean>;
   textSize: number; saveTextSize(size: number): boolean;
-}
-function node<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) {
-  const result = document.createElement(tag);
-  if (text !== undefined) result.textContent = text;
-  return result;
 }
 function button(text: string, action: () => void) {
   const result = node("button", text); result.type = "button";
