@@ -308,13 +308,6 @@ fn render_scope_with(
     path: &Path, name: &str, format: crate::export::Format, vault: &crate::identity::Vault,
     strings: crate::strings::Strings, markup_limit: Option<u32>, story_id: Option<&str>,
 ) -> std::result::Result<Rendered, String> {
-    render_scope_policy(path, name, format, vault, strings, markup_limit, story_id, #[cfg(test)] PUBLICATION_FIXTURE.get())
-}
-
-fn render_scope_policy(
-    path: &Path, name: &str, format: crate::export::Format, vault: &crate::identity::Vault,
-    strings: crate::strings::Strings, markup_limit: Option<u32>, story_id: Option<&str>, #[cfg(test)] fixture: bool,
-) -> std::result::Result<Rendered, String> {
     let store = store::Store::open_readonly(path).map_err(|e| e.to_string())?;
     let story = story_id.map(|id| crate::collection::story(&store, id)).transpose()?;
     let name = story.as_ref().map(|story| story.title.as_str()).unwrap_or(name);
@@ -404,6 +397,8 @@ fn render_scope_policy(
     }
 
     let has_new = items.iter().filter_map(|(id, _, _)| bodies.get(id)).any(|body| crate::figure_salvage::has_new_nodes(body));
+    #[cfg(test)]
+    let fixture = PUBLICATION_FIXTURE.get();
     #[cfg(not(test))]
     let fixture = false;
     if has_new && !fixture {

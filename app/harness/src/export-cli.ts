@@ -200,17 +200,6 @@ function signatureOf(walk: readonly WalkRow[]): string {
   return walk.map((r) => `${r.id}|${r.parent_id ?? ""}|${r.title}|${r.depth}`).join("\n");
 }
 
-/** The text a stored body holds, by this rig's own walk of the ProseMirror JSON.
- *
- *  Restated here rather than taken from either side of the comparison. It is
- *  `store::document_text`'s rule: inline text concatenated with nothing, one
- *  space before a block node's content. Everything is whitespace-normalized
- *  afterwards anyway, so the only property that has to hold exactly is that no
- *  text is lost and no text is invented. */
-function storedText(body: string): string {
-  return legacyText(body);
-}
-
 /** Every text run in `body` carrying `mark`. */
 function markedRuns(body: string, mark: string): string[] {
   return legacyMarkedRuns(body, mark);
@@ -931,7 +920,7 @@ if (aligned) {
   for (const [index, item] of walk0.entries()) {
     const body = bodies.get(item.id);
     if (body === undefined) continue;
-    const expected = normalizeText(storedText(body));
+    const expected = normalizeText(legacyText(body));
     if (expected.length === 0) {
       abort(
         `VACUITY GUARD: ${item.id} has a stored body holding no text, and comparing empty to ` +

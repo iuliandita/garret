@@ -181,25 +181,13 @@ function storedStarterItems(
   }
 }
 
-/** The prose inside a stored body.
- *
- *  A body is a ProseMirror document as JSON, and the first version of this rig
- *  counted words in the RAW STRING. An empty scene serializes to
- *  `{"type":"doc","content":[{"type":"paragraph"}]}` -- no whitespace at all --
- *  so it counted as ONE word and the typing gate passed against a run in which
- *  nothing had been typed. It took a real FAIL elsewhere in the same run to
- *  notice. The gate now reads text nodes, where an empty document is 0. */
-function proseIn(body: string): string {
-  return legacyText(body);
-}
-
 /** Words across every stored body. Deliberately crude and deliberately NOT
  *  `words.ts`'s rule: this gate asks whether typing reached the store at all,
  *  and restating the product's word rule here would make a disagreement about
  *  hyphens look like a lost sentence. */
 function wordsIn(bodies: string[]): number {
   return bodies
-    .map(proseIn)
+    .map((body) => legacyText(body))
     .join(" ")
     .split(/\s+/)
     .filter(Boolean).length;
@@ -427,7 +415,7 @@ async function main(): Promise<void> {
     starter_items: starterItems,
     words_after_typing: wordsIn(bodies),
     quit_closed_the_window: observed.quit_closed_the_window,
-    stored_body_holds_the_sentence: bodies.some((b) => proseIn(b).includes(SENTENCE)),
+    stored_body_holds_the_sentence: bodies.some((body) => legacyText(body).includes(SENTENCE)),
     peak_rss_mb: observed.peak_rss_mb,
   };
 

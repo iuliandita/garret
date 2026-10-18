@@ -712,13 +712,6 @@ const WALK_SQL = `WITH RECURSIVE walk(id, parent_id, type, title, position, dept
    )
    SELECT id, parent_id, type, title, depth FROM walk ORDER BY path`;
 
-/** The text a stored body holds, by this rig's own walk of the ProseMirror
- *  JSON. `export-cli`'s `storedText`, restated for the same recorded reason:
- *  a reader taken from either side of the comparison would grade a tautology. */
-function storedText(body: string): string {
-  return legacyText(body);
-}
-
 /** What the book IS, counted from the file: the walked items, and the words in
  *  the bodies those items carry.
  *
@@ -740,7 +733,7 @@ function bookFigures(projectPath: string): { items: number; words: number } {
     let words = 0;
     for (const item of walk) {
       const body = bodies.get(item.id);
-      if (body !== undefined) words += countWords(storedText(body));
+      if (body !== undefined) words += countWords(legacyText(body));
     }
     return { items: walk.length, words };
   } finally {

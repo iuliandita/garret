@@ -261,11 +261,6 @@ function signatureOf(bodies: ReadonlyMap<string, string>): string {
     .join("\n");
 }
 
-/** Independent prose count over the complete validated stored body. */
-function oracleWordsOf(body: string): number {
-  return proseWords(body);
-}
-
 /** Every text run in `body` carrying `mark`. */
 function markedRuns(body: string, mark: string): string[] {
   return legacyMarkedRuns(body, mark);
@@ -957,7 +952,7 @@ if (finalReading !== null && finalReading.sceneWords === 0) {
 }
 
 const perScene = [...preKillBodies]
-  .map(([itemId, body]) => ({ item_id: itemId, words: oracleWordsOf(body) }))
+  .map(([itemId, body]) => ({ item_id: itemId, words: proseWords(body) }))
   .sort((a, b) => a.item_id.localeCompare(b.item_id));
 if (perScene.length === 0) {
   abort(

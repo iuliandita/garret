@@ -140,14 +140,6 @@ function withImportedWalk<T>(source: string, use: (walk: WalkRow[], name: string
   }
 }
 
-/** A stored ProseMirror body reduced to its words, restated from
- *  `import-cli.ts`'s `bodyText`: inline text concatenated with nothing, one
- *  space before each block's content. Used only to total `manifest.json`'s
- *  word count. */
-function bodyText(body: string): string {
-  return legacyText(body);
-}
-
 function wordCount(text: string): number {
   return text.split(/\p{White_Space}+/u).filter((word) => word.length > 0).length;
 }
@@ -429,7 +421,10 @@ function build(srcDir: string): Built {
           },
         ];
 
-  const totalWords = scenes.reduce((sum, s) => sum + wordCount(bodyText(JSON.stringify(s.body))), 0);
+  const totalWords = scenes.reduce((sum, s) => {
+    const body = JSON.stringify(s.body);
+    return sum + wordCount(legacyText(body));
+  }, 0);
 
   const project = {
     meta: { name: manuscript.name ?? "sample", seed: "sample-v1" },
@@ -526,7 +521,7 @@ export {
   buildBible,
   idAssigner,
   wordCount,
-  bodyText,
+  legacyText as bodyText,
   resolveTimelineBody,
 };
 
