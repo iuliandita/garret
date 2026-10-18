@@ -10,11 +10,7 @@ if [[ ${1:-} == --inside ]]; then
   shift
   for fixture in "$@"; do
     phase "test process starting: $fixture"
-    if [[ ${GARRET_PROOF_BACKTRACE:-0} == 1 ]]; then
-      python3 ../../../scripts/diagnose-proof-test.py "$binary" --ignored --exact --nocapture --test-threads=1 "printer::tests::$fixture"
-    else
-      "$binary" --ignored --exact --nocapture --test-threads=1 "printer::tests::$fixture"
-    fi
+    "$binary" --ignored --exact --nocapture --test-threads=1 "printer::tests::$fixture"
     phase "test process exited: $fixture"
   done
   phase "before xvfb-run shutdown"

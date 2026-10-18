@@ -154,7 +154,9 @@ HOME and XDG_DATA_HOME. Its diagnostic directory is printed before startup and
 retains the phase log and Xvfb errors. Failures are not retried.
 It uses an isolated X display, software rendering, disabled compositing and
 DMA-BUF rendering, and no accessibility bridge.
-The underlying intermittent hang remains unconfirmed and tracked in #324.
+CI native stacks locate the intermittent stall after the test body, in WebKit
+run-loop thread teardown while libtest joins its worker. Deferring GTK exit
+avoids the observed stall; #324 tracks the remaining native teardown risk.
 
 Install Poppler tools for PDF text and image inspection. The publication fixture
 checks delayed, rejected, and stalled figure decoding; damaged PNG/JPEG covers

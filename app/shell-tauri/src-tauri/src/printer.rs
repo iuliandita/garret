@@ -92,7 +92,12 @@ fn proof_test_phase(phase: &str) {
         .expect("system clock");
     // Direct stderr writes bypass libtest's per-test output capture.
     let _ = std::io::stderr().write_all(
-        format!("proof-phase ts={:.3} pid={} {phase}\n", timestamp.as_secs_f64(), std::process::id()).as_bytes(),
+        format!(
+            "proof-phase ts={:.3} pid={} {phase}\n",
+            timestamp.as_secs_f64(),
+            std::process::id()
+        )
+        .as_bytes(),
     );
 }
 
@@ -478,9 +483,9 @@ mod tests {
                 proof_test_phase("watchdog thread running");
                 let mut phase = "initializing GTK";
                 loop {
-                    match receiver.recv_timeout(
-                        deadline.saturating_duration_since(std::time::Instant::now()),
-                    ) {
+                    match receiver
+                        .recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()))
+                    {
                         Ok(Some(next)) => phase = next,
                         Ok(None) | Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
                             if !wait_for_process_exit {
@@ -488,7 +493,9 @@ mod tests {
                             }
                             phase = "test body returned; waiting for process teardown";
                             proof_test_phase(phase);
-                            std::thread::sleep(deadline.saturating_duration_since(std::time::Instant::now()));
+                            std::thread::sleep(
+                                deadline.saturating_duration_since(std::time::Instant::now()),
+                            );
                             break;
                         }
                         Err(std::sync::mpsc::RecvTimeoutError::Timeout) => break,
@@ -517,7 +524,9 @@ mod tests {
 
         fn phase(&self, phase: &'static str) {
             proof_test_phase(phase);
-            self.progress.send(Some(phase)).expect("watchdog is running");
+            self.progress
+                .send(Some(phase))
+                .expect("watchdog is running");
         }
     }
 
@@ -587,7 +596,10 @@ mod tests {
                 } else {
                     "deliberately blocked test thread"
                 };
-                assert!(diagnostics.contains(&format!("watchdog expired after 1s: {phase}")), "{diagnostics}");
+                assert!(
+                    diagnostics.contains(&format!("watchdog expired after 1s: {phase}")),
+                    "{diagnostics}"
+                );
             } else {
                 assert!(output.status.success(), "{diagnostics}");
             }
