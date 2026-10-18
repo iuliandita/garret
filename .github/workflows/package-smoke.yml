@@ -167,21 +167,28 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: x64, runner: windows-2025 }
-          - { name: arm64-emulating-x64, runner: windows-11-arm }
+          - { name: x64, runner: windows-2025, arch: x86_64 }
+          - { name: arm64, runner: windows-11-arm, arch: arm64 }
     steps:
       - name: Download, verify, install silently, launch and capture
         shell: pwsh
+        env:
+          ARCH: ${{ matrix.arch }}
         run: |
           $ErrorActionPreference = 'Stop'
           Add-Type -AssemblyName System.Windows.Forms, System.Drawing
           $ver = $env:TAG.TrimStart('v')
-          $file = "garret-$ver-windows-x86_64-setup.exe"
           $base = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:TAG"
           $out = Join-Path $env:RUNNER_TEMP 'out'; New-Item -ItemType Directory $out | Out-Null
           Set-Location $env:RUNNER_TEMP
-          Invoke-WebRequest "$base/$file" -OutFile $file
           Invoke-WebRequest "$base/SHA256SUMS" -OutFile SHA256SUMS
+          $file = "garret-$ver-windows-$env:ARCH-setup.exe"
+          if (-not (Get-Content SHA256SUMS | Where-Object { $_ -like "* $file" })) {
+            # Releases before native arm64 packages only ship the x86_64 installer.
+            $file = "garret-$ver-windows-x86_64-setup.exe"
+          }
+          "installer: $file" | Tee-Object (Join-Path $out 'installer.txt')
+          Invoke-WebRequest "$base/$file" -OutFile $file
           $want = ((Get-Content SHA256SUMS | Where-Object { $_ -like "* $file" }) -split '\s+')[0]
           $got = (Get-FileHash $file -Algorithm SHA256).Hash.ToLower()
           if ($want -ne $got) { throw "checksum mismatch: $got" }
