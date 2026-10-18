@@ -60,7 +60,7 @@ jobs:
           case "$KIND" in
             deb) $sudo apt-get install -y "./$file"; cmd=/usr/bin/garret ;;
             rpm) dnf install -y "./$file"; cmd=/usr/bin/garret ;;
-            appimage) chmod +x "$file"; $sudo apt-get install -y -qq libfuse2t64 libegl1; cmd="$PWD/$file" ;;
+            appimage) chmod +x "$file"; $sudo apt-get install -y -qq libfuse2t64 libegl1 libgles2; cmd="$PWD/$file" ;;
             tar) $sudo apt-get install -y -qq libwebkit2gtk-4.1-0; tar -xzf "$file"; cmd="$(find "$PWD" -type f -name garret -perm -u+x | head -n1)" ;;
           esac
           echo "CMD=$cmd" >> "$GITHUB_ENV"
@@ -69,21 +69,42 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          cat > "$RUNNER_TEMP/launch.sh" <<'EOF'
+          set -euo pipefail
+          label="$1"
           out="$RUNNER_TEMP/out"
-          Xvfb :99 -screen 0 1280x800x24 >/dev/null 2>&1 &
-          sleep 2
           unset WAYLAND_DISPLAY
-          export DISPLAY=:99 GDK_BACKEND=x11 HOME="$RUNNER_TEMP/home"
+          export DISPLAY=:99 GDK_BACKEND=x11 HOME="$RUNNER_TEMP/home-$label"
           mkdir -p "$HOME"
-          "$CMD" >"$out/app.log" 2>&1 &
+          "$CMD" >"$out/app-$label.log" 2>&1 &
           pid=$!
           sleep 25
+          { xwininfo -root -tree || true; ps -eo pid,comm,args | grep -i -E "garret|webkit" | grep -v grep || true; } > "$out/diagnostics-$label.txt"
           if ! kill -0 "$pid" 2>/dev/null; then
-            echo "garret exited during startup"; cat "$out/app.log"; exit 1
+            echo "garret exited during startup"; cat "$out/app-$label.log"; exit 1
           fi
-          import -window root "$out/${{ matrix.name }}.png"
-          { xwininfo -root -tree || true; ps -eo pid,comm,args | grep -i -E "garret|webkit" | grep -v grep || true; cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null || true; } > "$out/diagnostics.txt"
-          kill "$pid"
+          import -window root "$out/$label.png"
+          kill "$pid"; sleep 2
+          if ! grep -q '"Library - garret"' "$out/diagnostics-$label.txt"; then
+            echo "garret is running but its interface never loaded"; cat "$out/diagnostics-$label.txt" "$out/app-$label.log"; exit 1
+          fi
+          EOF
+          Xvfb :99 -screen 0 1280x800x24 >/dev/null 2>&1 &
+          sleep 2
+          bash "$RUNNER_TEMP/launch.sh" "${{ matrix.name }}"
+      - name: Diagnose a blank start on Ubuntu
+        if: failure() && matrix.container == ''
+        shell: bash
+        run: |
+          set -uo pipefail
+          out="$RUNNER_TEMP/out"
+          { echo "restrict_unprivileged_userns=$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null)"
+            dpkg -l 'libwebkit2gtk-4.1-0' 'bubblewrap' 2>/dev/null | tail -n 2
+            sudo dmesg | grep -i -E 'apparmor|userns|bwrap' | tail -n 20; } > "$out/apparmor.txt"
+          cat "$out/apparmor.txt"
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          bash "$RUNNER_TEMP/launch.sh" "${{ matrix.name }}-userns-unrestricted" && echo "RESULT: starts once the user namespace restriction is off" | tee -a "$out/apparmor.txt"
+          exit 1
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
