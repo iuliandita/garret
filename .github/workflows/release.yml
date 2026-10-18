@@ -99,6 +99,10 @@ jobs:
             runner: ubuntu-24.04
           - platform: windows
             runner: windows-2025
+            target: x86_64-pc-windows-msvc
+          - platform: windows-arm64
+            runner: windows-11-arm
+            target: aarch64-pc-windows-msvc
           - platform: macos-arm64
             runner: macos-15
           - platform: macos-x86_64
@@ -119,10 +123,20 @@ jobs:
         with:
           bun-version: '1.4.2'
       - run: bun install --frozen-lockfile
+      - name: Select native Windows Rust host
+        if: runner.os == 'Windows'
+        env:
+          WINDOWS_TARGET: ${{ matrix.target }}
+        run: rustup set default-host "$WINDOWS_TARGET"
       - name: Install pinned Rust
         run: |
           rustup toolchain install "$RUST_TOOLCHAIN" --profile minimal
           rustup default "$RUST_TOOLCHAIN"
+      - name: Install Windows target
+        if: runner.os == 'Windows'
+        env:
+          WINDOWS_TARGET: ${{ matrix.target }}
+        run: rustup target add "$WINDOWS_TARGET" --toolchain "$RUST_TOOLCHAIN"
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
         run: |
@@ -146,7 +160,15 @@ jobs:
       - name: Package Windows
         if: runner.os == 'Windows'
         shell: pwsh
-        run: ./scripts/package-windows-native.ps1
+        env:
+          WINDOWS_TARGET: ${{ matrix.target }}
+        run: ./scripts/package-windows-native.ps1 -Target $env:WINDOWS_TARGET
+      - name: Check Windows portable and installed binaries
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WINDOWS_TARGET: ${{ matrix.target }}
+        run: ./scripts/windows/install-smoke.ps1 -Target $env:WINDOWS_TARGET
       - name: Package macOS
         if: runner.os == 'macOS'
         run: bash scripts/package-macos
@@ -280,7 +302,7 @@ jobs:
           cat > release-notes.md <<'NOTES'
           Alpha testing build. Keep a backup of your work before trying a new version.
 
-          Downloads: Linux and Windows x86_64, Android arm64/x86_64, and macOS Apple Silicon/Intel.
+          Downloads: Linux x86_64, Windows x86_64/arm64, Android arm64/x86_64, and macOS Apple Silicon/Intel.
           Choose a desktop installer or extract the whole portable archive and follow its README.
           On Android, install the APK;
           the Android info ZIP contains instructions and build details. The phone app has fewer

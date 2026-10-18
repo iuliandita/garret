@@ -10,7 +10,8 @@ Running it
 ----------
 Extract the entire ZIP, open the app folder and double-click
 garret.exe. Keep the dist folder beside the executable.
-Use a 64-bit Intel/AMD Windows PC. No installer or administrator rights are
+Choose the x86_64 package for Intel/AMD or arm64 for Windows on ARM.
+No installer or administrator rights are
 required by this package.
 
 Windows may show an unknown-publisher or SmartScreen warning. This package

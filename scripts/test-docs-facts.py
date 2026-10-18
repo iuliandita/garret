@@ -96,8 +96,20 @@ class DocumentationFacts(unittest.TestCase):
         return data
 
     def test_recorded_release_matches_local_tag(self) -> None:
-        self.release_fixture()
+        data = self.release_fixture()
         facts.check_releases(self.root)
+        data["published"]["downloads"].append("windows-arm64")
+        (self.root / "docs/releases.json").write_text(json.dumps(data))
+        facts.check_releases(self.root)
+        for downloads in (
+            ["linux-x86_64", "android", "macos-arm64", "macos-x86_64", "windows-arm64"],
+            data["published"]["downloads"] + ["windows-unknown"],
+        ):
+            with self.subTest(downloads=downloads):
+                data["published"]["downloads"] = downloads
+                (self.root / "docs/releases.json").write_text(json.dumps(data))
+                with self.assertRaisesRegex(ValueError, "platform inventory"):
+                    facts.check_releases(self.root)
 
     def test_stale_schema_documentation_is_rejected(self) -> None:
         self.release_fixture()

@@ -1,5 +1,10 @@
 #Requires -Version 7.0
 # Build a portable Windows package on a native MSVC runner.
+param(
+    [ValidateSet('x86_64-pc-windows-msvc', 'aarch64-pc-windows-msvc')]
+    [string] $Target = 'x86_64-pc-windows-msvc'
+)
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -22,7 +27,7 @@ function Assert-UnchangedSource {
 }
 Assert-UnchangedSource
 
-$target = 'x86_64-pc-windows-msvc'
+$architecture = if ($Target -eq 'aarch64-pc-windows-msvc') { 'arm64' } else { 'x86_64' }
 $hostDir = Join-Path $repo 'app/shell-tauri/src-tauri'
 $uiDist = Join-Path $repo 'app/ui/dist'
 $hostDist = Join-Path $repo 'app/shell-tauri/dist'
@@ -40,7 +45,7 @@ finally { Pop-Location }
 if (Test-Path $hostDist) { Remove-Item $hostDist -Recurse -Force }
 Copy-Item $uiDist $hostDist -Recurse
 
-$flagsName = 'CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS'
+$flagsName = 'CARGO_TARGET_' + $Target.ToUpperInvariant().Replace('-', '_') + '_RUSTFLAGS'
 $previousFlags = [Environment]::GetEnvironmentVariable($flagsName)
 [Environment]::SetEnvironmentVariable($flagsName, '-C target-feature=+crt-static')
 Push-Location $hostDir
@@ -75,7 +80,7 @@ $sums = Get-ChildItem $stage -File -Recurse | Sort-Object FullName | ForEach-Obj
     "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $relative"
 }
 $sums | Set-Content (Join-Path $stage 'SHA256SUMS.txt') -Encoding utf8NoBOM
-$zip = Join-Path $out 'garret-windows-x86_64.zip'
+$zip = Join-Path $out "garret-windows-$architecture.zip"
 Compress-Archive -LiteralPath $stage -DestinationPath $zip -CompressionLevel Optimal
 "$((Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant())  $([IO.Path]::GetFileName($zip))" |
     Set-Content "$zip.sha256" -Encoding utf8NoBOM
@@ -85,6 +90,7 @@ if (Test-Path $bundleDir) { Remove-Item $bundleDir -Recurse -Force }
 Push-Location (Join-Path $repo 'app/shell-tauri')
 try { Invoke-Checked -Command bun -Arguments @((Join-Path $repo 'node_modules/@tauri-apps/cli/tauri.js'), 'bundle', '--ci', '--no-binary-patching', '--target', $target, '--bundles', 'nsis') }
 finally { Pop-Location }
-Invoke-Checked -Command python -Arguments @((Join-Path $PSScriptRoot 'collect-installers.py'), 'windows', $bundleDir, $out)
+$platform = if ($architecture -eq 'arm64') { 'windows-arm64' } else { 'windows' }
+Invoke-Checked -Command python -Arguments @((Join-Path $PSScriptRoot 'collect-installers.py'), $platform, $bundleDir, $out)
 Assert-UnchangedSource
 Write-Output "Wrote $zip"

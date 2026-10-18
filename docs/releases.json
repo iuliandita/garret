@@ -6,5 +6,5 @@
     "downloads": ["linux-x86_64", "windows-x86_64", "android", "macos-arm64", "macos-x86_64"],
     "android_scope": "library-and-scene-editor-manual-transfer"
   },
-  "develop_only": []
+  "develop_only": ["Native Windows arm64 installer and portable archive"]
 }
