@@ -190,7 +190,7 @@ export function createStatisticsPanel(deps: StatisticsPanelDeps): StatisticsPane
       const section = document.createElement("div");
       section.className = "stat-group";
 
-      const title = document.createElement("div");
+      const title = document.createElement("h3");
       title.className = "stat-group-heading";
       title.textContent = group.heading;
       section.append(title);

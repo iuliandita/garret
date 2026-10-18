@@ -284,9 +284,12 @@ is handled separately; do not assume an older Android build understands it.
 Collections use ordinary chapter containers as stories. The outermost chapters
 in the manuscript are stories; nested chapters remain sections. New story follows
 the selected story in the same parent, without an automatic part. Scenes stay in
-the selected story or section. Outside a story, a new scene goes into the nearest
-preceding story in outline order (the last story when nothing is selected). If
-none precedes it, a new story holds the scene, inside the selected part if any.
+the selected story or section, or follow a selected scene in its container.
+With a part selected, a new scene appends to the last story inside that part.
+An empty part uses the nearest preceding story in outline order. Other selections
+outside a story use this fallback too; no selection uses the last story. If the
+fallback finds no story, a new story holds the scene, inside the selected part
+if any.
 Each story keeps its existing title and revision status; navigator counts sum
 its scenes. Right-click a story (or press Shift+F10) and choose Story details to
 edit its title, optional public author, and status, or save and export it alone.

@@ -262,6 +262,11 @@ and profile backup and separate-copy rollback instructions in the
 assessment supplements the migration, backup, and rollback assessment for the
 full checked range; it does not replace it.
 
+Collection placement checks must distinguish the selected part's last story
+from earlier and later stories, including nested parts and section chapters.
+Check empty-part fallback separately. Statistics captures should show each group
+heading on its own row with consistent spacing in light and dark themes.
+
 Before release, run `sh scripts/check-docs --release` and review the complete
 range. A later query-only or version-only commit cannot erase an earlier
 migration obligation. The initial `--init --note` baseline records the existing
