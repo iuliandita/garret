@@ -2907,9 +2907,12 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn pdf_export_refuses_headless_with_a_display_instruction() {
+        let home = tempdir().unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .arg("--exact")
             .arg("cli::tests::pdf_without_display_child")
+            .env("HOME", home.path())
+            .env("XDG_DATA_HOME", home.path())
             .env("APP_PDF_HEADLESS_PROBE", "1")
             .env("GDK_BACKEND", "x11")
             .env_remove("DISPLAY")
