@@ -61,11 +61,11 @@ test("a selected collection part uses its last story, excluding sections and lat
   }
 });
 
-test("an empty collection part keeps the preceding-story or new-story fallback", () => {
+test("an empty collection part creates its own story regardless of preceding stories", () => {
   const part = item("part", null, "part", 0);
   const story = item("story", null, "chapter", 0);
   expect(planPlacement([story, part], "part", "scene", "collection")).toEqual({
-    holders: [], parentId: "story", afterId: null,
+    holders: ["chapter"], parentId: "part", afterId: null,
   });
   expect(planPlacement([part, story], "part", "scene", "collection")).toEqual({
     holders: ["chapter"], parentId: "part", afterId: null,

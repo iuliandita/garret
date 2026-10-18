@@ -245,6 +245,10 @@ export function planPlacement(
       const selectedIndex = items.findIndex((row) => row.id === selectedId);
       const selected = chain[0];
       if (selected?.type === "part") {
+        const next = items[selectedIndex + 1];
+        if (next === undefined || next.depth <= selected.depth) {
+          return { holders: ["chapter"], parentId: selected.id, afterId: null };
+        }
         let lastStory: ProjectItem | undefined;
         for (let index = selectedIndex + 1; index < items.length; index++) {
           const row = items[index]!;
