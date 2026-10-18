@@ -458,10 +458,6 @@ mod tests {
     }
 
     impl TestWatchdog {
-        fn start(timeout: std::time::Duration) -> Self {
-            Self::with_process_exit(timeout, false)
-        }
-
         fn for_process(timeout: std::time::Duration) -> Self {
             Self::with_process_exit(timeout, true)
         }
@@ -550,7 +546,7 @@ mod tests {
             let watchdog = if mode == "teardown" {
                 TestWatchdog::for_process(Duration::from_secs(1))
             } else {
-                TestWatchdog::start(Duration::from_secs(1))
+                TestWatchdog::with_process_exit(Duration::from_secs(1), false)
             };
             watchdog.phase("deliberately blocked test thread");
             if mode == "blocked" {

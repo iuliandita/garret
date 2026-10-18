@@ -1,5 +1,4 @@
 import { chapterItemsIn, itemsExcludingRoots } from "./outline-items";
-export { chapterItemsIn } from "./outline-items";
 import type { ProjectPreset } from "./project-preset";
 // app/ui/src/outline.ts
 // Neighbour arithmetic for outline moves: the pure half of "move this row up /
