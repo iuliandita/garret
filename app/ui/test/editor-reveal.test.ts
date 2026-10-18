@@ -3,9 +3,13 @@
 // the selection actually moves, and that moving it does not mark the document
 // dirty.
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
+
+afterEach(() => {
+  document.body.replaceChildren();
+});
 
 import { createEditor, type DocInput } from "../src/editor";
 

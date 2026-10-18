@@ -1,8 +1,12 @@
 // app/ui/test/cast-card.test.ts
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-import { beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
+
+afterEach(() => {
+  document.body.replaceChildren();
+});
 
 import { createCastCard, placeCastCard, type CastCardMember } from "../src/cast-card";
 

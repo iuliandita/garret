@@ -1698,7 +1698,7 @@ mod tests {
         out
     }
 
-    fn run(argv: &[String]) -> i32 {
+    fn run_isolated(argv: &[String]) -> i32 {
         let home = tempdir().unwrap();
         run_with(argv, home.path())
     }
@@ -2240,7 +2240,7 @@ mod tests {
             { "id": second.id, "title": "The Forest", "author": null },
         ]));
         let dest = dir.path().join("story.md");
-        assert_eq!(run(&argv(&["export", path.to_str().unwrap(), dest.to_str().unwrap(), "--story", &first.id])), EXIT_OK);
+        assert_eq!(run_isolated(&argv(&["export", path.to_str().unwrap(), dest.to_str().unwrap(), "--story", &first.id])), EXIT_OK);
         let text = std::fs::read_to_string(&dest).unwrap();
         assert!(text.starts_with("# The Harbour\n\nAda Lane\n"), "{text}");
         let refused = dir.path().join("refused.md");
@@ -2926,6 +2926,8 @@ mod tests {
 
     #[test]
     fn the_cli_writes_in_the_language_settings_json_names() {
+        // Guards against replacing strings_for(..) with default settings,
+        // which would ignore the saved locale when writing the manuscript.
         let project_dir = tempdir().unwrap();
         let db = project_dir.path().join("p.db");
         fixture(&db);
@@ -3053,7 +3055,7 @@ mod tests {
             vec!["history", &path, "--json"],
             vec!["search", &path, "harbour"],
         ] {
-            assert_eq!(run(&argv(&args)), EXIT_OK, "{args:?}");
+            assert_eq!(run_isolated(&argv(&args)), EXIT_OK, "{args:?}");
         }
     }
 
@@ -3071,7 +3073,7 @@ mod tests {
         let library = dir.path().join("projects");
 
         assert_eq!(
-            run(&argv(&[
+            run_isolated(&argv(&[
                 "restore",
                 &point.to_string_lossy(),
                 &library.to_string_lossy()
@@ -3106,9 +3108,9 @@ mod tests {
         assert!(recorded.database_verified);
         let point = crate::backup_bundle::path_for(&points, &recorded.id);
         let library = dir.path().join("projects");
-        assert_eq!(run(&argv(&["restore", &point.to_string_lossy(), &library.to_string_lossy()])), EXIT_UNREADABLE);
+        assert_eq!(run_isolated(&argv(&["restore", &point.to_string_lossy(), &library.to_string_lossy()])), EXIT_UNREADABLE);
         assert!(!library.exists());
-        assert_eq!(run(&argv(&["restore", &point.to_string_lossy(), &library.to_string_lossy(), "--allow-picture-gaps"])), EXIT_OK);
+        assert_eq!(run_isolated(&argv(&["restore", &point.to_string_lossy(), &library.to_string_lossy(), "--allow-picture-gaps"])), EXIT_OK);
         let restored = library.join("book-recovered.db");
         let member = Store::open_readonly(&restored).unwrap().cast_list().unwrap();
         assert_eq!(member[0].picture_path.as_deref(), Some("missing.png"));
@@ -3132,7 +3134,7 @@ mod tests {
         let untouched = std::fs::read(&occupied).unwrap();
 
         assert_eq!(
-            run(&argv(&[
+            run_isolated(&argv(&[
                 "restore",
                 &point.to_string_lossy(),
                 &library.to_string_lossy()
@@ -3150,7 +3152,7 @@ mod tests {
         let point = dir.path().join("p.db");
         fixture(&point);
         assert_eq!(
-            run(&argv(&["restore", &point.to_string_lossy()])),
+            run_isolated(&argv(&["restore", &point.to_string_lossy()])),
             EXIT_USAGE
         );
     }
@@ -3162,7 +3164,7 @@ mod tests {
         std::fs::write(&garbage, "this is not a database").unwrap();
         let library = dir.path().join("projects");
         assert_eq!(
-            run(&argv(&[
+            run_isolated(&argv(&[
                 "restore",
                 &garbage.to_string_lossy(),
                 &library.to_string_lossy()
@@ -3188,19 +3190,19 @@ mod tests {
         let db = dir.path().join("p.db");
         fixture(&db);
         let path = db.to_string_lossy().into_owned();
-        assert_eq!(run(&argv(&["inspect", &path, "--depth"])), EXIT_USAGE);
-        assert_eq!(run(&argv(&["inspect"])), EXIT_USAGE);
-        assert_eq!(run(&argv(&["search", &path])), EXIT_USAGE);
-        assert_eq!(run(&argv(&["nonsense", &path])), EXIT_USAGE);
-        assert_eq!(run(&[]), EXIT_USAGE);
+        assert_eq!(run_isolated(&argv(&["inspect", &path, "--depth"])), EXIT_USAGE);
+        assert_eq!(run_isolated(&argv(&["inspect"])), EXIT_USAGE);
+        assert_eq!(run_isolated(&argv(&["search", &path])), EXIT_USAGE);
+        assert_eq!(run_isolated(&argv(&["nonsense", &path])), EXIT_USAGE);
+        assert_eq!(run_isolated(&[]), EXIT_USAGE);
         assert_eq!(
-            run(&argv(&["search", &path, "x", "--limit", "many"])),
+            run_isolated(&argv(&["search", &path, "x", "--limit", "many"])),
             EXIT_USAGE
         );
         // 0 would return nothing from a search that matched, which reads as "no
         // matches" -- the one answer a search must not fake.
         assert_eq!(
-            run(&argv(&["search", &path, "harbour", "--limit", "0"])),
+            run_isolated(&argv(&["search", &path, "harbour", "--limit", "0"])),
             EXIT_USAGE
         );
     }
@@ -3221,7 +3223,7 @@ mod tests {
             vec!["validate", &garbage],
             vec!["search", &garbage, "x"],
         ] {
-            assert_eq!(run(&argv(&args)), EXIT_UNREADABLE, "{args:?}");
+            assert_eq!(run_isolated(&argv(&args)), EXIT_UNREADABLE, "{args:?}");
         }
     }
 
@@ -3235,17 +3237,17 @@ mod tests {
         fixture(&db);
         let path = db.to_string_lossy().into_owned();
         assert_eq!(
-            run(&argv(&["search", &path, "zzzznotinthisbook"])),
+            run_isolated(&argv(&["search", &path, "zzzznotinthisbook"])),
             EXIT_ANSWER_IS_FAILURE
         );
         damage(
             &db,
             "INSERT INTO doc VALUES ('ghost', '{\"type\":\"doc\",\"content\":[]}', 1, 0);",
         );
-        assert_eq!(run(&argv(&["validate", &path])), EXIT_ANSWER_IS_FAILURE);
+        assert_eq!(run_isolated(&argv(&["validate", &path])), EXIT_ANSWER_IS_FAILURE);
         // The control: the same file still INSPECTS fine, so exit 3 is about the
         // answer and not about the command having stopped working.
-        assert_eq!(run(&argv(&["inspect", &path])), EXIT_OK);
+        assert_eq!(run_isolated(&argv(&["inspect", &path])), EXIT_OK);
     }
 
     // ---------------------------------------------------------- salvage
@@ -3707,18 +3709,18 @@ mod tests {
         // 0: recovered everything, nothing lost.
         let clean = dir.path().join("clean");
         assert_eq!(
-            run(&argv(&["salvage", &path, &clean.to_string_lossy()])),
+            run_isolated(&argv(&["salvage", &path, &clean.to_string_lossy()])),
             EXIT_OK
         );
 
         // 1: the output directory already exists. The SOURCE is fine, so this
         // must not read as "could not open the project".
         assert_eq!(
-            run(&argv(&["salvage", &path, &clean.to_string_lossy()])),
+            run_isolated(&argv(&["salvage", &path, &clean.to_string_lossy()])),
             EXIT_USAGE
         );
         // 1: a missing argument, before anything is opened at all.
-        assert_eq!(run(&argv(&["salvage", &path])), EXIT_USAGE);
+        assert_eq!(run_isolated(&argv(&["salvage", &path])), EXIT_USAGE);
 
         // 2: a zero-byte file. SQLite reads one as an EMPTY DATABASE, so this
         // is the case that would otherwise report a truncated manuscript as a
@@ -3726,7 +3728,7 @@ mod tests {
         let empty = dir.path().join("empty.db");
         std::fs::write(&empty, b"").unwrap();
         assert_eq!(
-            run(&argv(&[
+            run_isolated(&argv(&[
                 "salvage",
                 &empty.to_string_lossy(),
                 &dir.path().join("e").to_string_lossy()
@@ -3740,7 +3742,7 @@ mod tests {
             "INSERT INTO doc VALUES ('ghost', '{\"type\":\"doc\",\"content\":[]}', 1, 0);",
         );
         assert_eq!(
-            run(&argv(&[
+            run_isolated(&argv(&[
                 "salvage",
                 &path,
                 &dir.path().join("damaged").to_string_lossy()
@@ -3786,7 +3788,7 @@ mod tests {
                 let body = serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":text}]}]}).to_string();
                 conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![body, scene.id]).unwrap();
                 let dest = dir.path().join(format!("{count}.epub"));
-                assert_eq!(run(&argv(&["export", db.to_str().unwrap(), dest.to_str().unwrap(), "--format", "epub"])), EXIT_OK);
+                assert_eq!(run_isolated(&argv(&["export", db.to_str().unwrap(), dest.to_str().unwrap(), "--format", "epub"])), EXIT_OK);
             }
             return;
         }
@@ -3935,7 +3937,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let source = write_manuscript(dir.path(), "book.md", "# Book\n\n## One\n\ntext\n");
         let library = dir.path().join("library");
-        let code = run(&argv(&[
+        let code = run_isolated(&argv(&[
             "import",
             source.to_str().unwrap(),
             library.to_str().unwrap(),
@@ -4007,7 +4009,7 @@ mod tests {
         let library = dir.path().join("library");
         assert!(import(dir.path(), &source, &library).is_err());
 
-        let code = run(&argv(&[
+        let code = run_isolated(&argv(&[
             "import",
             source.to_str().unwrap(),
             library.to_str().unwrap(),
@@ -4216,7 +4218,7 @@ mod tests {
 
     #[test]
     fn preflight_alone_is_a_usage_error() {
-        assert_eq!(run(&argv(&["preflight"])), EXIT_USAGE);
+        assert_eq!(run_isolated(&argv(&["preflight"])), EXIT_USAGE);
     }
 
     #[test]
@@ -4224,7 +4226,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let missing = dir.path().join("nosuch.db");
         assert_eq!(
-            run(&argv(&["preflight", missing.to_str().unwrap()])),
+            run_isolated(&argv(&["preflight", missing.to_str().unwrap()])),
             EXIT_UNREADABLE
         );
     }

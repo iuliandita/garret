@@ -3703,6 +3703,7 @@ const DEFAULT_PROJECT: &str = "default.db";
 /// opened. That is the same failure the recorded `last_project` hazard
 /// describes, except it splits the whole library rather than one setting.
 pub(crate) fn data_home() -> PathBuf {
+    // Test builds refuse ambient profiles; callers must pass a temporary data home.
     #[cfg(test)]
     panic!("tests must pass an isolated data home instead of resolving the application profile");
     #[cfg(not(test))]

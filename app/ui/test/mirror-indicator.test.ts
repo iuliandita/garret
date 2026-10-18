@@ -8,7 +8,7 @@
 // matches the book -- and never about whether the book is safe.
 
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-import { beforeEach, describe as suite, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe as suite, expect, test } from "bun:test";
 import {
   createMirrorIndicator,
   describe,
@@ -17,6 +17,10 @@ import {
 import { EN } from "../src/i18n/en";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
+
+afterEach(() => {
+  document.body.replaceChildren();
+});
 
 const NOW = 1_787_174_042_000;
 const HOUR = 3_600_000;
