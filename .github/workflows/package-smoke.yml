@@ -47,7 +47,7 @@ jobs:
             tar) file="garret-$ver-linux-x86_64.tar.gz" ;;
           esac
           if [ "$KIND" = rpm ]; then
-            dnf install -y curl file xorg-x11-server-Xvfb xwininfo ImageMagick procps-ng
+            dnf install -y curl file xorg-x11-server-Xvfb xwininfo ImageMagick procps-ng dbus-daemon
           else
             $sudo apt-get update -qq
             $sudo apt-get install -y -qq xvfb imagemagick x11-utils libegl-mesa0 libgl1-mesa-dri
@@ -76,7 +76,7 @@ jobs:
           unset WAYLAND_DISPLAY
           export DISPLAY=:99 GDK_BACKEND=x11 HOME="$RUNNER_TEMP/home-$label"
           mkdir -p "$HOME"
-          ${LAUNCH_PREFIX:-} "$CMD" >"$out/app-$label.log" 2>&1 &
+          dbus-run-session -- "$CMD" >"$out/app-$label.log" 2>&1 &
           pid=$!
           sleep 25
           { xwininfo -root -tree || true; ps -eo pid,comm,args | grep -i -E "garret|webkit" | grep -v grep || true; } > "$out/diagnostics-$label.txt"
@@ -92,19 +92,6 @@ jobs:
           Xvfb :99 -screen 0 1280x800x24 >/dev/null 2>&1 &
           sleep 2
           bash "$RUNNER_TEMP/launch.sh" "${{ matrix.name }}"
-      - name: Diagnose a blank start on Ubuntu
-        if: failure() && matrix.container == ''
-        shell: bash
-        run: |
-          set -uo pipefail
-          out="$RUNNER_TEMP/out"
-          { dpkg -l 'libwebkit2gtk-4.1-0' 'bubblewrap' 'xdg-dbus-proxy' 2>/dev/null | tail -n 3
-            echo "DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-unset}"
-            bwrap --ro-bind / / --dev /dev --proc /proc true && echo "bwrap: ok" || echo "bwrap: failed $?"; } > "$out/environment.txt" 2>&1
-          cat "$out/environment.txt"
-          LAUNCH_PREFIX="dbus-run-session --" bash "$RUNNER_TEMP/launch.sh" "${{ matrix.name }}-session-bus" && echo "RESULT: starts with a session bus" | tee -a "$out/environment.txt"
-          WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 bash "$RUNNER_TEMP/launch.sh" "${{ matrix.name }}-no-sandbox" && echo "RESULT: starts without the WebKit sandbox" | tee -a "$out/environment.txt"
-          exit 1
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
