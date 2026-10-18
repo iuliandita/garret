@@ -12,7 +12,8 @@ The export result adds `xml_characters_removed`, counting both replacements and
 deletions; the interface and CLI explain a nonzero count in plain language.
 Stored prose, titles, metadata, marks, history, and ordinary XML
 whitespace remain unchanged. Fixtures without these characters retain identical
-output bytes. Identity preflight and export word counts inspect the cleaned prose.
+output bytes. Identity preflight inspects cleaned prose, titles, names, and metadata. Export
+word counts inspect the cleaned prose.
 Markdown and PDF prose are unchanged by this cleanup.
 Each source field is counted once even when repeated in headings, navigation,
 or OPF metadata. DOCX emits no core/app properties, headers, or footers.

@@ -22,6 +22,22 @@
 
 use std::collections::HashMap;
 
+pub(crate) fn strip_xml_text(text: &mut String) -> u64 {
+    let mut removed = 0;
+    *text = text.chars().filter_map(|c| match c {
+        '\u{b}' | '\u{c}' => {
+            removed += 1;
+            Some(' ')
+        }
+        '\t' | '\n' | '\r' | '\u{20}'..='\u{d7ff}' | '\u{e000}'..='\u{fffd}' | '\u{10000}'..='\u{10ffff}' => Some(c),
+        _ => {
+            removed += 1;
+            None
+        }
+    }).collect();
+    removed
+}
+
 /// Characters that can open inline markup or be misread as it. `&` is
 /// deliberately absent, and so is the rest of the CommonMark ASCII-punctuation
 /// set: escaping all of it makes a manuscript unreadable as plain text, which is
