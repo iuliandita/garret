@@ -1558,6 +1558,11 @@ fn extract(
                 text.push('\n');
                 std::fs::write(out_dir.join(DOCUMENTS_DIR).join(&file), text)
                     .map_err(|e| e.to_string())?;
+                if crate::figure_salvage::has_new_nodes(body) {
+                    let raw = names.pick(id, "json");
+                    std::fs::write(out_dir.join(DOCUMENTS_DIR).join(raw), body)
+                        .map_err(|e| e.to_string())?;
+                }
                 index.record(id, body);
                 let projected = if crate::figure_salvage::has_new_nodes(body) {
                     serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":markdown.replace("../pictures/", "pictures/")}]}]}).to_string()
@@ -2227,6 +2232,11 @@ fn write_snapshots(
                     out.push('\n');
                     std::fs::write(into.join(&file), out).map_err(|e| e.to_string())?;
                     text.push_str(&format!("{label} {SNAPSHOTS_DIR}/{sid}/{file}\n"));
+                    if crate::figure_salvage::has_new_nodes(&body) {
+                        let raw = names.pick(&v.item_id, "json");
+                        std::fs::write(into.join(&raw), &body).map_err(|e| e.to_string())?;
+                        text.push_str(&format!("{label} {SNAPSHOTS_DIR}/{sid}/{raw}\n"));
+                    }
                     recovered += 1;
                 }
                 None => {

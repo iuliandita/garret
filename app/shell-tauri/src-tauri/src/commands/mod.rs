@@ -8,6 +8,7 @@ pub(crate) mod design;
 pub(crate) mod dialogs;
 pub(crate) mod dict;
 pub(crate) mod export;
+pub(crate) mod figures;
 pub(crate) mod history;
 pub(crate) mod identity;
 pub(crate) mod knowledge;

@@ -436,6 +436,15 @@ fn mobile_flush(
 }
 
 #[tauri::command]
+fn mobile_figure_preview(
+    host: State<'_, MobileHost>, generation: u64, item_id: String, instance_id: String, asset_id: String,
+) -> Result<crate::pictures::PictureView, String> {
+    let session = host.session.lock().map_err(|_| "book session unavailable")?;
+    let open = checked(&session, generation)?;
+    crate::figures::preview(&book_path(&host, &open.id)?, &open.store, &item_id, &instance_id, &asset_id)
+}
+
+#[tauri::command]
 fn mobile_close(host: State<'_, MobileHost>, generation: u64) -> Result<(), String> {
     let mut session = host
         .session
@@ -871,6 +880,7 @@ pub fn run() {
             mobile_document,
             mobile_flush,
             mobile_close,
+            mobile_figure_preview,
             mobile_transfer_start,
             mobile_transfer_status,
             mobile_transfer_cancel,
@@ -2213,14 +2223,40 @@ mod tests {
         finish_transfer(&host, &job.token).unwrap();
     }
     #[test]
+    fn schema18_reader_mobile_opens_edits_and_reopens_all_supported_presets() {
+        for preset in [None, Some("novel"), Some("short"), Some("nonfiction"), Some("collection")] {
+            let root = tempfile::tempdir().unwrap();
+            let (host, id) = host(root.path());
+            let path = book_path(&host, &id).unwrap();
+            let (store, scene, body) = store::test_support::reader_fixture(&path);
+            if let Some(preset) = preset { store.set_meta("project.preset", preset).unwrap(); }
+            store.checkpoint().unwrap();
+            drop(store);
+            open_book(&host, &id).unwrap();
+            let session = host.session.lock().unwrap();
+            let open = checked(&session, session.generation).unwrap();
+            assert_eq!(open.store.user_version().unwrap(), 18);
+            assert_eq!(open.store.load_doc(&scene).unwrap().body, body);
+            let edited = body.replace("Surrounding prose", "Mobile prose");
+            crate::mobile_core::flush(&open.store, session.generation, session.generation, &[store::FlushEntry { item_id: scene.clone(), body: edited.clone(), base_rev: 1, comments: None }], &[]).unwrap();
+            drop(session);
+            // Opening the saved book through a fresh handle must preserve N.
+            let reader = store::Store::open_existing(&path).unwrap();
+            assert_eq!(reader.user_version().unwrap(), 18);
+            assert_eq!(reader.load_doc(&scene).unwrap().body, edited);
+        }
+    }
+
+    #[test]
     fn mobile_transfer_open_refuses_schema_before_preset_without_library_changes() {
-        for (preset, newer, code) in [
-            ("zzz", false, "unsupported_project_preset"),
-            ("novel", true, "unsupported_schema"),
-            ("short", true, "unsupported_schema"),
-            ("nonfiction", true, "unsupported_schema"),
-            ("collection", true, "unsupported_schema"),
-            ("zzz", true, "unsupported_schema"),
+        for (preset, version, code) in [
+            ("zzz", 17, "unsupported_project_preset"),
+            ("zzz", 18, "unsupported_project_preset"),
+            ("novel", 19, "unsupported_schema"),
+            ("short", 19, "unsupported_schema"),
+            ("nonfiction", 19, "unsupported_schema"),
+            ("collection", 19, "unsupported_schema"),
+            ("zzz", 19, "unsupported_schema"),
         ] {
             for wal in [false, true] {
                 let root = tempfile::tempdir().unwrap();
@@ -2236,11 +2272,10 @@ mod tests {
                         [preset],
                     )
                     .unwrap();
-                if newer {
-                    connection
-                        .pragma_update(None, "user_version", store::SCHEMA_VERSION + 1)
-                        .unwrap();
+                if version == 18 {
+                    connection.execute_batch(store::figure_assets::PROPOSED_MIGRATION).unwrap();
                 }
+                connection.pragma_update(None, "user_version", version).unwrap();
                 let mut connection = Some(connection);
                 if !wal {
                     drop(connection.take());
@@ -2255,7 +2290,7 @@ mod tests {
                 let before = transfer::tests::contents(&host.books);
                 assert!(
                     matches!(open_book(&host, &id), Err(found) if found == code),
-                    "{preset} {newer}"
+                    "{preset} {version}"
                 );
                 let session = host.session.lock().unwrap();
                 assert!(session.open.is_none());
@@ -2267,7 +2302,7 @@ mod tests {
                 );
                 for (path, bytes) in &before {
                     if !path.to_string_lossy().ends_with("-shm") {
-                        assert_eq!(after.get(path), Some(bytes), "{preset} {newer} WAL={wal}");
+                        assert_eq!(after.get(path), Some(bytes), "{preset} {version} WAL={wal}");
                     }
                 }
                 drop(connection);

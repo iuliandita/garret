@@ -53,6 +53,7 @@ async function open(command: "mobile_open" | "mobile_create", args: Record<strin
     // Build before retiring the library, so malformed content leaves recovery UI.
     const container = element("div");
     workspace = createMobileWorkspace(container, {
+      figurePreview: (itemId, instanceId, assetId) => native.core.invoke<import("../../ui/src/document-reader").FigurePreview>("mobile_figure_preview", { generation, itemId, instanceId, assetId }),
       bookTitle: book.name || m.unnamedBook, locale, theme, scenes: book.scenes, initial,
       initialPosition: position?.sceneId === first.id ? position : undefined,
       positionUnavailable,

@@ -18,6 +18,7 @@ export interface MobileDocument {
 export interface MobileContext { id: string; title: string; kind: "part" | "chapter" }
 export interface MobileScene { id: string; title: string; depth: number; context?: readonly MobileContext[] }
 export interface MobileWorkspaceOptions {
+  figurePreview?(itemId: string, instanceId: string, assetId: string): Promise<import("../../ui/src/document-reader").FigurePreview>;
   bookTitle: string;
   locale: "en" | "de";
   theme: "light" | "dark";
@@ -181,6 +182,8 @@ export function createMobileWorkspace(mount: HTMLElement, opts: MobileWorkspaceO
     for (const [key, button] of markButtons) button.setAttribute("aria-pressed", String(marks[key as keyof typeof marks]));
   }
   editor = createEditor(get(".mobile-prose"), { kind: "pmjson", json: initial }, {
+    figurePreview: opts.figurePreview ? (instanceId, assetId) => opts.figurePreview!(session?.activeDocId() ?? opts.initial.item_id, instanceId, assetId) : undefined,
+    onAtomEditRefused: () => showError(m.atomsReadOnly),
     onClipboardRefused: () => showError(m.clipboardRefused),
     onChange: change => {
       session.noteChange(change);

@@ -4,7 +4,7 @@ use crate::{
     backup_bundle, pictures,
     store::{
         document_format,
-        figure_assets::{FigureAsset, SCHEMA_VERSION},
+        figure_assets::{FigureAsset, READ_SCHEMA_VERSION},
         Store,
     },
 };
@@ -17,7 +17,7 @@ use std::{
 
 pub(crate) fn import_copy(db: &Path, store: &Store, source: &Path) -> Result<FigureAsset, String> {
     if !document_format::new_nodes_allowed()
-        || store.user_version().map_err(|e| e.to_string())? < SCHEMA_VERSION
+        || store.user_version().map_err(|e| e.to_string())? < READ_SCHEMA_VERSION
     {
         return Err("figure registration is disabled".into());
     }
@@ -93,6 +93,10 @@ fn import_original(
 }
 
 pub(crate) fn verify_original(path: &Path, asset: &FigureAsset) -> Result<(), String> {
+    verified_original(path, asset).map(|_| ())
+}
+
+fn verified_original(path: &Path, asset: &FigureAsset) -> Result<Vec<u8>, String> {
     let data = read_original(path).map_err(|error| format!("figure {}: {error}", asset.id))?;
     if data.len() as u64 != asset.bytes || format!("{:x}", Sha256::digest(&data)) != asset.sha256 {
         return Err(format!(
@@ -100,7 +104,25 @@ pub(crate) fn verify_original(path: &Path, asset: &FigureAsset) -> Result<(), St
             asset.id
         ));
     }
-    Ok(())
+    Ok(data)
+}
+
+/// Resolve a placement to a verified original; return only a bounded preview.
+pub(crate) fn preview(db: &Path, store: &Store, item_id: &str, instance_id: &str, asset_id: &str) -> Result<pictures::PictureView, String> {
+    let body = store.load_doc(item_id).map_err(|e| e.to_string())?.body;
+    let value: serde_json::Value = serde_json::from_str(&body).map_err(|_| "unreadable figure document")?;
+    let found = value["content"].as_array().is_some_and(|nodes| nodes.iter().any(|node|
+        node["type"] == "figure" && node["attrs"]["id"] == instance_id && node["attrs"]["asset_id"] == asset_id));
+    if !found { return Err("figure placement changed".into()); }
+    let asset = store.figure_assets().map_err(|e| e.to_string())?.into_iter()
+        .find(|asset| asset.id == asset_id).ok_or("unregistered figure asset")?;
+    let dir = pictures::dir_for(db);
+    let data = verified_original(&dir.join(&asset.stored_name), &asset)?;
+    let preview = pictures::figure_preview(&data, asset.orientation).map_err(|e| e.to_string())?;
+    Ok(pictures::PictureView {
+        state: pictures::VIEW_PRESENT.into(),
+        data_uri: Some(format!("data:image/png;base64,{}", pictures::base64(&preview))),
+    })
 }
 
 fn tiff_orientation(data: &[u8]) -> Result<u8, String> {

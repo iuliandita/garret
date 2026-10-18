@@ -1247,7 +1247,7 @@ pub fn file_body(item: &crate::store::Item, body: Option<&str>) -> String {
 
 #[cfg(test)]
 pub(crate) fn planned_file(item: &crate::store::Item, schema: i64, plan: &crate::publication_plan::Plan) -> Result<crate::export::Manuscript, String> {
-    if schema != crate::store::figure_assets::SCHEMA_VERSION { return Err("new-format mirror requires the matching book schema".into()); }
+    if schema != crate::store::figure_assets::READ_SCHEMA_VERSION { return Err("new-format mirror requires the matching book schema".into()); }
     let doc = plan.documents.get(&item.id).ok_or("missing planned mirror document")?;
     let (mut prose, underlined_runs) = crate::markdown::document(&item.id, doc, plan);
     for note in plan.notes.iter().filter(|note| note.item == item.id) {

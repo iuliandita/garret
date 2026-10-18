@@ -1,0 +1,73 @@
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
+import { expect, test } from "bun:test";
+import { EditorState } from "prosemirror-state";
+import { undo, redo } from "prosemirror-history";
+import { createEditor, editorPlugins, schema } from "../src/editor";
+import { atomSignature, preserveAtoms } from "../src/document-reader";
+
+if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
+const note = schema.nodes.endnote.create({ id: "01900000-0000-7000-8000-000000000001", fmt: "text", body: "Saved note\nMore" });
+const figure = schema.nodes.figure.create({ id: "01900000-0000-7000-8000-000000000002", asset_id: "01900000-0000-7000-8000-000000000003", width: "half", caption: "Caption", alt: "Description" });
+const doc = schema.node("doc", null, [schema.node("paragraph", null, [schema.text("Prose"), note]), figure, schema.nodes.scene_break.create(), schema.node("paragraph", null, schema.text("After"))]);
+
+test("reader prose edits and undo retain atoms; changes, deletion, and insertion refuse", () => {
+  let state = EditorState.create({ doc, plugins: [...editorPlugins(), preserveAtoms()] });
+  const original = atomSignature(state.doc);
+  const dispatch = (tr: Parameters<typeof state.apply>[0]) => { state = state.apply(tr); };
+  dispatch(state.tr.insertText("Edited ", 1));
+  expect(state.doc.textContent).toContain("Edited Prose");
+  expect(atomSignature(state.doc)).toBe(original);
+  expect(undo(state, dispatch)).toBe(true);
+  expect(state.doc.eq(doc)).toBe(true);
+  expect(redo(state, dispatch)).toBe(true);
+  const before = state;
+  dispatch(state.tr.insert(1, note));
+  expect(state).toBe(before);
+  dispatch(state.tr.replaceWith(0, state.doc.content.size, [figure, doc.child(0), doc.child(2), doc.child(3)]));
+  expect(state).toBe(before);
+  dispatch(state.tr.delete(1, state.doc.content.size));
+  expect(state).toBe(before);
+  state.doc.descendants((node, pos) => {
+    if (node.type.name === "endnote") dispatch(state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, body: "changed" }));
+  });
+  expect(state).toBe(before);
+});
+
+test("reader displays note body and bounded figure preview; late previews stay retired", async () => {
+  const mount = document.createElement("div"); document.body.append(mount);
+  let resolve!: (value: { state: string; data_uri: string }) => void;
+  const observer = globalThis.IntersectionObserver;
+  Object.defineProperty(globalThis, "IntersectionObserver", { configurable: true, writable: true, value: undefined });
+  let refused = 0;
+  const editor = createEditor(mount, { kind: "pmjson", json: doc.toJSON() }, {
+    onAtomEditRefused: () => refused++,
+    figurePreview: async () => new Promise(r => { resolve = r; }),
+  });
+  const original = editor.serialize();
+  editor.restoreSelection(7, 7);
+  editor.erasePrev();
+  expect(editor.serialize()).toBe(original);
+  expect(refused).toBe(1);
+  const button = mount.querySelector<HTMLButtonElement>(".document-endnote-reader button")!;
+  expect(button.getAttribute("aria-label")).toMatch(/1$/);
+  button.click();
+  expect(mount.querySelector<HTMLElement>(".document-endnote-body")!.hidden).toBe(false);
+  expect(mount.textContent).toContain("Saved note\nMore");
+  const oldFigure = mount.querySelector("figure")!;
+  editor.replaceDoc({ kind: "pmjson", json: schema.node("doc", null, schema.node("paragraph", null, schema.text("Other"))).toJSON() });
+  resolve({ state: "present", data_uri: "data:image/png;base64,AAAA" });
+  await Promise.resolve(); await Promise.resolve();
+  expect(oldFigure.querySelector("img")).toBeNull();
+  editor.destroy();
+  const current = createEditor(mount, { kind: "pmjson", json: doc.toJSON() }, {
+    figurePreview: async (instance, asset) => {
+      expect(instance).toBe(figure.attrs.id);
+      expect(asset).toBe(figure.attrs.asset_id);
+      return { state: "present", data_uri: "data:image/png;base64,AAAA" };
+    },
+  });
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(mount.querySelector("figure img")?.getAttribute("alt")).toBe("Description");
+  current.destroy(); mount.remove();
+  Object.defineProperty(globalThis, "IntersectionObserver", { configurable: true, writable: true, value: observer });
+});

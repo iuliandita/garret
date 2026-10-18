@@ -588,6 +588,80 @@ pub(crate) mod tests {
         }
     }
     #[test]
+    #[ignore = "explicit local phone fixture generation"]
+    fn write_schema18_phone_fixture() {
+        let out = PathBuf::from(std::env::var_os("GARRET_READER_FIXTURE_OUT").expect("fixture output required"));
+        fs::create_dir(&out).expect("fixture output must not exist");
+        // Transfer publication renames exclusively, so staging shares its filesystem.
+        let source = tempfile::tempdir_in(&out).unwrap();
+        let db = source.path().join("source.db");
+        let pixels: Vec<u8> = (0..160).flat_map(|_| (0..320).flat_map(|x| {
+            if x < 160 { [220, 40, 40] } else { [40, 80, 220] }
+        })).collect();
+        let mut png = Vec::new();
+        {
+            let mut encoder = png::Encoder::new(&mut png, 320, 160);
+            encoder.set_color(png::ColorType::Rgb);
+            encoder.set_depth(png::BitDepth::Eight);
+            encoder.write_header().unwrap().write_image_data(&pixels).unwrap();
+        }
+        let (store, scene, body) = crate::store::test_support::reader_fixture_with_image(&db, &png);
+        store.set_meta(crate::core_constants::NAME_KEY, "Schema 18 reader check").unwrap();
+        store.set_meta(crate::core_constants::PRESET_KEY, "novel").unwrap();
+        let bundle = source.path().join("snapshot.point");
+        assert!(backup_bundle::write(&db, &store, &bundle).unwrap().verified);
+        let key_path = out.join("reader-18-recovery-key.txt");
+        encrypted_archive::generate_key(&key_path).unwrap();
+        let key = encrypted_archive::key_from_path(&key_path).unwrap();
+        let archive = out.join("reader-18.age");
+        encrypted_archive::write_verified_cipher(&bundle, &archive, &key).unwrap();
+        // Exercise the actual phone import path and retain its owned copy for adb seeding.
+        let stage = stage(&source.path().join("transfer"), &uuid::Uuid::now_v7().to_string()).unwrap();
+        fs::copy(&key_path, stage.join("key.in")).unwrap();
+        fs::copy(&archive, stage.join("archive.in")).unwrap();
+        let books = out.join("books");
+        fs::create_dir(&books).unwrap();
+        let preview = preview(&stage, &books).unwrap();
+        let id = publish(&stage, &books, &preview).unwrap();
+        let imported = Store::open_existing(&books.join(format!("{id}.db"))).unwrap();
+        assert_eq!(imported.user_version().unwrap(), crate::store::document_format::READ_SCHEMA_VERSION);
+        assert_eq!(imported.load_doc(&scene).unwrap().body, body);
+        assert_eq!(imported.figure_assets().unwrap(), store.figure_assets().unwrap());
+        imported.checkpoint().unwrap();
+        drop(imported);
+        fs::write(out.join("fixture.json"), serde_json::to_vec_pretty(&serde_json::json!({
+            "schema": crate::store::document_format::READ_SCHEMA_VERSION,
+            "book_id": id, "scene_id": scene, "title": "Schema 18 reader check",
+            "body": serde_json::from_str::<serde_json::Value>(&body).unwrap(),
+            "assets": store.figure_assets().unwrap()
+        })).unwrap()).unwrap();
+        fs::write(out.join("README.md"), "# Schema 18 reader phone check\n\nSynthetic sample only. Install the schema-18 reader APK first; 0.0.5 refuses this book.\n\n1. Copy reader-18.age and reader-18-recovery-key.txt to a phone-accessible folder.\n2. In garret's library, choose Import archive. Select the archive, then the recovery key. Review the preview and confirm.\n3. Open Schema 18 reader check and Reader fixture. Tap note 1: it contains Retained note and Second line. Close it.\n4. Check the split-color figure, Retained caption, its alternative text, the scene break, and After break.\n5. Edit only Surrounding prose or After break. Wait for Saved on this device. Close and reopen the app and book; confirm the edit, note, figure and break remain.\n6. Export the book and recovery key through Outline > Export book to test the reverse transfer.\n\nAtom insertion, deletion and editing are disabled in this reader release. Never decrement user_version.\nThe recovery key is synthetic test material; do not reuse it for real writing.\nbooks/ is a plaintext owned copy for isolated emulator seeding, not a phone import format. fixture.json describes expected content.\nRegenerate with scripts/android/reader-fixture OUTPUT_DIRECTORY (a new directory).\n").unwrap();
+    }
+
+    #[test]
+    fn schema18_reader_mobile_archive_round_trip_preserves_nodes_and_originals() {
+        let root = tempfile::tempdir().unwrap();
+        let db = root.path().join("source.db");
+        let (store, scene, body) = crate::store::test_support::reader_fixture(&db);
+        let assets = store.figure_assets().unwrap();
+        let stage = stage(&root.path().join("transfer"), &uuid::Uuid::now_v7().to_string()).unwrap();
+        let bundle = stage.join("snapshot.point");
+        assert!(backup_bundle::write(&db, &store, &bundle).unwrap().verified);
+        encrypted_archive::generate_key(&stage.join("key.in")).unwrap();
+        let key = encrypted_archive::key_from_path(&stage.join("key.in")).unwrap();
+        encrypted_archive::write_verified_cipher(&bundle, &stage.join("archive.in"), &key).unwrap();
+        let books = root.path().join("books");
+        fs::create_dir(&books).unwrap();
+        let preview = preview(&stage, &books).unwrap();
+        let id = publish(&stage, &books, &preview).unwrap();
+        let copied = Store::open_existing(&books.join(format!("{id}.db"))).unwrap();
+        assert_eq!(copied.user_version().unwrap(), 18);
+        assert_eq!(copied.load_doc(&scene).unwrap().body, body);
+        assert_eq!(copied.figure_assets().unwrap(), assets);
+        copied.validate_retained_formats().unwrap();
+    }
+
+    #[test]
     fn mobile_transfer_schema_refusal_precedes_preset_and_never_publishes() {
         #[derive(serde::Serialize, serde::Deserialize)]
         struct Asset {
@@ -632,7 +706,7 @@ pub(crate) mod tests {
                 let connection =
                     rusqlite::Connection::open(backup_bundle::db_path(&bundle)).unwrap();
                 connection
-                    .pragma_update(None, "user_version", crate::store::SCHEMA_VERSION + 1)
+                    .pragma_update(None, "user_version", crate::store::READ_SCHEMA_VERSION + 1)
                     .unwrap();
                 drop(connection);
                 let inventory_path = bundle.join(backup_bundle::INVENTORY_NAME);
