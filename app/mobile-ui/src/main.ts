@@ -1,3 +1,4 @@
+import { askUpgrade } from "../../ui/src/upgrade-prompt";
 import { element } from "./element";
 import type { MobileDrafting } from "./drafting";
 import { mobileMessages } from "./messages";
@@ -43,7 +44,7 @@ async function open(command: "mobile_open" | "mobile_create", args: Record<strin
     try { book = await native.core.invoke<OpenBook>(command, args); }
     catch (error) {
       if (command !== "mobile_open" || String(error) !== "format_upgrade_required") throw error;
-      if (!window.confirm(m.formatUpgrade)) return;
+      if (!await askUpgrade(m.formatUpgrade, m.cancel, m.upgrade)) return;
       book = await native.core.invoke<OpenBook>(command, { ...args, upgradeConfirmed: true });
     }
     opened = book;

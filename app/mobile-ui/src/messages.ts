@@ -1,5 +1,6 @@
 const en = {
-  formatUpgrade: "Upgrade this book to format 18? Apps 0.0.5 and earlier cannot open it afterward. A complete verified pre-upgrade copy with originals will be retained on this device. Restore that copy as a separate book to roll back; later writing will be absent. Cancel keeps the book unchanged.",
+  upgrade: "Upgrade book",
+  formatUpgrade: "Upgrade this book to format 18? Apps 0.0.5 and earlier cannot open it afterward. A private safety copy with originals is retained; only the newest copy per book is kept. It cannot be exported or restored here. Export a complete archive to a compatible desktop before upgrading if you need rollback. Cancel keeps the book unchanged.",
   rename: "Rename scene", move: "Move scene", destination: "Inside", after: "After", first: "First", manuscript: "Manuscript root",
   saveAction: "Save", search: "Search", query: "Find text", searchScene: "Find in this scene", searchBook: "Search book", noResults: "No matches.", searchMatches: "{n} matches",
   searchLimited: "Only the first 200 matching scenes are shown.", searchSkipped: "Some documents could not be searched.",
@@ -73,7 +74,8 @@ const en = {
   positionError: "Your writing position could not be remembered on this device. Your text is still saved normally.",
 };
 const de: typeof en = {
-  formatUpgrade: "Dieses Buch auf Format 18 aktualisieren? Apps bis einschließlich 0.0.5 können es danach nicht öffnen. Eine vollständige, geprüfte Kopie mit Originaldateien bleibt auf diesem Gerät. Zum Zurückkehren die Kopie als eigenes Buch wiederherstellen; spätere Änderungen fehlen darin. Abbrechen lässt das Buch unverändert.",
+  upgrade: "Buch aktualisieren",
+  formatUpgrade: "Dieses Buch auf Format 18 aktualisieren? Apps bis einschließlich 0.0.5 können es danach nicht öffnen. Eine private Sicherheitskopie mit Originaldateien bleibt erhalten; nur die neueste pro Buch wird behalten. Sie kann hier nicht exportiert oder wiederhergestellt werden. Für eine Rückkehr vor dem Aktualisieren ein vollständiges Archiv auf einen kompatiblen Desktop exportieren. Abbrechen lässt das Buch unverändert.",
   rename: "Szene umbenennen", move: "Szene verschieben", destination: "Innerhalb von", after: "Nach", first: "Am Anfang", manuscript: "Manuskriptebene",
   saveAction: "Speichern", search: "Suchen", query: "Text suchen", searchScene: "In dieser Szene suchen", searchBook: "Im Buch suchen", noResults: "Keine Treffer.", searchMatches: "{n} Treffer",
   searchLimited: "Nur die ersten 200 passenden Szenen werden angezeigt.", searchSkipped: "Einige Dokumente konnten nicht durchsucht werden.",

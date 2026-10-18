@@ -478,6 +478,16 @@ impl Store {
     }
 
     fn prepare_writable(conn: Connection) -> Result<Store> {
+        Self::prepare_writable_to(conn, SCHEMA_VERSION)
+    }
+
+    /// Restores stay usable by the source reader; legacy bookkeeping needs 17.
+    pub(crate) fn open_restored(path: &Path) -> Result<Store> {
+        let conn = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE)?;
+        Self::prepare_writable_to(conn, 17)
+    }
+
+    fn prepare_writable_to(conn: Connection, ceiling: i64) -> Result<Store> {
         let version: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
         if version > READ_SCHEMA_VERSION {
             return Err(StoreError::NewerSchema { found: version, supported: READ_SCHEMA_VERSION });
@@ -496,7 +506,7 @@ impl Store {
         conn.pragma_update(None, "foreign_keys", "ON")?;
         conn.pragma_update(None, "busy_timeout", 5000)?;
         let store = Store { conn };
-        store.migrate()?;
+        store.migrate_to(ceiling)?;
         store.book_id()?;
         Ok(store)
     }
@@ -671,6 +681,10 @@ impl Store {
     /// them; the re-read lets the loser see the winner's work and skip the
     /// step as already done rather than failing on it.
     fn migrate(&self) -> Result<()> {
+        self.migrate_to(SCHEMA_VERSION)
+    }
+
+    fn migrate_to(&self, ceiling: i64) -> Result<()> {
         let version = self.user_version()?;
         if version > READ_SCHEMA_VERSION {
             return Err(StoreError::NewerSchema {
@@ -699,7 +713,7 @@ impl Store {
             (17, review::SCHEMA_V17),
         ];
         for (target, ddl) in LADDER {
-            if version >= target {
+            if version >= target || target > ceiling {
                 continue;
             }
             self.conn.execute_batch("BEGIN IMMEDIATE")?;

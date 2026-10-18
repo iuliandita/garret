@@ -1,15 +1,21 @@
 Upgrade preparation retains a complete verified `.point` bundle beside a book
 before the upcoming 17-to-18 activation. The desktop open flow and Android open
 flow have a separate upgrade decision; startup defers books needing that decision
-until the interface can ask. A missing original blocks upgrade and retains the
-incomplete copy for inspection. Copies include manuscript history, cast/cover
-originals and retained research. No original or uncertain copy is deleted.
+until the interface can ask. A missing original blocks upgrade; failed attempts clean up their own
+staging and incomplete output. Copies include manuscript history, cast/cover
+originals and retained research. Unrelated stages are left untouched and do not block retries. Free space is
+checked before copying. Android retains only the newest verified private safety
+copy per book; that copy has no in-app restore or export path. For Android rollback,
+export a complete archive to a compatible desktop before upgrading.
 
 This preparation does not activate the migration or authoring: new books and
 production migrations still stop at 17, and the write gate remains off. Once
 activated, 0.0.5 and earlier will refuse schema 18; 0.0.6 reads and preserves it.
 Rollback requires restoring the complete pre-upgrade copy as a separate book
-with a supporting previous package. Writing after the upgrade is absent from
+with a supporting previous package. Restores preserve format 17 (older schemas
+advance only to 17 for recovery bookkeeping); opening that restored book in the
+new application asks again before upgrading. Transfer imports deliberately create
+a current-format copy without modifying the archive or source book. Writing after the upgrade is absent from
 that copy. Never lower `user_version` manually. Android continues to read notes,
 figures and breaks and edit surrounding prose; it cannot author those nodes.
 
@@ -68,8 +74,8 @@ Physical-phone checks remain release qualification steps.
 archive, a fresh recovery key, import instructions and an owned plaintext copy
 using test-only construction and the real transfer import path. It never enables
 production writes. Keep generated archives and keys out of version control.
-`design-apply` accepts schemas 17 and 18; older books still require application
-migration first. Batch saves and retained-document validation share one schema
+`design-apply` requires the current creation schema or a supported newer reader
+schema; older books require consented application migration first. Batch saves and retained-document validation share one schema
 and registry read per batch, and a base-revision-zero save treats a missing
 document row as having no atoms.
 

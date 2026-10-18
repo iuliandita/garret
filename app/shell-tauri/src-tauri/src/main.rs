@@ -4206,7 +4206,9 @@ fn main() {
                 process::exit(1);
             }
             if store::SCHEMA_VERSION >= store::READ_SCHEMA_VERSION
-                && format_upgrade::required(p, store::SCHEMA_VERSION).unwrap_or(true) {
+                && format_upgrade::required(p, store::SCHEMA_VERSION).unwrap_or_else(|error| {
+                    eprintln!("{}: {error}", p.display()); process::exit(1);
+                }) {
                 pending_project = Some(p.to_path_buf());
                 None
             } else {

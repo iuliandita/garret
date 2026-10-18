@@ -345,7 +345,7 @@ fn open_book_with_upgrade(host: &MobileHost, id: &str, consent: bool) -> Result<
         Ok(())
     })?;
     if store::SCHEMA_VERSION >= store::READ_SCHEMA_VERSION {
-        crate::format_upgrade::retain(&path, store::SCHEMA_VERSION, consent)?;
+        crate::format_upgrade::retain_mobile(&path, store::SCHEMA_VERSION, consent)?;
     }
     let store = store::Store::open_existing(&path).map_err(|error| error.to_string())?;
     let name = store

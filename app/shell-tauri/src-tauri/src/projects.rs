@@ -1424,10 +1424,8 @@ fn restore_point_impl(
             }
             crate::backup_bundle::clear_marker(&staged)?;
         }
-        // Read-write, on OUR OWN COPY. A point written by an older build
-        // migrates forward here, which is correct: the migration lands on the
-        // copy and never on the point.
-        let store = Store::open(&staged).map_err(|e| format!("{}: {e}", path.display()))?;
+        // Keep format-17 rollback copies usable by the previous package.
+        let store = Store::open_restored(&staged).map_err(|e| format!("{}: {e}", path.display()))?;
         let copied_id = store
             .book_id()
             .map_err(|e| {

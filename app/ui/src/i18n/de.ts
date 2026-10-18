@@ -29,7 +29,8 @@
 // Bibel, Pseudonym, Fokusmodus, Schreibmaschinenmodus.
 
 export const DE = {
-  "format-upgrade.prompt": "Dieses Buch auf Format 18 aktualisieren? Desktop- und Telefon-Apps bis einschließlich 0.0.5 können es danach nicht öffnen. Eine vollständige, geprüfte Kopie mit Originaldateien bleibt neben dem Buch in einem .point-Ordner. Zum Zurückkehren diese Kopie als eigenes Buch wiederherstellen; spätere Änderungen fehlen darin. Abbrechen lässt das Buch unverändert.",
+  "format-upgrade.accept": "Buch aktualisieren",
+  "format-upgrade.prompt": "Dieses Buch auf Format 18 aktualisieren? Desktop- und Telefon-Apps bis einschließlich 0.0.5 können es danach nicht öffnen. Eine vollständige, geprüfte Kopie mit Originaldateien bleibt neben dem Buch in einem .point-Ordner. Zum Zurückkehren diese Kopie als eigenes Buch wiederherstellen und mit der vorherigen Version öffnen; spätere Änderungen fehlen darin. Abbrechen lässt das Buch unverändert.",
   "preset.collection": "Geschichtensammlung",
   "item.numbered.story": "Geschichte {n}",
   "collection.new-story": "Neue Geschichte",

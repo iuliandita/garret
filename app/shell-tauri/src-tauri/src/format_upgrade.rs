@@ -3,15 +3,15 @@ use crate::{backup_bundle, store::Store};
 use std::path::{Path, PathBuf};
 
 pub(crate) fn required(path: &Path, target: i64) -> Result<bool, String> {
-    let reader = Store::open_readonly(path).map_err(|error| error.to_string())?;
-    Ok(reader.user_version().map_err(|error| error.to_string())? < target)
+    let reader = Store::open_readonly(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    Ok(reader.user_version().map_err(|error| format!("{}: {error}", path.display()))? < target)
 }
 
 /// Consent is supplied by the caller's UI. Refusal does not create a copy.
-/// Keep incomplete or uncertain copies for inspection; never overwrite one.
+/// Never overwrite a previous copy; failed attempts only remove their own output.
 pub(crate) fn retain(path: &Path, target: i64, consent: bool) -> Result<Option<PathBuf>, String> {
-    let reader = Store::open_readonly(path).map_err(|error| error.to_string())?;
-    if reader.user_version().map_err(|error| error.to_string())? >= target {
+    let reader = Store::open_readonly(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    if reader.user_version().map_err(|error| format!("{}: {error}", path.display()))? >= target {
         return Ok(None);
     }
     if !consent {
@@ -25,14 +25,41 @@ pub(crate) fn retain(path: &Path, target: i64, consent: bool) -> Result<Option<P
         "{name}.before-format-{target}-{}.point",
         uuid::Uuid::now_v7()
     ));
-    let written = backup_bundle::write(path, &reader, &copy)?;
+    let written = backup_bundle::write(path, &reader, &copy)
+        .map_err(|error| format!("{}: {error}", copy.display()))?;
     if !written.verified {
-        return Err(format!(
-            "pre-upgrade copy is incomplete; book was not upgraded: {}",
-            written.errors.join("; ")
-        ));
+        let cleanup = std::fs::remove_dir_all(&copy);
+        return Err(format!("{}: pre-upgrade copy is incomplete; book was not upgraded: {}; cleanup: {:?}",
+            copy.display(), written.errors.join("; "), cleanup.err()));
     }
     Ok(Some(copy))
+}
+
+/// Android retains at most one complete private safety copy per book. It is
+/// not an export or a user-accessible rollback workflow.
+pub(crate) fn retain_mobile(path: &Path, target: i64, consent: bool) -> Result<Option<PathBuf>, String> {
+    let kept = retain(path, target, consent)?;
+    if let Some(copy) = &kept {
+        let prefix = format!("{}.before-format-{target}-", path.file_stem().ok_or("book has no filename")?.to_string_lossy());
+        for entry in std::fs::read_dir(path.parent().ok_or("book has no parent")?).map_err(|e| e.to_string())? {
+            let entry = entry.map_err(|e| e.to_string())?;
+            let candidate = entry.path();
+            if candidate == *copy { continue; }
+            let name = entry.file_name();
+            let name = name.to_string_lossy();
+            let Some(id) = name.strip_prefix(&prefix).and_then(|s| s.strip_suffix(".point")) else { continue; };
+            if uuid::Uuid::parse_str(id).is_err() { continue; }
+            let meta = entry.file_type().map_err(|e| e.to_string())?;
+            if !meta.is_dir() || meta.is_symlink() { continue; }
+            backup_bundle::verify(&candidate)?;
+            let older = Store::open_readonly(&backup_bundle::db_path(&candidate)).map_err(|e| e.to_string())?;
+            let current = Store::open_readonly(path).map_err(|e| e.to_string())?;
+            if older.book_id().map_err(|e| e.to_string())? != current.book_id().map_err(|e| e.to_string())? { continue; }
+            drop(older);
+            std::fs::remove_dir_all(&candidate).map_err(|e| format!("{}: {e}", candidate.display()))?;
+        }
+    }
+    Ok(kept)
 }
 
 #[cfg(test)]
@@ -111,6 +138,7 @@ mod tests {
         let library = dir.path().join("restored");
         fs::create_dir(&library).unwrap();
         let restored = crate::projects::restore_point_into(&copy, &library, "rollback", 1).unwrap();
+        assert_eq!(Store::open_readonly(Path::new(&restored.path)).unwrap().user_version().unwrap(), 17);
         assert!(Store::open_readonly(Path::new(&restored.path))
             .unwrap()
             .load_doc(&id)
@@ -120,7 +148,7 @@ mod tests {
     }
 
     #[test]
-    fn missing_original_blocks_upgrade_and_retains_incomplete_copy() {
+    fn missing_original_blocks_upgrade_and_cleans_incomplete_copy() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("book.db");
         book(&path);
@@ -135,7 +163,7 @@ mod tests {
             Store::open_readonly(&path).unwrap().user_version().unwrap(),
             17
         );
-        assert!(fs::read_dir(dir.path()).unwrap().any(|e| e
+        assert!(!fs::read_dir(dir.path()).unwrap().any(|e| e
             .unwrap()
             .path()
             .extension()
@@ -149,5 +177,34 @@ mod tests {
         book(&path);
         assert!(!required(&path, 17).unwrap());
         assert_eq!(retain(&path, 17, false).unwrap(), None);
+    }
+
+    #[test]
+    fn mobile_keeps_only_the_newest_complete_private_copy() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("book.db");
+        book(&path);
+        let old = retain_mobile(&path, 18, true).unwrap().unwrap();
+        let newest = retain_mobile(&path, 18, true).unwrap().unwrap();
+        assert!(!old.exists());
+        backup_bundle::verify(&newest).unwrap();
+    }
+
+    #[test]
+    fn stale_stages_do_not_block_copy_and_failed_attempts_clean_up() {
+        assert!(backup_bundle::check_space(99, 100).is_err());
+        assert!(backup_bundle::check_space(100, 100).is_ok());
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("book.db");
+        book(&path);
+        let stale = dir.path().join(".unrelated.stage-123");
+        fs::create_dir(&stale).unwrap();
+        fs::write(stale.join("keep"), b"unrelated").unwrap();
+        let copy = retain(&path, 18, true).unwrap().unwrap();
+        let reader = Store::open_readonly(&path).unwrap();
+        assert!(backup_bundle::write(&path, &reader, &copy).is_err());
+        assert_eq!(fs::read(stale.join("keep")).unwrap(), b"unrelated");
+        assert!(!fs::read_dir(dir.path()).unwrap().any(|e| e.unwrap().file_name().to_string_lossy().starts_with(".garret-backup.stage-")));
+        backup_bundle::verify(&copy).unwrap();
     }
 }
