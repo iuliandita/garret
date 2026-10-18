@@ -5,6 +5,9 @@ edition = "2021"
 
 [workspace]
 
+[features]
+pdf-smoke = []
+
 [lib]
 name = "garret_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]

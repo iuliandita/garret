@@ -48,6 +48,15 @@ for truncated originals. Damaged legacy covers remain non-fatal. A heading group
 directly before an interior plate travels with it.
 Legacy prose rendering and existing proof fixtures retain their behavior.
 
+An advisory native Windows CI probe exercises the existing GUI PDF renderer and
+destination writer on a disposable seeded sample. It records page and leaf
+counts, requested trim dimensions, font resolution, and bounded diagnostics;
+downloaded output still needs geometry, text, and visual inspection. This adds
+no book migration or Windows CLI PDF support. Keep closed-book backups and
+adjacent originals before upgrading; rollback uses the previous package with a
+separate complete copy. Runner verification does not qualify other WebView2
+versions, font installations, or individual machines.
+
 The paginator reports effective DPI for each figure from oriented pixels and its
 actual placed size. Below 300 DPI is a warning; below 200 DPI is also flagged.
 These advisories do not block publication. A 1200 by 1800 image is 300 DPI at

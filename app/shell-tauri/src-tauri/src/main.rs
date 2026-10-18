@@ -56,6 +56,8 @@ mod figure_salvage;
 mod printer;
 #[cfg(windows)]
 mod printer_windows;
+#[cfg(all(windows, feature = "pdf-smoke"))]
+mod pdf_smoke;
 mod privacy;
 mod privacy_host;
 #[cfg(target_os = "linux")]
@@ -98,6 +100,10 @@ mod zoom;
 
 #[cfg(windows)]
 fn legacy_webview_data_dir(app: &tauri::AppHandle) -> tauri::Result<PathBuf> {
+    #[cfg(feature = "pdf-smoke")]
+    if let Some(smoke) = app.try_state::<std::sync::Arc<pdf_smoke::Smoke>>() {
+        return Ok(smoke.root.join("webview"));
+    }
     app.path().resolve(data_migration::LEGACY_DIR, tauri::path::BaseDirectory::LocalData)
 }
 
@@ -4014,6 +4020,11 @@ fn main() {
                 process::exit(1);
             }
         }
+    }
+
+    #[cfg(all(windows, feature = "pdf-smoke"))]
+    if let Some(root) = std::env::var_os("GARRET_PDF_SMOKE").filter(|root| !root.is_empty()) {
+        process::exit(pdf_smoke::run(Path::new(&root)));
     }
 
     // The noninteractive CLI, dispatched BEFORE tauri::Builder for the reason
