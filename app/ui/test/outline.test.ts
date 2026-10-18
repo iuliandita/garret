@@ -1,3 +1,4 @@
+import { chapterItemsIn } from "../src/outline-items";
 import { describe, expect, test } from "bun:test";
 import {
   BACK_MATTER_TYPE,
@@ -10,7 +11,6 @@ import {
   TRASH_TYPE,
 } from "../src/item-types";
 import {
-  chapterItemsIn,
   createOutline,
   isTrashedIn,
   liveItemsIn,
