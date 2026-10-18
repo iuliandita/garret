@@ -1,3 +1,4 @@
+import { atomSignature, preserveAtoms, readerViews, type LoadFigurePreview } from "./document-reader";
 // app/ui/src/editor.ts
 // A single-scene ProseMirror surface: typing latency needs a real typing
 // target, but manuscript virtualization is a second independent variable.
@@ -545,6 +546,8 @@ export interface ActiveMarks {
 }
 
 export interface EditorOptions {
+  figurePreview?: LoadFigurePreview;
+  onAtomEditRefused?: () => void;
   /** Called after a transaction that CHANGED THE DOCUMENT is applied. Selection
    *  changes do not call it: `tr.docChanged` is false for those, which is the
    *  rule "a caret jump must never mark the document dirty", now enforced by
@@ -633,7 +636,8 @@ export function createEditor(
   let editable = true;
   const editSources = new EditSourceTracker();
   const view: EditorView = new EditorView(mount, {
-    state: EditorState.create({ doc, plugins: editorPlugins() }),
+    state: EditorState.create({ doc, plugins: [...editorPlugins(), preserveAtoms()] }),
+    nodeViews: readerViews(opts.figurePreview),
     attributes: { role: "textbox", "aria-multiline": "true", "aria-label": t("editor.name"), lang: "" },
     clipboardTextSerializer: slice => clipboardPlaintext(slice.content, plaintextLabels()),
     handleDOMEvents: {
@@ -669,6 +673,11 @@ export function createEditor(
     dispatchTransaction(tr) {
       if (tr.docChanged && !editable) return;
       const before = view.state;
+      if (tr.docChanged && atomSignature(tr.doc) !== atomSignature(before.doc)) {
+        if (opts.onAtomEditRefused) opts.onAtomEditRefused();
+        else opts.onClipboardRefused?.();
+        return;
+      }
       if (tr.docChanged) editSources.prepare(tr);
       view.updateState(before.apply(tr));
       if (tr.docChanged) {
@@ -707,7 +716,7 @@ export function createEditor(
     },
     replaceDoc(input: DocInput): void {
       const next = schema.nodeFromJSON(docJsonFrom(input) as unknown as Record<string, unknown>);
-      view.updateState(EditorState.create({ doc: next, plugins: editorPlugins() }));
+      view.updateState(EditorState.create({ doc: next, plugins: [...editorPlugins(), preserveAtoms()] }));
       editSources.reset();
     },
     setEditable(next: boolean): void {

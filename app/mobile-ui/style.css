@@ -104,3 +104,10 @@ body { margin: 0; }
 .document-figure-alt { font-size: 0.85em; }
 .document-scene-break { text-align: center; margin: 1.5em 0; color: var(--muted); }
 .document-scene-break::before { content: "* * *"; }
+
+.document-endnote-reader { position: relative; display: inline; }
+.document-endnote-reader > button { vertical-align: super; font: 0.65em system-ui, sans-serif; color: inherit; padding: 0 0.2em; }
+.document-endnote-body { position: absolute; z-index: 20; inset-inline-start: 0; top: 1.5em; width: min(20rem, 70vw); padding: 1rem; background: var(--bg); color: var(--fg); border: 1px solid var(--muted); font: 1rem/1.5 system-ui, sans-serif; white-space: pre-wrap; }
+.document-endnote-body[hidden] { display: none; }
+.document-figure img { display: block; max-width: 100%; max-height: 24rem; margin: auto; object-fit: contain; }
+.document-figure[data-width="half"] { width: 50%; }

@@ -32,7 +32,9 @@ use rusqlite::{Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
+/// Creation/migration target; the reader can preserve a later format.
 pub const SCHEMA_VERSION: i64 = 17;
+pub const READ_SCHEMA_VERSION: i64 = document_format::SCHEMA_VERSION;
 
 /// Nesting far beyond anything the product describes (part -> chapter ->
 /// scene is 3). A chain this deep means a corrupt file, not a deep book.
@@ -477,8 +479,14 @@ impl Store {
 
     fn prepare_writable(conn: Connection) -> Result<Store> {
         let version: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
-        if version > SCHEMA_VERSION {
-            return Err(StoreError::NewerSchema { found: version, supported: SCHEMA_VERSION });
+        if version > READ_SCHEMA_VERSION {
+            return Err(StoreError::NewerSchema { found: version, supported: READ_SCHEMA_VERSION });
+        }
+        if version == READ_SCHEMA_VERSION {
+            let registry = figure_assets::read(&conn)?;
+            if !registry.errors.is_empty() {
+                return Err(StoreError::Corrupt(registry.errors.join("; ")));
+            }
         }
         register_collations(&conn)?;
         // journal_mode is persistent in the file; synchronous and foreign_keys
@@ -539,10 +547,10 @@ impl Store {
             return Err(invalid());
         }
         let version = u32::from_be_bytes(header[60..64].try_into().unwrap()) as i64;
-        if version > SCHEMA_VERSION {
+        if version > READ_SCHEMA_VERSION {
             return Err(StoreError::NewerSchema {
                 found: version,
-                supported: SCHEMA_VERSION,
+                supported: READ_SCHEMA_VERSION,
             });
         }
         if std::fs::symlink_metadata(path.with_extension("db-journal"))
@@ -595,11 +603,14 @@ impl Store {
         // Not a migration, just a refusal: a project written by a newer build
         // must not be listed as though this build understood it.
         let version = store.user_version()?;
-        if version > SCHEMA_VERSION {
+        if version > READ_SCHEMA_VERSION {
             return Err(StoreError::NewerSchema {
                 found: version,
-                supported: SCHEMA_VERSION,
+                supported: READ_SCHEMA_VERSION,
             });
+        }
+        if version == READ_SCHEMA_VERSION {
+            store.figure_assets()?;
         }
         store.book_id()?;
         Ok(store)
@@ -661,10 +672,10 @@ impl Store {
     /// step as already done rather than failing on it.
     fn migrate(&self) -> Result<()> {
         let version = self.user_version()?;
-        if version > SCHEMA_VERSION {
+        if version > READ_SCHEMA_VERSION {
             return Err(StoreError::NewerSchema {
                 found: version,
-                supported: SCHEMA_VERSION,
+                supported: READ_SCHEMA_VERSION,
             });
         }
         // (target version, the DDL that reaches it from the version below).
@@ -4337,12 +4348,12 @@ mod tests {
             let store = Store::open(&path).unwrap();
             store
                 .conn
-                .execute_batch(&format!("PRAGMA user_version = {}", SCHEMA_VERSION + 1))
+                .execute_batch(&format!("PRAGMA user_version = {}", READ_SCHEMA_VERSION + 1))
                 .unwrap();
         }
         match Store::open(&path) {
             Err(StoreError::NewerSchema { found, supported }) => {
-                assert_eq!((found, supported), (SCHEMA_VERSION + 1, SCHEMA_VERSION));
+                assert_eq!((found, supported), (READ_SCHEMA_VERSION + 1, READ_SCHEMA_VERSION));
             }
             other => panic!("expected NewerSchema, got {other:?}"),
         }

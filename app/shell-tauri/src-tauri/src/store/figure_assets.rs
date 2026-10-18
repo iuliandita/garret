@@ -3,7 +3,7 @@ use super::{document_format, Result, Store, StoreError, TIMELINE_TYPE};
 use rusqlite::Connection;
 use std::collections::{BTreeMap, HashSet};
 
-pub const SCHEMA_VERSION: i64 = 18;
+pub use super::document_format::SCHEMA_VERSION;
 
 // Deliberately absent from the production migration ladder. Activation must use
 // this same SQL; tests install only the proposed table in disposable v17 books.

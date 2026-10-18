@@ -916,3 +916,20 @@ fn xml_export_cleanup_covers_publication_attributes_and_note_scope_titles() {
         assert_eq!(fixture.store.items().unwrap().into_iter().find(|item| item.id == chapter.id).unwrap().title, "Sec\u{1}tion\u{b}title");
     }
 }
+
+
+#[test]
+fn schema18_reader_exports_existing_nodes_without_the_fixture_override() {
+    let root = tempfile::tempdir().unwrap();
+    let db = root.path().join("reader.db");
+    let (store, id, body) = crate::store::test_support::reader_fixture(&db);
+    assert!(!PUBLICATION_FIXTURE.get());
+    for format in [crate::export::Format::Markdown, crate::export::Format::Epub, crate::export::Format::Docx, crate::export::Format::Pdf] {
+        let (written, _, _, _, _) = render_project(&db, "Reader", format,
+            &crate::identity::Vault::default(), crate::strings::Strings::english()).unwrap();
+        assert!(!written.bytes.is_empty());
+    }
+    assert_eq!(store.load_doc(&id).unwrap().body, body);
+    assert_eq!(store.user_version().unwrap(), 18);
+    assert!(!store::document_format::new_nodes_allowed());
+}

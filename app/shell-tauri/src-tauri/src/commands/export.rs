@@ -401,7 +401,7 @@ fn render_scope_with(
     let fixture = PUBLICATION_FIXTURE.get();
     #[cfg(not(test))]
     let fixture = false;
-    if has_new && !fixture {
+    if has_new && !fixture && store.user_version().map_err(|e| e.to_string())? < store::document_format::SCHEMA_VERSION {
         return Err("This document format cannot be exported by this build".into());
     }
 

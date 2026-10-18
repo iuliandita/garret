@@ -33,18 +33,25 @@ recovery key first or choose an existing key, and keep it separately. In the
 library, **Import archive** reads the archive and key, previews its title and
 related copies, then adds a separate book after confirmation. Existing copies
 are never replaced. There is no sync or desktop review/publishing toolset.
-Only novel projects are editable; unsupported presets are refused before opening.
+Novel, short fiction, nonfiction and collection projects are supported; unknown
+presets are refused before opening.
 The phone accepts at most 1 GiB archives and 512 MiB contents, with extra free
 space needed for verification and a separate owned copy.
 
-Schema-17 transfers retain legacy empty text runs and history. New document
-nodes are refused before preview or publication, with the affected item ID in
-English or German. A refused save names the scene and keeps its text pending;
-use the recovery-copy action before restarting.
+New books and migrations stop at schema 17. The reader also opens existing
+schema-18 books and retains their version, endnotes, figures, scene breaks,
+registry and originals through surrounding-prose edits, history and transfer.
+Numbered note references reveal read-only bodies, and figure previews load lazily.
+Existing atoms cannot be inserted, deleted or changed in this reader release.
+Schema 19 and higher refuse before preset checks and library publication.
+Schema-17 books still refuse new document nodes; new-format authoring remains
+disabled. A refused save keeps its text pending; use the recovery-copy action
+before restarting. See the compatibility guide for backup and rollback steps.
 
-Figure-original retention uses shared archive verification, but this preparation
-does not enable new document nodes or raise the phone's schema ceiling above 17.
-A future format upgrade still requires a compatible Android release.
+The emulator driver currently creates schema-17 books; it has no fixture-loading
+route for a schema-18 smoke. Shared host/interface tests cover the schema-18
+reader and transfer contracts, but do not certify native rendering or process
+death for schema-18 content. Test those on a phone before activating authoring.
 
 Cancellation waits for the original native operation. Close an open system
 picker to let cancellation finish. Provider write, close or readback failures

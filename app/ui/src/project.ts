@@ -688,6 +688,10 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // alike, rather than four places that could disagree about it.
   let timelineMount: TimelineMount | null = null;
   const editor = createEditor(editorEl, editorInput, {
+    figurePreview: async (instanceId, assetId) => await invoke("figure_preview", {
+      itemId: session?.activeDocId() ?? activeDocId, instanceId, assetId,
+    }) as PictureView,
+    onAtomEditRefused: () => raiseNotice(t("document.atoms-read-only")),
     onClipboardRefused: reason => raiseNotice(t(reason === "picture" ? "document.picture-refused" : "document.clipboard-refused")),
     onChange: (change) => {
       // Once per document-changing transaction, same as the word count

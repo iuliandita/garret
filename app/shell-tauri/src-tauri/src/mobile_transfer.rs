@@ -588,6 +588,29 @@ pub(crate) mod tests {
         }
     }
     #[test]
+    fn schema18_reader_mobile_archive_round_trip_preserves_nodes_and_originals() {
+        let root = tempfile::tempdir().unwrap();
+        let db = root.path().join("source.db");
+        let (store, scene, body) = crate::store::test_support::reader_fixture(&db);
+        let assets = store.figure_assets().unwrap();
+        let stage = stage(&root.path().join("transfer"), &uuid::Uuid::now_v7().to_string()).unwrap();
+        let bundle = stage.join("snapshot.point");
+        assert!(backup_bundle::write(&db, &store, &bundle).unwrap().verified);
+        encrypted_archive::generate_key(&stage.join("key.in")).unwrap();
+        let key = encrypted_archive::key_from_path(&stage.join("key.in")).unwrap();
+        encrypted_archive::write_verified_cipher(&bundle, &stage.join("archive.in"), &key).unwrap();
+        let books = root.path().join("books");
+        fs::create_dir(&books).unwrap();
+        let preview = preview(&stage, &books).unwrap();
+        let id = publish(&stage, &books, &preview).unwrap();
+        let copied = Store::open_existing(&books.join(format!("{id}.db"))).unwrap();
+        assert_eq!(copied.user_version().unwrap(), 18);
+        assert_eq!(copied.load_doc(&scene).unwrap().body, body);
+        assert_eq!(copied.figure_assets().unwrap(), assets);
+        copied.validate_retained_formats().unwrap();
+    }
+
+    #[test]
     fn mobile_transfer_schema_refusal_precedes_preset_and_never_publishes() {
         #[derive(serde::Serialize, serde::Deserialize)]
         struct Asset {
@@ -632,7 +655,7 @@ pub(crate) mod tests {
                 let connection =
                     rusqlite::Connection::open(backup_bundle::db_path(&bundle)).unwrap();
                 connection
-                    .pragma_update(None, "user_version", crate::store::SCHEMA_VERSION + 1)
+                    .pragma_update(None, "user_version", crate::store::READ_SCHEMA_VERSION + 1)
                     .unwrap();
                 drop(connection);
                 let inventory_path = bundle.join(backup_bundle::INVENTORY_NAME);

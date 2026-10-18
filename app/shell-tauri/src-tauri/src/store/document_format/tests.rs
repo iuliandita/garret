@@ -363,7 +363,7 @@ fn format_gate_database_restore_and_newer_open_leave_files_unchanged() {
         let db = dir.path().join("point.db");
         let (store, ids) = setup(&db);
         if placement == "newer schema" {
-            store.conn.pragma_update(None, "user_version", 18).unwrap();
+            store.conn.pragma_update(None, "user_version", crate::store::READ_SCHEMA_VERSION + 1).unwrap();
         } else {
             let body = &new_bodies()[0];
             if placement == "live" {
@@ -387,7 +387,7 @@ fn format_gate_database_restore_and_newer_open_leave_files_unchanged() {
         let error = crate::projects::restore_point_into(&db, &library, "book", 1).unwrap_err();
         assert!(
             error.contains(if placement == "newer schema" {
-                "schema v18"
+                "schema v19"
             } else {
                 "document format refused"
             }),
@@ -425,7 +425,7 @@ fn format_gate_restore_rechecks_the_staged_copy_before_publication() {
                 crate::projects::copy_point(source, target)?;
                 let conn = rusqlite::Connection::open(target).unwrap();
                 if newer {
-                    conn.pragma_update(None, "user_version", 18).unwrap();
+                    conn.pragma_update(None, "user_version", crate::store::READ_SCHEMA_VERSION + 1).unwrap();
                 } else {
                     conn.execute(
                         "UPDATE doc SET body=?1 WHERE item_id=?2",
@@ -438,7 +438,7 @@ fn format_gate_restore_rechecks_the_staged_copy_before_publication() {
         let error = result.unwrap_err();
         assert!(
             error.contains(if newer {
-                "schema v18"
+                "schema v19"
             } else {
                 "document format refused"
             }),
@@ -664,5 +664,114 @@ fn format_import_parsers_keep_future_constructs_out_of_stored_documents() {
         expected.sort_unstable();
         actual.sort_unstable();
         assert_eq!(actual, expected);
+    }
+}
+
+
+#[test]
+fn schema18_reader_opens_preserves_prose_edits_history_and_refuses_atom_changes() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = dir.path().join("reader.db");
+    let (store, id, body) = crate::store::test_support::reader_fixture(&db);
+    let assets = store.figure_assets().unwrap();
+    let preview = crate::figures::preview(&db, &store, &id, "01900000-0000-7000-8000-000000000002", &assets[0].id).unwrap();
+    assert_eq!(preview.state, "present");
+    assert!(preview.data_uri.unwrap().starts_with("data:image/"));
+    assert!(crate::figures::preview(&db, &store, &id, "wrong placement", &assets[0].id).is_err());
+    let versions = store.doc_versions(&id).unwrap();
+    drop(store);
+    let readonly = Store::open_readonly(&db).unwrap();
+    assert_eq!(readonly.user_version().unwrap(), 18);
+    assert_eq!(readonly.load_doc(&id).unwrap().body, body);
+    readonly.validate_retained_formats().unwrap();
+    drop(readonly);
+    let store = Store::open_existing(&db).unwrap();
+    let edited = body.replace("Surrounding prose", "Edited surrounding prose");
+    store.flush(&[entry(&id, 1, &edited)]).unwrap();
+    assert_eq!(atoms(&edited).unwrap(), atoms(&body).unwrap());
+    assert_eq!(store.load_doc(&id).unwrap().body, edited);
+    assert_eq!(store.figure_assets().unwrap(), assets);
+    let before = state(&store);
+    for changed in [edited.replace("Retained note", "Changed note"), edited.replace("Retained caption", "Changed caption"), prose("Lost atoms"), edited.replacen("\"content\":[", "\"content\":[{\"type\":\"scene_break\"},", 1)] {
+        refused(store.flush(&[entry(&id, 2, &changed)]));
+        assert_eq!(state(&store), before);
+    }
+    store.doc_restore(&id, versions[0].id, 2).unwrap();
+    assert_eq!(store.load_doc(&id).unwrap().body, body);
+    // A retained version may legitimately contain a different atom payload.
+    let original_version = store.doc_versions(&id).unwrap()[0].id;
+    store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![prose("Legacy revision"), id]).unwrap();
+    let rev = store.load_doc(&id).unwrap().rev;
+    store.doc_restore(&id, original_version, rev).unwrap();
+    assert!(!atoms(&store.load_doc(&id).unwrap().body).unwrap().is_empty());
+    assert_eq!(store.user_version().unwrap(), 18);
+    assert!(!new_nodes_allowed());
+    let fresh = Store::open(&dir.path().join("fresh.db")).unwrap();
+    assert_eq!(fresh.user_version().unwrap(), 17);
+    assert!(!fresh.figure_registry().unwrap().present);
+}
+
+#[test]
+fn schema18_reader_complete_copy_restore_transfer_and_salvage() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = dir.path().join("reader.db");
+    let (store, id, body) = crate::store::test_support::reader_fixture(&db);
+    let point = dir.path().join("reader.point");
+    assert!(crate::backup_bundle::write(&db, &store, &point).unwrap().verified);
+    crate::transfer_copy::inspect(&point).unwrap();
+    let target = dir.path().join("copies");
+    std::fs::create_dir(&target).unwrap();
+    let copied = crate::transfer_copy::stage(&point, &target, &crate::transfer_copy::inspect(&point).unwrap()).unwrap();
+    let reader = Store::open_existing(&copied.database).unwrap();
+    assert_eq!(reader.user_version().unwrap(), 18);
+    assert_eq!(reader.load_doc(&id).unwrap().body, body);
+    assert_eq!(reader.figure_assets().unwrap(), store.figure_assets().unwrap());
+    reader.validate_retained_formats().unwrap();
+    let library = dir.path().join("library");
+    let restored = crate::projects::restore_point_into(&point, &library, "copy", 1_700_000_000_000).unwrap();
+    let restored = Store::open_existing(std::path::Path::new(&restored.path)).unwrap();
+    assert_eq!(restored.user_version().unwrap(), 18);
+    assert_eq!(restored.load_doc(&id).unwrap().body, body);
+    assert_eq!(restored.version_body(restored.doc_versions(&id).unwrap()[0].id).unwrap(), body);
+    let salvage_dir = dir.path().join("salvage");
+    crate::salvage::salvage(&db, &salvage_dir).unwrap();
+    fn files(path: &std::path::Path) -> Vec<Vec<u8>> {
+        let mut out = Vec::new();
+        for entry in std::fs::read_dir(path).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_dir() { out.extend(files(&path)); } else { out.push(std::fs::read(path).unwrap()); }
+        }
+        out
+    }
+    let salvaged = files(&salvage_dir);
+    assert!(salvaged.iter().any(|bytes| bytes == body.as_bytes()));
+    assert!(salvaged.iter().any(|bytes| bytes == include_bytes!("../../../fixtures/two-halves.png")));
+    for asset in reader.figure_assets().unwrap() {
+        crate::figures::verify_original(&crate::pictures::dir_for(&copied.database).join(&asset.stored_name), &asset).unwrap();
+    }
+}
+
+#[test]
+fn schema18_reader_refuses_19_and_missing_registry_before_writable_setup() {
+    for version in [18, 19] {
+        let dir = tempfile::tempdir().unwrap();
+        let db = dir.path().join("book.db");
+        let store = Store::open(&db).unwrap();
+        store.checkpoint().unwrap();
+        drop(store);
+        let conn = rusqlite::Connection::open(&db).unwrap();
+        conn.pragma_update(None, "journal_mode", "DELETE").unwrap();
+        conn.pragma_update(None, "user_version", version).unwrap();
+        drop(conn);
+        let before = std::fs::read(&db).unwrap();
+        for opened in [Store::open_readonly(&db), Store::open_existing(&db)] {
+            if version == 18 {
+                assert!(matches!(opened, Err(StoreError::Corrupt(reason)) if reason.contains("registry")));
+            } else {
+                assert!(matches!(opened, Err(StoreError::NewerSchema { found: 19, supported: 18 })));
+            }
+        }
+        assert_eq!(std::fs::read(&db).unwrap(), before);
+        assert!(!db.with_extension("db-wal").exists());
     }
 }

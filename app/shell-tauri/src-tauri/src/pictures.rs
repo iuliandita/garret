@@ -852,6 +852,32 @@ fn render_original(dir: &Path, name: &str, max: u32) -> Result<Vec<u8>, &'static
     encode_png(&box_scale(&decoded, max)).map_err(|_| VIEW_UNREADABLE)
 }
 
+/// A bounded figure preview from already verified bytes, without trusting a cache.
+pub(crate) fn figure_preview(data: &[u8], orientation: u8) -> Result<Vec<u8>, PictureError> {
+    let format = sniff(data).ok_or(PictureError::UnknownFormat)?;
+    let source = box_scale(&decode(data, format)?, THUMB_MAX);
+    let (width, height) = if orientation >= 5 { (source.height, source.width) } else { (source.width, source.height) };
+    let mut pixels = Vec::with_capacity(source.pixels.len());
+    for y in 0..height {
+        for x in 0..width {
+            let (sx, sy) = match orientation {
+                1 => (x, y),
+                2 => (source.width - 1 - x, y),
+                3 => (source.width - 1 - x, source.height - 1 - y),
+                4 => (x, source.height - 1 - y),
+                5 => (y, x),
+                6 => (y, source.height - 1 - x),
+                7 => (source.width - 1 - y, source.height - 1 - x),
+                8 => (source.width - 1 - y, x),
+                _ => return Err(PictureError::Decode("invalid figure orientation".into())),
+            };
+            let at = ((sy * source.width + sx) * 3) as usize;
+            pixels.extend_from_slice(&source.pixels[at..at + 3]);
+        }
+    }
+    encode_png(&Rgb { width, height, pixels })
+}
+
 /// A picture at `FULL_MAX`: the same four states as `view`, and a `data:` URI
 /// big enough to look at.
 ///
@@ -1670,4 +1696,19 @@ mod tests {
         std::fs::write(dir.path().join("a.png"), b"not a picture at all").unwrap();
         assert!(original(dir.path(), "a.png").is_none());
     }
+    #[test]
+    fn figure_reader_previews_are_bounded_and_apply_all_exif_orientations() {
+        let source = decode(PNG, Format::Png).unwrap();
+        for (orientation, swapped, flipped) in [(1,false,false),(2,false,true),(3,false,true),(4,false,false),(5,true,false),(6,true,false),(7,true,true),(8,true,true)] {
+            let bytes = figure_preview(PNG, orientation).unwrap();
+            let decoded = decode(&bytes, Format::Png).unwrap();
+            assert_eq!((decoded.width, decoded.height), if swapped { (4,6) } else { (6,4) });
+            let at = if flipped { 3 * 3 } else { 0 };
+            assert_eq!(&decoded.pixels[..3], &source.pixels[at..at + 3], "orientation {orientation}");
+        }
+        let bytes = figure_preview(WIDE, 6).unwrap();
+        let decoded = decode(&bytes, Format::Png).unwrap();
+        assert!(decoded.width.max(decoded.height) <= THUMB_MAX);
+    }
+
 }
