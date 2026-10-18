@@ -3,32 +3,29 @@
 use crate::{
     backup_bundle, pictures,
     store::{
-        document_format,
-        figure_assets::{FigureAsset, READ_SCHEMA_VERSION},
+        figure_assets::FigureAsset,
         Store,
     },
 };
 use sha2::{Digest, Sha256};
+
+pub(crate) fn authoring_allowed(store: &Store) -> Result<(), String> {
+    if !crate::store::document_format::new_nodes_allowed()
+        || store.user_version().map_err(|error| error.to_string())? != crate::store::READ_SCHEMA_VERSION {
+        return Err("figure registration is disabled".into());
+    }
+    Ok(())
+}
 use std::{
     fs::{self, OpenOptions},
     io::{Read, Write},
     path::Path,
 };
 
-pub(crate) fn import_copy(db: &Path, store: &Store, source: &Path) -> Result<FigureAsset, String> {
-    if !document_format::new_nodes_allowed()
-        || store.user_version().map_err(|e| e.to_string())? < READ_SCHEMA_VERSION
-    {
-        return Err("figure registration is disabled".into());
-    }
-    import_original(db, source, |asset| {
-        store
-            .register_figure_asset(asset)
-            .map_err(|e| e.to_string())
-    })
-}
-
 fn read_original(path: &Path) -> Result<Vec<u8>, String> {
+    if fs::symlink_metadata(path).is_ok_and(|meta| meta.file_type().is_symlink()) {
+        return Err("figure_symlink".into());
+    }
     let file = backup_bundle::open_regular_with_limit(path, pictures::MAX_PICTURE_BYTES)
         .map_err(str::to_string)?;
     let mut data = Vec::new();
@@ -41,17 +38,31 @@ fn read_original(path: &Path) -> Result<Vec<u8>, String> {
     Ok(data)
 }
 
-fn import_original(
+pub(crate) fn import_original(
     db: &Path,
     source: &Path,
     register: impl FnOnce(&FigureAsset) -> Result<(), String>,
 ) -> Result<FigureAsset, String> {
     let data = read_original(source)?;
+    retain_bytes(db, &data, uuid::Uuid::now_v7().to_string(), register)
+}
+
+pub(crate) fn retain_bytes(
+    db: &Path,
+    data: &[u8],
+    id: String,
+    register: impl FnOnce(&FigureAsset) -> Result<(), String>,
+) -> Result<FigureAsset, String> {
+    admit_retained(db, data.len() as u64)?;
+    let asset = prepare_asset(data, id)?;
+    retain_prepared(db, data, asset, register)
+}
+
+pub(crate) fn prepare_asset(data: &[u8], id: String) -> Result<FigureAsset, String> {
     let (format, width_px, height_px) =
         pictures::inspect_original(&data).map_err(|e| e.to_string())?;
     let orientation = orientation(&data, format)?;
-    let id = uuid::Uuid::now_v7().to_string();
-    let asset = FigureAsset {
+    Ok(FigureAsset {
         stored_name: format!("fig-{id}.{}", format.extension()),
         id,
         mime: format.mime().into(),
@@ -60,7 +71,39 @@ fn import_original(
         width_px,
         height_px,
         orientation,
-    };
+    })
+}
+
+fn admit_retained(db: &Path, incoming: u64) -> Result<(), String> {
+    if incoming > 2 * 1024 * 1024 * 1024 { return Err("figure_retention_limit".into()); }
+    let dir = pictures::dir_for(db);
+    match fs::symlink_metadata(&dir) {
+        Ok(meta) if meta.is_dir() && !meta.file_type().is_symlink() => {}
+        Ok(_) => return Err("figure directory is unsafe".into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(error.to_string()),
+    }
+    let mut count = 0usize;
+    let mut bytes = incoming;
+    for entry in fs::read_dir(&dir).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        if !entry.file_name().to_string_lossy().starts_with("fig-") { continue; }
+        let metadata = fs::symlink_metadata(entry.path()).map_err(|e| e.to_string())?;
+        count += 1;
+        bytes = bytes.checked_add(metadata.len()).ok_or("figure_retention_limit")?;
+        if count >= 1024 || bytes > 2 * 1024 * 1024 * 1024 { return Err("figure_retention_limit".into()); }
+    }
+    Ok(())
+}
+
+pub(crate) fn retain_prepared(
+    db: &Path, data: &[u8], asset: FigureAsset,
+    register: impl FnOnce(&FigureAsset) -> Result<(), String>,
+) -> Result<FigureAsset, String> {
+    admit_retained(db, data.len() as u64)?;
+    if asset.bytes != data.len() as u64 || asset.sha256 != format!("{:x}", Sha256::digest(data)) {
+        return Err("prepared figure bytes changed".into());
+    }
     let dir = pictures::dir_for(db);
     match fs::symlink_metadata(&dir) {
         Ok(meta) if meta.is_dir() && !meta.file_type().is_symlink() => {}

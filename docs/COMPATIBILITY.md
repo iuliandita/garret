@@ -1,58 +1,115 @@
 # Compatibility and recovery
 
-SQLite schema: 17.
+SQLite schema: 18. The reader ceiling and creation/migration target share one
+version constant. The 17-to-18 ladder step uses the same figure-registry SQL as
+the schema-18 reader fixtures. On desktop, opening an existing book for writing requires consent before upgrading to 18;
+read-only operations never migrate. Schema 19 and higher refuse before writable
+setup. An existing schema-18 book keeps its registry and version unchanged.
 
-The desktop and Android reader ceiling is 18. Creation and writable migration
-still stop at 17; opening an existing schema-18 book leaves its `user_version`
-at 18 and retains its immutable figure registry. No schema downgrade or
-registry migration runs on that book. Read-only opens never migrate. Schema 19
-and higher are refused, including Android library probes and transfer imports,
-before writable database setup. Android then checks the preset: absent, novel,
-short, nonfiction and collection are supported; empty and unknown values refuse.
+Restores preserve format 17 (older schemas advance only to 17 for recovery
+bookkeeping), or preserve an existing format 18. Open a restored format-17 book
+with the previous package for rollback; the new application asks before upgrading
+it again. Android creates and opens schema-17 books without upgrading or writing
+an upgrade copy; existing schema-18 books remain 18. Android transfer imports
+preserve the source schema (17 stays 17; 18 stays 18), without modifying the archive.
+Android has no upgrade consent prompt.
 
-Schema-18 books display endnotes, bounded lazy figure previews (at most 256 pixels on the long side, with
-registered EXIF orientation), captions,
-alternative text and scene breaks on both platforms. Activate a numbered note
-reference to read its plain-text body; Escape hides it. Editor reference numbers
-follow the current document; publication numbering follows the selected book,
-chapter or story scope. Surrounding prose remains editable, with ordinary undo,
-redo, saves and retained history. Existing atoms are read-only: inserting,
-deleting, duplicating, reordering or changing their payloads is refused, including clipboard
-and replacement operations. Restoring a retained version may restore its own
-original atoms. No desktop or Android endnote, figure or scene-break authoring
-is enabled; figure registration and new-format Markdown/DOCX conversion remain
-disabled. Schema-17 books still refuse new nodes.
+Before an older book opens for writing on desktop, an app-owned dialog explains
+the format change and requires an upgrade decision. Startup defers that opening
+until the interface can ask. Consent first retains a complete verified `.point`
+bundle beside the book, including history, cast/cover originals and retained
+research. A missing original blocks migration. Failed attempts clean up their own
+stages and incomplete output; unrelated stages do not block retries. Free space is
+checked when available; an unavailable capacity query leaves write-time failure
+handling in charge. A process crash can leave a private `.garret-backup.stage-*`
+directory. It does not block retries and is not reaped automatically. After closing
+every garret process, inspect abandoned stages and remove only stages whose
+contents are no longer needed; they can contain plaintext writing and originals.
+Completed `.point` bundles are separate and must be kept. Cancel keeps the book at
+its previous format. Originals remain untouched. Keep the complete database,
+adjacent originals and profile before upgrading an installation, and try a
+disposable copy first.
 
-Complete backups, encrypted archives, restores and Android transfers retain
-schema 18, exact atom payloads, retained history and registered originals.
-Existing schema-18 books can publish Markdown packages, EPUB, DOCX and PDF
-through the shared publication plan. Blank figure alternative text blocks
-publication, and missing or changed originals refuse rather than disappear.
-Readable-folder output of new nodes remains disabled. Salvage keeps readable
-notes, figure links and scene breaks, plus verbatim JSON beside current and
-named-version documents containing atoms and copies of registered originals.
-Its existing automatic-version drops remain reported; salvage is not an
-in-place downgrade or a complete replacement for a verified backup.
+Desktop authoring supports plain-text endnotes and explicit scene breaks.
+Choose Edit > Insert or edit endnote, or press Ctrl+Alt+N (without Shift); this
+chord is reserved for endnotes in both interface languages. A numbered reference
+also opens the anchored textarea. Enter inserts a newline; Save commits one
+isolated undo step; Cancel or Escape discards the draft. A failed save keeps the
+draft available. Leaving a scene or book requires Save, Discard or Cancel.
+Edit > Endnote numbering chooses book, chapter or story; editor and publication
+numbers derive from that scope and the manuscript reading order. Collections
+default to story numbering. Identifiers remain stable through edit and undo.
 
-Before upgrading the application, close it and retain the complete database,
-adjacent originals and profile. Test a disposable copy first. Existing schema-17
-books remain usable by the previous build. A schema-18 book requires this reader
-release (0.0.6 or later) on both desktop and phone; 0.0.5 and earlier refuse it. To roll back,
-keep the schema-18 book separately and open a complete pre-activation schema-17
-copy with the older package. Later writing is absent from that copy. Never
-manually lower `user_version`, overwrite the newer book or remove its originals.
-Host and interface tests exercise reader preservation and transfer. The isolated
-Android emulator smoke accepts a generated schema-18 fixture, checks note and
-figure display, edits prose, and verifies schema, atoms, registry and originals
-after force-stop/reopen. Physical-phone checks remain release qualification steps.
+Edit > Insert scene break creates an explicit block rendered as `* * *`.
+Literal typed asterisks remain ordinary prose. Select a note or break and choose
+Edit > Delete selected note, figure or scene break to delete it; undo and redo retain
+its content. Edit > Insert or edit figure opens the native PNG/JPEG picker;
+each insertion retains an independent, durable original and registers it before
+placing the figure. Cancel leaves no placement and retains an already copied
+original. Figure properties are available on the figure and through the Edit
+menu. Full text width, half text width and a separate interior page are supported,
+with caption and alternative text. Saving or editing is one isolated undo step.
+Empty alternative text may be saved as a draft, but blocks publication.
+Properties estimate print DPI from the oriented pixels and book dimensions;
+the PDF proof measures the actual placed size, including caption space. Below
+300 DPI warns; below 200 DPI is flagged. Originals are never automatically removed.
+Retention checks count and total bytes before decoding a newly picked image.
+A crashed import can leave originals without a database; a later creation skips
+that occupied name and preserves the orphaned originals for inspection. A figure
+preview blocked by a failed save reports that save failure rather than claiming
+the original is missing.
+
+Android can read notes, figures and scene breaks; open a numbered note to read
+its body; edit surrounding prose; save, close and reopen; and import/export a
+complete archive. Android cannot insert, edit, delete, duplicate or reorder these
+atoms through its editor. Its UI retains the reader's atom-preservation guard.
+Android checks schema first, then book type: absent, novel, short, nonfiction
+and collection are supported; empty and unknown presets refuse. Desktop can
+retain an unknown preset, but it cannot send it as a supported mobile book.
+
+For a device copy, use Books > Copies > Export book for another device and
+check the app version on the receiving device first. Android export requires
+the same explicit capability check. Unknown capability refuses; update or check
+the receiving app before retrying. The host checks the source schema before
+preset support and before opening destination pickers. The 0.0.6 capability
+supports format 18 and all four current book types; the legacy capability stops
+at 17 and novels. These are manual version checks, not device discovery or sync.
+Ordinary recovery and encrypted backup creation remain available independently.
+The recipient rechecks the staged database before publishing a separate book.
+
+Complete backups, encrypted archives, restores and transfers retain schema 18,
+exact atom payloads, history and registered originals. Markdown packages, EPUB,
+DOCX and PDF use the shared publication plan. Empty figure alternative text
+blocks publication; missing or changed originals refuse. DOCX and marked
+Markdown imports preserve plain-text endnotes and explicit breaks. Figure-package
+import verifies and retains relative originals before publishing the separate book.
+New-format readable-folder copies require schema 18 and carry `document_format: 18`,
+notes, captions and relative hashed originals beside each scene. They are one-way:
+marker removal does not allow inbound replacement of atom-bearing scenes. Ordinary
+scenes remain bidirectional. Pauses, conflict copies and undo protections remain;
+changed asset bytes are retained and refuse replacement. Blank-alt drafts remain
+readable-folder copies while publication still refuses them. Salvage retains readable notes, figure links, breaks,
+verbatim JSON for affected current/named documents and registered originals;
+automatic-version drops remain reported. Salvage is not a downgrade route.
+
+Apps 0.0.5 and earlier refuse schema 18. Release 0.0.6 reads and preserves it,
+including new writing in surrounding prose, but has no atom authoring. To roll
+back, keep the upgraded book separately and restore the complete pre-upgrade
+schema-17 copy as a separate book with the previous package. Writing after
+upgrade is absent from that copy. Never lower `user_version`, overwrite the
+newer book or delete its originals. A schema-18 archive cannot restore into a
+schema-17 app; update the receiver or use the retained pre-upgrade copy.
+
+Host tests cover migration, cancellation, incomplete-copy refusal, independent
+originals, history, transfer checks and schema-specific writes. Interface tests
+cover isolated note undo, failed drafts and explicit scene-break deletion.
 `scripts/android/reader-fixture OUTPUT_DIRECTORY` generates a synthetic encrypted
-archive, a fresh recovery key, import instructions and an owned plaintext copy
-using test-only construction and the real transfer import path. It never enables
-production writes. Keep generated archives and keys out of version control.
-`design-apply` accepts schemas 17 and 18; older books still require application
-migration first. Batch saves and retained-document validation share one schema
-and registry read per batch, and a base-revision-zero save treats a missing
-document row as having no atoms.
+archive and separate key for reader qualification. The owner has qualified the
+0.0.6 reader on a physical phone. Android authoring and Windows/macOS native
+qualification remain separate work. First-launch Android activity recreation
+is tracked in [issue 403](https://github.com/iuliandita/garret/issues/403).
+`design-apply` requires schema 18; older books require consented migration first.
+Batch saves and retained-document validation share one schema/registry read.
 
 Proof paginator test diagnostics use isolated temporary profiles and timestamped
 phase logs. They do not change PDF output, stored books, profile migration, or
@@ -62,12 +119,17 @@ Shared restore normalization, preset validation, and canonical UUID checks retai
 their existing acceptance rules and errors. These helper cleanups add no migration
 and leave stored books, transfer formats, and rollback requirements unchanged.
 
+The schema-18 reader shares figure UUID validation and one reader-version export.
+Legacy-node refusal and picture-paste detection retain their existing acceptance
+rules, including the file-list fallback. These cleanups do not enable authoring,
+change stored data, or add migration, backup, upgrade, or rollback steps.
+
 EPUB and DOCX exports replace vertical tabs and form feeds with spaces and remove
 the other XML 1.0-forbidden characters from prose, item and book titles, contents
 labels, collection bylines, and EPUB author, sort name, publisher, and rights in
 the exported copy. Front and back matter, including References, use the same
 cleanup. Prepared publication exports also clean note bodies, captions,
-alternative text, and note headings; production activation remains disabled.
+alternative text, and note headings; production publication uses the same cleanup.
 The export result adds `xml_characters_removed`, counting both replacements and
 deletions; the interface and CLI explain a nonzero count in plain language.
 Stored prose, titles, metadata, marks, history, and ordinary XML
@@ -133,19 +195,17 @@ rotation but retains raw PNG dimensions for PNG eXIf; the proof follows that
 displayed geometry. EPUB retains the original PNG and DOCX uses its raw drawing
 dimensions. Preview reports include per-placement `figures`
 with item and instance IDs, DPI, warning, and flag values. Existing schema-18
-books can publish these nodes. Authoring and its activation interface remain
-disabled; creation stays at
-schema 17, existing schema-18 books retain their version, and no new migration runs. Native Linux output is exercised under a virtual
+books can publish these nodes. Release 0.0.6 keeps authoring disabled and creates
+schema 17; release 0.0.7 activates authoring on desktop, creates schema 18 and requires
+consent before upgrading existing writable books. Native Linux output is exercised under a virtual
 display; Windows and macOS layout qualification remains external.
 
-DOCX import keeps its existing prose-only behavior while new-node conversion is
-disabled. Footnote and endnote references and pictures are omitted with separate
-loss counts in the interface and CLI; no atoms are stored. Note-body parts are
-not parsed in this mode, including malformed parts that previous builds ignored.
-Keep the original DOCX to retain its notes and pictures. No migration runs, and
-existing books remain unchanged. Back up closed books and adjacent originals;
-rollback uses the previous package with a separate complete copy and the same
-counted-loss import behavior.
+Release 0.0.6 imports DOCX as prose and reports omitted notes and pictures.
+Release 0.0.7 converts footnotes and endnotes to owned plain-text endnotes;
+note formatting and unsupported pictures remain counted losses. Keep the original
+DOCX to retain its formatting and pictures. Import creates a separate current-format
+book. Back up closed books and adjacent originals; rollback uses the previous
+package with a separate complete pre-upgrade copy.
 
 Prepared DOCX publication uses the shared plan for native endnotes, scoped
 numbering, inline pictures, captions, alternative text, and scene breaks. Legacy
@@ -314,7 +374,7 @@ Opening a supported older book can upgrade its SQLite schema. A newer schema
 is refused by an older build; do not edit `PRAGMA user_version` to bypass this.
 Static version checks do not establish that every legacy book upgrades correctly.
 
-0.0.1 through 0.0.6 create SQLite schema 17; 0.0.6 also opens and preserves schema-18 books. The 0.0.2 DOCX importer adds
+0.0.1 through 0.0.6 create SQLite schema 17; 0.0.6 also opens and preserves schema-18 books. Desktop 0.0.7 creates schema 18 and upgrades existing books only after consent; Android 0.0.7 keeps schema-17 books at 17. The 0.0.2 DOCX importer adds
 archive expansion limits: 128 entries, 128 MiB combined, and 64 MiB per entry.
 An oversized foreign document can now be refused. Preserve the original and
 split or simplify a copy before retrying; do not bypass the limits. This does
@@ -517,6 +577,15 @@ schemas and stale sessions fail closed. Publication moves and syncs originals
 before the database becomes visible; unsupported exclusive-rename kernels
 refuse publication. No existing book is overwritten.
 
+A recovery key is a separate text file limited to 512 bytes. Selecting a book
+archive in the key picker reports a recovery-key error; it does not mean the
+book exceeds the archive or payload limits. A key that does not open the archive
+also reports a key error. Extraction maps only its explicit size-limit errors to
+the book-size message; verification details containing the words "too large" remain
+verification errors. These diagnostic changes do not alter size budgets,
+archive contents, schemas or rollback requirements. Existing valid schema-18
+archives do not need regeneration.
+
 Cancellation keeps admission until the original picker callback, stream and
 cancellation closer have drained. If the system picker remains open, close it
 to finish cancellation. A provider that cannot close within 15 seconds puts
@@ -572,8 +641,9 @@ certify a live upgrade or restore.
 ### Android drafting data
 
 Android drafting tools reuse the existing item revisions and positions, synopsis,
-cast, Bible documents, comments and saved-typing ledger. New books stay at schema 17;
-existing schema-18 books use the reader and transfer policy above. Old day-baseline metadata is retained
+cast, Bible documents, comments and saved-typing ledger. New Android books use
+schema 17; existing 17 books remain 17, and existing 18 books remain 18. Android
+never upgrades a book and needs no upgrade consent or private rollback copy. Old day-baseline metadata is retained
 and is not reclassified as typed progress. Daily targets use the desktop
 `daily_target` string encoding in application settings; they are device preferences
 and do not travel with a book. Text size is stored with Android appearance settings.
@@ -581,3 +651,21 @@ Synopsis edits the desktop synopsis panel field with explicit Save; closing the 
 Only scene mutations are exposed; parts and chapters remain read-only on mobile.
 Unsupported project presets remain refused before opening. Android relies on the
 system lock screen for device privacy; an application privacy lock is not provided.
+
+Ordinary desktop Delete, replacement and Select All edits cannot remove document
+atoms. Use the explicit deletion action; its undo/redo remains available. Android
+enforces atom preservation at the host save boundary, independently of desktop
+authoring. Encrypted archives remain backups; their interface warns to use the
+recipient-checked device export for transfers.
+
+Figure package imports admit at most 128 distinct originals and 256 MiB of
+original bytes. Each image is inspected once before retention. Originals and
+their database are staged together; failed publication cleans up originals
+owned by that attempt and refuses an existing destination pictures folder.
+Cancelled figure insertions retain their original for recovery, with admission
+limited to 1,024 retained figure files and 2 GiB per book. Nothing is deleted
+automatically to make room. Missing or changed originals produce a properties
+warning; caption and alternative text remain editable, while publication still
+requires valid originals. DPI estimates precede caption and heading layout;
+the proof checks the final placed size. Figure copy/paste is refused, including
+within the same book; use insertion and explicit deletion with undo instead.

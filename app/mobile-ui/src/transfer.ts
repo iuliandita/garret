@@ -6,6 +6,9 @@ export interface TransferStatus {
   token: string;
   phase: string;
   code?: string;
+  picker?: string;
+  archive_name?: string;
+  existing_key?: boolean;
   preview?: { title?: string; related: string[]; unreadable_books?: number };
   book_id?: string;
 }
@@ -15,9 +18,11 @@ export function transferError(code: unknown, locale: "en" | "de") {
     return m.transferFormat.replace("{item}", code.slice("transfer_format:".length));
   }
   const messages: Record<string, string> = {
+    recipient_unknown: m.recipientUnknown, recipient_schema: m.recipientSchema, recipient_preset: m.recipientPreset,
     unsupported_schema: m.unsupportedSchema,
     unsupported_project_preset: m.unsupportedPreset,
     transfer_storage: m.transferStorage, transfer_too_large: m.transferTooLarge,
+    transfer_wrong_archive: m.transferWrongArchive, transfer_wrong_key: m.transferWrongKey,
     transfer_key: m.transferKeyError, transfer_provider: m.transferProvider,
     transfer_stale: m.transferStale,
     transfer_cleanup: m.transferCleanup, transfer_retained: m.transferRetained,
@@ -43,7 +48,15 @@ export async function showTransfer(mount: HTMLElement, options: {
   const state = element("p"); state.setAttribute("role", "status"); state.setAttribute("aria-live", "polite");
   const preview = element("div");
   const actions = element("div"); actions.className = "mobile-transfer-actions";
-  dialog.append(title, hint, limits, state, preview, actions);
+  const recipientLabel = element("label", m.recipientLabel);
+  const recipient = element("select");
+  recipient.setAttribute("aria-label", m.recipientLabel);
+  for (const [value, label] of [["", m.recipientUnknown], ["legacy005", m.recipientLegacy], ["reader006", m.recipientReader]]) {
+    const option = element("option", label); option.value = value; recipient.append(option);
+  }
+  recipientLabel.append(recipient);
+  recipientLabel.hidden = options.direction !== "export" || options.existing !== undefined;
+  dialog.append(title, hint, limits, recipientLabel, state, preview, actions);
   const lifecycle = window as Window & { __mobileTransfer?: boolean };
   lifecycle.__mobileTransfer = true;
   let status = options.existing;
@@ -97,6 +110,7 @@ export async function showTransfer(mount: HTMLElement, options: {
       const start = async (keyChoice: "existing" | "new") => {
         status = await options.invoke<TransferStatus>("mobile_transfer_start", {
           direction: options.direction, generation: options.generation, keyChoice,
+          ...(options.direction === "export" ? { recipient: recipient.value || null } : {}),
         });
         render();
       };
@@ -106,14 +120,29 @@ export async function showTransfer(mount: HTMLElement, options: {
       button(m.cancel, async () => close());
       return;
     }
+    recipientLabel.hidden = true;
     const phaseMessages: Record<string, string> = {
-      key: m.transferKey, archive: m.transferArchive, save_key: m.transferSaveKey,
-      save_archive: m.transferSaveArchive, reading: m.transferReading, writing: m.transferWriting,
+      key: options.direction === "export" ? m.transferExistingKey : m.transferKey, archive: m.transferArchive, save_key: m.transferSaveKey,
+      save_archive: status.existing_key ? m.transferSaveArchiveExisting : m.transferSaveArchive, reading: m.transferReading, writing: m.transferWriting,
       publishing: m.transferPublishing, cancelling: m.transferCancelling, preparing: m.transferPreparing,
       restart_required: m.transferRestart, cancelled: m.transferCancelled, done: status.book_id ? m.importDone : m.transferDone,
       failed: transferError(status.code, options.locale), preview: m.previewHint,
     };
     state.textContent = phaseMessages[status.phase] ?? m.transferPreparing;
+    if (status.archive_name) preview.append(element("p", m.transferSelectedArchive.replace("{name}", status.archive_name)));
+    if (status.picker) {
+      if (status.code) {
+        const error = element("p", transferError(status.code, options.locale));
+        error.setAttribute("role", "alert"); preview.append(error);
+      }
+      const labels: Record<string, string> = { archive: m.chooseArchive, key: m.chooseKey, save_key: m.saveKey, save_archive: m.saveArchive };
+      button(labels[status.phase], async () => {
+        await options.invoke("mobile_transfer_choose", { token: status!.token, picker: status!.picker });
+        await poll();
+      });
+      button(m.cancel, cancel);
+      return;
+    }
     if (status.phase === "done" && status.code) state.textContent += ` ${transferError(status.code, options.locale)}`;
     if (status.phase === "preview" && status.preview) {
       const name = element("h3", status.preview.title || m.unnamedBook);

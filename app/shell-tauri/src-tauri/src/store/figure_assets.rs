@@ -1,14 +1,10 @@
 //! Retained, immutable figure originals. No deletion or update API.
-use super::{document_format, Result, Store, StoreError, TIMELINE_TYPE};
+use super::{document_format, Result, Store, StoreError, READ_SCHEMA_VERSION, TIMELINE_TYPE};
 use rusqlite::Connection;
 use std::collections::{BTreeMap, HashSet};
 
-pub use super::document_format::READ_SCHEMA_VERSION;
-
-// Deliberately absent from the production migration ladder. Activation must use
-// this same SQL; tests install only the proposed table in disposable v17 books.
-#[cfg(test)]
-pub(crate) const PROPOSED_MIGRATION: &str = include_str!("figure_assets.sql");
+// Shared with the reader fixtures and the atomic production ladder step.
+pub(crate) const SCHEMA_V18: &str = include_str!("figure_assets.sql");
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct FigureAsset {
@@ -29,19 +25,19 @@ pub fn is_figure_name(name: &str) -> bool {
     else {
         return false;
     };
-    uuid::Uuid::parse_str(stem).is_ok_and(|id| {
+    is_uuid_v7(stem)
+}
+
+fn is_uuid_v7(value: &str) -> bool {
+    uuid::Uuid::parse_str(value).is_ok_and(|id| {
         id.get_version_num() == 7
             && id.get_variant() == uuid::Variant::RFC4122
-            && id.to_string() == stem
+            && id.to_string() == value
     })
 }
 
 fn valid_asset(asset: &FigureAsset) -> bool {
-    uuid::Uuid::parse_str(&asset.id).is_ok_and(|id| {
-        id.get_version_num() == 7
-            && id.get_variant() == uuid::Variant::RFC4122
-            && id.to_string() == asset.id
-    }) && is_figure_name(&asset.stored_name)
+    is_uuid_v7(&asset.id)
         && asset.stored_name
             == format!(
                 "fig-{}.{}",
@@ -237,8 +233,10 @@ fn scan_references(
 pub(crate) mod test_support {
     use super::*;
     pub fn install(store: &Store) {
-        assert_eq!(store.user_version().unwrap(), 17);
-        store.conn.execute_batch(PROPOSED_MIGRATION).unwrap();
+        let version = store.user_version().unwrap();
+        if version == READ_SCHEMA_VERSION { return; }
+        assert_eq!(version, 17);
+        store.conn.execute_batch(SCHEMA_V18).unwrap();
     }
     pub fn allow_corruption(conn: &Connection) {
         conn.execute_batch("ALTER TABLE figure_asset RENAME TO unchecked_source; CREATE TABLE figure_asset AS SELECT * FROM unchecked_source; DROP TABLE unchecked_source;").unwrap();

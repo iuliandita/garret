@@ -118,6 +118,7 @@ function host(opts: HostOpts = {}): Host {
     // `today` is a fixed slice of it rather than another moving number: the
     // tests here are about whether the page asks and repaints, and a second
     // moving figure would make a stale reading look like a fresh one.
+    if (cmd === "endnote_context") return { offset: 0 };
     if (cmd === "project_preset") return opts.preset ?? "novel";
     if (cmd === "project_progress") return { total: ++counted * WORD_COUNT_STEP, today: 40 };
     if (cmd === "project_items") {
@@ -360,6 +361,46 @@ const deps = (over: Partial<MountDeps> & Pick<MountDeps, "invoke">): MountDeps =
   projectPath: "/tmp/project.db",
   generation: 1,
   ...over,
+});
+
+test.each([false, true])("a newly inserted figure preview waits for its placement to finish saving (failure: %s)", async (failure) => {
+  shell(); const h = host(); const asset = { id: crypto.randomUUID(), width_px: 1920, height_px: 1200, orientation: 1 };
+  let release!: () => void;
+  const saving = new Promise<void>(resolve => { release = resolve; });
+  let saved = ""; let previews = 0;
+  const observer = globalThis.IntersectionObserver;
+  Object.defineProperty(globalThis, "IntersectionObserver", { configurable: true, writable: true, value: undefined });
+  const invoke: Host["invoke"] = async (cmd, args) => {
+    if (cmd === "figure_pick") return asset;
+    if (cmd === "figure_details") return { asset, column_inches: 5, height_inches: 8 };
+    if (cmd === "doc_flush") { await saving; if (failure) throw new Error("save unavailable"); saved = (args!.entries as FlushEntry[])[0]!.body; }
+    if (cmd === "figure_preview") {
+      previews++;
+      if (!saved.includes(String(args!.instanceId))) throw new Error("figure placement changed");
+      return { state: "present", data_uri: "data:image/png;base64,AAAA" };
+    }
+    return h.invoke(cmd, args);
+  };
+  const mounted = await mountProject(deps({ invoke }));
+  try {
+    mounted.editor.editFigure(); await settle();
+    document.querySelector<HTMLTextAreaElement>("#figure-alt")!.value = "Earth above the Moon";
+    const buttons = [...document.querySelectorAll<HTMLButtonElement>("#endnote-editor button")];
+    buttons.find(button => button.textContent === "Save")!.click(); await settle();
+    expect(previews).toBe(0);
+    release(); await settle(); await settle();
+    if (failure) {
+      expect(previews).toBe(0);
+      expect(document.querySelector("#editor figure")?.textContent).toContain("Figure preview unavailable because the book could not be saved");
+      expect(document.querySelector("#editor figure")?.textContent).not.toContain("Figure original not included");
+    } else {
+      expect(previews).toBe(1);
+      expect(document.querySelector("#editor figure img")?.getAttribute("alt")).toBe("Earth above the Moon");
+    }
+  } finally {
+    release(); mounted.destroy();
+    Object.defineProperty(globalThis, "IntersectionObserver", { configurable: true, writable: true, value: observer });
+  }
 });
 
 describe("captured review integration", () => {

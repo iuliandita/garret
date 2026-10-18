@@ -262,7 +262,7 @@ fn mobile_create(host: State<'_, MobileHost>, name: String) -> Result<Book, Stri
         .create_new(true)
         .open(&stage)
         .map_err(|error| format!("cannot claim book stage: {error}"))?;
-    let store = store::Store::open(&stage).map_err(|error| error.to_string())?;
+    let store = store::Store::open_restored(&stage).map_err(|error| error.to_string())?;
     store
         .set_meta(NAME_KEY, name)
         .map_err(|error| error.to_string())?;
@@ -293,7 +293,7 @@ fn mobile_create(host: State<'_, MobileHost>, name: String) -> Result<Book, Stri
             }
         });
     }
-    let store = match store::Store::open_existing(&path) {
+    let store = match store::Store::open_restored(&path) {
         Ok(store) => store,
         Err(error) => {
             let rollback = crate::mobile_core::move_new(&path, &stage);
@@ -341,7 +341,8 @@ fn open_book(host: &MobileHost, id: &str) -> Result<Book, String> {
         }
         Ok(())
     })?;
-    let store = store::Store::open_existing(&path).map_err(|error| error.to_string())?;
+    // Android authors prose only; opening a legacy book must not activate atoms.
+    let store = store::Store::open_restored(&path).map_err(|error| error.to_string())?;
     let name = store
         .get_meta(NAME_KEY)
         .map_err(|error| error.to_string())?
@@ -882,6 +883,7 @@ pub fn run() {
             mobile_close,
             mobile_figure_preview,
             mobile_transfer_start,
+            mobile_transfer_choose,
             mobile_transfer_status,
             mobile_transfer_cancel,
             mobile_transfer_confirm,
@@ -911,6 +913,9 @@ struct TransferStatus {
     code: Option<String>,
     preview: Option<transfer::Preview>,
     book_id: Option<String>,
+    picker: Option<String>,
+    archive_name: Option<String>,
+    existing_key: bool,
 }
 struct Transfer {
     status: TransferStatus,
@@ -921,6 +926,7 @@ struct Transfer {
     running: bool,
     direction: Direction,
     uncertain_write: bool,
+    picker_ready: Option<tauri::async_runtime::Sender<()>>,
 }
 fn idle(session: &Session) -> Result<(), String> {
     if session.transfer.is_some() {
@@ -1056,7 +1062,60 @@ fn settle(session: &mut Session, token: &str, result: Result<Option<transfer::Pr
         }
     }
 }
+fn offer_picker(
+    host: &MobileHost, token: &str, phase: &str, code: Option<String>,
+) -> Result<tauri::async_runtime::Receiver<()>, String> {
+    let mut session = host.session.lock().map_err(|_| "transfer_invalid")?;
+    admitted(&session, token)?;
+    let job = session.transfer.as_mut().unwrap();
+    let (send, receive) = tauri::async_runtime::channel(1);
+    job.status.phase = phase.into();
+    job.status.code = code;
+    job.status.picker = Some(uuid::Uuid::now_v7().to_string());
+    job.picker_ready = Some(send);
+    Ok(receive)
+}
+fn choose_picker(host: &MobileHost, token: &str, picker: &str) -> Result<(), String> {
+    let mut session = host.session.lock().map_err(|_| "transfer_invalid")?;
+    let job = admitted(&session, token)?;
+    if job.status.picker.as_deref() != Some(picker) {
+        return Err("transfer_stale".into());
+    }
+    let job = session.transfer.as_mut().unwrap();
+    job.picker_ready.take().ok_or("transfer_stale")?
+        .try_send(()).map_err(|_| "transfer_stale")?;
+    job.status.picker = None;
+    job.status.code = None;
+    Ok(())
+}
+#[tauri::command]
+fn mobile_transfer_choose(host: State<'_, MobileHost>, token: String, picker: String) -> Result<(), String> {
+    choose_picker(&host, &token, &picker)
+}
+async fn wait_for_picker(app: &tauri::AppHandle, token: &str, step: &str, code: Option<String>) -> Result<(), String> {
+    let mut receive = offer_picker(&app.state::<MobileHost>(), token, step, code)?;
+    receive.recv().await.ok_or("transfer_cancelled")?;
+    phase(app, token, step)?;
+    Ok(())
+}
 async fn pick_read(app: &tauri::AppHandle, token: &str, kind: Kind) -> Result<(), String> {
+    let step = if kind == Kind::Key { "key" } else { "archive" };
+    let mut retry = None;
+    loop {
+        wait_for_picker(app, token, step, retry.take()).await?;
+        match read_picked(app, token, kind).await {
+            Err(code) if code == "transfer_wrong_key" || code == "transfer_wrong_archive" => {
+                let stage = phase(app, token, step)?;
+                // Native read has drained. Only discard this step's private input.
+                let path = stage.join(kind.file_name(Mode::Open));
+                if path.exists() { fs::remove_file(path).map_err(|_| "transfer_cleanup")?; }
+                retry = Some(code);
+            }
+            result => return result,
+        }
+    }
+}
+async fn read_picked(app: &tauri::AppHandle, token: &str, kind: Kind) -> Result<(), String> {
     let stage = phase(
         app,
         token,
@@ -1086,18 +1145,29 @@ async fn pick_read(app: &tauri::AppHandle, token: &str, kind: Kind) -> Result<()
     let receipt = bridge.read(ticket, token, limit).await.map_err(|code| {
         if matches!(
             code.as_str(),
-            "transfer_too_large" | "transfer_storage" | "transfer_restart"
+            "transfer_too_large" | "transfer_key" | "transfer_storage" | "transfer_restart"
         ) {
-            code
+            if code == "transfer_key" { "transfer_wrong_key".into() } else { code }
         } else {
             "transfer_provider".into()
         }
     })?;
     phase(app, token, "preparing")?;
+    let archive_name = receipt.display_name.as_ref().map(|name| name.chars()
+        .filter(|ch| !ch.is_control() && !matches!(ch, '/' | '\\'))
+        .take(120).collect()).filter(|name: &String| !name.is_empty());
     let path = stage.join(kind.file_name(Mode::Open));
-    let digest = blocking(move || transfer::fingerprint(&path, limit)).await?;
-    if digest != (receipt.bytes, receipt.sha256) {
-        return Err("transfer_provider".into());
+    blocking(move || {
+        if transfer::fingerprint(&path, limit)? != (receipt.bytes, receipt.sha256) {
+            return Err("transfer_provider".into());
+        }
+        transfer::check_input(&path, kind)
+    }).await?;
+    if kind == Kind::Archive {
+        let host = app.state::<MobileHost>();
+        let mut session = host.session.lock().map_err(|_| "transfer_invalid")?;
+        admitted(&session, token)?;
+        session.transfer.as_mut().unwrap().status.archive_name = archive_name;
     }
     Ok(())
 }
@@ -1107,6 +1177,7 @@ async fn pick_write(
     kind: Kind,
     digest: (u64, String),
 ) -> Result<(), String> {
+    wait_for_picker(app, token, if kind == Kind::Key { "save_key" } else { "save_archive" }, None).await?;
     phase(
         app,
         token,
@@ -1157,7 +1228,7 @@ async fn export_book(
     let bundle = blocking(move || {
         let host = snapshot_app.state::<MobileHost>();
         snapshot_transfer(&host, &snapshot_token, |path, stage| {
-            let store = store::Store::open_existing(path).map_err(|_| "transfer_invalid")?;
+            let store = store::Store::open_restored(path).map_err(|_| "transfer_invalid")?;
             transfer::snapshot(path, &store, stage)
         })
     })
@@ -1262,6 +1333,9 @@ fn start_transfer(
         code: None,
         preview: None,
         book_id: None,
+        picker: None,
+        archive_name: None,
+        existing_key: false,
     };
     session.transfer = Some(Transfer {
         status: status.clone(),
@@ -1272,6 +1346,7 @@ fn start_transfer(
         running: true,
         direction,
         uncertain_write: false,
+        picker_ready: None,
     });
     Ok(status)
 }
@@ -1282,8 +1357,16 @@ fn mobile_transfer_start(
     direction: Direction,
     generation: u64,
     key_choice: KeyChoice,
+    recipient: Option<crate::recipient_compatibility::Recipient>,
 ) -> Result<TransferStatus, String> {
+    if direction == Direction::Export {
+        let session = host.session.lock().map_err(|_| "transfer_invalid")?;
+        crate::recipient_compatibility::check(&checked(&session, generation)?.store, recipient)?;
+    }
     let status = start_transfer(&host, direction, generation)?;
+    if direction == Direction::Export && matches!(key_choice, KeyChoice::Existing) {
+        host.session.lock().map_err(|_| "transfer_invalid")?.transfer.as_mut().unwrap().status.existing_key = true;
+    }
     let token = status.token.clone();
     tauri::async_runtime::spawn(async move {
         let result = if direction == Direction::Export {
@@ -1327,6 +1410,8 @@ fn cancel_transfer(host: &MobileHost, token: &str) -> Result<(), String> {
             return Ok(());
         }
         job.canceled.store(true, Ordering::SeqCst);
+        job.picker_ready = None;
+        job.status.picker = None;
         job.status.phase = "cancelling".into();
         if !job.running {
             job.status.phase = "cancelled".into();
@@ -1453,7 +1538,9 @@ mod tests {
         let transfers = root.join("transfer");
         transfer::private_dir(&transfers).unwrap();
         let id = uuid::Uuid::now_v7().to_string();
-        let store = store::Store::open(&books.join(format!("{id}.db"))).unwrap();
+        let path = books.join(format!("{id}.db"));
+        fs::File::create(&path).unwrap();
+        let store = store::Store::open_restored(&path).unwrap();
         store.set_meta(NAME_KEY, "Harbour").unwrap();
         store
             .ensure_starter_structure(&strings::Strings::new(&strings::EN))
@@ -1479,6 +1566,34 @@ mod tests {
         let (host, id) = host(root.path());
         let book = open_book(&host, &id).unwrap();
         (root, host, book)
+    }
+
+    #[test]
+    fn mobile_schema17_open_edit_save_and_reopen_never_upgrade_or_copy() {
+        let root = tempfile::tempdir().unwrap();
+        let (host, id) = host(root.path());
+        let path = book_path(&host, &id).unwrap();
+        let book = open_book(&host, &id).unwrap();
+        let mut session = host.session.lock().unwrap();
+        let open = checked(&session, book.generation).unwrap();
+        assert_eq!(open.store.user_version().unwrap(), 17);
+        let scene = &book.scenes[0].id;
+        let loaded = open.store.load_doc(scene).unwrap();
+        let body = r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Phone prose stays at format 17"}]}]}"#;
+        crate::mobile_core::flush(&open.store, book.generation, book.generation,
+            &[store::FlushEntry { item_id: scene.clone(), base_rev: loaded.rev, body: body.into(), comments: None }], &[]).unwrap();
+        open.store.checkpoint().unwrap();
+        session.open = None;
+        drop(session);
+        let reader = store::Store::open_readonly(&path).unwrap();
+        assert_eq!(reader.user_version().unwrap(), 17);
+        assert_eq!(reader.load_doc(scene).unwrap().body, body);
+        drop(reader);
+        open_book(&host, &id).unwrap();
+        assert!(fs::read_dir(&host.books).unwrap().all(|entry| {
+            let name = entry.unwrap().file_name().to_string_lossy().into_owned();
+            [format!("{id}.db"), format!("{id}.db-wal"), format!("{id}.db-shm")].contains(&name)
+        }));
     }
     #[test]
     fn mobile_transferred_presets_create_scenes_in_order_without_scaffolding() {
@@ -2262,6 +2377,10 @@ mod tests {
                 let root = tempfile::tempdir().unwrap();
                 let (host, id) = host(root.path());
                 let path = book_path(&host, &id).unwrap();
+                if version >= 18 {
+                    // A claimed reader schema needs its real registry, not just a header change.
+                    store::Store::open_existing(&path).unwrap().checkpoint().unwrap();
+                }
                 let connection = rusqlite::Connection::open(&path).unwrap();
                 connection
                     .pragma_update(None, "journal_mode", "WAL")
@@ -2272,9 +2391,6 @@ mod tests {
                         [preset],
                     )
                     .unwrap();
-                if version == 18 {
-                    connection.execute_batch(store::figure_assets::PROPOSED_MIGRATION).unwrap();
-                }
                 connection.pragma_update(None, "user_version", version).unwrap();
                 let mut connection = Some(connection);
                 if !wal {
@@ -2310,6 +2426,29 @@ mod tests {
         }
     }
     #[test]
+    fn mobile_picker_requires_a_fresh_tap_and_cancellation_wakes_the_waiter() {
+        let root = tempfile::tempdir().unwrap();
+        let (host, _) = host(root.path());
+        let generation = host.session.lock().unwrap().generation;
+        let status = start_transfer(&host, Direction::Import, generation).unwrap();
+        let mut first = offer_picker(&host, &status.token, "archive", None).unwrap();
+        assert!(first.try_recv().is_err());
+        let picker = host.session.lock().unwrap().transfer.as_ref().unwrap().status.picker.clone().unwrap();
+        assert!(choose_picker(&host, &status.token, "stale").is_err());
+        choose_picker(&host, &status.token, &picker).unwrap();
+        assert_eq!(first.try_recv(), Ok(()));
+        assert!(choose_picker(&host, &status.token, &picker).is_err());
+        let mut retry = offer_picker(&host, &status.token, "archive", Some("transfer_wrong_archive".into())).unwrap();
+        assert!(choose_picker(&host, &status.token, &picker).is_err());
+        assert!(retry.try_recv().is_err());
+        cancel_transfer(&host, &status.token).unwrap();
+        assert!(tauri::async_runtime::block_on(retry.recv()).is_none());
+        let session = host.session.lock().unwrap();
+        assert!(session.transfer.as_ref().unwrap().running);
+        assert!(admitted(&session, &status.token).is_err());
+        assert!(idle(&session).is_err());
+    }
+    #[test]
     fn mobile_transfer_cancellation_keeps_admission_until_the_late_result_drains() {
         let root = tempfile::tempdir().unwrap();
         let (host, id) = host(root.path());
@@ -2324,6 +2463,9 @@ mod tests {
                 code: None,
                 preview: None,
                 book_id: None,
+                picker: None,
+                archive_name: None,
+                existing_key: false,
             },
             generation: opened.generation,
             book_id,
@@ -2332,6 +2474,7 @@ mod tests {
             running: true,
             direction: Direction::Export,
             uncertain_write: false,
+            picker_ready: None,
         });
         assert!(idle(&session).is_err());
         assert!(admitted(&session, &token).is_ok());
@@ -2376,6 +2519,9 @@ mod tests {
                 code: None,
                 preview: None,
                 book_id: None,
+                picker: None,
+                archive_name: None,
+                existing_key: false,
             },
             generation: opened.generation,
             book_id,
@@ -2384,6 +2530,7 @@ mod tests {
             running: true,
             direction: Direction::Export,
             uncertain_write: false,
+            picker_ready: None,
         });
         session.generation += 1;
         assert!(admitted(&session, &token).is_err());

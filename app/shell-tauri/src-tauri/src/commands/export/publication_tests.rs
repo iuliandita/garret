@@ -552,13 +552,13 @@ fn publication_refusals_preserve_unknown_content_and_missing_originals() {
         std::fs::rename(&moved, &dir).unwrap();
         assert!(build(&walk.bodies).is_ok());
     }
-    assert_eq!(fixture.store.user_version().unwrap(), 17);
-    assert!(!store::document_format::new_nodes_allowed());
+    assert_eq!(fixture.store.user_version().unwrap(), 18);
+    assert!(store::document_format::new_nodes_allowed());
     assert!(fixture.root.path().exists());
 }
 
 #[test]
-fn disabled_new_node_epub_refuses_before_publishing_a_destination() {
+fn unknown_node_epub_refuses_before_publishing_a_destination() {
     let root = tempfile::tempdir().unwrap();
     let db = root.path().join("book.db");
     let store = store::Store::open(&db).unwrap();
@@ -576,11 +576,11 @@ fn disabled_new_node_epub_refuses_before_publishing_a_destination() {
     )
     .unwrap_err();
     assert!(
-        error.contains("cannot be exported by this build"),
+        error.contains("unsupported document content"),
         "{error}"
     );
     assert!(!dest.exists());
-    assert_eq!(store.user_version().unwrap(), 17);
+    assert_eq!(store.user_version().unwrap(), 18);
 }
 
 #[test]
@@ -687,6 +687,14 @@ fn scoped_markdown_uses_the_publication_plan_and_round_trips_its_package() {
             let parsed = crate::import::read_package(text, "book", package.path()).unwrap();
             assert_eq!(parsed.assets, written.assets);
             assert_eq!(parsed.asset_ids.len(), written.assets.len());
+            let imported_dir = tempfile::tempdir().unwrap();
+            let made = crate::projects::create_imported_package(imported_dir.path(), &parsed, &crate::strings::Strings::english()).unwrap();
+            let reopened = store::Store::open_readonly(Path::new(&made.path)).unwrap();
+            assert_eq!(reopened.figure_assets().unwrap().len(), parsed.assets.len());
+            for asset in reopened.figure_assets().unwrap() {
+                crate::figures::verify_original(&crate::pictures::dir_for(Path::new(&made.path)).join(&asset.stored_name), &asset).unwrap();
+            }
+            assert!(crate::validation::validate(Path::new(&made.path)).unwrap().ok);
             let bodies: Vec<serde_json::Value> = parsed.imported.items.iter().filter_map(|item|
                 item.body.as_ref().map(|body| serde_json::from_str(body).unwrap())).collect();
             assert_eq!(sequence(&bodies), expected);
@@ -714,25 +722,26 @@ fn scoped_markdown_uses_the_publication_plan_and_round_trips_its_package() {
 }
 
 #[test]
-fn markdown_conversion_stays_disabled_before_any_publication_or_import_writes() {
+fn activated_markdown_conversion_publishes_and_imports_notes() {
     let fixture = fixture();
-    let dest = fixture.root.path().join("refused.md");
+    let dest = fixture.root.path().join("book.md");
     let before = fixture.store.documents().unwrap();
-    assert!(export_as(&fixture.db, "Collected", &dest, crate::export::Format::Markdown,
-        &crate::identity::Vault::default(), crate::strings::Strings::english()).unwrap_err().contains("cannot be exported by this build"));
-    assert!(!dest.exists()); assert!(!fixture.root.path().join("assets").exists());
+    export_as(&fixture.db, "Collected", &dest, crate::export::Format::Markdown,
+        &crate::identity::Vault::default(), crate::strings::Strings::english()).unwrap();
+    assert!(dest.exists());
+    assert!(fixture.root.path().join("assets").exists());
     assert!(check_save_as(&fixture.db, "Collected", crate::export::Format::Markdown,
-        &crate::identity::Vault::default(), crate::strings::Strings::english(), None).is_err());
+        &crate::identity::Vault::default(), crate::strings::Strings::english(), None).unwrap_err().contains("Markdown packages cannot use Export as"));
     let source = fixture.root.path().join("source.md");
     std::fs::write(&source, format!("{}# Book\n\n## Scene\n\ntext[^s1-1]\n\n[^s1-1]: note\n", crate::markdown::MARKER)).unwrap();
     let library = fixture.root.path().join("library");
     let home = fixture.root.path().join("home");
-    let error = crate::import_path(&home, &library, &source, &crate::strings::Strings::english()).err().unwrap();
-    assert!(error.contains("new-format Markdown conversion is disabled"), "{error}");
-    assert!(!library.exists()); assert!(!home.exists());
+    let imported = crate::import_path(&home, &library, &source, &crate::strings::Strings::english()).unwrap();
+    let store = store::Store::open_readonly(Path::new(&imported.summary.path)).unwrap();
+    assert!(store.documents().unwrap().values().any(|body| body.contains("endnote")));
     assert_eq!(fixture.store.documents().unwrap(), before);
-    assert_eq!(fixture.store.user_version().unwrap(), 17);
-    assert!(!store::document_format::new_nodes_allowed());
+    assert_eq!(fixture.store.user_version().unwrap(), 18);
+    assert!(store::document_format::new_nodes_allowed());
 }
 
 #[test]
@@ -764,15 +773,41 @@ fn mirror_fixture_copies_require_the_new_schema_and_use_relative_hashed_assets()
         assert!(parsed.imported.items.iter().filter_map(|item| item.body.as_ref()).any(|body| body.contains("endnote")));
         let legacy = crate::mirror::file_body(&item, Some(&fixture.store.load_doc(&item.id).unwrap().body));
         assert!(!legacy.contains("document_format:"));
-        assert!(!store::document_format::new_nodes_allowed());
-        let disabled = fixture.root.path().join("production-mirror");
-        assert!(crate::mirror::pass(&fixture.db, "book", "Book", &disabled, 0, &Default::default()).is_err());
-        assert!(!disabled.exists());
+        assert!(store::document_format::new_nodes_allowed());
+        let destination = fixture.root.path().join("production-mirror");
+        crate::mirror::pass(&fixture.db, "book", "Book", &destination, 0, &Default::default()).unwrap();
+        let manifest: crate::recovery::Manifest<crate::mirror::MirrorEntry> = crate::recovery::read_manifest(&destination).unwrap();
+        let entry = manifest.entries.iter().find(|entry| entry.id == item.id).unwrap();
+        let written = destination.join(&entry.path);
+        assert_eq!(std::fs::read_to_string(&written).unwrap(), copy.text());
+        for (href, bytes) in &copy.assets {
+            assert_eq!(std::fs::read(written.parent().unwrap().join(href)).unwrap(), *bytes);
+        }
+        // Marker removal still cannot turn an atom-bearing scene into inbound prose.
+        std::fs::write(&written, copy.text().replace("document_format: 18\n", "")).unwrap();
+        let rows = crate::mirror::change_set(&destination, &manifest.entries, &fixture.store.items().unwrap(),
+            &fixture.store.documents().unwrap(), &fixture.store.document_revs().unwrap(), &crate::mirror::detect(&destination));
+        assert!(!rows.iter().find(|row| row.id == item.id).unwrap().can_accept);
+        let doc = fixture.store.load_doc(&item.id).unwrap();
+        let mut draft: serde_json::Value = serde_json::from_str(&doc.body).unwrap();
+        for block in draft["content"].as_array_mut().unwrap() {
+            if block["type"] == "figure" { block["attrs"]["alt"] = json!(""); }
+        }
+        fixture.store.flush(&[store::FlushEntry { item_id: item.id.clone(), base_rev: doc.rev, body: draft.to_string(), comments: None }]).unwrap();
+        crate::mirror::pass(&fixture.db, "book", "Book", &destination, 1, &Default::default()).unwrap();
+        let copied: crate::recovery::Manifest<crate::mirror::MirrorEntry> = crate::recovery::read_manifest(&destination).unwrap();
+        assert_eq!(copied.completeness.unreadable_bodies, 0);
+        // Changed asset bytes are retained and fail the next pass explicitly.
+        let href = copy.assets.keys().next().unwrap();
+        std::fs::write(written.parent().unwrap().join(href), b"external original").unwrap();
+        let error = crate::mirror::pass(&fixture.db, "book", "Book", &destination, 1, &Default::default()).unwrap_err();
+        assert!(error.contains("differs"));
+        assert_eq!(std::fs::read(written.parent().unwrap().join(href)).unwrap(), b"external original");
     });
 }
 
 #[test]
-fn pdf_publication_reuses_scopes_assets_and_refuses_disabled_production() {
+fn pdf_publication_reuses_scopes_assets_in_production() {
     let fixture = fixture();
     for numbering in ["book", "chapter", "story"] {
         fixture.store.set_meta("notes.numbering", numbering).unwrap();
@@ -809,12 +844,11 @@ fn pdf_publication_reuses_scopes_assets_and_refuses_disabled_production() {
             });
         }
     }
-    let dest = fixture.root.path().join("refused.pdf");
-    assert!(export_as(&fixture.db, "Collected", &dest, crate::export::Format::Pdf,
-        &crate::identity::Vault::default(), crate::strings::Strings::english()).unwrap_err().contains("cannot be exported by this build"));
-    assert!(!dest.exists());
-    assert_eq!(fixture.store.user_version().unwrap(), 17);
-    assert!(!store::document_format::new_nodes_allowed());
+    let (written, _, _, _, _) = render_project(&fixture.db, "Collected", crate::export::Format::Pdf,
+        &crate::identity::Vault::default(), crate::strings::Strings::english()).unwrap();
+    assert!(written.text().contains("proof-noteref"));
+    assert_eq!(fixture.store.user_version().unwrap(), 18);
+    assert!(store::document_format::new_nodes_allowed());
 }
 
 fn publishing_fixture<T>(run: impl FnOnce() -> T) -> T {
@@ -931,5 +965,5 @@ fn schema18_reader_exports_existing_nodes_without_the_fixture_override() {
     }
     assert_eq!(store.load_doc(&id).unwrap().body, body);
     assert_eq!(store.user_version().unwrap(), 18);
-    assert!(!store::document_format::new_nodes_allowed());
+    assert!(store::document_format::new_nodes_allowed());
 }

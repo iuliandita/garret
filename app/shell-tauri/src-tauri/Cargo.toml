@@ -1,6 +1,6 @@
 [package]
 name = "garret"
-version = "0.0.6"
+version = "0.0.7"
 edition = "2021"
 
 [workspace]
@@ -49,6 +49,7 @@ miniz_oxide = "0.8"
 # Canonical registry alias checks. Already present in the locked graph; named
 # directly so this host code does not depend on a transitive package by accident.
 same-file = "1.0.6"
+fs2 = "=0.4.3"
 # The new book default: `document_dir()`/`home_dir()`, nothing else.
 # Already present in the locked graph under tauri's own dependencies; named
 # directly rather than relied on transitively, since this host code now calls

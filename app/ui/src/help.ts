@@ -114,6 +114,7 @@ export const SHORTCUTS: readonly ShortcutGroup[] = [
       // with nothing open, exactly like Alt+<key> above it.
       { keys: t("menu.shortcut.library"), description: t("help.library") },
       { keys: t("help.keys.export"), description: t("help.export") },
+      { keys: t("authoring.shortcut"), description: t("authoring.insert-note") },
       { keys: t("help.keys.escape"), description: t("help.menu.close") },
       // In Menus rather than in a group of its own: the File menu is where
       // the item lives, and a one-row group for leaving reads as a warning.

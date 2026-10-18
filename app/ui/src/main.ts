@@ -1,4 +1,5 @@
-import { localizedInvoke } from "./command-error";
+import { askUpgrade } from "./upgrade-prompt";
+import { failureDetail, localizedInvoke } from "./command-error";
 import { createPrivacyStartupInvoke, waitForPrivacyUnlock, type PrivacyStatus } from "./privacy";
 // app/ui/src/main.ts
 // Page assembly and the soak loop. Mode comes from the HOST at runtime, not
@@ -366,6 +367,7 @@ async function main(): Promise<void> {
       });
       const bookCopyPrompt = createBookCopyPrompt(document.body);
 
+      let upgradeConfirmed = false;
       const performProjectSwitch = createProjectSwitcher<MountedProject>({
         current: () => current,
         setCurrent: (next) => {
@@ -373,6 +375,11 @@ async function main(): Promise<void> {
         },
         currentPath: () => currentPath,
         prepareOpen: async (path) => {
+          upgradeConfirmed = false;
+          if (await invoke("project_upgrade_check", { path })) {
+            if (!await askUpgrade(t("format-upgrade.prompt"), t("book-copy.cancel"), t("format-upgrade.accept"))) return null;
+            upgradeConfirmed = true;
+          }
           dictionarySwitch += 1;
           preferences?.invalidateDictionary();
           await preferences?.drainDictionary();
@@ -380,7 +387,7 @@ async function main(): Promise<void> {
           return conflict === null ? undefined : bookCopyPrompt.choose(conflict);
         },
         openProject: async (path, decision) =>
-          (await invoke("project_open", { path, decision: decision ?? null })) as {
+          (await invoke("project_open", { path, decision: decision ?? null, upgradeConfirmed })) as {
             path: string;
             name: string;
             generation: number;
@@ -466,6 +473,15 @@ async function main(): Promise<void> {
         encryptedBackupDestination: async () => (await invoke("encrypted_backup_destination")) as string | null,
         chooseEncryptedBackupDestination: async () => (await invoke("encrypted_backup_destination_pick")) as string | null,
         makeEncryptedArchive: async () => (await invoke("encrypted_archive_create", { expectedGeneration: await prepareArchive() })) as { file: string; recipient: string; encrypted: true } | null,
+        exportForDevice: async (recipient) => {
+          try {
+            return await invoke("encrypted_archive_create", { expectedGeneration: await prepareArchive(), forDevice: true, recipient: recipient || null }) as { file: string; recipient: string; encrypted: true } | null;
+          } catch (error) {
+            const key = failureDetail(error);
+            if (["recipient_unknown", "recipient_schema", "recipient_preset"].includes(key)) throw new Error(t(`transfer.${key}`));
+            throw error;
+          }
+        },
         verifyEncryptedArchive: async () => (await invoke("encrypted_archive_verify")) as { file: string; encrypted: true } | null,
         restoreEncryptedArchive: async () => (await invoke("encrypted_archive_restore")) as ProjectSummary | null,
         canReportArchive: async () => {
@@ -870,6 +886,11 @@ async function main(): Promise<void> {
         openMirrorChanges: () => current.menuActions.openMirrorChanges(),
         openComments: () => current.menuActions.openComments(),
         addComment: () => current.menuActions.addComment(),
+        editFigure: () => current.menuActions.editFigure(),
+        editEndnote: () => current.menuActions.editEndnote(),
+        insertSceneBreak: () => current.menuActions.insertSceneBreak(),
+        deleteSelectedAtom: () => current.menuActions.deleteSelectedAtom(),
+        setEndnoteNumbering: mode => current.menuActions.setEndnoteNumbering(mode),
         addToDictionary: () => current.menuActions.addToDictionary(),
         openStatistics: () => current.menuActions.openStatistics(),
         openAnalytics: () => current.menuActions.openAnalytics(),

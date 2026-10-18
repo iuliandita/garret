@@ -265,6 +265,11 @@ export interface MountedProject {
  *  menu item that threw during assembly would turn a measurement run into a
  *  page error. */
 export interface MenuProjectActions {
+  editEndnote(): void;
+  editFigure(): void;
+  insertSceneBreak(): void;
+  deleteSelectedAtom(): void;
+  setEndnoteNumbering(mode: "book" | "chapter" | "story"): void;
   showManuscript(): void;
   showOutlineTable(): void;
   showOutlineCards(): void;
@@ -687,10 +692,34 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // has one answer for focusEditor, markOpen, commentsOf and Add comment
   // alike, rather than four places that could disagree about it.
   let timelineMount: TimelineMount | null = null;
+  async function refreshNoteContext(): Promise<void> {
+    if (!invoke) return;
+    const itemId = session?.activeDocId() ?? activeDocId;
+    try {
+      const context = await invoke("endnote_context", { itemId, generation: deps.generation }) as { offset: number };
+      if (!projectDestroyed && itemId === (session?.activeDocId() ?? activeDocId) && Number.isSafeInteger(context?.offset)) editor.setNoteOffset(context.offset);
+    } catch { if (!projectDestroyed) raiseNotice(t("authoring.numbering-failed")); }
+  }
   const editor = createEditor(editorEl, editorInput, {
-    figurePreview: async (instanceId, assetId) => await invoke("figure_preview", {
-      itemId: session?.activeDocId() ?? activeDocId, instanceId, assetId,
-    }) as PictureView,
+    authoring: persistMode === "write",
+    onAtomCommit: async () => {
+      const itemId = session?.activeDocId();
+      await session?.flushPending();
+      return !projectDestroyed && !flusher.failed() && itemId === session?.activeDocId();
+    },
+    pickFigure: async () => await invoke("figure_pick", { generation: deps.generation }) as import("./document-authoring").FigureAsset | null,
+    figureDetails: async assetId => await invoke("figure_details", { generation: deps.generation, assetId }) as import("./document-authoring").FigureDetails,
+    figurePreview: async (instanceId, assetId) => {
+      const itemId = session?.activeDocId() ?? activeDocId;
+      // A node view can mount inside dispatch, before onChange queues its body.
+      // The host must see that placement before resolving its original.
+      await Promise.resolve();
+      try { await session?.flushPending(); }
+      catch { return { state: "save_failed", data_uri: null }; }
+      if (flusher.failed()) return { state: "save_failed", data_uri: null };
+      if (projectDestroyed || itemId !== (session?.activeDocId() ?? activeDocId)) return { state: "missing", data_uri: null };
+      return await invoke("figure_preview", { itemId, instanceId, assetId }) as PictureView;
+    },
     onAtomEditRefused: () => raiseNotice(t("document.atoms-read-only")),
     onClipboardRefused: reason => raiseNotice(t(reason === "picture" ? "document.picture-refused" : "document.clipboard-refused")),
     onChange: (change) => {
@@ -736,6 +765,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     onFocus: () => formatBubble?.onFocus(),
     onBlur: (event) => formatBubble?.onBlur(event),
   });
+  void refreshNoteContext();
   formatBubble = createFormatBubble({
     container: document.body,
     pane: () => editorEl.getBoundingClientRect(),
@@ -1039,6 +1069,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         serialize: () => editor.serialize(),
         replaceDoc: (input) => {
           editor.replaceDoc(input);
+          void refreshNoteContext();
           timelineMount?.destroy();
           timelineMount = null;
           editor.setHidden(false);
@@ -1196,6 +1227,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       onFailure: (message) => raiseNotice(t("project.error.open-document", { error: message })),
     });
     openDocument = async (itemId: string): Promise<void> => {
+      if (editor.atomDraftPending() && !await editor.confirmAtomDraft()) return;
       if (undoInFlight || sourceCommandInFlight || historyOperationInFlight || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight || projectLeaving) return;
       if (outlineView?.mode() !== "manuscript" && isOpenableType(latestItems.find((item) => item.id === itemId)?.type ?? "")) {
         showManuscript();
@@ -1698,6 +1730,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       // snapshot of every document in the same transaction, which is the
       // inverse, and the report names it so the writer can find it.
       replaceEverywhere: async (query, replacement) => {
+        if (editor.atomDraftPending() && !await editor.confirmAtomDraft()) throw new Error(t("history.error.busy"));
         if (projectDestroyed || projectLeaving || outline?.busy() || historyOperationInFlight || historyReconcileFailed || reviewReconcileFailed ||
             sourceCommandInFlight || undoInFlight || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight ||
             inflightOpens > 0 || reviewPanel?.busy() || deps.privacyLocked?.()) throw new Error(t("history.error.busy"));
@@ -1914,6 +1947,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       if (projectDestroyed || projectLeaving || deps.privacyLocked?.()) throw new Error(t("history.error.busy"));
     },
     withOperation: async (operation) => {
+        if (editor.atomDraftPending() && !await editor.confirmAtomDraft()) throw new Error(t("history.error.busy"));
       if (projectDestroyed || projectLeaving || outline?.busy() || historyOperationInFlight || historyReconcileFailed || reviewReconcileFailed ||
           sourceCommandInFlight || undoInFlight || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight ||
           inflightOpens > 0 || reviewPanel?.busy() || deps.privacyLocked?.()) throw new Error(t("history.error.busy"));
@@ -1975,6 +2009,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       }
     },
     undo: async (handle: MirrorUndoHandle) => {
+      if (editor.atomDraftPending() && !await editor.confirmAtomDraft()) throw new Error(t("history.error.busy"));
       if (projectDestroyed || invoke === undefined || session === null || flusher === null) {
         throw new Error(t("mirror.changes.undo.error.destroyed"));
       }
@@ -2043,6 +2078,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         if (projectDestroyed || projectLeaving || deps.privacyLocked?.()) throw new Error(t("history.error.busy"));
       },
       withOperation: async (operation) => {
+        if (editor.atomDraftPending() && !await editor.confirmAtomDraft()) throw new Error(t("history.error.busy"));
         if (projectDestroyed || projectLeaving || outline?.busy() || historyOperationInFlight || historyReconcileFailed || reviewReconcileFailed ||
             sourceCommandInFlight || undoInFlight || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight ||
             inflightOpens > 0 || reviewPanel?.busy() || deps.privacyLocked?.()) throw new Error(t("history.error.busy"));
@@ -2452,6 +2488,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       return invoke("review_message_add", { generation: deps.generation, groupId, expectedGroupRev, authorId, body });
     },
     decide: async (itemId, groupId, expectedGroupRev, expectedDocRev, ids, decision: ReviewDecision, authorId) => {
+      if (editor.atomDraftPending() && !await editor.confirmAtomDraft()) throw new Error(t("history.error.busy"));
       if (projectLeaving || projectDestroyed || reviewDecisionInFlight || reviewOpenInFlight || reviewTransportInFlight || undoInFlight || sourceCommandInFlight || historyOperationInFlight || inflightOpens > 0) {
         throw new Error(t("review.busy"));
       }
@@ -3098,6 +3135,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     reviewPending: () => historyOperationInFlight || projectLeaving || reviewOpenInFlight || reviewDecisionInFlight || reviewTransportInFlight || (reviewPanel?.busy() ?? false) || (reviewPanel?.hasUnsaved() ?? false),
     reviewPrivacyChanged: () => reviewPanel?.invalidateTransport(),
     async prepareToLeave(): Promise<boolean> {
+      if (editor.atomDraftPending() && !await editor.confirmAtomDraft()) return false;
       if (projectDestroyed || projectLeaving || outline?.busy() || reviewOpenInFlight || reviewDecisionInFlight || reviewTransportInFlight || undoInFlight || sourceCommandInFlight || historyOperationInFlight || inflightOpens > 0 || reviewPanel?.busy() || deps.privacyLocked?.()) return false;
       projectLeaving = true;
       editor.setEditable(false);
@@ -3123,6 +3161,14 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     // reimplementing it. The menu is a second SURFACE, not a second
     // implementation.
     menuActions: {
+      editFigure: () => { if (!timelineMount) editor.editFigure(); },
+      editEndnote: () => { if (!timelineMount) editor.editEndnote(); },
+      insertSceneBreak: () => { if (!timelineMount) editor.insertSceneBreak(); },
+      deleteSelectedAtom: () => { if (!timelineMount) editor.deleteSelectedAtom(); },
+      setEndnoteNumbering: mode => {
+        void invoke("endnote_numbering_set", { generation: deps.generation, numbering: mode }).then(refreshNoteContext)
+          .catch(() => raiseNotice(t("authoring.numbering-failed")));
+      },
       exportProject: () => exportBar?.run("markdown"),
       exportAs: () => exportBar?.runAs("markdown"),
       exportDocx: () => exportBar?.runAs("docx"),

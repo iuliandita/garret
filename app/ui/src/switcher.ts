@@ -169,6 +169,7 @@ export interface SwitcherDeps {
   encryptedBackupDestination?(): Promise<string | null>;
   chooseEncryptedBackupDestination?(): Promise<string | null>;
   makeEncryptedArchive?(): Promise<{ file: string; recipient: string; encrypted: true } | null>;
+  exportForDevice?(recipient: string): Promise<{ file: string; recipient: string; encrypted: true } | null>;
   verifyEncryptedArchive?(): Promise<{ file: string; encrypted: true } | null>;
   restoreEncryptedArchive?(): Promise<ProjectSummary | null>;
   /** A status read after a native operation, so a lock never reveals its result. */
@@ -533,6 +534,28 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   archiveEncrypted.type = "button";
   archiveEncrypted.textContent = t("switcher.archive.encrypted.action");
   archiveEncrypted.hidden = deps.makeEncryptedArchive === undefined;
+  const recipientLabel = document.createElement("label");
+  recipientLabel.textContent = t("transfer.recipient");
+  const recipient = document.createElement("select");
+  recipient.id = "project-transfer-recipient";
+  for (const [value, key] of [["", "unknown"], ["legacy005", "legacy"], ["reader006", "reader"]]) {
+    const option = document.createElement("option"); option.value = value;
+    option.textContent = t(`transfer.${key}`); recipient.append(option);
+  }
+  recipientLabel.append(recipient);
+  recipientLabel.hidden = deps.exportForDevice === undefined;
+  const exportDevice = document.createElement("button");
+  exportDevice.type = "button"; exportDevice.id = "project-export-device";
+  exportDevice.textContent = t("transfer.export");
+  exportDevice.hidden = deps.exportForDevice === undefined;
+  const onExportDevice = (): void => {
+    if (!hasBook()) return;
+    encryptedAction(async () => {
+      const archive = await deps.exportForDevice?.(recipient.value);
+      return archive ? t("switcher.archive.encrypted.done", { file: archive.file, recipient: archive.recipient }) : null;
+    });
+  };
+  exportDevice.addEventListener("click", onExportDevice);
   const archiveVerify = document.createElement("button");
   archiveVerify.id = "project-archive-encrypted-verify";
   archiveVerify.type = "button";
@@ -679,6 +702,8 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     backupChoice,
     archiveKey,
     archiveEncrypted,
+    recipientLabel,
+    exportDevice,
     archiveVerify,
     archiveRestore,
     mirrorHeading,
@@ -1522,7 +1547,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const path = deps.currentPath();
     const opened = deps.currentGeneration?.();
     encryptedBusy = true;
-    for (const button of [backupChoose, archiveKey, archiveEncrypted, archiveVerify, archiveRestore]) button.disabled = true;
+    for (const button of [backupChoose, archiveKey, archiveEncrypted, exportDevice, archiveVerify, archiveRestore]) button.disabled = true;
     void (async (): Promise<void> => {
       try {
         const done = await action();
@@ -1538,7 +1563,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       } finally {
         encryptedBusy = false;
         if (!destroyed) {
-          for (const button of [backupChoose, archiveKey, archiveEncrypted, archiveVerify, archiveRestore]) button.disabled = false;
+          for (const button of [backupChoose, archiveKey, archiveEncrypted, exportDevice, archiveVerify, archiveRestore]) button.disabled = false;
           paintBookAvailability();
         }
       }
@@ -1919,6 +1944,10 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     }
     archiveEncrypted.hidden = !open || deps.makeEncryptedArchive === undefined;
     archiveEncrypted.disabled = !open || encryptedBusy;
+    recipientLabel.hidden = !open || deps.exportForDevice === undefined;
+    exportDevice.hidden = !open || deps.exportForDevice === undefined;
+    exportDevice.disabled = !open || encryptedBusy;
+    recipient.disabled = encryptedBusy;
     move.disabled = !open;
     archiveNow.disabled = !open || archiving;
     mirrorToggle.disabled = !open || mirrorActionBusy;
@@ -2026,6 +2055,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       archiveKey.removeEventListener("click", onArchiveKey);
       backupChoose.removeEventListener("click", onBackupChoose);
       archiveEncrypted.removeEventListener("click", onArchiveEncrypted);
+      exportDevice.removeEventListener("click", onExportDevice);
       archiveVerify.removeEventListener("click", onArchiveVerify);
       archiveRestore.removeEventListener("click", onArchiveRestore);
       mirrorToggle.removeEventListener("click", onMirrorToggle);

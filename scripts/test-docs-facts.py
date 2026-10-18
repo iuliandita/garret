@@ -105,6 +105,17 @@ class DocumentationFacts(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "canonical SQLite schema"):
             facts.check_releases(self.root)
 
+    def test_shared_reader_schema_is_resolved_without_duplicating_the_version(self) -> None:
+        self.release_fixture()
+        store = self.root / "app/shell-tauri/src-tauri/src/store"
+        (store / "mod.rs").write_text("pub const SCHEMA_VERSION: i64 = READ_SCHEMA_VERSION;")
+        (store / "document_format.rs").write_text("pub const READ_SCHEMA_VERSION: i64 = 18;")
+        (self.root / "docs/COMPATIBILITY.md").write_text("SQLite schema: 18.")
+        facts.check_releases(self.root)
+        (self.root / "docs/COMPATIBILITY.md").write_text("SQLite schema: 17.")
+        with self.assertRaisesRegex(ValueError, "canonical SQLite schema"):
+            facts.check_releases(self.root)
+
     def test_published_source_cannot_be_relabelled(self) -> None:
         data = self.release_fixture()
         data["published"]["source_revision"] = "0" * 40

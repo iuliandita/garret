@@ -26,12 +26,13 @@ or an internet connection to write. Your books stay on your own disk.
 
 > **Early alpha.** garret moves fast; keep backups of your work.
 
-The current published build is [0.0.5 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.5).
+The current published build is [0.0.6 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.6).
 See [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
 
-Development builds keep schema 17 and refuse unsupported document writes.
-Legacy books with empty text runs remain recoverable; see the compatibility guide.
+From 0.0.7, desktop upgrades books to schema 18 after consent and a verified
+pre-upgrade copy; Android keeps schema-17 books at 17. Apps 0.0.5 and earlier refuse the upgraded book; 0.0.6 reads it.
+See the compatibility guide before upgrading or transferring a book.
 
 ![garret writing view](docs/screenshots/editor-light.png)
 
@@ -44,6 +45,14 @@ Legacy books with empty text runs remain recoverable; see the compatibility guid
 Write in a calm editor with formatting, book-wide search, undo/redo, and
 scene history. Arrange parts, chapters, and scenes with outlines and cards.
 Choose light or dark mode, in English or German.
+
+On desktop, Edit > Insert or edit endnote (Ctrl+Alt+N) opens a plain-text note
+with Save/Cancel and isolated undo. Choose book, chapter or story numbering in
+the Edit menu. Insert scene break adds an explicit `* * *` separator. Insert or
+edit figure opens the native PNG/JPEG picker, with full/half/page placement,
+caption, alternative text and print-resolution warnings. Empty alternative text
+blocks publication. Android
+reads these nodes and edits surrounding prose; atom authoring stays on desktop.
 
 ### Keep the story straight
 
@@ -152,7 +161,7 @@ release for you:
 
 1. Add `https://github.com/iuliandita/garret` as an app source.
 2. Pick the asset whose name ends in `-android.apk`, for example
-   `garret-0.0.6-android.apk`. The `-android-info.zip` asset holds instructions
+   `garret-0.0.7-android.apk`. The `-android-info.zip` asset holds instructions
    and build details; it is not installable.
 3. Check the signing certificate. Obtainium shows the certificate hash for the
    installed app on its app page; the SHA-256 digest must be
@@ -236,15 +245,19 @@ is manual. **Restore encrypted archive** restores it as a separate book.
 
 On Android, open the book, open **Outline**, then choose **Export book**.
 Use an existing recovery key, or save a new key first. Keep the key separately
-from the archive. The app saves a complete encrypted `.age` archive through
+from the archive. Each numbered step waits for you to tap its file-picker button.
+The app saves a complete encrypted `.age` archive through
 the system file picker, including picture and retained research originals.
 A successful export means the chosen file was closed and read back with the
 same length and hash; it does not verify a provider's later cloud upload.
 On desktop, use **Restore encrypted archive** with that archive and key.
 
 To move a desktop book onto the phone, make an encrypted archive on desktop,
-then choose **Import archive** in the Android library. Pick the archive and
-its separate key, review the book title and any related local copies, and
+then choose **Import archive** in the Android library. Step 1 asks for the `.age`
+book archive; step 2 asks for its separate small `.txt` recovery key. Tap the
+button at each step to open the file picker. The archive name stays visible in
+step 2, and an obvious wrong-file choice can be retried at that step.
+Review the book title and any related local copies, and
 choose **Keep both as separate books** (or **Import as a separate book**).
 Open the new copy from the library. Existing books and source files stay intact.
 This is a manual copy, not synchronization or merging.

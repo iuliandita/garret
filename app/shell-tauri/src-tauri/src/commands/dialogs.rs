@@ -444,6 +444,8 @@ pub(crate) async fn encrypted_archive_create(
     state: State<'_, StoreState>,
     data_home: State<'_, DataHome>,
     expected_generation: u64,
+    for_device: Option<bool>,
+    recipient: Option<crate::recipient_compatibility::Recipient>,
 ) -> Result<Option<crate::encrypted_archive::ArchiveInfo>, String> {
     let (source, generation) = {
         let guard = locked(&state);
@@ -451,6 +453,7 @@ pub(crate) async fn encrypted_archive_create(
         if project.generation != expected_generation {
             return Err("the open project changed before encrypting".into());
         }
+        if for_device == Some(true) { crate::recipient_compatibility::check(&project.store, recipient)?; }
         (project.path.clone(), project.generation)
     };
     let epoch = dialog_epoch(&app);
@@ -477,6 +480,10 @@ pub(crate) async fn encrypted_archive_create(
     let stage_home = data_home.0.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
         let _passing = crate::recovery::PASSING.lock().map_err(|_| "backup is busy")?;
+        if for_device == Some(true) {
+            let copied = crate::store::Store::open_readonly(&source).map_err(|error| error.to_string())?;
+            crate::recipient_compatibility::check(&copied, recipient)?;
+        }
         crate::encrypted_archive::create_from_project(&source, &dest, &key, &stage_home)
     }).await.map_err(|_| "encrypted archive task failed")??;
     Ok(Some(result))
@@ -1099,6 +1106,35 @@ fn commit_picked_picture<T>(
             Err(error)
         }
     }
+}
+
+/// Retain and register a picked figure before the page can place it.
+#[command_boundary::command]
+pub(crate) async fn figure_pick(
+    app: tauri::AppHandle,
+    state: State<'_, StoreState>,
+    generation: u64,
+) -> Result<Option<crate::store::figure_assets::FigureAsset>, String> {
+    let owner = {
+        let guard = locked(&state);
+        let project = open_project(&guard)?;
+        if project.generation != generation { return Err("figure selection belongs to another book".into()); }
+        crate::figures::authoring_allowed(&project.store)?;
+        PictureOwner::capture(project, &app)
+    };
+    let start = dirs::home_dir().unwrap_or_else(|| crate::pictures::dir_for(&owner.path));
+    let Some(source) = ask_for_picture_path(&app, &start).await else { return Ok(None); };
+    {
+        let guard = locked(&state);
+        owner.check_app(guard.as_ref(), &app)?;
+    }
+    // Retain the original even if the book closes while decoding. Registration
+    // is the final step, and a cancelled placement never deletes its original.
+    crate::figures::import_original(&owner.path, &source, |asset| {
+        let guard = locked(&state);
+        let project = owner.check_app(guard.as_ref(), &app)?;
+        project.store.register_figure_asset(asset).map_err(|error| error.to_string())
+    }).map(Some)
 }
 
 /// Attach a picture the WRITER picks, through the operating system's own open

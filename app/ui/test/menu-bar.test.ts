@@ -1562,6 +1562,8 @@ describe("the items that open a page dialog say so", () => {
   // how a screen-reader user learned that the control opens a thing. The buttons
   // are gone and the menu item is the only route in.
   const OPENS_DIALOG: Record<string, string> = {
+    "menu-insert-figure": "menu-edit",
+    "menu-insert-endnote": "menu-edit",
     "menu-project-new": "menu-file",
     "menu-project-open": "menu-file",
     "menu-mirror-changes": "menu-file",
@@ -1593,6 +1595,11 @@ describe("the items that open a page dialog say so", () => {
   // place. Without these the attribute could be set on every item and the test
   // above would still pass.
   const OPENS_NOTHING: Record<string, string> = {
+    "menu-insert-scene-break": "menu-edit",
+    "menu-delete-atom": "menu-edit",
+    "menu-endnote-numbering-book": "menu-edit",
+    "menu-endnote-numbering-chapter": "menu-edit",
+    "menu-endnote-numbering-story": "menu-edit",
     "menu-import": "menu-file",
     // acts on the caret and reports through the notice surface.
     "menu-add-to-dictionary": "menu-edit",

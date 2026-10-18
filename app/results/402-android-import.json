@@ -1,0 +1,39 @@
+{
+  "archive_sha256": "f75c65e72b7dbbdcfefb1c70ca43170b279255af2962355cc6601e22831da33b",
+  "schema18": {
+    "apk_sha256": "a389a45c0f600915b9466ed3e5ea4b2856b2166dee162e5ea1452c33a2523606",
+    "package": "com.usegarret.app",
+    "system_image": "system-images;android-36;google_apis;x86_64",
+    "steps": [
+      "fresh API 36 emulator booted",
+      "APK installed; book library rendered",
+      "app restarted after installation before transfer checks",
+      "oversized key selection refused as a recovery-key error",
+      "schema-18 archive imported through system picker, preview and confirmation",
+      "native endnote body, loaded figure and caption displayed; scene-break screenshot captured",
+      "saved database remains schema 18 with exact atoms, registry and original",
+      "surrounding edit, endnote and loaded figure survived process death and reopen"
+    ],
+    "status": "PASS",
+    "emulator_version": "Android emulator version 37.2.12.0 (build_id 16428233) (CL:N/A)",
+    "android_release": "16",
+    "android_api": "36"
+  },
+  "schema17": {
+    "apk_sha256": "a389a45c0f600915b9466ed3e5ea4b2856b2166dee162e5ea1452c33a2523606",
+    "package": "com.usegarret.app",
+    "system_image": "system-images;android-36;google_apis;x86_64",
+    "steps": [
+      "fresh API 36 emulator booted",
+      "APK installed; book library rendered",
+      "app restarted after installation before transfer checks",
+      "schema-17 archive imported through picker and confirmation, prose displayed, user_version remains 17"
+    ],
+    "status": "PASS",
+    "emulator_version": "Android emulator version 37.2.12.0 (build_id 16428233) (CL:N/A)",
+    "android_release": "16",
+    "android_api": "36"
+  },
+  "startup_issue": "https://github.com/iuliandita/garret/issues/403",
+  "scope": "Fresh API 36 emulators with an explicit restart after installation. This does not reproduce the physical-phone failure with the correct archive/key pair."
+}

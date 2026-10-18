@@ -63,6 +63,11 @@ export interface MenuSpec {
 export type ProjectsFocus = "list" | "create" | "import" | "backups";
 
 export interface MenuBarDeps {
+  editFigure?: () => void;
+  editEndnote?: () => void;
+  insertSceneBreak?: () => void;
+  deleteSelectedAtom?: () => void;
+  setEndnoteNumbering?: (mode: "book" | "chapter" | "story") => void;
   projectPreset?: () => ProjectPreset;
   showManuscript: () => void;
   showOutlineTable: () => void;
@@ -321,6 +326,15 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
           label: () => t("menu.add-to-dictionary"),
           run: deps.addToDictionary,
         },
+        { id: "menu-insert-figure", opensDialog: true, label: () => t("figure.insert"), run: () => deps.editFigure?.() },
+        { id: "menu-insert-endnote", opensDialog: true, label: () => t("authoring.insert-note"), shortcut: t("authoring.shortcut"), run: () => deps.editEndnote?.() },
+        { id: "menu-insert-scene-break", label: () => t("authoring.insert-break"), run: () => deps.insertSceneBreak?.() },
+        { id: "menu-delete-atom", label: () => t("authoring.delete"), run: () => deps.deleteSelectedAtom?.() },
+        { id: "menu-endnote-numbering", label: () => t("authoring.numbering"), children: [
+          { id: "menu-endnote-numbering-book", label: () => t("authoring.numbering-book"), run: () => deps.setEndnoteNumbering?.("book") },
+          { id: "menu-endnote-numbering-chapter", label: () => t("authoring.numbering-chapter"), run: () => deps.setEndnoteNumbering?.("chapter") },
+          { id: "menu-endnote-numbering-story", label: () => t("authoring.numbering-story"), run: () => deps.setEndnoteNumbering?.("story") },
+        ], run: () => {} },
       ],
     },
     {
