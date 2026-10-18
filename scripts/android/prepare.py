@@ -42,7 +42,7 @@ for kind in ("cloud-backup", "device-transfer"):
         ET.SubElement(section, "exclude", {"domain": domain, "path": "."})
 ET.indent(rules, space="    ")
 ET.ElementTree(rules).write(main / "res/xml/data_extraction_rules.xml", encoding="utf-8", xml_declaration=True)
-for name in ("MainActivity.kt", "TransferPlugin.kt"):
+for name in ("MainActivity.kt", "TransferPlugin.kt", "TransferLifecycle.kt"):
     shutil.copyfile(source / name, main / "java/com/usegarret/app" / name)
 # Launcher icons come from scripts/render-icons, not the generator's defaults.
 launchers = repo / "app/shell-tauri/src-tauri/icons/android"

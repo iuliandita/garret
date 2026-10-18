@@ -169,7 +169,8 @@ impl<R: Runtime> Bridge<R> {
                             if matches!(
                                 reply.code.as_deref(),
                                 Some(
-                                    "transfer_too_large"
+                                    "transfer_lifecycle"
+                                        | "transfer_too_large"
                                         | "transfer_key"
                                         | "transfer_storage"
                                         | "transfer_restart"

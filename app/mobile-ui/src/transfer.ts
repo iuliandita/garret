@@ -24,7 +24,7 @@ export function transferError(code: unknown, locale: "en" | "de") {
     transfer_storage: m.transferStorage, transfer_too_large: m.transferTooLarge,
     transfer_wrong_archive: m.transferWrongArchive, transfer_wrong_key: m.transferWrongKey,
     transfer_key: m.transferKeyError, transfer_provider: m.transferProvider,
-    transfer_stale: m.transferStale,
+    transfer_stale: m.transferStale, transfer_lifecycle: m.transferLifecycle,
     transfer_cleanup: m.transferCleanup, transfer_retained: m.transferRetained,
     transfer_disabled: m.transferDisabled, transfer_restart: m.transferRestart,
     transfer_busy: m.transferBusy, transfer_publish: m.transferPublish,
