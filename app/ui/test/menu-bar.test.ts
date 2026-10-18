@@ -1,10 +1,14 @@
 import type { ProjectPreset } from "../src/project-preset";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { menuRoute } from "../../harness/src/menu-drive";
 import type { MatterKind } from "../src/outline";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
+
+afterEach(() => {
+  document.body.replaceChildren();
+});
 
 import { createMenuBar, type MenuBar, type ProjectsFocus } from "../src/menu-bar";
 import { createClosePrompt } from "../src/close-prompt";
