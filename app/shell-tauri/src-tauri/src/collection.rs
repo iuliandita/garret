@@ -55,7 +55,7 @@ pub fn story(store: &Store, id: &str) -> Result<Story, String> {
         .chapters
         .into_iter()
         .find(|item| item.id == id)
-        .ok_or_else(|| "the story is no longer available".to_string())?;
+        .expect("story membership proves the chapter exists");
     Ok(Story {
         author: author(store, id)?,
         id: item.id,

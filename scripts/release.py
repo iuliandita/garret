@@ -71,6 +71,11 @@ def set_version(value: str) -> None:
     check()
 
 
+def file_sha256(path: Path) -> str:
+    with path.open("rb") as stream:
+        return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
 def collect(platform: str) -> None:
     value = check()
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
@@ -109,8 +114,7 @@ def collect(platform: str) -> None:
             for name in ("BUILD.txt", "README.md", "COPYING", "THIRD-PARTY-NOTICES.md"):
                 archive.write(sources[platform].parent / name, name)
     for path in sorted(out.iterdir()):
-        with path.open("rb") as stream:
-            digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        digest = file_sha256(path)
         (out / f"{path.name}.sha256").write_text(f"{digest}  {path.name}\n")
     print(out.relative_to(ROOT))
 
@@ -135,8 +139,7 @@ def verify_downloads() -> None:
         raise ValueError(f"Incomplete or unexpected downloads: missing={sorted(expected - actual)}, extra={sorted(actual - expected)}")
     for name in sorted(name for name in expected if not name.endswith(".sha256")):
         path = folder / name
-        with path.open("rb") as stream:
-            digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        digest = file_sha256(path)
         if not path.stat().st_size or (folder / f"{name}.sha256").read_text() != f"{digest}  {name}\n":
             raise ValueError(f"Download checksum failed: {name}")
 
@@ -146,8 +149,7 @@ def write_manifest() -> None:
     folder = ROOT / "app/dist-release/downloads"
     lines = []
     for name in sorted(download_names()):
-        with (folder / name).open("rb") as stream:
-            digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        digest = file_sha256(folder / name)
         lines.append(f"{digest}  {name}\n")
     (folder / "SHA256SUMS").write_text("".join(lines))
 
@@ -163,6 +165,9 @@ def sign_manifest(allow_unsigned: bool = False) -> None:
             raise ValueError("Unsigned publication is blocked; configure release signing or explicitly set ALLOW_UNSIGNED_RELEASE=true.")
         print("::warning::Unsigned publication explicitly allowed by ALLOW_UNSIGNED_RELEASE=true.")
         return
+    for name in ("SECURITY.md", "README.md"):
+        if "Release signing key fingerprint: not yet published" in (ROOT / name).read_text():
+            raise ValueError(f"Publish the release signing key fingerprint in {name} before signed publication.")
     with tempfile.TemporaryDirectory(prefix="release-gnupg-") as home:
         env = {name: value for name, value in os.environ.items()
                if name not in {"RELEASE_GPG_PRIVATE_KEY", "RELEASE_GPG_PASSPHRASE"}}
@@ -186,9 +191,6 @@ def sign_manifest(allow_unsigned: bool = False) -> None:
                  "--detach-sign", "--output", str(signature), str(folder / "SHA256SUMS")],
                 os.environ.get("RELEASE_GPG_PASSPHRASE", "") + "\n")
             gpg(["--verify", str(signature), str(folder / "SHA256SUMS")])
-            for name in ("SECURITY.md", "README.md"):
-                if "Release signing key fingerprint: not yet published" in (ROOT / name).read_text():
-                    raise ValueError(f"Publish the release signing key fingerprint in {name} before signed publication.")
         finally:
             try:
                 subprocess.run(["gpgconf", "--kill", "gpg-agent"], env=env,

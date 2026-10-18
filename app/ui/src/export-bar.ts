@@ -120,7 +120,7 @@ export function createExportBar(deps: ExportBarDeps): ExportBar {
       // and is still called their manuscript.
       await deps.drain();
       const result = chooseDestination
-        ? await (storyId === undefined ? deps.exportProjectAs?.(format) : deps.exportProjectAs?.(format, storyId))
+        ? await deps.exportProjectAs?.(format, storyId)
         : await deps.exportProject(format);
       // null is the writer cancelling the dialog. Saying nothing is the whole
       // response: they asked for a choice, made one, and nothing happened

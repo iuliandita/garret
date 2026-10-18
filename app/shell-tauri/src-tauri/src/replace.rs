@@ -170,10 +170,7 @@ fn normalize_children(children: &mut Vec<serde_json::Value>) -> bool {
     let mut normalized: Vec<serde_json::Value> = Vec::with_capacity(children.len());
     for child in std::mem::take(children) {
         if legacy_text(&child) {
-            let Some(text) = child.get("text").and_then(|v| v.as_str()) else {
-                normalized.push(child);
-                continue;
-            };
+            let text = child["text"].as_str().expect("legacy_text requires string text");
             if text.is_empty() {
                 continue;
             }
@@ -181,10 +178,9 @@ fn normalize_children(children: &mut Vec<serde_json::Value>) -> bool {
                 if legacy_text(previous)
                     && previous.get("marks") == child.get("marks")
                 {
-                    if let Some(value) = previous.get("text").and_then(|v| v.as_str()) {
-                        previous["text"] = serde_json::Value::String(format!("{value}{text}"));
-                        continue;
-                    }
+                    let value = previous["text"].as_str().expect("legacy_text requires string text");
+                    previous["text"] = serde_json::Value::String(format!("{value}{text}"));
+                    continue;
                 }
             }
         }

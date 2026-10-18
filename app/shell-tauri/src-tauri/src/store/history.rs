@@ -196,6 +196,12 @@ pub fn thin(now: i64, created: &[i64]) -> Vec<usize> {
     thin_with_cap(now, created, MAX_AUTO_VERSIONS)
 }
 
+fn normalized_restore_body(body: &str, validate: impl FnOnce(&str) -> Result<()>) -> Result<String> {
+    let body = crate::replace::normalize_legacy_text(body);
+    validate(&body)?;
+    Ok(body)
+}
+
 impl Store {
     /// The key a body is stored under, inserting the blob if it is new.
     ///
@@ -451,8 +457,7 @@ impl Store {
                     })
                 }
             }
-            let body = crate::replace::normalize_legacy_text(&self.version_body(version_id)?);
-            validate(&body)?;
+            let body = normalized_restore_body(&self.version_body(version_id)?, validate)?;
             let current: Option<(String, i64)> = self
                 .conn
                 .query_row(
@@ -834,8 +839,7 @@ impl Store {
             let body = body.ok_or(StoreError::NotFound {
                 item_id: format!("version {version_id} of {item_id} in snapshot {snapshot_id}"),
             })?;
-            let body = crate::replace::normalize_legacy_text(&body);
-            self.validate_body_write(item_id, &body)?;
+            let body = normalized_restore_body(&body, |body| self.validate_body_write(item_id, body))?;
             let current: Option<(String, i64)> = self
                 .conn
                 .query_row(
@@ -955,8 +959,7 @@ impl Store {
                 if was == current {
                     continue;
                 }
-                let was = crate::replace::normalize_legacy_text(was);
-                self.validate_body_write(item_id, &was)?;
+                let was = normalized_restore_body(was, |body| self.validate_body_write(item_id, body))?;
                 if source_words::eligible(&self.conn, item_id)? {
                     source_movements.push(source_words::directional(
                         WordSource::Restored,

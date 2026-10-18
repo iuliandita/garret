@@ -1,3 +1,4 @@
+import { chapterItemsIn } from "./outline-items";
 import type { ProjectPreset } from "./project-preset";
 import { storyIds } from "./collection";
 // app/ui/src/placement.ts
@@ -235,17 +236,7 @@ export function planPlacement(
   });
   const chain = selectedId === null ? [] : ancestorsOrSelf(items, selectedId);
   if (preset === "collection" && (itemType === "chapter" || itemType === "scene")) {
-    const excluded = new Set<string>();
-    const sections = new Set<string>();
-    const stories = storyIds(items.filter((row) => {
-      const section = isReservedRoot(row) && !sections.has(row.type);
-      if (section) sections.add(row.type);
-      if (section || (row.parent_id !== null && excluded.has(row.parent_id))) {
-        excluded.add(row.id);
-        return false;
-      }
-      return true;
-    }));
+    const stories = storyIds(chapterItemsIn(items));
     const story = chain.find((row) => stories.has(row.id));
     if (itemType === "chapter" && story !== undefined) {
       return { holders: [], parentId: story.parent_id, afterId: story.id };
