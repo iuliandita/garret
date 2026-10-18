@@ -3,8 +3,10 @@ package com.usegarret.app
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.os.CancellationSignal
 import android.os.Process
 import android.provider.DocumentsContract
+import android.provider.OpenableColumns
 import android.system.Os
 import android.system.OsConstants
 import androidx.activity.result.ActivityResult
@@ -249,6 +251,22 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
                     val uri = s.uri ?: throw IllegalStateException()
                     val resolver = activity.contentResolver
                     check(s)
+                    var displayName: String? = null
+                    if (!writing && s.kind == "archive") {
+                        // Keep optional provider metadata under the stream cancellation watchdog.
+                        val signal = CancellationSignal()
+                        try {
+                            tracked(s, Closeable { signal.cancel() }).use {
+                                resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null, signal)?.let { cursor ->
+                                    tracked(s, cursor).use {
+                                        if (cursor.moveToFirst()) displayName = cursor.getString(0)
+                                            ?.filter { !it.isISOControl() && it != '/' && it != '\\' }?.take(120)
+                                    }
+                                }
+                            }
+                        } catch (_: Exception) { }
+                        check(s)
+                    }
                     val digest = if (!writing) {
                         tracked(s, privateOutput(file)).use { output ->
                             val read = tracked(s, resolver.openInputStream(uri) ?: throw IllegalStateException()).use { input ->
@@ -277,6 +295,7 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
                     synchronized(monitor) {
                         check(s); check(!destroyed && slot === s)
                         result = receipt(s, stageId, digest, writing)
+                        displayName?.let { result?.put("displayName", it) }
                     }
                 } catch (error: Exception) {
                     result = null

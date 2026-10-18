@@ -236,15 +236,19 @@ is manual. **Restore encrypted archive** restores it as a separate book.
 
 On Android, open the book, open **Outline**, then choose **Export book**.
 Use an existing recovery key, or save a new key first. Keep the key separately
-from the archive. The app saves a complete encrypted `.age` archive through
+from the archive. Each numbered step waits for you to tap its file-picker button.
+The app saves a complete encrypted `.age` archive through
 the system file picker, including picture and retained research originals.
 A successful export means the chosen file was closed and read back with the
 same length and hash; it does not verify a provider's later cloud upload.
 On desktop, use **Restore encrypted archive** with that archive and key.
 
 To move a desktop book onto the phone, make an encrypted archive on desktop,
-then choose **Import archive** in the Android library. Pick the archive and
-its separate key, review the book title and any related local copies, and
+then choose **Import archive** in the Android library. Step 1 asks for the `.age`
+book archive; step 2 asks for its separate small `.txt` recovery key. Tap the
+button at each step to open the file picker. The archive name stays visible in
+step 2, and an obvious wrong-file choice can be retried at that step.
+Review the book title and any related local copies, and
 choose **Keep both as separate books** (or **Import as a separate book**).
 Open the new copy from the library. Existing books and source files stay intact.
 This is a manual copy, not synchronization or merging.

@@ -6,6 +6,9 @@ export interface TransferStatus {
   token: string;
   phase: string;
   code?: string;
+  picker?: string;
+  archive_name?: string;
+  existing_key?: boolean;
   preview?: { title?: string; related: string[]; unreadable_books?: number };
   book_id?: string;
 }
@@ -18,6 +21,7 @@ export function transferError(code: unknown, locale: "en" | "de") {
     unsupported_schema: m.unsupportedSchema,
     unsupported_project_preset: m.unsupportedPreset,
     transfer_storage: m.transferStorage, transfer_too_large: m.transferTooLarge,
+    transfer_wrong_archive: m.transferWrongArchive, transfer_wrong_key: m.transferWrongKey,
     transfer_key: m.transferKeyError, transfer_provider: m.transferProvider,
     transfer_stale: m.transferStale,
     transfer_cleanup: m.transferCleanup, transfer_retained: m.transferRetained,
@@ -107,13 +111,27 @@ export async function showTransfer(mount: HTMLElement, options: {
       return;
     }
     const phaseMessages: Record<string, string> = {
-      key: m.transferKey, archive: m.transferArchive, save_key: m.transferSaveKey,
-      save_archive: m.transferSaveArchive, reading: m.transferReading, writing: m.transferWriting,
+      key: options.direction === "export" ? m.transferExistingKey : m.transferKey, archive: m.transferArchive, save_key: m.transferSaveKey,
+      save_archive: status.existing_key ? m.transferSaveArchiveExisting : m.transferSaveArchive, reading: m.transferReading, writing: m.transferWriting,
       publishing: m.transferPublishing, cancelling: m.transferCancelling, preparing: m.transferPreparing,
       restart_required: m.transferRestart, cancelled: m.transferCancelled, done: status.book_id ? m.importDone : m.transferDone,
       failed: transferError(status.code, options.locale), preview: m.previewHint,
     };
     state.textContent = phaseMessages[status.phase] ?? m.transferPreparing;
+    if (status.archive_name) preview.append(element("p", m.transferSelectedArchive.replace("{name}", status.archive_name)));
+    if (status.picker) {
+      if (status.code) {
+        const error = element("p", transferError(status.code, options.locale));
+        error.setAttribute("role", "alert"); preview.append(error);
+      }
+      const labels: Record<string, string> = { archive: m.chooseArchive, key: m.chooseKey, save_key: m.saveKey, save_archive: m.saveArchive };
+      button(labels[status.phase], async () => {
+        await options.invoke("mobile_transfer_choose", { token: status!.token, picker: status!.picker });
+        await poll();
+      });
+      button(m.cancel, cancel);
+      return;
+    }
     if (status.phase === "done" && status.code) state.textContent += ` ${transferError(status.code, options.locale)}`;
     if (status.phase === "preview" && status.preview) {
       const name = element("h3", status.preview.title || m.unnamedBook);

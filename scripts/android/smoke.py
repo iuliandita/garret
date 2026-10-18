@@ -221,19 +221,29 @@ def pick_download(out: Path, file: Path, name: str) -> None:
     tap_text(nodes, file.name, out=out)
 
 
-def import_archive(out: Path, archive: Path, key: Path, name: str, *, reject_key: bool = False) -> None:
+def import_archive(out: Path, archive: Path, key: Path, name: str) -> None:
     for file in (archive, key):
         adb("push", str(file), f"/sdcard/Download/{file.name}")
     nodes = checkpoint(out, f"{name}-start", "Import archive", "Archiv importieren")
     tap_text(nodes, "Import archive", "Archiv importieren", out=out, scene=True)
     nodes = checkpoint(out, f"{name}-dialog", "Phone limit:", "Handy-Limit:")
     tap_text(nodes, "Import archive", "Archiv importieren", out=out, scene=True)
+    nodes = checkpoint(out, f"{name}-step1", "Step 1 of 2", "Schritt 1 von 2")
+    tap_text(nodes, "Choose book archive", "Bucharchiv auswählen", out=out, scene=True)
+    pick_download(out, key, f"{name}-wrong-archive")
+    nodes = checkpoint(out, f"{name}-wrong-archive-message", "This is not a book archive", "Dies ist kein Bucharchiv")
+    tap_text(nodes, "Choose book archive", "Bucharchiv auswählen", out=out, scene=True)
     pick_download(out, archive, f"{name}-archive")
+    nodes = checkpoint(out, f"{name}-step2", "Step 2 of 2", "Schritt 2 von 2")
+    if not has(nodes, archive.name):
+        raise RuntimeError("step 2 did not retain the selected archive name")
+    tap_text(nodes, "Choose recovery key", "Wiederherstellungsschlüssel auswählen", out=out, scene=True)
+    pick_download(out, archive, f"{name}-wrong-key")
+    nodes = checkpoint(out, f"{name}-wrong-key-message", "This is not a readable recovery key", "Dies ist kein lesbarer Wiederherstellungsschlüssel")
+    if not has(nodes, archive.name):
+        raise RuntimeError("wrong-key retry lost the selected archive name")
+    tap_text(nodes, "Choose recovery key", "Wiederherstellungsschlüssel auswählen", out=out, scene=True)
     pick_download(out, key, f"{name}-key")
-    if reject_key:
-        nodes = checkpoint(out, f"{name}-key-refused", "This recovery key could not be read", "Dieser Wiederherstellungsschlüssel konnte nicht gelesen werden")
-        tap_text(nodes, "Close", "Schließen", out=out)
-        return
     nodes = checkpoint(out, f"{name}-preview", "Import as a separate book", "Als separates Buch importieren")
     tap_text(nodes, "Import as a separate book", "Als separates Buch importieren", out=out)
     nodes = checkpoint(out, f"{name}-done", "The imported copy is in", "Die importierte Kopie steht")
@@ -243,11 +253,8 @@ def import_archive(out: Path, archive: Path, key: Path, name: str, *, reject_key
 def reader_smoke(out: Path, source: Path, steps: list[str]) -> None:
     fixture = json.loads((source / "fixture.json").read_text())
     verify_reader_copy(source / "books", fixture, edited=False)
-    # Selecting an archive in the key picker must report a key error, never a
-    # book-size failure. This also verifies that refusal adds no library book.
-    import_archive(out, source / "reader-18.age", source / "reader-18.age", "reader18-wrong-key", reject_key=True)
-    steps.append("oversized key selection refused as a recovery-key error")
     import_archive(out, source / "reader-18.age", source / "reader-18-recovery-key.txt", "reader18")
+    steps.append("numbered archive/key steps wait for taps, retain archive name and retry both wrong-file choices")
     adb("root")
     adb("wait-for-device")
     roots = adb("shell", "find", f"/data/user/0/{PKG}", "-type", "d", "-name", "books").splitlines()
@@ -332,6 +339,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("apk", type=Path)
     parser.add_argument("evidence", type=Path)
+    parser.add_argument("--locale", choices=("en", "de"), default="en", help="device language for localized transfer checks")
     fixtures = parser.add_mutually_exclusive_group()
     fixtures.add_argument("--reader-fixture", type=Path, help="reader-fixture output directory (fresh emulator only)")
     fixtures.add_argument("--schema17-fixture", type=Path, help="schema-17 transfer fixture directory (fresh emulator only)")
@@ -382,6 +390,15 @@ def main() -> int:
             result["android_release"] = adb("shell", "getprop", "ro.build.version.release").strip()
             result["android_api"] = adb("shell", "getprop", "ro.build.version.sdk").strip()
             steps.append("fresh API 36 emulator booted")
+            if args.locale == "de":
+                adb("root")
+                adb("wait-for-device")
+                adb("shell", "setprop", "persist.sys.locale", "de-DE")
+                adb("shell", "settings", "put", "system", "system_locales", "de-DE")
+                adb("shell", "stop")
+                adb("shell", "start")
+                adb("wait-for-device", timeout=180)
+            result["locale"] = args.locale
             adb("install", "-r", str(apk), timeout=120)
             adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
             nodes = checkpoint(out, "01-library", "Your books", "Deine Bücher")

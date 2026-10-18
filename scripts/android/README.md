@@ -30,8 +30,14 @@ lock.
 Use sample writing. In a book, **Outline > Export book** saves a complete
 encrypted desktop-compatible archive through the system picker. Save a new
 recovery key first or choose an existing key, and keep it separately. In the
-library, **Import archive** reads the archive and key, previews its title and
-related copies, then adds a separate book after confirmation. Existing copies
+library, **Import archive** shows two numbered steps. At each step, read the
+instruction and tap its button to open the system picker: first choose the book
+archive (`.age`), then its separate recovery key (the small `.txt` file exported
+with it). The archive name stays visible while choosing the key. A wrong-file
+message lets you pick again at that step without restarting. The verified import
+previews its title and related copies, then adds a separate book after confirmation.
+Export also waits for a tap before each of its two file steps: save a new key (or
+choose an existing one), then save the archive. Existing copies
 are never replaced. There is no sync or desktop review/publishing toolset.
 Novel, short fiction, nonfiction and collection projects are supported; unknown
 presets are refused before opening.
@@ -195,9 +201,10 @@ The smoke selects both files through **Import archive** and Android's system
 picker, reviews the preview and confirms a separate book. It explicitly restarts
 the fresh app after installation, isolating transfer checks from
 [first-launch activity recreation](https://github.com/iuliandita/garret/issues/403).
-It first verifies
-that selecting the archive as the recovery key reports a key error rather than
-a book-size failure. Root access only retrieves app-private databases for
+It captures both numbered steps, checks that the archive name remains visible
+in step 2, and retries a key selected as the archive and an archive selected as
+the key within the same transfer. Pass `--locale de` for German device labels
+and screenshots; the default is English. Root access only retrieves app-private databases for
 verification; no book is seeded. The smoke checks a note body, a loaded figure
 and caption, captures the scene break for visual inspection, edits surrounding
 prose, waits for save, force-stops, verifies `user_version` and every
