@@ -50,7 +50,7 @@ jobs:
             dnf install -y curl file xorg-x11-server-Xvfb ImageMagick procps-ng
           else
             $sudo apt-get update -qq
-            $sudo apt-get install -y -qq xvfb imagemagick
+            $sudo apt-get install -y -qq xvfb imagemagick x11-utils libegl-mesa0 libgl1-mesa-dri
           fi
           mkdir -p "$RUNNER_TEMP/pkg" "$RUNNER_TEMP/out"
           cd "$RUNNER_TEMP/pkg"
@@ -82,6 +82,7 @@ jobs:
             echo "garret exited during startup"; cat "$out/app.log"; exit 1
           fi
           import -window root "$out/${{ matrix.name }}.png"
+          { xwininfo -root -tree || true; ps -eo pid,comm,args | grep -i -E "garret|webkit" | grep -v grep || true; cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null || true; } > "$out/diagnostics.txt"
           kill "$pid"
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
