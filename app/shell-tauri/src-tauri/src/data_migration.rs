@@ -10,10 +10,8 @@ use std::path::{Component, Path};
 
 pub(crate) const LEGACY_DIR: &str = "cc.local.app";
 const INTENT: &str = ".garret-data-migration.json";
-const CLI_PENDING: &str = "open garret to set aside an empty leftover folder before using the CLI";
-#[cfg(any(windows, test))]
+const CLI_PENDING: &str = "reopen garret to set aside an unused leftover folder";
 const STAGE: &str = ".garret-data-migration";
-#[cfg(any(windows, test))]
 const RECORD: &str = ".migration-from-cc.local.app.json";
 
 #[derive(Serialize, Deserialize)]
@@ -188,34 +186,74 @@ pub(crate) fn refusal(data_home: &Path, detail: &str) -> String {
             .t("startup.data_migration_pending")
             .to_owned();
     }
-    let guidance = locale.strings().f(
+    let strings = locale.strings();
+    let old_count = book_count(&old);
+    let new_count = book_count(&new);
+    let count = |value| match value {
+        Some(0) => strings.t("startup.data_migration_books_none").to_owned(),
+        Some(1) => strings.t("startup.data_migration_books_one").to_owned(),
+        Some(n) => strings.f(
+            "startup.data_migration_books_many",
+            &[("count", &n.to_string())],
+        ),
+        None => strings.t("startup.data_migration_books_unknown").to_owned(),
+    };
+    let unchanged = real_directory(&old).unwrap_or(false)
+        && real_directory(&new).unwrap_or(false)
+        && !migration_started(data_home);
+    let location = match (old_count, new_count) {
+        (Some(n), Some(0)) if n > 0 => strings.t("startup.data_migration_location_old"),
+        (Some(0), Some(n)) if n > 0 => strings.t("startup.data_migration_location_new"),
+        _ => String::new(),
+    };
+    let location = if location.is_empty() {
+        String::new()
+    } else {
+        format!("\n\n{location}")
+    };
+    let guidance = strings.f(
         "startup.data_migration",
         &[
             (
                 "status",
-                &locale.strings().t(
-                    if real_directory(&old).unwrap_or(false)
-                        && real_directory(&new).unwrap_or(false)
-                    {
-                        "startup.data_migration_unchanged"
-                    } else {
-                        "startup.data_migration_preserved"
-                    },
-                ),
+                &locale.strings().t(if unchanged {
+                    "startup.data_migration_unchanged"
+                } else {
+                    "startup.data_migration_preserved"
+                }),
             ),
             ("old", &old.to_string_lossy()),
             ("new", &new.to_string_lossy()),
-            (
-                "old_count",
-                &book_count(&old).map_or_else(|| "?".into(), |n| n.to_string()),
-            ),
-            (
-                "new_count",
-                &book_count(&new).map_or_else(|| "?".into(), |n| n.to_string()),
-            ),
+            ("location", &location),
+            ("old_count", &count(old_count)),
+            ("new_count", &count(new_count)),
         ],
     );
     format!("{guidance}\n{detail}")
+}
+
+fn migration_started(data_home: &Path) -> bool {
+    if metadata(&data_home.join(INTENT)).map_or(true, |value| value.is_some())
+        || metadata(&data_home.join(STAGE)).map_or(true, |value| value.is_some())
+        || metadata(&data_home.join(crate::APP_DIR).join(RECORD))
+            .map_or(true, |value| value.is_some())
+    {
+        return true;
+    }
+    fs::read_dir(data_home).map_or(true, |entries| {
+        entries.into_iter().any(|entry| {
+            entry.map_or(true, |entry| {
+                entry
+                    .file_name()
+                    .to_string_lossy()
+                    .starts_with(".garret.set-aside-")
+                    || entry
+                        .file_name()
+                        .to_string_lossy()
+                        .starts_with("garret.set-aside-")
+            })
+        })
+    })
 }
 
 fn book_paths(value: &Value) -> Result<Vec<&str>, String> {
@@ -258,19 +296,57 @@ fn book_count(root: &Path) -> Option<usize> {
             serde_json::from_slice(&bytes(&root.join("settings.json")).ok()?).ok()?;
         for raw in book_paths(&value).ok()? {
             let path = expanded_path(raw).ok()?;
-            paths.insert(fs::canonicalize(&path).unwrap_or(path));
+            match fs::canonicalize(&path) {
+                Ok(path) if fs::metadata(&path).ok()?.is_file() => {
+                    paths.insert(path);
+                }
+                Ok(_) => {}
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(_) => return None,
+            }
         }
     }
     let projects = root.join("projects");
     if real_directory(&projects).ok()? {
         for entry in fs::read_dir(projects).ok()? {
             let path = entry.ok()?.path();
-            if path.extension().is_some_and(|ext| ext == "db") {
-                paths.insert(fs::canonicalize(&path).unwrap_or(path));
+            if path.extension().is_some_and(|ext| ext == "db")
+                && fs::metadata(&path).ok()?.is_file()
+            {
+                paths.insert(fs::canonicalize(&path).ok()?);
             }
         }
     }
     Some(paths.len())
+}
+
+fn existing_ancestor(path: &Path) -> Result<PathBuf, String> {
+    let mut current = path;
+    loop {
+        match fs::canonicalize(current) {
+            Ok(path) => return Ok(path),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                if metadata(current)?.is_some() {
+                    return Err("book ancestor exists but cannot be resolved".into());
+                }
+                current = current
+                    .parent()
+                    .ok_or("book path has no resolvable ancestor")?;
+            }
+            Err(error) => return Err(error.to_string()),
+        }
+    }
+}
+
+fn safe_temporary_directory(root: &Path) -> Result<Option<PathBuf>, String> {
+    let temp = fs::canonicalize(std::env::temp_dir()).map_err(|error| error.to_string())?;
+    let home = crate::projects::home_dir()
+        .or_else(|| std::env::var_os("USERPROFILE").map(PathBuf::from))
+        .ok_or("cannot determine the home directory")?;
+    let home = fs::canonicalize(home).map_err(|error| error.to_string())?;
+    let data_home = fs::canonicalize(root.parent().ok_or("missing data home")?)
+        .map_err(|error| error.to_string())?;
+    Ok((!home.starts_with(&temp) && !data_home.starts_with(&temp)).then_some(temp))
 }
 
 fn harmless_settings(root: &Path) -> Result<bool, String> {
@@ -294,13 +370,19 @@ fn harmless_settings(root: &Path) -> Result<bool, String> {
             }
         }
     }
-    let temp = fs::canonicalize(std::env::temp_dir()).map_err(|error| error.to_string())?;
+    let Some(temp) = safe_temporary_directory(root)? else {
+        return Ok(false);
+    };
     for raw in book_paths(&value)? {
         let path = expanded_path(raw)?;
-        match fs::canonicalize(path) {
+        match fs::canonicalize(&path) {
             Ok(path) if !path.starts_with(&temp) => return Ok(false),
             Ok(_) => {}
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                if !existing_ancestor(&path)?.starts_with(&temp) {
+                    return Ok(false);
+                }
+            }
             Err(error) => return Err(error.to_string()),
         }
     }
@@ -308,6 +390,9 @@ fn harmless_settings(root: &Path) -> Result<bool, String> {
 }
 
 fn harmless_folder(root: &Path) -> Result<bool, String> {
+    if safe_temporary_directory(root)?.is_none() {
+        return Ok(false);
+    }
     validate_tree(root, 0)?;
     for entry in fs::read_dir(root).map_err(|error| error.to_string())? {
         let path = entry.map_err(|error| error.to_string())?.path();
@@ -318,6 +403,10 @@ fn harmless_folder(root: &Path) -> Result<bool, String> {
                 Some(
                     "WebKit"
                         | "webkitgtk"
+                        | "WebKitCache"
+                        | "CacheStorage"
+                        | "mediakeys"
+                        | "storage"
                         | "WebView2"
                         | "EBWebView"
                         | "GPUCache"
@@ -350,9 +439,22 @@ fn cache_only(root: &Path) -> Result<bool, String> {
             .and_then(|name| name.to_str())
             .ok_or("unrecognized cache filename")?
             .to_ascii_lowercase();
-        if [".db", ".db-wal", ".db-shm"]
-            .iter()
-            .any(|ending| name.ends_with(*ending))
+        if [
+            ".db",
+            ".db-wal",
+            ".db-shm",
+            ".sqlite",
+            ".sqlite3",
+            ".sqlite-wal",
+            ".sqlite-shm",
+            ".sqlite3-wal",
+            ".sqlite3-shm",
+            ".localstorage",
+            ".localstorage-wal",
+            ".localstorage-shm",
+        ]
+        .iter()
+        .any(|ending| name.ends_with(*ending))
         {
             return Ok(false);
         }
@@ -395,7 +497,7 @@ fn set_aside(data_home: &Path) -> Result<(), String> {
         }
         move_new(&new, &destination)?;
         crate::backup_bundle::sync_directory(data_home)?;
-        eprintln!("An empty leftover folder was set aside as {name}.");
+        eprintln!("An unused leftover folder was set aside as {name}.");
         return Ok(());
     }
     Err("cannot reserve a name for the leftover folder".into())
@@ -538,7 +640,7 @@ pub(crate) fn check_cli(data_home: &Path) -> Result<(), String> {
     let old = data_home.join(LEGACY_DIR);
     let new = data_home.join(crate::APP_DIR);
     if metadata(&data_home.join(INTENT))?.is_some() {
-        return Err("application data migration is unfinished; open garret to finish it before using the CLI".into());
+        return Err("application data migration is unfinished; reopen garret to finish preparing its library".into());
     }
     #[cfg(unix)]
     if legacy_alias(&old, &new)? {
@@ -546,32 +648,64 @@ pub(crate) fn check_cli(data_home: &Path) -> Result<(), String> {
     }
     let old_exists = real_directory(&old)?;
     let new_exists = real_directory(&new)?;
-    if old_exists && new_exists && harmless_folder(&new).unwrap_or(false) {
-        return Err(CLI_PENDING.into());
-    }
     #[cfg(windows)]
     {
-        if old_exists && has_payload(&old)? {
-            if new_exists {
-                if let Some(record) = completed_record(&new)? {
-                    verify_completed(&old, &new, &record)?;
-                    return Ok(());
-                }
-            }
-            return Err("application data must be moved first; close older garret versions and open garret before using the CLI".into());
-        }
-        if metadata(&data_home.join(STAGE))?.is_some() {
-            return Err(
-                "application data migration is unfinished; open garret before using the CLI".into(),
-            );
-        }
+        return check_copy_cli(data_home);
     }
     #[cfg(unix)]
     if old_exists {
-        return Err(if new_exists { "both application data folders need to be kept" } else {
-            "application data must be moved first; close older garret versions and open garret before using the CLI" }.into());
+        if new_exists && unused_destination(data_home, &old, &new)? {
+            return Err(CLI_PENDING.into());
+        }
+        return Err(if new_exists {
+            "both application data folders need to be kept"
+        } else {
+            "application data must be moved first; close older garret versions and reopen garret"
+        }
+        .into());
     }
     let _ = new_exists;
+    Ok(())
+}
+
+fn unused_destination(data_home: &Path, old: &Path, new: &Path) -> Result<bool, String> {
+    if !data_home.is_absolute() || !harmless_folder(new)? {
+        return Ok(false);
+    }
+    validate_profile(old)?;
+    prepare_settings(old, old, new, crate::projects::home_dir().as_deref())?;
+    Ok(true)
+}
+
+#[cfg(any(windows, test))]
+fn copy_set_aside_candidate(data_home: &Path, old: &Path, new: &Path) -> Result<bool, String> {
+    Ok(has_payload(old)?
+        && completed_record(new)?.is_none()
+        && unused_destination(data_home, old, new)?)
+}
+
+#[cfg(any(windows, test))]
+fn check_copy_cli(data_home: &Path) -> Result<(), String> {
+    let old = data_home.join(LEGACY_DIR);
+    let new = data_home.join(crate::APP_DIR);
+    if real_directory(&old)? && has_payload(&old)? {
+        if real_directory(&new)? {
+            if let Some(record) = completed_record(&new)? {
+                return verify_completed(&old, &new, &record);
+            }
+            if copy_set_aside_candidate(data_home, &old, &new)? {
+                return Err(CLI_PENDING.into());
+            }
+            return Err("both application data folders need to be kept".into());
+        }
+        return Err(
+            "application data must be moved first; close older garret versions and reopen garret"
+                .into(),
+        );
+    }
+    if metadata(&data_home.join(STAGE))?.is_some() {
+        return Err("application data migration is unfinished; reopen garret to finish preparing its library".into());
+    }
     Ok(())
 }
 
@@ -596,7 +730,7 @@ pub(crate) fn prepare(data_home: &Path) -> Result<(), String> {
         if !old_exists {
             return Ok(());
         }
-        if new_exists && !harmless_folder(&new)? {
+        if new_exists && !unused_destination(data_home, &old, &new)? {
             return Err("both application data folders need to be kept".into());
         }
         if !data_home.is_absolute() {
@@ -867,18 +1001,14 @@ fn prepare_copy(data_home: &Path, guard: &crate::instance_file::Guard) -> Result
     let stage = data_home.join(STAGE);
     real_directory(&old)?;
     if real_directory(&new)? {
-        if has_payload(&old)? && harmless_folder(&new)? {
-            validate_profile(&old)?;
-            prepare_settings(&old, &old, &new, crate::projects::home_dir().as_deref())?;
+        if copy_set_aside_candidate(data_home, &old, &new)? {
             set_aside(data_home)?;
         } else {
             if has_payload(&old)? {
                 let record = completed_record(&new)?
-                    .ok_or("both application data directories exist; neither was changed")?;
+                    .ok_or("both application data folders need to be kept")?;
                 if !guard.migrated()? {
-                    return Err(
-                        "both application data directories exist; neither was changed".into(),
-                    );
+                    return Err("both application data folders need to be kept".into());
                 }
                 verify_completed(&old, &new, &record)?;
             }
@@ -960,7 +1090,184 @@ pub(crate) fn prepare(data_home: &Path, guard: &crate::instance_file::Guard) -> 
 mod tests {
     use super::*;
     use serde_json::json;
-    use tempfile::tempdir;
+    fn tempdir() -> std::io::Result<tempfile::TempDir> {
+        tempfile::Builder::new()
+            .prefix("migration-")
+            .tempdir_in(crate::projects::home_dir().unwrap())
+    }
+
+    fn isolated_case(test: &str, home: &Path, data: &Path, temp: &Path) {
+        for path in [home, data, temp] {
+            fs::create_dir_all(path).unwrap();
+        }
+        let result = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                &format!("data_migration::tests::{test}"),
+                "--nocapture",
+            ])
+            .env("HOME", home)
+            .env("XDG_DATA_HOME", data)
+            .env("TMPDIR", temp)
+            .env("TMP", temp)
+            .env("TEMP", temp)
+            .env("GARRET_MIGRATION_CHILD", "1")
+            .output()
+            .unwrap();
+        assert!(
+            result.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&result.stdout),
+            String::from_utf8_lossy(&result.stderr)
+        );
+    }
+
+    fn missing_book_case(case: &str, test: &str) {
+        if std::env::var_os("GARRET_MIGRATION_CHILD").is_none() {
+            let root = tempdir().unwrap();
+            isolated_case(
+                test,
+                &root.path().join("home"),
+                &root.path().join("data"),
+                &root.path().join("temporary"),
+            );
+            return;
+        }
+        let gone = std::env::temp_dir().join("gone/x.db");
+        let outside = if cfg!(windows) {
+            PathBuf::from(r"C:\mnt\usb\x.db")
+        } else {
+            PathBuf::from("/mnt/usb/x.db")
+        };
+        assert!(!gone.exists() && !outside.exists());
+        for copy in modes() {
+            for (row, settings, allowed) in [
+                (
+                    "temporary",
+                    json!({"books":[gone], "last_project":gone, "book_locations":[{"path":gone}]}),
+                    true,
+                ),
+                ("external", json!({"books":[outside]}), false),
+                ("home", json!({"books":["~/Books/x.db"]}), false),
+                (
+                    "mixed",
+                    json!({"recent":[{"path":gone},{"path":outside}]}),
+                    false,
+                ),
+            ]
+            .into_iter()
+            .filter(|(row, _, _)| *row == case)
+            {
+                let root = tempdir().unwrap();
+                let old = profile(root.path());
+                let new = root.path().join(crate::APP_DIR);
+                fs::create_dir(&new).unwrap();
+                let body = serde_json::to_vec(&settings).unwrap();
+                fs::write(new.join("settings.json"), &body).unwrap();
+                let result = migrate(root.path(), copy);
+                assert_eq!(
+                    result.is_ok(),
+                    allowed,
+                    "{row}: {settings}, copy={copy}: {result:?}"
+                );
+                if allowed {
+                    let saved = leftovers(root.path());
+                    assert_eq!(saved.len(), 1);
+                    assert_eq!(fs::read(saved[0].join("settings.json")).unwrap(), body);
+                    assert_eq!(
+                        fs::read(new.join("projects/book.db")).unwrap(),
+                        b"manuscript"
+                    );
+                } else {
+                    assert_eq!(fs::read(new.join("settings.json")).unwrap(), body);
+                    assert_eq!(
+                        fs::read(old.join("projects/book.db")).unwrap(),
+                        b"manuscript"
+                    );
+                    assert!(leftovers(root.path()).is_empty());
+                    assert!(!root.path().join(INTENT).exists());
+                    assert!(!root.path().join(STAGE).exists());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn missing_temporary_books_are_set_aside_on_both_paths() {
+        missing_book_case(
+            "temporary",
+            "missing_temporary_books_are_set_aside_on_both_paths",
+        );
+    }
+
+    #[test]
+    fn missing_external_books_are_preserved_on_both_paths() {
+        missing_book_case(
+            "external",
+            "missing_external_books_are_preserved_on_both_paths",
+        );
+    }
+
+    #[test]
+    fn missing_home_books_are_preserved_on_both_paths() {
+        missing_book_case("home", "missing_home_books_are_preserved_on_both_paths");
+    }
+
+    #[test]
+    fn mixed_recent_books_are_preserved_on_both_paths() {
+        missing_book_case("mixed", "mixed_recent_books_are_preserved_on_both_paths");
+    }
+
+    #[test]
+    fn temporary_directory_cannot_cover_the_home_or_data_home() {
+        if std::env::var_os("GARRET_MIGRATION_CHILD").is_none() {
+            for which in ["home", "data", "ancestor"] {
+                let root = tempdir().unwrap();
+                let home = root.path().join("home");
+                let data = root.path().join("data");
+                let temp = match which {
+                    "home" => home.clone(),
+                    "data" => data.clone(),
+                    _ => root.path().to_path_buf(),
+                };
+                isolated_case(
+                    "temporary_directory_cannot_cover_the_home_or_data_home",
+                    &home,
+                    &data,
+                    &temp,
+                );
+            }
+            return;
+        }
+        let data = PathBuf::from(std::env::var_os("XDG_DATA_HOME").unwrap());
+        for copy in modes() {
+            let root = data.join(if copy { "copy" } else { "move" });
+            fs::create_dir(&root).unwrap();
+            profile(&root);
+            let new = root.join(crate::APP_DIR);
+            fs::create_dir(&new).unwrap();
+            fs::write(new.join("settings.json"), b"{}").unwrap();
+            assert!(migrate(&root, copy).is_err());
+            assert!(leftovers(&root).is_empty());
+            assert_eq!(fs::read(new.join("settings.json")).unwrap(), b"{}");
+        }
+    }
+
+    #[test]
+    fn completed_windows_copy_never_sets_aside_a_profile() {
+        let root = tempdir().unwrap();
+        let old = root.path().join(LEGACY_DIR);
+        fs::create_dir(&old).unwrap();
+        fs::write(old.join("settings.json"), b"{}").unwrap();
+        migrate(root.path(), true).unwrap();
+        let new = root.path().join(crate::APP_DIR);
+        assert!(completed_record(&new).unwrap().is_some());
+        assert!(!copy_set_aside_candidate(root.path(), &old, &new).unwrap());
+        assert!(check_copy_cli(root.path()).is_ok());
+        migrate(root.path(), true).unwrap();
+        assert!(leftovers(root.path()).is_empty());
+        assert_eq!(fs::read(new.join("settings.json")).unwrap(), b"{}");
+    }
 
     fn migrate(home: &Path, copy: bool) -> Result<(), String> {
         if copy {
@@ -1003,14 +1310,25 @@ mod tests {
             let temp = tempdir().unwrap();
             profile(temp.path());
             let new = temp.path().join(crate::APP_DIR);
-            fs::create_dir_all(new.join("WebKit/Cache")).unwrap();
-            fs::write(new.join("WebKit/Cache/data"), b"cache").unwrap();
+            for name in [
+                "WebKitCache/Version 17",
+                "CacheStorage",
+                "mediakeys/v1",
+                "storage",
+            ] {
+                fs::create_dir_all(new.join(name)).unwrap();
+                fs::write(new.join(name).join("salt"), b"cache").unwrap();
+            }
+            fs::create_dir_all(new.join("WebKitCache/Version 17/Blobs")).unwrap();
             fs::write(new.join("settings.json"), br#"{"locale":"de","books":[]}"#).unwrap();
             fs::write(new.join("instance.lock"), b"").unwrap();
             fs::write(new.join("focus.request"), b"").unwrap();
             assert!(check_cli(temp.path()).is_err());
             assert!(refusal(temp.path(), &check_cli(temp.path()).unwrap_err())
-                .contains("Öffnen Sie garret einmal"));
+                .contains("ungenutzter Restordner"));
+            assert_eq!(check_copy_cli(temp.path()).unwrap_err(), CLI_PENDING);
+            let pending = refusal(temp.path(), CLI_PENDING);
+            assert!(!pending.contains("CLI"));
             assert!(leftovers(temp.path()).is_empty());
             migrate(temp.path(), copy).unwrap();
             let saved = leftovers(temp.path());
@@ -1020,7 +1338,7 @@ mod tests {
                 br#"{"locale":"de","books":[]}"#
             );
             assert_eq!(
-                fs::read(saved[0].join("WebKit/Cache/data")).unwrap(),
+                fs::read(saved[0].join("WebKitCache/Version 17/salt")).unwrap(),
                 b"cache"
             );
             assert_eq!(
@@ -1046,6 +1364,38 @@ mod tests {
     }
 
     #[test]
+    fn pending_explanation_requires_a_migratable_source() {
+        for copy in modes() {
+            let root = tempdir().unwrap();
+            let old = root.path().join(LEGACY_DIR);
+            let new = root.path().join(crate::APP_DIR);
+            fs::create_dir(&old).unwrap();
+            fs::create_dir(&new).unwrap();
+            fs::write(new.join("settings.json"), b"{}").unwrap();
+            let check = |root: &Path| {
+                if copy {
+                    check_copy_cli(root)
+                } else {
+                    check_cli(root)
+                }
+            };
+            if copy {
+                assert!(check(root.path()).is_ok());
+                migrate(root.path(), true).unwrap();
+                assert!(leftovers(root.path()).is_empty());
+            }
+            fs::write(old.join("settings.json"), b"[").unwrap();
+            assert_ne!(check(root.path()).unwrap_err(), CLI_PENDING);
+            assert!(migrate(root.path(), copy).is_err());
+            assert!(leftovers(root.path()).is_empty());
+            fs::write(old.join("settings.json"), b"{}").unwrap();
+            assert_eq!(check(root.path()).unwrap_err(), CLI_PENDING);
+            assert!(refusal(root.path(), CLI_PENDING).contains("unused leftover folder"));
+            assert!(!refusal(root.path(), CLI_PENDING).contains("CLI"));
+        }
+    }
+
+    #[test]
     fn real_and_unknown_destination_entries_are_never_set_aside() {
         for copy in modes() {
             for name in [
@@ -1059,6 +1409,16 @@ mod tests {
                 "unknown",
                 "WebKit/book.db",
                 "WebKit/.db",
+                "WebKit/book.sqlite",
+                "WebKit/book.sqlite3",
+                "WebKit/book.sqlite-wal",
+                "WebKit/book.sqlite-shm",
+                "WebKit/book.sqlite3-wal",
+                "WebKit/book.sqlite3-shm",
+                "WebKit/book.localstorage",
+                "WebKitCache/book.sqlite3",
+                "storage/book.localstorage",
+                "hsts-storage.sqlite",
             ] {
                 let temp = tempdir().unwrap();
                 let old = profile(temp.path());
@@ -1158,12 +1518,12 @@ mod tests {
             (
                 "en",
                 "Nothing was lost or changed.",
-                "Older folder (books: 1):",
+                "Older folder (1 book):",
             ),
             (
                 "de",
                 "Nichts ist verloren gegangen oder verändert worden.",
-                "Bisheriger Ordner (Bücher: 1):",
+                "Bisheriger Ordner (1 Buch):",
             ),
         ] {
             let temp = tempdir().unwrap();
@@ -1182,14 +1542,59 @@ mod tests {
             assert!(message.starts_with(opening), "{message}");
             assert!(message.contains(count), "{message}");
             assert!(message.contains(if locale == "en" {
-                "Newer folder (books: 1):"
+                "Newer folder (1 book):"
             } else {
-                "Neuer Ordner (Bücher: 1):"
+                "Neuer Ordner (1 Buch):"
             }));
             assert!(message.contains("github.com/iuliandita/garret/issues"));
             assert!(message.ends_with(&detail));
             assert!(!temp.path().join(INTENT).exists());
             assert!(leftovers(temp.path()).is_empty());
+            fs::remove_file(new.join("projects/other.db")).unwrap();
+            fs::write(
+                new.join("settings.json"),
+                serde_json::to_vec(&json!({"locale":locale,"books":["/missing/book.db"]})).unwrap(),
+            )
+            .unwrap();
+            let message = refusal(temp.path(), &detail);
+            assert!(
+                message.contains(if locale == "en" {
+                    "Newer folder (no books found)"
+                } else {
+                    "Neuer Ordner (keine Bücher gefunden)"
+                }),
+                "{message}"
+            );
+            assert!(message.contains(if locale == "en" {
+                "Your books appear to be in the older folder."
+            } else {
+                "Ihre Bücher scheinen im bisherigen Ordner zu liegen."
+            }));
+            fs::remove_file(old.join("projects/book.db")).unwrap();
+            fs::write(new.join("projects/other.db"), b"other book").unwrap();
+            let message = refusal(temp.path(), &detail);
+            assert!(message.contains(if locale == "en" {
+                "Your books appear to be in the newer folder."
+            } else {
+                "Ihre Bücher scheinen im neuen Ordner zu liegen."
+            }));
+            fs::write(temp.path().join(INTENT), b"{}").unwrap();
+            let message = refusal(temp.path(), &detail);
+            assert!(
+                message.starts_with(if locale == "en" {
+                    "Nothing was lost."
+                } else {
+                    "Nichts ist verloren gegangen."
+                }),
+                "{message}"
+            );
+            assert!(!message.starts_with(opening));
+            fs::write(new.join("settings.json"), b"[").unwrap();
+            let message = refusal(temp.path(), &detail);
+            assert!(
+                message.contains("could not be counted")
+                    || message.contains("konnten nicht gezählt werden")
+            );
         }
     }
 
