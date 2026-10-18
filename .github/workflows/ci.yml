@@ -90,5 +90,6 @@ jobs:
         timeout-minutes: 8
         working-directory: app/shell-tauri/src-tauri
         run: |
-          export TMPDIR="$(mktemp -d)"
+          export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
+          export HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)"
           bash ../../../scripts/test-proof-paginator
