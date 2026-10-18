@@ -181,7 +181,8 @@ class TransferPlugin(activity: Activity) : Plugin(activity) {
             if (result.resultCode == Activity.RESULT_CANCELED || s.canceled.get()) {
                 synchronized(monitor) { if (slot === s) slot = null }
                 if (result.resultCode == Activity.RESULT_OK) deleteCreated(s.mode, result.data?.data)
-                s.picker.resolve(canceled(s))
+                if (synchronized(monitor) { s.operation in interruptedOperations }) s.picker.reject("transfer_lifecycle")
+                else s.picker.resolve(canceled(s))
                 return
             }
             require(result.resultCode == Activity.RESULT_OK && result.data?.clipData == null)
@@ -339,7 +340,7 @@ class TransferPlugin(activity: Activity) : Plugin(activity) {
                     val drained = !s.closing.get() || try { s.closeDrained.await(15, TimeUnit.SECONDS) } catch (_: InterruptedException) { false }
                     synchronized(monitor) {
                         if (!drained) { lifecycle.requireRestart(); failure = "transfer_restart"; result = null }
-                        else if (s.operation in interruptedOperations) failure = "transfer_stale"
+                        else if (s.operation in interruptedOperations) failure = "transfer_lifecycle"
                         if (s.canceled.get() || lifecycle.restartRequired) result = null
                         if (result == null) deleteCreated(s.mode, s.uri)
                         if (drained) {
@@ -356,7 +357,7 @@ class TransferPlugin(activity: Activity) : Plugin(activity) {
             synchronized(monitor) { if (admitted != null && slot === admitted) slot = null }
             val code = synchronized(monitor) {
                 if (lifecycle.restartRequired) "transfer_restart"
-                else if (operation in interruptedOperations) "transfer_stale"
+                else if (operation in interruptedOperations) "transfer_lifecycle"
                 else if (writing) "transfer_not_started" else "saf_read_refused"
             }
             reply.reject(code)

@@ -1145,7 +1145,7 @@ async fn read_picked(app: &tauri::AppHandle, token: &str, kind: Kind) -> Result<
     let receipt = bridge.read(ticket, token, limit).await.map_err(|code| {
         if matches!(
             code.as_str(),
-            "transfer_too_large" | "transfer_key" | "transfer_storage" | "transfer_restart" | "transfer_stale"
+            "transfer_too_large" | "transfer_key" | "transfer_storage" | "transfer_restart" | "transfer_lifecycle"
         ) {
             if code == "transfer_key" { "transfer_wrong_key".into() } else { code }
         } else {
@@ -1284,7 +1284,7 @@ fn write_state(host: &MobileHost, token: &str, uncertain: bool) -> Result<(), St
     Ok(())
 }
 fn provider_error(code: String) -> String {
-    if matches!(code.as_str(), "transfer_restart" | "transfer_stale") {
+    if matches!(code.as_str(), "transfer_restart" | "transfer_lifecycle") {
         code
     } else {
         "transfer_provider".into()
@@ -1532,7 +1532,7 @@ fn discard_transfers(host: &MobileHost) -> Result<(), String> {
 mod tests {
     #[test]
     fn mobile_transfer_lifecycle_errors_keep_their_meaning() {
-        for code in ["transfer_stale", "transfer_restart"] {
+        for code in ["transfer_lifecycle", "transfer_restart"] {
             assert_eq!(super::provider_error(code.into()), code);
         }
         assert_eq!(super::provider_error("saf_picker_unavailable".into()), "transfer_provider");

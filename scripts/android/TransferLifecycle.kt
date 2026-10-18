@@ -16,7 +16,7 @@ internal class TransferLifecycle<A> {
     fun requireRestart() { restartRequired = true }
     fun admissionCode(): String? = when {
         restartRequired -> "transfer_restart"
-        owner == null -> "transfer_stale"
+        owner == null -> "transfer_lifecycle"
         else -> null
     }
 }

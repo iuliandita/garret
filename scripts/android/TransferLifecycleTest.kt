@@ -3,13 +3,13 @@ package com.usegarret.app
 // Run on the JVM; no Android activity or provider is needed.
 fun main() {
     val lifecycle = TransferLifecycle<Any>()
-    check(lifecycle.admissionCode() == "transfer_stale")
+    check(lifecycle.admissionCode() == "transfer_lifecycle")
     val first = Any()
     val replacement = Any()
     lifecycle.attach(first)
     check(lifecycle.admissionCode() == null)
     check(lifecycle.detach(first))
-    check(lifecycle.admissionCode() == "transfer_stale")
+    check(lifecycle.admissionCode() == "transfer_lifecycle")
     lifecycle.attach(replacement)
     check(!lifecycle.detach(first))
     check(lifecycle.owner === replacement)

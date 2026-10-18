@@ -73,7 +73,9 @@ uncertain provider write is retained. Startup sweeps disposable stages, and the
 library offers **Discard leftover transfer files** without deleting books.
 Activity recreation cancels an active operation and retains its admission until
 the original picker callback or stream drains. An idle activity replacement
-rebinds the picker without disabling transfer. A blocked provider close still
+rebinds the picker without disabling transfer. An interrupted transfer reports
+that its app screen was recreated or closed and can be started again after
+cleanup. A blocked provider close still
 requires restarting the app before another transfer.
 Android transfer is not certified on physical devices.
 See [compatibility and recovery](../../docs/COMPATIBILITY.md) for limits.
