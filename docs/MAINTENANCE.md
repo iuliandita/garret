@@ -288,8 +288,10 @@ full checked range; it does not replace it.
 
 Collection placement checks must distinguish the selected part's last story
 from earlier and later stories, including nested parts and section chapters.
-Check empty-part fallback separately. Statistics captures should show each group
-heading on its own row with consistent spacing in light and dark themes.
+Check that an empty selected part gets a new numbered story and scene, and one
+undo removes both. Keep the loose-scene fallback separate. Statistics captures
+should show each group heading on its own row with consistent spacing in light
+and dark themes.
 
 Before release, run `sh scripts/check-docs --release` and review the complete
 range. A later query-only or version-only commit cannot erase an earlier

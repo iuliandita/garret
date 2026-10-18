@@ -294,10 +294,11 @@ in the manuscript are stories; nested chapters remain sections. New story follow
 the selected story in the same parent, without an automatic part. Scenes stay in
 the selected story or section, or follow a selected scene in its container.
 With a part selected, a new scene appends to the last story inside that part.
-An empty part uses the nearest preceding story in outline order. Other selections
-outside a story use this fallback too; no selection uses the last story. If the
-fallback finds no story, a new story holds the scene, inside the selected part
-if any.
+An empty part gets a new numbered story containing the scene, as one undoable
+step. A part containing only loose scenes and other selections outside a story
+use the nearest preceding story in outline order; no selection uses the last
+story. If the fallback finds no story, a new story holds the scene, inside the
+selected part if any.
 Each story keeps its existing title and revision status; navigator counts sum
 its scenes. Right-click a story (or press Shift+F10) and choose Story details to
 edit its title, optional public author, and status, or save and export it alone.
