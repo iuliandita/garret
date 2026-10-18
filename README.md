@@ -137,7 +137,8 @@ one directory, then run:
 ```sh
 gpg --verify SHA256SUMS.asc SHA256SUMS
 sha256sum -c SHA256SUMS
-gh attestation verify <file> --repo iuliandita/garret
+gh attestation verify <file> --repo iuliandita/garret \
+  --signer-workflow iuliandita/garret/.github/workflows/release.yml
 ```
 
 If you downloaded only the files for your platform, check those present with:
