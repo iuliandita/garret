@@ -29,6 +29,66 @@ function notes(editor: Editor) {
     .filter((node: { type: string }) => node.type === "endnote") as { attrs: { id: string; fmt: string; body: string } }[];
 }
 
+test("figure registration precedes placement; properties, retry and undo retain identity", async () => {
+  const mount = document.createElement("div"); document.body.append(mount);
+  const asset = { id: crypto.randomUUID(), width_px: 1200, height_px: 800, orientation: 1 };
+  let picked = false;
+  let saved = false;
+  const editor = createEditor(mount, { kind: "pmjson", json: { type: "doc", content: [{ type: "paragraph" }] } }, {
+    authoring: true,
+    pickFigure: async () => { expect(JSON.parse(editor.serialize()).content.some((node: { type: string }) => node.type === "figure")).toBe(false); picked = true; return asset; },
+    figureDetails: async () => ({ asset, column_inches: 5, height_inches: 8 }),
+    onAtomCommit: async () => saved,
+  });
+  editors.push(editor);
+  editor.editFigure(); await tick();
+  expect(picked).toBe(true);
+  const alt = document.querySelector<HTMLTextAreaElement>("#figure-alt")!;
+  const width = document.querySelector<HTMLSelectElement>("#figure-width")!;
+  expect(document.querySelector("[data-resolution=warning]")).not.toBeNull();
+  width.value = "half"; width.dispatchEvent(new Event("change"));
+  expect(document.querySelector("[data-resolution=accepted]")).not.toBeNull();
+  alt.value = "A mountain";
+  document.querySelector<HTMLTextAreaElement>("#figure-caption")!.value = "The summit";
+  press("authoring.save"); await tick();
+  expect(editor.atomDraftPending()).toBe(true);
+  const figures = () => JSON.parse(editor.serialize()).content.filter((node: { type: string }) => node.type === "figure");
+  const original = figures()[0];
+  expect(original.attrs).toMatchObject({ asset_id: asset.id, width: "half", alt: "A mountain", caption: "The summit" });
+  saved = true; press("authoring.save"); await tick();
+  expect(editor.atomDraftPending()).toBe(false);
+  expect(figures()).toHaveLength(1);
+  editor.undo(); expect(figures()).toHaveLength(0);
+  editor.redo(); expect(figures()[0].attrs.id).toBe(original.attrs.id);
+  const propertiesButton = mount.querySelector<HTMLButtonElement>("figure button")!;
+  const enter = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+  propertiesButton.dispatchEvent(enter);
+  expect(enter.defaultPrevented).toBe(false);
+  propertiesButton.click(); await tick();
+  expect(alt.value).toBe("A mountain");
+  alt.value = "Changed mountain"; press("authoring.save"); await tick();
+  expect(figures()[0].attrs.alt).toBe("Changed mountain");
+  editor.undo(); expect(figures()[0].attrs.alt).toBe("A mountain");
+});
+
+test("cancelled figure picker and discarded properties never manufacture a placement", async () => {
+  const mount = document.createElement("div"); document.body.append(mount);
+  let cancel = true;
+  const asset = { id: crypto.randomUUID(), width_px: 400, height_px: 800, orientation: 6 };
+  const editor = createEditor(mount, { kind: "pmjson", json: { type: "doc", content: [{ type: "paragraph" }] } }, {
+    authoring: true, pickFigure: async () => cancel ? null : asset,
+    figureDetails: async () => ({ asset, column_inches: 5, height_inches: 8 }),
+  }); editors.push(editor);
+  const before = editor.serialize(); editor.editFigure(); await tick();
+  expect(editor.atomDraftPending()).toBe(false); expect(editor.serialize()).toBe(before);
+  cancel = false; editor.editFigure(); await tick();
+  expect(document.querySelector("[data-resolution=flag]")).not.toBeNull();
+  const leave = editor.confirmAtomDraft(); press("authoring.cancel"); expect(await leave).toBe(false);
+  expect(editor.atomDraftPending()).toBe(true);
+  const discard = editor.confirmAtomDraft(); press("authoring.discard"); expect(await discard).toBe(true);
+  expect(editor.serialize()).toBe(before);
+});
+
 test("note Save is isolated from typing; edit, delete, undo and redo retain identity and body", async () => {
   const { editor, mount } = rig();
   editor.typeChar("X");

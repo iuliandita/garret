@@ -755,6 +755,11 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     if (!view.font_resolved) {
       lines.push(t("preview.pdf.font-missing", { font: view.font }));
     }
+    for (const [index, figure] of (view.figures ?? []).entries()) {
+      if (figure.warning) lines.push(t(figure.flag ? "figure.proof-flag" : "figure.proof-warning", {
+        number: formatNumber(index + 1), dpi: formatNumber(Math.floor(figure.dpi)),
+      }));
+    }
     // Another open gap: the gutter minimum is banded by page count, which
     // nothing knew until a book was laid out.
     const verdict = gutterVerdict(view.gutter_minimum_um, view.inner_um);

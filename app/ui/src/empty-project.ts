@@ -69,6 +69,7 @@ function inertNavigator(): ManuscriptNavigator {
 
 function inertEditor(): Editor {
   return {
+    editFigure: () => undefined,
     editEndnote: () => undefined,
     insertSceneBreak: () => undefined,
     deleteSelectedAtom: () => undefined,
@@ -177,6 +178,7 @@ export function mountEmpty(deps: EmptyProjectDeps): MountedProject {
   }
 
   const menuActions: MenuProjectActions = {
+    editFigure: refuse,
     editEndnote: refuse,
     insertSceneBreak: refuse,
     deleteSelectedAtom: refuse,

@@ -384,6 +384,7 @@ export function editorPlugins(): Plugin[] {
 
 export interface Editor {
   editEndnote(): void;
+  editFigure(): void;
   insertSceneBreak(): void;
   deleteSelectedAtom(): void;
   atomDraftPending(): boolean;
@@ -554,6 +555,8 @@ export interface ActiveMarks {
 
 export interface EditorOptions {
   authoring?: boolean;
+  pickFigure?: () => Promise<import("./document-authoring").FigureAsset | null>;
+  figureDetails?: (assetId: string) => Promise<import("./document-authoring").FigureDetails>;
   onAtomCommit?: () => Promise<boolean>;
   figurePreview?: LoadFigurePreview;
   onAtomEditRefused?: () => void;
@@ -649,6 +652,7 @@ export function createEditor(
   const view: EditorView = new EditorView(mount, {
     state: EditorState.create({ doc, plugins: [...editorPlugins(), preserveAtoms(opts.authoring)] }),
     nodeViews: readerViews(opts.figurePreview, {
+      editFigure: opts.authoring ? pos => { void authoring?.figure(pos); } : undefined,
       noteOffset: () => noteOffset,
       editNote: opts.authoring ? pos => authoring?.note(pos) : undefined,
     }),
@@ -657,8 +661,9 @@ export function createEditor(
       if (event.key.toLowerCase() === "n" && event.ctrlKey && event.altKey && !event.metaKey && !event.shiftKey && !event.getModifierState("AltGraph")) {
         authoring?.note(); return true;
       }
-      if (event.key === "Enter" && view.state.selection instanceof NodeSelection && view.state.selection.node.type.name === "endnote") {
-        authoring?.note(view.state.selection.from); return true;
+      if (event.key === "Enter" && view.state.selection instanceof NodeSelection && ["endnote", "figure"].includes(view.state.selection.node.type.name)) {
+        if (view.state.selection.node.type.name === "figure") void authoring?.figure(view.state.selection.from);
+        else authoring?.note(view.state.selection.from); return true;
       }
       return false;
     },
@@ -734,6 +739,7 @@ export function createEditor(
       opts.onChange?.(editSources.record(tr, before, state, () => countWordsIn(before.doc)));
       opts.onStateChange?.();
     },
+    pickFigure: opts.pickFigure, figureDetails: opts.figureDetails,
   });
   const onFocus = (): void => opts.onFocus?.();
   const onBlur = (event: FocusEvent): void => opts.onBlur?.(event);
@@ -741,6 +747,7 @@ export function createEditor(
   view.dom.addEventListener("blur", onBlur);
   return {
     editEndnote: () => authoring?.note(),
+    editFigure: () => { void authoring?.figure(); },
     insertSceneBreak: () => authoring?.sceneBreak(),
     deleteSelectedAtom: () => authoring?.remove(),
     atomDraftPending: () => authoring?.pending() ?? false,

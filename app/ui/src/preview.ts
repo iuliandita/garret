@@ -142,6 +142,7 @@ export function parseDocumentBody(xhtml: string): Element | null {
 // handed.
 
 export interface PdfPreview {
+  figures?: { id: string; item: string; dpi: number; warning: boolean; flag: boolean }[];
   /** Each leaf, as the markup the printer received. Bounded; `leaves` is the
    *  whole book either way. */
   pages: string[];

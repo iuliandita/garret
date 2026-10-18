@@ -9418,3 +9418,8 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 #endnote-body { width: 100%; min-height: 8rem; resize: vertical; }
 #endnote-editor p { margin: 0; }
 .document-scene-break::before { user-select: none; }
+
+#endnote-editor [hidden] { display: none; }
+#endnote-editor textarea { width: 100%; resize: vertical; }
+#endnote-editor .panel-body > div { display: grid; gap: var(--space-2); }
+#endnote-editor [data-resolution="flag"], #endnote-editor [data-resolution="warning"] { color: var(--color-warning, #a35d00); }

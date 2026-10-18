@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
     covers, research,
-    store::{figure_assets, Store},
+    store::{document_format, figure_assets, Store},
 };
 use std::path::PathBuf;
 
@@ -111,7 +111,7 @@ fn figure_names_are_strict_and_registration_is_disabled_before_any_file_write() 
     let source = root.path().join("photo.png");
     fs::write(&source, PNG).unwrap();
     assert_eq!(
-        import_copy(&db, &store, &source).unwrap_err(),
+        authoring_allowed(&store).unwrap_err(),
         "figure registration is disabled"
     );
     assert!(!pictures::dir_for(&db).exists());

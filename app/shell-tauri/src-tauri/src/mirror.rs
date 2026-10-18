@@ -414,7 +414,7 @@ fn pass_inner(
     now_ms: i64,
     paused: &std::collections::HashSet<String>,
 ) -> Result<PassReport, String> {
-    let (items, bodies, doc_revs, texts, schema_version, dictionary) = {
+    let (items, bodies, doc_revs, texts, schema_version, dictionary, plan) = {
         let store = crate::store::Store::open_readonly(source).map_err(|e| e.to_string())?;
         if let Some(expected) = expected_book_id {
             if store.book_id().map_err(|error| error.to_string())?.as_deref() != Some(expected) {
@@ -439,12 +439,20 @@ fn pass_inner(
             .dict_words()
             .map(|words| words.into_iter().map(|w| w.word).collect::<Vec<_>>())
             .map_err(|e| format!("{}: {e}", crate::mirror_wordlist::WORDLIST_NAME));
-        (items, bodies, doc_revs, texts, schema_version, dictionary)
+        let plan = if bodies.values().any(|body| crate::figure_salvage::has_new_nodes(body)) {
+            if schema_version != crate::store::READ_SCHEMA_VERSION { return Err("new-format mirror requires the matching book schema".into()); }
+            let walk = crate::store::book_walk(store.items().map_err(|error| error.to_string())?);
+            let tuples = |items: &[crate::store::Item]| items.iter().map(|item| (item.id.clone(), item.title.clone(), item.depth)).collect::<Vec<_>>();
+            let front = tuples(&walk.front); let chapters = tuples(&walk.chapters); let back = tuples(&walk.back);
+            let book = crate::export::Book { publication: None, single_scene: false, name, contents_title: "", front: &front, chapters: &chapters, back: &back };
+            let collection = store.project_preset().map_err(|error| error.to_string())? == "collection";
+            let mode = store.get_meta("notes.numbering").map_err(|error| error.to_string())?;
+            let scopes = crate::publication_plan::Scopes::of(&walk, crate::publication_plan::Numbering::parse(mode.as_deref(), collection)?, collection);
+            Some(crate::publication_plan::Plan::for_copy(&book, &bodies, scopes, &store, source)?)
+        } else { None };
+        (items, bodies, doc_revs, texts, schema_version, dictionary, plan)
     };
 
-    if bodies.values().any(|body| crate::figure_salvage::has_new_nodes(body)) {
-        return Err("new-format readable-folder output is disabled by this build".into());
-    }
     std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     let mut effective_pauses = persisted_pauses(dir)?;
     effective_pauses.extend(paused.iter().cloned());
@@ -472,10 +480,13 @@ fn pass_inner(
 
     for (item, place) in items.iter().zip(placed.iter()) {
         let body = bodies.get(&item.id).map(String::as_str);
-        let content = file_body(item, body);
+        let planned = if body.is_some_and(crate::figure_salvage::has_new_nodes) {
+            Some(planned_file(item, schema_version, plan.as_ref().ok_or("missing mirror plan")?)?)
+        } else { None };
+        let content = if let Some(copy) = &planned { String::from_utf8(copy.bytes.clone()).map_err(|error| error.to_string())? } else { file_body(item, body) };
         let content_hash = format!("{:016x}", hash64(content.as_bytes()));
         if let Some(b) = body {
-            if crate::export::document_markdown(b).is_none() {
+            if planned.is_none() && crate::export::document_markdown(b).is_none() {
                 unreadable_bodies += 1;
             }
         }
@@ -523,6 +534,7 @@ fn pass_inner(
                         std::fs::create_dir_all(parent)
                             .map_err(|e| format!("{}: {e}", parent.display()))?;
                     }
+                    if let Some(copy) = &planned { retain_mirror_assets(full.parent().ok_or("missing mirror parent")?, &copy.assets)?; }
                     std::fs::write(&full, &content)
                         .map_err(|e| format!("{}: {e}", full.display()))?;
                     sidecars.insert(rel);
@@ -535,6 +547,12 @@ fn pass_inner(
             // describes -- but if it ever does, writing the file would be the
             // one unrecoverable choice. Skip it and describe nothing.
             continue;
+        }
+
+        if let Some(copy) = &planned {
+            let parent = dir.join(&place.path).parent().ok_or("missing mirror parent")?.to_path_buf();
+            std::fs::create_dir_all(&parent).map_err(|error| error.to_string())?;
+            retain_mirror_assets(&parent, &copy.assets)?;
         }
 
         // UNCHANGED means both revisions, the path, and rendered content match.
@@ -1245,7 +1263,33 @@ pub fn file_body(item: &crate::store::Item, body: Option<&str>) -> String {
     out
 }
 
-#[cfg(test)]
+fn retain_mirror_assets(root: &std::path::Path, assets: &std::collections::BTreeMap<String, Vec<u8>>) -> Result<(), String> {
+    if assets.is_empty() { return Ok(()); }
+    let directory = root.join("assets");
+    match std::fs::create_dir(&directory) {
+        Ok(()) => {},
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            let meta = std::fs::symlink_metadata(&directory).map_err(|error| error.to_string())?;
+            if !meta.is_dir() || meta.file_type().is_symlink() { return Err("unsafe mirror asset directory".into()); }
+        },
+        Err(error) => return Err(error.to_string()),
+    }
+    for (href, bytes) in assets {
+        let path = root.join(href);
+        match std::fs::OpenOptions::new().write(true).create_new(true).open(&path) {
+            Ok(mut file) => { use std::io::Write; file.write_all(bytes).and_then(|_| file.sync_all()).map_err(|error| error.to_string())?; },
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                let existing = crate::backup_bundle::open_regular_with_limit(&path, crate::pictures::MAX_PICTURE_BYTES).map_err(str::to_string)?;
+                use std::io::Read;
+                let mut content = Vec::new(); existing.take(crate::pictures::MAX_PICTURE_BYTES + 1).read_to_end(&mut content).map_err(|error| error.to_string())?;
+                if content != *bytes { return Err("mirror figure original differs; retained without replacement".into()); }
+            },
+            Err(error) => return Err(error.to_string()),
+        }
+    }
+    crate::backup_bundle::sync_directory(&directory)
+}
+
 pub(crate) fn planned_file(item: &crate::store::Item, schema: i64, plan: &crate::publication_plan::Plan) -> Result<crate::export::Manuscript, String> {
     if schema != crate::store::READ_SCHEMA_VERSION { return Err("new-format mirror requires the matching book schema".into()); }
     let doc = plan.documents.get(&item.id).ok_or("missing planned mirror document")?;
@@ -4983,7 +5027,7 @@ mod tests {
         assert!(accept_plan(&rows, &store.document_revs().unwrap(), &[sibling.id.clone()]).is_ok());
         let empty = tmp.path().join("disabled-output");
         let error = pass(&m.src, "my-book", "My Book", &empty, NOW, &HashSet::new()).unwrap_err();
-        assert!(error.contains("new-format readable-folder output is disabled"));
+        assert!(error.contains("unregistered asset"), "{error}");
         assert!(!empty.exists());
     }
 

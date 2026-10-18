@@ -43,9 +43,16 @@ default to story numbering. Identifiers remain stable through edit and undo.
 Edit > Insert scene break creates an explicit block rendered as `* * *`.
 Literal typed asterisks remain ordinary prose. Select a note or break and choose
 Edit > Delete selected note, figure or scene break to delete it; undo and redo retain
-its content. Desktop figure authoring is the next activation layer. Existing
-figures remain readable and preserved, with bounded lazy previews, captions,
-alternative text and registered orientation.
+its content. Edit > Insert or edit figure opens the native PNG/JPEG picker;
+each insertion retains an independent, durable original and registers it before
+placing the figure. Cancel leaves no placement and retains an already copied
+original. Figure properties are available on the figure and through the Edit
+menu. Full text width, half text width and a separate interior page are supported,
+with caption and alternative text. Saving or editing is one isolated undo step.
+Empty alternative text may be saved as a draft, but blocks publication.
+Properties estimate print DPI from the oriented pixels and book dimensions;
+the PDF proof measures the actual placed size, including caption space. Below
+300 DPI warns; below 200 DPI is flagged. Originals are never automatically removed.
 
 Android can read notes, figures and scene breaks; open a numbered note to read
 its body; edit surrounding prose; save, close and reopen; and import/export a
@@ -69,10 +76,14 @@ Complete backups, encrypted archives, restores and transfers retain schema 18,
 exact atom payloads, history and registered originals. Markdown packages, EPUB,
 DOCX and PDF use the shared publication plan. Empty figure alternative text
 blocks publication; missing or changed originals refuse. DOCX and marked
-Markdown imports preserve plain-text endnotes and explicit breaks. Picture
-import and new-format readable-folder output remain reserved for the figure
-activation layer; refusal leaves destinations unpublished. Ordinary readable
-folders continue to work. Salvage retains readable notes, figure links, breaks,
+Markdown imports preserve plain-text endnotes and explicit breaks. Figure-package
+import verifies and retains relative originals before publishing the separate book.
+New-format readable-folder copies require schema 18 and carry `document_format: 18`,
+notes, captions and relative hashed originals beside each scene. They are one-way:
+marker removal does not allow inbound replacement of atom-bearing scenes. Ordinary
+scenes remain bidirectional. Pauses, conflict copies and undo protections remain;
+changed asset bytes are retained and refuse replacement. Blank-alt drafts remain
+readable-folder copies while publication still refuses them. Salvage retains readable notes, figure links, breaks,
 verbatim JSON for affected current/named documents and registered originals;
 automatic-version drops remain reported. Salvage is not a downgrade route.
 

@@ -365,6 +365,25 @@ pub fn create_imported(
     create_imported_with(library, name, rows, strings, |_| {})
 }
 
+pub(crate) fn create_imported_package(
+    library: &Path, parsed: &crate::markdown::Parsed, strings: &crate::strings::Strings,
+) -> Result<ProjectSummary, String> {
+    let rows: Vec<_> = parsed.imported.items.iter().map(|item|
+        (item.parent, item.item_type, item.title.as_str(), item.body.as_deref())).collect();
+    let ids = parsed.asset_ids.values().cloned().collect();
+    crate::store::document_format::validate_import_assets(&rows, &ids).map_err(|error| error.to_string())?;
+    create_book_with(library, &parsed.imported.name, |_| {}, |store, path| {
+        for (href, bytes) in &parsed.assets {
+            let id = parsed.asset_ids.get(href).ok_or("missing imported figure identity")?;
+            crate::figures::retain_bytes(path, bytes, id.clone(), |asset|
+                store.register_figure_asset(asset).map_err(|error| error.to_string()))?;
+        }
+        store.import_tree(&rows).map_err(|error| error.to_string())?;
+        store.ensure_starter_structure(strings).map_err(|error| error.to_string())?;
+        Ok(())
+    })
+}
+
 fn create_imported_with(
     library: &Path,
     name: &str,

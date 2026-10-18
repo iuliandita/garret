@@ -3,30 +3,24 @@
 use crate::{
     backup_bundle, pictures,
     store::{
-        document_format,
         figure_assets::FigureAsset,
-        Store, READ_SCHEMA_VERSION,
+        Store,
     },
 };
 use sha2::{Digest, Sha256};
+
+pub(crate) fn authoring_allowed(store: &Store) -> Result<(), String> {
+    if !crate::store::document_format::new_nodes_allowed()
+        || store.user_version().map_err(|error| error.to_string())? != crate::store::READ_SCHEMA_VERSION {
+        return Err("figure registration is disabled".into());
+    }
+    Ok(())
+}
 use std::{
     fs::{self, OpenOptions},
     io::{Read, Write},
     path::Path,
 };
-
-pub(crate) fn import_copy(db: &Path, store: &Store, source: &Path) -> Result<FigureAsset, String> {
-    if !document_format::new_nodes_allowed()
-        || store.user_version().map_err(|e| e.to_string())? < READ_SCHEMA_VERSION
-    {
-        return Err("figure registration is disabled".into());
-    }
-    import_original(db, source, |asset| {
-        store
-            .register_figure_asset(asset)
-            .map_err(|e| e.to_string())
-    })
-}
 
 fn read_original(path: &Path) -> Result<Vec<u8>, String> {
     let file = backup_bundle::open_regular_with_limit(path, pictures::MAX_PICTURE_BYTES)
@@ -41,16 +35,24 @@ fn read_original(path: &Path) -> Result<Vec<u8>, String> {
     Ok(data)
 }
 
-fn import_original(
+pub(crate) fn import_original(
     db: &Path,
     source: &Path,
     register: impl FnOnce(&FigureAsset) -> Result<(), String>,
 ) -> Result<FigureAsset, String> {
     let data = read_original(source)?;
+    retain_bytes(db, &data, uuid::Uuid::now_v7().to_string(), register)
+}
+
+pub(crate) fn retain_bytes(
+    db: &Path,
+    data: &[u8],
+    id: String,
+    register: impl FnOnce(&FigureAsset) -> Result<(), String>,
+) -> Result<FigureAsset, String> {
     let (format, width_px, height_px) =
         pictures::inspect_original(&data).map_err(|e| e.to_string())?;
     let orientation = orientation(&data, format)?;
-    let id = uuid::Uuid::now_v7().to_string();
     let asset = FigureAsset {
         stored_name: format!("fig-{id}.{}", format.extension()),
         id,

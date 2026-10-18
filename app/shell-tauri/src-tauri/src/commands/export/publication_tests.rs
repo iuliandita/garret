@@ -687,6 +687,14 @@ fn scoped_markdown_uses_the_publication_plan_and_round_trips_its_package() {
             let parsed = crate::import::read_package(text, "book", package.path()).unwrap();
             assert_eq!(parsed.assets, written.assets);
             assert_eq!(parsed.asset_ids.len(), written.assets.len());
+            let imported_dir = tempfile::tempdir().unwrap();
+            let made = crate::projects::create_imported_package(imported_dir.path(), &parsed, &crate::strings::Strings::english()).unwrap();
+            let reopened = store::Store::open_readonly(Path::new(&made.path)).unwrap();
+            assert_eq!(reopened.figure_assets().unwrap().len(), parsed.assets.len());
+            for asset in reopened.figure_assets().unwrap() {
+                crate::figures::verify_original(&crate::pictures::dir_for(Path::new(&made.path)).join(&asset.stored_name), &asset).unwrap();
+            }
+            assert!(crate::validation::validate(Path::new(&made.path)).unwrap().ok);
             let bodies: Vec<serde_json::Value> = parsed.imported.items.iter().filter_map(|item|
                 item.body.as_ref().map(|body| serde_json::from_str(body).unwrap())).collect();
             assert_eq!(sequence(&bodies), expected);
@@ -767,8 +775,34 @@ fn mirror_fixture_copies_require_the_new_schema_and_use_relative_hashed_assets()
         assert!(!legacy.contains("document_format:"));
         assert!(store::document_format::new_nodes_allowed());
         let destination = fixture.root.path().join("production-mirror");
-        assert!(crate::mirror::pass(&fixture.db, "book", "Book", &destination, 0, &Default::default()).unwrap_err().contains("new-format readable-folder output is disabled"));
-        assert!(!destination.exists());
+        crate::mirror::pass(&fixture.db, "book", "Book", &destination, 0, &Default::default()).unwrap();
+        let manifest: crate::recovery::Manifest<crate::mirror::MirrorEntry> = crate::recovery::read_manifest(&destination).unwrap();
+        let entry = manifest.entries.iter().find(|entry| entry.id == item.id).unwrap();
+        let written = destination.join(&entry.path);
+        assert_eq!(std::fs::read_to_string(&written).unwrap(), copy.text());
+        for (href, bytes) in &copy.assets {
+            assert_eq!(std::fs::read(written.parent().unwrap().join(href)).unwrap(), *bytes);
+        }
+        // Marker removal still cannot turn an atom-bearing scene into inbound prose.
+        std::fs::write(&written, copy.text().replace("document_format: 18\n", "")).unwrap();
+        let rows = crate::mirror::change_set(&destination, &manifest.entries, &fixture.store.items().unwrap(),
+            &fixture.store.documents().unwrap(), &fixture.store.document_revs().unwrap(), &crate::mirror::detect(&destination));
+        assert!(!rows.iter().find(|row| row.id == item.id).unwrap().can_accept);
+        let doc = fixture.store.load_doc(&item.id).unwrap();
+        let mut draft: serde_json::Value = serde_json::from_str(&doc.body).unwrap();
+        for block in draft["content"].as_array_mut().unwrap() {
+            if block["type"] == "figure" { block["attrs"]["alt"] = json!(""); }
+        }
+        fixture.store.flush(&[store::FlushEntry { item_id: item.id.clone(), base_rev: doc.rev, body: draft.to_string(), comments: None }]).unwrap();
+        crate::mirror::pass(&fixture.db, "book", "Book", &destination, 1, &Default::default()).unwrap();
+        let copied: crate::recovery::Manifest<crate::mirror::MirrorEntry> = crate::recovery::read_manifest(&destination).unwrap();
+        assert_eq!(copied.completeness.unreadable_bodies, 0);
+        // Changed asset bytes are retained and fail the next pass explicitly.
+        let href = copy.assets.keys().next().unwrap();
+        std::fs::write(written.parent().unwrap().join(href), b"external original").unwrap();
+        let error = crate::mirror::pass(&fixture.db, "book", "Book", &destination, 1, &Default::default()).unwrap_err();
+        assert!(error.contains("differs"));
+        assert_eq!(std::fs::read(written.parent().unwrap().join(href)).unwrap(), b"external original");
     });
 }
 

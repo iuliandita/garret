@@ -1562,6 +1562,7 @@ describe("the items that open a page dialog say so", () => {
   // how a screen-reader user learned that the control opens a thing. The buttons
   // are gone and the menu item is the only route in.
   const OPENS_DIALOG: Record<string, string> = {
+    "menu-insert-figure": "menu-edit",
     "menu-insert-endnote": "menu-edit",
     "menu-project-new": "menu-file",
     "menu-project-open": "menu-file",

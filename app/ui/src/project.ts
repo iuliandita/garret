@@ -266,6 +266,7 @@ export interface MountedProject {
  *  page error. */
 export interface MenuProjectActions {
   editEndnote(): void;
+  editFigure(): void;
   insertSceneBreak(): void;
   deleteSelectedAtom(): void;
   setEndnoteNumbering(mode: "book" | "chapter" | "story"): void;
@@ -706,6 +707,8 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       await session?.flushPending();
       return !projectDestroyed && !flusher.failed() && itemId === session?.activeDocId();
     },
+    pickFigure: async () => await invoke("figure_pick", { generation: deps.generation }) as import("./document-authoring").FigureAsset | null,
+    figureDetails: async assetId => await invoke("figure_details", { generation: deps.generation, assetId }) as import("./document-authoring").FigureDetails,
     figurePreview: async (instanceId, assetId) => await invoke("figure_preview", {
       itemId: session?.activeDocId() ?? activeDocId, instanceId, assetId,
     }) as PictureView,
@@ -3150,6 +3153,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     // reimplementing it. The menu is a second SURFACE, not a second
     // implementation.
     menuActions: {
+      editFigure: () => { if (!timelineMount) editor.editFigure(); },
       editEndnote: () => { if (!timelineMount) editor.editEndnote(); },
       insertSceneBreak: () => { if (!timelineMount) editor.insertSceneBreak(); },
       deleteSelectedAtom: () => { if (!timelineMount) editor.deleteSelectedAtom(); },

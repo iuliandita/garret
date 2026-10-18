@@ -35,6 +35,7 @@ export function preserveAtoms(authoring = false): Plugin {
 }
 
 export function readerViews(load?: LoadFigurePreview, options: {
+  editFigure?: (pos: number) => void;
   editNote?: (pos: number) => void;
   noteOffset?: () => number;
 } = {}): Record<string, NodeViewConstructor> {
@@ -65,7 +66,7 @@ export function readerViews(load?: LoadFigurePreview, options: {
       dom.append(button, body);
       return { dom, stopEvent: () => true, ignoreMutation: () => true };
     },
-    figure(node) {
+    figure(node, _view, getPos) {
       const dom = document.createElement("figure");
       dom.className = "document-figure";
       dom.dataset.width = node.attrs.width as string;
@@ -78,6 +79,11 @@ export function readerViews(load?: LoadFigurePreview, options: {
       alt.className = "document-figure-alt";
       alt.textContent = node.attrs.alt as string;
       dom.append(placeholder, caption, alt);
+      if (options.editFigure) {
+        const edit = document.createElement("button"); edit.type = "button"; edit.textContent = t("figure.properties");
+        edit.addEventListener("click", () => { const pos = getPos(); if (pos !== undefined) options.editFigure?.(pos); });
+        dom.append(edit);
+      }
       let alive = true;
       let started = false;
       const start = () => {
@@ -95,7 +101,8 @@ export function readerViews(load?: LoadFigurePreview, options: {
         if (entries.some(entry => entry.isIntersecting)) { observer?.disconnect(); start(); }
       });
       if (observer) observer.observe(dom); else start();
-      return { dom, ignoreMutation: () => true, destroy() { alive = false; observer?.disconnect(); } };
+      return { dom, stopEvent: event => event.target instanceof Element && event.target.closest("button") !== null,
+        ignoreMutation: () => true, destroy() { alive = false; observer?.disconnect(); } };
     },
   };
 }

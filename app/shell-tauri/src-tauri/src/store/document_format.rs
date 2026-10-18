@@ -163,9 +163,14 @@ pub fn validate_write(body: &str) -> Result<()> {
 }
 
 pub fn validate_import(rows: &[super::ImportRow<'_>]) -> Result<()> {
+    validate_import_assets(rows, &HashSet::new())
+}
+
+pub(crate) fn validate_import_assets(rows: &[super::ImportRow<'_>], assets: &HashSet<String>) -> Result<()> {
     for (_, _, _, body) in rows {
         if let Some(body) = body {
-            validate_write(body)?;
+            let value = serde_json::from_str(body).map_err(|_| invalid("invalid document JSON"))?;
+            validate(&value, new_nodes_allowed(), assets)?;
         }
     }
     Ok(())
