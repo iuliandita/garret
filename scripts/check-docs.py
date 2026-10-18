@@ -230,7 +230,7 @@ def validate_record(domain, record, fingerprint, files):
     if record.get("breaking", "none") != "none":
         reason(record["breaking"], "Breaking-change assessment")
         if no_impact or "docs/COMPATIBILITY.md" not in cited:
-            raise Failure(f"{domain}: a breaking consequence requires changed docs/COMPATIBILITY.md; no-impact is unavailable.")
+            raise Failure(f"{domain}: a breaking consequence requires citing docs/COMPATIBILITY.md; no-impact is unavailable.")
         compatibility_note(record)
     for path, expected in cited.items():
         if path not in DOMAINS[domain]["docs"]:
@@ -247,7 +247,7 @@ def main():
     parser.add_argument("--explain", action="store_true")
     parser.add_argument("--init", action="store_true")
     parser.add_argument("--accept", choices=DOMAINS)
-    parser.add_argument("--docs", help="comma-separated changed documentation paths")
+    parser.add_argument("--docs", help="comma-separated documentation paths; unchanged compatibility guidance may be cited for an unchanged breaking consequence")
     parser.add_argument("--note")
     parser.add_argument("--no-impact")
     parser.add_argument("--breaking", default="none", help="none or a specific breaking-change explanation")
@@ -289,6 +289,14 @@ def main():
         if not lock_path.is_file():
             raise Failure(f"Missing {LOCK}; initialize the explicit baseline with --init --note.")
         lock = read_lock(lock_path.read_bytes())
+    base_data = git("show", f"{base}:{LOCK}", allow_missing=True)
+    base_lock = read_lock(base_data) if base_data is not None else {"receipts": {}}
+
+    def reusable_compatibility(domain, breaking, path):
+        return (path == "docs/COMPATIBILITY.md" and domain not in sensitive_domains
+                and breaking != "none"
+                and breaking == base_lock["receipts"].get(domain, {}).get("breaking", "none"))
+
     if args.accept:
         if bool(args.docs) == bool(args.no_impact):
             raise Failure("--accept needs exactly one of --docs or --no-impact.")
@@ -299,7 +307,7 @@ def main():
                 continue
             if path not in DOMAINS[args.accept]["docs"] or path not in files:
                 raise Failure(f"{args.accept}: documentation must be an allowed tracked file: {path}")
-            if (git("show", f"{base}:{path}", allow_missing=True) or b"") == files[path]:
+            if (git("show", f"{base}:{path}", allow_missing=True) or b"") == files[path] and not reusable_compatibility(args.accept, args.breaking, path):
                 raise Failure(f"{args.accept}: cited documentation has not changed against base: {path}")
             cited[path] = sha(files[path])
         record = {"source_sha256": fingerprints[args.accept], "docs": cited, "note": note, "no_impact": args.no_impact or "", "breaking": args.breaking, "migration": args.migration}
@@ -315,15 +323,13 @@ def main():
         print(f"Recorded {'explicit baseline' if args.init else args.accept} in {LOCK}.")
         return
     baseline = lock["baseline"]["source"]
-    base_data = git("show", f"{base}:{LOCK}", allow_missing=True)
-    base_lock = read_lock(base_data) if base_data is not None else {"receipts": {}}
     for domain, fingerprint in fingerprints.items():
         record = lock["receipts"].get(domain)
         if record:
             validate_record(domain, record, fingerprint, files)
         elif baseline.get(domain) != fingerprint:
             raise Failure(f"{domain}: source changed since baseline; record a documentation assessment.")
-        if record and record.get("breaking", "none") != "none" and record != base_lock["receipts"].get(domain):
+        if record and record.get("breaking", "none") != "none" and record.get("breaking") != base_lock["receipts"].get(domain, {}).get("breaking", "none"):
             path = "docs/COMPATIBILITY.md"
             if (git("show", f"{base}:{path}", allow_missing=True) or b"") == files[path]:
                 raise Failure(f"{domain}: breaking consequences require compatibility documentation changed against base.")
@@ -331,7 +337,7 @@ def main():
             if not record or record == base_lock["receipts"].get(domain):
                 raise Failure(f"{domain}: range changes require a fresh assessment; baseline/reset receipts do not count.")
             for path in record["docs"]:
-                if (git("show", f"{base}:{path}", allow_missing=True) or b"") == files[path]:
+                if (git("show", f"{base}:{path}", allow_missing=True) or b"") == files[path] and not reusable_compatibility(domain, record.get("breaking", "none"), path):
                     raise Failure(f"{domain}: cited documentation has not changed against base: {path}")
             if domain in sensitive_domains:
                 if record["no_impact"] or "docs/COMPATIBILITY.md" not in record["docs"]:

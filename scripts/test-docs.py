@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Exercise the real offline docs CLI in disposable Git repositories."""
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -238,6 +239,60 @@ class DocsTests(unittest.TestCase):
         lock["receipts"]["editor"]["no_impact"] = NOTE
         self.write("docs/docs-impact.json", json.dumps(lock))
         self.cli(ok=False, contains="no-impact is unavailable")
+
+    def test_unchanged_breaking_consequence_can_cite_current_guide(self):
+        consequence = "The previous editor shortcut is removed and existing workflows must change."
+        self.write("docs/COMPATIBILITY.md", MIGRATION)
+        self.accept("editor", "docs/COMPATIBILITY.md", breaking=consequence, migration=MIGRATION)
+        self.commit("document breaking consequence")
+        self.git("tag", "breaking-base")
+        self.write("README.md", "Record the published release without changing editor compatibility.\n")
+        for source_change in (False, True):
+            with self.subTest(source_change=source_change):
+                if source_change:
+                    self.write("app/ui/src/editor.ts", "export const editor = 2;\n")
+                self.cli("--base", "breaking-base", "--accept", "editor", "--docs", "README.md,docs/COMPATIBILITY.md",
+                         "--note", NOTE, "--breaking", consequence, "--migration", MIGRATION)
+                self.cli("--base", "breaking-base")
+                self.cli("--release-base", "base")
+        self.write("docs/COMPATIBILITY.md", "A later edit invalidates the cited compatibility bytes.\n")
+        self.cli("--base", "breaking-base", ok=False, contains="stale or missing cited")
+
+    def test_new_or_changed_breaking_consequence_requires_guide_edit(self):
+        consequence = "The previous editor shortcut is removed and existing workflows must change."
+        for existing in (False, True):
+            with self.subTest(existing=existing):
+                if existing:
+                    self.write("docs/COMPATIBILITY.md", MIGRATION)
+                    self.accept("editor", "docs/COMPATIBILITY.md", breaking=consequence, migration=MIGRATION)
+                    self.commit("document existing breaking consequence")
+                self.git("tag", "consequence-base-" + str(existing))
+                base = "consequence-base-" + str(existing)
+                breaking = consequence + " The replacement shortcut also changes."
+                self.cli("--base", base, "--accept", "editor", "--docs", "docs/COMPATIBILITY.md",
+                         "--note", NOTE, "--breaking", breaking, "--migration", MIGRATION,
+                         ok=False, contains="has not changed")
+                lock = json.loads((self.root / "docs/docs-impact.json").read_text())
+                if not existing:
+                    lock["receipts"]["editor"] = {
+                        "source_sha256": lock["baseline"]["source"]["editor"],
+                        "docs": {"docs/COMPATIBILITY.md": hashlib.sha256((self.root / "docs/COMPATIBILITY.md").read_bytes()).hexdigest()},
+                        "note": NOTE, "no_impact": "", "migration": MIGRATION,
+                    }
+                lock["receipts"]["editor"]["breaking"] = breaking
+                self.write("docs/docs-impact.json", json.dumps(lock))
+                self.cli("--base", base, ok=False, contains="breaking consequences require")
+
+    def test_unchanged_breaking_text_does_not_waive_schema_guide_edit(self):
+        consequence = "Older builds cannot open books after the schema upgrade completes."
+        self.write("docs/COMPATIBILITY.md", MIGRATION)
+        self.accept("schema", "docs/COMPATIBILITY.md", breaking=consequence, migration=MIGRATION)
+        self.commit("document existing schema consequence")
+        self.git("tag", "schema-base")
+        self.write(HOST + "store/mod.rs", "const SCHEMA_VERSION: u32 = 18;\nfn query() { select(); }\n")
+        self.cli("--base", "schema-base", "--accept", "schema", "--docs", "docs/COMPATIBILITY.md",
+                 "--note", NOTE, "--breaking", consequence, "--migration", MIGRATION,
+                 ok=False, contains="has not changed")
 
     def test_only_mapped_files_are_read_and_symlinks_are_refused(self):
         excluded = self.root / "lab/excluded.rs"

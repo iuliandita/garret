@@ -30,10 +30,6 @@ its previous format. Originals remain untouched. Keep the complete database,
 adjacent originals and profile before upgrading an installation, and try a
 disposable copy first.
 
-Post-activation cleanup leaves schema 18, stored-schema checks, import validation,
-and upgrade consent unchanged. DOCX import JSON still emits `losses.notes` as 0;
-supported notes remain owned plain-text endnotes.
-
 Desktop authoring supports plain-text endnotes and explicit scene breaks.
 Choose Edit > Insert or edit endnote, or press Ctrl+Alt+N (without Shift); this
 chord is reserved for endnotes in both interface languages. A numbered reference
