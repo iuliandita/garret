@@ -21,6 +21,13 @@ release = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(release)
 
 
+FINGERPRINT = "8270 74C7 C4A2 9486 FB48  BC00 8B54 EB1A DBE5 8725"
+
+
+def published(fingerprint: str = FINGERPRINT) -> str:
+    return f"Release signing key fingerprint: `{fingerprint}`\n"
+
+
 class ReleaseTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -28,7 +35,7 @@ class ReleaseTests(unittest.TestCase):
         self.host = self.root / "app/shell-tauri/src-tauri"
         self.host.mkdir(parents=True)
         for name in ("README.md", "SECURITY.md"):
-            (self.root / name).write_text("Release signing key fingerprint: test fingerprint\n")
+            (self.root / name).write_text(published())
         (self.host / "tauri.conf.json").write_text(json.dumps({"version": "0.0.1"}))
         (self.host / "tauri.android.conf.json").write_text(json.dumps({"bundle": {"android": {"versionCode": 1}}}))
         (self.host / "Cargo.toml").write_text('[package]\nversion = "0.0.1"\n')
@@ -205,7 +212,10 @@ class ReleaseTests(unittest.TestCase):
                     self.assertNotIn(secret, kwargs["env"])
                 if failure in command:
                     raise subprocess.CalledProcessError(2, command, stderr="gpg: failure test-input test-passphrase")
-                return subprocess.CompletedProcess(command, 2 if command[0] == "gpgconf" else 0)
+                status = ""
+                if "--verify" in command:
+                    status = "[GNUPG:] GOODSIG 1 x\n[GNUPG:] VALIDSIG 2 d 1 0 4 0 22 10 00 " + FINGERPRINT.replace(" ", "") + "\n"
+                return subprocess.CompletedProcess(command, 2 if command[0] == "gpgconf" else 0, stdout=status)
             diagnostics = io.StringIO()
             with patch.dict(os.environ, {"RELEASE_GPG_PRIVATE_KEY": "test-input", "RELEASE_GPG_PASSPHRASE": "test-passphrase"}), patch.object(release.subprocess, "run", side_effect=run), patch("sys.stderr", diagnostics):
                 if failure:
@@ -224,6 +234,8 @@ class ReleaseTests(unittest.TestCase):
                 self.assertIn("gpg: failure", diagnostics.getvalue())
             if not failure:
                 self.assertIn("--detach-sign", calls[1][0])
+                self.assertEqual(calls[1][0][calls[1][0].index("--local-user") + 1], FINGERPRINT.replace(" ", ""))
+                self.assertIn("--status-fd", calls[2][0])
                 self.assertIn("--passphrase-fd", calls[1][0])
                 self.assertEqual(calls[1][1]["input"], "test-passphrase\n")
                 self.assertIn("--verify", calls[2][0])
@@ -233,7 +245,7 @@ class ReleaseTests(unittest.TestCase):
         release.write_manifest()
         for name in ("README.md", "SECURITY.md"):
             guide = self.root / name
-            published = guide.read_text()
+            original = guide.read_text()
             guide.write_text("Release signing key fingerprint: not yet published\n")
             asc = self.root / "app/dist-release/downloads/SHA256SUMS.asc"
             asc.write_text("stale signature\n")
@@ -242,35 +254,116 @@ class ReleaseTests(unittest.TestCase):
                     release.sign_manifest(allow_unsigned=True)
                 run.assert_not_called()
                 self.assertFalse(asc.exists())
-            guide.write_text(published)
+            guide.write_text(original)
 
-    @unittest.skipUnless(shutil.which("gpg"), "GPG is not installed")
-    def test_passphrase_protected_test_key_round_trips_manifest_signing(self):
+    def test_signed_publication_needs_one_well_formed_fingerprint_in_both_guides(self):
+        self.downloads()
+        release.write_manifest()
+        self.assertEqual(release.published_fingerprint(), FINGERPRINT.replace(" ", ""))
+        other = "0000 0000 0000 0000 0000  0000 0000 0000 0000 0000"
+        for name, text, message in (
+            ("README.md", "Release signing key fingerprint: test fingerprint\n", "README.md is missing"),
+            ("SECURITY.md", published("8270 74C7"), "SECURITY.md is missing"),
+            ("SECURITY.md", "no fingerprint here\n", "SECURITY.md is missing"),
+            ("README.md", published(other), "different release signing key fingerprints"),
+        ):
+            guide = self.root / name
+            original = guide.read_text()
+            guide.write_text(text)
+            with patch.dict(os.environ, {"RELEASE_GPG_PRIVATE_KEY": "test-input"}), patch.object(release.subprocess, "run") as run:
+                with self.assertRaisesRegex(ValueError, message):
+                    release.sign_manifest()
+                run.assert_not_called()
+            guide.write_text(original)
+        (self.root / "README.md").write_text(published(FINGERPRINT.lower().replace(" ", "")))
+        self.assertEqual(release.published_fingerprint(), FINGERPRINT.replace(" ", ""))
+
+    def test_signature_by_another_key_is_refused_and_removed(self):
         out = self.downloads()
         release.write_manifest()
-        home = self.root / "test-gnupg"
-        home.mkdir(mode=0o700)
-        env = {name: value for name, value in os.environ.items()
-               if name not in {"RELEASE_GPG_PRIVATE_KEY", "RELEASE_GPG_PASSPHRASE"}}
-        env["GNUPGHOME"] = str(home)
-        command = ["gpg", "--batch", "--no-tty", "--no-options"]
-        passphrase = "disposable-test-passphrase"
-        try:
-            subprocess.run(command + ["--pinentry-mode", "loopback", "--passphrase-fd", "0",
-                           "--quick-generate-key", "garret release test", "ed25519", "sign", "1d"],
-                           input=passphrase + "\n", text=True, env=env, capture_output=True, check=True)
-            key = subprocess.run(command + ["--pinentry-mode", "loopback", "--passphrase-fd", "0",
-                                 "--armor", "--export-secret-keys"], input=passphrase + "\n",
-                                 text=True, env=env, capture_output=True, check=True).stdout
-            with patch.dict(os.environ, {"RELEASE_GPG_PRIVATE_KEY": key, "RELEASE_GPG_PASSPHRASE": passphrase}):
+        other = "A" * 40
+        def run(command, **kwargs):
+            if "--detach-sign" in command:
+                Path(command[command.index("--output") + 1]).write_text("signature\n")
+            status = f"[GNUPG:] GOODSIG 1 x\n[GNUPG:] VALIDSIG 2 d 1 0 4 0 22 10 00 {other}\n" if "--verify" in command else ""
+            return subprocess.CompletedProcess(command, 0, stdout=status)
+        with patch.dict(os.environ, {"RELEASE_GPG_PRIVATE_KEY": "test-input"}), patch.object(release.subprocess, "run", side_effect=run):
+            with self.assertRaisesRegex(ValueError, "other than the published"):
                 release.sign_manifest()
-            verify = command + ["--verify", str(out / "SHA256SUMS.asc"), str(out / "SHA256SUMS")]
-            subprocess.run(verify, env=env, capture_output=True, check=True)
-            (out / "SHA256SUMS").write_text("tampered manifest\n")
-            self.assertNotEqual(subprocess.run(verify, env=env, capture_output=True).returncode, 0)
-        finally:
-            subprocess.run(["gpgconf", "--kill", "gpg-agent"], env=env,
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        self.assertFalse((out / "SHA256SUMS.asc").exists())
+
+    def gpg_env(self, name: str) -> tuple[dict[str, str], Path]:
+        home = self.root / name
+        home.mkdir(mode=0o700)
+        env = {key: value for key, value in os.environ.items()
+               if key not in {"RELEASE_GPG_PRIVATE_KEY", "RELEASE_GPG_PASSPHRASE"}}
+        env["GNUPGHOME"] = str(home)
+        self.addCleanup(lambda: subprocess.run(["gpgconf", "--kill", "gpg-agent"], env=env,
+                                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False))
+        return env, home
+
+    def release_key(self, env: dict[str, str], passphrase: str) -> tuple[str, str]:
+        """Certify-only primary key with a separate signing subkey, exported like the owner procedure."""
+        command = ["gpg", "--batch", "--no-tty", "--no-options", "--pinentry-mode", "loopback", "--passphrase-fd", "0"]
+        def gpg(*args: str) -> str:
+            return subprocess.run(command + list(args), input=passphrase + "\n", text=True, env=env,
+                                  capture_output=True, check=True).stdout
+        gpg("--quick-generate-key", "garret release test", "ed25519", "cert", "1d")
+        listing = subprocess.run(["gpg", "--batch", "--no-options", "--with-colons", "--list-keys"], text=True,
+                                 env=env, capture_output=True, check=True).stdout
+        primary = next(line.split(":")[9] for line in listing.splitlines() if line.startswith("fpr:"))
+        gpg("--quick-add-key", primary, "ed25519", "sign", "1d")
+        exported = gpg("--armor", "--export-secret-subkeys")
+        return primary, exported
+
+    @unittest.skipUnless(shutil.which("gpg"), "GPG is not installed")
+    def test_subkey_only_export_signs_with_the_published_primary_fingerprint(self):
+        out = self.downloads()
+        release.write_manifest()
+        passphrase = "disposable-test-passphrase"
+        source_env, _ = self.gpg_env("test-gnupg")
+        primary, exported = self.release_key(source_env, passphrase)
+        for name in ("README.md", "SECURITY.md"):
+            (self.root / name).write_text(published(primary))
+        # Like the CI secret: the primary is only a stub, the secret material is the signing subkey.
+        stub_env, _ = self.gpg_env("stub-gnupg")
+        subprocess.run(["gpg", "--batch", "--no-options", "--import"], input=exported, text=True, env=stub_env,
+                       capture_output=True, check=True)
+        secrets = subprocess.run(["gpg", "--batch", "--no-options", "--with-colons", "--list-secret-keys"], text=True,
+                                 env=stub_env, capture_output=True, check=True).stdout.splitlines()
+        self.assertEqual([line.split(":")[14] for line in secrets if line.startswith("sec:")], ["#"])
+        self.assertEqual(len([line for line in secrets if line.startswith("ssb:")]), 1)
+        with patch.dict(os.environ, {"RELEASE_GPG_PRIVATE_KEY": exported, "RELEASE_GPG_PASSPHRASE": passphrase}):
+            release.sign_manifest()
+        verify_env, _ = self.gpg_env("verify-gnupg")
+        verify = ["gpg", "--batch", "--no-tty", "--no-options", "--status-fd", "1", "--verify",
+                  str(out / "SHA256SUMS.asc"), str(out / "SHA256SUMS")]
+        subprocess.run(["gpg", "--batch", "--no-options", "--import"], input=subprocess.run(
+            ["gpg", "--batch", "--no-options", "--armor", "--export"], env=source_env, capture_output=True,
+            check=True).stdout, env=verify_env, capture_output=True, check=True)
+        result = subprocess.run(verify, env=verify_env, capture_output=True, text=True, check=True)
+        release.require_published_signer(result.stdout, primary)
+        signer = next(line.split()[2] for line in result.stdout.splitlines() if "VALIDSIG" in line)
+        self.assertNotEqual(signer, primary)
+        (out / "SHA256SUMS").write_text("tampered manifest\n")
+        self.assertNotEqual(subprocess.run(verify, env=verify_env, capture_output=True).returncode, 0)
+
+    @unittest.skipUnless(shutil.which("gpg"), "GPG is not installed")
+    def test_signing_key_that_is_not_the_published_one_refuses_publication(self):
+        out = self.downloads()
+        release.write_manifest()
+        passphrase = "disposable-test-passphrase"
+        env, _ = self.gpg_env("other-gnupg")
+        _, exported = self.release_key(env, passphrase)
+        # The docs still advertise the real release key, not the one in the secret.
+        asc = out / "SHA256SUMS.asc"
+        for allow in (False, True):
+            asc.write_text("stale signature\n")
+            with patch.dict(os.environ, {"RELEASE_GPG_PRIVATE_KEY": exported, "RELEASE_GPG_PASSPHRASE": passphrase}), \
+                    patch("sys.stderr", io.StringIO()):
+                with self.assertRaises(subprocess.CalledProcessError):
+                    release.sign_manifest(allow_unsigned=allow)
+            self.assertFalse(asc.exists())
 
 
 if __name__ == "__main__":
