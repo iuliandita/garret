@@ -93,7 +93,9 @@ verbatim JSON for affected current/named documents and registered originals;
 automatic-version drops remain reported. Salvage is not a downgrade route.
 
 Apps 0.0.5 and earlier refuse schema 18. Release 0.0.6 reads and preserves it,
-including new writing in surrounding prose, but has no atom authoring. To roll
+including new writing in surrounding prose, but has no atom authoring. Release
+0.0.7 adds endnote, scene-break and figure authoring on desktop; Android 0.0.7
+still reads them without authoring. To roll
 back, keep the upgraded book separately and restore the complete pre-upgrade
 schema-17 copy as a separate book with the previous package. Writing after
 upgrade is absent from that copy. Never lower `user_version`, overwrite the

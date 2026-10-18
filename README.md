@@ -26,7 +26,7 @@ or an internet connection to write. Your books stay on your own disk.
 
 > **Early alpha.** garret moves fast; keep backups of your work.
 
-The current published build is [0.0.6 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.6).
+The current published build is [0.0.7 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.7).
 See [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
 
