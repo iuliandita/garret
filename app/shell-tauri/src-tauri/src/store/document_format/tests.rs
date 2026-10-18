@@ -133,7 +133,6 @@ fn refused<T>(result: Result<T>) {
 
 #[test]
 fn format_gate_shared_corpus() {
-    assert!(new_nodes_allowed());
     assert_eq!(SCHEMA_VERSION, 18);
     let cases = corpus();
     assert!(cases.len() > 40);
@@ -742,7 +741,6 @@ fn schema18_authoring_opens_preserves_history_and_changes_atoms() {
     store.doc_restore(&id, original_version, rev).unwrap();
     assert!(!atoms(&store.load_doc(&id).unwrap().body).unwrap().is_empty());
     assert_eq!(store.user_version().unwrap(), 18);
-    assert!(new_nodes_allowed());
     let fresh = Store::open(&dir.path().join("fresh.db")).unwrap();
     assert_eq!(fresh.user_version().unwrap(), 18);
     assert!(fresh.figure_registry().unwrap().present);

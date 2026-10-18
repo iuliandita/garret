@@ -27,7 +27,7 @@ use serde_json::json;
 /// same vector. A flat vector with backward references rather than a nested tree
 /// because the store is written depth-first in one pass and a nested structure
 /// would only be flattened again at the boundary.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ImportedItem {
     pub parent: Option<usize>,
     /// `part`, `chapter` or `scene`. `&'static str` because these are the
@@ -40,7 +40,7 @@ pub struct ImportedItem {
     pub body: Option<String>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Imported {
     /// A leading contents section omitted because exports regenerate it.
     pub derived_contents: Option<String>,
@@ -481,17 +481,6 @@ fn drop_generated_contents(sections: &mut Vec<Section<'_>>) -> Option<String> {
 /// extension, used when the file does not name itself.
 pub fn parse(source: &str, stem: &str) -> Imported {
     parse_with(source, stem, |paragraphs| Ok(document(paragraphs))).expect("legacy Markdown reader")
-}
-
-#[cfg(test)]
-pub(crate) fn parse_package(source: &str, stem: &str, root: &std::path::Path) -> Result<Imported, String> {
-    if crate::markdown::is_dialect(source) {
-        if !crate::store::document_format::new_nodes_allowed() {
-            return Err("new-format Markdown conversion is disabled by this build".into());
-        }
-        return Ok(read_package(source, stem, root)?.imported);
-    }
-    Ok(parse(source, stem))
 }
 
 pub(crate) fn read_package(source: &str, stem: &str, root: &std::path::Path) -> Result<crate::markdown::Parsed, String> {

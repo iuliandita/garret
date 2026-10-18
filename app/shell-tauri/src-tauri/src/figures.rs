@@ -10,8 +10,7 @@ use crate::{
 use sha2::{Digest, Sha256};
 
 pub(crate) fn authoring_allowed(store: &Store) -> Result<(), String> {
-    if !crate::store::document_format::new_nodes_allowed()
-        || store.user_version().map_err(|error| error.to_string())? != crate::store::READ_SCHEMA_VERSION {
+    if store.user_version().map_err(|error| error.to_string())? != crate::store::READ_SCHEMA_VERSION {
         return Err("figure registration is disabled".into());
     }
     Ok(())
