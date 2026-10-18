@@ -395,9 +395,19 @@ def main() -> int:
                 adb("wait-for-device")
                 adb("shell", "setprop", "persist.sys.locale", "de-DE")
                 adb("shell", "settings", "put", "system", "system_locales", "de-DE")
+                adb("shell", "setprop", "sys.boot_completed", "0")
                 adb("shell", "stop")
                 adb("shell", "start")
                 adb("wait-for-device", timeout=180)
+                deadline = time.monotonic() + 120
+                while time.monotonic() < deadline:
+                    if adb("shell", "getprop", "sys.boot_completed").strip() == "1":
+                        break
+                    if emulator.poll() is not None:
+                        raise RuntimeError(f"emulator exited during locale restart ({emulator.returncode})")
+                    time.sleep(1)
+                else:
+                    raise RuntimeError("Android did not finish restarting after the locale change")
             result["locale"] = args.locale
             adb("install", "-r", str(apk), timeout=120)
             adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
