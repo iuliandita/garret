@@ -297,18 +297,7 @@ pub(crate) fn preview(stage: &Path, books: &Path) -> Result<Preview, String> {
         payload,
         |bundle| mobile_core::open_supported(&backup_bundle::db_path(bundle)).map(|_| ()),
     )
-    .map_err(|error| {
-        if matches!(
-            error.as_str(),
-            "unsupported_schema" | "unsupported_project_preset"
-        ) {
-            error
-        } else if error.contains("too large") {
-            "transfer_too_large".into()
-        } else {
-            "transfer_invalid".into()
-        }
-    })?;
+    .map_err(extraction_error)?;
     let source = transfer_copy::inspect(&bundle).map_err(|error| transfer_error(error, "transfer_incomplete"))?;
     let mut related = Vec::new();
     let mut unreadable_books = 0;
@@ -350,6 +339,18 @@ pub(crate) fn preview(stage: &Path, books: &Path) -> Result<Preview, String> {
         archive_bytes,
         archive_sha256,
     })
+}
+
+fn extraction_error(error: String) -> String {
+    match error.as_str() {
+        "unsupported_schema" | "unsupported_project_preset" => error,
+        // These are the extraction core's own admission failures. Verification
+        // details can contain the same words without exceeding a transfer limit.
+        "too large" | "encrypted tar entry too large" | "encrypted tar payload too large" =>
+            "transfer_too_large".into(),
+        "recovery key does not open this archive" => "transfer_key".into(),
+        _ => "transfer_invalid".into(),
+    }
 }
 
 pub(crate) fn publish(stage: &Path, books: &Path, expected: &Preview) -> Result<String, String> {
@@ -402,6 +403,22 @@ pub(crate) mod tests {
             }
         }
         found
+    }
+
+    #[test]
+    fn mobile_transfer_extraction_errors_distinguish_limits_from_validation() {
+        for (detail, expected) in [
+            ("too large", "transfer_too_large"),
+            ("encrypted tar entry too large", "transfer_too_large"),
+            ("encrypted tar payload too large", "transfer_too_large"),
+            ("decrypted bundle verification failed: library membership is too large", "transfer_invalid"),
+            ("recovery key does not open this archive", "transfer_key"),
+            ("encrypted tar payload unreadable", "transfer_invalid"),
+            ("unsupported_schema", "unsupported_schema"),
+            ("unsupported_project_preset", "unsupported_project_preset"),
+        ] {
+            assert_eq!(extraction_error(detail.into()), expected, "{detail}");
+        }
     }
 
     fn book(root: &Path) -> PathBuf {
@@ -587,6 +604,53 @@ pub(crate) mod tests {
             }
         }
     }
+    #[test]
+    #[ignore = "explicit local schema-17 transfer fixture generation"]
+    fn write_schema17_phone_fixture() {
+        let out = PathBuf::from(std::env::var_os("GARRET_TRANSFER_FIXTURE_OUT").expect("fixture output required"));
+        fs::create_dir(&out).expect("fixture output must not exist");
+        let root = tempfile::tempdir().unwrap();
+        let db = book(root.path());
+        let stage = incoming(root.path(), &db);
+        fs::copy(stage.join("archive.in"), out.join("book.age")).unwrap();
+        fs::copy(stage.join("key.in"), out.join("recovery-key.txt")).unwrap();
+    }
+
+    #[test]
+    #[ignore = "requires a local synthetic archive directory"]
+    fn mobile_transfer_exact_phone_archive() {
+        let fixture = PathBuf::from(std::env::var_os("GARRET_READER_FIXTURE_IN").expect("fixture input required"));
+        let root = tempfile::tempdir().unwrap();
+        let stage = stage(&root.path().join("transfer"), &uuid::Uuid::now_v7().to_string()).unwrap();
+        fs::copy(fixture.join("reader-18.age"), stage.join("archive.in")).unwrap();
+        fs::copy(fixture.join("reader-18-recovery-key.txt"), stage.join("key.in")).unwrap();
+        let key = encrypted_archive::key_from_path(&stage.join("key.in")).unwrap();
+        let diagnostic = root.path().join("diagnostic");
+        fs::create_dir(&diagnostic).unwrap();
+        let extracted = encrypted_archive::extract_checked(&stage.join("archive.in"), &key, &diagnostic,
+            ARCHIVE_LIMIT, PAYLOAD_LIMIT, |bundle| mobile_core::open_supported(&backup_bundle::db_path(bundle)).map(|_| ()));
+        eprintln!("raw extraction result: {extracted:?}");
+        let books = root.path().join("books");
+        fs::create_dir(&books).unwrap();
+        let review = preview(&stage, &books).unwrap();
+        let id = publish(&stage, &books, &review).unwrap();
+        let source_db = backup_bundle::db_path(&extracted.unwrap());
+        let source = Store::open_readonly(&source_db).unwrap();
+        let copy_db = books.join(format!("{id}.db"));
+        let copy = Store::open_existing(&copy_db).unwrap();
+        assert_eq!(copy.user_version().unwrap(), 18);
+        assert_eq!(copy.figure_assets().unwrap(), source.figure_assets().unwrap());
+        for item in source.items().unwrap() {
+            if let Ok(doc) = source.load_doc(&item.id) {
+                assert_eq!(copy.load_doc(&item.id).unwrap().body, doc.body);
+            }
+        }
+        for asset in source.figure_assets().unwrap() {
+            assert_eq!(fs::read(crate::pictures::dir_for(&copy_db).join(&asset.stored_name)).unwrap(),
+                fs::read(crate::pictures::dir_for(&source_db).join(&asset.stored_name)).unwrap());
+        }
+    }
+
     #[test]
     #[ignore = "explicit local phone fixture generation"]
     fn write_schema18_phone_fixture() {

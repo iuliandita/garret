@@ -42,9 +42,13 @@ keep the schema-18 book separately and open a complete pre-activation schema-17
 copy with the older package. Later writing is absent from that copy. Never
 manually lower `user_version`, overwrite the newer book or remove its originals.
 Host and interface tests exercise reader preservation and transfer. The isolated
-Android emulator smoke accepts a generated schema-18 fixture, checks note and
-figure display, edits prose, and verifies schema, atoms, registry and originals
-after force-stop/reopen. Physical-phone checks remain release qualification steps.
+Android emulator smoke imports a generated schema-18 archive and its separate
+key through the system picker, confirms the preview, checks note and figure
+display, edits prose, and verifies schema, atoms, registry and originals after
+force-stop/reopen. A separate schema-17 fixture exercises the same import UI.
+The driver restarts after installation; first-launch activity recreation is
+tracked separately in [issue 403](https://github.com/iuliandita/garret/issues/403).
+Physical-phone checks remain release qualification steps.
 `scripts/android/reader-fixture OUTPUT_DIRECTORY` generates a synthetic encrypted
 archive, a fresh recovery key, import instructions and an owned plaintext copy
 using test-only construction and the real transfer import path. It never enables
@@ -521,6 +525,15 @@ copying. Storage failure, incomplete originals, invalid authentication, newer
 schemas and stale sessions fail closed. Publication moves and syncs originals
 before the database becomes visible; unsupported exclusive-rename kernels
 refuse publication. No existing book is overwritten.
+
+A recovery key is a separate text file limited to 512 bytes. Selecting a book
+archive in the key picker reports a recovery-key error; it does not mean the
+book exceeds the archive or payload limits. A key that does not open the archive
+also reports a key error. Extraction maps only its explicit size-limit errors to
+the book-size message; verification details containing the words "too large" remain
+verification errors. These diagnostic changes do not alter size budgets,
+archive contents, schemas or rollback requirements. Existing valid schema-18
+archives do not need regeneration.
 
 Cancellation keeps admission until the original picker callback, stream and
 cancellation closer have drained. If the system picker remains open, close it

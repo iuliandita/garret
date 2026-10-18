@@ -281,7 +281,9 @@ class TransferPlugin(private val activity: Activity) : Plugin(activity) {
                 } catch (error: Exception) {
                     result = null
                     if (writing && !writeBegan) failure = "transfer_not_started"
-                    if (!writing && error is TransferTooLarge) failure = "transfer_too_large"
+                    if (!writing && error is TransferTooLarge) {
+                        failure = if (s.kind == "key") "transfer_key" else "transfer_too_large"
+                    }
                     var cause: Throwable? = error
                     while (cause != null) {
                         if (cause is android.system.ErrnoException && cause.errno == OsConstants.ENOSPC) failure = "transfer_storage"

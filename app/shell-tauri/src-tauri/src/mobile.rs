@@ -1086,7 +1086,7 @@ async fn pick_read(app: &tauri::AppHandle, token: &str, kind: Kind) -> Result<()
     let receipt = bridge.read(ticket, token, limit).await.map_err(|code| {
         if matches!(
             code.as_str(),
-            "transfer_too_large" | "transfer_storage" | "transfer_restart"
+            "transfer_too_large" | "transfer_key" | "transfer_storage" | "transfer_restart"
         ) {
             code
         } else {
