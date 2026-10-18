@@ -33,10 +33,44 @@ for (const selected of ["part", null]) {
       holders: [], parentId: "story", afterId: "scene",
     });
     expect(planPlacement(items, selected === null ? null : "later", "scene", "collection")).toEqual({
-      holders: [], parentId: selected === null ? "future" : "story", afterId: null,
+      holders: [], parentId: "future", afterId: null,
     });
   });
 }
+
+test("a selected collection part uses its last story, excluding sections and later parts", () => {
+  const items = [
+    item("earlier", null, "part", 0), item("a", "earlier", "chapter", 1),
+    item("part", null, "part", 0), item("b", "part", "chapter", 1),
+    item("nested", "part", "part", 1), item("c", "nested", "chapter", 2),
+    item("section", "c", "chapter", 3), item("scene", "section", "scene", 4),
+    item("later", null, "part", 0), item("d", "later", "chapter", 1),
+  ];
+  for (const selected of ["part", "nested"]) {
+    expect(planPlacement(items, selected, "scene", "collection")).toEqual({
+      holders: [], parentId: "c", afterId: null,
+    });
+  }
+  for (const [selected, parentId, afterId] of [
+    ["c", "c", null], ["section", "section", null],
+    ["scene", "section", "scene"], [null, "d", null],
+  ] as const) {
+    expect(planPlacement(items, selected, "scene", "collection")).toEqual({
+      holders: [], parentId, afterId,
+    });
+  }
+});
+
+test("an empty collection part keeps the preceding-story or new-story fallback", () => {
+  const part = item("part", null, "part", 0);
+  const story = item("story", null, "chapter", 0);
+  expect(planPlacement([story, part], "part", "scene", "collection")).toEqual({
+    holders: [], parentId: "story", afterId: null,
+  });
+  expect(planPlacement([part, story], "part", "scene", "collection")).toEqual({
+    holders: ["chapter"], parentId: "part", afterId: null,
+  });
+});
 
 test("story fields capture their row, save before export, and stop on a failed save", async () => {
   const original: StoryFields = { id: "second", title: "Forest", author: null, state: "draft", rev: 7 };

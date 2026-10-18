@@ -78,6 +78,23 @@ function valueOf(rig: Rig, key: string): string | null {
 }
 
 describe("opening and closing", () => {
+  test("each statistics group starts with its own heading before its rows", async () => {
+    const rig = mount();
+    try {
+      await rig.panel.open();
+      const groups = [...rig.el().querySelectorAll(".stat-group")];
+      expect(groups.length).toBeGreaterThan(0);
+      expect(groups.map(group => group.firstElementChild?.textContent)).toContain("By section");
+      for (const group of groups) {
+        expect(group.firstElementChild?.tagName).toBe("H3");
+        expect(group.firstElementChild?.className).toBe("stat-group-heading");
+        expect(group.children[1]?.className).toBe("stat-row");
+      }
+    } finally {
+      teardown(rig);
+    }
+  });
+
   test("it mounts hidden and the note is there before anything is measured", () => {
     const rig = mount();
     try {

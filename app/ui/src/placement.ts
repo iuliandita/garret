@@ -252,6 +252,16 @@ export function planPlacement(
     }
     if (itemType === "scene" && story === undefined) {
       const selectedIndex = items.findIndex((row) => row.id === selectedId);
+      const selected = chain[0];
+      if (selected?.type === "part") {
+        let lastStory: ProjectItem | undefined;
+        for (let index = selectedIndex + 1; index < items.length; index++) {
+          const row = items[index]!;
+          if (row.depth <= selected.depth) break;
+          if (stories.has(row.id)) lastStory = row;
+        }
+        if (lastStory !== undefined) return { holders: [], parentId: lastStory.id, afterId: null };
+      }
       const preceding = items.slice(0, selectedIndex < 0 ? items.length : selectedIndex).reverse().find((row) => stories.has(row.id));
       if (preceding !== undefined) return { holders: [], parentId: preceding.id, afterId: null };
       const top = chain.at(-1);

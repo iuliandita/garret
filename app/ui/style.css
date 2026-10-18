@@ -6136,10 +6136,11 @@ body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="t
 }
 
 .stat-group-heading {
+  display: block;
   font-size: var(--text-sm);
   font-weight: 500;
   color: var(--muted);
-  margin-bottom: 6px;
+  margin: 0 0 6px;
 }
 
 .stat-row {
