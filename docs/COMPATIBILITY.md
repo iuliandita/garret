@@ -1,3 +1,18 @@
+Upgrade preparation retains a complete verified `.point` bundle beside a book
+before the upcoming 17-to-18 activation. The desktop open flow and Android open
+flow have a separate upgrade decision; startup defers books needing that decision
+until the interface can ask. A missing original blocks upgrade and retains the
+incomplete copy for inspection. Copies include manuscript history, cast/cover
+originals and retained research. No original or uncertain copy is deleted.
+
+This preparation does not activate the migration or authoring: new books and
+production migrations still stop at 17, and the write gate remains off. Once
+activated, 0.0.5 and earlier will refuse schema 18; 0.0.6 reads and preserves it.
+Rollback requires restoring the complete pre-upgrade copy as a separate book
+with a supporting previous package. Writing after the upgrade is absent from
+that copy. Never lower `user_version` manually. Android continues to read notes,
+figures and breaks and edit surrounding prose; it cannot author those nodes.
+
 # Compatibility and recovery
 
 SQLite schema: 17.

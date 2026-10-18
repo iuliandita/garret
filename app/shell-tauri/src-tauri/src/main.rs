@@ -52,6 +52,7 @@ mod package_format;
 mod pdf;
 mod pictures;
 mod figures;
+mod format_upgrade;
 mod figure_salvage;
 mod printer;
 #[cfg(windows)]
@@ -1629,6 +1630,19 @@ fn set_open_project_locked(
 }
 
 #[command_boundary::command]
+fn project_upgrade_check(
+    library: State<'_, Library>, data_home: State<'_, DataHome>,
+    explicit: State<'_, ExplicitProject>, path: String,
+) -> Result<bool, String> {
+    let requested = PathBuf::from(&path);
+    if !may_open(&library.0, explicit.0.as_deref(), &projects::known(&data_home.0), &requested) {
+        return Err("not a project this application knows about".into());
+    }
+    if store::SCHEMA_VERSION < store::READ_SCHEMA_VERSION { return Ok(false); }
+    format_upgrade::required(&requested, store::SCHEMA_VERSION)
+}
+
+#[command_boundary::command]
 fn project_open_check(
     library: State<'_, Library>,
     data_home: State<'_, DataHome>,
@@ -1660,6 +1674,7 @@ fn project_open(
     mirror_root: State<'_, MirrorRoot>,
     path: String,
     decision: Option<book_open::Decision>,
+    upgrade_confirmed: Option<bool>,
 ) -> std::result::Result<ProjectOpened, String> {
     let requested = PathBuf::from(&path);
     if !may_open(
@@ -1673,6 +1688,9 @@ fn project_open(
         ));
     }
     let outgoing_generation = locked(&state).as_ref().map(|project| project.generation);
+    if store::SCHEMA_VERSION >= store::READ_SCHEMA_VERSION {
+        format_upgrade::retain(&requested, store::SCHEMA_VERSION, upgrade_confirmed == Some(true))?;
+    }
     // `open_for_writing`, for `try_open`'s reason: this is the other path a
     // writer opens a project through.
     let store = projects::open_existing_for_writing(&requested).map_err(|e| format!("{path}: {e}"))?;
@@ -3925,6 +3943,8 @@ fn open_and_prepare(store: store::Store, project_path: &Path, data_home: &Path, 
 }
 
 fn startup_needs_choice(path: &Path, data_home: &Path) -> bool {
+    if store::SCHEMA_VERSION >= store::READ_SCHEMA_VERSION
+        && format_upgrade::required(path, store::SCHEMA_VERSION).unwrap_or(true) { return true; }
     let Ok(reader) = store::Store::open_readonly(path) else { return false };
     match projects::read_settings_checked(data_home)
         .and_then(|settings| book_open::conflict(&reader, path, &settings))
@@ -4185,7 +4205,13 @@ fn main() {
                 );
                 process::exit(1);
             }
-            Some(open_and_prepare(open_or_exit(p, &startup_strings, false), p, &data_home, false))
+            if store::SCHEMA_VERSION >= store::READ_SCHEMA_VERSION
+                && format_upgrade::required(p, store::SCHEMA_VERSION).unwrap_or(true) {
+                pending_project = Some(p.to_path_buf());
+                None
+            } else {
+                Some(open_and_prepare(open_or_exit(p, &startup_strings, false), p, &data_home, false))
+            }
         }
         None => match startup_settings.start {
             projects::Start::Last => {
@@ -4466,6 +4492,7 @@ fn main() {
             __wire_project_retry_registration,
             __wire_project_open,
             __wire_project_open_check,
+            __wire_project_upgrade_check,
             __wire_project_current,
             __wire_project_rename,
             __wire_project_word_count,

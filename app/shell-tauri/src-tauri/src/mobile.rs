@@ -315,10 +315,13 @@ fn mobile_create(host: State<'_, MobileHost>, name: String) -> Result<Book, Stri
 }
 
 #[tauri::command]
-fn mobile_open(host: State<'_, MobileHost>, id: String) -> Result<Book, String> {
-    open_book(&host, &id)
+fn mobile_open(host: State<'_, MobileHost>, id: String, upgrade_confirmed: Option<bool>) -> Result<Book, String> {
+    open_book_with_upgrade(&host, &id, upgrade_confirmed == Some(true))
 }
 fn open_book(host: &MobileHost, id: &str) -> Result<Book, String> {
+    open_book_with_upgrade(host, id, false)
+}
+fn open_book_with_upgrade(host: &MobileHost, id: &str, consent: bool) -> Result<Book, String> {
     let mut session = host
         .session
         .lock()
@@ -341,6 +344,9 @@ fn open_book(host: &MobileHost, id: &str) -> Result<Book, String> {
         }
         Ok(())
     })?;
+    if store::SCHEMA_VERSION >= store::READ_SCHEMA_VERSION {
+        crate::format_upgrade::retain(&path, store::SCHEMA_VERSION, consent)?;
+    }
     let store = store::Store::open_existing(&path).map_err(|error| error.to_string())?;
     let name = store
         .get_meta(NAME_KEY)

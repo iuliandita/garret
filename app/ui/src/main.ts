@@ -366,6 +366,7 @@ async function main(): Promise<void> {
       });
       const bookCopyPrompt = createBookCopyPrompt(document.body);
 
+      let upgradeConfirmed = false;
       const performProjectSwitch = createProjectSwitcher<MountedProject>({
         current: () => current,
         setCurrent: (next) => {
@@ -373,6 +374,11 @@ async function main(): Promise<void> {
         },
         currentPath: () => currentPath,
         prepareOpen: async (path) => {
+          upgradeConfirmed = false;
+          if (await invoke("project_upgrade_check", { path })) {
+            if (!window.confirm(t("format-upgrade.prompt"))) return null;
+            upgradeConfirmed = true;
+          }
           dictionarySwitch += 1;
           preferences?.invalidateDictionary();
           await preferences?.drainDictionary();
@@ -380,7 +386,7 @@ async function main(): Promise<void> {
           return conflict === null ? undefined : bookCopyPrompt.choose(conflict);
         },
         openProject: async (path, decision) =>
-          (await invoke("project_open", { path, decision: decision ?? null })) as {
+          (await invoke("project_open", { path, decision: decision ?? null, upgradeConfirmed })) as {
             path: string;
             name: string;
             generation: number;

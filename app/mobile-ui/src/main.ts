@@ -39,7 +39,13 @@ async function open(command: "mobile_open" | "mobile_create", args: Record<strin
   setBusy(true);
   let opened: OpenBook | undefined;
   try {
-    const book = await native.core.invoke<OpenBook>(command, args);
+    let book: OpenBook;
+    try { book = await native.core.invoke<OpenBook>(command, args); }
+    catch (error) {
+      if (command !== "mobile_open" || String(error) !== "format_upgrade_required") throw error;
+      if (!window.confirm(m.formatUpgrade)) return;
+      book = await native.core.invoke<OpenBook>(command, { ...args, upgradeConfirmed: true });
+    }
     opened = book;
     let position: WritingPosition | undefined;
     let positionUnavailable = false;
