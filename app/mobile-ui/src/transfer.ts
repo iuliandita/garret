@@ -18,6 +18,7 @@ export function transferError(code: unknown, locale: "en" | "de") {
     return m.transferFormat.replace("{item}", code.slice("transfer_format:".length));
   }
   const messages: Record<string, string> = {
+    recipient_unknown: m.recipientUnknown, recipient_schema: m.recipientSchema, recipient_preset: m.recipientPreset,
     unsupported_schema: m.unsupportedSchema,
     unsupported_project_preset: m.unsupportedPreset,
     transfer_storage: m.transferStorage, transfer_too_large: m.transferTooLarge,
@@ -47,7 +48,15 @@ export async function showTransfer(mount: HTMLElement, options: {
   const state = element("p"); state.setAttribute("role", "status"); state.setAttribute("aria-live", "polite");
   const preview = element("div");
   const actions = element("div"); actions.className = "mobile-transfer-actions";
-  dialog.append(title, hint, limits, state, preview, actions);
+  const recipientLabel = element("label", m.recipientLabel);
+  const recipient = element("select");
+  recipient.setAttribute("aria-label", m.recipientLabel);
+  for (const [value, label] of [["", m.recipientUnknown], ["legacy005", m.recipientLegacy], ["reader006", m.recipientReader]]) {
+    const option = element("option", label); option.value = value; recipient.append(option);
+  }
+  recipientLabel.append(recipient);
+  recipientLabel.hidden = options.direction !== "export" || options.existing !== undefined;
+  dialog.append(title, hint, limits, recipientLabel, state, preview, actions);
   const lifecycle = window as Window & { __mobileTransfer?: boolean };
   lifecycle.__mobileTransfer = true;
   let status = options.existing;
@@ -101,6 +110,7 @@ export async function showTransfer(mount: HTMLElement, options: {
       const start = async (keyChoice: "existing" | "new") => {
         status = await options.invoke<TransferStatus>("mobile_transfer_start", {
           direction: options.direction, generation: options.generation, keyChoice,
+          ...(options.direction === "export" ? { recipient: recipient.value || null } : {}),
         });
         render();
       };
@@ -110,6 +120,7 @@ export async function showTransfer(mount: HTMLElement, options: {
       button(m.cancel, async () => close());
       return;
     }
+    recipientLabel.hidden = true;
     const phaseMessages: Record<string, string> = {
       key: options.direction === "export" ? m.transferExistingKey : m.transferKey, archive: m.transferArchive, save_key: m.transferSaveKey,
       save_archive: status.existing_key ? m.transferSaveArchiveExisting : m.transferSaveArchive, reading: m.transferReading, writing: m.transferWriting,

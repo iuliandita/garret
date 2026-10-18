@@ -31,6 +31,7 @@ pub fn flush(
     if opened_generation != claimed_generation {
         return Err("this request belongs to an older book session".into());
     }
+    store.validate_reader_saves(entries).map_err(|error| error.to_string())?;
     let acks = store
         .flush_with_sources(entries, attribution)
         .map_err(|error| error.to_string())?;

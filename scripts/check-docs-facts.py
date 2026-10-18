@@ -125,6 +125,9 @@ def check_releases(root: Path) -> None:
         raise ValueError("Published documentation cannot claim a future source version.")
     store = (root / "app/shell-tauri/src-tauri/src/store/mod.rs").read_text()
     schema = re.search(r"pub const SCHEMA_VERSION: i64 = (\d+);", store)
+    if not schema and re.search(r"pub const SCHEMA_VERSION: i64 = READ_SCHEMA_VERSION;", store):
+        boundary = (root / "app/shell-tauri/src-tauri/src/store/document_format.rs").read_text()
+        schema = re.search(r"pub const READ_SCHEMA_VERSION: i64 = (\d+);", boundary)
     if not schema or f"SQLite schema: {schema[1]}." not in (root / "docs/COMPATIBILITY.md").read_text():
         raise ValueError("Compatibility documentation differs from the canonical SQLite schema version.")
 

@@ -118,6 +118,7 @@ function host(opts: HostOpts = {}): Host {
     // `today` is a fixed slice of it rather than another moving number: the
     // tests here are about whether the page asks and repaints, and a second
     // moving figure would make a stale reading look like a fresh one.
+    if (cmd === "endnote_context") return { offset: 0 };
     if (cmd === "project_preset") return opts.preset ?? "novel";
     if (cmd === "project_progress") return { total: ++counted * WORD_COUNT_STEP, today: 40 };
     if (cmd === "project_items") {

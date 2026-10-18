@@ -1357,7 +1357,12 @@ fn mobile_transfer_start(
     direction: Direction,
     generation: u64,
     key_choice: KeyChoice,
+    recipient: Option<crate::recipient_compatibility::Recipient>,
 ) -> Result<TransferStatus, String> {
+    if direction == Direction::Export {
+        let session = host.session.lock().map_err(|_| "transfer_invalid")?;
+        crate::recipient_compatibility::check(&checked(&session, generation)?.store, recipient)?;
+    }
     let status = start_transfer(&host, direction, generation)?;
     if direction == Direction::Export && matches!(key_choice, KeyChoice::Existing) {
         host.session.lock().map_err(|_| "transfer_invalid")?.transfer.as_mut().unwrap().status.existing_key = true;
@@ -2372,6 +2377,10 @@ mod tests {
                 let root = tempfile::tempdir().unwrap();
                 let (host, id) = host(root.path());
                 let path = book_path(&host, &id).unwrap();
+                if version >= 18 {
+                    // A claimed reader schema needs its real registry, not just a header change.
+                    store::Store::open_existing(&path).unwrap().checkpoint().unwrap();
+                }
                 let connection = rusqlite::Connection::open(&path).unwrap();
                 connection
                     .pragma_update(None, "journal_mode", "WAL")
@@ -2382,9 +2391,6 @@ mod tests {
                         [preset],
                     )
                     .unwrap();
-                if version == 18 {
-                    connection.execute_batch(store::figure_assets::PROPOSED_MIGRATION).unwrap();
-                }
                 connection.pragma_update(None, "user_version", version).unwrap();
                 let mut connection = Some(connection);
                 if !wal {

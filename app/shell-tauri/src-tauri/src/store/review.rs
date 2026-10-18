@@ -1685,7 +1685,7 @@ mod tests {
     fn schema17_migrates_without_rewriting_prose_history_or_state() {
         let dir = tempdir().unwrap();
         let path = dir.path().join("book.db");
-        let store = Store::open(&path).unwrap();
+        let store = crate::store::historical_test_store(&path, 17);
         let scene = store.item_create(None, "scene", "Scene").unwrap();
         let rev = write(&store, &scene.id, scene.doc_rev.unwrap(), &doc("draft"));
         store

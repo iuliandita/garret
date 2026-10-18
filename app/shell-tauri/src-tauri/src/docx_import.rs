@@ -1110,7 +1110,7 @@ mod tests {
         assert_eq!(parsed.losses.missing_note_bodies, 1);
         assert_eq!(parsed.losses.note_drawings, 1);
         assert_eq!(parsed.losses.notes, 0);
-        let legacy = parse(&bytes, "notes").unwrap();
+        let legacy = parse_with_policy(&bytes, "notes", false).unwrap();
         assert_eq!(legacy.losses.notes, 4);
         assert!(owned_notes(&legacy).is_empty());
     }
@@ -1125,7 +1125,7 @@ mod tests {
                 crate::epub::Entry::text("word/endnotes.xml", notes),
                 crate::epub::Entry::text("word/media/unused.png", "unused"),
             ]);
-            let parsed = parse(&bytes, "book").unwrap();
+            let parsed = parse_with_policy(&bytes, "book", false).unwrap();
             assert_eq!(parsed.losses, Losses { notes: 3, pictures: 2, ..Losses::default() });
             assert_eq!(parsed.imported.items.len(), 1);
             assert_eq!(parsed.imported.items[0].title, "Scene");
@@ -1138,7 +1138,7 @@ mod tests {
             crate::epub::Entry::text("word/document.xml", &document),
             crate::epub::Entry::text("word/endnotes.xml", &separators),
         ]);
-        assert_eq!(parse(&bytes, "book").unwrap().losses, Losses::default());
+        assert_eq!(parse_with_policy(&bytes, "book", false).unwrap().losses, Losses::default());
     }
 
     #[test]
@@ -1151,7 +1151,7 @@ mod tests {
         assert_eq!(parsed.losses.note_drawings, 1);
         assert_eq!(parsed.losses.missing_note_bodies, 0);
         assert_eq!(notes.len(), 3);
-        let legacy = parse(bytes, "notes").unwrap();
+        let legacy = parse_with_policy(bytes, "notes", false).unwrap();
         assert_eq!(legacy.losses, Losses { notes: 3, ..Losses::default() });
         assert!(owned_notes(&legacy).is_empty());
     }

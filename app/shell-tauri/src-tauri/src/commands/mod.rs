@@ -19,3 +19,5 @@ pub(crate) mod revision_planning;
 pub(crate) mod settings;
 pub(crate) mod spell;
 pub(crate) mod synopsis;
+
+pub(crate) mod authoring;

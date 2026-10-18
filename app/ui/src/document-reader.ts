@@ -1,4 +1,6 @@
 import { Plugin } from "prosemirror-state";
+import { isHistoryTransaction } from "prosemirror-history";
+import type { Transaction } from "prosemirror-state";
 import type { Node as PmNode } from "prosemirror-model";
 import type { EditorView, NodeViewConstructor } from "prosemirror-view";
 import { t, formatNumber } from "./i18n";
@@ -22,13 +24,20 @@ export function atomSignature(doc: PmNode): string {
 }
 
 /** Reader builds permit prose edits, but never manufacture or change atoms. */
-export function preserveAtoms(): Plugin {
+export function mayChangeAtoms(tr: Transaction, authoring = false): boolean {
+  return authoring && (tr.getMeta("documentAuthoring") === true || isHistoryTransaction(tr));
+}
+
+export function preserveAtoms(authoring = false): Plugin {
   return new Plugin({
-    filterTransaction: (tr, state) => !tr.docChanged || atomSignature(tr.doc) === atomSignature(state.doc),
+    filterTransaction: (tr, state) => !tr.docChanged || mayChangeAtoms(tr, authoring) || atomSignature(tr.doc) === atomSignature(state.doc),
   });
 }
 
-export function readerViews(load?: LoadFigurePreview): Record<string, NodeViewConstructor> {
+export function readerViews(load?: LoadFigurePreview, options: {
+  editNote?: (pos: number) => void;
+  noteOffset?: () => number;
+} = {}): Record<string, NodeViewConstructor> {
   return {
     endnote(node, view: EditorView, getPos) {
       const dom = document.createElement("span");
@@ -36,18 +45,22 @@ export function readerViews(load?: LoadFigurePreview): Record<string, NodeViewCo
       dom.contentEditable = "false";
       const button = document.createElement("button");
       button.type = "button";
-      let number = 1;
+      button.dataset.endnoteId = node.attrs.id as string;
+      let number = (options.noteOffset?.() ?? 0) + 1;
       const pos = getPos();
       if (pos !== undefined) view.state.doc.nodesBetween(0, pos, child => { if (child.type.name === "endnote") number++; });
       button.textContent = formatNumber(number);
-      button.setAttribute("aria-label", t("document.note-reference", { number: formatNumber(number) }));
+      button.setAttribute("aria-label", t(options.editNote ? "authoring.reference" : "document.note-reference", { number: formatNumber(number) }));
       button.setAttribute("aria-expanded", "false");
       const body = document.createElement("span");
       body.className = "document-endnote-body";
       body.textContent = node.attrs.body as string;
       body.hidden = true;
       const close = () => { body.hidden = true; button.setAttribute("aria-expanded", "false"); };
-      button.addEventListener("click", () => { body.hidden = !body.hidden; button.setAttribute("aria-expanded", String(!body.hidden)); });
+      button.addEventListener("click", () => {
+        const position = getPos();
+        if (options.editNote && position !== undefined) { options.editNote(position); return; }
+        body.hidden = !body.hidden; button.setAttribute("aria-expanded", String(!body.hidden)); });
       dom.addEventListener("keydown", event => { if (event.key === "Escape") { close(); button.focus(); event.preventDefault(); event.stopPropagation(); } });
       dom.append(button, body);
       return { dom, stopEvent: () => true, ignoreMutation: () => true };
@@ -85,4 +98,17 @@ export function readerViews(load?: LoadFigurePreview): Record<string, NodeViewCo
       return { dom, ignoreMutation: () => true, destroy() { alive = false; observer?.disconnect(); } };
     },
   };
+}
+
+export function refreshNoteReferences(view: EditorView, offset: number, editable = false): void {
+  const numbers = new Map<string, number>();
+  view.state.doc.descendants(node => {
+    if (node.type.name === "endnote") numbers.set(node.attrs.id as string, offset + numbers.size + 1);
+  });
+  for (const button of view.dom.querySelectorAll<HTMLButtonElement>("button[data-endnote-id]")) {
+    const number = numbers.get(button.dataset.endnoteId!);
+    if (number === undefined) continue;
+    button.textContent = formatNumber(number);
+    button.setAttribute("aria-label", t(editable ? "authoring.reference" : "document.note-reference", { number: formatNumber(number) }));
+  }
 }

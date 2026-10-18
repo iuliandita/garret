@@ -62,3 +62,10 @@ pub(crate) fn reader_fixture_with_image(path: &Path, image: &[u8]) -> (Store, St
     store.snapshot_create("Before reader edits").unwrap();
     (store, id, body)
 }
+
+/// A test-only handle for exercising refusals without migrating the fixture.
+pub(crate) fn writable_legacy(path: &Path) -> Store {
+    let conn = rusqlite::Connection::open(path).unwrap();
+    register_collations(&conn).unwrap();
+    Store { conn }
+}

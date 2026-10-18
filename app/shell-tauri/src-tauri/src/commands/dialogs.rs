@@ -444,6 +444,8 @@ pub(crate) async fn encrypted_archive_create(
     state: State<'_, StoreState>,
     data_home: State<'_, DataHome>,
     expected_generation: u64,
+    for_device: Option<bool>,
+    recipient: Option<crate::recipient_compatibility::Recipient>,
 ) -> Result<Option<crate::encrypted_archive::ArchiveInfo>, String> {
     let (source, generation) = {
         let guard = locked(&state);
@@ -451,6 +453,7 @@ pub(crate) async fn encrypted_archive_create(
         if project.generation != expected_generation {
             return Err("the open project changed before encrypting".into());
         }
+        if for_device == Some(true) { crate::recipient_compatibility::check(&project.store, recipient)?; }
         (project.path.clone(), project.generation)
     };
     let epoch = dialog_epoch(&app);
@@ -477,6 +480,10 @@ pub(crate) async fn encrypted_archive_create(
     let stage_home = data_home.0.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
         let _passing = crate::recovery::PASSING.lock().map_err(|_| "backup is busy")?;
+        if for_device == Some(true) {
+            let copied = crate::store::Store::open_readonly(&source).map_err(|error| error.to_string())?;
+            crate::recipient_compatibility::check(&copied, recipient)?;
+        }
         crate::encrypted_archive::create_from_project(&source, &dest, &key, &stage_home)
     }).await.map_err(|_| "encrypted archive task failed")??;
     Ok(Some(result))
