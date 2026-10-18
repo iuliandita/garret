@@ -3,7 +3,7 @@ use super::{document_format, Result, Store, StoreError, TIMELINE_TYPE};
 use rusqlite::Connection;
 use std::collections::{BTreeMap, HashSet};
 
-pub const SCHEMA_VERSION: i64 = 18;
+pub use super::document_format::READ_SCHEMA_VERSION;
 
 // Deliberately absent from the production migration ladder. Activation must use
 // this same SQL; tests install only the proposed table in disposable v17 books.
@@ -81,7 +81,7 @@ pub(crate) fn read(conn: &Connection) -> Result<Registry> {
     )?;
     if !present {
         let version: i64 = conn.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        if version >= SCHEMA_VERSION {
+        if version >= READ_SCHEMA_VERSION {
             return Err(StoreError::Corrupt(
                 "figure registry: table is missing".into(),
             ));
@@ -161,7 +161,7 @@ impl Store {
     }
 
     pub(crate) fn register_figure_asset(&self, asset: &FigureAsset) -> Result<()> {
-        if !document_format::new_nodes_allowed() || self.user_version()? < SCHEMA_VERSION {
+        if !document_format::new_nodes_allowed() || self.user_version()? < READ_SCHEMA_VERSION {
             return Err(StoreError::InvalidDocument(
                 "figure registration is disabled".into(),
             ));

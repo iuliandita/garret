@@ -26,7 +26,7 @@ or an internet connection to write. Your books stay on your own disk.
 
 > **Early alpha.** garret moves fast; keep backups of your work.
 
-The current published build is [0.0.4 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.4).
+The current published build is [0.0.5 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.5).
 See [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
 
@@ -152,7 +152,7 @@ release for you:
 
 1. Add `https://github.com/iuliandita/garret` as an app source.
 2. Pick the asset whose name ends in `-android.apk`, for example
-   `garret-0.0.5-android.apk`. The `-android-info.zip` asset holds instructions
+   `garret-0.0.6-android.apk`. The `-android-info.zip` asset holds instructions
    and build details; it is not installable.
 3. Check the signing certificate. Obtainium shows the certificate hash for the
    installed app on its app page; the SHA-256 digest must be

@@ -424,7 +424,7 @@ impl Store {
         version_id: i64,
         base_rev: i64,
     ) -> Result<RestoredDoc> {
-        self.doc_restore_validated(item_id, version_id, base_rev, |body| self.validate_body_write(item_id, body))
+        self.doc_restore_validated(item_id, version_id, base_rev, |body| self.validate_body_read(item_id, body))
     }
 
     fn doc_restore_validated(
@@ -839,7 +839,7 @@ impl Store {
             let body = body.ok_or(StoreError::NotFound {
                 item_id: format!("version {version_id} of {item_id} in snapshot {snapshot_id}"),
             })?;
-            let body = normalized_restore_body(&body, |body| self.validate_body_write(item_id, body))?;
+            let body = normalized_restore_body(&body, |body| self.validate_body_read(item_id, body))?;
             let current: Option<(String, i64)> = self
                 .conn
                 .query_row(
@@ -959,7 +959,7 @@ impl Store {
                 if was == current {
                     continue;
                 }
-                let was = normalized_restore_body(was, |body| self.validate_body_write(item_id, body))?;
+                let was = normalized_restore_body(was, |body| self.validate_body_read(item_id, body))?;
                 if source_words::eligible(&self.conn, item_id)? {
                     source_movements.push(source_words::directional(
                         WordSource::Restored,

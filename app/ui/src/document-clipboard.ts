@@ -1,6 +1,26 @@
 import { Fragment, Slice, type Node as PmNode } from "prosemirror-model";
 import { validDocumentShape } from "./document-format";
 
+function imagePayload(text: string): boolean {
+  const value = text.trim();
+  if (/^data:(?:image\/[^,\s]*,|[^,;\s]+;base64,)/i.test(value)) return true;
+  if (value.length >= 256 && /^[A-Za-z0-9+/\r\n]+={0,2}$/.test(value)) return true;
+  if (!value.startsWith("<") || !/<(?:svg|img|picture)\b/i.test(value)) return false;
+  return value.replace(/<svg\b[^>]*>[\s\S]*?<\/svg\s*>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]*>/g, "").replace(/&nbsp;|&#160;/gi, "").trim() === "";
+}
+
+export function refusesPicture(data: DataTransfer | null): boolean {
+  if (!data) return false;
+  const plain = data.getData("text/plain");
+  const html = data.getData("text/html");
+  // Only whole image markup, data URIs, or long base64-alphabet tokens (optional
+  // line wrapping) qualify; spaces/punctuation in prose keep its normal path.
+  if (imagePayload(plain) || imagePayload(html)) return true;
+  const hasProse = plain.trim() !== "" || html.replace(/<[^>]*>/g, "").trim() !== "";
+  return !hasProse && (Array.from(data.types ?? []).some(type => /^image\//i.test(type) || type === "Files") || data.files.length > 0);
+}
+
 export function validateClipboardHtml(html: string): void {
   if (!html.includes("data-garret-")) return;
   const root = document.createElement("div");

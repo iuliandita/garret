@@ -98,7 +98,7 @@ test("formatting and comment ranges preserve whole atoms beside astral character
   } finally { editor.destroy(); mount.remove(); }
 });
 
-test("editor paste remints note IDs and refuses malformed or duplicate atom HTML", () => {
+test("reader editor refuses new, malformed and duplicate pasted atoms", () => {
   const mount = document.createElement("div"); document.body.append(mount);
   let refused = 0;
   const editor = createEditor(mount, { kind: "pmjson", json: readableBody(JSON.stringify(atomDoc()))! }, { onClipboardRefused: () => refused++ });
@@ -114,15 +114,15 @@ test("editor paste remints note IDs and refuses malformed or duplicate atom HTML
     const doc = schema.nodeFromJSON(JSON.parse(editor.serialize()));
     const notes: string[] = [];
     doc.descendants(node => { if (node.type.name === "endnote") notes.push(node.attrs.id as string); });
-    expect(notes.length).toBe(2);
-    expect(new Set(notes).size).toBe(2);
+    expect(notes.length).toBe(1);
+    expect(new Set(notes).size).toBe(1);
     expect(notes).toContain(note.attrs.id as string);
     const before = editor.serialize();
     paste(html.innerHTML + html.innerHTML);
     expect(editor.serialize()).toBe(before);
     paste(`<sup data-garret-endnote='{"id":"bad","fmt":"html","body":"lost"}'>lost</sup>`);
     expect(editor.serialize()).toBe(before);
-    expect(refused).toBe(2);
+    expect(refused).toBe(3);
   } finally { editor.destroy(); mount.remove(); }
 });
 

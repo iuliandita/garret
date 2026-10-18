@@ -1,3 +1,4 @@
+import { chapterItemsIn } from "./outline-items";
 import { projectPreset, referenceTitle, type ProjectPreset } from "./project-preset";
 // app/ui/src/project.ts
 // Page assembly for one open project: source, navigator, editor, failure
@@ -31,7 +32,6 @@ import { mountTimeline, type TimelineMount } from "./timeline-view";
 import { parseTimeline } from "./timeline-model";
 import {
   createOutline,
-  chapterItemsIn,
   isReferencesPage,
   isTrashedIn,
   liveItemsIn,
@@ -688,7 +688,11 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
   // alike, rather than four places that could disagree about it.
   let timelineMount: TimelineMount | null = null;
   const editor = createEditor(editorEl, editorInput, {
-    onClipboardRefused: () => raiseNotice(t("document.clipboard-refused")),
+    figurePreview: async (instanceId, assetId) => await invoke("figure_preview", {
+      itemId: session?.activeDocId() ?? activeDocId, instanceId, assetId,
+    }) as PictureView,
+    onAtomEditRefused: () => raiseNotice(t("document.atoms-read-only")),
+    onClipboardRefused: reason => raiseNotice(t(reason === "picture" ? "document.picture-refused" : "document.clipboard-refused")),
     onChange: (change) => {
       // Once per document-changing transaction, same as the word count
       // above: the module arms once and returns early after, so the

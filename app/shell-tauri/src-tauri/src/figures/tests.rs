@@ -90,20 +90,8 @@ fn proposed_migration_preserves_prose_history_and_states_without_activating() {
     let conn = rusqlite::Connection::open(&db).unwrap();
     conn.pragma_update(None, "user_version", 18).unwrap();
     drop(conn);
-    assert!(matches!(
-        Store::open_existing(&db),
-        Err(crate::store::StoreError::NewerSchema {
-            found: 18,
-            supported: 17
-        })
-    ));
-    assert!(matches!(
-        Store::open_readonly(&db),
-        Err(crate::store::StoreError::NewerSchema {
-            found: 18,
-            supported: 17
-        })
-    ));
+    assert_eq!(Store::open_existing(&db).unwrap().user_version().unwrap(), 18);
+    assert_eq!(Store::open_readonly(&db).unwrap().user_version().unwrap(), 18);
 }
 
 #[test]

@@ -7,7 +7,7 @@ import {
   NOTE_TYPE,
   TRASH_TYPE,
 } from "../src/item-types";
-import { chapterItemsIn } from "../src/outline";
+import { chapterItemsIn } from "../src/outline-items";
 import { adoptionPreservesOrder, lastManuscriptRootId, planAdoption, planPlacement } from "../src/placement";
 import type { ProjectItem } from "../src/store/source";
 

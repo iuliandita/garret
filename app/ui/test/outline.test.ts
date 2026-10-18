@@ -1,3 +1,4 @@
+import { chapterItemsIn } from "../src/outline-items";
 import { describe, expect, test } from "bun:test";
 import {
   BACK_MATTER_TYPE,
@@ -10,7 +11,6 @@ import {
   TRASH_TYPE,
 } from "../src/item-types";
 import {
-  chapterItemsIn,
   createOutline,
   isTrashedIn,
   liveItemsIn,
@@ -2529,4 +2529,23 @@ test("short fiction creates ordered siblings, an explicit chapter, then a part w
     ["scene", null, "s1"], ["chapter", null, "made-1"], ["part", null, "made-2"],
   ]);
   expect(r.created).toEqual(["made-1", "made-2", "made-3"]);
+});
+
+test("an empty collection part creates a numbered story and scene with one undo", async () => {
+  const before = [...walk(), item("trash", null, 0, 1, "Trash", "trash")];
+  const story = item("made-1", "p2", 1, 1, "Story 1", "chapter");
+  const scene = item("made-2", "made-1", 2, 1, "Scene 1");
+  const withStory = [...before.slice(0, -1), story, before.at(-1)!];
+  const withScene = [...withStory.slice(0, -1), scene, before.at(-1)!];
+  const r = await seeded({ preset: "collection", selected: "p2", walks: [before, withStory, withScene] });
+  expect(await r.outline.create("scene")).toBe("applied");
+  expect(r.calls.filter((call) => call.cmd === "item_create").map((call) => call.args)).toEqual([
+    { generation: 17, parentId: "p2", afterId: null, itemType: "chapter", title: "Story 1" },
+    { generation: 17, parentId: "made-1", afterId: null, itemType: "scene", title: "Scene 1" },
+  ]);
+  expect(r.created).toEqual(["made-2"]);
+  expect(await r.outline.undo()).toBe("applied");
+  expect(r.calls.filter((call) => call.cmd === "item_move").map((call) => [call.args?.id, call.args?.newParentId])).toEqual([["made-1", "trash"]]);
+  expect(r.outline.canUndo()).toBe(false);
+  expect(r.failures).toEqual([]);
 });

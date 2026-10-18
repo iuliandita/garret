@@ -4403,6 +4403,7 @@ fn main() {
             commands::cast::__wire_cast_set,
             commands::cast::__wire_cast_remove,
             commands::cast::__wire_cast_picture_view,
+            commands::figures::__wire_figure_preview,
             commands::cast::__wire_cast_picture_clear,
             commands::cast::__wire_cast_picture_full,
             commands::appearances::__wire_appearances_list,
