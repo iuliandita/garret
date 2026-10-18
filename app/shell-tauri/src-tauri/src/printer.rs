@@ -638,6 +638,67 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires an isolated X display, WebKit and Poppler tools"]
+    fn typed_dashes_stay_on_one_line_and_page() {
+        let watchdog = TestWatchdog::start(std::time::Duration::from_secs(90));
+        gtk::init().unwrap();
+        let token = format!("{}--{}", "1".repeat(39), "123456789--".repeat(20));
+        let flow = format!("<p>123456789-- tail</p><p>123456789-<em>-</em> tail</p><p>123456789--- tail</p><p data-proof-break=\"page\">{token}</p>");
+        let html = r#"<!doctype html><html><head><style>
+          @page { size: 180px 150px; margin: 0; }
+          html,body { margin: 0; font: 16px/20px monospace; }
+          .proof-leaf { width: 180px; height: 150px; box-sizing: border-box;
+            padding: 10px; display: flex; flex-direction: column; break-after: page; }
+          .proof-runhead,.proof-folio { height: 20px; flex: 0 0 auto; }
+          .proof-text { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+          p { width: 10.5ch; margin: 0; overflow-wrap: anywhere; hyphens: auto; }
+          </style><script type="application/json" id="proof-meta">
+          {"book":"Typed dashes","font":"monospace","newPage":false,"markupLimit":null}
+          </script></head><body><div id="proof-flow">__FLOW__</div>
+          <div id="proof-leaves"></div><script>__SCRIPT__</script><script>
+          if (window.__proof) {
+            var glyphs = [], text = '', marked = '';
+            document.querySelectorAll('.proof-text').forEach(function(column, page) {
+              var walk = document.createTreeWalker(column, NodeFilter.SHOW_TEXT);
+              while (walk.nextNode()) {
+                var node = walk.currentNode;
+                text += node.data;
+                for (var i = 0; i < node.length; i++) {
+                  var range = document.createRange();
+                  range.setStart(node, i); range.setEnd(node, i + 1);
+                  var box = range.getBoundingClientRect();
+                  glyphs.push({ch:node.data[i], page:page, y:box.top});
+                }
+              }
+              column.querySelectorAll('em').forEach(function(em) { marked += em.textContent; });
+            });
+            var splits = glyphs.filter(function(glyph, i) {
+              var previous = glyphs[i - 1];
+              return previous && previous.ch === '-' && glyph.ch === '-' &&
+                (previous.page !== glyph.page || Math.abs(previous.y - glyph.y) > 1);
+            }).length;
+            window.__proof.pages.push(JSON.stringify({text:text, marked:marked, splits:splits}));
+          }
+          </script></body></html>"#
+            .replace("__FLOW__", &flow)
+            .replace("__SCRIPT__", crate::pdf::PAGINATOR_JS);
+        let directory = tempfile::tempdir().unwrap();
+        let dest = directory.path().join("dashes.pdf");
+        let mut printed = render_for_test(&html, Some(&dest), (47_625, 39_688), &watchdog).unwrap();
+        let probe: serde_json::Value = serde_json::from_str(&printed.report.pages.pop().unwrap()).unwrap();
+        if let Some(output) = std::env::var_os("GARRET_DASH_TEST_OUTPUT") {
+            let output = std::path::PathBuf::from(output);
+            std::fs::create_dir_all(&output).unwrap();
+            std::fs::copy(&dest, output.join("dashes.pdf")).unwrap();
+            std::fs::write(output.join("geometry.json"), serde_json::to_string_pretty(&probe).unwrap()).unwrap();
+        }
+        assert!(printed.report.leaves > 1);
+        assert_eq!(probe["text"], format!("123456789-- tail123456789-- tail123456789--- tail{token}"));
+        assert_eq!(probe["marked"], "-");
+        assert_eq!(probe["splits"], 0, "a typed dash split across lines or pages: {probe}");
+    }
+
+    #[test]
     #[ignore = "requires an isolated X display and a live WebKit process"]
     fn rich_paragraphs_keep_text_and_marks_and_oversized_headings_refuse() {
         let watchdog = TestWatchdog::start(std::time::Duration::from_secs(90));
