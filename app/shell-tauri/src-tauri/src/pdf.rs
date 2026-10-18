@@ -557,7 +557,7 @@ pub fn anchor_id(id: &str) -> String {
 /// `dist` would make a book depend on a build directory. It is small, it is
 /// tested through the rendered document and through the rigs, and it has one
 /// home.
-pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), r#"
+pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), include_str!("pdf/dashes.js"), r#"
 (function () {
   "use strict";
   var flow = document.getElementById("proof-flow");
@@ -617,6 +617,7 @@ pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), r#"
     return page;
   }
 
+  proofKeepDashes(flow);
   var blocks = [];
   while (flow.firstElementChild) blocks.push(flow.removeChild(flow.firstElementChild));
 
@@ -810,9 +811,15 @@ pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), r#"
     }
     function codepoints() {
       var breaks = [], offset = 0;
+      var guarded = new Set(), dashes = /-{2,}/g, dash;
+      while ((dash = dashes.exec(whole)) !== null) {
+        if (dash[0].length <= 3) {
+          for (var i = 1; i < dash[0].length; i++) guarded.add(dash.index + i);
+        }
+      }
       for (var character of whole) {
         offset += character.length;
-        if (offset < whole.length) breaks.push(offset);
+        if (offset < whole.length && !guarded.has(offset)) breaks.push(offset);
       }
       return breaks;
     }

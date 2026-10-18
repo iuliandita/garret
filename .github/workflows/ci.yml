@@ -108,7 +108,9 @@ jobs:
               cargo test --locked --bin garret -- --ignored --exact --test-threads=1 \
                 printer::tests::rich_paragraphs_keep_text_and_marks_and_oversized_headings_refuse &&
               cargo test --locked --bin garret -- --ignored --exact --test-threads=1 \
-                printer::tests::notes_figures_and_plates_decode_before_layout_and_print_intact'; then
+                printer::tests::notes_figures_and_plates_decode_before_layout_and_print_intact &&
+              cargo test --locked --bin garret -- --ignored --exact --test-threads=1 \
+                printer::tests::typed_dashes_stay_on_one_line_and_page'; then
             exit 0
           else
             status=$?

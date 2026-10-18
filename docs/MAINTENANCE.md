@@ -270,6 +270,14 @@ and identify historical images explicitly; never relabel an older screenshot
 as a new release. A matching hash cannot prove visual correctness or freshness.
 Review the running app and inspect the affected captures when behavior changes.
 
+PDF proofs keep typed two- and three-hyphen dashes together, including across
+inline formatting and page boundaries. Longer hyphen rules retain their line
+and page break points. The isolated display regression
+`printer::tests::typed_dashes_stay_on_one_line_and_page` measures glyph positions
+and checks that text and formatting survive pagination, including oversized
+hyphen runs in prose and headings. This proof-only layout
+rule does not rewrite manuscript text or change legacy export goldens.
+
 The release registry checks its recorded tag, source version and platform
 inventory offline. Updating it is an explicit observation of published state;
 the guard cannot independently prove remote publication. Proposed features
