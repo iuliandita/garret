@@ -58,13 +58,12 @@ import { nodeToPress, type PressSelector, pressPoint } from "./press-selector";
 import { buildResult, writeResult } from "./results";
 import { descendantsByComm, sumTreeRssKb } from "./rss";
 import { probeRenderer, type RendererRecord } from "./renderer";
-import { BIN, SHELL_PROC_NAME, assertAtspiBridgeEnabled, freeDisplayNumber, survivingShellPids } from "./shell";
+import { BIN, SHELL_PROC_NAME, SHELL_WINDOW_CLASS_PATTERN, assertAtspiBridgeEnabled, freeDisplayNumber, survivingShellPids } from "./shell";
 import { parseGeometry } from "./window-size";
 
 const DIST = "app/ui/dist";
 const FIXTURE = "lab/fixtures/out/tiny";
 const RESULTS = "app/results";
-const CLASS = "^[Aa]pp-shell-tauri$";
 
 /** How long to let the ten-second mirror schedule come round, with room. */
 const MIRROR_WAIT_MS = 16_000;
@@ -173,7 +172,7 @@ function xdo(args: string[]): string {
 }
 
 function windowId(): string | null {
-  const p = Bun.spawnSync(["xdotool", "search", "--onlyvisible", "--class", CLASS], {
+  const p = Bun.spawnSync(["xdotool", "search", "--onlyvisible", "--class", SHELL_WINDOW_CLASS_PATTERN], {
     env: { ...process.env, DISPLAY: display },
     stdout: "pipe",
     stderr: "pipe",

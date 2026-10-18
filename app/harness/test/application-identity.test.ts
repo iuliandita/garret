@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { SHELL_WINDOW_CLASS_PATTERN } from "../src/shell";
+import { matchesShellWindowClass, SHELL_WINDOW_CLASS_PATTERN } from "../src/shell";
 
 test("Android inherits the shared application identifier", () => {
   const config = (name: string): { identifier?: string } => JSON.parse(readFileSync(
@@ -19,8 +19,12 @@ test("window lookup accepts the application identifier and legacy classes, witho
     new URL("../../shell-tauri/src-tauri/tauri.conf.json", import.meta.url), "utf8",
   )) as { identifier: string };
   const pattern = new RegExp(SHELL_WINDOW_CLASS_PATTERN);
-  for (const name of [identifier, "garret", "Garret"]) expect(pattern.test(name)).toBe(true);
-  for (const name of ["comXusegarretXapp", `${identifier}.other`, `other.${identifier}`, "garret-other"]) {
+  for (const name of [identifier, "garret", "Garret"]) {
+    expect(pattern.test(name)).toBe(true);
+    expect(matchesShellWindowClass(name)).toBe(true);
+  }
+  for (const name of ["comXusegarretXapp", `${identifier}.other`, `other.${identifier}`, "garret-other", "App-shell-tauri", "app-shell-tauri", "cc.local.app", ""]) {
     expect(pattern.test(name)).toBe(false);
+    expect(matchesShellWindowClass(name)).toBe(false);
   }
 });

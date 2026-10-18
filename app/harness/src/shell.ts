@@ -53,6 +53,12 @@ export const SHELL_PROC_NAME = "garret";
 // Keep the legacy class and app_id spellings for older binaries and sessions.
 export const SHELL_WINDOW_CLASS_PATTERN = "^(com[.]usegarret[.]app|[Gg]arret)$";
 
+const shellWindowClass = new RegExp(SHELL_WINDOW_CLASS_PATTERN);
+
+export function matchesShellWindowClass(windowClass: string): boolean {
+  return shellWindowClass.test(windowClass);
+}
+
 // GTK also creates an unmapped 10x10 group leader with a legacy class.
 // Restrict the lookup to mapped windows and still refuse ambiguous matches,
 // such as a manuscript window with an open native dialog.
