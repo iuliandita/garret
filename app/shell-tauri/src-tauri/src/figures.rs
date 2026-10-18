@@ -4,8 +4,8 @@ use crate::{
     backup_bundle, pictures,
     store::{
         document_format,
-        figure_assets::{FigureAsset, READ_SCHEMA_VERSION},
-        Store,
+        figure_assets::FigureAsset,
+        Store, READ_SCHEMA_VERSION,
     },
 };
 use sha2::{Digest, Sha256};
