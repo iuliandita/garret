@@ -128,6 +128,7 @@ export const EN = {
   "document.figure-placeholder": "Figure original not included",
   "document.plaintext-loss": "Plain text copy: formatting, structure, and figure originals are not included.",
   "document.clipboard-refused": "This content could not be pasted safely. Figure originals must be copied through the book first.",
+  "document.picture-refused": "Pictures can't be pasted into the manuscript yet.",
   "editor.name": "Manuscript editor",
   // panel-shell.ts: the Close icon every anchored panel shares.
   "panel.close": "Close {title}",

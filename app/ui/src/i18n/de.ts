@@ -124,6 +124,7 @@ export const DE = {
   "document.figure-placeholder": "Bildoriginal nicht enthalten",
   "document.plaintext-loss": "Textkopie: Formatierung, Struktur und Bildoriginale sind nicht enthalten.",
   "document.clipboard-refused": "Dieser Inhalt konnte nicht sicher eingefügt werden. Bildoriginale müssen zuerst in das Buch kopiert werden.",
+  "document.picture-refused": "Bilder können noch nicht in das Manuskript eingefügt werden.",
   "editor.name": "Manuskripteditor",
   // panel-shell.ts: the Close icon every anchored panel shares.
   "panel.close": "{title} schließen",
