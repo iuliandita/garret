@@ -31,10 +31,14 @@ archive and keep `dist` beside `garret.exe`.
 
 ## macOS
 
-Open the dmg for Apple Silicon (`arm64`) or Intel (`x86_64`) and drag garret into
-Applications. Close an existing copy before replacing it. The application zip
-remains available. These builds have no purchased signing identity or Apple
-notarization; native functionality still needs platform testing.
+Open the dmg for Apple Silicon (`arm64`) or Intel (`x86_64`), agree to the GPL
+license it shows, and drag garret into Applications. Close an existing copy
+before replacing it. The application zip remains available.
+
+The builds are not notarized by Apple, so the first launch shows "garret Not
+Opened". Choose Done, then open System Settings > Privacy & Security and choose
+Open Anyway next to the garret message. Alternatively, run
+`xattr -dr com.apple.quarantine /Applications/garret.app` once in Terminal.
 
 ## Upgrade, remove, or return to an older version
 

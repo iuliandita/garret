@@ -219,6 +219,18 @@ diagnostics and detaches only images from the current build's bundle directory.
 Other bundler failures stop immediately. Signing, content verification and
 release eligibility checks still apply.
 
+After publishing, dispatch the "Package smoke" workflow with the release tag. It
+downloads each published installer, checks it against `SHA256SUMS`, installs it
+as a user would and launches it: deb on Ubuntu 24.04 and 26.04, rpm on Fedora,
+AppImage and the tar.gz on Ubuntu, the dmg on macOS Apple Silicon and Intel, the
+setup executable on Windows x64 and Windows on ARM, and the APK on an x86_64
+Android emulator. Linux launches run under Xvfb inside a D-Bus session, because
+the system WebKitGTK sandbox stays blank without one. A Linux or Windows job
+passes only when the window title shows the loaded Library. The macOS jobs also
+capture the first launch with the download quarantine flag, which shows the
+unsigned-app prompt. Screenshots and logs are uploaded per variant. Runners are
+server images, so this does not replace testing on real desktops.
+
 ## Source impact and assessments
 
 The single domain map lives in scripts/check-docs.py. Inspect it with

@@ -84,7 +84,7 @@ jobs:
             echo "garret exited during startup"; cat "$out/app-$label.log"; exit 1
           fi
           import -window root "$out/$label.png"
-          kill "$pid"; sleep 2
+          kill "$pid"; pkill -x garret || true; sleep 2
           if ! grep -q '"Library - garret"' "$out/diagnostics-$label.txt"; then
             echo "garret is running but its interface never loaded"; cat "$out/diagnostics-$label.txt" "$out/app-$label.log"; exit 1
           fi
@@ -203,7 +203,7 @@ jobs:
           $bmp.Save((Join-Path $out "windows-${{ matrix.name }}-screen.png"))
           $p.Refresh()
           "title: $($p.MainWindowTitle)" | Tee-Object (Join-Path $out 'window.txt')
-          if ($p.MainWindowHandle -eq 0) { throw 'garret has no main window' }
+          if ($p.MainWindowTitle -ne 'Library - garret') { throw 'garret is running but its interface never loaded' }
           Add-Type @'
           using System; using System.Runtime.InteropServices;
           public static class Win {
