@@ -19,18 +19,9 @@ def dump(name):
     return list(ET.parse(FIXTURES / f"{name}.xml").getroot().iter("node"))
 
 
-def hidden_dialog():
-    nodes = dump("outline-keyboard")
-    dialog = next(n for n in nodes if n.get("class") == "android.app.Dialog")
-    left, _, right, bottom = smoke.bounds(dialog)
-    button = next(n for n in nodes if n.get("text") == "Add scene")
-    button.set("bounds", f"[{left},{bottom}][{right},{bottom}]")
-    return nodes
-
-
 class AndroidSmokeTests(unittest.TestCase):
     def test_scene_buttons_match_only_exact_or_contextual_labels(self):
-        button = next(n for n in dump("outline-keyboard") if n.get("text") == "Scene 1")
+        button = next(n for n in dump("outline-keyboard") if n.get("text") == "Chapter 1, Scene 1")
         for attribute in ("text", "content-desc"):
             for label, expected in (("Scene 1", True), ("Chapter 1, Scene 1", True),
                                     ("Szene 1", True), ("Kapitel 1, Szene 1", True),
@@ -50,7 +41,7 @@ class AndroidSmokeTests(unittest.TestCase):
     def test_missing_and_ambiguous_controls_never_tap_or_scroll(self):
         nodes = dump("outline-keyboard")
         button = next(n for n in nodes if n.get("text") == "Add scene")
-        first = copy.deepcopy(next(n for n in nodes if n.get("text") == "Scene 1"))
+        first = copy.deepcopy(next(n for n in nodes if n.get("text") == "Chapter 1, Scene 1"))
         second = copy.deepcopy(first)
         first.set("text", "Chapter 1, Scene 1")
         second.set("text", "Chapter 2, Scene 1")
@@ -63,7 +54,7 @@ class AndroidSmokeTests(unittest.TestCase):
                 adb.assert_not_called()
 
     def test_scroll_decision_uses_visible_dialog_bounds(self):
-        hidden = hidden_dialog()
+        hidden = dump("outline-keyboard")
         visible = dump("outline-visible")
         button = next(n for n in hidden if n.get("text") == "Add scene")
         dialog = next(n for n in hidden if n.get("class") == "android.app.Dialog")
@@ -80,7 +71,7 @@ class AndroidSmokeTests(unittest.TestCase):
                 self.assertEqual(start < end, downward)
 
     def test_scroll_refreshes_before_tap_and_stops_when_unreachable(self):
-        hidden, visible = hidden_dialog(), dump("outline-visible")
+        hidden, visible = dump("outline-keyboard"), dump("outline-visible")
         with patch.object(smoke, "hierarchy", return_value=visible), patch.object(smoke, "adb") as adb:
             smoke.tap_text(hidden, "Add scene", out=Path("."))
             self.assertEqual([call.args[2] for call in adb.call_args_list], ["swipe", "tap"])

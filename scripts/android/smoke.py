@@ -146,7 +146,7 @@ def tap_text(nodes: list[ET.Element], *texts: str, out: Path,
         if attempt == max_scrolls:
             raise RuntimeError(f"UI control not visible after {max_scrolls} scrolls: {texts}")
         adb("shell", "input", "swipe", *(str(value) for value in swipe), "300")
-        nodes = hierarchy(out, f"scroll-{attempt + 1}")
+        nodes = hierarchy(out, f"scroll-{time.monotonic_ns()}-{attempt + 1}")
 
 
 def tap_editable(nodes: list[ET.Element], *, last: bool = False) -> None:
