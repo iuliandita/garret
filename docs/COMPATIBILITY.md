@@ -2,6 +2,10 @@
 
 SQLite schema: 17.
 
+Proof paginator test diagnostics use isolated temporary profiles and timestamped
+phase logs. They do not change PDF output, stored books, profile migration, or
+the application's rendering settings.
+
 EPUB and DOCX exports replace vertical tabs and form feeds with spaces and remove
 the other XML 1.0-forbidden characters from prose, item and book titles, contents
 labels, collection bylines, and EPUB author, sort name, publisher, and rights in
