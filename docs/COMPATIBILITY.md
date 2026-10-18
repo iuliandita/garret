@@ -9,8 +9,7 @@ setup. An existing schema-18 book keeps its registry and version unchanged.
 Restores preserve format 17 (older schemas advance only to 17 for recovery
 bookkeeping), or preserve an existing format 18. Open a restored format-17 book
 with the previous package for rollback; the new application asks before upgrading
-it again. Desktop archive imports create a current-format copy without modifying
-the source. Android creates and opens schema-17 books without upgrading or writing
+it again. Android creates and opens schema-17 books without upgrading or writing
 an upgrade copy; existing schema-18 books remain 18. Android transfer imports
 preserve the source schema (17 stays 17; 18 stays 18), without modifying the archive.
 Android has no upgrade consent prompt.
