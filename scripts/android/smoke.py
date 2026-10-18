@@ -209,7 +209,7 @@ def verify_reader_copy(books: Path, fixture: dict, *, edited: bool) -> None:
 def pick_download(out: Path, file: Path, name: str) -> None:
     nodes = checkpoint(out, f"{name}-picker", "Downloads", "Recent", "Zuletzt")
     # Open the provider root explicitly; recent files depend on media indexing.
-    menus = [node for node in nodes if node.get("content-desc") in ("Show roots", "Wurzeln anzeigen")]
+    menus = [node for node in nodes if node.get("content-desc") in ("Show roots", "Wurzeln anzeigen", "Root-Verzeichnis anzeigen")]
     if menus:
         tap_node(menus[0])
         nodes = wait_nodes(out, f"{name}-roots", lambda found: any(
