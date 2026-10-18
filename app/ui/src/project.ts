@@ -1,3 +1,4 @@
+import { chapterItemsIn } from "./outline-items";
 import { projectPreset, referenceTitle, type ProjectPreset } from "./project-preset";
 // app/ui/src/project.ts
 // Page assembly for one open project: source, navigator, editor, failure
@@ -31,7 +32,6 @@ import { mountTimeline, type TimelineMount } from "./timeline-view";
 import { parseTimeline } from "./timeline-model";
 import {
   createOutline,
-  chapterItemsIn,
   isReferencesPage,
   isTrashedIn,
   liveItemsIn,

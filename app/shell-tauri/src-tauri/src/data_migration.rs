@@ -1152,15 +1152,9 @@ mod tests {
         true
     }
 
-    fn missing_book_case(case: &str, test: &str) {
-        if std::env::var_os("GARRET_MIGRATION_CHILD").is_none() {
-            let root = tempdir().unwrap();
-            isolated_case(
-                test,
-                &root.path().join("home"),
-                &root.path().join("data"),
-                &root.path().join("temporary"),
-            );
+    #[test]
+    fn missing_books_are_classified_on_both_paths() {
+        if isolated_temporary_directory("missing_books_are_classified_on_both_paths") {
             return;
         }
         let gone = std::env::temp_dir().join("gone/x.db");
@@ -1185,8 +1179,6 @@ mod tests {
                     false,
                 ),
             ]
-            .into_iter()
-            .filter(|(row, _, _)| *row == case)
             {
                 let root = tempdir().unwrap();
                 let old = profile(root.path());
@@ -1220,32 +1212,6 @@ mod tests {
                 }
             }
         }
-    }
-
-    #[test]
-    fn missing_temporary_books_are_set_aside_on_both_paths() {
-        missing_book_case(
-            "temporary",
-            "missing_temporary_books_are_set_aside_on_both_paths",
-        );
-    }
-
-    #[test]
-    fn missing_external_books_are_preserved_on_both_paths() {
-        missing_book_case(
-            "external",
-            "missing_external_books_are_preserved_on_both_paths",
-        );
-    }
-
-    #[test]
-    fn missing_home_books_are_preserved_on_both_paths() {
-        missing_book_case("home", "missing_home_books_are_preserved_on_both_paths");
-    }
-
-    #[test]
-    fn mixed_recent_books_are_preserved_on_both_paths() {
-        missing_book_case("mixed", "mixed_recent_books_are_preserved_on_both_paths");
     }
 
     #[test]
@@ -1299,12 +1265,16 @@ mod tests {
         assert_eq!(fs::read(new.join("settings.json")).unwrap(), b"{}");
     }
 
+    fn claim_guard(home: &Path) -> crate::instance_file::Guard {
+        match crate::instance_file::claim(home) {
+            crate::instance_file::Claim::Owned(guard) => guard,
+            _ => panic!("ownership"),
+        }
+    }
+
     fn migrate(home: &Path, copy: bool) -> Result<(), String> {
         if copy {
-            let guard = match crate::instance_file::claim(home) {
-                crate::instance_file::Claim::Owned(guard) => guard,
-                _ => panic!("ownership"),
-            };
+            let guard = claim_guard(home);
             prepare_copy(home, &guard)
         } else {
             #[cfg(unix)]
@@ -1901,10 +1871,7 @@ mod tests {
     fn windows_copy_retains_originals_lock_inode_and_rejects_unrelated_destination() {
         let temp = tempdir().unwrap();
         let old = profile(temp.path());
-        let guard = match crate::instance_file::claim(temp.path()) {
-            crate::instance_file::Claim::Owned(guard) => guard,
-            _ => panic!("ownership"),
-        };
+        let guard = claim_guard(temp.path());
         #[cfg(unix)]
         let inode = {
             use std::os::unix::fs::MetadataExt;
@@ -1938,10 +1905,7 @@ mod tests {
         let conflict = tempdir().unwrap();
         profile(conflict.path());
         fs::create_dir_all(conflict.path().join(crate::APP_DIR).join("projects")).unwrap();
-        let guard = match crate::instance_file::claim(conflict.path()) {
-            crate::instance_file::Claim::Owned(guard) => guard,
-            _ => panic!("ownership"),
-        };
+        let guard = claim_guard(conflict.path());
         assert!(prepare_copy(conflict.path(), &guard).is_err());
         assert!(!guard.migrated().unwrap());
     }
@@ -1950,10 +1914,7 @@ mod tests {
     fn a_copied_completion_record_cannot_authorize_independent_directories() {
         let source = tempdir().unwrap();
         profile(source.path());
-        let guard = match crate::instance_file::claim(source.path()) {
-            crate::instance_file::Claim::Owned(guard) => guard,
-            _ => panic!("ownership"),
-        };
+        let guard = claim_guard(source.path());
         prepare_copy(source.path(), &guard).unwrap();
         let other = tempdir().unwrap();
         profile(other.path());
@@ -1963,10 +1924,7 @@ mod tests {
             other.path().join(crate::APP_DIR).join(RECORD),
         )
         .unwrap();
-        let other_guard = match crate::instance_file::claim(other.path()) {
-            crate::instance_file::Claim::Owned(guard) => guard,
-            _ => panic!("ownership"),
-        };
+        let other_guard = claim_guard(other.path());
         other_guard.mark_migrated().unwrap();
         assert!(prepare_copy(other.path(), &other_guard).is_err());
         assert_eq!(
@@ -1981,10 +1939,7 @@ mod tests {
         profile(temp.path());
         fs::create_dir(temp.path().join(STAGE)).unwrap();
         fs::write(temp.path().join(STAGE).join("retained"), b"incomplete").unwrap();
-        let guard = match crate::instance_file::claim(temp.path()) {
-            crate::instance_file::Claim::Owned(guard) => guard,
-            _ => panic!("ownership"),
-        };
+        let guard = claim_guard(temp.path());
         assert!(prepare_copy(temp.path(), &guard).is_err());
         assert_eq!(
             fs::read(temp.path().join(STAGE).join("retained")).unwrap(),
@@ -2000,10 +1955,7 @@ mod tests {
             let old = profile(temp.path());
             let new = temp.path().join(crate::APP_DIR);
             let stage = temp.path().join(STAGE);
-            let guard = match crate::instance_file::claim(temp.path()) {
-                crate::instance_file::Claim::Owned(guard) => guard,
-                _ => panic!("ownership"),
-            };
+            let guard = claim_guard(temp.path());
             fs::create_dir(&stage).unwrap();
             let mut record = CopyRecord {
                 version: 1,
