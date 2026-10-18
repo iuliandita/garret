@@ -287,6 +287,7 @@ jobs:
           path: app/dist-release/downloads/
           if-no-files-found: error
           retention-days: 7
+          compression-level: 0
 
   attest:
     if: github.event_name == 'push'
@@ -367,7 +368,7 @@ jobs:
           else
             printf '\nRun sha256sum -c SHA256SUMS to check the downloads.\n\nWARNING: This release has no GPG manifest signature; unsigned publication was explicitly enabled.\n' >> release-notes.md
           fi
-          printf 'See SECURITY.md for the signing key status and GitHub attestation verification.\nPlease report problems through GitHub Issues.\n' >> release-notes.md
+          printf '\nSee SECURITY.md for the signing key status and GitHub attestation verification.\nPlease report problems through GitHub Issues.\n' >> release-notes.md
           # A rerun may complete an interrupted draft, but never replaces a published release.
           releases=$(gh api "repos/$REPO/releases" --paginate --slurp)
           existing=$(printf '%s' "$releases" | jq -r --arg tag "$TAG" 'flatten | map(select(.tag_name == $tag)) | if length == 0 then "absent" else .[0].draft end')
