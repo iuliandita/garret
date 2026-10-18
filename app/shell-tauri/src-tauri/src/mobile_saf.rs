@@ -65,6 +65,7 @@ pub(crate) struct Receipt {
     pub(crate) bytes: u64,
     pub(crate) sha256: String,
     pub(crate) verified: bool,
+    pub(crate) display_name: Option<String>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -292,6 +293,7 @@ mod tests {
             bytes: 512,
             sha256: "a".repeat(64),
             verified: true,
+            display_name: None,
         };
         assert!(receipt.validate(id, id, 512, true).is_ok());
         assert!(receipt.validate("other", id, 512, true).is_err());
@@ -309,6 +311,7 @@ mod tests {
                 bytes,
                 sha256: hash,
                 verified,
+                display_name: None,
             };
             assert!(failed.validate_write(id, id, 512, &"a".repeat(64)).is_err());
         }

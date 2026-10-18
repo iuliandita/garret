@@ -12,6 +12,19 @@ use std::{
 
 pub(crate) const ARCHIVE_LIMIT: u64 = 1 << 30;
 pub(crate) const PAYLOAD_LIMIT: u64 = 512 << 20;
+// This is only an early wrong-file check; full archive verification still follows.
+pub(crate) fn check_input(path: &Path, kind: crate::mobile_saf::Kind) -> Result<(), String> {
+    if kind == crate::mobile_saf::Kind::Key {
+        encrypted_archive::key_from_path(path).map(|_| ()).map_err(|_| "transfer_wrong_key".into())
+    } else {
+        let mut file = backup_bundle::open_regular_with_limit(path, ARCHIVE_LIMIT)
+            .map_err(|_| "transfer_invalid")?;
+        let mut header = [0; 22];
+        let n = file.read(&mut header).map_err(|_| "transfer_invalid")?;
+        if header[..n].starts_with(b"age-encryption.org/v1\n") { Ok(()) }
+        else { Err("transfer_wrong_archive".into()) }
+    }
+}
 const RESERVE: u64 = 16 << 20;
 const MAX_RETAINED: usize = 16;
 
@@ -403,6 +416,24 @@ pub(crate) mod tests {
             }
         }
         found
+    }
+
+    #[test]
+    fn mobile_wrong_file_checks_accept_the_exported_pair_and_allow_reselection() {
+        use crate::mobile_saf::Kind;
+        let root = tempfile::tempdir().unwrap();
+        let db = book(root.path());
+        let stage = incoming(root.path(), &db);
+        assert!(check_input(&stage.join("archive.in"), Kind::Archive).is_ok());
+        assert!(check_input(&stage.join("key.in"), Kind::Key).is_ok());
+        assert_eq!(check_input(&stage.join("key.in"), Kind::Archive).unwrap_err(), "transfer_wrong_archive");
+        assert_eq!(check_input(&stage.join("archive.in"), Kind::Key).unwrap_err(), "transfer_wrong_key");
+        fs::write(stage.join("wrong.txt"), b"some unrelated text").unwrap();
+        assert_eq!(check_input(&stage.join("wrong.txt"), Kind::Key).unwrap_err(), "transfer_wrong_key");
+        assert_eq!(check_input(&stage.join("wrong.txt"), Kind::Archive).unwrap_err(), "transfer_wrong_archive");
+        let books = root.path().join("books");
+        fs::create_dir(&books).unwrap();
+        assert_eq!(preview(&stage, &books).unwrap().title.as_deref(), Some("Harbour"));
     }
 
     #[test]
