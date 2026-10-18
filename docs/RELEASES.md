@@ -1,22 +1,22 @@
 # Published and development builds
 
-The current published release is [0.0.4 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.4).
+The current published release is [0.0.5 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.5).
 Its source and platform inventory are recorded in [releases.json](releases.json).
 That record is an explicit observation of published state, not an automatic
 claim that the current develop commit has shipped. Update it only after the
 release and complete downloads are public and verified.
 
-The release adds in-project collections of short stories (story containers,
-per-story author and status, whole-collection and single-story export), books
-without chapters and short fiction and nonfiction on Android, and a lighter
-preview rail that mounts only nearby documents. It fixes replace-all with an
-empty replacement leaving scenes unreadable, and repairs affected scenes
-automatically. Saved documents are now checked more strictly against the
-supported format. The Android package is now `com.usegarret.app`, with the same
-signing certificate. It installs next to the old `cc.local.app` app, and books
-move by export and import once; see
-[the Android notes](../scripts/android/README.md). Desktop installers and signed
-checksums are as in 0.0.3.
+The release makes the desktop move from the old `cc.local.app` profile folder
+to `garret` handle more cases by itself. An unused newer folder left by an
+earlier launch is set aside under a dated name and the move continues. Real
+conflicts are explained in plain English or German, with the book counts found
+in each folder. PDF proofs keep typed double and triple hyphens together.
+EPUB and DOCX exports remove control characters from titles and metadata. In
+collections, a new scene goes into the selected part's last story. Find
+results no longer repeat the prose label, References pages use a hanging
+indent, numbers are not flagged as misspelled, and statistics headings no
+longer run together. Desktop installers, signed checksums and the Android
+package `com.usegarret.app` are as in 0.0.4.
 
 Linux and Windows x86_64, Android, and macOS Apple Silicon and Intel packages
 are published. Packaging success establishes a build and archive check, not new
