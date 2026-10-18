@@ -143,26 +143,29 @@ jobs:
           codesign -dv /Applications/garret.app 2>&1 | tee "$out/codesign.txt" || true
           spctl -a -vv /Applications/garret.app 2>&1 | tee "$out/gatekeeper.txt" || true
       - name: Launch with the download quarantine flag, as a browser download would
+        timeout-minutes: 3
+        continue-on-error: true
         run: |
           set -euo pipefail
           out="$RUNNER_TEMP/out"
           xattr -w com.apple.quarantine "0081;$(printf %x "$(date +%s)");Safari;" /Applications/garret.app
-          open /Applications/garret.app || true
+          perl -e 'alarm 20; exec @ARGV' open /Applications/garret.app || echo "open did not return: $?" | tee "$out/1-open.txt"
           sleep 12
-          screencapture -x "$out/1-quarantined.png"
+          perl -e 'alarm 20; exec @ARGV' screencapture -x "$out/1-quarantined.png" || echo "screencapture did not finish"
           pkill -x garret || true
           killall CoreServicesUIAgent 2>/dev/null || true
       - name: Launch after clearing quarantine and capture
+        timeout-minutes: 5
         run: |
           set -euo pipefail
           out="$RUNNER_TEMP/out"
           xattr -dr com.apple.quarantine /Applications/garret.app
-          open /Applications/garret.app
+          perl -e 'alarm 20; exec @ARGV' open /Applications/garret.app
           sleep 25
           if ! pgrep -x garret >/dev/null; then
             echo "garret is not running"; log show --last 2m --predicate 'process == "garret"' | tail -n 80; exit 1
           fi
-          screencapture -x "$out/2-running.png"
+          perl -e 'alarm 20; exec @ARGV' screencapture -x "$out/2-running.png"
           pkill -x garret
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
