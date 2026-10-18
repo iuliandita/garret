@@ -1,6 +1,6 @@
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { afterEach, expect, test } from "bun:test";
-import { EditorState, NodeSelection } from "prosemirror-state";
+import { AllSelection, EditorState, NodeSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { undo, redo } from "prosemirror-history";
 import { createEditor, editorPlugins, schema, type Editor } from "../src/editor";
@@ -34,10 +34,11 @@ test("figure registration precedes placement; properties, retry and undo retain 
   const asset = { id: crypto.randomUUID(), width_px: 1200, height_px: 800, orientation: 1 };
   let picked = false;
   let saved = false;
+  let missingOriginal = false;
   const editor = createEditor(mount, { kind: "pmjson", json: { type: "doc", content: [{ type: "paragraph" }] } }, {
     authoring: true,
     pickFigure: async () => { expect(JSON.parse(editor.serialize()).content.some((node: { type: string }) => node.type === "figure")).toBe(false); picked = true; return asset; },
-    figureDetails: async () => ({ asset, column_inches: 5, height_inches: 8 }),
+    figureDetails: async () => ({ asset, column_inches: 5, height_inches: 8, original_warning: missingOriginal ? "missing_or_changed" : null }),
     onAtomCommit: async () => saved,
   });
   editors.push(editor);
@@ -61,14 +62,27 @@ test("figure registration precedes placement; properties, retry and undo retain 
   editor.undo(); expect(figures()).toHaveLength(0);
   editor.redo(); expect(figures()[0].attrs.id).toBe(original.attrs.id);
   const propertiesButton = mount.querySelector<HTMLButtonElement>("figure button")!;
+  missingOriginal = true;
   const enter = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
   propertiesButton.dispatchEvent(enter);
   expect(enter.defaultPrevented).toBe(false);
   propertiesButton.click(); await tick();
   expect(alt.value).toBe("A mountain");
+  expect(document.querySelector("#endnote-editor")!.textContent).toContain(t("figure.original-warning"));
   alt.value = "Changed mountain"; press("authoring.save"); await tick();
   expect(figures()[0].attrs.alt).toBe("Changed mountain");
   editor.undo(); expect(figures()[0].attrs.alt).toBe("A mountain");
+});
+
+test("a non-node selection starting at a figure inserts rather than editing its neighbour", async () => {
+  const mount = document.createElement("div"); document.body.append(mount);
+  const doc = schema.node("doc", null, [schema.nodes.figure.create({ id: crypto.randomUUID(), asset_id: crypto.randomUUID(), width: "full", caption: "Existing", alt: "Existing" }), schema.nodes.paragraph.create()]);
+  const view = new EditorView(mount, { state: EditorState.create({ doc, selection: new AllSelection(doc), plugins: editorPlugins() }) });
+  let picked = 0;
+  const authoring = createDocumentAuthoring(view, { canEdit: () => true, committed: async () => true, draftChanged() {}, noteOffset: () => 0,
+    pickFigure: async () => { picked++; return null; }, figureDetails: async () => { throw new Error("must not request neighbouring properties"); } });
+  try { await authoring.figure(); expect(picked).toBe(1); expect(view.state.doc.eq(doc)).toBe(true); }
+  finally { authoring.destroy(); view.destroy(); }
 });
 
 test("cancelled figure picker and discarded properties never manufacture a placement", async () => {

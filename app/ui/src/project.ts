@@ -709,9 +709,15 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     },
     pickFigure: async () => await invoke("figure_pick", { generation: deps.generation }) as import("./document-authoring").FigureAsset | null,
     figureDetails: async assetId => await invoke("figure_details", { generation: deps.generation, assetId }) as import("./document-authoring").FigureDetails,
-    figurePreview: async (instanceId, assetId) => await invoke("figure_preview", {
-      itemId: session?.activeDocId() ?? activeDocId, instanceId, assetId,
-    }) as PictureView,
+    figurePreview: async (instanceId, assetId) => {
+      const itemId = session?.activeDocId() ?? activeDocId;
+      // A node view can mount inside dispatch, before onChange queues its body.
+      // The host must see that placement before resolving its original.
+      await Promise.resolve();
+      await session?.flushPending();
+      if (projectDestroyed || flusher.failed() || itemId !== (session?.activeDocId() ?? activeDocId)) return { state: "missing", data_uri: null };
+      return await invoke("figure_preview", { itemId, instanceId, assetId }) as PictureView;
+    },
     onAtomEditRefused: () => raiseNotice(t("document.atoms-read-only")),
     onClipboardRefused: reason => raiseNotice(t(reason === "picture" ? "document.picture-refused" : "document.clipboard-refused")),
     onChange: (change) => {

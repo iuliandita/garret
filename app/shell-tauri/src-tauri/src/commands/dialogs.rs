@@ -1108,25 +1108,7 @@ fn commit_picked_picture<T>(
     }
 }
 
-/// Attach a picture the WRITER picks, through the operating system's own open
-/// dialog.
-///
-/// THE PAGE NAMES NO PATH, in either direction. It sends a member id; the writer
-/// chooses a file in the host; the host copies it under a uuid it generated and
-/// stores that name. So `picture_path` can never hold a path the webview
-/// composed, and there is nothing inbound for a traversal rule to guard --
-/// `project_export_as`'s argument, on a value that goes into the database rather
-/// than onto the disk.
-///
-/// `Ok(None)` is the writer cancelling, and it is an ANSWER rather than a
-/// failure: it must raise no notice and latch no banner.
-///
-/// THE STORE MUTEX IS TAKEN TWICE AND HELD ACROSS NEITHER THE DIALOG NOR THE
-/// DECODE. Holding it across the dialog would block every `doc_flush` -- which
-/// is on the writer's keystroke budget -- for as long as somebody stands there
-/// choosing a photograph, and holding it across the decode would do the same for
-/// as long as a 50-megapixel picture takes. `project_export_as`'s rule, with a
-/// second reason.
+/// Retain and register a picked figure before the page can place it.
 #[command_boundary::command]
 pub(crate) async fn figure_pick(
     app: tauri::AppHandle,
@@ -1155,6 +1137,25 @@ pub(crate) async fn figure_pick(
     }).map(Some)
 }
 
+/// Attach a picture the WRITER picks, through the operating system's own open
+/// dialog.
+///
+/// THE PAGE NAMES NO PATH, in either direction. It sends a member id; the writer
+/// chooses a file in the host; the host copies it under a uuid it generated and
+/// stores that name. So `picture_path` can never hold a path the webview
+/// composed, and there is nothing inbound for a traversal rule to guard --
+/// `project_export_as`'s argument, on a value that goes into the database rather
+/// than onto the disk.
+///
+/// `Ok(None)` is the writer cancelling, and it is an ANSWER rather than a
+/// failure: it must raise no notice and latch no banner.
+///
+/// THE STORE MUTEX IS TAKEN TWICE AND HELD ACROSS NEITHER THE DIALOG NOR THE
+/// DECODE. Holding it across the dialog would block every `doc_flush` -- which
+/// is on the writer's keystroke budget -- for as long as somebody stands there
+/// choosing a photograph, and holding it across the decode would do the same for
+/// as long as a 50-megapixel picture takes. `project_export_as`'s rule, with a
+/// second reason.
 #[command_boundary::command]
 pub(crate) async fn cast_picture_pick(
     app: tauri::AppHandle,

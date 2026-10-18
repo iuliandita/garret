@@ -8040,7 +8040,7 @@ mod tests {
         std::fs::create_dir(home.path().join("assets")).unwrap();
         std::fs::write(home.path().join("assets/view.png"), bytes).unwrap();
         let text = format!("{}# Illustrated book\n\n<!-- garret-figure: {{\"path\":\"assets/view.png\",\"width\":\"half\",\"caption\":\"Summit\",\"alt\":\"A mountain\"}} -->\n![A mountain](assets/view.png)\n*Summit*\n", crate::markdown::MARKER);
-        std::fs::write(&source, text).unwrap();
+        std::fs::write(&source, &text).unwrap();
         let made = import_path(home.path(), dest.path(), &source).unwrap().summary;
         let store = store::Store::open_readonly(Path::new(&made.path)).unwrap();
         let assets = store.figure_assets().unwrap();
@@ -8048,6 +8048,13 @@ mod tests {
         assert_eq!(std::fs::read(crate::pictures::dir_for(Path::new(&made.path)).join(&assets[0].stored_name)).unwrap(), bytes);
         assert!(store.documents().unwrap().values().any(|body| body.contains(&assets[0].id)));
         assert!(crate::validation::validate(Path::new(&made.path)).unwrap().ok);
+        let failed = tempdir().unwrap();
+        let double = format!("{text}\n{}", text.strip_prefix(crate::markdown::MARKER).unwrap().replace("assets/view.png", "assets/second.png"));
+        let mut parsed = crate::markdown::parse(&double, "book", |_| Ok(bytes.to_vec())).unwrap();
+        // The second sorted asset fails after the first original is retained.
+        parsed.inspected_assets.get_mut("assets/view.png").unwrap().id = uuid::Uuid::now_v7().to_string();
+        assert!(projects::create_imported_package(failed.path(), &parsed, &crate::strings::Strings::english()).is_err());
+        assert_eq!(std::fs::read_dir(failed.path()).unwrap().count(), 0);
         std::fs::remove_file(home.path().join("assets/view.png")).unwrap();
         let refused = tempdir().unwrap();
         assert!(import_path(home.path(), refused.path(), &source).is_err());

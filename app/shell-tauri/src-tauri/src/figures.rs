@@ -23,6 +23,9 @@ use std::{
 };
 
 fn read_original(path: &Path) -> Result<Vec<u8>, String> {
+    if fs::symlink_metadata(path).is_ok_and(|meta| meta.file_type().is_symlink()) {
+        return Err("figure_symlink".into());
+    }
     let file = backup_bundle::open_regular_with_limit(path, pictures::MAX_PICTURE_BYTES)
         .map_err(str::to_string)?;
     let mut data = Vec::new();
@@ -50,10 +53,15 @@ pub(crate) fn retain_bytes(
     id: String,
     register: impl FnOnce(&FigureAsset) -> Result<(), String>,
 ) -> Result<FigureAsset, String> {
+    let asset = prepare_asset(data, id)?;
+    retain_prepared(db, data, asset, register)
+}
+
+pub(crate) fn prepare_asset(data: &[u8], id: String) -> Result<FigureAsset, String> {
     let (format, width_px, height_px) =
         pictures::inspect_original(&data).map_err(|e| e.to_string())?;
     let orientation = orientation(&data, format)?;
-    let asset = FigureAsset {
+    Ok(FigureAsset {
         stored_name: format!("fig-{id}.{}", format.extension()),
         id,
         mime: format.mime().into(),
@@ -62,7 +70,16 @@ pub(crate) fn retain_bytes(
         width_px,
         height_px,
         orientation,
-    };
+    })
+}
+
+pub(crate) fn retain_prepared(
+    db: &Path, data: &[u8], asset: FigureAsset,
+    register: impl FnOnce(&FigureAsset) -> Result<(), String>,
+) -> Result<FigureAsset, String> {
+    if asset.bytes != data.len() as u64 || asset.sha256 != format!("{:x}", Sha256::digest(data)) {
+        return Err("prepared figure bytes changed".into());
+    }
     let dir = pictures::dir_for(db);
     match fs::symlink_metadata(&dir) {
         Ok(meta) if meta.is_dir() && !meta.file_type().is_symlink() => {}
@@ -73,6 +90,16 @@ pub(crate) fn retain_bytes(
         }
         Err(error) => return Err(error.to_string()),
     }
+    let mut count = 0usize;
+    let mut bytes = data.len() as u64;
+    for entry in fs::read_dir(&dir).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        if !entry.file_name().to_string_lossy().starts_with("fig-") { continue; }
+        let metadata = fs::symlink_metadata(entry.path()).map_err(|e| e.to_string())?;
+        count += 1;
+        bytes = bytes.checked_add(metadata.len()).ok_or("figure_retention_limit")?;
+    }
+    if count >= 1024 || bytes > 2 * 1024 * 1024 * 1024 { return Err("figure_retention_limit".into()); }
     let mut options = OpenOptions::new();
     options.write(true).create_new(true);
     #[cfg(unix)]

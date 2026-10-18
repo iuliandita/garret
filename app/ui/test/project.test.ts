@@ -363,6 +363,40 @@ const deps = (over: Partial<MountDeps> & Pick<MountDeps, "invoke">): MountDeps =
   ...over,
 });
 
+test("a newly inserted figure preview waits for its placement to finish saving", async () => {
+  shell(); const h = host(); const asset = { id: crypto.randomUUID(), width_px: 1920, height_px: 1200, orientation: 1 };
+  let release!: () => void;
+  const saving = new Promise<void>(resolve => { release = resolve; });
+  let saved = ""; let previews = 0;
+  const observer = globalThis.IntersectionObserver;
+  Object.defineProperty(globalThis, "IntersectionObserver", { configurable: true, writable: true, value: undefined });
+  const invoke: Host["invoke"] = async (cmd, args) => {
+    if (cmd === "figure_pick") return asset;
+    if (cmd === "figure_details") return { asset, column_inches: 5, height_inches: 8 };
+    if (cmd === "doc_flush") { await saving; saved = (args!.entries as FlushEntry[])[0]!.body; }
+    if (cmd === "figure_preview") {
+      previews++;
+      if (!saved.includes(String(args!.instanceId))) throw new Error("figure placement changed");
+      return { state: "present", data_uri: "data:image/png;base64,AAAA" };
+    }
+    return h.invoke(cmd, args);
+  };
+  const mounted = await mountProject(deps({ invoke }));
+  try {
+    mounted.editor.editFigure(); await settle();
+    document.querySelector<HTMLTextAreaElement>("#figure-alt")!.value = "Earth above the Moon";
+    const buttons = [...document.querySelectorAll<HTMLButtonElement>("#endnote-editor button")];
+    buttons.find(button => button.textContent === "Save")!.click(); await settle();
+    expect(previews).toBe(0);
+    release(); await settle(); await settle();
+    expect(previews).toBe(1);
+    expect(document.querySelector("#editor figure img")?.getAttribute("alt")).toBe("Earth above the Moon");
+  } finally {
+    release(); mounted.destroy();
+    Object.defineProperty(globalThis, "IntersectionObserver", { configurable: true, writable: true, value: observer });
+  }
+});
+
 describe("captured review integration", () => {
   const reviewSummary = { id: 7, author_name: "Mara", rev: 2, created_at: 1, pending: 1, conflicted: 0, accepted: 0, rejected: 0, messages: 0 };
   const reviewGroup = (itemId: string) => ({ id: 7, item_id: itemId, author_id: 3, author_name: "Mara", rev: 2, created_at: 1,

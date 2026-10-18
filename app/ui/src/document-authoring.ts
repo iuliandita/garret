@@ -6,7 +6,7 @@ import { createPanelShell } from "./panel-shell";
 import { formatNumber, t } from "./i18n";
 
 export interface FigureAsset { id: string; width_px: number; height_px: number; orientation: number }
-export interface FigureDetails { asset: FigureAsset; column_inches: number; height_inches: number }
+export interface FigureDetails { asset: FigureAsset; column_inches: number; height_inches: number; original_warning?: string | null }
 
 export interface DocumentAuthoring {
   figure(pos?: number): Promise<void>;
@@ -70,7 +70,9 @@ export function createDocumentAuthoring(view: EditorView, options: {
   property("figure-caption", "figure.caption", caption);
   const alt = document.createElement("textarea"); alt.rows = 3;
   property("figure-alt", "figure.alt", alt);
-  const resolution = document.createElement("p"); resolution.setAttribute("role", "status"); properties.append(resolution);
+  const resolution = document.createElement("p"); resolution.setAttribute("role", "status");
+  const originalWarning = document.createElement("p"); originalWarning.setAttribute("role", "status");
+  properties.append(resolution, originalWarning);
   let details: FigureDetails | null = null;
   function updateResolution(): void {
     if (!details) return;
@@ -175,17 +177,17 @@ export function createDocumentAuthoring(view: EditorView, options: {
     async figure(pos) {
       if (!options.canEdit() || target || !options.pickFigure || !options.figureDetails) return;
       const at = pos ?? view.state.selection.from;
-      const node = view.state.doc.nodeAt(at);
+      const node = pos !== undefined || view.state.selection instanceof NodeSelection ? view.state.doc.nodeAt(at) : null;
       const editing = node?.type.name === "figure";
       const captured = { kind: "figure" as const, pos: at, id: editing ? node.attrs.id as string : crypto.randomUUID(),
         assetId: editing ? node.attrs.asset_id as string : undefined, inserted: editing, doc: view.state.doc, before: view.state };
       target = captured;
       properties.hidden = false; label.hidden = field.hidden = hint.hidden = true;
-      error.textContent = ""; details = null; resolution.textContent = "";
+      error.textContent = ""; details = null; resolution.textContent = ""; originalWarning.textContent = "";
       question.textContent = t("figure.leave");
-      shell.setTitle(t(editing ? "figure.properties" : "figure.insert"));
-      shell.closeButton.setAttribute("aria-label", t("panel.close", { title: t(editing ? "figure.properties" : "figure.insert") }));
-      panel.setAttribute("aria-label", t(editing ? "figure.properties" : "figure.insert"));
+      shell.setTitle(t(editing ? "figure.properties" : "figure.insert-title"));
+      shell.closeButton.setAttribute("aria-label", t("panel.close", { title: t(editing ? "figure.properties" : "figure.insert-title") }));
+      panel.setAttribute("aria-label", t(editing ? "figure.properties" : "figure.insert-title"));
       options.draftChanged(); busy = true;
       save.disabled = cancel.disabled = true;
       try {
@@ -198,10 +200,14 @@ export function createDocumentAuthoring(view: EditorView, options: {
         width.value = editing ? node.attrs.width as string : "full";
         caption.value = editing ? node.attrs.caption as string : "";
         alt.value = editing ? node.attrs.alt as string : "";
+        originalWarning.textContent = details.original_warning ? t("figure.original-warning") : "";
         updateResolution();
         panel.style.left = Math.max(8, (window.innerWidth - 360) / 2) + "px";
         panel.style.top = "80px"; panel.hidden = false; alt.focus();
-      } catch { if (alive && target === captured) { error.textContent = t("figure.failed"); panel.hidden = false; } }
+      } catch (errorValue) { if (alive && target === captured) {
+        const key = String(errorValue).includes("figure_symlink") ? "figure.symlink" : String(errorValue).includes("figure_retention_limit") ? "figure.retention-limit" : "figure.failed";
+        error.textContent = t(key); panel.hidden = false;
+      } }
       finally { busy = false; save.disabled = !details; cancel.disabled = false; }
     },
     note(pos) {
@@ -246,7 +252,7 @@ export function createDocumentAuthoring(view: EditorView, options: {
     },
     remove() {
       const selection = view.state.selection;
-      if (target || !(selection instanceof NodeSelection) || !["endnote", "scene_break"].includes(selection.node.type.name)) return;
+      if (target || !(selection instanceof NodeSelection) || !["endnote", "figure", "scene_break"].includes(selection.node.type.name)) return;
       isolated(view.state.tr.deleteSelection());
     },
     pending: () => target !== null,

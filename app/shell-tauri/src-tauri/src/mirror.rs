@@ -1282,7 +1282,7 @@ fn retain_mirror_assets(root: &std::path::Path, assets: &std::collections::BTree
                 let existing = crate::backup_bundle::open_regular_with_limit(&path, crate::pictures::MAX_PICTURE_BYTES).map_err(str::to_string)?;
                 use std::io::Read;
                 let mut content = Vec::new(); existing.take(crate::pictures::MAX_PICTURE_BYTES + 1).read_to_end(&mut content).map_err(|error| error.to_string())?;
-                if content != *bytes { return Err("mirror figure original differs; retained without replacement".into()); }
+                if content != *bytes { return Err(format!("{}: mirror figure original differs; retained without replacement", path.display())); }
             },
             Err(error) => return Err(error.to_string()),
         }
