@@ -212,7 +212,7 @@ def verify_remote_assets(names: set[str], complete: bool = False, allow_unsigned
         raise ValueError("The draft release has missing or unexpected assets; inspect it before publishing.")
 
 
-if __name__ == "__main__":
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check").add_argument("--tag")
@@ -223,7 +223,7 @@ if __name__ == "__main__":
     remote.add_argument("--complete", action="store_true")
     remote.add_argument("--allow-unsigned", action="store_true")
     commands.add_parser("set-version").add_argument("version")
-    commands.add_parser("collect").add_argument("platform", choices=["linux", "windows", "android", "macos-arm64", "macos-x86_64"])
+    commands.add_parser("collect").add_argument("platform", choices=["linux", "windows", "windows-arm64", "android", "macos-arm64", "macos-x86_64"])
     args = parser.parse_args()
     try:
         if args.command == "check":
@@ -243,3 +243,7 @@ if __name__ == "__main__":
             collect(args.platform)
     except (ValueError, OSError, subprocess.CalledProcessError) as error:
         parser.exit(1, f"Release preparation failed: {error}\n")
+
+
+if __name__ == "__main__":
+    main()

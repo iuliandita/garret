@@ -98,7 +98,8 @@ class ReleaseTests(unittest.TestCase):
             for suffix in suffixes:
                 (folder / f"garret{suffix}").write_bytes(suffix.encode())
             with patch.object(release.subprocess, "check_output", return_value="revision\n"):
-                release.collect(platform)
+                with patch.object(sys, "argv", ["release.py", "collect", platform]):
+                    release.main()
             out = self.root / "app/dist-release" / platform
             names = {f"garret-0.0.1{suffix}" for suffix in suffixes}
             self.assertEqual({p.name for p in out.iterdir()}, names | {f"{name}.sha256" for name in names})
