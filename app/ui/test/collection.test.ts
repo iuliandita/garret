@@ -72,6 +72,18 @@ test("an empty collection part keeps the preceding-story or new-story fallback",
   });
 });
 
+test("a collection part with only loose scenes keeps the no-story fallback", () => {
+  const story = item("story", null, "chapter", 0);
+  const part = item("part", null, "part", 0);
+  const scene = item("loose", "part", "scene", 1);
+  expect(planPlacement([story, part, scene], "part", "scene", "collection")).toEqual({
+    holders: [], parentId: "story", afterId: null,
+  });
+  expect(planPlacement([part, scene], "part", "scene", "collection")).toEqual({
+    holders: ["chapter"], parentId: "part", afterId: null,
+  });
+});
+
 test("story fields capture their row, save before export, and stop on a failed save", async () => {
   const original: StoryFields = { id: "second", title: "Forest", author: null, state: "draft", rev: 7 };
   const saved: StoryFields[] = [];
