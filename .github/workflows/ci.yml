@@ -24,7 +24,7 @@ jobs:
         env:
           DOCS_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
-          export HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)"
+          export HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)"
           python3 scripts/test-release.py
           python3 scripts/test-docs.py
           python3 scripts/test-docs-facts.py
@@ -44,9 +44,9 @@ jobs:
           restore-keys: bun-${{ runner.os }}-
       - run: bun install --frozen-lockfile
       - run: bunx tsc --noEmit -p app/tsconfig.json
-      - run: HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" bun test ./app/ui
-      - run: HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" bun test ./app/harness
-      - run: HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" bun test ./app/mobile-ui/test
+      - run: HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)" bun test ./app/ui
+      - run: HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)" bun test ./app/harness
+      - run: HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)" bun test ./app/mobile-ui/test
       - run: bun run build
         working-directory: app/ui
 
@@ -78,7 +78,7 @@ jobs:
         working-directory: app/shell-tauri/src-tauri
         run: |
           export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
-          export HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)"
+          export HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)"
           cargo test --locked --bin garret -- --exact
       # The proof paginator runs in a web view and needs a display, so it is
       # ignored by default. Run the paginator fixtures under a virtual one.
@@ -95,7 +95,7 @@ jobs:
           NO_AT_BRIDGE: "1"
         run: |
           export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
-          export HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)"
+          export HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)"
           # The outer bound also covers compilation and startup (#324).
           if env -u WAYLAND_DISPLAY timeout --verbose --signal=TERM --kill-after=30s 420s \
             xvfb-run -a sh -c '

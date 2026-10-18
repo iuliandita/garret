@@ -1122,6 +1122,20 @@ mod tests {
         );
     }
 
+    fn isolated_temporary_directory(test: &str) -> bool {
+        if std::env::var_os("GARRET_MIGRATION_CHILD").is_some() {
+            return false;
+        }
+        let root = tempdir().unwrap();
+        isolated_case(
+            test,
+            &root.path().join("home"),
+            &root.path().join("data"),
+            &root.path().join("temporary"),
+        );
+        true
+    }
+
     fn missing_book_case(case: &str, test: &str) {
         if std::env::var_os("GARRET_MIGRATION_CHILD").is_none() {
             let root = tempdir().unwrap();
@@ -1306,6 +1320,11 @@ mod tests {
 
     #[test]
     fn harmless_destination_is_preserved_and_books_migrate_on_both_paths() {
+        if isolated_temporary_directory(
+            "harmless_destination_is_preserved_and_books_migrate_on_both_paths",
+        ) {
+            return;
+        }
         for copy in modes() {
             let temp = tempdir().unwrap();
             profile(temp.path());
@@ -1365,6 +1384,9 @@ mod tests {
 
     #[test]
     fn pending_explanation_requires_a_migratable_source() {
+        if isolated_temporary_directory("pending_explanation_requires_a_migratable_source") {
+            return;
+        }
         for copy in modes() {
             let root = tempdir().unwrap();
             let old = root.path().join(LEGACY_DIR);
@@ -1474,6 +1496,11 @@ mod tests {
 
     #[test]
     fn set_aside_interruption_and_stale_receipt_resume_without_overwriting() {
+        if isolated_temporary_directory(
+            "set_aside_interruption_and_stale_receipt_resume_without_overwriting",
+        ) {
+            return;
+        }
         for copy in modes() {
             for moved in [false, true] {
                 let temp = tempdir().unwrap();

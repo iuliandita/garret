@@ -30,7 +30,7 @@ writing.
 ```sh
 (
   export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
-  export HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)"
+  export HOME="$(mktemp -d)" XDG_DATA_HOME="$(mktemp -d)" TMPDIR="$(mktemp -d)"
   bun run check:docs
   bunx tsc --noEmit -p app/tsconfig.json   # typecheck
   bun test ./app/ui                       # interface tests
