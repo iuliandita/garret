@@ -1,3 +1,4 @@
+use crate::export::strip_xml_text;
 use crate::{export_dir, locked, open_project, projects, store, DataHome, StoreState};
 use std::fs;
 use std::io::Write as _;
@@ -318,15 +319,29 @@ fn render_scope_policy(
     let story = story_id.map(|id| crate::collection::story(&store, id)).transpose()?;
     let name = story.as_ref().map(|story| story.title.as_str()).unwrap_or(name);
     let book_id = store.book_id().map_err(|e| e.to_string())?;
-    let Walked {
-        front,
-        chapters,
-        back,
-        mut bodies,
-        openings,
-        single_scene,
-        mut publication,
-    } = walk_scope(&store, story_id)?;
+    let mut walked = walk_scope(&store, story_id)?;
+    let mut pin = crate::identity::pin_of_project(&store)?;
+    let mut export_pin = pin.clone();
+    if let Some(story) = &story {
+        let author = story.author.as_deref().or_else(|| pin.as_ref().map(|pin| pin.public.name.as_str())).filter(|value| !value.trim().is_empty());
+        walked.publication.author = author.map(str::to_string);
+        if story.author.is_some() {
+            export_pin = author.map(|name| crate::identity::Pin {
+                public: crate::identity::Public { name: name.to_string(), ..Default::default() },
+                ..Default::default()
+            });
+        }
+    }
+    let mut contents_title = strings.t(CONTENTS_KEY);
+    let mut name = name.to_string();
+    let mut xml_characters_removed = clean_xml_inputs(format, &mut name, &mut contents_title, &mut walked, &mut export_pin);
+    let Walked { front, chapters, back, bodies, openings, single_scene, publication } = walked;
+    if matches!(format, crate::export::Format::Epub | crate::export::Format::Docx) {
+        if let Some(pin) = pin.as_mut() {
+            clean_xml_pin(pin);
+        }
+    }
+    let name = name.as_str();
     // ONE list for every question that is about the file as a whole -- the word
     // count below and the reported item count. A dedication is prose in the
     // exported file, so it is prose in the figure that describes it.
@@ -335,15 +350,6 @@ fn render_scope_policy(
         .chain(chapters.iter())
         .chain(back.iter())
         .collect();
-
-    let mut xml_characters_removed = 0;
-    if matches!(format, crate::export::Format::Epub | crate::export::Format::Docx) {
-        for (id, _, _) in &items {
-            if let Some(body) = bodies.get_mut(id) {
-                xml_characters_removed += strip_xml_prose(body);
-            }
-        }
-    }
 
     // Counted over the WALKED items only, not over every `doc` row, so the
     // figure describes the file that was written. `manuscript` emits prose for
@@ -360,19 +366,6 @@ fn render_scope_policy(
         }
     }
 
-    let pin = crate::identity::pin_of_project(&store)?;
-    let mut export_pin = pin.clone();
-    if let Some(story) = &story {
-        let author = story.author.as_deref().or_else(|| pin.as_ref().map(|pin| pin.public.name.as_str())).filter(|value| !value.trim().is_empty());
-        publication.author = author.map(str::to_string);
-        if story.author.is_some() {
-            export_pin = author.map(|name| crate::identity::Pin {
-                public: crate::identity::Public { name: name.to_string(), ..Default::default() },
-                ..Default::default()
-            });
-        }
-    }
-    let contents_title = strings.t(CONTENTS_KEY);
     let book = crate::export::Book {
         publication: (story.is_some() || publication.contents.is_some()).then_some(&publication),
         single_scene,
@@ -417,6 +410,11 @@ fn render_scope_policy(
         return Err("This document format cannot be exported by this build".into());
     }
 
+    let xml_scopes = || -> Result<crate::publication_plan::Scopes, String> {
+        let mut scopes = publication_scopes(&store)?;
+        for scope in &mut scopes.rows { strip_xml_text(&mut scope.label); }
+        Ok(scopes)
+    };
     let written = match format {
         crate::export::Format::Markdown => {
             let plan = if has_new { Some(crate::publication_plan::Plan::from_store(
@@ -491,9 +489,12 @@ fn render_scope_policy(
                 });
             let plan = if items.iter().filter_map(|(id, _, _)| bodies.get(id))
                 .any(|body| crate::figure_salvage::has_new_nodes(body)) {
-                Some(crate::publication_plan::Plan::from_store(&book, &bodies, publication_scopes(&store)?, &store, path)?)
+                Some(crate::publication_plan::Plan::from_store(&book, &bodies, xml_scopes()?, &store, path)?)
             } else { None };
-            let notes_title = strings.t("book.notes");
+            let mut notes_title = strings.t("book.notes");
+            if plan.as_ref().is_some_and(|plan| !plan.notes.is_empty()) {
+                xml_characters_removed += strip_xml_text(&mut notes_title);
+            }
             crate::epub::manuscript(&crate::epub::Epub {
                 plan: plan.as_ref(),
                 notes_title: &notes_title,
@@ -518,7 +519,7 @@ fn render_scope_policy(
         crate::export::Format::Docx => {
             let plan = if has_new {
                 Some(crate::publication_plan::Plan::from_store(
-                    &book, &bodies, publication_scopes(&store)?, &store, path,
+                    &book, &bodies, xml_scopes()?, &store, path,
                 )?)
             } else { None };
             crate::docx::render_planned(&book, &bodies, strings.tag(), plan.as_ref())?
@@ -527,22 +528,55 @@ fn render_scope_policy(
     Ok((written, items.len() as u64, index.count().words, preflight, xml_characters_removed))
 }
 
+fn clean_xml_inputs(
+    format: crate::export::Format, name: &mut String, contents_title: &mut String,
+    walked: &mut Walked, pin: &mut Option<crate::identity::Pin>,
+) -> u64 {
+    if !matches!(format, crate::export::Format::Epub | crate::export::Format::Docx) { return 0; }
+    let mut removed = strip_xml_text(name) + strip_xml_text(contents_title);
+    for (id, title, _) in walked.front.iter_mut().chain(walked.chapters.iter_mut()).chain(walked.back.iter_mut()) {
+        removed += strip_xml_text(title);
+        if let Some(body) = walked.bodies.get_mut(id) { removed += strip_xml_prose(body); }
+    }
+    let has_author = walked.publication.author.is_some();
+    for author in walked.publication.author.iter_mut().chain(walked.publication.bylines.values_mut()) {
+        removed += strip_xml_text(author);
+        *author = author.trim().to_string();
+    }
+    walked.publication.author = walked.publication.author.take().filter(|author| !author.is_empty());
+    walked.publication.bylines.retain(|_, author| !author.is_empty());
+    if let Some(pin) = pin.as_mut() {
+        let [name, sort_name, imprint, rights] = clean_xml_pin(pin);
+        if format == crate::export::Format::Epub {
+            if !has_author { removed += name; }
+            removed += sort_name + imprint + rights;
+        }
+    }
+    removed
+}
+
+fn clean_xml_pin(pin: &mut crate::identity::Pin) -> [u64; 4] {
+    let counts = [&mut pin.public.name, &mut pin.public.sort_name, &mut pin.publishing.imprint, &mut pin.publishing.rights].map(strip_xml_text);
+    if counts[0] > 0 { pin.public.name = pin.public.name.trim().to_string(); }
+    counts
+}
+
 fn strip_xml_prose(body: &mut String) -> u64 {
     fn clean(node: &mut serde_json::Value) -> u64 {
         let mut removed = 0;
         if node["type"] == "text" {
             if let Some(serde_json::Value::String(text)) = node.get_mut("text") {
-                *text = text.chars().filter_map(|c| match c {
-                    '\u{b}' | '\u{c}' => {
-                        removed += 1;
-                        Some(' ')
-                    }
-                    '\t' | '\n' | '\r' | '\u{20}'..='\u{d7ff}' | '\u{e000}'..='\u{fffd}' | '\u{10000}'..='\u{10ffff}' => Some(c),
-                    _ => {
-                        removed += 1;
-                        None
-                    }
-                }).collect();
+                removed += strip_xml_text(text);
+            }
+        }
+        let fields: &[&str] = match node["type"].as_str() {
+            Some("endnote") => &["body"],
+            Some("figure") => &["caption", "alt"],
+            _ => &[],
+        };
+        for field in fields {
+            if let Some(serde_json::Value::String(text)) = node.get_mut("attrs").and_then(|attrs| attrs.get_mut(*field)) {
+                removed += strip_xml_text(text);
             }
         }
         if let Some(children) = node.get_mut("content").and_then(|v| v.as_array_mut()) {
@@ -674,30 +708,26 @@ pub(crate) fn preflight_of_store(
     format: crate::export::Format,
     vault: &crate::identity::Vault,
 ) -> std::result::Result<crate::identity::Preflight, String> {
-    let Walked {
-        front,
-        chapters,
-        back,
-        bodies,
-        openings: _,
-        single_scene,
-        publication,
-    } = walk_of(&store)?;
-    let items: Vec<&(String, String, i64)> =
-        front.iter().chain(chapters.iter()).chain(back.iter()).collect();
-    let pin = crate::identity::pin_of_project(&store)?;
+    let mut walked = walk_of(store)?;
+    let mut pin = crate::identity::pin_of_project(store)?;
+    let mut name = name.to_string();
+    clean_xml_inputs(format, &mut name, &mut String::new(), &mut walked, &mut pin);
+    let Walked { front, chapters, back, bodies, openings: _, single_scene, publication } = walked;
+    let items: Vec<&(String, String, i64)> = front.iter().chain(chapters.iter()).chain(back.iter()).collect();
     let planning = if crate::identity::has_needles(vault, pin.as_ref()) {
         planning_texts(&store)?
     } else { Vec::new() };
-    let mut report = checked(format, name, vault, pin.as_ref(), &items, &bodies, &planning);
+    let mut report = checked(format, &name, vault, pin.as_ref(), &items, &bodies, &planning);
     publication_disclosures(&mut report, &publication, format, pin.as_ref(), false, single_scene);
     report.reason_history = crate::warning_history::read(store)?;
     Ok(report)
 }
 
 fn publication_disclosures(report: &mut crate::identity::Preflight, publication: &crate::export::Publication, format: crate::export::Format, pin: Option<&crate::identity::Pin>, scoped: bool, single_scene: bool) {
-    if scoped {
+    if scoped || format == crate::export::Format::Epub {
         report.fields = crate::identity::disclosed(format, pin).into_iter().map(|(at, value)| crate::identity::DisclosedField { field: crate::identity::fields_for(format).iter().find(|row| row.at == at).map(|row| row.field.id()).unwrap_or(at), at, value: value.to_string() }).collect();
+    }
+    if scoped {
         if let Some(author) = &publication.author {
             if format != crate::export::Format::Pdf {
                 report.fields.push(crate::identity::DisclosedField { field: "name", at: "title-page", value: author.clone() });
@@ -3643,3 +3673,7 @@ mod format_golden;
 #[cfg(test)]
 #[path = "export/publication_tests.rs"]
 mod publication_tests;
+
+#[cfg(test)]
+#[path = "export/xml_metadata_tests.rs"]
+mod xml_metadata_tests;
