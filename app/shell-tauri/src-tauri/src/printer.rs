@@ -454,6 +454,14 @@ mod tests {
 
     impl TestWatchdog {
         fn start(timeout: std::time::Duration) -> Self {
+            Self::with_process_exit(timeout, false)
+        }
+
+        fn for_process(timeout: std::time::Duration) -> Self {
+            Self::with_process_exit(timeout, true)
+        }
+
+        fn with_process_exit(timeout: std::time::Duration, wait_for_process_exit: bool) -> Self {
             proof_test_phase("test process entered; starting watchdog");
             #[cfg(target_os = "linux")]
             rustix::process::setrlimit(
@@ -474,7 +482,15 @@ mod tests {
                         deadline.saturating_duration_since(std::time::Instant::now()),
                     ) {
                         Ok(Some(next)) => phase = next,
-                        Ok(None) | Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => return,
+                        Ok(None) | Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                            if !wait_for_process_exit {
+                                return;
+                            }
+                            phase = "test body returned; waiting for process teardown";
+                            proof_test_phase(phase);
+                            std::thread::sleep(deadline.saturating_duration_since(std::time::Instant::now()));
+                            break;
+                        }
                         Err(std::sync::mpsc::RecvTimeoutError::Timeout) => break,
                     }
                 }
@@ -507,9 +523,9 @@ mod tests {
 
     impl Drop for TestWatchdog {
         fn drop(&mut self) {
-            proof_test_phase("test body end; cancelling watchdog");
+            proof_test_phase("test body end; notifying watchdog");
             let _ = self.progress.send(None);
-            proof_test_phase("test teardown done");
+            proof_test_phase("test body guard dropped");
         }
     }
 
@@ -522,7 +538,11 @@ mod tests {
 
         const CHILD: &str = "GARRET_PROOF_WATCHDOG_TEST";
         if let Ok(mode) = std::env::var(CHILD) {
-            let watchdog = TestWatchdog::start(Duration::from_secs(1));
+            let watchdog = if mode == "teardown" {
+                TestWatchdog::for_process(Duration::from_secs(1))
+            } else {
+                TestWatchdog::start(Duration::from_secs(1))
+            };
             watchdog.phase("deliberately blocked test thread");
             if mode == "blocked" {
                 loop {
@@ -533,7 +553,7 @@ mod tests {
             std::thread::sleep(Duration::from_millis(1250));
             return;
         }
-        for mode in ["blocked", "completed"] {
+        for mode in ["blocked", "completed", "teardown"] {
             let mut child = Command::new(std::env::current_exe().unwrap())
                 .args([
                     "--exact",
@@ -555,14 +575,19 @@ mod tests {
             }
             let output = child.wait_with_output().unwrap();
             let diagnostics = String::from_utf8_lossy(&output.stderr);
-            if mode == "blocked" {
+            if mode != "completed" {
                 assert_eq!(output.status.signal(), Some(6), "{diagnostics}");
                 assert!(
                     diagnostics.contains("deliberately blocked test thread"),
                     "{diagnostics}"
                 );
                 assert!(diagnostics.contains("thread "), "{diagnostics}");
-                assert!(diagnostics.contains("watchdog expired after 1s"), "{diagnostics}");
+                let phase = if mode == "teardown" {
+                    "test body returned; waiting for process teardown"
+                } else {
+                    "deliberately blocked test thread"
+                };
+                assert!(diagnostics.contains(&format!("watchdog expired after 1s: {phase}")), "{diagnostics}");
             } else {
                 assert!(output.status.success(), "{diagnostics}");
             }
@@ -636,7 +661,14 @@ mod tests {
         let done = result.clone();
         render_with_timeout(html, dest, page_um, timeout_seconds, move |value| {
             *done.borrow_mut() = Some(value);
-            gtk::main_quit();
+            proof_test_phase("render answered; draining WebKit callbacks");
+            // WebKit's thread-exit queue cleanup can deadlock with IPC dispatch.
+            // Let queued callbacks release their references before libtest joins us.
+            glib::idle_add_local_full(glib::Priority::LOW, || {
+                proof_test_phase("WebKit callbacks drained; leaving GTK");
+                gtk::main_quit();
+                glib::ControlFlow::Break
+            });
         });
         watchdog.phase("dispatching GTK or cleaning up WebKit");
         gtk::main();
@@ -667,7 +699,7 @@ mod tests {
     #[test]
     #[ignore = "requires an isolated X display, WebKit and Poppler tools"]
     fn typed_dashes_stay_on_one_line_and_page() {
-        let watchdog = TestWatchdog::start(std::time::Duration::from_secs(90));
+        let watchdog = TestWatchdog::for_process(std::time::Duration::from_secs(90));
         watchdog.phase("GTK init starting");
         gtk::init().unwrap();
         watchdog.phase("GTK init done");
@@ -761,7 +793,7 @@ mod tests {
     #[test]
     #[ignore = "requires an isolated X display and a live WebKit process"]
     fn rich_paragraphs_keep_text_and_marks_and_oversized_headings_refuse() {
-        let watchdog = TestWatchdog::start(std::time::Duration::from_secs(90));
+        let watchdog = TestWatchdog::for_process(std::time::Duration::from_secs(90));
         fn document(flow: &str) -> String {
             let shell = r#"<!doctype html><html><head><style>
               html,body{margin:0}body{font:16px/20px serif}
@@ -994,7 +1026,7 @@ mod tests {
     #[ignore = "requires an isolated X display, WebKit and Poppler tools"]
     fn notes_figures_and_plates_decode_before_layout_and_print_intact() {
         use std::process::Command;
-        let watchdog = TestWatchdog::start(std::time::Duration::from_secs(180));
+        let watchdog = TestWatchdog::for_process(std::time::Duration::from_secs(180));
         watchdog.phase("GTK init starting");
         gtk::init().unwrap();
         watchdog.phase("GTK init done");
@@ -1176,7 +1208,7 @@ mod tests {
         use crate::pdf::{pdf_page_count, proof_document, Cover, Proof};
         use std::process::Command;
 
-        let watchdog = TestWatchdog::start(std::time::Duration::from_secs(90));
+        let watchdog = TestWatchdog::for_process(std::time::Duration::from_secs(90));
         watchdog.phase("GTK init starting");
         gtk::init().unwrap();
         watchdog.phase("GTK init done");

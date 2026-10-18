@@ -133,8 +133,13 @@ before submitting or enabling the disabled draft recipe.
 
 The display-gated proof tests have per-test watchdogs on a separate OS thread:
 90 seconds for rich paragraphs and typed dashes, and 180 seconds for notes, figures, and plates,
-armed before GTK initialization. It reports the last phase and thread wait
-channels before aborting, even if GTK stops dispatching. Core dumps are disabled
+armed before GTK initialization and kept alive through process exit. The fixtures
+run separately: a completed test body must not cancel protection while libtest
+joins its worker and WebKit tears down thread-local run-loop state. Each render
+leaves GTK from a low-priority idle callback so queued WebKit callbacks can
+release their references before the worker exits. The watchdog reports the last
+phase and thread wait channels before aborting, even if GTK stops dispatching
+or thread teardown stalls. Core dumps are disabled
 in these isolated test processes. Timestamped phase markers write directly to
 stderr, bypassing libtest capture, including watchdog reports. The CI runner
 uses `--nocapture` and prints its phase log on success or failure. Markers cover
