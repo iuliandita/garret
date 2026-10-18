@@ -175,6 +175,7 @@ export const EN = {
   "document.field.alt": "Alternative text",
   "document.field.structure": "Structure",
   "document.figure-placeholder": "Figure original not included",
+  "document.figure-save-failed": "Figure preview unavailable because the book could not be saved",
   "document.plaintext-loss": "Plain text copy: formatting, structure, and figure originals are not included.",
   "document.atoms-read-only": "Existing endnotes, figures and scene breaks are read-only in this version.",
   "document.clipboard-refused": "This content could not be pasted safely. Figure originals must be copied through the book first.",

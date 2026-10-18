@@ -171,6 +171,7 @@ export const DE = {
   "document.field.alt": "Alternativtext",
   "document.field.structure": "Struktur",
   "document.figure-placeholder": "Bildoriginal nicht enthalten",
+  "document.figure-save-failed": "Bildvorschau nicht verfügbar, weil das Buch nicht gespeichert werden konnte",
   "document.plaintext-loss": "Textkopie: Formatierung, Struktur und Bildoriginale sind nicht enthalten.",
   "document.atoms-read-only": "Vorhandene Endnoten, Abbildungen und Szenentrenner sind in dieser Version schreibgeschützt.",
   "document.clipboard-refused": "Dieser Inhalt konnte nicht sicher eingefügt werden. Bildoriginale müssen zuerst in das Buch kopiert werden.",

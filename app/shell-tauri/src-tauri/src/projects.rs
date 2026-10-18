@@ -1127,12 +1127,25 @@ fn create_book_with_cleanup(
     let slug = slugify(name)
         .ok_or_else(|| format!("\"{name}\" has no characters that can name a file"))?;
     fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
-    let path = dir.join(format!("{slug}.db"));
+    let mut path = dir.join(format!("{slug}.db"));
     if path.exists() {
         return Err(format!(
             "a project named \"{name}\" already exists at {}",
             path.display()
         ));
+    }
+    // A crash can publish originals before its database. Preserve that evidence
+    // and choose another name instead of adopting or deleting those originals.
+    let mut ordinal = 1u64;
+    loop {
+        let pictures_present = match fs::symlink_metadata(crate::pictures::dir_for(&path)) {
+            Ok(_) => true,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+            Err(error) => return Err(format!("{}: cannot check originals: {error}", path.display())),
+        };
+        if !path.exists() && !pictures_present { break; }
+        ordinal = ordinal.checked_add(1).ok_or("project name suffix exhausted")?;
+        path = dir.join(format!("{slug}-{ordinal}.db"));
     }
     before_create(&path);
     let mut builder = tempfile::Builder::new();

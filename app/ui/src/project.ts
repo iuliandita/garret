@@ -714,8 +714,10 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       // A node view can mount inside dispatch, before onChange queues its body.
       // The host must see that placement before resolving its original.
       await Promise.resolve();
-      await session?.flushPending();
-      if (projectDestroyed || flusher.failed() || itemId !== (session?.activeDocId() ?? activeDocId)) return { state: "missing", data_uri: null };
+      try { await session?.flushPending(); }
+      catch { return { state: "save_failed", data_uri: null }; }
+      if (flusher.failed()) return { state: "save_failed", data_uri: null };
+      if (projectDestroyed || itemId !== (session?.activeDocId() ?? activeDocId)) return { state: "missing", data_uri: null };
       return await invoke("figure_preview", { itemId, instanceId, assetId }) as PictureView;
     },
     onAtomEditRefused: () => raiseNotice(t("document.atoms-read-only")),

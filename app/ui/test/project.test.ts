@@ -363,7 +363,7 @@ const deps = (over: Partial<MountDeps> & Pick<MountDeps, "invoke">): MountDeps =
   ...over,
 });
 
-test("a newly inserted figure preview waits for its placement to finish saving", async () => {
+test.each([false, true])("a newly inserted figure preview waits for its placement to finish saving (failure: %s)", async (failure) => {
   shell(); const h = host(); const asset = { id: crypto.randomUUID(), width_px: 1920, height_px: 1200, orientation: 1 };
   let release!: () => void;
   const saving = new Promise<void>(resolve => { release = resolve; });
@@ -373,7 +373,7 @@ test("a newly inserted figure preview waits for its placement to finish saving",
   const invoke: Host["invoke"] = async (cmd, args) => {
     if (cmd === "figure_pick") return asset;
     if (cmd === "figure_details") return { asset, column_inches: 5, height_inches: 8 };
-    if (cmd === "doc_flush") { await saving; saved = (args!.entries as FlushEntry[])[0]!.body; }
+    if (cmd === "doc_flush") { await saving; if (failure) throw new Error("save unavailable"); saved = (args!.entries as FlushEntry[])[0]!.body; }
     if (cmd === "figure_preview") {
       previews++;
       if (!saved.includes(String(args!.instanceId))) throw new Error("figure placement changed");
@@ -389,8 +389,14 @@ test("a newly inserted figure preview waits for its placement to finish saving",
     buttons.find(button => button.textContent === "Save")!.click(); await settle();
     expect(previews).toBe(0);
     release(); await settle(); await settle();
-    expect(previews).toBe(1);
-    expect(document.querySelector("#editor figure img")?.getAttribute("alt")).toBe("Earth above the Moon");
+    if (failure) {
+      expect(previews).toBe(0);
+      expect(document.querySelector("#editor figure")?.textContent).toContain("Figure preview unavailable because the book could not be saved");
+      expect(document.querySelector("#editor figure")?.textContent).not.toContain("Figure original not included");
+    } else {
+      expect(previews).toBe(1);
+      expect(document.querySelector("#editor figure img")?.getAttribute("alt")).toBe("Earth above the Moon");
+    }
   } finally {
     release(); mounted.destroy();
     Object.defineProperty(globalThis, "IntersectionObserver", { configurable: true, writable: true, value: observer });

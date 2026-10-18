@@ -53,6 +53,7 @@ pub(crate) fn retain_bytes(
     id: String,
     register: impl FnOnce(&FigureAsset) -> Result<(), String>,
 ) -> Result<FigureAsset, String> {
+    admit_retained(db, data.len() as u64)?;
     let asset = prepare_asset(data, id)?;
     retain_prepared(db, data, asset, register)
 }
@@ -73,10 +74,33 @@ pub(crate) fn prepare_asset(data: &[u8], id: String) -> Result<FigureAsset, Stri
     })
 }
 
+fn admit_retained(db: &Path, incoming: u64) -> Result<(), String> {
+    if incoming > 2 * 1024 * 1024 * 1024 { return Err("figure_retention_limit".into()); }
+    let dir = pictures::dir_for(db);
+    match fs::symlink_metadata(&dir) {
+        Ok(meta) if meta.is_dir() && !meta.file_type().is_symlink() => {}
+        Ok(_) => return Err("figure directory is unsafe".into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(error.to_string()),
+    }
+    let mut count = 0usize;
+    let mut bytes = incoming;
+    for entry in fs::read_dir(&dir).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        if !entry.file_name().to_string_lossy().starts_with("fig-") { continue; }
+        let metadata = fs::symlink_metadata(entry.path()).map_err(|e| e.to_string())?;
+        count += 1;
+        bytes = bytes.checked_add(metadata.len()).ok_or("figure_retention_limit")?;
+        if count >= 1024 || bytes > 2 * 1024 * 1024 * 1024 { return Err("figure_retention_limit".into()); }
+    }
+    Ok(())
+}
+
 pub(crate) fn retain_prepared(
     db: &Path, data: &[u8], asset: FigureAsset,
     register: impl FnOnce(&FigureAsset) -> Result<(), String>,
 ) -> Result<FigureAsset, String> {
+    admit_retained(db, data.len() as u64)?;
     if asset.bytes != data.len() as u64 || asset.sha256 != format!("{:x}", Sha256::digest(data)) {
         return Err("prepared figure bytes changed".into());
     }
@@ -90,16 +114,6 @@ pub(crate) fn retain_prepared(
         }
         Err(error) => return Err(error.to_string()),
     }
-    let mut count = 0usize;
-    let mut bytes = data.len() as u64;
-    for entry in fs::read_dir(&dir).map_err(|e| e.to_string())? {
-        let entry = entry.map_err(|e| e.to_string())?;
-        if !entry.file_name().to_string_lossy().starts_with("fig-") { continue; }
-        let metadata = fs::symlink_metadata(entry.path()).map_err(|e| e.to_string())?;
-        count += 1;
-        bytes = bytes.checked_add(metadata.len()).ok_or("figure_retention_limit")?;
-    }
-    if count >= 1024 || bytes > 2 * 1024 * 1024 * 1024 { return Err("figure_retention_limit".into()); }
     let mut options = OpenOptions::new();
     options.write(true).create_new(true);
     #[cfg(unix)]

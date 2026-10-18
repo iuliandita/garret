@@ -225,5 +225,5 @@ Run that command from `app/shell-tauri/src-tauri` with an isolated HOME, XDG and
 temporary directory; `$fixture` must name a new directory. Mount it at
 `/test/schema17:ro` in a fresh emulator and pass `--schema17-fixture /test/schema17`
 instead of `--reader-fixture`. This imports `book.age` with `recovery-key.txt`,
-displays the retained prose and verifies that the imported database stays at
-schema 17. Keep all generated archives and keys outside version control.
+edits and saves the retained prose, restarts the app and reopens the edit, and
+verifies that the database stays at schema 17 without an upgrade copy. Keep all generated archives and keys outside version control.

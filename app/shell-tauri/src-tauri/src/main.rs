@@ -8041,7 +8041,13 @@ mod tests {
         std::fs::write(home.path().join("assets/view.png"), bytes).unwrap();
         let text = format!("{}# Illustrated book\n\n<!-- garret-figure: {{\"path\":\"assets/view.png\",\"width\":\"half\",\"caption\":\"Summit\",\"alt\":\"A mountain\"}} -->\n![A mountain](assets/view.png)\n*Summit*\n", crate::markdown::MARKER);
         std::fs::write(&source, &text).unwrap();
+        // A crash may publish originals before the database. Keep those bytes and skip the name.
+        let orphan = dest.path().join("illustrated-book.pictures");
+        std::fs::create_dir(&orphan).unwrap();
+        std::fs::write(orphan.join("retained.png"), b"orphaned original").unwrap();
         let made = import_path(home.path(), dest.path(), &source).unwrap().summary;
+        assert_eq!(Path::new(&made.path).file_name().unwrap(), "illustrated-book-2.db");
+        assert_eq!(std::fs::read(orphan.join("retained.png")).unwrap(), b"orphaned original");
         let store = store::Store::open_readonly(Path::new(&made.path)).unwrap();
         let assets = store.figure_assets().unwrap();
         assert_eq!(assets.len(), 1);

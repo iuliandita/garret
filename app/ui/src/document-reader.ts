@@ -90,7 +90,12 @@ export function readerViews(load?: LoadFigurePreview, options: {
         if (!alive || started || !load) return;
         started = true;
         void load(node.attrs.id as string, node.attrs.asset_id as string).then(preview => {
-          if (!alive || preview.state !== "present" || !preview.data_uri?.startsWith("data:image/")) return;
+          if (!alive) return;
+          if (preview.state === "save_failed") {
+            placeholder.textContent = t("document.figure-save-failed");
+            return;
+          }
+          if (preview.state !== "present" || !preview.data_uri?.startsWith("data:image/")) return;
           const image = document.createElement("img");
           image.src = preview.data_uri;
           image.alt = node.attrs.alt as string;

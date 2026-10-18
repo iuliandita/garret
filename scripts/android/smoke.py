@@ -317,7 +317,14 @@ def schema17_smoke(out: Path, source: Path, steps: list[str]) -> None:
     import_archive(out, source / "book.age", source / "recovery-key.txt", "schema17")
     nodes = checkpoint(out, "schema17-library", "Harbour")
     tap_text(nodes, "Harbour Imported copy", "Harbour Importierte Kopie", out=out)
-    checkpoint(out, "schema17-prose", "The tide waited.")
+    nodes = checkpoint(out, "schema17-prose", "The tide waited.")
+    tap_text(nodes, "The tide waited.", out=out)
+    adb("shell", "input", "keyevent", "KEYCODE_MOVE_HOME")
+    type_token("PhoneEdit17")
+    checkpoint(out, "schema17-edited", "PhoneEdit17")
+    checkpoint(out, "schema17-saved", "Saved on this device", "Auf diesem Gerät gespeichert")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    adb("shell", "input", "keyevent", "KEYCODE_HOME")
     adb("shell", "am", "force-stop", PKG)
     adb("root")
     adb("wait-for-device")
@@ -332,7 +339,15 @@ def schema17_smoke(out: Path, source: Path, steps: list[str]) -> None:
     with closing(sqlite3.connect(databases[0])) as connection:
         if connection.execute("PRAGMA user_version").fetchone()[0] != 17:
             raise RuntimeError("schema-17 import changed user_version")
-    steps.append("schema-17 archive imported through picker and confirmation, prose displayed, user_version remains 17")
+        if not any("PhoneEdit17" in row[0] for row in connection.execute("SELECT body FROM doc")):
+            raise RuntimeError("schema-17 surrounding prose edit was not saved")
+    if any(path.name.endswith(".point") or path.name.startswith((".garret-backup.stage-", ".format-upgrade")) for path in pulled.rglob("*")):
+        raise RuntimeError("Android retained an unexpected upgrade copy")
+    adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
+    nodes = checkpoint(out, "schema17-reopened-library", "Harbour")
+    tap_text(nodes, "Harbour Imported copy", "Harbour Importierte Kopie", out=out)
+    checkpoint(out, "schema17-reopened-prose", "PhoneEdit17")
+    steps.append("schema-17 archive imported through picker and confirmation, prose edited and saved, process restarted and edit reopened, user_version remains 17 with no upgrade copy")
 
 
 def main() -> int:

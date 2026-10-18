@@ -53,6 +53,11 @@ Empty alternative text may be saved as a draft, but blocks publication.
 Properties estimate print DPI from the oriented pixels and book dimensions;
 the PDF proof measures the actual placed size, including caption space. Below
 300 DPI warns; below 200 DPI is flagged. Originals are never automatically removed.
+Retention checks count and total bytes before decoding a newly picked image.
+A crashed import can leave originals without a database; a later creation skips
+that occupied name and preserves the orphaned originals for inspection. A figure
+preview blocked by a failed save reports that save failure rather than claiming
+the original is missing.
 
 Android can read notes, figures and scene breaks; open a numbered note to read
 its body; edit surrounding prose; save, close and reopen; and import/export a
@@ -636,8 +641,9 @@ certify a live upgrade or restore.
 ### Android drafting data
 
 Android drafting tools reuse the existing item revisions and positions, synopsis,
-cast, Bible documents, comments and saved-typing ledger. New books use schema 18;
-existing books use the consent, reader and transfer policy above. Old day-baseline metadata is retained
+cast, Bible documents, comments and saved-typing ledger. New Android books use
+schema 17; existing 17 books remain 17, and existing 18 books remain 18. Android
+never upgrades a book and needs no upgrade consent or private rollback copy. Old day-baseline metadata is retained
 and is not reclassified as typed progress. Daily targets use the desktop
 `daily_target` string encoding in application settings; they are device preferences
 and do not travel with a book. Text size is stored with Android appearance settings.

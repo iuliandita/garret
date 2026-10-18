@@ -215,10 +215,12 @@ fn failed_registration_keeps_original_for_salvage_and_never_reuses_it() {
     for i in 2..1024 { fs::write(dir.join(format!("fig-abandoned-{i}.png")), []).unwrap(); }
     assert_eq!(import_original(&db, &source, |_| panic!("over-limit original registered")).unwrap_err(), "figure_retention_limit");
     assert_eq!(fs::read_dir(&dir).unwrap().count(), 1024);
+    assert_eq!(retain_bytes(&db, b"not an image", uuid::Uuid::now_v7().to_string(), |_| panic!("over-limit bytes decoded")).unwrap_err(), "figure_retention_limit");
     // Sparse bytes exercise total-size admission without allocating 2 GiB.
     fs::remove_file(dir.join("fig-abandoned-2.png")).unwrap();
     fs::OpenOptions::new().write(true).open(dir.join("fig-abandoned-3.png")).unwrap().set_len(2 * 1024 * 1024 * 1024).unwrap();
     assert_eq!(import_original(&db, &source, |_| panic!("over-size original registered")).unwrap_err(), "figure_retention_limit");
+    assert_eq!(retain_bytes(&db, b"not an image", uuid::Uuid::now_v7().to_string(), |_| panic!("over-size bytes decoded")).unwrap_err(), "figure_retention_limit");
 }
 
 #[test]
