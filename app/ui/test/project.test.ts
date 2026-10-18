@@ -741,6 +741,7 @@ describe("captured review integration", () => {
 
 afterEach(() => {
   tearDownShell();
+  document.body.replaceChildren();
 });
 
 describe("mountProject store path", () => {
