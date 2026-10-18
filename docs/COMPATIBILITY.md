@@ -62,6 +62,11 @@ Shared restore normalization, preset validation, and canonical UUID checks retai
 their existing acceptance rules and errors. These helper cleanups add no migration
 and leave stored books, transfer formats, and rollback requirements unchanged.
 
+The schema-18 reader shares figure UUID validation and one reader-version export.
+Legacy-node refusal and picture-paste detection retain their existing acceptance
+rules, including the file-list fallback. These cleanups do not enable authoring,
+change stored data, or add migration, backup, upgrade, or rollback steps.
+
 EPUB and DOCX exports replace vertical tabs and form feeds with spaces and remove
 the other XML 1.0-forbidden characters from prose, item and book titles, contents
 labels, collection bylines, and EPUB author, sort name, publisher, and rights in
