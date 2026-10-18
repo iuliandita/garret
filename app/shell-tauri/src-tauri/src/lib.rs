@@ -71,6 +71,8 @@ mod mobile_saf;
 mod mobile_transfer;
 #[cfg(target_os = "android")]
 mod format_upgrade;
+#[cfg(target_os = "android")]
+mod recipient_compatibility;
 
 #[cfg(target_os = "android")]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

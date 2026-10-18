@@ -53,6 +53,7 @@ mod pdf;
 mod pictures;
 mod figures;
 mod format_upgrade;
+mod recipient_compatibility;
 mod figure_salvage;
 mod printer;
 #[cfg(windows)]
@@ -4432,6 +4433,8 @@ fn main() {
             commands::cast::__wire_cast_remove,
             commands::cast::__wire_cast_picture_view,
             commands::figures::__wire_figure_preview,
+            commands::authoring::__wire_endnote_context,
+            commands::authoring::__wire_endnote_numbering_set,
             commands::cast::__wire_cast_picture_clear,
             commands::cast::__wire_cast_picture_full,
             commands::appearances::__wire_appearances_list,
@@ -8885,13 +8888,15 @@ mod tests {
             std::fs::write(&path, &bytes).unwrap();
             let outcome = if picked { import_path(dir.path(), &library, &path) }
                 else { import_named(dir.path(), &library, &drop_dir, "book.docx") }.unwrap();
-            assert_eq!(outcome.losses, crate::docx_import::Losses { notes: 3, pictures: 1, ..Default::default() });
+            assert_eq!(outcome.losses, crate::docx_import::Losses { missing_note_bodies: 3, pictures: 1, ..Default::default() });
             let store = crate::store::Store::open_readonly(Path::new(&outcome.summary.path)).unwrap();
             let bodies = store.documents().unwrap();
             assert_eq!(bodies.len(), 1);
             for body in bodies.values() {
-                assert!(!crate::figure_salvage::has_new_nodes(body));
-                assert_eq!(serde_json::from_str::<serde_json::Value>(body).unwrap(), serde_json::json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Manuscript"}]}]}));
+                let doc: serde_json::Value = serde_json::from_str(body).unwrap();
+                assert_eq!(doc["content"][0]["content"][0]["text"], "Manuscript");
+                assert_eq!(doc["content"][0]["content"].as_array().unwrap().iter().filter(|node| node["type"] == "endnote").count(), 3);
+                crate::store::document_format::validate_write(body).unwrap();
             }
             assert_eq!(std::fs::read(&path).unwrap(), bytes);
         }

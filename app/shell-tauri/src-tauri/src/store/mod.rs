@@ -33,7 +33,7 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 /// Creation/migration target; the reader can preserve a later format.
-pub const SCHEMA_VERSION: i64 = 17;
+pub const SCHEMA_VERSION: i64 = READ_SCHEMA_VERSION;
 pub use document_format::READ_SCHEMA_VERSION;
 
 /// Nesting far beyond anything the product describes (part -> chapter ->
@@ -693,7 +693,7 @@ impl Store {
             });
         }
         // (target version, the DDL that reaches it from the version below).
-        const LADDER: [(i64, &str); 17] = [
+        const LADDER: [(i64, &str); 18] = [
             (1, SCHEMA_V1),
             (2, SCHEMA_V2),
             (3, SCHEMA_V3),
@@ -711,6 +711,7 @@ impl Store {
             (15, analytics::SCHEMA_V15),
             (16, knowledge::SCHEMA_V16),
             (17, review::SCHEMA_V17),
+            (18, figure_assets::SCHEMA_V18),
         ];
         for (target, ddl) in LADDER {
             if version >= target || target > ceiling {
@@ -1036,7 +1037,7 @@ impl Store {
     /// scenes and to nothing else, so any other pairing is refused here rather
     /// than silently dropped.
     pub fn import_tree(&self, rows: &[ImportRow<'_>]) -> Result<Vec<String>> {
-        document_format::validate_import(rows)?;
+        self.validate_import_rows(rows)?;
         self.conn.execute_batch("BEGIN IMMEDIATE")?;
         let result = (|| -> Result<Vec<String>> {
             let mut ids: Vec<String> = Vec::with_capacity(rows.len());
@@ -2592,8 +2593,11 @@ pub(crate) fn historical_test_store(path: &Path, version: i64) -> Store {
         (12, ""),
         (13, revision_planning::SCHEMA_V13),
         (14, cast::SCHEMA_V14),
+        (15, analytics::SCHEMA_V15),
+        (16, knowledge::SCHEMA_V16),
+        (17, review::SCHEMA_V17),
     ];
-    assert!((1..=14).contains(&version));
+    assert!((1..=17).contains(&version));
     conn.execute_batch("BEGIN IMMEDIATE").unwrap();
     for (step, ddl) in steps {
         if step > version {
@@ -3300,6 +3304,7 @@ mod tests {
                 "doc_version_blob",
                 "doc_version_item",
                 "doc_version_snap",
+                "figure_asset",
                 "item",
                 "item_root_sibling",
                 "item_sibling",

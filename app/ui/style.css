@@ -9413,3 +9413,8 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 .upgrade-prompt { max-width: min(34rem, calc(100vw - 3rem)); padding: 1.25rem; color: inherit; background: Canvas; border: 1px solid GrayText; border-radius: .5rem; line-height: 1.5; }
 .upgrade-prompt::backdrop { background: #0008; }
 .upgrade-prompt > div { display: flex; gap: .75rem; justify-content: flex-end; }
+#endnote-editor { position: fixed; z-index: 90; width: min(360px, calc(100vw - 16px)); max-height: calc(100vh - 16px); }
+#endnote-editor .panel-body { display: grid; gap: var(--space-2); }
+#endnote-body { width: 100%; min-height: 8rem; resize: vertical; }
+#endnote-editor p { margin: 0; }
+.document-scene-break::before { user-select: none; }

@@ -69,6 +69,12 @@ function inertNavigator(): ManuscriptNavigator {
 
 function inertEditor(): Editor {
   return {
+    editEndnote: () => undefined,
+    insertSceneBreak: () => undefined,
+    deleteSelectedAtom: () => undefined,
+    atomDraftPending: () => false,
+    confirmAtomDraft: async () => true,
+    setNoteOffset: () => undefined,
     typeChar: () => undefined,
     splitParagraph: () => undefined,
     erasePrev: () => undefined,
@@ -171,6 +177,10 @@ export function mountEmpty(deps: EmptyProjectDeps): MountedProject {
   }
 
   const menuActions: MenuProjectActions = {
+    editEndnote: refuse,
+    insertSceneBreak: refuse,
+    deleteSelectedAtom: refuse,
+    setEndnoteNumbering: refuse,
     showManuscript: refuse,
     showOutlineTable: refuse,
     showOutlineCards: refuse,

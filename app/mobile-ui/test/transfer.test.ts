@@ -69,7 +69,7 @@ test("export explicitly saves a new key first and passes only opaque operation d
     invoke: async <T>(command: string, args?: Record<string, unknown>) => {
       commands.push(command);
       if (command === "mobile_transfer_start") {
-        expect(args).toEqual({ direction: "export", generation: 42, keyChoice: "new" });
+        expect(args).toEqual({ direction: "export", generation: 42, keyChoice: "new", recipient: "reader006" });
         return { token: "job", phase: "failed", code: "transfer_storage" } as T;
       }
       if (command === "mobile_transfer_finish") return undefined as T;
@@ -77,6 +77,8 @@ test("export explicitly saves a new key first and passes only opaque operation d
     },
   });
   expect(mount.textContent).toContain("lost key");
+  expect(mount.querySelector("select")!.value).toBe("");
+  mount.querySelector("select")!.value = "reader006";
   press(mount, "Save a new recovery key first"); await settled();
   expect(mount.querySelector('[role="status"]')!.textContent).toContain("Not enough private storage");
   press(mount, "Close"); await done; expect(commands).toEqual(["mobile_transfer_start", "mobile_transfer_finish"]); mount.remove();

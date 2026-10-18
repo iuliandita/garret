@@ -43,7 +43,7 @@ mod tests {
     use std::fs;
 
     fn book(path: &Path) -> String {
-        let store = Store::open(path).unwrap();
+        let store = crate::store::historical_test_store(path, 17);
         let id = store.item_create(None, "scene", "Chapter one").unwrap().id;
         store.flush(&[FlushEntry { item_id: id.clone(), base_rev: 1,
             body: r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Original writing"}]}]}"#.into(), comments: None }]).unwrap();
@@ -84,7 +84,7 @@ mod tests {
         let id = book(&path);
         let pictures = crate::pictures::dir_for(&path);
         fs::create_dir(&pictures).unwrap();
-        let store = Store::open_existing(&path).unwrap();
+        let store = crate::store::test_support::writable_legacy(&path);
         let member = store.cast_create("character", "A character").unwrap();
         let name = "retained.png";
         let data = b"retained original";
@@ -92,6 +92,10 @@ mod tests {
         store.cast_set_picture(&member.id, Some(name)).unwrap();
         drop(store);
         let copy = retain(&path, 18, true).unwrap().unwrap();
+        let activated = Store::open_existing(&path).unwrap();
+        assert_eq!(activated.user_version().unwrap(), crate::store::READ_SCHEMA_VERSION);
+        assert!(crate::store::document_format::new_nodes_allowed());
+        drop(activated);
         let reader = Store::open_readonly(&backup_bundle::db_path(&copy)).unwrap();
         assert_eq!(reader.user_version().unwrap(), 17);
         assert!(reader
@@ -125,7 +129,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("book.db");
         book(&path);
-        let store = Store::open_existing(&path).unwrap();
+        let store = crate::store::test_support::writable_legacy(&path);
         let member = store.cast_create("character", "A character").unwrap();
         store
             .cast_set_picture(&member.id, Some("missing.png"))

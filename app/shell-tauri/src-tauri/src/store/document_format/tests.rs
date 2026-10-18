@@ -54,7 +54,7 @@ fn setup(path: &std::path::Path) -> (Store, Vec<String>) {
         b"retained research",
     )
     .unwrap();
-    let store = Store::open(path).unwrap();
+    let store = crate::store::historical_test_store(path, 17);
     let ids: Vec<String> = ["First", "Second"]
         .into_iter()
         .map(|title| store.item_create(None, "scene", title).unwrap().id)
@@ -133,8 +133,8 @@ fn refused<T>(result: Result<T>) {
 
 #[test]
 fn format_gate_shared_corpus() {
-    assert!(!new_nodes_allowed());
-    assert_eq!(SCHEMA_VERSION, 17);
+    assert!(new_nodes_allowed());
+    assert_eq!(SCHEMA_VERSION, 18);
     let cases = corpus();
     assert!(cases.len() > 40);
     for case in cases {
@@ -145,7 +145,7 @@ fn format_gate_shared_corpus() {
             case.id
         );
         assert_eq!(
-            validate_write(&case.body.to_string()).is_ok(),
+            validate(&case.body, false, &HashSet::new()).is_ok(),
             case.legacy,
             "{}",
             case.id
@@ -242,7 +242,7 @@ fn format_gate_save_desktop_mobile_and_mirror_batches_store_nothing() {
 fn format_gate_import_batches_and_publication_store_nothing() {
     for body in new_bodies() {
         let dir = tempfile::tempdir().unwrap();
-        let store = Store::open(&dir.path().join("empty.db")).unwrap();
+        let store = crate::store::historical_test_store(&dir.path().join("empty.db"), 17);
         let valid = prose("First imported scene");
         let rows = [
             (None, "scene", "First", Some(valid.as_str())),
@@ -254,15 +254,21 @@ fn format_gate_import_batches_and_publication_store_nothing() {
         // Markdown, DOCX and salvage reimport all publish through this boundary.
         for name in ["Markdown import", "DOCX import", "Salvage reimport"] {
             let library = dir.path().join(name);
-            let error = crate::projects::create_imported(
+            let result = crate::projects::create_imported(
                 &library,
                 name,
                 &rows,
                 &crate::strings::Strings::english(),
-            )
-            .unwrap_err();
-            assert!(error.contains("document format refused"));
-            assert!(!library.exists());
+            );
+            if body.contains("\"figure\"") {
+                assert!(result.unwrap_err().contains("document format refused"));
+                assert!(!library.exists());
+            } else {
+                let project = result.unwrap();
+                let imported = Store::open_readonly(std::path::Path::new(&project.path)).unwrap();
+                assert_eq!(imported.user_version().unwrap(), READ_SCHEMA_VERSION);
+                assert!(imported.documents().unwrap().values().any(|stored| stored == &body));
+            }
         }
     }
 }
@@ -550,8 +556,17 @@ fn format_gate_seed_replace_and_timeline_store_nothing() {
         )
         .unwrap();
         let db = dir.path().join("new.db");
-        refused(crate::store::seed::seed_project(&fixture, &db));
-        assert!(!db.exists());
+        let seeded = crate::store::seed::seed_project(&fixture, &db);
+        if body.contains("\"figure\"") {
+            refused(seeded);
+            assert!(!db.exists());
+        } else {
+            seeded.unwrap();
+            let store = Store::open_readonly(&db).unwrap();
+            assert_eq!(store.load_doc("scene").unwrap().body, body);
+            drop(store);
+            std::fs::remove_file(&db).unwrap();
+        }
         std::fs::write(fixture.join("scenes.ndjson"), json!({"id":"scene","body":serde_json::from_str::<Value>(crate::store::EMPTY_DOC_BODY).unwrap()}).to_string()).unwrap();
         std::fs::write(fixture.join("timelines.ndjson"), json!({"id":"timeline","title":"Timeline","body":serde_json::from_str::<Value>(&body).unwrap()}).to_string()).unwrap();
         refused(crate::store::seed::seed_project(&fixture, &db));
@@ -630,13 +645,16 @@ fn format_replace_skips_untouched_invalid_documents_and_snapshot_rows() {
 }
 
 #[test]
-fn format_import_parsers_keep_future_constructs_out_of_stored_documents() {
+fn format_import_parsers_keep_activated_notes_and_breaks_without_dropping_them() {
     let markdown = crate::import::parse("# Book\n\n## Scene\n\nProse[^note]\n\n[^note]: A note\n\n![Figure](image.png)\n\n---\n", "book");
     let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Prose</w:t><w:endnoteReference w:id="1"/><w:drawing/></w:r></w:p></w:body></w:document>"#;
     let bytes = crate::epub::zip(&[crate::epub::Entry::text("word/document.xml", xml)]);
     let docx = crate::docx_import::parse(&bytes, "book").unwrap();
-    assert_eq!(docx.losses, crate::docx_import::Losses { notes: 1, pictures: 1, ..Default::default() });
-    assert_eq!(docx.imported.items[0].body.as_deref(), Some(prose("Prose").as_str()));
+    assert_eq!(docx.losses, crate::docx_import::Losses { missing_note_bodies: 1, pictures: 1, ..Default::default() });
+    let parsed: Value = serde_json::from_str(docx.imported.items[0].body.as_deref().unwrap()).unwrap();
+    assert_eq!(parsed["content"][0]["content"][0]["text"], "Prose");
+    assert_eq!(parsed["content"][0]["content"][1]["type"], "endnote");
+    assert_eq!(parsed["content"][0]["content"][1]["attrs"]["body"], "");
     let dir = tempfile::tempdir().unwrap();
     let db = dir.path().join("damaged.db");
     let (store, ids) = setup(&db);
@@ -653,12 +671,12 @@ fn format_import_parsers_keep_future_constructs_out_of_stored_documents() {
     for imported in [markdown, docx.imported, salvage] {
         let bodies: Vec<_> = imported.items.iter().filter_map(|item| item.body.as_deref()).collect();
         assert!(!bodies.is_empty());
-        for body in bodies { assert!(!crate::figure_salvage::has_new_nodes(body)); validate_write(body).unwrap(); }
+        for body in bodies { validate_write(body).unwrap(); }
         let rows: Vec<_> = imported.items.iter().map(|item| (item.parent, item.item_type, item.title.as_str(), item.body.as_deref())).collect();
         let library = tempfile::tempdir().unwrap();
         let summary = crate::projects::create_imported(library.path(), &imported.name, &rows, &crate::strings::Strings::english()).unwrap();
         let stored = Store::open_readonly(std::path::Path::new(&summary.path)).unwrap().documents().unwrap();
-        for body in stored.values() { assert!(!crate::figure_salvage::has_new_nodes(body)); }
+        for body in stored.values() { validate_write(body).unwrap(); }
         let mut expected: Vec<_> = rows.iter().filter_map(|row| row.3).collect();
         let mut actual: Vec<_> = stored.values().map(String::as_str).collect();
         expected.sort_unstable();
@@ -681,11 +699,11 @@ fn schema18_reader_first_save_of_new_scene_keeps_existing_atoms() {
     assert_eq!(store.user_version().unwrap(), 18);
     let another = store.item_create(None, "scene", "No new atoms").unwrap().id;
     store.conn.execute("DELETE FROM doc WHERE item_id=?1", [&another]).unwrap();
-    refused(store.flush(&[entry(&another, 0, &body)]));
+    store.flush(&[entry(&another, 0, &body)]).unwrap();
 }
 
 #[test]
-fn schema18_reader_opens_preserves_prose_edits_history_and_refuses_atom_changes() {
+fn schema18_authoring_opens_preserves_history_and_changes_atoms() {
     let dir = tempfile::tempdir().unwrap();
     let db = dir.path().join("reader.db");
     let (store, id, body) = crate::store::test_support::reader_fixture(&db);
@@ -707,12 +725,13 @@ fn schema18_reader_opens_preserves_prose_edits_history_and_refuses_atom_changes(
     assert_eq!(atoms(&edited).unwrap(), atoms(&body).unwrap());
     assert_eq!(store.load_doc(&id).unwrap().body, edited);
     assert_eq!(store.figure_assets().unwrap(), assets);
-    let before = state(&store);
     for changed in [edited.replace("Retained note", "Changed note"), edited.replace("Retained caption", "Changed caption"), prose("Lost atoms"), edited.replacen("\"content\":[", "\"content\":[{\"type\":\"scene_break\"},", 1)] {
-        refused(store.flush(&[entry(&id, 2, &changed)]));
-        assert_eq!(state(&store), before);
+        let rev = store.load_doc(&id).unwrap().rev;
+        store.flush(&[entry(&id, rev, &changed)]).unwrap();
+        assert_eq!(store.load_doc(&id).unwrap().body, changed);
     }
-    store.doc_restore(&id, versions[0].id, 2).unwrap();
+    let rev = store.load_doc(&id).unwrap().rev;
+    store.doc_restore(&id, versions[0].id, rev).unwrap();
     assert_eq!(store.load_doc(&id).unwrap().body, body);
     // A retained version may legitimately contain a different atom payload.
     let original_version = store.doc_versions(&id).unwrap()[0].id;
@@ -721,10 +740,10 @@ fn schema18_reader_opens_preserves_prose_edits_history_and_refuses_atom_changes(
     store.doc_restore(&id, original_version, rev).unwrap();
     assert!(!atoms(&store.load_doc(&id).unwrap().body).unwrap().is_empty());
     assert_eq!(store.user_version().unwrap(), 18);
-    assert!(!new_nodes_allowed());
+    assert!(new_nodes_allowed());
     let fresh = Store::open(&dir.path().join("fresh.db")).unwrap();
-    assert_eq!(fresh.user_version().unwrap(), 17);
-    assert!(!fresh.figure_registry().unwrap().present);
+    assert_eq!(fresh.user_version().unwrap(), 18);
+    assert!(fresh.figure_registry().unwrap().present);
 }
 
 #[test]
@@ -772,7 +791,7 @@ fn schema18_reader_refuses_19_and_missing_registry_before_writable_setup() {
     for version in [18, 19] {
         let dir = tempfile::tempdir().unwrap();
         let db = dir.path().join("book.db");
-        let store = Store::open(&db).unwrap();
+        let store = crate::store::historical_test_store(&db, 17);
         store.checkpoint().unwrap();
         drop(store);
         let conn = rusqlite::Connection::open(&db).unwrap();

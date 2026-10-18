@@ -11,7 +11,7 @@ pub const READ_SCHEMA_VERSION: i64 = 18;
 pub const MAX_ATTRIBUTE_BYTES: usize = 64 * 1024;
 
 pub fn new_nodes_allowed() -> bool {
-    false
+    super::SCHEMA_VERSION >= READ_SCHEMA_VERSION
 }
 
 fn invalid(reason: &str) -> StoreError {
@@ -192,6 +192,17 @@ impl Store {
         Ok(FormatContext { schema, assets })
     }
 
+    pub(crate) fn validate_import_rows(&self, rows: &[super::ImportRow<'_>]) -> Result<()> {
+        let context = self.format_context()?;
+        for (_, _, _, body) in rows {
+            if let Some(body) = body {
+                let value = serde_json::from_str(body).map_err(|_| invalid("invalid document JSON"))?;
+                validate(&value, context.schema >= READ_SCHEMA_VERSION && new_nodes_allowed(), &context.assets)?;
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn validate_body_write(&self, item_id: &str, body: &str) -> Result<()> {
         self.validate_body_write_in(item_id, body, &self.format_context()?)
     }
@@ -232,7 +243,10 @@ impl Store {
             let value = super::document_fields::read(body).ok_or_else(|| invalid("unsupported retained document"))?;
             if atoms_in(&value).is_empty() { Ok(()) }
             else { validate(&value, true, &context.assets) }
-        } else { validate_write(body) };
+        } else {
+            let value = serde_json::from_str(body).map_err(|_| invalid("invalid document JSON"))?;
+            validate(&value, false, &context.assets)
+        };
         result.map_err(|error| match error {
             StoreError::InvalidDocument(reason) => invalid(&format!("{item_id}: {reason}")),
             other => other,

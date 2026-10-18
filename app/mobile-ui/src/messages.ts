@@ -1,4 +1,10 @@
 const en = {
+  recipientLabel: "Receiving app, checked on the other device",
+  recipientUnknown: "Check or update the receiving app before exporting.",
+  recipientLegacy: "0.0.5 or earlier (format 17, novels only)",
+  recipientReader: "0.0.6 (format 18, all four book types)",
+  recipientSchema: "The receiving app cannot open this format. Update it first.",
+  recipientPreset: "The receiving app cannot open this book type. Update it first.",
   rename: "Rename scene", move: "Move scene", destination: "Inside", after: "After", first: "First", manuscript: "Manuscript root",
   saveAction: "Save", search: "Search", query: "Find text", searchScene: "Find in this scene", searchBook: "Search book", noResults: "No matches.", searchMatches: "{n} matches",
   searchLimited: "Only the first 200 matching scenes are shown.", searchSkipped: "Some documents could not be searched.",
@@ -72,6 +78,12 @@ const en = {
   positionError: "Your writing position could not be remembered on this device. Your text is still saved normally.",
 };
 const de: typeof en = {
+  recipientLabel: "Empfänger-App, auf dem anderen Gerät geprüft",
+  recipientUnknown: "Prüfe oder aktualisiere die Empfänger-App vor dem Export.",
+  recipientLegacy: "0.0.5 oder älter (Format 17, nur Romane)",
+  recipientReader: "0.0.6 (Format 18, alle vier Buchtypen)",
+  recipientSchema: "Die Empfänger-App kann dieses Format nicht öffnen. Aktualisiere sie zuerst.",
+  recipientPreset: "Die Empfänger-App kann diesen Buchtyp nicht öffnen. Aktualisiere sie zuerst.",
   rename: "Szene umbenennen", move: "Szene verschieben", destination: "Innerhalb von", after: "Nach", first: "Am Anfang", manuscript: "Manuskriptebene",
   saveAction: "Speichern", search: "Suchen", query: "Text suchen", searchScene: "In dieser Szene suchen", searchBook: "Im Buch suchen", noResults: "Keine Treffer.", searchMatches: "{n} Treffer",
   searchLimited: "Nur die ersten 200 passenden Szenen werden angezeigt.", searchSkipped: "Einige Dokumente konnten nicht durchsucht werden.",

@@ -3,10 +3,8 @@ use super::{document_format, Result, Store, StoreError, READ_SCHEMA_VERSION, TIM
 use rusqlite::Connection;
 use std::collections::{BTreeMap, HashSet};
 
-// Deliberately absent from the production migration ladder. Activation must use
-// this same SQL; tests install only the proposed table in disposable v17 books.
-#[cfg(test)]
-pub(crate) const PROPOSED_MIGRATION: &str = include_str!("figure_assets.sql");
+// Shared with the reader fixtures and the atomic production ladder step.
+pub(crate) const SCHEMA_V18: &str = include_str!("figure_assets.sql");
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct FigureAsset {
@@ -235,8 +233,10 @@ fn scan_references(
 pub(crate) mod test_support {
     use super::*;
     pub fn install(store: &Store) {
-        assert_eq!(store.user_version().unwrap(), 17);
-        store.conn.execute_batch(PROPOSED_MIGRATION).unwrap();
+        let version = store.user_version().unwrap();
+        if version == READ_SCHEMA_VERSION { return; }
+        assert_eq!(version, 17);
+        store.conn.execute_batch(SCHEMA_V18).unwrap();
     }
     pub fn allow_corruption(conn: &Connection) {
         conn.execute_batch("ALTER TABLE figure_asset RENAME TO unchecked_source; CREATE TABLE figure_asset AS SELECT * FROM unchecked_source; DROP TABLE unchecked_source;").unwrap();

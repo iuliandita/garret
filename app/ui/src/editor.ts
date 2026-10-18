@@ -1,4 +1,5 @@
-import { atomSignature, preserveAtoms, readerViews, type LoadFigurePreview } from "./document-reader";
+import { createDocumentAuthoring, type DocumentAuthoring } from "./document-authoring";
+import { atomSignature, preserveAtoms, readerViews, refreshNoteReferences, type LoadFigurePreview } from "./document-reader";
 // app/ui/src/editor.ts
 // A single-scene ProseMirror surface: typing latency needs a real typing
 // target, but manuscript virtualization is a second independent variable.
@@ -382,6 +383,12 @@ export function editorPlugins(): Plugin[] {
 }
 
 export interface Editor {
+  editEndnote(): void;
+  insertSceneBreak(): void;
+  deleteSelectedAtom(): void;
+  atomDraftPending(): boolean;
+  confirmAtomDraft(): Promise<boolean>;
+  setNoteOffset(offset: number): void;
   typeChar(char: string): void;
   /** Enter. */
   splitParagraph(): void;
@@ -546,6 +553,8 @@ export interface ActiveMarks {
 }
 
 export interface EditorOptions {
+  authoring?: boolean;
+  onAtomCommit?: () => Promise<boolean>;
   figurePreview?: LoadFigurePreview;
   onAtomEditRefused?: () => void;
   /** Called after a transaction that CHANGED THE DOCUMENT is applied. Selection
@@ -634,10 +643,25 @@ export function createEditor(
   }
 
   let editable = true;
+  let authoring: DocumentAuthoring | undefined;
+  let noteOffset = 0;
   const editSources = new EditSourceTracker();
   const view: EditorView = new EditorView(mount, {
-    state: EditorState.create({ doc, plugins: [...editorPlugins(), preserveAtoms()] }),
-    nodeViews: readerViews(opts.figurePreview),
+    state: EditorState.create({ doc, plugins: [...editorPlugins(), ...(opts.authoring ? [] : [preserveAtoms()])] }),
+    nodeViews: readerViews(opts.figurePreview, {
+      noteOffset: () => noteOffset,
+      editNote: opts.authoring ? pos => authoring?.note(pos) : undefined,
+    }),
+    handleKeyDown(_view, event) {
+      if (!opts.authoring || event.isComposing || event.repeat) return false;
+      if (event.key.toLowerCase() === "n" && event.ctrlKey && event.altKey && !event.metaKey && !event.shiftKey && !event.getModifierState("AltGraph")) {
+        authoring?.note(); return true;
+      }
+      if (event.key === "Enter" && view.state.selection instanceof NodeSelection && view.state.selection.node.type.name === "endnote") {
+        authoring?.note(view.state.selection.from); return true;
+      }
+      return false;
+    },
     attributes: { role: "textbox", "aria-multiline": "true", "aria-label": t("editor.name"), lang: "" },
     clipboardTextSerializer: slice => clipboardPlaintext(slice.content, plaintextLabels()),
     handleDOMEvents: {
@@ -671,15 +695,16 @@ export function createEditor(
       return false;
     },
     dispatchTransaction(tr) {
-      if (tr.docChanged && !editable) return;
+      if (tr.docChanged && (!editable || (authoring?.pending() && !tr.getMeta("documentAuthoring")))) return;
       const before = view.state;
-      if (tr.docChanged && atomSignature(tr.doc) !== atomSignature(before.doc)) {
+      if (!opts.authoring && tr.docChanged && atomSignature(tr.doc) !== atomSignature(before.doc)) {
         if (opts.onAtomEditRefused) opts.onAtomEditRefused();
         else opts.onClipboardRefused?.();
         return;
       }
       if (tr.docChanged) editSources.prepare(tr);
       view.updateState(before.apply(tr));
+      if (tr.docChanged) refreshNoteReferences(view, noteOffset, opts.authoring);
       if (tr.docChanged) {
         const change = editSources.record(tr, before, view.state, () => countWordsIn(before.doc));
         opts.onChange?.(change);
@@ -695,11 +720,23 @@ export function createEditor(
       if (!tr.getMeta("restoreSelection")) holdTypewriterLine();
     },
   });
+  if (opts.authoring) authoring = createDocumentAuthoring(view, {
+    canEdit: () => editable,
+    committed: opts.onAtomCommit ?? (async () => true),
+    draftChanged: () => view.setProps({ editable: () => editable && !authoring?.pending() }),
+    noteOffset: () => noteOffset,
+  });
   const onFocus = (): void => opts.onFocus?.();
   const onBlur = (event: FocusEvent): void => opts.onBlur?.(event);
   view.dom.addEventListener("focus", onFocus);
   view.dom.addEventListener("blur", onBlur);
   return {
+    editEndnote: () => authoring?.note(),
+    insertSceneBreak: () => authoring?.sceneBreak(),
+    deleteSelectedAtom: () => authoring?.remove(),
+    atomDraftPending: () => authoring?.pending() ?? false,
+    confirmAtomDraft: () => authoring?.confirmLeave() ?? Promise.resolve(true),
+    setNoteOffset(offset) { noteOffset = offset; refreshNoteReferences(view, noteOffset, opts.authoring); },
     typeChar(char: string): void {
       const { state } = view;
       view.dispatch(state.tr.insertText(char, state.selection.from));
@@ -715,13 +752,15 @@ export function createEditor(
       view.dispatch(caretTr(view.state, n));
     },
     replaceDoc(input: DocInput): void {
+      if (authoring?.pending()) throw new Error("an endnote draft is still open");
       const next = schema.nodeFromJSON(docJsonFrom(input) as unknown as Record<string, unknown>);
-      view.updateState(EditorState.create({ doc: next, plugins: [...editorPlugins(), preserveAtoms()] }));
+      view.updateState(EditorState.create({ doc: next, plugins: [...editorPlugins(), ...(opts.authoring ? [] : [preserveAtoms()])] }));
       editSources.reset();
+      refreshNoteReferences(view, noteOffset, opts.authoring);
     },
     setEditable(next: boolean): void {
       editable = next;
-      view.setProps({ editable: () => editable });
+      view.setProps({ editable: () => editable && !authoring?.pending() });
     },
     revealMatch(query: string, locator?: FieldLocator): boolean {
       const at = locateFirstMatch(view.state.doc, query, locator);
@@ -894,6 +933,7 @@ export function createEditor(
     destroy: () => {
       view.dom.removeEventListener("focus", onFocus);
       view.dom.removeEventListener("blur", onBlur);
+      authoring?.destroy();
       view.destroy();
     },
   };

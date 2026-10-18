@@ -2889,7 +2889,7 @@ mod tests {
     fn format_gate_import_refuses_before_claiming_a_book() {
         let dir = tempdir().unwrap();
         let created = std::cell::Cell::new(false);
-        let future = r#"{"type":"doc","content":[{"type":"scene_break"}]}"#;
+        let future = r#"{"type":"doc","content":[{"type":"future"}]}"#;
         let error = super::create_imported_with(dir.path(), "Book", &[(None, "scene", "Scene", Some(future))], &english(), |_| created.set(true)).unwrap_err();
         assert!(error.contains("document format refused"));
         assert!(!created.get());

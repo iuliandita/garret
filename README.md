@@ -30,8 +30,9 @@ The current published build is [0.0.6 alpha](https://github.com/iuliandita/garre
 See [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
 
-Development builds keep schema 17 and refuse unsupported document writes.
-Legacy books with empty text runs remain recoverable; see the compatibility guide.
+Development builds upgrade books to schema 18 after consent and a verified
+pre-upgrade copy. Apps 0.0.5 and earlier refuse the upgraded book; 0.0.6 reads it.
+See the compatibility guide before upgrading or transferring a book.
 
 ![garret writing view](docs/screenshots/editor-light.png)
 
@@ -44,6 +45,11 @@ Legacy books with empty text runs remain recoverable; see the compatibility guid
 Write in a calm editor with formatting, book-wide search, undo/redo, and
 scene history. Arrange parts, chapters, and scenes with outlines and cards.
 Choose light or dark mode, in English or German.
+
+On desktop, Edit > Insert or edit endnote (Ctrl+Alt+N) opens a plain-text note
+with Save/Cancel and isolated undo. Choose book, chapter or story numbering in
+the Edit menu. Insert scene break adds an explicit `* * *` separator. Android
+reads these nodes and edits surrounding prose; atom authoring stays on desktop.
 
 ### Keep the story straight
 

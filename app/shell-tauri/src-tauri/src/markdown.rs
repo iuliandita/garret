@@ -295,12 +295,8 @@ mod tests {
                 doc["content"][0]["content"][1]["attrs"]["body"],
                 "note*\nnext"
             );
-            let error = crate::import::parse_package(&source, "book", std::path::Path::new("."))
-                .unwrap_err();
-            assert!(
-                error.contains("new-format Markdown conversion is disabled"),
-                "{error}"
-            );
+            let activated = crate::import::parse_package(&source, "book", std::path::Path::new(".")).unwrap();
+            assert!(activated.items[0].body.as_ref().unwrap().contains("endnote"));
         }
         let ordinary = "# Book\n\n## Scene\n\nordinary [^1]\n\n---\n\n![image](assets/image.png)\n";
         for source in [

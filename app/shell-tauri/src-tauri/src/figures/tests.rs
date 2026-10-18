@@ -24,7 +24,7 @@ pub(crate) fn body(asset: &FigureAsset) -> String {
 pub(crate) fn fixture() -> Fixture {
     let root = tempfile::tempdir().unwrap();
     let db = root.path().join("book.db");
-    let store = Store::open(&db).unwrap();
+    let store = crate::store::historical_test_store(&db, 17);
     store.set_meta("name", "Figures").unwrap();
     figure_assets::test_support::install(&store);
     let source = root.path().join("selected.png");
@@ -67,38 +67,34 @@ pub(crate) fn fixture() -> Fixture {
 }
 
 #[test]
-fn proposed_migration_preserves_prose_history_and_states_without_activating() {
+fn activation_migration_preserves_prose_history_and_states() {
     let root = tempfile::tempdir().unwrap();
     let db = root.path().join("book.db");
-    let store = Store::open(&db).unwrap();
+    let store = crate::store::historical_test_store(&db, 17);
     let item = store.item_create(None, "scene", "Scene").unwrap();
-    store
-        .item_set_state(&item.id, Some("draft"), item.rev)
-        .unwrap();
+    store.item_set_state(&item.id, Some("draft"), item.rev).unwrap();
     let before = store.load_doc(&item.id).unwrap();
     let snapshot = store.snapshot_create("Keep").unwrap();
-    figure_assets::test_support::install(&store);
-    assert_eq!(store.user_version().unwrap(), 17);
-    assert_eq!(crate::store::SCHEMA_VERSION, 17);
-    assert!(!document_format::new_nodes_allowed());
+    assert!(!store.figure_registry().unwrap().present);
+    drop(store);
+    let store = Store::open_existing(&db).unwrap();
+    assert_eq!(store.user_version().unwrap(), 18);
+    assert_eq!(crate::store::SCHEMA_VERSION, 18);
+    assert!(document_format::new_nodes_allowed());
     assert_eq!(store.load_doc(&item.id).unwrap().body, before.body);
     assert_eq!(store.items().unwrap()[0].state.as_deref(), Some("draft"));
     assert_eq!(store.snapshots().unwrap()[0].id, snapshot.id);
+    assert!(store.figure_registry().unwrap().present);
     assert!(store.figure_assets().unwrap().is_empty());
     drop(store);
-    // Rehearse the eventual atomic version bump only on this disposable DB.
-    let conn = rusqlite::Connection::open(&db).unwrap();
-    conn.pragma_update(None, "user_version", 18).unwrap();
-    drop(conn);
     assert_eq!(Store::open_existing(&db).unwrap().user_version().unwrap(), 18);
-    assert_eq!(Store::open_readonly(&db).unwrap().user_version().unwrap(), 18);
 }
 
 #[test]
 fn figure_names_are_strict_and_registration_is_disabled_before_any_file_write() {
     let root = tempfile::tempdir().unwrap();
     let db = root.path().join("book.db");
-    let store = Store::open(&db).unwrap();
+    let store = crate::store::historical_test_store(&db, 17);
     assert!(store.figure_assets().unwrap().is_empty());
     let good = "fig-019b1234-5678-7abc-8def-123456789abc.png";
     assert!(figure_assets::is_figure_name(good));
@@ -555,6 +551,7 @@ fn encrypted_archives_and_owned_transfer_copies_keep_registered_originals() {
     conn.execute("UPDATE doc SET body=?1", [r#"{"type":"doc","content":[]}"#])
         .unwrap();
     conn.execute("DELETE FROM doc_version", []).unwrap();
+    conn.pragma_update(None, "user_version", 18).unwrap();
     let legacy = f.root.path().join("registry-only.point");
     assert!(
         backup_bundle::write(&f.db, &f.store, &legacy)
