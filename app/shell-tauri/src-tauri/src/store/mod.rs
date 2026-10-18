@@ -34,7 +34,7 @@ use std::path::Path;
 
 /// Creation/migration target; the reader can preserve a later format.
 pub const SCHEMA_VERSION: i64 = 17;
-pub const READ_SCHEMA_VERSION: i64 = document_format::SCHEMA_VERSION;
+pub const READ_SCHEMA_VERSION: i64 = document_format::READ_SCHEMA_VERSION;
 
 /// Nesting far beyond anything the product describes (part -> chapter ->
 /// scene is 3). A chain this deep means a corrupt file, not a deep book.
@@ -1716,8 +1716,9 @@ impl Store {
         session: Option<&analytics::Runtime>,
         tracking_on: bool,
     ) -> Result<Vec<FlushAck>> {
+        let format = self.format_context()?;
         for entry in entries {
-            self.validate_body_write(&entry.item_id, &entry.body)?;
+            self.validate_body_write_in(&entry.item_id, &entry.body, &format)?;
         }
         let now = now_ms();
         self.conn.execute_batch("BEGIN IMMEDIATE")?;

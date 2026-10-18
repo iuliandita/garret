@@ -4,7 +4,7 @@ use crate::{
     backup_bundle, pictures,
     store::{
         document_format,
-        figure_assets::{FigureAsset, SCHEMA_VERSION},
+        figure_assets::{FigureAsset, READ_SCHEMA_VERSION},
         Store,
     },
 };
@@ -17,7 +17,7 @@ use std::{
 
 pub(crate) fn import_copy(db: &Path, store: &Store, source: &Path) -> Result<FigureAsset, String> {
     if !document_format::new_nodes_allowed()
-        || store.user_version().map_err(|e| e.to_string())? < SCHEMA_VERSION
+        || store.user_version().map_err(|e| e.to_string())? < READ_SCHEMA_VERSION
     {
         return Err("figure registration is disabled".into());
     }

@@ -41,10 +41,18 @@ release on both desktop and phone; 0.0.5 and earlier refuse it. To roll back,
 keep the schema-18 book separately and open a complete pre-activation schema-17
 copy with the older package. Later writing is absent from that copy. Never
 manually lower `user_version`, overwrite the newer book or remove its originals.
-Host and interface tests exercise reader preservation and transfer. The current
-Android emulator smoke creates schema-17 books and cannot load a schema-18
-fixture; schema-18 native rendering, process-death and physical-phone checks
-remain release qualification steps.
+Host and interface tests exercise reader preservation and transfer. The isolated
+Android emulator smoke accepts a generated schema-18 fixture, checks note and
+figure display, edits prose, and verifies schema, atoms, registry and originals
+after force-stop/reopen. Physical-phone checks remain release qualification steps.
+`scripts/android/reader-fixture OUTPUT_DIRECTORY` generates a synthetic encrypted
+archive, a fresh recovery key, import instructions and an owned plaintext copy
+using test-only construction and the real transfer import path. It never enables
+production writes. Keep generated archives and keys out of version control.
+`design-apply` accepts schemas 17 and 18; older books still require application
+migration first. Batch saves and retained-document validation share one schema
+and registry read per batch, and a base-revision-zero save treats a missing
+document row as having no atoms.
 
 Proof paginator test diagnostics use isolated temporary profiles and timestamped
 phase logs. They do not change PDF output, stored books, profile migration, or
@@ -255,14 +263,19 @@ A failure after staging keeps the stage and reports its location and any partial
 published assets folder; preserve both until the
 outcome is known. It never overwrites an existing package to resolve a collision.
 
-New-format readable-folder copies are tested only with matching-schema fixtures.
-They carry relative hashed assets and a `document_format: 18` front-matter marker.
-Production output remains disabled. The existing reader retains unknown keys and
-refuses inbound acceptance for every document-format marker. Stored atoms also
-prevent acceptance after marker removal. Ordinary documents keep their existing
-bidirectional, pause, conflict-copy, and undo behavior. Removing a marker and
-importing the file as ordinary Markdown is a lossy conversion, not a mirror
-round-trip. No schema upgrade or production activation is included.
+Readable-folder output refuses the entire pass before writing any files when
+any stored document contains endnotes, figures or scene breaks. The background
+caller records one persistent failing-folder status; it does not emit repeated
+notices or save-failure banners. An explicit enable attempt reports its refusal
+once. Subsequent scheduled attempts may retry and log the same failure, leaving
+the folder stale and the book untouched. Turn the folder off until authoring
+activation provides this output. Production emits no `document_format: 18`
+front matter. Matching-schema output with relative hashed assets exists only
+in isolated tests. The existing inbound reader retains unknown keys and refuses
+every document-format marker; stored atoms also prevent acceptance after marker
+removal. Ordinary books keep their existing bidirectional, pause, conflict-copy
+and undo behavior. Removing a marker and importing as ordinary Markdown is a
+lossy conversion, not a mirror round-trip.
 
 The default `garret search book.db QUERY --json` result adds a `locators` array
 to each hit, retaining the existing keys. Each locator contains `field`,

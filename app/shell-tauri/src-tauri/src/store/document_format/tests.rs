@@ -669,6 +669,22 @@ fn format_import_parsers_keep_future_constructs_out_of_stored_documents() {
 
 
 #[test]
+fn schema18_reader_first_save_of_new_scene_keeps_existing_atoms() {
+    let dir = tempfile::tempdir().unwrap();
+    let (store, retained, body) = crate::store::test_support::reader_fixture(&dir.path().join("reader.db"));
+    let scene = store.item_create(None, "scene", "New prose").unwrap().id;
+    // Exercise the supported base-rev-zero path without a starter doc row.
+    store.conn.execute("DELETE FROM doc WHERE item_id=?1", [&scene]).unwrap();
+    store.flush(&[entry(&scene, 0, &prose("First save"))]).unwrap();
+    assert_eq!(store.load_doc(&scene).unwrap().rev, 1);
+    assert_eq!(store.load_doc(&retained).unwrap().body, body);
+    assert_eq!(store.user_version().unwrap(), 18);
+    let another = store.item_create(None, "scene", "No new atoms").unwrap().id;
+    store.conn.execute("DELETE FROM doc WHERE item_id=?1", [&another]).unwrap();
+    refused(store.flush(&[entry(&another, 0, &body)]));
+}
+
+#[test]
 fn schema18_reader_opens_preserves_prose_edits_history_and_refuses_atom_changes() {
     let dir = tempfile::tempdir().unwrap();
     let db = dir.path().join("reader.db");

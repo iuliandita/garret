@@ -6,7 +6,7 @@ use std::collections::HashSet;
 mod tests;
 
 /// Reserved document boundary, shared by the reader and registry migration.
-pub const SCHEMA_VERSION: i64 = 18;
+pub const READ_SCHEMA_VERSION: i64 = 18;
 
 pub const MAX_ATTRIBUTE_BYTES: usize = 64 * 1024;
 
@@ -178,22 +178,41 @@ pub(crate) fn validate_timeline(value: &Value) -> Result<()> {
     Ok(())
 }
 
+pub(crate) struct FormatContext {
+    schema: i64,
+    assets: HashSet<String>,
+}
+
 impl Store {
+    pub(crate) fn format_context(&self) -> Result<FormatContext> {
+        let schema = self.user_version()?;
+        let assets = if schema >= READ_SCHEMA_VERSION {
+            self.figure_assets()?.into_iter().map(|asset| asset.id).collect()
+        } else { HashSet::new() };
+        Ok(FormatContext { schema, assets })
+    }
+
     pub(crate) fn validate_body_write(&self, item_id: &str, body: &str) -> Result<()> {
+        self.validate_body_write_in(item_id, body, &self.format_context()?)
+    }
+
+    pub(crate) fn validate_body_write_in(&self, item_id: &str, body: &str, context: &FormatContext) -> Result<()> {
+        let value: Value = serde_json::from_str(body).map_err(|_| invalid("invalid document JSON"))?;
         if self.item_type(item_id)?.as_deref() == Some(TIMELINE_TYPE) {
-            let value: Value =
-                serde_json::from_str(body).map_err(|_| invalid("invalid timeline JSON"))?;
             return validate_timeline(&value);
         }
-        self.validate_body_read(item_id, body)?;
-        if self.user_version()? >= SCHEMA_VERSION {
-            let value = serde_json::from_str(body).map_err(|_| invalid("invalid document JSON"))?;
-            let assets = self.figure_assets()?.into_iter().map(|asset| asset.id).collect();
-            validate(&value, true, &assets)?;
-        }
-        if self.user_version()? >= SCHEMA_VERSION && !new_nodes_allowed() {
-            let current = self.load_doc(item_id)?.body;
-            if atoms(&current)? != atoms(body)? {
+        validate(&value, context.schema >= READ_SCHEMA_VERSION, &context.assets)
+            .map_err(|error| match error {
+                StoreError::InvalidDocument(reason) => invalid(&format!("{item_id}: {reason}")),
+                other => other,
+            })?;
+        if context.schema >= READ_SCHEMA_VERSION && !new_nodes_allowed() {
+            let current = match self.load_doc(item_id) {
+                Ok(doc) => atoms(&doc.body)?,
+                Err(StoreError::NotFound { .. }) => Vec::new(),
+                Err(error) => return Err(error),
+            };
+            if current != atoms_in(&value) {
                 return Err(invalid(&format!("{item_id}: existing document atoms are read-only in this build")));
             }
         }
@@ -201,21 +220,19 @@ impl Store {
     }
 
     pub(crate) fn validate_body_read(&self, item_id: &str, body: &str) -> Result<()> {
+        self.validate_body_read_in(item_id, body, &self.format_context()?)
+    }
+
+    fn validate_body_read_in(&self, item_id: &str, body: &str, context: &FormatContext) -> Result<()> {
         if self.item_type(item_id)?.as_deref() == Some(TIMELINE_TYPE) {
             let value: Value = serde_json::from_str(body).map_err(|_| invalid("invalid timeline JSON"))?;
             return validate_timeline(&value);
         }
-        let result = if self.user_version()? >= SCHEMA_VERSION {
-            let assets = self.figure_assets()?.into_iter().map(|asset| asset.id).collect();
+        let result = if context.schema >= READ_SCHEMA_VERSION {
             let value = super::document_fields::read(body).ok_or_else(|| invalid("unsupported retained document"))?;
-            if atoms(body)?.is_empty() {
-                Ok(())
-            } else {
-                validate(&value, true, &assets)
-            }
-        } else {
-            validate_write(body)
-        };
+            if atoms_in(&value).is_empty() { Ok(()) }
+            else { validate(&value, true, &context.assets) }
+        } else { validate_write(body) };
         result.map_err(|error| match error {
             StoreError::InvalidDocument(reason) => invalid(&format!("{item_id}: {reason}")),
             other => other,
@@ -223,26 +240,22 @@ impl Store {
     }
 
     pub(crate) fn validate_retained_formats(&self) -> Result<()> {
+        let context = self.format_context()?;
         for (id, body) in self.documents()? {
-            if self.user_version()? >= SCHEMA_VERSION {
-                self.validate_body_read(&id, &body)?;
-            } else {
-                refuse_new_nodes(&id, &body)?;
-            }
+            if context.schema >= READ_SCHEMA_VERSION {
+                self.validate_body_read_in(&id, &body, &context)?;
+            } else { refuse_new_nodes(&id, &body)?; }
         }
-        if self.user_version()? >= 2 {
+        if context.schema >= 2 {
             let mut stmt = self.conn.prepare(
                 "SELECT v.item_id, b.body FROM doc_version v JOIN blob b ON b.key = v.blob_key",
             )?;
-            let rows =
-                stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
+            let rows = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
             for row in rows {
                 let (id, body) = row?;
-                if self.user_version()? >= SCHEMA_VERSION {
-                    self.validate_body_read(&id, &body)?;
-                } else {
-                    refuse_new_nodes(&id, &body)?;
-                }
+                if context.schema >= READ_SCHEMA_VERSION {
+                    self.validate_body_read_in(&id, &body, &context)?;
+                } else { refuse_new_nodes(&id, &body)?; }
             }
         }
         Ok(())
@@ -268,6 +281,11 @@ fn refuse_new_nodes(item_id: &str, body: &str) -> Result<()> {
 
 // Keep atom payloads, order and multiplicity; prose edits may move their positions.
 fn atoms(body: &str) -> Result<Vec<String>> {
+    let value: Value = serde_json::from_str(body).map_err(|_| invalid("invalid document JSON"))?;
+    Ok(atoms_in(&value))
+}
+
+fn atoms_in(value: &Value) -> Vec<String> {
     fn walk(value: &Value, out: &mut Vec<String>) {
         if matches!(value["type"].as_str(), Some("endnote" | "figure" | "scene_break")) {
             out.push(value.to_string());
@@ -276,8 +294,7 @@ fn atoms(body: &str) -> Result<Vec<String>> {
             for child in children { walk(child, out); }
         }
     }
-    let value: Value = serde_json::from_str(body).map_err(|_| invalid("invalid document JSON"))?;
     let mut out = Vec::new();
-    walk(&value, &mut out);
-    Ok(out)
+    walk(value, &mut out);
+    out
 }

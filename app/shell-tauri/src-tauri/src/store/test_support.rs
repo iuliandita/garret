@@ -41,11 +41,15 @@ pub(crate) fn legacy_fixture(path: &Path, version: i64) {
 
 /// The exact future schema installed only in disposable reader fixtures.
 pub(crate) fn reader_fixture(path: &Path) -> (Store, String, String) {
+    reader_fixture_with_image(path, include_bytes!("../../fixtures/two-halves.png"))
+}
+
+pub(crate) fn reader_fixture_with_image(path: &Path, image: &[u8]) -> (Store, String, String) {
     let store = Store::open(path).unwrap();
     let id = store.item_create(None, "scene", "Reader fixture").unwrap().id;
     figure_assets::test_support::install(&store);
     let selected = path.with_extension("png");
-    std::fs::write(&selected, include_bytes!("../../fixtures/two-halves.png")).unwrap();
+    std::fs::write(&selected, image).unwrap();
     let asset = crate::figures::test_support::import(path, &store, &selected);
     let body = serde_json::json!({"type":"doc","content":[
         {"type":"paragraph","content":[{"type":"text","text":"Surrounding prose"},
@@ -54,7 +58,7 @@ pub(crate) fn reader_fixture(path: &Path) -> (Store, String, String) {
         {"type":"scene_break"}, {"type":"paragraph","content":[{"type":"text","text":"After break"}]}
     ]}).to_string();
     store.conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![body, id]).unwrap();
-    store.conn.pragma_update(None, "user_version", document_format::SCHEMA_VERSION).unwrap();
+    store.conn.pragma_update(None, "user_version", document_format::READ_SCHEMA_VERSION).unwrap();
     store.snapshot_create("Before reader edits").unwrap();
     (store, id, body)
 }

@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import closing
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
+import sqlite3
 import subprocess
 import tempfile
 import time
@@ -169,10 +171,94 @@ def checkpoint(out: Path, name: str, *text: str) -> list[ET.Element]:
     return nodes
 
 
+def atoms(value: dict) -> list[dict]:
+    if value.get("type") in ("endnote", "figure", "scene_break"):
+        return [value]
+    return [atom for child in value.get("content", []) for atom in atoms(child)]
+
+
+def verify_reader_copy(books: Path, fixture: dict, *, edited: bool) -> None:
+    db = books / f"{fixture['book_id']}.db"
+    # The generated fixture is checkpointed and mounted read-only; pulled saves
+    # may still have a WAL and must be read with its normal recovery semantics.
+    target = f"{db.as_uri()}?mode=ro&immutable=1" if not edited else str(db)
+    with closing(sqlite3.connect(target, uri=not edited)) as connection:
+        if connection.execute("PRAGMA user_version").fetchone()[0] != fixture["schema"]:
+            raise RuntimeError("reader changed user_version")
+        body = json.loads(connection.execute("SELECT body FROM doc WHERE item_id=?", (fixture["scene_id"],)).fetchone()[0])
+        if atoms(body) != atoms(fixture["body"]):
+            raise RuntimeError("reader changed atom payloads, order or multiplicity")
+        if edited and "ReaderEdit18" not in json.dumps(body):
+            raise RuntimeError("surrounding prose edit was not saved")
+        columns = ("id", "stored_name", "mime", "bytes", "sha256", "width_px", "height_px", "orientation")
+        actual = [dict(zip(columns, row)) for row in connection.execute(f"SELECT {', '.join(columns)} FROM figure_asset ORDER BY id")]
+        if sorted(actual, key=lambda asset: asset["id"]) != sorted(fixture["assets"], key=lambda asset: asset["id"]):
+            raise RuntimeError("reader changed figure registry")
+    for asset in fixture["assets"]:
+        original = db.with_suffix(".pictures") / asset["stored_name"]
+        if original.stat().st_size != asset["bytes"] or hashlib.sha256(original.read_bytes()).hexdigest() != asset["sha256"]:
+            raise RuntimeError("reader changed figure original")
+
+
+def reader_smoke(out: Path, source: Path, steps: list[str]) -> None:
+    fixture = json.loads((source / "fixture.json").read_text())
+    verify_reader_copy(source / "books", fixture, edited=False)
+    adb("shell", "am", "force-stop", PKG)
+    adb("root")
+    adb("wait-for-device")
+    roots = adb("shell", "find", f"/data/user/0/{PKG}", "-type", "d", "-name", "books").splitlines()
+    if len(roots) != 1:
+        raise RuntimeError(f"expected one fresh app book directory, found {roots}")
+    remote = roots[0].strip()
+    uid = adb("shell", "stat", "-c", "%u", f"/data/user/0/{PKG}").strip()
+    if not uid.isdecimal():
+        raise RuntimeError("app UID unavailable")
+    adb("push", f"{source / 'books'}/.", remote)
+    adb("shell", "chown", "-R", f"{uid}:{uid}", remote)
+    adb("shell", "restorecon", "-R", remote)
+    steps.append("verified schema-18 transferred copy seeded into fresh emulator")
+    adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
+    nodes = checkpoint(out, "reader18-library", fixture["title"])
+    tap_text(nodes, fixture["title"], out=out)
+    nodes = checkpoint(out, "reader18-prose", "Surrounding prose")
+    tap_text(nodes, "Read endnote 1", "Endnote 1 lesen", out=out)
+    checkpoint(out, "reader18-note", "Retained note")
+    nodes = hierarchy(out, "reader18-note-open")
+    tap_text(nodes, "Read endnote 1", "Endnote 1 lesen", out=out)
+    nodes = wait_nodes(out, "reader18-figure", lambda found: any(
+        node.get("class") == "android.widget.Image" and "Retained alternative" in node_text(node)
+        for node in found), 45)
+    if not has(nodes, "Retained caption") or not has(nodes, "* * *"):
+        raise RuntimeError("figure caption or scene break is not displayed")
+    screenshot(out, "reader18-displayed")
+    steps.append("native endnote body, loaded figure, caption and scene break displayed")
+    tap_editable(nodes)
+    # Android MOVE_HOME selects a safe prose position without touching an atom.
+    adb("shell", "input", "keyevent", "KEYCODE_MOVE_HOME")
+    type_token("ReaderEdit18")
+    checkpoint(out, "reader18-edited", "ReaderEdit18")
+    checkpoint(out, "reader18-saved", "Saved on this device", "Auf diesem Gerät gespeichert")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    adb("shell", "input", "keyevent", "KEYCODE_HOME")
+    adb("shell", "am", "force-stop", PKG)
+    pulled = out / "reader18-after"
+    adb("pull", remote, str(pulled))
+    verify_reader_copy(pulled, fixture, edited=True)
+    steps.append("saved database remains schema 18 with exact atoms, registry and original")
+    adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
+    nodes = checkpoint(out, "reader18-reopened-library", fixture["title"])
+    tap_text(nodes, fixture["title"], out=out)
+    nodes = checkpoint(out, "reader18-reopened-prose", "ReaderEdit18")
+    tap_text(nodes, "Read endnote 1", "Endnote 1 lesen", out=out)
+    checkpoint(out, "reader18-reopened-note", "Retained note")
+    steps.append("surrounding edit and endnote survived process death and reopen")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("apk", type=Path)
     parser.add_argument("evidence", type=Path)
+    parser.add_argument("--reader-fixture", type=Path, help="reader-fixture output directory (fresh emulator only)")
     args = parser.parse_args()
     if not Path("/.dockerenv").is_file():
         parser.error("run in the isolated garret-android-emulator Docker container")
@@ -224,6 +310,11 @@ def main() -> int:
             adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
             nodes = checkpoint(out, "01-library", "Your books", "Deine Bücher")
             steps.append("APK installed; book library rendered")
+
+            if args.reader_fixture:
+                reader_smoke(out, args.reader_fixture.resolve(strict=True), steps)
+                result["status"] = "PASS"
+                return 0
 
             tap_editable(nodes)
             type_token(book)

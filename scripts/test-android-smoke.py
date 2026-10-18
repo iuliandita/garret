@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 """Offline Android hierarchy matching and scroll regressions."""
 import copy
+from contextlib import closing
 import importlib.util
+import hashlib
+import json
 from pathlib import Path
 import sys
+import sqlite3
+import tempfile
 import unittest
 from unittest.mock import patch
 import xml.etree.ElementTree as ET
@@ -20,6 +25,41 @@ def dump(name):
 
 
 class AndroidSmokeTests(unittest.TestCase):
+    def test_reader_verification_rejects_downgrades_atom_loss_and_changed_originals(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            books = Path(temporary)
+            body = {"type": "doc", "content": [{"type": "paragraph", "content": [
+                {"type": "text", "text": "ReaderEdit18"}, {"type": "endnote", "attrs": {"body": "note"}}]},
+                {"type": "figure", "attrs": {"asset_id": "asset"}}, {"type": "scene_break"}]}
+            original = b"synthetic original"
+            asset = dict(id="asset", stored_name="original.png", mime="image/png", bytes=len(original),
+                         sha256=hashlib.sha256(original).hexdigest(), width_px=1, height_px=1, orientation=1)
+            fixture = dict(schema=18, book_id="book", scene_id="scene", body=body, assets=[asset])
+            pictures = books / "book.pictures"
+            pictures.mkdir()
+            (pictures / "original.png").write_bytes(original)
+            with closing(sqlite3.connect(books / "book.db")) as connection, connection:
+                connection.executescript("PRAGMA user_version=18; CREATE TABLE doc(item_id, body); "
+                                         "CREATE TABLE figure_asset(id, stored_name, mime, bytes, sha256, width_px, height_px, orientation);")
+                connection.execute("INSERT INTO doc VALUES (?, ?)", ("scene", json.dumps(body)))
+                connection.execute("INSERT INTO figure_asset VALUES (?, ?, ?, ?, ?, ?, ?, ?)", tuple(asset.values()))
+            smoke.verify_reader_copy(books, fixture, edited=True)
+            for mutation, reason in (("PRAGMA user_version=17", "user_version"),
+                                     ("UPDATE doc SET body='{}'", "atom payloads"),
+                                     ("DELETE FROM figure_asset", "registry")):
+                with self.subTest(mutation=mutation), closing(sqlite3.connect(books / "book.db")) as connection, connection:
+                    connection.execute(mutation)
+                    connection.commit()
+                    with self.assertRaisesRegex(RuntimeError, reason):
+                        smoke.verify_reader_copy(books, fixture, edited=True)
+                    connection.execute("PRAGMA user_version=18")
+                    connection.execute("UPDATE doc SET body=?", (json.dumps(body),))
+                    connection.execute("DELETE FROM figure_asset")
+                    connection.execute("INSERT INTO figure_asset VALUES (?, ?, ?, ?, ?, ?, ?, ?)", tuple(asset.values()))
+            (pictures / "original.png").write_bytes(b"changed")
+            with self.assertRaisesRegex(RuntimeError, "original"):
+                smoke.verify_reader_copy(books, fixture, edited=True)
+
     def test_scene_buttons_match_only_exact_or_contextual_labels(self):
         button = next(n for n in dump("outline-keyboard") if n.get("text") == "Chapter 1, Scene 1")
         for attribute in ("text", "content-desc"):

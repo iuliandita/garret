@@ -1335,7 +1335,7 @@ fn dispatch(argv: &[String], data_home: &Path) -> Result<i32, Refusal> {
             let token = arg(2)?;
             read(&|| {
                 let preflight = store::Store::open_readonly(&project).map_err(|e| e.to_string())?;
-                if preflight.user_version().map_err(|e| e.to_string())? != store::SCHEMA_VERSION {
+                if preflight.user_version().map_err(|e| e.to_string())? < store::SCHEMA_VERSION {
                     return Err("design-apply requires a current project schema; open it in the application first".into());
                 }
                 drop(preflight);
@@ -1618,6 +1618,23 @@ mod tests {
     use super::*;
     use crate::store::{FlushEntry, Store};
     use tempfile::tempdir;
+
+    #[test]
+    fn schema18_reader_design_apply_preserves_documents_and_registry() {
+        let dir = tempdir().unwrap();
+        let db = dir.path().join("reader.db");
+        let (store, scene, body) = crate::store::test_support::reader_fixture(&db);
+        let assets = store.figure_assets().unwrap();
+        let design = dir.path().join("design.json");
+        crate::design_transfer::export(&store, &design).unwrap();
+        let preview = crate::design_transfer::preview(&store, &db, &design, 0).unwrap();
+        drop(store);
+        assert!(matches!(dispatch(&argv(&["design-apply", db.to_str().unwrap(), design.to_str().unwrap(), &preview.token]), dir.path()), Ok(EXIT_OK)));
+        let reader = Store::open_readonly(&db).unwrap();
+        assert_eq!(reader.user_version().unwrap(), 18);
+        assert_eq!(reader.load_doc(&scene).unwrap().body, body);
+        assert_eq!(reader.figure_assets().unwrap(), assets);
+    }
 
     #[test]
     fn only_profile_commands_require_application_data_preparation() {
