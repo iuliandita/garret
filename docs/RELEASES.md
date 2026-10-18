@@ -25,9 +25,11 @@ not synchronize books automatically.
 
 ## Develop-only work
 
-Nothing user-visible is pending on develop. Future user-visible capabilities
-awaiting release belong here and in the
-separate `develop_only` list in releases.json.
+The next release adds native Windows arm64 installers and portable archives.
+Windows x86_64 downloads keep their existing names. Both architectures enter
+the signed checksum manifest and artifact attestations with the other downloads.
+Native packaging checks install the app and create a sample book; GUI behavior
+still needs testing on Windows devices.
 
 ## Preparing the next release
 

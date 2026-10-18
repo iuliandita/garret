@@ -88,15 +88,18 @@ class ReleaseTests(unittest.TestCase):
         for platform, suffixes in {
             "linux": ("-linux-x86_64.tar.gz", "-linux-x86_64.deb", "-linux-x86_64.rpm", "-linux-x86_64.AppImage"),
             "windows": ("-windows-x86_64.zip", "-windows-x86_64-setup.exe"),
+            "windows-arm64": ("-windows-arm64.zip", "-windows-arm64-setup.exe"),
             "macos-arm64": ("-macos-arm64.zip", "-macos-arm64.dmg"),
             "macos-x86_64": ("-macos-x86_64.zip", "-macos-x86_64.dmg"),
         }.items():
-            folder = self.root / "app" / ("dist-macos/build-fresh" if platform.startswith("macos-") else f"dist-{platform}")
+            folder = self.root / "app" / ("dist-macos/build-fresh" if platform.startswith("macos-")
+                                         else "dist-windows" if platform.startswith("windows") else f"dist-{platform}")
             folder.mkdir(parents=True, exist_ok=True)
             for suffix in suffixes:
                 (folder / f"garret{suffix}").write_bytes(suffix.encode())
             with patch.object(release.subprocess, "check_output", return_value="revision\n"):
-                release.collect(platform)
+                with patch.object(sys, "argv", ["release.py", "collect", platform]):
+                    release.main()
             out = self.root / "app/dist-release" / platform
             names = {f"garret-0.0.1{suffix}" for suffix in suffixes}
             self.assertEqual({p.name for p in out.iterdir()}, names | {f"{name}.sha256" for name in names})

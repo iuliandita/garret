@@ -2,7 +2,7 @@ garret - Windows test preview
 =============================
 
 This is garret, an unfinished writing studio, shared for testing. This build
-is unsigned. Testers have run garret successfully on Windows with no issues
+is unsigned. Testers have run the x86_64 build successfully on Windows with no issues
 reported. Please use a sample manuscript or a copy of your work, and keep
 your original backup.
 
@@ -10,7 +10,8 @@ Running it
 ----------
 Extract the entire ZIP, open the app folder and double-click
 garret.exe. Keep the dist folder beside the executable.
-Use a 64-bit Intel/AMD Windows PC. No installer or administrator rights are
+Choose the x86_64 package for Intel/AMD or arm64 for Windows on ARM.
+No installer or administrator rights are
 required by this package.
 
 Windows may show an unknown-publisher or SmartScreen warning. This package
@@ -61,7 +62,7 @@ cover different machines and workflows.
 
 Known Windows limitations
 -------------------------
-- PDF export uses WebView2. Native Windows CI covers the sample's export renderer
+- PDF export uses WebView2. Native x86_64 Windows CI covers the sample's export renderer
   and writer through a CI hook. The menu, preview and command bridge still need
   native testing, as do other runtimes and font installations.
   CLI PDF export remains Linux-only.

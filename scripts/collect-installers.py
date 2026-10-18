@@ -6,7 +6,7 @@ import sys
 
 platform, source, destination = sys.argv[1:]
 source, destination = Path(source), Path(destination)
-formats = {"linux": ("deb", "rpm", "AppImage"), "windows": ("exe",)}.get(platform, ("dmg",))
+formats = {"linux": ("deb", "rpm", "AppImage"), "windows": ("exe",), "windows-arm64": ("exe",)}.get(platform, ("dmg",))
 for extension in formats:
     matches = list(source.glob(f"**/*.{extension}"))
     if extension == "exe":
@@ -14,5 +14,5 @@ for extension in formats:
     if len(matches) != 1:
         raise SystemExit(f"Expected one fresh {extension} installer, found {len(matches)}")
     suffix = "-setup.exe" if extension == "exe" else f".{extension}"
-    architecture = platform if platform.startswith("macos-") else f"{platform}-x86_64"
+    architecture = platform if platform.startswith(("macos-", "windows-")) else f"{platform}-x86_64"
     shutil.copy(matches[0], destination / f"garret-{architecture}{suffix}")

@@ -104,6 +104,7 @@ are included too. All of these tools are free.
 
 Get [alpha testing builds from GitHub Releases](https://github.com/iuliandita/garret/releases),
 or [build garret from source](#building-from-source-linux).
+Native Windows arm64 installers and portable archives are prepared for the next release.
 
 <p>
   <img src="docs/screenshots/android-editor-light.png" alt="Android writing view in light mode" width="240">

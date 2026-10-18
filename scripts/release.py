@@ -82,11 +82,13 @@ def collect(platform: str) -> None:
     sources = {
         "linux": ROOT / "app/dist-linux/garret-linux-x86_64.tar.gz",
         "windows": ROOT / "app/dist-windows/garret-windows-x86_64.zip",
+        "windows-arm64": ROOT / "app/dist-windows/garret-windows-arm64.zip",
         "android": ROOT / f"app/dist-android/{revision}/garret-android.apk",
     }
     names = {
         "linux": f"garret-{value}-linux-x86_64.tar.gz",
         "windows": f"garret-{value}-windows-x86_64.zip",
+        "windows-arm64": f"garret-{value}-windows-arm64.zip",
         "android": f"garret-{value}-android.apk",
     }
     if platform.startswith("macos-"):
@@ -102,11 +104,12 @@ def collect(platform: str) -> None:
     installers = {
         "linux": (".deb", ".rpm", ".AppImage"),
         "windows": ("-setup.exe",),
+        "windows-arm64": ("-setup.exe",),
         "macos-arm64": (".dmg",),
         "macos-x86_64": (".dmg",),
     }
     for extension in installers.get(platform, ()):
-        architecture = platform if platform.startswith("macos-") else f"{platform}-x86_64"
+        architecture = platform if platform.startswith(("macos-", "windows-")) else f"{platform}-x86_64"
         source = sources[platform].parent / f"garret-{architecture}{extension}"
         shutil.copyfile(source, out / f"garret-{value}-{architecture}{extension}")
     if platform == "android":
@@ -126,7 +129,8 @@ def download_names() -> set[str]:
         for suffix in ("linux-x86_64.tar.gz", "windows-x86_64.zip", "android.apk",
                        "android-info.zip", "macos-arm64.zip", "macos-x86_64.zip",
                        "linux-x86_64.deb", "linux-x86_64.rpm", "linux-x86_64.AppImage",
-                       "windows-x86_64-setup.exe", "macos-arm64.dmg", "macos-x86_64.dmg")
+                       "windows-x86_64-setup.exe", "windows-arm64.zip", "windows-arm64-setup.exe",
+                       "macos-arm64.dmg", "macos-x86_64.dmg")
     }
     return names | {f"{name}.sha256" for name in names}
 
@@ -208,7 +212,7 @@ def verify_remote_assets(names: set[str], complete: bool = False, allow_unsigned
         raise ValueError("The draft release has missing or unexpected assets; inspect it before publishing.")
 
 
-if __name__ == "__main__":
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check").add_argument("--tag")
@@ -219,7 +223,7 @@ if __name__ == "__main__":
     remote.add_argument("--complete", action="store_true")
     remote.add_argument("--allow-unsigned", action="store_true")
     commands.add_parser("set-version").add_argument("version")
-    commands.add_parser("collect").add_argument("platform", choices=["linux", "windows", "android", "macos-arm64", "macos-x86_64"])
+    commands.add_parser("collect").add_argument("platform", choices=["linux", "windows", "windows-arm64", "android", "macos-arm64", "macos-x86_64"])
     args = parser.parse_args()
     try:
         if args.command == "check":
@@ -239,3 +243,7 @@ if __name__ == "__main__":
             collect(args.platform)
     except (ValueError, OSError, subprocess.CalledProcessError) as error:
         parser.exit(1, f"Release preparation failed: {error}\n")
+
+
+if __name__ == "__main__":
+    main()

@@ -23,7 +23,9 @@ license notices. The package manager installs WebKitGTK 4.1 and GTK 3 dependenci
 
 ## Windows
 
-Run `garret-VERSION-windows-x86_64-setup.exe`. It installs for the current user
+Choose `windows-x86_64` for Intel/AMD or `windows-arm64` for Windows on ARM
+(arm64 downloads start with the next release). Run the matching
+`garret-VERSION-windows-ARCH-setup.exe`. It installs for the current user
 and adds menu shortcuts. The embedded WebView2 bootstrapper installs the runtime
 if missing; that first runtime installation needs internet. Once installed,
 garret works offline. The portable zip remains available; extract the entire
