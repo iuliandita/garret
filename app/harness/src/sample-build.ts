@@ -124,7 +124,7 @@ function withImportedWalk<T>(source: string, use: (walk: WalkRow[], name: string
     const dataHome = join(library, "application-data");
     mkdirSync(dataHome);
     const proc = Bun.spawnSync([BIN, "import", source, library, "--json"], {
-      env: { ...process.env, XDG_DATA_HOME: dataHome, LOCALAPPDATA: dataHome },
+      env: { ...process.env, XDG_DATA_HOME: dataHome, APPDATA: dataHome },
       stdout: "pipe",
       stderr: "pipe",
     });

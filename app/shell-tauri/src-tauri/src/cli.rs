@@ -511,14 +511,15 @@ fn print_results(r: &find::FindResults, query: &str) {
 /// overwrite has `rm`; a CLI that silently destroyed a file named by a typo
 /// would not.
 pub fn export(
+    data_home: &Path,
     path: &Path,
     dest: &Path,
     format: export::Format,
 ) -> Result<crate::commands::export::ExportResult, String> {
-    export_scope(path, dest, format, None)
+    export_scope(data_home, path, dest, format, None)
 }
 
-pub fn export_scope(path: &Path, dest: &Path, format: export::Format, story_id: Option<&str>) -> Result<crate::commands::export::ExportResult, String> {
+pub fn export_scope(data_home: &Path, path: &Path, dest: &Path, format: export::Format, story_id: Option<&str>) -> Result<crate::commands::export::ExportResult, String> {
     let store = store::Store::open_readonly(path).map_err(|e| e.to_string())?;
     let name = project_name(&store, path);
     drop(store);
@@ -526,13 +527,13 @@ pub fn export_scope(path: &Path, dest: &Path, format: export::Format, story_id: 
     // it would be the same argument `project_export` declined, arriving by a
     // different door. An unreadable one refuses the export here rather than
     // exporting against an empty one.
-    let vault = crate::identity::read_vault(&crate::data_home()).map_err(|e| e.to_string())?;
+    let vault = crate::identity::read_vault(data_home).map_err(|e| e.to_string())?;
     // THE LANGUAGE THE HOST WRITES IN, from the same `settings.json` the window
     // reads and by the same rule -- there is no `--locale` flag for the vault's
     // recorded reason, and none is needed: a CLI export is the SAME writer's
     // book, run without a window, and it must not come out in a different
     // language from the one the File menu produces.
-    let strings = crate::commands::export::strings_for(&crate::data_home());
+    let strings = crate::commands::export::strings_for(data_home);
     // A PROOF IS LAID OUT BY A WEB ENGINE and the other two formats are not, so
     // this is the one subcommand arm that needs a display. It is a SENTENCE and
     // not a crash when there is none -- `render_standalone` says what to set --
@@ -1256,7 +1257,11 @@ pub(crate) fn uses_profile(command: &str) -> bool {
 }
 
 pub fn run(argv: &[String]) -> i32 {
-    match dispatch(argv) {
+    run_with(argv, &crate::data_home())
+}
+
+fn run_with(argv: &[String], data_home: &Path) -> i32 {
+    match dispatch(argv, data_home) {
         Ok(code) => code,
         Err(e) => {
             eprintln!("{e}");
@@ -1268,7 +1273,7 @@ pub fn run(argv: &[String]) -> i32 {
     }
 }
 
-fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
+fn dispatch(argv: &[String], data_home: &Path) -> Result<i32, Refusal> {
     let Some(command) = argv.first() else {
         return Err(Refusal::Usage("no subcommand given".into()));
     };
@@ -1378,9 +1383,9 @@ fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
                 .map_err(Refusal::Unreadable)?;
             read(&|| {
                 let result = if source.is_dir() {
-                    crate::encrypted_archive::create_from_bundle(&source, &dest, &key, &crate::data_home())?
+                    crate::encrypted_archive::create_from_bundle(&source, &dest, &key, data_home)?
                 } else {
-                    crate::encrypted_archive::create_from_project(&source, &dest, &key, &crate::data_home())?
+                    crate::encrypted_archive::create_from_project(&source, &dest, &key, data_home)?
                 };
                 println!("encrypted archive written: {} (recipient {})", result.file, result.recipient);
                 Ok(EXIT_OK)
@@ -1392,7 +1397,7 @@ fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
             let key = if spec == "-" { crate::encrypted_archive::key_from_stdin() } else { crate::encrypted_archive::key_from_path(Path::new(spec)) }
                 .map_err(Refusal::Unreadable)?;
             read(&|| {
-                crate::encrypted_archive::verify(&cipher, &key, &crate::data_home())?;
+                crate::encrypted_archive::verify(&cipher, &key, data_home)?;
                 println!("encrypted archive verified");
                 Ok(EXIT_OK)
             })
@@ -1404,7 +1409,7 @@ fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
             let key = if spec == "-" { crate::encrypted_archive::key_from_stdin() } else { crate::encrypted_archive::key_from_path(Path::new(spec)) }
                 .map_err(Refusal::Unreadable)?;
             read(&|| {
-                let result = crate::encrypted_archive::restore(&cipher, &key, &library, "recovered", crate::store::now_ms(), &crate::data_home())?;
+                let result = crate::encrypted_archive::restore(&cipher, &key, &library, "recovered", crate::store::now_ms(), data_home)?;
                 println!("restored {} as {:?}", result.path, result.name);
                 Ok(EXIT_OK)
             })
@@ -1474,8 +1479,8 @@ fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
             // were fine and the destination was occupied.
             read(&|| {
                 let r = match opts.story.as_deref() {
-                    Some(id) => export_scope(&path, &dest, opts.format, Some(id))?,
-                    None => export(&path, &dest, opts.format)?,
+                    Some(id) => export_scope(data_home, &path, &dest, opts.format, Some(id))?,
+                    None => export(data_home, &path, &dest, opts.format)?,
                 };
                 // No `--json` on export: its answer is a FILE, and the one line
                 // saying where it landed is the same in both shapes.
@@ -1516,7 +1521,7 @@ fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
             // the window would. The report `print_salvage` prints below is the
             // OPERATOR's, it is parsed by the graded rig, and it does not move:
             // see this module's header.
-            let strings = crate::commands::export::strings_for(&crate::data_home());
+            let strings = crate::commands::export::strings_for(data_home);
             let v = salvage::salvage_with(&path, &out, strings).map_err(|e| match e {
                 salvage::Refusal::Usage(m) => Refusal::Usage(m),
                 salvage::Refusal::Unreadable(m) => Refusal::Unreadable(m),
@@ -1576,9 +1581,8 @@ fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
             let source = PathBuf::from(arg(0)?);
             let library = PathBuf::from(arg(1)?);
             read(&|| {
-                let data_home = crate::data_home();
-                let strings = crate::projects::read_settings(&data_home).locale.strings();
-                let r = import(&data_home, &source, &library, &strings)?;
+                let strings = crate::projects::read_settings(data_home).locale.strings();
+                let r = import(data_home, &source, &library, &strings)?;
                 emit(&r, opts.json, print_import);
                 Ok(EXIT_OK)
             })
@@ -1590,7 +1594,7 @@ fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
         "preflight" => {
             let path = PathBuf::from(arg(0)?);
             read(&|| {
-                let v = preflight_with(&path, opts.format, &crate::data_home())?;
+                let v = preflight_with(&path, opts.format, data_home)?;
                 let code = preflight_exit(&v);
                 emit(&v, opts.json, print_preflight);
                 Ok(code)
@@ -1599,9 +1603,8 @@ fn dispatch(argv: &[String]) -> Result<i32, Refusal> {
         "mirror-preview" => {
             let path = PathBuf::from(arg(0)?);
             read(&|| {
-                let data_home = crate::data_home();
                 let root = std::env::var_os("APP_MIRROR_DIR").map(PathBuf::from);
-                let preview = mirror_preview_with(&path, &data_home, root.as_deref())?;
+                let preview = mirror_preview_with(&path, data_home, root.as_deref())?;
                 emit(&preview, opts.json, print_mirror_preview);
                 Ok(EXIT_OK)
             })
@@ -1695,6 +1698,11 @@ mod tests {
         out
     }
 
+    fn run(argv: &[String]) -> i32 {
+        let home = tempdir().unwrap();
+        run_with(argv, home.path())
+    }
+
     fn argv(parts: &[&str]) -> Vec<String> {
         parts.iter().map(|s| s.to_string()).collect()
     }
@@ -1761,7 +1769,7 @@ mod tests {
         assert!(h.snapshots.is_empty());
         assert_eq!(version(&db), 1, "history migrated the project");
 
-        export(&db, &dir.path().join("out.md"), export::Format::Markdown).unwrap();
+        export(dir.path(), &db, &dir.path().join("out.md"), export::Format::Markdown).unwrap();
         assert_eq!(version(&db), 1, "export migrated the project");
 
         // And nothing was left beside it either: a read that opens WAL writes
@@ -2240,14 +2248,14 @@ mod tests {
             ("export", scene.id.as_str(), EXIT_UNREADABLE, "not a story"),
             ("inspect", first.id.as_str(), EXIT_USAGE, "--story applies only to export"),
         ] {
-            let error = dispatch(&argv(&[command, path.to_str().unwrap(), refused.to_str().unwrap(), "--story", id])).err().expect("scope must refuse");
+            let error = dispatch(&argv(&[command, path.to_str().unwrap(), refused.to_str().unwrap(), "--story", id]), dir.path()).err().expect("scope must refuse");
             assert_eq!(error.code(), code);
             assert!(error.to_string().contains(message), "{error}");
             assert!(!refused.exists());
         }
         store.set_meta(crate::core_constants::PRESET_KEY, "novel").unwrap();
         assert!(inspect(path).unwrap().stories.is_none());
-        let error = dispatch(&argv(&["export", path.to_str().unwrap(), refused.to_str().unwrap(), "--story", &first.id])).err().expect("novel scope must refuse");
+        let error = dispatch(&argv(&["export", path.to_str().unwrap(), refused.to_str().unwrap(), "--story", &first.id]), dir.path()).err().expect("novel scope must refuse");
         assert_eq!(error.code(), EXIT_UNREADABLE);
         assert!(error.to_string().contains("not a collection"), "{error}");
         assert!(!refused.exists());
@@ -2859,7 +2867,7 @@ mod tests {
         let db = dir.path().join("p.db");
         fixture(&db);
         let dest = dir.path().join("book.md");
-        let r = export(&db, &dest, export::Format::Markdown).unwrap();
+        let r = export(dir.path(), &db, &dest, export::Format::Markdown).unwrap();
         let text = std::fs::read_to_string(&dest).unwrap();
         assert!(text.starts_with("# The Harbour\n"), "{text}");
         assert!(text.contains("## Part One"), "{text}");
@@ -2878,7 +2886,7 @@ mod tests {
         fixture(&db);
         let dest = dir.path().join("book.md");
         std::fs::write(&dest, "mine").unwrap();
-        assert!(export(&db, &dest, export::Format::Markdown).is_err());
+        assert!(export(dir.path(), &db, &dest, export::Format::Markdown).is_err());
         assert_eq!(std::fs::read_to_string(&dest).unwrap(), "mine");
     }
 
@@ -2887,11 +2895,10 @@ mod tests {
     fn pdf_without_display_child() {
         if std::env::var_os("APP_PDF_HEADLESS_PROBE").is_none() { return; }
         let dir = tempdir().unwrap();
-        std::env::set_var("XDG_DATA_HOME", dir.path());
         let db = dir.path().join("p.db");
         fixture(&db);
         let dest = dir.path().join("proof.pdf");
-        let error = export(&db, &dest, export::Format::Pdf).unwrap_err();
+        let error = export(dir.path(), &db, &dest, export::Format::Pdf).unwrap_err();
         assert!(error.contains("needs a display"), "{error}");
         assert!(error.contains("set DISPLAY or WAYLAND_DISPLAY"), "{error}");
         assert!(!dest.exists());
@@ -2916,31 +2923,6 @@ mod tests {
 
     #[test]
     fn the_cli_writes_in_the_language_settings_json_names() {
-        // KILLS THE MUTANT the single-catalog record predicted would survive
-        // once a second catalog shipped: this module's two
-        // `strings_for(&crate::data_home())` calls (this one and salvage's)
-        // replaced by `crate::projects::Settings::default().locale.strings()`.
-        // Every other test in this file calls `export()`/`salvage_with()`
-        // directly with a fixture locale or none at all, so neither call site
-        // was ever exercised through the real `data_home()` seam this binary
-        // actually runs on. This test dispatches the CLI subcommand, exactly
-        // as an operator's shell would, over a `settings.json` this test
-        // controls.
-        //
-        // `data_home()`'s OWN doc comment says why this is the one test in
-        // this crate that touches `XDG_DATA_HOME`: "reading process
-        // environment inside a unit test is a data race against every other
-        // test in the binary." The lock below only serializes repeat runs of
-        // THIS test against each other; it cannot protect
-        // `export_writes_the_manuscript_under_the_projects_own_name` and its
-        // neighbours above, which read the same variable's ambient value
-        // without a lock of their own. Documented rather than hidden: those
-        // tests do not assert anything language-dependent, so the window this
-        // opens is real but narrow, and it is the only way to reach a seam
-        // that has no other injection point.
-        static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-        let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-
         let project_dir = tempdir().unwrap();
         let db = project_dir.path().join("p.db");
         fixture(&db);
@@ -2951,30 +2933,18 @@ mod tests {
         std::fs::create_dir_all(settings.parent().unwrap()).unwrap();
         std::fs::write(&settings, br#"{"locale":"de"}"#).unwrap();
 
-        struct RestoreDataHome(Option<std::ffi::OsString>);
-        impl Drop for RestoreDataHome {
-            fn drop(&mut self) {
-                match &self.0 {
-                    Some(value) => std::env::set_var("XDG_DATA_HOME", value),
-                    None => std::env::remove_var("XDG_DATA_HOME"),
-                }
-            }
-        }
-        let restore_home = RestoreDataHome(std::env::var_os("XDG_DATA_HOME"));
-        std::env::set_var("XDG_DATA_HOME", home.path());
-        let code = run(&argv(&[
+        let code = run_with(&argv(&[
             "export",
             &db.to_string_lossy(),
             &dest.to_string_lossy(),
-        ]));
+        ]), home.path());
         let source = write_manuscript(project_dir.path(), "source.md", "# Book\n\n## Part\n\n### Chapter\n");
         let library = project_dir.path().join("library");
-        let import_code = run(&argv(&[
+        let import_code = run_with(&argv(&[
             "import",
             source.to_str().unwrap(),
             library.to_str().unwrap(),
-        ]));
-        drop(restore_home);
+        ]), home.path());
 
         assert_eq!(code, EXIT_OK);
         let text = std::fs::read_to_string(&dest).unwrap();
@@ -3817,11 +3787,9 @@ mod tests {
             }
             return;
         }
-        let home = tempdir().unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "cli::tests::export_reports_control_character_changes_in_plain_language", "--nocapture"])
             .env(CHILD, "1")
-            .env("XDG_DATA_HOME", home.path())
             .output().unwrap();
         let stdout = String::from_utf8(output.stdout).unwrap();
         assert!(output.status.success(), "{stdout}\n{}", String::from_utf8_lossy(&output.stderr));
@@ -3843,7 +3811,7 @@ mod tests {
         let db = dir.path().join("p.db");
         fixture(&db);
         let dest = dir.path().join("out.epub");
-        let r = export(&db, &dest, export::Format::Epub).unwrap();
+        let r = export(dir.path(), &db, &dest, export::Format::Epub).unwrap();
         assert_eq!(r.format, "epub");
         let bytes = std::fs::read(&dest).unwrap();
         assert_eq!(&bytes[30..38], b"mimetype");
@@ -3862,7 +3830,7 @@ mod tests {
         let db = dir.path().join("p.db");
         fixture(&db);
         let dest = dir.path().join("out.docx");
-        let r = export(&db, &dest, export::Format::Docx).unwrap();
+        let r = export(dir.path(), &db, &dest, export::Format::Docx).unwrap();
         assert_eq!(r.format, "docx");
         let bytes = std::fs::read(&dest).unwrap();
         let entries = crate::epub::read_zip(&bytes).unwrap();
