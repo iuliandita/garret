@@ -25,6 +25,7 @@ import { t } from "./i18n";
 import { validDocument, validDocumentShape } from "./document-format";
 import { clipboardPlaintext, positionalText, proseText, type PlaintextLabels } from "./document-projections";
 import { refusesPicture, remintClipboard, validateClipboardHtml } from "./document-clipboard";
+import { trailingTextblockPlugin, withTrailingTextblock } from "./trailing-block";
 import type { FieldLocator } from "./find-locate";
 
 export const schema = new Schema({
@@ -41,8 +42,7 @@ export const schema = new Schema({
       group: "block", atom: true, marks: "",
       attrs: { id: {}, asset_id: {}, width: {}, caption: {}, alt: {} },
       toDOM: node => ["figure", { class: "document-figure", "data-garret-figure": JSON.stringify(node.attrs), contenteditable: "false" },
-        ["span", {}, t("document.figure-placeholder")], ["figcaption", {}, node.attrs.caption as string],
-        ["span", { class: "document-figure-alt" }, node.attrs.alt as string]],
+        ["span", {}, t("document.figure-placeholder")], ["figcaption", {}, node.attrs.caption as string]],
       parseDOM: [{ tag: "figure[data-garret-figure]", getAttrs: dom => clipboardAttrs(dom, "figure") }],
     },
     scene_break: { group: "block", atom: true, marks: "", toDOM: () => ["div", { class: "document-scene-break", role: "separator", contenteditable: "false" }],
@@ -379,6 +379,9 @@ export function editorPlugins(): Plugin[] {
     // transaction at a time. Last, so it is outside every real one.
     spellRedrawPlugin(),
     numericSpellingPlugin(),
+    // Appends to the transaction that ended the document in an atom, so it
+    // needs no place in the order either.
+    trailingTextblockPlugin(),
   ];
 }
 
@@ -650,7 +653,7 @@ export function createEditor(
   let noteOffset = 0;
   const editSources = new EditSourceTracker();
   const view: EditorView = new EditorView(mount, {
-    state: EditorState.create({ doc, plugins: [...editorPlugins(), preserveAtoms(opts.authoring)] }),
+    state: EditorState.create({ doc: opts.authoring ? withTrailingTextblock(doc) : doc, plugins: [...editorPlugins(), preserveAtoms(opts.authoring)] }),
     nodeViews: readerViews(opts.figurePreview, {
       editFigure: opts.authoring ? pos => { void authoring?.figure(pos); } : undefined,
       noteOffset: () => noteOffset,
@@ -770,7 +773,7 @@ export function createEditor(
     replaceDoc(input: DocInput): void {
       if (authoring?.pending()) throw new Error("an endnote draft is still open");
       const next = schema.nodeFromJSON(docJsonFrom(input) as unknown as Record<string, unknown>);
-      view.updateState(EditorState.create({ doc: next, plugins: [...editorPlugins(), preserveAtoms(opts.authoring)] }));
+      view.updateState(EditorState.create({ doc: opts.authoring ? withTrailingTextblock(next) : next, plugins: [...editorPlugins(), preserveAtoms(opts.authoring)] }));
       editSources.reset();
       refreshNoteReferences(view, noteOffset, opts.authoring);
     },

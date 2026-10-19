@@ -34,6 +34,7 @@ const CLASSES: ReadonlyArray<readonly [string, RegExp]> = [
   ["host-error.picture-format", /is not a png or a jpeg/],
   ["host-error.picture-pixels", /the largest this book will read is/],
   ["host-error.picture-unreadable", /^that picture could not be read/],
+  ["host-error.figure-alt", /^item [^:\s]+: figure needs alternative text/],
   ["host-error.archive-stage", /^unfinished encrypted archive staging /],
   ["host-error.corrupt", /database disk image is malformed|file is not a database|sqlite_corrupt|sqlite_notadb/],
   ["host-error.disk-full", /database or disk is full|no space left on device|\(os error 28\)|disk quota exceeded|\(os error 122\)|^disk full|sqlite_full/],

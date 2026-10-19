@@ -4,6 +4,7 @@ import { EditorState } from "prosemirror-state";
 import { undo, redo } from "prosemirror-history";
 import { createEditor, editorPlugins, schema } from "../src/editor";
 import { atomSignature, preserveAtoms } from "../src/document-reader";
+import { t } from "../src/i18n";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 const note = schema.nodes.endnote.create({ id: "01900000-0000-7000-8000-000000000001", fmt: "text", body: "Saved note\nMore" });
@@ -88,4 +89,36 @@ test("reader displays note body and bounded figure preview; late previews stay r
   expect(mount.querySelector("figure img")?.getAttribute("alt")).toBe("Description");
   current.destroy(); mount.remove();
   Object.defineProperty(globalThis, "IntersectionObserver", { configurable: true, writable: true, value: observer });
+});
+
+test("figure alternative text sits on the picture and never as a second visible line", async () => {
+  const mount = document.createElement("div"); document.body.append(mount);
+  const observer = globalThis.IntersectionObserver;
+  Object.defineProperty(globalThis, "IntersectionObserver", { configurable: true, writable: true, value: undefined });
+  const editor = createEditor(mount, { kind: "pmjson", json: doc.toJSON() }, {
+    figurePreview: async () => ({ state: "present", data_uri: "data:image/png;base64,AAAA" }),
+  });
+  try {
+    await new Promise(resolve => setTimeout(resolve, 0));
+    const figureDom = mount.querySelector("figure")!;
+    const image = figureDom.querySelector("img")!;
+    expect(image.getAttribute("alt")).toBe("Description");
+    expect(image.getAttribute("title")).toBe("Description");
+    expect(figureDom.textContent).not.toContain("Description");
+    expect(figureDom.querySelector(".document-figure-alt-missing")).toBeNull();
+    expect(figureDom.querySelector("figcaption")!.textContent).toBe("Caption");
+  } finally {
+    editor.destroy(); mount.remove();
+    Object.defineProperty(globalThis, "IntersectionObserver", { configurable: true, writable: true, value: observer });
+  }
+});
+
+test.each(["", "  "])("a figure without alternative text shows a quiet marker (%j)", alt => {
+  const mount = document.createElement("div"); document.body.append(mount);
+  const bare = schema.node("doc", null, [figure.type.create({ ...figure.attrs, alt }), schema.node("paragraph")]);
+  const editor = createEditor(mount, { kind: "pmjson", json: bare.toJSON() });
+  try {
+    expect(mount.querySelector(".document-figure-alt-missing")!.textContent).toBe(t("figure.alt-missing"));
+    expect(JSON.parse(editor.serialize()).content[0].attrs.alt).toBe(alt);
+  } finally { editor.destroy(); mount.remove(); }
 });
