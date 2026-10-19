@@ -5,16 +5,6 @@
   </picture>
 </p>
 
-New desktop books offer Novel, Short fiction, Nonfiction, and Story collection project types.
-Short fiction starts with one scene and grows structure as needed. Nonfiction
-starts with its own book design, calls the Bible Reference notes, and keeps
-fiction tools available under Planning > More. A single-scene manuscript
-exports without generated contents or outline headings; front and back matter
-remain included. Collections keep stories in one book, with their own titles,
-optional authors, status and word counts. Use Story details from a story's
-navigator context menu to edit its fields or export it alone in Markdown, EPUB,
-PDF or Word. See [collection export rules](docs/COMPATIBILITY.md).
-
 ## A writing studio for the whole book.
 
 **garret** <img src="assets/brand/garret/garret-middle-dot.svg" alt="·" width="8" height="16"> is a powerful writing studio for novelists, completely free and open
@@ -27,7 +17,7 @@ or an internet connection to write. Your books stay on your own disk.
 > **Early alpha.** garret moves fast; keep backups of your work.
 
 The current published build is [0.0.10 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.10).
-See [published and development changes](docs/RELEASES.md) and the
+See the [changelog](CHANGELOG.md), [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
 
 From 0.0.7, desktop upgrades books to schema 18 after consent and a verified
@@ -45,6 +35,16 @@ See the compatibility guide before upgrading or transferring a book.
 Write in a calm editor with formatting, book-wide search, undo/redo, and
 scene history. Arrange parts, chapters, and scenes with outlines and cards.
 Choose light or dark mode, in English or German.
+
+New desktop books offer Novel, Short fiction, Nonfiction, and Story collection project types.
+Short fiction starts with one scene and grows structure as needed. Nonfiction
+starts with its own book design, calls the Bible Reference notes, and keeps
+fiction tools available under Planning > More. A single-scene manuscript
+exports without generated contents or outline headings; front and back matter
+remain included. Collections keep stories in one book, with their own titles,
+optional authors, status and word counts. Use Story details from a story's
+navigator context menu to edit its fields or export it alone in Markdown, EPUB,
+PDF or Word. See [collection export rules](docs/COMPATIBILITY.md).
 
 On desktop, Edit > Insert or edit endnote (Ctrl+Alt+N) opens a plain-text note
 with Save/Cancel and isolated undo. Choose book, chapter or story numbering in
