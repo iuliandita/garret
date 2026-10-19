@@ -1,12 +1,10 @@
 {
   "version": 1,
   "published": {
-    "tag": "v0.0.8",
-    "source_revision": "0a9ac338626a1d0a21b09c9b92ca70b935c1cc00",
+    "tag": "v0.0.9",
+    "source_revision": "05085317bd8d14a3f0be0a92561fb558879774f4",
     "downloads": ["linux-x86_64", "windows-x86_64", "windows-arm64", "android", "macos-arm64", "macos-x86_64"],
     "android_scope": "library-and-scene-editor-manual-transfer"
   },
-  "develop_only": [
-    "Library screen menu, summary, selectors and project types"
-  ]
+  "develop_only": []
 }

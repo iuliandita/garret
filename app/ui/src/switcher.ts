@@ -1,4 +1,4 @@
-import { createPresetChoice, projectPreset, type ProjectPreset } from "./project-preset";
+import { createPresetChoice, type ProjectPreset } from "./project-preset";
 // app/ui/src/switcher.ts
 // The project surface: a header strip naming the open manuscript, and a panel
 // listing the others. There is deliberately no native file dialog - it would be
