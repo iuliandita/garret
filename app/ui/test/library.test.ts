@@ -17,6 +17,7 @@ import {
   type LibraryWordsAnswer,
 } from "../src/library";
 import { createLibraryBookActions } from "../src/library-book-actions";
+import { askUpgrade } from "../src/upgrade-prompt";
 import type { BookStats, LibraryMembership, MembershipEdit } from "../src/library-summary";
 
 function book(over: Partial<LibraryBook> = {}): LibraryBook {
@@ -1310,4 +1311,20 @@ test("series pills filter the shelf, covers name the project type, and the summa
   expect(document.querySelector('#library-series-filter button[data-group-id="s1"]')?.getAttribute("aria-pressed")).toBe("true");
   r.library.setSummaryVisible(true);
   expect(document.getElementById("library-summary")?.hidden).toBe(false);
+});
+
+test("the format upgrade prompt stays usable over the library", async () => {
+  const r = rig();
+  r.library.open();
+  await flush();
+  const answer = askUpgrade("Upgrade this book?", "Cancel", "Upgrade book");
+  const bystander = document.createElement("div");
+  document.body.append(bystander);
+  await flush();
+  const dialog = document.querySelector<HTMLDialogElement>("dialog.upgrade-prompt")!;
+  expect(bystander.inert).toBe(true);
+  expect(dialog.inert).toBe(false);
+  dialog.querySelectorAll("button")[1].click();
+  expect(await answer).toBe(true);
+  bystander.remove();
 });

@@ -464,7 +464,7 @@ export function createLibrary(deps: LibraryDeps): Library {
   const isolateWorkspace = (): void => {
     for (const child of document.body.children) {
       if (!(child instanceof HTMLElement) || child === root || ["SCRIPT", "STYLE"].includes(child.tagName) ||
-          child.matches("#book-copy-prompt, #close-prompt-panel, [role=alert], [role=status]")) continue;
+          child.matches("#book-copy-prompt, #close-prompt-panel, .upgrade-prompt, [role=alert], [role=status]")) continue;
       if (!isolated.has(child)) isolated.set(child, child.inert);
       child.inert = true;
     }
