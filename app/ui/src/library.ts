@@ -272,6 +272,8 @@ export function createLibrary(deps: LibraryDeps): Library {
   menuButton.setAttribute("aria-expanded", "false");
   menuButton.setAttribute("aria-controls", "library-menu-panel");
   const menu = createMenuPanel({ id: "library-menu-panel", onClose: () => menuButton.setAttribute("aria-expanded", "false") });
+  // A refused close (a dirty membership draft, a busy room) opens nothing.
+  const leaveFor = (focus: "list" | "import" | "restore" | "backups") => (): void => { close(); if (!isOpen) deps.openBooks(focus); };
   const menuAnchor = document.createElement("div");
   menuAnchor.id = "library-menu-anchor";
   menuAnchor.append(menuButton, menu.element);
@@ -280,7 +282,6 @@ export function createLibrary(deps: LibraryDeps): Library {
     if (menu.isOpen()) { menu.close(); return; }
     // The File menu's book-independent items, under the same labels and
     // shortcuts, so the room and the book view offer one menu.
-    const leaveFor = (focus: "list" | "import" | "backups") => () => { close(); if (!isOpen) deps.openBooks(focus); };
     menu.paint([
       { id: "library-new-book", label: () => t("menu.project-new"), run: () => beginNewBook() },
       { id: "library-open-book", label: () => t("menu.project-open"), opensDialog: true, run: leaveFor("list") },
@@ -358,10 +359,7 @@ export function createLibrary(deps: LibraryDeps): Library {
     button.type = "button";
     button.id = focus === "restore" ? "library-copies" : `library-${focus}`;
     button.textContent = t(key);
-    button.addEventListener("click", () => {
-      close();
-      if (!isOpen) deps.openBooks(focus);
-    });
+    button.addEventListener("click", leaveFor(focus));
     existingBooks.append(button);
   }
 
@@ -391,7 +389,7 @@ export function createLibrary(deps: LibraryDeps): Library {
   moreOpen.type = "button";
   moreOpen.id = "library-more-open";
   moreOpen.textContent = t("menu.project-open");
-  moreOpen.addEventListener("click", () => { close(); if (!isOpen) deps.openBooks("list"); });
+  moreOpen.addEventListener("click", leaveFor("list"));
   more.append(moreText, moreOpen);
 
   // Expose the instrument to native probes only with explicit diagnostics.
