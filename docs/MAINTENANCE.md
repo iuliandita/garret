@@ -111,18 +111,20 @@ the gate before packaging. Tag publication checks the complete range from the
 previous reachable alpha tag and publishes the same checked source commit.
 
 Release downloads are checked before `SHA256SUMS` is generated over all package
-files and checksum sidecars. The publish job signs the manifest using only the
+files and checksum sidecars. The sign job signs the manifest using only the
 `release` environment secrets `RELEASE_GPG_PRIVATE_KEY` and
 `RELEASE_GPG_PASSPHRASE`, in a
-temporary GPG home that is removed after use. No key material is logged or
+temporary GPG home that is removed after use, with the key whose fingerprint is
+published in SECURITY.md and README.md. No key material is logged or
 uploaded. A missing key blocks publication unless the repository variable
 `ALLOW_UNSIGNED_RELEASE` is exactly `true`; a configured key that fails to sign
 or verify always blocks publication. A signed release also requires removing
 the unpublished fingerprint placeholder from both SECURITY.md and README.md.
 Configure environment restrictions before the first signed tag, as described
 in the signing policy. GitHub attestations cover the downloads,
-manifest, and available signature before release upload. Only the publish job
-has attestation and OIDC write permissions. The existing tag and CI eligibility
+manifest, and available signature before release upload. Only the attest job
+has attestation and OIDC write permissions, and only the publish job has
+repository write permission. The existing tag and CI eligibility
 checks still apply. See the [signing policy](SIGNING.md) and
 [verification instructions](../SECURITY.md#verifying-releases).
 
