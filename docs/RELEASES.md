@@ -2,6 +2,7 @@
 
 The current published release is [0.0.10 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.10).
 Its source and platform inventory are recorded in [releases.json](releases.json).
+Earlier releases are listed in the [changelog](../CHANGELOG.md).
 That record is an explicit observation of published state, not an automatic
 claim that the current develop commit has shipped. Update it only after the
 release and complete downloads are public and verified.
