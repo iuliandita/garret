@@ -23,9 +23,13 @@ and does not synchronize books automatically.
 
 ## Develop-only work
 
-Nothing user-visible is pending on develop. Future user-visible capabilities
-awaiting release belong here and in the
-separate `develop_only` list in releases.json.
+The next release reworks the library screen. Its menu matches the book view's
+and offers New book, Open book, Import, Encrypted backups, Preferences, the
+privacy lock, Help and Quit. Preferences and Help open in front of the library
+instead of over the empty workspace. The saved-words summary shows by default
+and can be turned off in Preferences > Application. Series, universe and project
+type are pill selectors, and each book on the desk and shelf shows its project
+type.
 
 ## Preparing the next release
 
