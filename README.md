@@ -26,7 +26,7 @@ or an internet connection to write. Your books stay on your own disk.
 
 > **Early alpha.** garret moves fast; keep backups of your work.
 
-The current published build is [0.0.7 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.7).
+The current published build is [0.0.8 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.8).
 See [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
 
@@ -98,13 +98,12 @@ are included too. All of these tools are free.
 | Platform | |
 | --- | --- |
 | Linux | x86_64, glibc 2.39+, WebKitGTK 4.1 |
-| Windows | x86_64, WebView2 |
+| Windows | x86_64 and arm64, WebView2 |
 | Android | Writing and editing on the go |
 | macOS | Apple Silicon and Intel |
 
 Get [alpha testing builds from GitHub Releases](https://github.com/iuliandita/garret/releases),
 or [build garret from source](#building-from-source-linux).
-Native Windows arm64 installers and portable archives are prepared for the next release.
 
 <p>
   <img src="docs/screenshots/android-editor-light.png" alt="Android writing view in light mode" width="240">
