@@ -8,6 +8,15 @@ import sys
 import time
 
 
+class Interrupted(Exception):
+    def __init__(self, number: int):
+        self.number = number
+
+
+def interrupt(number: int, _frame) -> None:
+    raise Interrupted(number)
+
+
 def phase(message: str) -> None:
     line = f"proof-phase ts={time.time():.3f} pid={os.getpid()} {message}\n".encode()
     os.write(2, line)
@@ -64,26 +73,41 @@ def main() -> int:
     seconds, directory, *command = sys.argv[1:]
     phase("outer supervisor starting child process group")
     child = subprocess.Popen(command, start_new_session=True)
+    signal.signal(signal.SIGTERM, interrupt)
+    signal.signal(signal.SIGINT, interrupt)
     phase(f"outer supervisor started child pid={child.pid}")
+    terminate = False
     try:
-        returncode = child.wait(timeout=float(seconds))
-        phase(f"outer supervisor child exited status={returncode}")
-        return returncode if returncode >= 0 else 128 - returncode
-    except subprocess.TimeoutExpired:
-        snapshot(child.pid, Path(directory))
         try:
-            os.killpg(child.pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-        # The deadline still fails even if the child exits while being inspected.
-        time.sleep(5)
-        try:
-            os.killpg(child.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-        child.wait()
-        phase("outer supervisor deadline failure status=124")
-        return 124
+            returncode = child.wait(timeout=float(seconds))
+            phase(f"outer supervisor child exited status={returncode}")
+            return returncode if returncode >= 0 else 128 - returncode
+        except subprocess.TimeoutExpired:
+            terminate = True
+            snapshot(child.pid, Path(directory))
+            phase("outer supervisor deadline failure status=124")
+            return 124
+    except Interrupted as error:
+        terminate = True
+        phase(f"outer supervisor interrupted signal={error.number}")
+        return 128 + error.number
+    finally:
+        if terminate:
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            try:
+                os.killpg(child.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            time.sleep(5)
+            try:
+                os.killpg(child.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            try:
+                child.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                phase("proof child did not reap after KILL")
 
 
 if __name__ == "__main__":

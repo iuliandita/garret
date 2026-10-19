@@ -160,11 +160,13 @@ WebKit creation, loading, pagination, render cleanup, test return, and Xvfb exit
 The paginator CI step runs the three fixtures in
 separate processes under the same X display, with a 420-second
 supervisor deadline, including compilation and startup. At that deadline the
-supervisor saves live process/thread wait channels and kernel stacks, then
+supervisor saves live process/thread wait channels and attempts kernel stacks, then
 attempts native backtraces with GDB before sending TERM. Debugger collection
 has a 20-second total budget; five seconds after TERM, remaining processes
-receive KILL. The deadline returns status 124 even if the child exits while
-being inspected. CI enables ptrace on its disposable runner for these stacks.
+receive KILL, followed by at most five seconds to reap the child. INT and TERM
+also trigger bounded process-group cleanup. The deadline returns status 124 even if the child exits while
+being inspected. CI enables ptrace on its disposable runner for native stacks;
+kernel stack permission errors are recorded when the kernel requires privileges.
 Run `bash ../../../scripts/test-proof-paginator` from the host crate directory;
 optional arguments select individual fixture names. Each invocation uses a fresh
 HOME and XDG_DATA_HOME. Its diagnostic directory is printed before startup and
