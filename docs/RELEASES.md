@@ -1,21 +1,18 @@
 # Published and development builds
 
-The current published release is [0.0.9 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.9).
+The current published release is [0.0.10 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.10).
 Its source and platform inventory are recorded in [releases.json](releases.json).
 That record is an explicit observation of published state, not an automatic
 claim that the current develop commit has shipped. Update it only after the
 release and complete downloads are public and verified.
 
-The release fixes the format 18 upgrade question when a book is opened from
-the library: its buttons did nothing in 0.0.8, so older books could not be
-opened from there. It also reworks the library screen. Its menu matches the
-book view's and offers New book, Open book, Import, Encrypted backups,
-Preferences, the privacy lock, Help and Quit. Preferences and Help open in
-front of the library. The saved-words summary shows by default and can be
-turned off in Preferences > Application. Series, universe and project type are
-pill selectors, and each book on the desk and shelf shows its project type. The
-stored format is unchanged from 0.0.8, and the Android package
-`com.usegarret.app` keeps its signing certificate.
+The release fixes figure editing. A figure at the end of a scene always has a
+writable paragraph after it, alternative text sits on the image instead of
+showing as a second caption, a missing description is marked on the figure, and
+publishing without one names Figure properties instead of a generic error. The
+EPUB preview shows figure images, including after a refresh. The stored format
+is unchanged from 0.0.9, and the Android package `com.usegarret.app` keeps its
+signing certificate.
 
 Linux x86_64, Windows x86_64 and arm64, Android, and macOS Apple Silicon and
 Intel packages are published. Install-and-launch checks on CI runners are not
@@ -24,11 +21,9 @@ and does not synchronize books automatically.
 
 ## Develop-only work
 
-The next release fixes figure editing. A figure at the end of a scene always
-has a writable paragraph after it, alternative text sits on the image instead
-of showing as a second caption, a missing description is marked on the figure,
-and publishing without one names Figure properties instead of a generic error.
-The EPUB preview shows figure images, including after a refresh.
+Nothing user-visible is pending on develop. Future user-visible capabilities
+awaiting release belong here and in the
+separate `develop_only` list in releases.json.
 
 ## Preparing the next release
 
