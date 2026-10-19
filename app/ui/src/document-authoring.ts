@@ -5,6 +5,7 @@ import { MAX_ATTRIBUTE_BYTES, validDocumentShape } from "./document-format";
 import { createPanelShell } from "./panel-shell";
 import { noteNumberAt } from "./document-reader";
 import { formatNumber, t } from "./i18n";
+import { appendTrailingTextblock } from "./trailing-block";
 
 export interface FigureAsset { id: string; width_px: number; height_px: number; orientation: number }
 export interface FigureDetails { asset: FigureAsset; column_inches: number; height_inches: number; original_warning?: string | null }
@@ -161,6 +162,10 @@ export function createDocumentAuthoring(view: EditorView, options: {
         tr.doc.descendants((node, pos) => { if (node.type.name === "figure" && node.attrs.id === captured.id) inserted = pos; });
         if (inserted < 0) { error.textContent = t("figure.failed"); return; }
         captured.pos = inserted;
+        // The caret goes on past the figure, into a paragraph made for it when
+        // the figure is the last block.
+        appendTrailingTextblock(tr);
+        tr.setSelection(TextSelection.near(tr.doc.resolve(inserted + tr.doc.nodeAt(inserted)!.nodeSize), 1));
       }
     }
     if (tr.docChanged && !isolated(tr)) { showSaveError(); return; }

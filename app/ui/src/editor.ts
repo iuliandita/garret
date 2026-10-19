@@ -25,6 +25,7 @@ import { t } from "./i18n";
 import { validDocument, validDocumentShape } from "./document-format";
 import { clipboardPlaintext, positionalText, proseText, type PlaintextLabels } from "./document-projections";
 import { refusesPicture, remintClipboard, validateClipboardHtml } from "./document-clipboard";
+import { trailingTextblockPlugin, withTrailingTextblock } from "./trailing-block";
 import type { FieldLocator } from "./find-locate";
 
 export const schema = new Schema({
@@ -41,8 +42,7 @@ export const schema = new Schema({
       group: "block", atom: true, marks: "",
       attrs: { id: {}, asset_id: {}, width: {}, caption: {}, alt: {} },
       toDOM: node => ["figure", { class: "document-figure", "data-garret-figure": JSON.stringify(node.attrs), contenteditable: "false" },
-        ["span", {}, t("document.figure-placeholder")], ["figcaption", {}, node.attrs.caption as string],
-        ["span", { class: "document-figure-alt" }, node.attrs.alt as string]],
+        ["span", {}, t("document.figure-placeholder")], ["figcaption", {}, node.attrs.caption as string]],
       parseDOM: [{ tag: "figure[data-garret-figure]", getAttrs: dom => clipboardAttrs(dom, "figure") }],
     },
     scene_break: { group: "block", atom: true, marks: "", toDOM: () => ["div", { class: "document-scene-break", role: "separator", contenteditable: "false" }],
@@ -248,6 +248,13 @@ export function caretTr(state: EditorState, n: number): Transaction {
 /** Counts prose independently of recovery and clipboard serialization. */
 export function countWordsIn(doc: PmNode): number {
   return countWords(proseText(doc));
+}
+
+/** A stored document serialized the way `Editor.serialize` does, without the
+ *  trailing paragraph a writing editor seeds, so a hash of it is the hash of
+ *  what the store holds. */
+export function storedBody(json: PmNodeJson): string {
+  return JSON.stringify(schema.nodeFromJSON(json as unknown as Record<string, unknown>).toJSON());
 }
 
 /** Prose only; attribute fields are compared separately in history. */
@@ -645,12 +652,18 @@ export function createEditor(
     pane.scrollTop = typewriterScrollTop(box.top, box.height, pane.scrollTop, caretTop);
   }
 
+  // Only the writer's editor keeps a textblock last. A read-only or review
+  // body is shown and diffed as stored, so it gets neither plugin nor seeding.
+  const createState = (base: PmNode): EditorState => EditorState.create({
+    doc: opts.authoring ? withTrailingTextblock(base) : base,
+    plugins: [...editorPlugins(), preserveAtoms(opts.authoring), ...(opts.authoring ? [trailingTextblockPlugin()] : [])],
+  });
   let editable = true;
   let authoring: DocumentAuthoring | undefined;
   let noteOffset = 0;
   const editSources = new EditSourceTracker();
   const view: EditorView = new EditorView(mount, {
-    state: EditorState.create({ doc, plugins: [...editorPlugins(), preserveAtoms(opts.authoring)] }),
+    state: createState(doc),
     nodeViews: readerViews(opts.figurePreview, {
       editFigure: opts.authoring ? pos => { void authoring?.figure(pos); } : undefined,
       noteOffset: () => noteOffset,
@@ -708,7 +721,10 @@ export function createEditor(
         return;
       }
       if (tr.docChanged) editSources.prepare(tr);
-      view.updateState(before.apply(tr));
+      const next = before.apply(tr);
+      // A transaction filter refused the edit: nothing to record or report.
+      if (tr.docChanged && next === before) return;
+      view.updateState(next);
       if (tr.docChanged) refreshNoteReferences(view, noteOffset, opts.authoring);
       if (tr.docChanged) {
         const change = editSources.record(tr, before, view.state, () => countWordsIn(before.doc));
@@ -770,7 +786,7 @@ export function createEditor(
     replaceDoc(input: DocInput): void {
       if (authoring?.pending()) throw new Error("an endnote draft is still open");
       const next = schema.nodeFromJSON(docJsonFrom(input) as unknown as Record<string, unknown>);
-      view.updateState(EditorState.create({ doc: next, plugins: [...editorPlugins(), preserveAtoms(opts.authoring)] }));
+      view.updateState(createState(next));
       editSources.reset();
       refreshNoteReferences(view, noteOffset, opts.authoring);
     },

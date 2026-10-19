@@ -17,7 +17,7 @@ import { formatNumber, plural, t } from "./i18n";
 import { createBanner, type Tone } from "./banner";
 import { HostCommandError } from "./command-error";
 import { refusedDocumentId } from "./document-format";
-import { createEditor, type DocInput, type Editor, readableBody, bodyText } from "./editor";
+import { createEditor, type DocInput, type Editor, readableBody, bodyText, storedBody } from "./editor";
 import type { FixtureSource } from "./fixture/source";
 import { createNavigator, type ManuscriptNavigator } from "./navigator/index";
 import { createFlushScheduler, type FlushScheduler } from "./store/flush";
@@ -964,8 +964,10 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
 
   // The document as loaded THIS run, before any typing. Doubles as the verify
   // payload's body_hash (nothing is typed in verify mode, so "loaded" and
-  // "current" are the same thing) and as the write payload's baseline.
-  const loadedBodyHash = bodyHash(editor.serialize());
+  // "current" are the same thing) and as the write payload's baseline. Hashed
+  // from the stored body, not the editor, which may have seeded a trailing
+  // paragraph that the store does not hold yet.
+  const loadedBodyHash = bodyHash(storedBody(openedJson));
   let referenceRail: ReferenceRail | null = null;
   let previewRail: PreviewRail | null = null;
   let craftPanel: CraftPanel | null = null;
