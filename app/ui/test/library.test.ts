@@ -17,6 +17,7 @@ import {
   type LibraryWordsAnswer,
 } from "../src/library";
 import { createLibraryBookActions } from "../src/library-book-actions";
+import { askUpgrade } from "../src/upgrade-prompt";
 import type { BookStats, LibraryMembership, MembershipEdit } from "../src/library-summary";
 
 function book(over: Partial<LibraryBook> = {}): LibraryBook {
@@ -1257,4 +1258,20 @@ test.each(["novel", "short", "nonfiction", "collection"])("Library creation choo
   document.getElementById("library-new-book-create")!.click();
   await flush();
   expect(choices).toEqual([["Draft", null, preset]]);
+});
+
+test("the format upgrade prompt stays usable over the library", async () => {
+  const r = rig();
+  r.library.open();
+  await flush();
+  const answer = askUpgrade("Upgrade this book?", "Cancel", "Upgrade book");
+  const bystander = document.createElement("div");
+  document.body.append(bystander);
+  await flush();
+  const dialog = document.querySelector<HTMLDialogElement>("dialog.upgrade-prompt")!;
+  expect(bystander.inert).toBe(true);
+  expect(dialog.inert).toBe(false);
+  dialog.querySelectorAll("button")[1].click();
+  expect(await answer).toBe(true);
+  bystander.remove();
 });
