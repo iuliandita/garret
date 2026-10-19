@@ -112,6 +112,8 @@ export interface PreviewRailDeps {
   drain(): Promise<void>;
   /** Renders the book as an EPUB and reads the archive back. */
   read(): Promise<EpubPreview>;
+  /** One figure image of the EPUB, by a key `read` listed, as a data URI. */
+  readFigure(key: string): Promise<string>;
   /** Lays the book out as a proof copy and reads the leaves back. */
   readProof(): Promise<PdfPreview>;
   /** The four options, and the ornaments the host offers. */
@@ -469,6 +471,39 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     epubWindow = null;
   }
 
+  // FIGURES ARE FETCHED ONCE PER KEY. Their names are content hashes, so a
+  // refresh that repeats a key needs nothing again; the cache lives until the
+  // rail closes, reopens or is destroyed, which is also when the book can
+  // change. A load that finishes after that is dropped rather than cached.
+  const figureUris = new Map<string, string>();
+  const figureLoads = new Map<string, Promise<string | null>>();
+
+  function dropFigures(): void {
+    figureUris.clear();
+    figureLoads.clear();
+  }
+
+  function figureLoad(key: string): Promise<string | null> {
+    const pending = figureLoads.get(key);
+    if (pending !== undefined) return pending;
+    const owner = lifecycle;
+    const load = (async (): Promise<string | null> => {
+      try {
+        const uri = await deps.readFigure(key);
+        if (destroyed || owner !== lifecycle) return null;
+        figureUris.set(key, uri);
+        return uri;
+      } catch (error: unknown) {
+        console.error(key, error);
+        return null;
+      }
+    })().finally(() => {
+      if (figureLoads.get(key) === load) figureLoads.delete(key);
+    });
+    figureLoads.set(key, load);
+    return load;
+  }
+
   function pageFromScroll(): number {
     return Math.round(pages.scrollLeft / (pages.clientWidth || 1));
   }
@@ -722,6 +757,8 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       framed,
       problem: (name) => line(t("preview.error.document", { name })),
       coverAlt: () => t("preview.cover.alt"),
+      figureCached: (key) => figureUris.get(key),
+      figureLoad,
     });
     // NOT A PROOF. The attribute is removed rather than left, exactly as
     // `data-theme` is removed rather than set to `system`: a hook that is true
@@ -947,6 +984,10 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       paintPreview(view);
     } catch (error: unknown) {
       if (destroyed || rail.hidden || mine !== generation) return;
+      // STALE AGAIN: the paint this render owed did not happen. `stale` alone
+      // (no idle timer, which would retry a persistent error every pause) lets
+      // turning Auto-refresh on, or the next save, try once more.
+      stale = true;
       // NOT AN EMPTY RAIL. A catch that painted the no-documents state would
       // report a host that could not answer as a book with nothing in it --
       // the recorded `renderImports([])` defect.
@@ -1075,6 +1116,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
     divider.hidden = true;
     drag = null;
     stale = false;
+    dropFigures();
     cancelIdle();
     window.removeEventListener("resize", onWindowResize);
     observer?.disconnect();
@@ -1105,6 +1147,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       // over the one the writer just asked for.
       saySummary([]);
       destroyEpubWindow();
+      dropFigures();
       pages.replaceChildren();
       styleElement.textContent = "";
       rail.hidden = false;
@@ -1170,6 +1213,7 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
       destroyed = true;
       lifecycle += 1;
       pageSetup?.destroy();
+      dropFigures();
       cancelIdle();
       window.removeEventListener("resize", onWindowResize);
       observer?.disconnect();

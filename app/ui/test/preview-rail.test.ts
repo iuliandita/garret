@@ -29,7 +29,7 @@ function preview(over: Partial<EpubPreview> = {}): EpubPreview {
     ],
     css: "body { margin: 0 5%; }\np { text-indent: 1.2em; }",
     cover_data_uri: null,
-    images: {},
+    figure_keys: [],
     items: 1,
     words: 1,
     ...over,
@@ -55,6 +55,7 @@ interface Harness {
   reads: number;
   proofReads: number;
   styleReads: number;
+  figureReads: string[];
   written: ChapterStyle[];
   saved: string[];
   notices: string[];
@@ -101,6 +102,7 @@ function mount(
     reads: 0,
     proofReads: 0,
     styleReads: 0,
+    figureReads: [],
     written: [],
     saved: [],
     notices: [],
@@ -115,6 +117,10 @@ function mount(
     read: async () => {
       h.reads += 1;
       return view;
+    },
+    readFigure: async (key) => {
+      h.figureReads.push(key);
+      return `data:image/png;base64,${key}`;
     },
     readProof: async () => {
       h.proofReads += 1;
@@ -142,6 +148,25 @@ function mount(
   live = h.rail;
   return h;
 }
+
+const settle = async (): Promise<void> => {
+  for (let i = 0; i < 8; i += 1) await new Promise<void>((resolve) => setTimeout(resolve, 0));
+};
+
+function figureBook(): EpubPreview {
+  return preview({
+    figure_keys: ["assets/aa.png"],
+    documents: [
+      {
+        name: "OEBPS/text/0001.xhtml",
+        xhtml: XHTML('<section><figure><img src="../assets/aa.png" alt="a"/></figure></section>'),
+      },
+    ],
+  });
+}
+
+const figureSource = (): string | null =>
+  document.querySelector<HTMLImageElement>("#preview-pages img")?.getAttribute("src") ?? null;
 
 const rail = (): HTMLElement => document.querySelector("#preview-rail") as HTMLElement;
 const pages = (): HTMLElement | null => document.querySelector("#preview-pages");
@@ -303,14 +328,14 @@ describe("what it renders", () => {
     );
   });
 
-  test("a figure shows its own bytes and a cover replaces only the cover", async () => {
+  test("a figure is fetched by key once, and a cover replaces only the cover", async () => {
     // With a cover the old rewrite pointed EVERY img at the cover, and without
     // one a figure's `../assets/...` path never loaded under the page's CSP.
     const h = mount(
       {},
       preview({
         cover_data_uri: "data:image/png;base64,COVER",
-        images: { "assets/aa.png": "data:image/png;base64,FIG1", "assets/bb.jpg": "data:image/jpeg;base64,FIG2" },
+        figure_keys: ["assets/aa.png", "assets/bb.jpg"],
         documents: [
           {
             name: "OEBPS/text/cover.xhtml",
@@ -321,24 +346,83 @@ describe("what it renders", () => {
             xhtml: XHTML(
               '<section><figure><img src="../assets/aa.png" alt="a"/></figure>'
               + '<figure><img src="../assets/bb.jpg" alt="b"/></figure>'
-              + '<figure><img src="../assets/gone.png" alt="g"/></figure></section>',
+              + '<figure><img src="../assets/aa.png" alt="a again"/></figure>'
+              + '<figure><img src="../assets/gone.png" alt="g"/></figure>'
+              + '<figure><img src="../constructor" alt="k"/></figure></section>',
             ),
           },
         ],
       }),
     );
     await h.rail.open("epub");
-    const sources = [...document.querySelectorAll<HTMLImageElement>("#preview-pages img")].map(i => i.getAttribute("src"));
-    expect(sources).toEqual([
+    await settle();
+    const images = [...document.querySelectorAll<HTMLImageElement>("#preview-pages img")];
+    expect(images.map(i => i.getAttribute("src"))).toEqual([
       "data:image/png;base64,COVER",
-      "data:image/png;base64,FIG1",
-      "data:image/jpeg;base64,FIG2",
+      "data:image/png;base64,assets/aa.png",
+      "data:image/png;base64,assets/bb.jpg",
+      "data:image/png;base64,assets/aa.png",
       "../assets/gone.png",
+      "../constructor",
     ]);
+    // Fetched once per key, and never for a source the host did not list.
+    expect(h.figureReads.sort()).toEqual(["assets/aa.png", "assets/bb.jpg"]);
     // A figure keeps its own alt text, so an edit to it is what a refresh shows.
-    const alts = [...document.querySelectorAll<HTMLImageElement>("#preview-pages img")].map(i => i.getAttribute("alt"));
-    expect(alts.slice(1)).toEqual(["a", "b", "g"]);
-    expect(alts[0]).not.toBe("c");
+    expect(images.slice(1).map(i => i.getAttribute("alt"))).toEqual(["a", "b", "a again", "g", "k"]);
+    expect(images[0]!.getAttribute("alt")).not.toBe("c");
+  });
+
+  test("a refresh reuses the fetched figures and a reopen fetches them again", async () => {
+    const h = mount({}, figureBook());
+    await h.rail.open("epub");
+    await settle();
+    expect(h.figureReads).toEqual(["assets/aa.png"]);
+    press("#preview-refresh");
+    await settle();
+    press("#preview-refresh");
+    await settle();
+    expect(h.figureReads).toEqual(["assets/aa.png"]);
+    expect(figureSource()).toBe("data:image/png;base64,assets/aa.png");
+    h.rail.close();
+    await h.rail.open("epub");
+    await settle();
+    expect(h.figureReads).toEqual(["assets/aa.png", "assets/aa.png"]);
+  });
+
+  test("a figure that cannot be fetched shows its alt text and the rest paints", async () => {
+    const errors = console.error;
+    console.error = () => undefined;
+    try {
+      const h = mount({ readFigure: async () => { throw new Error("gone"); } }, figureBook());
+      await h.rail.open("epub");
+      await settle();
+      const image = document.querySelector<HTMLImageElement>("#preview-pages img")!;
+      expect(image.hasAttribute("src")).toBe(false);
+      expect(image.getAttribute("alt")).toBe("a");
+      expect(h.notices).toEqual([]);
+    } finally {
+      console.error = errors;
+    }
+  });
+
+  test("a figure that arrives for a closed rail is not cached for the next one", async () => {
+    const releases: ((uri: string) => void)[] = [];
+    const h = mount({
+      readFigure: () => new Promise<string>((resolve) => { releases.push(resolve); }),
+    }, figureBook());
+    await h.rail.open("epub");
+    await settle();
+    h.rail.close();
+    await h.rail.open("epub");
+    await settle();
+    expect(releases).toHaveLength(2);
+    releases[1]!("data:image/png;base64,NEW");
+    await settle();
+    releases[0]!("data:image/png;base64,LATE");
+    await settle();
+    press("#preview-refresh");
+    await settle();
+    expect(figureSource()).toBe("data:image/png;base64,NEW");
   });
 
   test("it states what the book is, so a writer can see the preview is of all of it", async () => {

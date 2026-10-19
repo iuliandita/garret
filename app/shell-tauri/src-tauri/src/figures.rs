@@ -149,6 +149,36 @@ fn verified_original(path: &Path, asset: &FigureAsset) -> Result<Vec<u8>, String
     Ok(data)
 }
 
+/// The registered figure behind one `assets/<sha256>.<png|jpg>` key of an EPUB
+/// preview. The key must be `assets/` plus a known extension, and its stem must
+/// EQUAL a registered lowercase SHA-256 and the extension that asset's media
+/// type: equality against the registry is the whole hex check, so nothing the
+/// page sends is ever joined to a path.
+pub(crate) fn archive_asset(store: &Store, key: &str) -> Result<FigureAsset, String> {
+    let malformed = || "figure image key is malformed".to_string();
+    let (sha, ext) = key
+        .strip_prefix("assets/")
+        .and_then(|name| name.split_once('.'))
+        .ok_or_else(malformed)?;
+    let format = [pictures::Format::Png, pictures::Format::Jpeg]
+        .into_iter()
+        .find(|format| format.extension() == ext)
+        .ok_or_else(malformed)?;
+    store
+        .figure_assets()
+        .map_err(|e| e.to_string())?
+        .into_iter()
+        .find(|asset| asset.sha256 == sha && asset.mime == format.mime())
+        .ok_or_else(|| "unregistered figure image".to_string())
+}
+
+/// The original of an `archive_asset`, hash-verified and bounded by
+/// `MAX_PICTURE_BYTES`, as a `data:` URI.
+pub(crate) fn archive_image(db: &Path, asset: &FigureAsset) -> Result<String, String> {
+    let data = verified_original(&pictures::dir_for(db).join(&asset.stored_name), asset)?;
+    Ok(format!("data:{};base64,{}", asset.mime, pictures::base64(&data)))
+}
+
 /// Resolve a placement to a verified original; return only a bounded preview.
 pub(crate) fn preview(db: &Path, store: &Store, item_id: &str, instance_id: &str, asset_id: &str) -> Result<pictures::PictureView, String> {
     let body = store.load_doc(item_id).map_err(|e| e.to_string())?.body;

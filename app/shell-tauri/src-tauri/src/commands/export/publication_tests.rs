@@ -964,23 +964,65 @@ fn schema18_reader_exports_existing_nodes_without_the_fixture_override() {
 }
 
 #[test]
-fn the_epub_preview_carries_each_figure_image_the_documents_name() {
+fn the_epub_preview_lists_each_figure_image_and_serves_it_by_key() {
     // The page's CSP allows `data:` and nothing that resolves a path inside the
-    // archive, so `../assets/<hash>.<ext>` never loads. Every figure src, minus
-    // its leading `../`, must be a key whose data URI is the stored original.
+    // archive, so `../assets/<hash>.<ext>` never loads. The payload names every
+    // figure source (minus its leading `../`) and carries no bytes; each name
+    // fetches the stored original.
     let fixture = fixture();
     let preview = preview_of(&fixture.db, "Collected", &crate::identity::Vault::default(), crate::strings::Strings::english()).unwrap();
-    let sources: Vec<&str> = preview.documents.iter()
+    let mut sources: Vec<&str> = preview.documents.iter()
         .flat_map(|doc| doc.xhtml.split("<img src=\"../").skip(1).map(|rest| rest.split('"').next().unwrap()))
         .collect();
-    assert!(sources.len() >= 2, "{sources:?}");
+    sources.sort_unstable();
+    sources.dedup();
+    assert_eq!(sources.len(), 2, "{sources:?}");
+    let mut listed: Vec<&str> = preview.figure_keys.iter().map(String::as_str).collect();
+    listed.sort_unstable();
+    assert_eq!(listed, sources);
     let jpeg = include_bytes!("../../../fixtures/two-halves.jpg");
-    for (asset, original, mime) in [(&fixture.assets[0], crate::figures::tests::PNG, "image/png"), (&fixture.assets[1], &jpeg[..], "image/jpeg")] {
-        let ext = if mime == "image/png" { "png" } else { "jpg" };
+    for (asset, original, mime, ext) in [(&fixture.assets[0], crate::figures::tests::PNG, "image/png", "png"), (&fixture.assets[1], &jpeg[..], "image/jpeg", "jpg")] {
         let key = format!("assets/{}.{ext}", asset.sha256);
-        assert!(sources.contains(&key.as_str()), "{key} in {sources:?}");
-        assert_eq!(preview.images[&key], format!("data:{mime};base64,{}", crate::pictures::base64(original)));
+        assert!(listed.contains(&key.as_str()), "{key} in {listed:?}");
+        let served = crate::figures::archive_asset(&fixture.store, &key).unwrap();
+        assert_eq!(
+            crate::figures::archive_image(&fixture.db, &served).unwrap(),
+            format!("data:{mime};base64,{}", crate::pictures::base64(original))
+        );
     }
-    assert!(sources.iter().all(|src| preview.images.contains_key(*src)));
     assert!(preview.cover_data_uri.is_none());
+}
+
+#[test]
+fn a_preview_image_key_is_only_ever_a_registered_hash() {
+    let fixture = fixture();
+    let sha = &fixture.assets[0].sha256;
+    let upper = sha.to_uppercase();
+    let unregistered = "0".repeat(64);
+    for key in [
+        String::new(),
+        format!("../assets/{sha}.png"),
+        format!("assets/../{sha}.png"),
+        format!("assets/{sha}.png/../../x"),
+        format!("assets/{sha}/x.png"),
+        format!("assets/{upper}.png"),
+        format!("assets/{}.png", &sha[1..]),
+        format!("assets/{sha}.gif"),
+        format!("assets/{sha}.jpg"),
+        format!("assets/{sha}"),
+        format!("assets/{sha}.png\0"),
+        format!("assets/{}.png", fixture.assets[0].stored_name),
+        format!("assets/{unregistered}.png"),
+    ] {
+        assert!(crate::figures::archive_asset(&fixture.store, &key).is_err(), "{key:?}");
+    }
+}
+
+#[test]
+fn a_preview_image_that_changed_on_disk_is_refused() {
+    let fixture = fixture();
+    let asset = &fixture.assets[0];
+    let served = crate::figures::archive_asset(&fixture.store, &format!("assets/{}.png", asset.sha256)).unwrap();
+    std::fs::write(crate::pictures::dir_for(&fixture.db).join(&asset.stored_name), b"changed").unwrap();
+    assert!(crate::figures::archive_image(&fixture.db, &served).unwrap_err().contains("mismatch"));
 }

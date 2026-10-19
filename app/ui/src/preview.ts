@@ -26,10 +26,10 @@ export interface EpubPreview {
   /** The front cover, cut from the bytes IN THE ARCHIVE. Null when the book has
    *  none, and null when the file the book names has gone. */
   cover_data_uri: string | null;
-  /** Each figure image as a data URI, keyed by its path inside `OEBPS/`
-   *  (`assets/<hash>.png`). The page's CSP cannot load a path inside the
-   *  archive. Bounded by the host; a figure past the bound is absent. */
-  images: Record<string, string>;
+  /** The figure images the documents name, by their path inside `OEBPS/`
+   *  (`assets/<sha256>.png`). Names only: the page's CSP cannot load a path
+   *  inside the archive, so each image is fetched once by key. */
+  figure_keys: string[];
   items: number;
   words: number;
 }

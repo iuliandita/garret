@@ -837,23 +837,18 @@ pub(crate) struct EpubPreview {
     /// ARCHIVE and not from the file on disk, for this whole surface's reason:
     /// what is shown is what was packed.
     pub(crate) cover_data_uri: Option<String>,
-    /// Each figure image as a data URI, keyed by its path inside the OEBPS
-    /// folder (`assets/<hash>.png`), which is what the documents name once
-    /// their leading `../` is dropped. The page's CSP allows `data:` and
-    /// nothing that could resolve a path inside the archive. Bounded by
-    /// `PREVIEW_IMAGE_BYTES`; a figure past the bound is absent and the page
-    /// shows its alt text.
-    pub(crate) images: std::collections::BTreeMap<String, String>,
+    /// The figure images the documents name, as their path inside the OEBPS
+    /// folder (`assets/<sha256>.png`), which is what a document's `src` is once
+    /// its leading `../` is dropped. NAMES ONLY: the page's CSP allows `data:`
+    /// and nothing that resolves a path inside the archive, so it fetches each
+    /// image once through `epub_preview_image`. The names are content hashes, so
+    /// a refresh that repeats them costs the page nothing.
+    pub(crate) figure_keys: Vec<String>,
     /// The figures the rail states, so a writer can see the preview is of their
     /// whole book and not of part of it.
     pub(crate) items: u64,
     pub(crate) words: u64,
 }
-
-/// The most figure bytes (before base64) one preview carries. A single original
-/// may be 16 MiB, so without this a book of large plates would send the page
-/// hundreds of megabytes over one IPC call.
-const PREVIEW_IMAGE_BYTES: usize = 32 * 1024 * 1024;
 
 /// Render the book at `path` as an EPUB and read the archive back.
 ///
@@ -896,32 +891,18 @@ pub(crate) fn preview_of(
             };
             format!("data:{mime};base64,{}", crate::pictures::base64(bytes))
         });
-    let assets = format!("{}/assets/", crate::epub::OEBPS);
-    let mut budget = PREVIEW_IMAGE_BYTES;
-    let mut images = std::collections::BTreeMap::new();
-    for (n, bytes) in &entries {
-        let Some(href) = n.strip_prefix(&format!("{}/", crate::epub::OEBPS)) else {
-            continue;
-        };
-        if !n.starts_with(&assets) || bytes.len() > budget {
-            continue;
-        }
-        budget -= bytes.len();
-        let mime = if n.ends_with(".png") {
-            crate::pictures::Format::Png.mime()
-        } else {
-            crate::pictures::Format::Jpeg.mime()
-        };
-        images.insert(
-            href.to_string(),
-            format!("data:{mime};base64,{}", crate::pictures::base64(bytes)),
-        );
-    }
+    let oebps = format!("{}/", crate::epub::OEBPS);
+    let figure_keys = entries
+        .iter()
+        .filter_map(|(n, _)| n.strip_prefix(&oebps))
+        .filter(|href| href.starts_with("assets/"))
+        .map(str::to_string)
+        .collect();
     Ok(EpubPreview {
         documents,
         css,
         cover_data_uri,
-        images,
+        figure_keys,
         items,
         words,
     })
@@ -1125,6 +1106,26 @@ pub(crate) fn epub_preview(
         &vault_for(&data_home.0)?,
         strings_for(&data_home.0),
     )
+}
+
+/// One figure of the open book's EPUB preview, by the key `epub_preview` listed.
+///
+/// BY CONTENT HASH, so it needs no open-book generation: the key names bytes,
+/// the lookup is in the registry of the book that is open NOW, and a key from
+/// another book either is not registered here or names the same bytes. The
+/// original is hash-verified and bounded by `MAX_PICTURE_BYTES`, and read
+/// outside the store lock for `figure_details`' reason.
+#[command_boundary::command]
+pub(crate) fn epub_preview_image(
+    state: State<'_, StoreState>,
+    key: String,
+) -> std::result::Result<String, String> {
+    let (asset, path) = {
+        let guard = locked(&state);
+        let project = open_project(&guard)?;
+        (crate::figures::archive_asset(&project.store, &key)?, project.path.clone())
+    };
+    crate::figures::archive_image(&path, &asset)
 }
 
 /// The open book, laid out as a proof copy, with the leaves read back.
