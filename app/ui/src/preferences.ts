@@ -151,6 +151,10 @@ export interface PreferencesDeps {
   /** A plain bool at the host, unlike every other row here: there is no
    *  misspelling of on/off to refuse. */
   persistMarkCastNames: (on: boolean) => Promise<void>;
+  /** Whether the library screen shows its summary. On when absent. */
+  initialLibrarySummary?: boolean;
+  persistLibrarySummary?: (on: boolean) => Promise<void>;
+  onLibrarySummary?: (on: boolean) => void;
   /** Told on a successful change, so the currently mounted project can feed
    *  the editor plugin at once rather than waiting for the writer to switch
    *  scenes -- `onWritingModes`'s own reason and shape. */
@@ -366,6 +370,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
   // is a plain bool, and this string is only ever converted at that one
   // boundary (see `onPanelClick`'s own branch below).
   let markCastNames: SpellingMode = deps.initialMarkCastNames ? "on" : "off";
+  let librarySummary: SpellingMode = deps.initialLibrarySummary === false ? "off" : "on";
   // Applied here as well as by the head script, because the panel must agree
   // with the page even when the head script did not run - which is every test,
   // and any future embedding of this page.
@@ -620,6 +625,13 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     description: t("prefs.mark-cast-names.note"),
     legend: t("prefs.legend.mark-cast-names"),
     name: t("prefs.name.mark-cast-names"),
+    values: SPELLING_MODES,
+    labels: SPELLING_LABELS,
+  });
+  const librarySummaryGroup = buildGroup<SpellingMode>({
+    id: "prefs-library-summary",
+    legend: t("prefs.legend.library-summary"),
+    name: t("prefs.name.library-summary"),
     values: SPELLING_MODES,
     labels: SPELLING_LABELS,
   });
@@ -935,7 +947,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
     sidebarGroup.append(label);
   }
   pages[1].append(paletteGroup, themeGroup, zoomGroup, sidebarGroup);
-  pages[2].append(languageGroup, startGroup);
+  pages[2].append(languageGroup, startGroup, librarySummaryGroup);
   selectCategory(0);
   panel.append(tabs, ...pages);
   if (deps.openPrivacy) {
@@ -973,6 +985,7 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
         (group === "prefs-zoom" && value === zoom) ||
         (group === "prefs-spelling" && value === spelling) ||
         (group === "prefs-mark-cast-names" && value === markCastNames) ||
+        (group === "prefs-library-summary" && value === librarySummary) ||
         (group === "prefs-focus" && value === writingModes.focus) ||
         (group === "prefs-typewriter" && value === writingModes.typewriter) ||
         (group === "prefs-goal" && value === dailyTarget);
@@ -1147,6 +1160,19 @@ export function createPreferences(deps: PreferencesDeps): Preferences {
       // the currently open scene must not wait for a switch to see it.
       deps.onMarkCastNames?.(on);
       void record(() => deps.persistMarkCastNames(on), t("prefs.what.mark-cast-names"));
+      return;
+    }
+
+    if (group === "prefs-library-summary") {
+      if (!(SPELLING_MODES as readonly string[]).includes(value)) return;
+      librarySummary = value as SpellingMode;
+      paint();
+      const on = librarySummary === "on";
+      deps.onLibrarySummary?.(on);
+      if (deps.persistLibrarySummary !== undefined) {
+        const persist = deps.persistLibrarySummary;
+        void record(() => persist(on), t("prefs.what.library-summary"));
+      }
       return;
     }
 

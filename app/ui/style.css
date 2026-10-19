@@ -1518,7 +1518,6 @@ body {
 #find-query:focus-visible,
 #comments-compose:focus-visible,
 #project-new-name:focus-visible,
-#project-new-preset:focus-visible,
 #project-name-field:focus-visible,
 #prefs-goal-custom:focus-visible,
 #prefs-dict-word:focus-visible,
@@ -2856,15 +2855,12 @@ body.nav-hidden #nav-column {
    shared one; this adds the drawn arrow the native paint cannot. */
 #prefs-language,
 #prefs-start,
-#project-new-preset,
-#library-new-book-preset,
 #design-page-select,
 #proof-page-select,
 #cast-panel select,
 #story-panel select,
 #revision-planning select,
 #craft-panel select,
-#library-group-filters select,
 #library-membership select,
 #library-summary select,
 #analytics-workspace select,
@@ -2980,7 +2976,8 @@ body.nav-hidden #nav-column {
    "All" or one pen name is the filter in effect, and `aria-pressed` is what
    says which to a screen reader. Not a descendant of #project-bar either, the
    EPUB rail's own case. */
-#library button[aria-pressed="true"] {
+#library button[aria-pressed="true"],
+#project-panel .pill[aria-pressed="true"] {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--fg);
@@ -8495,6 +8492,17 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   display: none;
 }
 
+.library-group-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-basis: 100%;
+}
+
+.library-group-row[hidden] {
+  display: none;
+}
+
 
 #library-membership,
 #library-summary {
@@ -8507,6 +8515,8 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 
 #library-membership[hidden],
 #library-summary[hidden] { display: none; }
+/* The desk's own rule already closes the row above. */
+#library-desk + #library-summary { border-top: 0; padding-top: 0; }
 
 #library-membership h3,
 #library-summary h3 { font: 500 var(--text-xl) var(--prose-family, serif); margin: 0 0 8px; }
@@ -8522,7 +8532,13 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 #library-summary-coverage { font-size: var(--text-xs); }
 
 #library-menu-anchor { position: relative; }
-#library-menu-panel { top: calc(100% + 4px); right: 0; min-width: min(180px, 80vw); max-width: 80vw; max-height: 60vh; }
+#library button#library-menu { display: inline-flex; align-items: center; padding: 7px 9px; }
+#library-menu svg { display: block; width: 16px; height: 16px; }
+#library button#library-menu[aria-expanded="true"] { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+/* A panel opened from the room is held in front of it; library.ts places it
+   under the menu button. */
+#library > .library-hosted { position: fixed; z-index: 1; }
+#library-menu-panel { top: calc(100% + 4px); right: 0; min-width: min(240px, 80vw); max-width: 80vw; max-height: 60vh; }
 
 .library-strip {
   display: flex;
@@ -8558,7 +8574,8 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
    -- present in the file, matching, and silently overridden by the shared
    button treatment. Every override below this point that has to beat
    `#library button` is written the same way, on purpose, not selectively. */
-#library .pill {
+#library .pill,
+#project-panel .pill {
   font-family: inherit;
   font-size: var(--text-sm);
   line-height: var(--leading-tight);
@@ -8741,6 +8758,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   font-size: var(--text-md);
 }
 
+.shelf-kind,
 .shelf-by,
 .shelf-meta,
 .shelf-error {
@@ -8754,7 +8772,9 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   overflow-wrap: anywhere;
 }
 
-.shelf-by[hidden] {
+.shelf-kind[hidden],
+.shelf-by[hidden],
+.desk-info .desk-kind[hidden] {
   display: none;
 }
 
@@ -8840,6 +8860,13 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 #library-empty,
 #library-more {
   color: var(--muted);
+}
+
+#library-more:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
 }
 
 /* With no books, the next action leads. The shelf's cover-shaped placeholder
@@ -9235,6 +9262,7 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
   margin: 0 6px 6px 0;
 }
 .field-with-label > label,
+.field-with-label > .field-label,
 #find-panel label[for="find-query"],
 #find-panel label[for="find-replace"] {
   color: var(--muted);
@@ -9249,6 +9277,7 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 #find-panel label[for="find-query"],
 #find-panel label[for="find-replace"] { display: block; margin: 8px 0 4px; }
 #library #library-new-book-tile .field-with-label { width: min(320px, 100%); margin: 0; }
+#library #library-new-book-tile .field-with-label:has(> .pill-row) { width: auto; }
 #library #library-new-book-name { width: 100%; color: var(--fg); }
 #library #library-new-book-preset { width: 100%; min-height: 44px; }
 #library #library-new-book-name::placeholder { color: var(--muted); }

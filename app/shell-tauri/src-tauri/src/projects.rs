@@ -1906,6 +1906,14 @@ fn default_mark_cast_names() -> bool {
     true
 }
 
+fn default_library_summary() -> bool {
+    true
+}
+
+fn lenient_library_summary<'de, D: serde::Deserializer<'de>>(d: D) -> Result<bool, D::Error> {
+    Ok(serde_json::Value::deserialize(d)?.as_bool().unwrap_or(true))
+}
+
 /// A usable `HOME`, or nothing to contract or expand against: absolute,
 /// UTF-8, and not root. ROOT IS REFUSED because under it every absolute path
 /// contracts, and `books[]` -- the only record of where a manuscript was --
@@ -2167,6 +2175,9 @@ pub struct Settings {
     /// silent absence they have to discover a toggle to fix.
     #[serde(default = "default_mark_cast_names")]
     pub mark_cast_names: bool,
+    /// Whether the library screen shows its saved-words summary. Default on.
+    #[serde(default = "default_library_summary", deserialize_with = "lenient_library_summary")]
+    pub library_summary: bool,
     /// What the window opens onto with no `APP_PROJECT`. LENIENT
     /// on purpose - see `lenient_start`. DEFAULTS TO `Last`.
     #[serde(default, deserialize_with = "lenient_start")]
@@ -2219,6 +2230,7 @@ impl Default for Settings {
             new_book_dir: None,
             encrypted_backup_dir: None,
             mark_cast_names: default_mark_cast_names(),
+            library_summary: default_library_summary(),
             start: Start::default(),
             recent: Vec::new(),
             home_identity: None,
@@ -4374,6 +4386,7 @@ mod tests {
                 time_tracking: TimeTracking::Off,
                 theme_family: ThemeFamily::Atmospheric,
                 mark_cast_names: false,
+                library_summary: false,
                 start: Start::Blank,
                 recent: vec![RecentBook {
                     path: "/x/y.db".into(),
@@ -4794,6 +4807,7 @@ mod tests {
             new_book_dir: Some(sentinel.clone()),
             encrypted_backup_dir: Some(sentinel.clone()),
             mark_cast_names: true,
+            library_summary: true,
             start: Start::default(),
             recent: vec![RecentBook {
                 path: sentinel.clone(),
@@ -4822,6 +4836,21 @@ mod tests {
         // Default: a plain `bool` field derives to `false`, which would read a
         // file written before this slice as the feature turned off.
         assert!(read.mark_cast_names);
+    }
+
+    #[test]
+    fn library_summary_defaults_on_and_a_bad_value_costs_nothing_else() {
+        let dir = tempdir().unwrap();
+        let path = settings_path(dir.path());
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, br#"{"last_project":"/x/y.db"}"#).unwrap();
+        assert!(read_settings(dir.path()).library_summary);
+        fs::write(&path, br#"{"last_project":"/x/y.db","library_summary":"no"}"#).unwrap();
+        let read = read_settings(dir.path());
+        assert!(read.library_summary);
+        assert_eq!(read.last_project.as_deref(), Some("/x/y.db"));
+        update_settings(dir.path(), |s| s.library_summary = false).unwrap();
+        assert!(!read_settings(dir.path()).library_summary);
     }
 
     #[test]
