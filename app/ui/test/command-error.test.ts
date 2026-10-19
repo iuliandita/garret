@@ -69,6 +69,8 @@ test("known host failures read as one plain sentence naming the recovery", () =>
     ["that file is not a PNG or a JPEG, whatever it is called", "host-error.picture-format"],
     ["that picture says it is 50410000 pixels and the largest this book will read is 50000000", "host-error.picture-pixels"],
     ["that picture could not be read: invalid signature", "host-error.picture-unreadable"],
+    // publication_plan.rs: a figure with no alternative text blocks publishing.
+    ["item 01900000-0000-7000-8000-000000000001: figure needs alternative text", "host-error.figure-alt"],
   ];
   for (const [detail, key] of cases) {
     const error = new HostCommandError("doc_flush", failed(detail));
@@ -82,6 +84,16 @@ test("known host failures read as one plain sentence naming the recovery", () =>
   expect(new HostCommandError("x", failed("unknown (os error 50)")).problem).toBe(t("host-error.failed"));
   expect(commandFailureMessage({ version: 1, code: "application_locked", operation: "doc_load", detail: "" })).toBe(t("host-error.locked"));
   expect(commandFailureMessage("application locked")).toBe(t("host-error.locked"));
+});
+
+test("the alternative-text refusal is classified as the preview and export commands deliver it", () => {
+  // The host passes the plan's message through unprefixed (commands/export.rs adds none).
+  const detail = "item 01900000-0000-7000-8000-000000000001: figure needs alternative text";
+  for (const operation of ["epub_preview", "proof_preview", "export_into"]) {
+    const error = new HostCommandError(operation, { version: 1, code: "operation_failed", operation, detail });
+    expect(error.problem).toBe(t("host-error.figure-alt"));
+    expect(error.detail).toBe(detail);
+  }
 });
 
 test("a banner can lift exactly the diagnostic out of a sentence built around it", () => {

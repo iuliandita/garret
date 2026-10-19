@@ -74,6 +74,40 @@ test("figure registration precedes placement; properties, retry and undo retain 
   editor.undo(); expect(figures()[0].attrs.alt).toBe("A mountain");
 });
 
+test("a figure placed at the end of a scene leaves a paragraph to write in, in one change and one undo", async () => {
+  const mount = document.createElement("div"); document.body.append(mount);
+  const asset = { id: crypto.randomUUID(), width_px: 1200, height_px: 800, orientation: 1 };
+  let changes = 0;
+  const editor = createEditor(mount, { kind: "pmjson", json: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Prose" }] }] } }, {
+    authoring: true, onChange: () => changes++, onAtomCommit: async () => true,
+    pickFigure: async () => asset, figureDetails: async () => ({ asset, column_inches: 5, height_inches: 8, original_warning: null }),
+  });
+  editors.push(editor);
+  const types = () => JSON.parse(editor.serialize()).content.map((node: { type: string }) => node.type);
+  editor.restoreSelection(6, 6);
+  editor.editFigure(); await tick();
+  document.querySelector<HTMLTextAreaElement>("#figure-alt")!.value = "A mountain";
+  press("authoring.save"); await tick();
+  expect(types()).toEqual(["paragraph", "figure", "paragraph"]);
+  expect(changes).toBe(1);
+  editor.typeChar("Z");
+  expect(JSON.parse(editor.serialize()).content[2].content[0].text).toBe("Z");
+  editor.undo(); editor.undo();
+  expect(types()).toEqual(["paragraph"]);
+});
+
+test("a scene opened with a figure last gets its paragraph without a change being reported", () => {
+  const mount = document.createElement("div"); document.body.append(mount);
+  let changes = 0;
+  const figure = { type: "figure", attrs: { id: crypto.randomUUID(), asset_id: crypto.randomUUID(), width: "full", caption: "", alt: "x" } };
+  const editor = createEditor(mount, { kind: "pmjson", json: { type: "doc", content: [{ type: "paragraph" }, figure] } }, { authoring: true, onChange: () => changes++ });
+  editors.push(editor);
+  expect(JSON.parse(editor.serialize()).content.map((node: { type: string }) => node.type)).toEqual(["paragraph", "figure", "paragraph"]);
+  editor.replaceDoc({ kind: "pmjson", json: { type: "doc", content: [figure] } });
+  expect(JSON.parse(editor.serialize()).content.map((node: { type: string }) => node.type)).toEqual(["figure", "paragraph"]);
+  expect(changes).toBe(0);
+});
+
 test("a non-node selection starting at a figure inserts rather than editing its neighbour", async () => {
   const mount = document.createElement("div"); document.body.append(mount);
   const doc = schema.node("doc", null, [schema.nodes.figure.create({ id: crypto.randomUUID(), asset_id: crypto.randomUUID(), width: "full", caption: "Existing", alt: "Existing" }), schema.nodes.paragraph.create()]);

@@ -79,10 +79,15 @@ export function readerViews(load?: LoadFigurePreview, options: {
       placeholder.textContent = t("document.figure-placeholder");
       const caption = document.createElement("figcaption");
       caption.textContent = node.attrs.caption as string;
-      const alt = document.createElement("span");
-      alt.className = "document-figure-alt";
-      alt.textContent = node.attrs.alt as string;
-      dom.append(placeholder, caption, alt);
+      const alternative = node.attrs.alt as string;
+      if (alternative) placeholder.title = alternative;
+      dom.append(placeholder, caption);
+      if (!alternative.trim()) {
+        const missing = document.createElement("span");
+        missing.className = "document-figure-alt-missing";
+        missing.textContent = t("figure.alt-missing");
+        dom.append(missing);
+      }
       if (options.editFigure) {
         const edit = document.createElement("button"); edit.type = "button"; edit.textContent = t("figure.properties");
         edit.addEventListener("click", () => { const pos = getPos(); if (pos !== undefined) options.editFigure?.(pos); });
@@ -102,7 +107,8 @@ export function readerViews(load?: LoadFigurePreview, options: {
           if (preview.state !== "present" || !preview.data_uri?.startsWith("data:image/")) return;
           const image = document.createElement("img");
           image.src = preview.data_uri;
-          image.alt = node.attrs.alt as string;
+          image.alt = alternative;
+          if (alternative) image.title = alternative;
           placeholder.replaceWith(image);
         }).catch(() => { /* The named placeholder retains a failed preview. */ });
       };

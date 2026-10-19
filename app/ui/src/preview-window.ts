@@ -28,8 +28,17 @@ export interface PreviewWindow {
 export function createPreviewWindow(
   pages: HTMLElement,
   view: EpubPreview,
-  deps: { framed(): boolean; problem(name: string): HTMLElement; coverAlt(): string },
+  deps: {
+    framed(): boolean;
+    problem(name: string): HTMLElement;
+    coverAlt(): string;
+    /** A fetched figure's data URI, or undefined when it has not arrived. */
+    figureCached(key: string): string | undefined;
+    /** Fetch a figure by key; null when the host could not serve it. */
+    figureLoad(key: string): Promise<string | null>;
+  },
 ): PreviewWindow {
+  const figureKeys = new Set(view.figure_keys);
   const elements = view.documents.map(({ name }) => {
     const slot = document.createElement("div");
     slot.dataset.epubName = name;
@@ -69,10 +78,26 @@ export function createPreviewWindow(
     if (body === null) slot.append(deps.problem(doc.name));
     else {
       const imported = document.importNode(body, true);
-      if (view.cover_data_uri !== null) {
-        for (const image of imported.querySelectorAll("img")) {
+      for (const image of imported.querySelectorAll("img")) {
+        if (image.closest("section.cover") !== null) {
+          if (view.cover_data_uri === null) continue;
           image.setAttribute("src", view.cover_data_uri);
           image.setAttribute("alt", deps.coverAlt());
+        } else {
+          // The document names `../assets/<sha256>.png` and the host lists
+          // `assets/<sha256>.png`. The page cannot load that path, so the
+          // source is dropped (alt text shows) until the bytes arrive; a source
+          // the host did not list is left as written.
+          const key = (image.getAttribute("src") ?? "").replace(/^\.\.\//, "");
+          if (!figureKeys.has(key)) continue;
+          const cached = deps.figureCached(key);
+          if (cached !== undefined) image.setAttribute("src", cached);
+          else {
+            image.removeAttribute("src");
+            void deps.figureLoad(key).then((uri) => {
+              if (uri !== null && !dead && image.isConnected) image.setAttribute("src", uri);
+            });
+          }
         }
       }
       slot.append(...imported.childNodes);
