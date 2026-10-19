@@ -1259,6 +1259,7 @@ test("Preferences opens in front of the room and goes home when it hides", async
   const header = document.createElement("header");
   const panel = document.createElement("div");
   panel.id = "prefs-panel";
+  panel.tabIndex = -1;
   panel.hidden = true;
   header.append(panel);
   document.body.append(header);
@@ -1269,6 +1270,7 @@ test("Preferences opens in front of the room and goes home when it hides", async
   document.getElementById("library-menu")?.click();
   document.getElementById("library-preferences")?.click();
   expect(panel.parentElement?.id).toBe("library");
+  expect(document.activeElement).toBe(panel);
   const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
   panel.addEventListener("keydown", (event) => { event.preventDefault(); panel.hidden = true; }, { once: true });
   panel.dispatchEvent(escape);
@@ -1276,6 +1278,15 @@ test("Preferences opens in front of the room and goes home when it hides", async
   expect(r.library.isOpen()).toBe(true);
   expect(panel.parentElement).toBe(header);
   expect(document.activeElement?.id).toBe("library-menu");
+  // A click elsewhere closes the panel without taking focus from the click.
+  document.getElementById("library-menu")?.click();
+  document.getElementById("library-preferences")?.click();
+  const elsewhere = document.getElementById("library-import")!;
+  elsewhere.focus();
+  panel.hidden = true;
+  await flush();
+  expect(panel.parentElement).toBe(header);
+  expect(document.activeElement).toBe(elsewhere);
   header.remove();
 });
 
@@ -1294,6 +1305,7 @@ test("series pills filter the shelf, covers name the project type, and the summa
   const pills = [...document.querySelectorAll<HTMLButtonElement>("#library-series-filter button")];
   expect(pills.map((pill) => pill.textContent)).toEqual(["All", "Tides"]);
   pills[1].click();
+  expect((document.activeElement as HTMLElement | null)?.dataset.groupId).toBe("s1");
   expect([...document.querySelectorAll("#library-shelf .shelf-title")].map((el) => el.textContent)).toEqual(["Salt"]);
   expect(document.querySelector('#library-series-filter button[data-group-id="s1"]')?.getAttribute("aria-pressed")).toBe("true");
   r.library.setSummaryVisible(true);

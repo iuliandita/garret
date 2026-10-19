@@ -632,6 +632,9 @@ export function createLibrary(deps: LibraryDeps): Library {
         else selectedUniverse = id;
         generation++;
         paint();
+        // The repaint replaced the pressed pill; keep the keyboard on it.
+        (id === null ? filter.pills.querySelector<HTMLElement>("button:not([data-group-id])")
+          : [...filter.pills.querySelectorAll<HTMLElement>("button[data-group-id]")].find((pill) => pill.dataset.groupId === id))?.focus();
       };
       for (const [id, label] of [[null, t("library.all")], ...groups.map((group) => [group.id, groupLabel(group)] as const)] as const) {
         const pill = document.createElement("button");
@@ -888,7 +891,8 @@ export function createLibrary(deps: LibraryDeps): Library {
   function setSummaryVisible(show: boolean): void {
     summaryOpen = show;
     summaryPanel.hidden = !show || root.classList.contains("library-is-empty");
-    if (show) void runSummary(); else summaryGeneration++;
+    if (show && hasOverviewAnswer && !root.classList.contains("library-is-empty")) void runSummary();
+    else summaryGeneration++;
   }
 
   // Preferences and Help open IN FRONT of the room rather than over the
@@ -900,17 +904,24 @@ export function createLibrary(deps: LibraryDeps): Library {
     const home = panel.parentElement;
     const after = panel.nextSibling;
     const focused = document.activeElement;
-    const anchor = menuButton.getBoundingClientRect();
+    const place = (): void => {
+      const anchor = menuButton.getBoundingClientRect();
+      const top = Math.round(anchor.bottom + 4);
+      const right = Math.max(8, Math.round(window.innerWidth - anchor.right));
+      const height = Math.max(160, window.innerHeight - top - 12);
+      panel.style.top = `${top}px`;
+      panel.style.right = `${right}px`;
+      panel.style.maxHeight = `${height}px`;
+    };
     panel.classList.add("library-hosted");
-    const top = Math.round(anchor.bottom + 4);
-    const right = Math.max(8, Math.round(window.innerWidth - anchor.right));
-    const height = Math.max(160, window.innerHeight - top - 12);
-    panel.style.top = `${top}px`;
-    panel.style.right = `${right}px`;
-    panel.style.maxHeight = `${height}px`;
+    place();
     root.append(panel);
+    // The panel's own open() focused it while it was still inert in the header.
     if (focused instanceof HTMLElement && panel.contains(focused)) focused.focus();
+    else panel.focus();
+    window.addEventListener("resize", place);
     const goHome = (): void => {
+      window.removeEventListener("resize", place);
       watch.disconnect();
       hosted.delete(panel);
       panel.classList.remove("library-hosted");
@@ -919,8 +930,11 @@ export function createLibrary(deps: LibraryDeps): Library {
     };
     const watch = new MutationObserver(() => {
       if (!panel.hidden) return;
+      // An outside click has already put focus where the writer clicked.
+      const active = document.activeElement;
+      const ownFocus = active === null || active === document.body || panel.contains(active);
       goHome();
-      if (isOpen) menuButton.focus();
+      if (isOpen && ownFocus) menuButton.focus();
     });
     watch.observe(panel, { attributes: true, attributeFilter: ["hidden"] });
     hosted.set(panel, goHome);
@@ -1266,7 +1280,12 @@ export function createLibrary(deps: LibraryDeps): Library {
     latest = { ...latest, selected_identity: id };
     generation += 1;
     slowestWordsMs = null;
+    const hadFocus = pillRow.contains(document.activeElement);
     paint();
+    if (hadFocus) {
+      (id === null ? pillRow.querySelector<HTMLElement>("button.pill:not([data-identity-id]):not(#library-new-pen-name)")
+        : [...pillRow.querySelectorAll<HTMLElement>("button[data-identity-id]")].find((pill) => pill.dataset.identityId === id))?.focus();
+    }
     try {
       await deps.persistHomeIdentity(id);
     } catch (error: unknown) {
