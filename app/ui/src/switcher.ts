@@ -1809,7 +1809,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const current = (): Promise<boolean> => outcomeCurrent(path, opened);
     void (async (): Promise<void> => {
       try {
-        const made = await deps.createProject(wanted, projectPreset(presetChoice.select.value));
+        const made = await deps.createProject(wanted, presetChoice.value());
         if (!await current()) return;
         const warning = registrationNotice(made);
         if (warning) deps.onNotice(warning);
@@ -1846,7 +1846,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const current = (): Promise<boolean> => outcomeCurrent(path, opened);
     void (async (): Promise<void> => {
       try {
-        const made = await deps.createProjectIn(wanted, projectPreset(presetChoice.select.value));
+        const made = await deps.createProjectIn(wanted, presetChoice.value());
         // Cancellation keeps the typed name and does not announce a result.
         if (made === null || !await current()) return;
         const warning = registrationNotice(made);

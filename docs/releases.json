@@ -1,10 +1,12 @@
 {
   "version": 1,
   "published": {
-    "tag": "v0.0.7",
-    "source_revision": "8297a59d0f1e4e90cdbdd82c09a1c5c247b61db6",
-    "downloads": ["linux-x86_64", "windows-x86_64", "android", "macos-arm64", "macos-x86_64"],
+    "tag": "v0.0.8",
+    "source_revision": "0a9ac338626a1d0a21b09c9b92ca70b935c1cc00",
+    "downloads": ["linux-x86_64", "windows-x86_64", "windows-arm64", "android", "macos-arm64", "macos-x86_64"],
     "android_scope": "library-and-scene-editor-manual-transfer"
   },
-  "develop_only": ["Native Windows arm64 installer and portable archive"]
+  "develop_only": [
+    "Library screen menu, summary, selectors and project types"
+  ]
 }

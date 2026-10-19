@@ -273,6 +273,15 @@ fn set_mark_cast_names(data_home: &Path, mark: bool) -> std::result::Result<(), 
     projects::update_settings(data_home, |settings| settings.mark_cast_names = mark)
 }
 
+/// Record whether the library screen shows its summary.
+#[command_boundary::command]
+pub(crate) fn settings_set_library_summary(
+    data_home: State<'_, DataHome>,
+    show: bool,
+) -> std::result::Result<(), String> {
+    projects::update_settings(&data_home.0, |settings| settings.library_summary = show)
+}
+
 /// Remember the window's size for the next launch. Best effort throughout: a
 /// window that fails to record its size must still close.
 ///
