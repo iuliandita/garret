@@ -33,6 +33,7 @@ const EPUB: EpubPreview = {
   documents: [{ name: "a.xhtml", xhtml: XHTML("<section><h2>One</h2><p>alpha</p></section>") }],
   css: "p { margin: 0; }",
   cover_data_uri: null,
+  figure_keys: [],
   items: 1,
   words: 1,
 };
@@ -86,6 +87,7 @@ function mount(
     container,
     drain: async () => { h.drains += 1; },
     read: opts.read ?? (async () => { h.reads += 1; return EPUB; }),
+    readFigure: async () => "data:image/png;base64,X",
     readProof: async () => { h.proofReads += 1; return PROOF; },
     readStyle: async () => STYLE,
     writeStyle: async (style) => style,
@@ -257,6 +259,7 @@ describe("the remembered width", () => {
       container,
       drain: async () => undefined,
       read: async () => EPUB,
+      readFigure: async () => "data:image/png;base64,X",
       readProof: async () => PROOF,
       readStyle: async () => STYLE,
       writeStyle: async (style) => style,
@@ -498,6 +501,59 @@ describe("refresh after a pause", () => {
     expect(pending(h)).toHaveLength(0);
     press("#preview-auto-toggle");
     expect(pending(h)).toHaveLength(1);
+  });
+
+  test("a failed render leaves the book owing a paint, so switching it on retries", async () => {
+    let calls = 0;
+    let fail = true;
+    const h = mount({
+      read: async () => {
+        calls += 1;
+        if (fail) throw new Error("boom");
+        return EPUB;
+      },
+    });
+    await h.rail.open("epub");
+    expect(calls).toBe(1);
+    expect(pages().textContent).toBe("");
+    // The failure itself arms nothing: a persistent error must not retry every pause.
+    expect(pending(h)).toHaveLength(0);
+    fail = false;
+    press("#preview-auto-toggle");
+    expect(pending(h)).toHaveLength(1);
+    pending(h)[0]!.fn();
+    await settle();
+    expect(calls).toBe(2);
+    expect(pages().textContent).toContain("alpha");
+  });
+
+  test("a save that settles after a failed render triggers the retry", async () => {
+    let calls = 0;
+    let fail = false;
+    const storage = new MemoryStorage();
+    storage.map.set(RAIL_AUTO_KEY, "1");
+    const h = mount({
+      storage,
+      read: async () => {
+        calls += 1;
+        if (fail) throw new Error("boom");
+        return EPUB;
+      },
+    });
+    await h.rail.open("epub");
+    h.rail.saveStateChanged("pending");
+    fail = true;
+    press("#preview-refresh");
+    await settle();
+    expect(calls).toBe(2);
+    expect(pending(h)).toHaveLength(0);
+    fail = false;
+    h.rail.saveStateChanged("saved");
+    expect(pending(h)).toHaveLength(1);
+    pending(h)[0]!.fn();
+    await settle();
+    expect(calls).toBe(3);
+    expect(pages().textContent).toContain("alpha");
   });
 
   test("a timer that fires after the rail closed renders nothing", async () => {

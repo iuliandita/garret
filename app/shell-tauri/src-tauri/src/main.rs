@@ -4522,6 +4522,7 @@ fn main() {
             __wire_project_source_words_reset,
             commands::export::__wire_project_export,
             commands::export::__wire_epub_preview,
+            commands::export::__wire_epub_preview_image,
             #[cfg(any(target_os = "linux", windows))]
             commands::export::__wire_pdf_preview,
             __wire_project_find,

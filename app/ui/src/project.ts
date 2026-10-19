@@ -2848,6 +2848,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       container: epubEl,
       drain: () => drainForPublishing("preview"),
       read: async () => (await invoke("epub_preview")) as EpubPreview,
+      readFigure: async (key) => (await invoke("epub_preview_image", { key })) as string,
       readProof: async () => (await invoke("pdf_preview")) as PdfPreview,
       readStyle: async () => (await invoke("chapter_style_get")) as ChapterStyleView,
       readDesign: async () => (await invoke("book_design_get")) as BookDesignView,
