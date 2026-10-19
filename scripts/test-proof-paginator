@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-phase() { printf 'proof-phase ts=%s pid=%s %s\n' "$(date -u +%FT%T.%3NZ)" "$$" "$*" >&2; }
+phase() {
+  local line
+  printf -v line 'proof-phase ts=%s pid=%s %s' "$(date -u +%FT%T.%3NZ)" "$$" "$*"
+  printf '%s\n' "$line" >&2
+  printf '%s\n' "$line" >> "$GARRET_PROOF_PHASE_LOG"
+}
 
 if [[ ${1:-} == --inside ]]; then
   shift
@@ -42,11 +47,14 @@ if [[ $# == 0 ]]; then
     typed_dashes_stay_on_one_line_and_page
 fi
 diagnostics=$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/garret-proof.XXXXXX")
+export GARRET_PROOF_PHASE_LOG="$diagnostics/phases.log"
+if [[ -n ${GITHUB_OUTPUT:-} ]]; then
+  printf 'diagnostics=%s\n' "$diagnostics" >> "$GITHUB_OUTPUT"
+fi
 phase "runner starting; diagnostics: $diagnostics"
 status=0
-timeout --verbose --signal=TERM --kill-after=30s 420s \
-  bash "$0" --run "$diagnostics" "$@" > "$diagnostics/phases.log" 2>&1 || status=$?
-cat "$diagnostics/phases.log"
+python3 "$(dirname "$0")/proof-process-bound.py" 420 "$diagnostics" \
+  bash "$0" --run "$diagnostics" "$@" || status=$?
 if [[ $status != 0 ]]; then
   phase "runner failed: status=$status"
   if [[ -f $diagnostics/xvfb.log ]]; then cat "$diagnostics/xvfb.log"; fi

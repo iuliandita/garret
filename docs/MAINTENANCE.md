@@ -152,16 +152,28 @@ phase and thread wait channels before aborting, even if GTK stops dispatching
 or thread teardown stalls. Core dumps are disabled
 in these isolated test processes. Timestamped phase markers write directly to
 stderr, bypassing libtest capture, including watchdog reports. The CI runner
-uses `--nocapture` and prints its phase log on success or failure. Markers cover
+uses `--nocapture` and streams stderr to the job log as each phase occurs.
+Each marker is also appended without userspace buffering to `phases.log`;
+failure artifacts retain this file and the Xvfb and native diagnostic logs. Markers cover
 compilation, Xvfb startup, test-process entry, GTK initialization, the watchdog,
 WebKit creation, loading, pagination, render cleanup, test return, and Xvfb exit.
 The paginator CI step runs the three fixtures in
 separate processes under the same X display, with a 420-second
-process timeout and 30-second kill grace, including compilation and startup.
+supervisor deadline, including compilation and startup. At that deadline the
+supervisor saves live process/thread wait channels and attempts kernel stacks, then
+attempts native backtraces with GDB before sending TERM. Debugger collection
+has a 20-second total budget; five seconds after TERM, remaining processes
+receive KILL, followed by at most five seconds to reap the child. INT and TERM
+also trigger bounded process-group cleanup. The deadline returns status 124 even if the child exits while
+being inspected. CI enables ptrace on its disposable runner for native stacks;
+kernel stack permission errors are recorded when the kernel requires privileges.
 Run `bash ../../../scripts/test-proof-paginator` from the host crate directory;
 optional arguments select individual fixture names. Each invocation uses a fresh
 HOME and XDG_DATA_HOME. Its diagnostic directory is printed before startup and
-retains the phase log and Xvfb errors. Failures are not retried.
+retains the phase log and Xvfb errors. Only diagnostic logs are uploaded,
+excluding the temporary profile and data. Failures are not retried. Run
+`python3 scripts/test-proof-process-bound.py` to exercise live deadline capture,
+TERM flushing and nonzero exit propagation without GTK.
 It uses an isolated X display, software rendering, disabled compositing and
 DMA-BUF rendering, and no accessibility bridge.
 CI native stacks locate the intermittent stall after the test body, in WebKit
