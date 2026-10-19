@@ -997,6 +997,8 @@ export const EN = {
   // pattern of a fixed-width legend beside a longer aria-label.
   "prefs.legend.mark-cast-names": "Cast names",
   "prefs.name.mark-cast-names": "Mark cast names in the text",
+  "prefs.legend.library-summary": "Library summary",
+  "prefs.name.library-summary": "Show the library summary",
   // The language chooser. Both catalogs carry both language names, spelled in
   // their own language, because this is the one control whose two options are
   // themselves names of languages rather than English words describing a
@@ -1030,6 +1032,7 @@ export const EN = {
   "prefs.what.zoom": "zoom",
   "prefs.what.language": "language",
   "prefs.what.mark-cast-names": "cast names",
+  "prefs.what.library-summary": "library summary",
   "prefs.what.start": "when the application starts",
   "prefs.error.save": "Could not save the {what} preference: {error}",
   // This project's own spelling wordlist -- see store::dict and
@@ -2628,8 +2631,6 @@ export const EN = {
   "library.universe": "Universe",
   "library.series.filter": "Filter by series",
   "library.universe.filter": "Filter by universe",
-  "library.series.all": "All series",
-  "library.universe.all": "All universes",
   "library.series.name": "Series name",
   "library.universe.name": "Universe name",
   "library.group-conflict-separator": " / ",
@@ -2646,8 +2647,6 @@ export const EN = {
   "library.membership.discard-question": "Discard the unsaved membership changes?",
   "library.membership.discard": "Discard changes",
   "library.membership.keep": "Keep editing",
-  "library.summary.open": "Show library summary",
-  "library.summary.close": "Hide library summary",
   "library.summary.title": "Saved library summary",
   "library.summary.definition": "Words and documents as saved in the books shown. Recorded changes cover only what was recorded, not everything you ever wrote. Filters combine, and books that cannot be read or are not shown are left out.",
   "library.summary.counts": "{books} with {documents} and {words}.",
@@ -2710,8 +2709,8 @@ export const EN = {
   "library.empty": "No books yet.",
   "library.import": "Import a manuscript…",
   "library.restore": "Restore an encrypted backup…",
-  "library.more.one": "{count} more book is not shown. Use {menu}",
-  "library.more.other": "{count} more books are not shown. Use {menu}",
+  "library.more.one": "{count} more book is not shown.",
+  "library.more.other": "{count} more books are not shown.",
   "library.close": "Close",
   "library.when.now": "just now",
   "library.when.minutes.one": "{count} minute ago",

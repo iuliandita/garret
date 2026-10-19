@@ -65,6 +65,8 @@ pub struct LibraryBook {
     pub series: Option<Group>,
     pub universe: Option<Group>,
     pub membership_error: Option<String>,
+    /// The project type the book was created as; None when it could not be read.
+    pub preset: Option<String>,
     pub cover: PictureView,
     pub error: Option<String>,
     pub missing: bool,
@@ -353,7 +355,7 @@ fn describe(path: PathBuf, opened_at: Option<u64>, modified_at: i64, want_cover:
     let key = path.to_string_lossy().into_owned();
     let missing = projects::book_is_missing(&path).unwrap_or(false);
 
-    let (name, error, identity_id, identity_name, book_id, membership, membership_error, cover) = match Store::open_readonly(&path) {
+    let (name, error, identity_id, identity_name, book_id, membership, membership_error, preset, cover) = match Store::open_readonly(&path) {
         Ok(store) => {
             let (name, name_error) = match store.get_meta(projects::NAME_KEY) {
                 Ok(Some(n)) if !n.is_empty() => (n, None),
@@ -375,6 +377,7 @@ fn describe(path: PathBuf, opened_at: Option<u64>, modified_at: i64, want_cover:
                 Ok(value) => (value, None),
                 Err(e) => (Membership::default(), Some(e.to_string())),
             };
+            let preset = store.project_preset().ok().map(str::to_string);
             let cover = if want_cover {
                 let cover_name = crate::covers::cover_of(&store, crate::covers::SIDE_FRONT)
                     .ok()
@@ -383,9 +386,9 @@ fn describe(path: PathBuf, opened_at: Option<u64>, modified_at: i64, want_cover:
             } else {
                 none_cover()
             };
-            (name, name_error.or(identity_error), identity_id, identity_name, book_id, membership, membership_error, cover)
+            (name, name_error.or(identity_error), identity_id, identity_name, book_id, membership, membership_error, preset, cover)
         }
-        Err(e) => (stem, Some(e.to_string()), None, None, None, Membership::default(), None, none_cover()),
+        Err(e) => (stem, Some(e.to_string()), None, None, None, Membership::default(), None, None, none_cover()),
     };
 
     LibraryBook {
@@ -399,6 +402,7 @@ fn describe(path: PathBuf, opened_at: Option<u64>, modified_at: i64, want_cover:
         series: membership.series,
         universe: membership.universe,
         membership_error,
+        preset,
         cover,
         error,
         missing,
@@ -524,10 +528,13 @@ mod tests {
                 .unwrap();
         }
         plant_recent(dir.path(), &[(&b, 10), (&a, 20)]);
+        Store::open(&b).unwrap().set_meta(crate::core_constants::PRESET_KEY, "short").unwrap();
         let ov = overview(dir.path());
         let paths: Vec<&str> = ov.books.iter().map(|b| b.name.as_str()).collect();
         assert_eq!(paths, vec!["a", "b", "c-never-opened"]);
         assert_eq!(ov.books[2].opened_at, None);
+        assert_eq!(ov.books[0].preset.as_deref(), Some("novel"));
+        assert_eq!(ov.books[1].preset.as_deref(), Some("short"));
         // A sanity bound rather than an exact figure: `took_ms` is a real
         // wall-clock reading and this is three tiny stores opened on a local
         // disk, not a claim about what a slower machine would report.

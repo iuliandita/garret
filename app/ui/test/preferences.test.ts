@@ -266,7 +266,7 @@ describe("the preferences panel", () => {
     }
     expect([...pages[0].children].map((child) => child.id)).toEqual(["prefs-family", "prefs-size", "prefs-measure", "prefs-goal", "prefs-writing-aids"]);
     expect([...pages[1].children].map((child) => child.id)).toEqual(["prefs-palette", "prefs-theme", "prefs-zoom", "prefs-sidebar-word-counts"]);
-    expect([...pages[2].children].map((child) => child.id)).toEqual(["prefs-language-group", "prefs-start-group"]);
+    expect([...pages[2].children].map((child) => child.id)).toEqual(["prefs-language-group", "prefs-start-group", "prefs-library-summary"]);
     expect(r.panel().querySelector<HTMLDetailsElement>("#prefs-writing-aids")?.open).toBe(false);
     r.control.destroy();
   });

@@ -39,6 +39,8 @@ import type { LibraryCreateResult } from "./library-book-actions";
 import { isCompositionKey } from "./composition-key";
 import { closeOnOutsideClick } from "./dismiss-outside";
 import { createMenuPanel } from "./menu-panel";
+import { createIcon } from "./icons";
+import { privacyShortcutLabel, type PrivacyShortcut } from "./privacy";
 import { zoomActionFor } from "./zoom";
 import { isQuitChord } from "./quit";
 import { createHelpTip } from "./help-tip";
@@ -69,6 +71,8 @@ export interface LibraryBook {
   series: LibraryGroup | null;
   universe: LibraryGroup | null;
   membership_error: string | null;
+  /** The project type; absent or null when the host could not read it. */
+  preset?: string | null;
   cover: PictureView;
   error: string | null;
   missing: boolean;
@@ -105,9 +109,16 @@ export interface LibraryDeps {
   /** Creates and opens the book. A refused switch keeps the room open;
    *  failed attribution preserves its notice without announcing success. */
   createBook(name: string, identityId: string | null, preset?: ProjectPreset): Promise<LibraryCreateResult>;
-  openBooks(focus: "import" | "restore"): void;
-  openPreferences?(): void;
-  openHelp?(): void;
+  openBooks(focus: "list" | "import" | "restore" | "backups"): void;
+  /** Opens the panel and returns it, so the room can hold it in front of
+   *  itself instead of closing onto the workspace behind. */
+  openPreferences?(): HTMLElement | null;
+  openHelp?(): HTMLElement | null;
+  lockPrivacy?(): void;
+  canLockPrivacy?(): boolean;
+  privacyShortcut?(): PrivacyShortcut;
+  /** `settings.library_summary`; on when absent. */
+  showSummary?: boolean;
   quit?(): void;
   forget(path: string): Promise<void>;
   /** `identity_save` with an empty id, public tier only. Resolves to the
@@ -127,6 +138,7 @@ export interface Library {
   close(): void;
   isOpen(): boolean;
   refresh(): Promise<void>;
+  setSummaryVisible(show: boolean): void;
   destroy(): void;
 }
 
@@ -254,8 +266,8 @@ export function createLibrary(deps: LibraryDeps): Library {
   const menuButton = document.createElement("button");
   menuButton.type = "button";
   menuButton.id = "library-menu";
-  menuButton.dataset.weight = "quiet";
-  menuButton.textContent = t("menu.button.label");
+  menuButton.setAttribute("aria-label", t("menu.button.label"));
+  menuButton.append(createIcon("menu"));
   menuButton.setAttribute("aria-haspopup", "menu");
   menuButton.setAttribute("aria-expanded", "false");
   menuButton.setAttribute("aria-controls", "library-menu-panel");
@@ -266,10 +278,19 @@ export function createLibrary(deps: LibraryDeps): Library {
   menuButton.addEventListener("click", () => {
     if (creatingBook || openingBook) return;
     if (menu.isOpen()) { menu.close(); return; }
+    // The File menu's book-independent items, under the same labels and
+    // shortcuts, so the room and the book view offer one menu.
+    const leaveFor = (focus: "list" | "import" | "backups") => () => { close(); if (!isOpen) deps.openBooks(focus); };
     menu.paint([
-      { id: "library-preferences", label: () => t("menu.preferences"), opensDialog: true, run: () => { close(); if (!isOpen) deps.openPreferences?.(); } },
-      { id: "library-help", label: () => t("menu.help"), opensDialog: true, run: () => { close(); if (!isOpen) deps.openHelp?.(); } },
-      { id: "library-quit", label: () => t("menu.quit"), run: () => { close(); if (!isOpen) deps.quit?.(); } },
+      { id: "library-new-book", label: () => t("menu.project-new"), run: () => beginNewBook() },
+      { id: "library-open-book", label: () => t("menu.project-open"), opensDialog: true, run: leaveFor("list") },
+      { id: "library-import-book", label: () => t("menu.import"), opensDialog: true, run: leaveFor("import") },
+      { id: "library-encrypted-backups", label: () => t("menu.encrypted-backups"), opensDialog: true, run: leaveFor("backups") },
+      { id: "library-preferences", separatorBefore: true, label: () => t("menu.preferences"), opensDialog: true, run: () => hostPanel(deps.openPreferences?.() ?? null) },
+      { id: "library-privacy-lock", label: () => t("privacy.lock"), shortcut: privacyShortcutLabel(deps.privacyShortcut?.() ?? "ctrl_alt_l"),
+        enabled: () => deps.canLockPrivacy?.() ?? false, run: () => deps.lockPrivacy?.() },
+      { id: "library-help", label: () => t("menu.help"), opensDialog: true, run: () => hostPanel(deps.openHelp?.() ?? null) },
+      { id: "library-quit", label: () => t("menu.quit"), shortcut: t("menu.shortcut.quit"), run: () => { close(); if (!isOpen) deps.quit?.(); } },
     ], t("menu.button.label"));
     menuButton.setAttribute("aria-expanded", "true");
     menu.focusItem(0);
@@ -283,12 +304,23 @@ export function createLibrary(deps: LibraryDeps): Library {
 
   const groupFilters = document.createElement("div");
   groupFilters.id = "library-group-filters";
-  const seriesFilter = document.createElement("select");
-  seriesFilter.id = "library-series-filter";
-  seriesFilter.setAttribute("aria-label", t("library.series.filter"));
-  const universeFilter = document.createElement("select");
-  universeFilter.id = "library-universe-filter";
-  universeFilter.setAttribute("aria-label", t("library.universe.filter"));
+  const groupRow = (kind: "series" | "universe"): { row: HTMLElement; pills: HTMLElement } => {
+    const row = document.createElement("div");
+    row.id = `library-${kind}-filter`;
+    row.className = "library-group-row";
+    const label = document.createElement("span");
+    label.id = `library-${kind}-label`;
+    label.className = "library-strip-label";
+    label.textContent = t(kind === "series" ? "library.series" : "library.universe");
+    const pills = document.createElement("div");
+    pills.className = "pill-row";
+    pills.setAttribute("role", "group");
+    pills.setAttribute("aria-label", t(kind === "series" ? "library.series.filter" : "library.universe.filter"));
+    row.append(label, pills);
+    return { row, pills };
+  };
+  const seriesFilter = groupRow("series");
+  const universeFilter = groupRow("universe");
   const membershipButton = document.createElement("button");
   membershipButton.type = "button";
   membershipButton.id = "library-membership-open";
@@ -296,17 +328,12 @@ export function createLibrary(deps: LibraryDeps): Library {
   const membershipPanel = document.createElement("section");
   membershipPanel.id = "library-membership";
   membershipPanel.hidden = true;
-  const summaryButton = document.createElement("button");
-  summaryButton.type = "button";
-  summaryButton.id = "library-summary-toggle";
-  summaryButton.textContent = t("library.summary.open");
-  summaryButton.setAttribute("aria-expanded", "false");
-  groupFilters.append(seriesFilter, universeFilter, membershipButton, summaryButton);
+  groupFilters.append(seriesFilter.row, universeFilter.row, membershipButton);
 
   const summaryPanel = document.createElement("section");
   summaryPanel.id = "library-summary";
   summaryPanel.setAttribute("aria-label", t("library.summary.title"));
-  summaryPanel.hidden = true;
+  summaryPanel.hidden = deps.showSummary === false;
 
   const heading = document.createElement("h2");
   heading.id = "library-heading";
@@ -359,6 +386,13 @@ export function createLibrary(deps: LibraryDeps): Library {
   const more = document.createElement("p");
   more.id = "library-more";
   more.hidden = true;
+  const moreText = document.createElement("span");
+  const moreOpen = document.createElement("button");
+  moreOpen.type = "button";
+  moreOpen.id = "library-more-open";
+  moreOpen.textContent = t("menu.project-open");
+  moreOpen.addEventListener("click", () => { close(); if (!isOpen) deps.openBooks("list"); });
+  more.append(moreText, moreOpen);
 
   // Expose the instrument to native probes only with explicit diagnostics.
   // Its host-measured values remain available in the DOM in every mode.
@@ -367,7 +401,7 @@ export function createLibrary(deps: LibraryDeps): Library {
   timing.className = "library-timing";
   timing.setAttribute("aria-hidden", deps.diagnostics === true ? "false" : "true");
 
-  root.append(wordmark, strip, groupFilters, membershipPanel, headingRow, bioLine, newBookArea, existingBooks, desk, shelfHeading, empty, shelf, more, summaryPanel, timing);
+  root.append(wordmark, strip, groupFilters, membershipPanel, headingRow, bioLine, newBookArea, existingBooks, desk, summaryPanel, shelfHeading, empty, shelf, more, timing);
   document.body.append(root);
 
   const penNameForm = createPenNameForm({
@@ -451,7 +485,7 @@ export function createLibrary(deps: LibraryDeps): Library {
   let hasOverviewAnswer = false;
   let selectedSeries: string | null = null;
   let selectedUniverse: string | null = null;
-  let summaryOpen = false;
+  let summaryOpen = deps.showSummary !== false;
   let editorOpen = false;
   let editorDirty = false;
   let editingPath = "";
@@ -494,7 +528,7 @@ export function createLibrary(deps: LibraryDeps): Library {
       }
       return;
     }
-    if (event.key !== "Escape") return;
+    if (event.key !== "Escape" || event.defaultPrevented) return;
     event.preventDefault();
     if (editorOpen) {
       event.preventDefault();
@@ -524,6 +558,7 @@ export function createLibrary(deps: LibraryDeps): Library {
     const restoreFocus = !toEditor || document.activeElement === root;
     finishEditorClose(false);
     menu.close();
+    releaseHosted();
     isOpen = false;
     root.hidden = true;
     penNameForm.close();
@@ -588,21 +623,26 @@ export function createLibrary(deps: LibraryDeps): Library {
   }
 
   function paintGroupFilters(): void {
-    const paintOne = (element: HTMLSelectElement, kind: "series" | "universe", selected: string | null) => {
-      clear(element);
-      const all = document.createElement("option");
-      all.value = "";
-      all.textContent = t(kind === "series" ? "library.series.all" : "library.universe.all");
-      element.append(all);
+    const paintOne = (filter: { row: HTMLElement; pills: HTMLElement }, kind: "series" | "universe", selected: string | null) => {
+      clear(filter.pills);
       const groups = groupsOf(latest.books, kind);
-      element.hidden = groups.length === 0;
-      for (const group of groups) {
-        const option = document.createElement("option");
-        option.value = group.id;
-        option.textContent = groupLabel(group);
-        element.append(option);
+      filter.row.hidden = groups.length === 0;
+      const choose = (id: string | null) => {
+        if (kind === "series") selectedSeries = id;
+        else selectedUniverse = id;
+        generation++;
+        paint();
+      };
+      for (const [id, label] of [[null, t("library.all")], ...groups.map((group) => [group.id, groupLabel(group)] as const)] as const) {
+        const pill = document.createElement("button");
+        pill.type = "button";
+        pill.className = "pill";
+        if (id !== null) pill.dataset.groupId = id;
+        pill.setAttribute("aria-pressed", String(selected === id));
+        pill.textContent = label;
+        pill.addEventListener("click", () => choose(id));
+        filter.pills.append(pill);
       }
-      element.value = selected ?? "";
     };
     paintOne(seriesFilter, "series", selectedSeries);
     paintOne(universeFilter, "universe", selectedUniverse);
@@ -843,16 +883,55 @@ export function createLibrary(deps: LibraryDeps): Library {
     }
   }
 
-  seriesFilter.addEventListener("change", () => { selectedSeries = seriesFilter.value || null; generation++; paint(); });
-  universeFilter.addEventListener("change", () => { selectedUniverse = universeFilter.value || null; generation++; paint(); });
   membershipButton.addEventListener("click", () => void openMembershipEditor());
-  summaryButton.addEventListener("click", () => {
-    summaryOpen = !summaryOpen;
-    summaryPanel.hidden = !summaryOpen;
-    summaryButton.textContent = t(summaryOpen ? "library.summary.close" : "library.summary.open");
-    summaryButton.setAttribute("aria-expanded", String(summaryOpen));
-    if (summaryOpen) void runSummary(); else summaryGeneration++;
-  });
+
+  function setSummaryVisible(show: boolean): void {
+    summaryOpen = show;
+    summaryPanel.hidden = !show || root.classList.contains("library-is-empty");
+    if (show) void runSummary(); else summaryGeneration++;
+  }
+
+  // Preferences and Help open IN FRONT of the room rather than over the
+  // workspace behind it: the panel moves into #library while it is open
+  // (everything outside the room is inert) and goes home when it hides.
+  const hosted = new Map<HTMLElement, () => void>();
+  function hostPanel(panel: HTMLElement | null): void {
+    if (panel === null || panel.hidden || hosted.has(panel)) return;
+    const home = panel.parentElement;
+    const after = panel.nextSibling;
+    const focused = document.activeElement;
+    const anchor = menuButton.getBoundingClientRect();
+    panel.classList.add("library-hosted");
+    const top = Math.round(anchor.bottom + 4);
+    const right = Math.max(8, Math.round(window.innerWidth - anchor.right));
+    const height = Math.max(160, window.innerHeight - top - 12);
+    panel.style.top = `${top}px`;
+    panel.style.right = `${right}px`;
+    panel.style.maxHeight = `${height}px`;
+    root.append(panel);
+    if (focused instanceof HTMLElement && panel.contains(focused)) focused.focus();
+    const goHome = (): void => {
+      watch.disconnect();
+      hosted.delete(panel);
+      panel.classList.remove("library-hosted");
+      for (const property of ["top", "right", "max-height"]) panel.style.removeProperty(property);
+      if (home !== null) home.insertBefore(panel, after !== null && after.parentNode === home ? after : null);
+    };
+    const watch = new MutationObserver(() => {
+      if (!panel.hidden) return;
+      goHome();
+      if (isOpen) menuButton.focus();
+    });
+    watch.observe(panel, { attributes: true, attributeFilter: ["hidden"] });
+    hosted.set(panel, goHome);
+  }
+  function releaseHosted(): void {
+    for (const goHome of [...hosted.values()]) goHome();
+  }
+
+  function presetLabel(book: LibraryBook): string {
+    return typeof book.preset === "string" ? t(`preset.${projectPreset(book.preset)}`) : "";
+  }
 
   function renderCover(container: HTMLElement, book: LibraryBook): void {
     clear(container);
@@ -931,6 +1010,10 @@ export function createLibrary(deps: LibraryDeps): Library {
     const title = document.createElement("h3");
     title.id = "library-desk-title";
     title.textContent = book.name;
+    const kind = document.createElement("p");
+    kind.className = "desk-kind";
+    kind.textContent = presetLabel(book);
+    kind.hidden = kind.textContent === "";
     const byline = document.createElement("p");
     byline.textContent =
       book.identity_name !== null ? t("library.by", { name: book.identity_name }) : t("library.no-pen-name");
@@ -943,12 +1026,12 @@ export function createLibrary(deps: LibraryDeps): Library {
     continueButton.id = "library-continue";
     continueButton.textContent = t("library.continue");
     continueButton.addEventListener("click", () => void openBook(book.path, continueButton, book.name));
-    info.append(title, byline, meta, continueButton);
+    info.append(title, kind, byline, meta, continueButton);
     desk.append(coverBox, info);
   }
 
   function shelfLabel(book: LibraryBook, when: string, words = ""): string {
-    return metaJoin([book.name, book.identity_name === null ? "" : t("library.by", { name: book.identity_name }), when, words]);
+    return metaJoin([book.name, presetLabel(book), book.identity_name === null ? "" : t("library.by", { name: book.identity_name }), when, words]);
   }
 
   function paintShelf(books: readonly LibraryBook[], nowMs: number): void {
@@ -965,6 +1048,10 @@ export function createLibrary(deps: LibraryDeps): Library {
       const title = document.createElement("span");
       title.className = "shelf-title";
       title.textContent = book.name;
+      const kind = document.createElement("span");
+      kind.className = "shelf-kind";
+      kind.textContent = presetLabel(book);
+      kind.hidden = kind.textContent === "";
       // The pen name on its own line, so the meta line carries one middle
       // dot at most: "last opened just now · 2,000 words".
       const by = document.createElement("span");
@@ -975,7 +1062,7 @@ export function createLibrary(deps: LibraryDeps): Library {
       meta.className = "shelf-meta";
       meta.dataset.path = book.path;
       meta.textContent = lastOpenedText(book, nowMs);
-      tile.append(coverBox, title, by, meta);
+      tile.append(coverBox, title, kind, by, meta);
       if (book.missing || book.error !== null) {
         meta.removeAttribute("data-path");
         const errorLine = document.createElement("span");
@@ -1012,6 +1099,13 @@ export function createLibrary(deps: LibraryDeps): Library {
     newBookTile.classList.add("shelf-tile", "new-book");
     paintNewBookTile(newBookTile, false);
     newBookArea.replaceChildren(newBookTile);
+  }
+
+  function beginNewBook(): void {
+    const tile = root.querySelector<HTMLElement>("#library-new-book-tile");
+    if (tile === null) return;
+    if (tile instanceof HTMLButtonElement) paintNewBookTile(tile, true);
+    else root.querySelector<HTMLInputElement>("#library-new-book-name")?.focus();
   }
 
   function paintNewBookTile(tile: HTMLElement, editing: boolean): void {
@@ -1056,7 +1150,7 @@ export function createLibrary(deps: LibraryDeps): Library {
       if (isCompositionKey(event)) return;
       if (event.key === "Enter") {
         event.preventDefault();
-        void createBook(input.value.trim(), projectPreset(presetChoice.select.value));
+        void createBook(input.value.trim(), presetChoice.value());
       } else if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
@@ -1070,7 +1164,7 @@ export function createLibrary(deps: LibraryDeps): Library {
     create.type = "button";
     create.id = "library-new-book-create";
     create.textContent = t("library.new-book.create");
-    create.addEventListener("click", () => void createBook(input.value.trim(), projectPreset(presetChoice.select.value)));
+    create.addEventListener("click", () => void createBook(input.value.trim(), presetChoice.value()));
     const cancel = document.createElement("button");
     cancel.type = "button";
     cancel.id = "library-new-book-cancel";
@@ -1101,6 +1195,7 @@ export function createLibrary(deps: LibraryDeps): Library {
     const isEmptyLibrary = latest.books.length === 0 && latest.more === 0;
     root.classList.toggle("library-is-empty", isEmptyLibrary);
     groupFilters.hidden = isEmptyLibrary;
+    summaryPanel.hidden = !summaryOpen || isEmptyLibrary;
     desk.hidden = isEmptyLibrary;
     shelfHeading.hidden = isEmptyLibrary;
 
@@ -1116,16 +1211,14 @@ export function createLibrary(deps: LibraryDeps): Library {
     empty.hidden = filtered.length > 0;
     if (latest.more > 0) {
       more.hidden = false;
-      more.textContent = plural("library.more", latest.more, {
-        menu: [t("menu.file"), t("menu.project-open")].join(" › "),
-      });
+      moreText.textContent = plural("library.more", latest.more, { count: formatNumber(latest.more) });
     } else {
       more.hidden = true;
     }
 
     const onScreen = [deskBook, ...shelfBooks].filter((b): b is LibraryBook => b !== null);
     void fetchWordCounts(generation, onScreen);
-    if (summaryOpen) void runSummary();
+    if (summaryOpen && !isEmptyLibrary) void runSummary();
     paintBusy();
   }
 
@@ -1287,6 +1380,7 @@ export function createLibrary(deps: LibraryDeps): Library {
     close,
     isOpen: () => isOpen,
     refresh,
+    setSummaryVisible,
     destroy(): void {
       isOpen = false;
       generation++;
@@ -1294,6 +1388,7 @@ export function createLibrary(deps: LibraryDeps): Library {
       membershipGeneration++;
       root.removeEventListener("keydown", onKeydown);
       removeOutsideMenu();
+      releaseHosted();
       menu.destroy();
       releaseWorkspace();
       penNameForm.destroy();

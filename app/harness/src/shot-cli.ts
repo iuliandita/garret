@@ -4115,14 +4115,6 @@ try {
         await Bun.sleep(PAINT_SETTLE_MS);
       }
 
-      if (options.librarySeries && options.press?.value === "library-summary-toggle") {
-        // The focused toggle consumes Ctrl+End without scrolling the library.
-        // Wheel over its scroll surface so the result below the shelf is visible.
-        xdo(display, ["mousemove", "--window", wid, "700", "700"]);
-        xdo(display, ["click", "--repeat", "12", "--delay", "60", "5"]);
-        await Bun.sleep(PAINT_SETTLE_MS);
-      }
-
       if (options.outlineView !== null) {
         const probe = Bun.spawnSync(["python3", "-c", PY_OUTLINE_VIEW, pidListArg(rootPid)], {
           stdout: "pipe", stderr: "pipe",

@@ -2128,6 +2128,7 @@ fn preferences_js(settings: &projects::Settings) -> String {
          window.__appZoom={};\
          window.__appSidebarWordCounts={};\
          window.__appMarkCastNames={};\
+         window.__appLibrarySummary={};\
          window.__appStart={};",
         js_string(settings.theme.as_str()),
         js_string(settings.typography.family.as_str()),
@@ -2144,6 +2145,7 @@ fn preferences_js(settings: &projects::Settings) -> String {
         js_string(settings.zoom.as_str()),
         serde_json::to_string(&settings.sidebar_word_counts).expect("sidebar counts serialize"),
         settings.mark_cast_names,
+        settings.library_summary,
         js_string(settings.start.as_str()),
     )
 }
@@ -4529,6 +4531,7 @@ fn main() {
             commands::settings::__wire_settings_set_bible_rows,
             commands::settings::__wire_settings_set_writing_modes,
             commands::settings::__wire_settings_set_mark_cast_names,
+            commands::settings::__wire_settings_set_library_summary,
             commands::spell::__wire_settings_set_spelling,
             commands::settings::__wire_settings_set_time_tracking,
             commands::settings::__wire_settings_set_zoom,
@@ -7826,6 +7829,7 @@ mod tests {
             theme_family: crate::projects::ThemeFamily::Atmospheric,
             locale: crate::projects::LocaleTag::default(),
             mark_cast_names: false,
+            library_summary: false,
             start: crate::projects::Start::Blank,
             recent: Vec::new(),
             home_identity: None,
@@ -7856,6 +7860,7 @@ mod tests {
         // NO QUOTES: a bare JS boolean, not a validated enum spelling, since
         // there is nothing here for a stray value to misspell.
         assert!(js.contains("window.__appMarkCastNames=false"), "{js}");
+        assert!(js.contains("window.__appLibrarySummary=false"), "{js}");
     }
 
     #[test]
@@ -7881,6 +7886,7 @@ mod tests {
         assert!(js.contains("window.__appProseMeasure='medium'"), "{js}");
         // A writer who has never opened Preferences sees the feature on.
         assert!(js.contains("window.__appMarkCastNames=true"), "{js}");
+        assert!(js.contains("window.__appLibrarySummary=true"), "{js}");
         // 100 flips the default: a first launch is what this default answers
         // for, and the library screen is now what a first launch shows.
         assert!(js.contains("window.__appStart='home'"), "{js}");

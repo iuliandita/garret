@@ -90,6 +90,7 @@ declare global {
      *  from settings.json. A bare boolean, unlike every other
      *  injected preference: there is no spelling of it to validate. */
     __appMarkCastNames?: boolean;
+    __appLibrarySummary?: boolean;
     __appSidebarWordCounts?: unknown;
     __appProject?: string;
     /** A copied book the host deferred until the page can ask whether it is
@@ -573,8 +574,18 @@ async function main(): Promise<void> {
       const library = createLibrary({
         diagnostics: window.__appLibraryDiagnostics === true,
         openBooks: (focus) => switcher.open(focus),
-        openPreferences: () => preferences?.open(),
-        openHelp: () => help.open(),
+        openPreferences: () => {
+          preferences?.open();
+          return document.getElementById("prefs-panel");
+        },
+        openHelp: () => {
+          help.open();
+          return document.getElementById("help-panel");
+        },
+        lockPrivacy: () => lockPrivacy(),
+        canLockPrivacy: () => privacyStatus.enabled && !privacyStatus.locked && !privacyStatus.recovery,
+        privacyShortcut: () => privacyStatus.shortcut,
+        showSummary: window.__appLibrarySummary !== false,
         quit: () => quit.run(),
         overview: async () => (await invoke("library_overview")) as LibraryOverview,
         bookWords: async (path) => (await invoke("library_book_words", { path })) as LibraryWordsAnswer,
@@ -725,6 +736,11 @@ async function main(): Promise<void> {
           markCastNames = on;
         },
         onMarkCastNames: (on) => current.setMarkCastNames(on),
+        initialLibrarySummary: window.__appLibrarySummary !== false,
+        persistLibrarySummary: async (on) => {
+          await invoke("settings_set_library_summary", { show: on });
+        },
+        onLibrarySummary: (on) => library.setSummaryVisible(on),
         initialWritingModes,
         onWritingModes: (modes) => focusToggle?.set(modes.focus),
         initialZoom: zoom,

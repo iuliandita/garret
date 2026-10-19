@@ -47,7 +47,7 @@ interface Rig {
   answer: LibraryOverview;
   currentPath: string;
   opened: string[];
-  browsed: Array<"import" | "restore">;
+  browsed: Array<"list" | "import" | "restore" | "backups">;
   created: Array<{ name: string; identityId: string | null }>;
   forgotten: string[];
   forgetFails: boolean;
@@ -241,7 +241,7 @@ describe("createLibrary", () => {
     await flush();
     expect(document.getElementById("library-series-filter")?.hidden).toBe(false);
     expect(document.getElementById("library-universe-filter")?.hidden).toBe(true);
-    expect(document.getElementById("library-summary-toggle")?.hidden).toBe(false);
+    expect(document.getElementById("library-summary")?.hidden).toBe(false);
     expect(document.getElementById("library-membership-open")?.hidden).toBe(false);
   });
 
@@ -507,14 +507,16 @@ describe("createLibrary", () => {
     expect(timing?.textContent).toBe("Overview 37 ms");
   });
 
-  test("overflow guidance names the File menu command", async () => {
+  test("overflow guidance offers the book list it names", async () => {
     const r = rig();
+    r.currentPath = "/lib/a.db";
     r.answer = overview([book()], { more: 2 });
     r.library.open();
     await flush();
-    expect(document.getElementById("library-more")?.textContent).toBe(
-      "2 more books are not shown. Use File › Open book…",
-    );
+    expect(document.querySelector("#library-more span")?.textContent).toBe("2 more books are not shown.");
+    document.getElementById("library-more-open")?.click();
+    expect(r.library.isOpen()).toBe(false);
+    expect(r.browsed).toEqual(["list"]);
   });
 
   test("#library-timing carries the slowest word count seen so far, not an average", async () => {
@@ -610,8 +612,6 @@ describe("createLibrary", () => {
     r.answer = overview([book({ path: "a", book_id: "a" }), book({ path: "b", book_id: "b" })], { more: 3 });
     r.library.open();
     await flush();
-    document.getElementById("library-summary-toggle")?.click();
-    await flush();
     expect([...r.statResolvers.keys()]).toEqual(["a"]);
     r.statResolvers.get("a")?.({
       book_id: "a", identity_id: null, membership: { version: 1, series: null, universe: null }, words: 12,
@@ -650,8 +650,6 @@ describe("createLibrary", () => {
     });
     r.library.open();
     await flush();
-    document.getElementById("library-summary-toggle")?.click();
-    await flush();
     expect(document.getElementById("library-summary-result")?.textContent).toContain("30");
     expect(document.getElementById("library-summary-activity")?.textContent).toContain("1 of 2");
     expect(document.getElementById("library-summary-activity")?.textContent).toContain("+5/−1");
@@ -666,8 +664,6 @@ describe("createLibrary", () => {
     });
     r.library.open();
     await flush();
-    document.getElementById("library-summary-toggle")?.click();
-    await flush();
     expect(document.getElementById("library-summary-result")?.textContent).not.toContain("900");
     expect(document.getElementById("library-summary-coverage")?.textContent).toBe("1 book could not be read. Not read yet.");
   });
@@ -676,8 +672,6 @@ describe("createLibrary", () => {
     const r = rig();
     r.answer = overview([book({ path: "a", book_id: "a" }), book({ path: "b", book_id: "b" })]);
     r.library.open();
-    await flush();
-    document.getElementById("library-summary-toggle")?.click();
     await flush();
     r.library.destroy();
     r.statResolvers.get("a")?.({
@@ -1200,12 +1194,12 @@ test("opening another book returns focus to its editor instead of the Library or
 
 test("Library menu closes before actions, Escape returns to its opener, and global chords pass", async () => {
   const calls: string[] = [];
-  const r = rig({ openPreferences: () => calls.push(String(r.library.isOpen())) });
+  const r = rig({ openPreferences: () => { calls.push(String(r.library.isOpen())); return null; } });
   r.library.open();
   await flush();
   const opener = document.getElementById("library-menu")!;
   opener.click();
-  expect(document.activeElement?.id).toBe("library-preferences");
+  expect(document.activeElement?.id).toBe("library-new-book");
   document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
   expect(r.library.isOpen()).toBe(true);
   expect(document.activeElement).toBe(opener);
@@ -1218,13 +1212,13 @@ test("Library menu closes before actions, Escape returns to its opener, and glob
   } finally { document.removeEventListener("keydown", listen); }
   opener.click();
   document.getElementById("library-preferences")?.click();
-  expect(calls).toEqual(["false"]);
+  expect(calls).toEqual(["true"]);
   expect(document.getElementById("library-menu-panel")?.hidden).toBe(true);
 });
 
 test("Library menu preserves dirty membership drafts and labels the identity choices", async () => {
   let called = false;
-  const r = rig({ openHelp: () => { called = true; } });
+  const r = rig({ openHelp: () => { called = true; return null; } });
   r.currentPath = "/lib/a.db";
   r.answer = overview([book()]);
   r.library.open();
@@ -1238,9 +1232,11 @@ test("Library menu preserves dirty membership drafts and labels the identity cho
   choice.dispatchEvent(new Event("change", { bubbles: true }));
   document.getElementById("library-menu")?.click();
   document.getElementById("library-help")?.click();
-  expect(called).toBe(false);
+  // Help opens in front of the room, so the draft is never put to the question.
+  expect(called).toBe(true);
   expect(r.library.isOpen()).toBe(true);
-  expect(document.getElementById("library-membership-discard")).not.toBeNull();
+  expect(document.getElementById("library-membership-discard")).toBeNull();
+  expect(document.getElementById("library-membership")?.hidden).toBe(false);
 });
 
 test.each(["novel", "short", "nonfiction", "collection"])("Library creation chooser forwards %s", async (preset) => {
@@ -1249,12 +1245,57 @@ test.each(["novel", "short", "nonfiction", "collection"])("Library creation choo
   r.library.open();
   await flush();
   document.getElementById("library-new-book-tile")!.click();
-  const choice = document.getElementById("library-new-book-preset") as HTMLSelectElement;
-  expect(choice.value).toBe("novel");
-  expect([...choice.options].map((option) => option.value)).toEqual(["novel", "short", "nonfiction", "collection"]);
-  choice.value = preset;
+  const pills = [...document.querySelectorAll<HTMLButtonElement>("#library-new-book-preset button")];
+  expect(pills.map((pill) => pill.dataset.preset)).toEqual(["novel", "short", "nonfiction", "collection"]);
+  expect(pills.filter((pill) => pill.getAttribute("aria-pressed") === "true").map((pill) => pill.dataset.preset)).toEqual(["novel"]);
+  pills.find((pill) => pill.dataset.preset === preset)!.click();
   (document.getElementById("library-new-book-name") as HTMLInputElement).value = "Draft";
   document.getElementById("library-new-book-create")!.click();
   await flush();
   expect(choices).toEqual([["Draft", null, preset]]);
+});
+
+test("Preferences opens in front of the room and goes home when it hides", async () => {
+  const header = document.createElement("header");
+  const panel = document.createElement("div");
+  panel.id = "prefs-panel";
+  panel.hidden = true;
+  header.append(panel);
+  document.body.append(header);
+  const r = rig({ openPreferences: () => { panel.hidden = false; return panel; } });
+  r.currentPath = "/lib/a.db";
+  r.library.open();
+  await flush();
+  document.getElementById("library-menu")?.click();
+  document.getElementById("library-preferences")?.click();
+  expect(panel.parentElement?.id).toBe("library");
+  const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+  panel.addEventListener("keydown", (event) => { event.preventDefault(); panel.hidden = true; }, { once: true });
+  panel.dispatchEvent(escape);
+  await flush();
+  expect(r.library.isOpen()).toBe(true);
+  expect(panel.parentElement).toBe(header);
+  expect(document.activeElement?.id).toBe("library-menu");
+  header.remove();
+});
+
+test("series pills filter the shelf, covers name the project type, and the summary follows its setting", async () => {
+  const r = rig({ showSummary: false });
+  r.answer = overview([
+    book({ path: "a", name: "Harbour", opened_at: 30, preset: "novel", series: { id: "s1", name: "Tides" } }),
+    book({ path: "b", name: "Fence", opened_at: 20, preset: "short" }),
+    book({ path: "c", name: "Salt", opened_at: 10, preset: "collection", series: { id: "s1", name: "Tides" } }),
+  ]);
+  r.library.open();
+  await flush();
+  expect(document.getElementById("library-summary")?.hidden).toBe(true);
+  expect(document.querySelector("#library-desk .desk-kind")?.textContent).toBe("Novel");
+  expect([...document.querySelectorAll("#library-shelf .shelf-kind")].map((el) => el.textContent)).toEqual(["Short fiction", "Story collection"]);
+  const pills = [...document.querySelectorAll<HTMLButtonElement>("#library-series-filter button")];
+  expect(pills.map((pill) => pill.textContent)).toEqual(["All", "Tides"]);
+  pills[1].click();
+  expect([...document.querySelectorAll("#library-shelf .shelf-title")].map((el) => el.textContent)).toEqual(["Salt"]);
+  expect(document.querySelector('#library-series-filter button[data-group-id="s1"]')?.getAttribute("aria-pressed")).toBe("true");
+  r.library.setSummaryVisible(true);
+  expect(document.getElementById("library-summary")?.hidden).toBe(false);
 });

@@ -3113,7 +3113,7 @@ test.each(["short", "nonfiction", "collection"] as const)("switcher forwards %s 
   });
   r.switcher.open("create");
   await settle();
-  (r.container.querySelector("#project-new-preset") as HTMLSelectElement).value = preset;
+  r.container.querySelector<HTMLButtonElement>(`#project-new-preset button[data-preset="${preset}"]`)!.click();
   (r.container.querySelector("#project-new-name") as HTMLInputElement).value = "Draft";
   r.container.querySelector<HTMLButtonElement>("#project-create")!.click();
   await settle();
