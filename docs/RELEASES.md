@@ -24,9 +24,11 @@ and does not synchronize books automatically.
 
 ## Develop-only work
 
-Nothing user-visible is pending on develop. Future user-visible capabilities
-awaiting release belong here and in the
-separate `develop_only` list in releases.json.
+The next release fixes figure editing. A figure at the end of a scene always
+has a writable paragraph after it, alternative text sits on the image instead
+of showing as a second caption, a missing description is marked on the figure,
+and publishing without one names Figure properties instead of a generic error.
+The EPUB preview shows figure images, including after a refresh.
 
 ## Preparing the next release
 
