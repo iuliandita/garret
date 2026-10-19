@@ -1453,35 +1453,39 @@ fn import_path(
     // The stem, for a file that does not name itself. `file_stem` and not a
     // split on '.', so "part 2.md" keeps its space and "a.b.md" keeps "a.b".
     let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or(shown);
+    let imported;
     let mut package = None;
-    let (imported, losses) = if bytes.starts_with(ZIP_SIGNATURE) {
+    let (parsed, losses) = if bytes.starts_with(ZIP_SIGNATURE) {
         let parsed =
             docx_import::parse(&bytes, stem).map_err(|e| format!("{}: {e}", path.display()))?;
-        (parsed.imported, parsed.losses)
+        imported = parsed.imported;
+        (&imported, parsed.losses)
     } else {
         let source = String::from_utf8(bytes)
             .map_err(|_| format!("{}: not valid UTF-8 text", path.display()))?;
         if markdown::is_dialect(&source) {
             let parsed = import::read_package(&source, stem, path.parent().ok_or("missing Markdown package root")?)?;
-            let imported = parsed.imported.clone();
             package = Some(parsed);
-            (imported, docx_import::Losses::default())
-        } else { (import::parse(&source, stem), docx_import::Losses::default()) }
+            (&package.as_ref().unwrap().imported, docx_import::Losses::default())
+        } else {
+            imported = import::parse(&source, stem);
+            (&imported, docx_import::Losses::default())
+        }
     };
-    let rows: Vec<store::ImportRow<'_>> = imported
+    let rows: Vec<store::ImportRow<'_>> = parsed
         .items
         .iter()
         .map(|i| (i.parent, i.item_type, i.title.as_str(), i.body.as_deref()))
         .collect();
-    let made = if let Some(package) = package {
-        projects::create_imported_package(dest_dir, &package, strings)
+    let made = if let Some(package) = &package {
+        projects::create_imported_package(dest_dir, package, strings)
             .map(|summary| book_registration::remember(data_home, dest_dir, summary))
-    } else { create_imported_into_dir(data_home, dest_dir, &imported.name, &rows, strings) };
+    } else { create_imported_into_dir(data_home, dest_dir, &parsed.name, &rows, strings) };
     made.map(|summary| {
         ImportOutcome {
             summary,
             losses,
-            derived_contents: imported.derived_contents,
+            derived_contents: parsed.derived_contents.clone(),
         }
     })
 }
@@ -1698,9 +1702,7 @@ fn project_open(
         ));
     }
     let outgoing_generation = locked(&state).as_ref().map(|project| project.generation);
-    if store::SCHEMA_VERSION >= store::READ_SCHEMA_VERSION {
-        format_upgrade::retain(&requested, store::SCHEMA_VERSION, upgrade_confirmed == Some(true))?;
-    }
+    format_upgrade::retain(&requested, store::SCHEMA_VERSION, upgrade_confirmed == Some(true))?;
     // `open_for_writing`, for `try_open`'s reason: this is the other path a
     // writer opens a project through.
     let store = projects::open_existing_for_writing(&requested).map_err(|e| format!("{path}: {e}"))?;
@@ -3953,8 +3955,7 @@ fn open_and_prepare(store: store::Store, project_path: &Path, data_home: &Path, 
 }
 
 fn startup_needs_choice(path: &Path, data_home: &Path) -> bool {
-    if store::SCHEMA_VERSION >= store::READ_SCHEMA_VERSION
-        && format_upgrade::required(path, store::SCHEMA_VERSION).unwrap_or(true) { return true; }
+    if format_upgrade::required(path, store::SCHEMA_VERSION).unwrap_or(true) { return true; }
     let Ok(reader) = store::Store::open_readonly(path) else { return false };
     match projects::read_settings_checked(data_home)
         .and_then(|settings| book_open::conflict(&reader, path, &settings))
@@ -4215,8 +4216,7 @@ fn main() {
                 );
                 process::exit(1);
             }
-            if store::SCHEMA_VERSION >= store::READ_SCHEMA_VERSION
-                && format_upgrade::required(p, store::SCHEMA_VERSION).unwrap_or_else(|error| {
+            if format_upgrade::required(p, store::SCHEMA_VERSION).unwrap_or_else(|error| {
                     eprintln!("{}: {error}", p.display()); process::exit(1);
                 }) {
                 pending_project = Some(p.to_path_buf());
@@ -8058,7 +8058,7 @@ mod tests {
         let double = format!("{text}\n{}", text.strip_prefix(crate::markdown::MARKER).unwrap().replace("assets/view.png", "assets/second.png"));
         let mut parsed = crate::markdown::parse(&double, "book", |_| Ok(bytes.to_vec())).unwrap();
         // The second sorted asset fails after the first original is retained.
-        parsed.inspected_assets.get_mut("assets/view.png").unwrap().id = uuid::Uuid::now_v7().to_string();
+        parsed.inspected_assets.get_mut("assets/view.png").unwrap().sha256 = "0".repeat(64);
         assert!(projects::create_imported_package(failed.path(), &parsed, &crate::strings::Strings::english()).is_err());
         assert_eq!(std::fs::read_dir(failed.path()).unwrap().count(), 0);
         std::fs::remove_file(home.path().join("assets/view.png")).unwrap();

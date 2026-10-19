@@ -90,15 +90,23 @@ fn proof_test_phase(phase: &str) {
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .expect("system clock");
-    // Direct stderr writes bypass libtest's per-test output capture.
-    let _ = std::io::stderr().write_all(
-        format!(
-            "proof-phase ts={:.3} pid={} {phase}\n",
-            timestamp.as_secs_f64(),
-            std::process::id()
-        )
-        .as_bytes(),
+    let marker = format!(
+        "proof-phase ts={:.3} pid={} {phase}\n",
+        timestamp.as_secs_f64(),
+        std::process::id()
     );
+    // Direct writes bypass libtest capture and leave no userspace buffer at abort.
+    let _ = std::io::stderr().write_all(marker.as_bytes());
+    if let Some(path) = std::env::var_os("GARRET_PROOF_PHASE_LOG") {
+        let result = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&path)
+            .and_then(|mut file| file.write_all(marker.as_bytes()));
+        if let Err(error) = result {
+            let _ = writeln!(std::io::stderr(), "proof-phase log error: {error}");
+        }
+    }
 }
 
 /// Load `html`, let it paginate itself, and optionally print it.
@@ -132,6 +140,10 @@ fn render_with_timeout(
     #[cfg(test)]
     proof_test_phase("creating WebKit context");
     let context = webkit2gtk::WebContext::new_ephemeral();
+    #[cfg(test)]
+    proof_test_phase("WebKit context created");
+    #[cfg(test)]
+    proof_test_phase("creating webview");
     let view = webkit2gtk::WebView::with_context(&context);
     #[cfg(test)]
     proof_test_phase("webview created");
@@ -142,8 +154,16 @@ fn render_with_timeout(
     // window is never presented, so nothing appears on the writer's desktop.
     let window = gtk::Window::new(gtk::WindowType::Toplevel);
     window.add(&view);
+    #[cfg(test)]
+    proof_test_phase("realizing window");
     window.realize();
+    #[cfg(test)]
+    proof_test_phase("window realized");
+    #[cfg(test)]
+    proof_test_phase("realizing webview");
     view.realize();
+    #[cfg(test)]
+    proof_test_phase("webview realized");
 
     let dest = dest.map(|p| p.to_path_buf());
     let holder = std::rc::Rc::new(std::cell::RefCell::new(Some(
@@ -287,7 +307,11 @@ fn render_with_timeout(
                     }));
                     return;
                 };
+                #[cfg(test)]
+                proof_test_phase("creating print operation");
                 let operation = webkit2gtk::PrintOperation::new(&view);
+                #[cfg(test)]
+                proof_test_phase("print operation created");
                 let settings = gtk::PrintSettings::new();
                 // THE FILE BACKEND, WHICH NEEDS NO PRINTER AND NO CUPS. GTK
                 // ships it in-tree; "Print to File" is its printer name and the
@@ -348,12 +372,20 @@ fn render_with_timeout(
                 // and it holds one GObject per export for the life of the
                 // window; this drops with the view that made it.
                 *parked.borrow_mut() = Some(operation.clone());
+                #[cfg(test)]
+                proof_test_phase("invoking print operation");
                 operation.print();
+                #[cfg(test)]
+                proof_test_phase("print operation invocation returned");
             },
         );
     });
 
+    #[cfg(test)]
+    proof_test_phase("invoking load_html");
     view.load_html(html, Some("about:blank"));
+    #[cfg(test)]
+    proof_test_phase("load_html invocation returned");
 }
 
 /// Micrometres as PostScript points, which is what GTK's paper sizes take.
@@ -559,12 +591,16 @@ mod tests {
             return;
         }
         for mode in ["blocked", "completed", "teardown"] {
+            let directory = tempfile::tempdir().unwrap();
+            let phase_log = directory.path().join("proof-phases.log");
+            std::fs::write(&phase_log, "existing phase log\n").unwrap();
             let mut child = Command::new(std::env::current_exe().unwrap())
                 .args([
                     "--exact",
                     "printer::tests::proof_watchdog_bounds_a_blocked_thread_and_cancels_after_completion",
                 ])
                 .env(CHILD, mode)
+                .env("GARRET_PROOF_PHASE_LOG", &phase_log)
                 .stdout(Stdio::null())
                 .stderr(Stdio::piped())
                 .spawn()
@@ -580,6 +616,25 @@ mod tests {
             }
             let output = child.wait_with_output().unwrap();
             let diagnostics = String::from_utf8_lossy(&output.stderr);
+            let logged = std::fs::read_to_string(&phase_log).unwrap();
+            assert!(logged.starts_with("existing phase log\n"), "{logged}");
+            // No --nocapture: even a successful child must expose direct writes.
+            for markers in [diagnostics.as_ref(), logged.as_str()] {
+                assert!(markers.contains("watchdog armed"), "{mode}: {markers}");
+                assert!(
+                    markers.contains("deliberately blocked test thread"),
+                    "{mode}: {markers}"
+                );
+            }
+            for marker in diagnostics
+                .lines()
+                .filter(|line| line.starts_with("proof-phase ts="))
+            {
+                assert!(
+                    logged.lines().any(|line| line == marker),
+                    "{mode}: missing {marker}"
+                );
+            }
             if mode != "completed" {
                 assert_eq!(output.status.signal(), Some(6), "{diagnostics}");
                 assert!(

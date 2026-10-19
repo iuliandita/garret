@@ -26,7 +26,7 @@ or an internet connection to write. Your books stay on your own disk.
 
 > **Early alpha.** garret moves fast; keep backups of your work.
 
-The current published build is [0.0.6 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.6).
+The current published build is [0.0.7 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.7).
 See [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
 
@@ -100,10 +100,11 @@ are included too. All of these tools are free.
 | Linux | x86_64, glibc 2.39+, WebKitGTK 4.1 |
 | Windows | x86_64, WebView2 |
 | Android | Writing and editing on the go |
-| macOS | Apple Silicon and Intel alpha builds; native testing needed |
+| macOS | Apple Silicon and Intel |
 
 Get [alpha testing builds from GitHub Releases](https://github.com/iuliandita/garret/releases),
 or [build garret from source](#building-from-source-linux).
+Native Windows arm64 installers and portable archives are prepared for the next release.
 
 <p>
   <img src="docs/screenshots/android-editor-light.png" alt="Android writing view in light mode" width="240">
@@ -136,7 +137,8 @@ one directory, then run:
 ```sh
 gpg --verify SHA256SUMS.asc SHA256SUMS
 sha256sum -c SHA256SUMS
-gh attestation verify <file> --repo iuliandita/garret
+gh attestation verify <file> --repo iuliandita/garret \
+  --signer-workflow iuliandita/garret/.github/workflows/release.yml
 ```
 
 If you downloaded only the files for your platform, check those present with:
@@ -161,7 +163,7 @@ release for you:
 
 1. Add `https://github.com/iuliandita/garret` as an app source.
 2. Pick the asset whose name ends in `-android.apk`, for example
-   `garret-0.0.7-android.apk`. The `-android-info.zip` asset holds instructions
+   `garret-0.0.8-android.apk`. The `-android-info.zip` asset holds instructions
    and build details; it is not installable.
 3. Check the signing certificate. Obtainium shows the certificate hash for the
    installed app on its app page; the SHA-256 digest must be

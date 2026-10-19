@@ -3,6 +3,7 @@ import { NodeSelection, TextSelection, type Transaction, type EditorState } from
 import type { EditorView } from "prosemirror-view";
 import { MAX_ATTRIBUTE_BYTES, validDocumentShape } from "./document-format";
 import { createPanelShell } from "./panel-shell";
+import { noteNumberAt } from "./document-reader";
 import { formatNumber, t } from "./i18n";
 
 export interface FigureAsset { id: string; width_px: number; height_px: number; orientation: number }
@@ -40,7 +41,7 @@ export function createDocumentAuthoring(view: EditorView, options: {
   let leavePromise: Promise<boolean> | null = null;
   const shell = createPanelShell({ panel, title: t("authoring.endnote"), footer: true,
     outsideClick: false, close: () => { if (!busy) { if (leaving) answer(false); else finish(true); } },
-    returnFocus: () => { if (target?.kind === "figure") alt.focus(); else if (target) field.focus(); else view.focus(); } });
+    returnFocus: focusTarget });
   const label = document.createElement("label");
   label.htmlFor = "endnote-body";
   const field = document.createElement("textarea");
@@ -102,13 +103,19 @@ export function createDocumentAuthoring(view: EditorView, options: {
   discard.hidden = true;
   const save = button("authoring.save", () => { void commit(); });
 
+  function focusTarget(): void {
+    if (target?.kind === "figure") alt.focus(); else if (target) field.focus(); else view.focus();
+  }
+  function showSaveError(): void {
+    error.textContent = t(target?.kind === "figure" ? "figure.failed" : "authoring.failed");
+  }
   function answer(allowed: boolean): void {
     const resolve = leaving;
     leaving = null;
     leavePromise = null;
     question.hidden = true;
     discard.hidden = true;
-    if (!allowed && target) { if (target.kind === "figure") alt.focus(); else field.focus(); }
+    if (!allowed && target) focusTarget();
     resolve?.(allowed);
   }
   function finish(allowed: boolean, discardDraft = true): void {
@@ -134,7 +141,7 @@ export function createDocumentAuthoring(view: EditorView, options: {
     if (!captured || busy || !options.canEdit() || (captured.kind === "figure" && !details)) return;
     const values = captured.kind === "figure" ? [caption.value, alt.value] : [field.value];
     if (values.some(value => new TextEncoder().encode(value).length > MAX_ATTRIBUTE_BYTES) || !view.state.doc.eq(captured.doc)) {
-      error.textContent = t(target?.kind === "figure" ? "figure.failed" : "authoring.failed");
+      showSaveError();
       return;
     }
     const attrs = captured.kind === "endnote" ? { id: captured.id, fmt: "text", body: field.value } : {
@@ -142,7 +149,7 @@ export function createDocumentAuthoring(view: EditorView, options: {
     };
     const tr = view.state.tr;
     if (captured.inserted) {
-      if (tr.doc.nodeAt(captured.pos)?.attrs.id !== captured.id) { error.textContent = t(target?.kind === "figure" ? "figure.failed" : "authoring.failed"); return; }
+      if (tr.doc.nodeAt(captured.pos)?.attrs.id !== captured.id) { showSaveError(); return; }
       const current = tr.doc.nodeAt(captured.pos)!;
       if (Object.entries(attrs).some(([key, value]) => current.attrs[key] !== value)) tr.setNodeMarkup(captured.pos, undefined, attrs);
     } else {
@@ -156,7 +163,7 @@ export function createDocumentAuthoring(view: EditorView, options: {
         captured.pos = inserted;
       }
     }
-    if (tr.docChanged && !isolated(tr)) { error.textContent = t(target?.kind === "figure" ? "figure.failed" : "authoring.failed"); return; }
+    if (tr.docChanged && !isolated(tr)) { showSaveError(); return; }
     captured.inserted = true;
     captured.doc = view.state.doc;
     busy = true;
@@ -166,7 +173,7 @@ export function createDocumentAuthoring(view: EditorView, options: {
       if (!await options.committed()) throw new Error("endnote save failed");
       if (alive && target === captured) finish(true, false);
     } catch {
-      if (alive && target === captured) error.textContent = t(target?.kind === "figure" ? "figure.failed" : "authoring.failed");
+      if (alive && target === captured) showSaveError();
     } finally {
       busy = false;
       save.disabled = cancel.disabled = discard.disabled = field.disabled = false;
@@ -212,14 +219,13 @@ export function createDocumentAuthoring(view: EditorView, options: {
     },
     note(pos) {
       if (!options.canEdit()) return;
-      if (target) { if (target.kind === "figure") alt.focus(); else field.focus(); return; }
+      if (target) { focusTarget(); return; }
       const selected = view.state.selection;
       const at = pos ?? selected.from;
       const node = view.state.doc.nodeAt(at);
       const editing = node?.type.name === "endnote";
       if (!editing && !view.state.doc.resolve(at).parent.isTextblock) return;
-      let number = options.noteOffset() + 1;
-      view.state.doc.nodesBetween(0, at, child => { if (child.type.name === "endnote") number++; });
+      const number = noteNumberAt(view.state.doc, at, options.noteOffset());
       const title = t("authoring.reference", { number: formatNumber(number) });
       panel.setAttribute("aria-label", title);
       shell.setTitle(title);

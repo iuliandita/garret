@@ -431,13 +431,7 @@ def main() -> int:
 
             if args.reader_fixture or args.schema17_fixture:
                 checkpoint(out, "01-ready-library", "Import archive", "Archiv importieren")
-                # Initial installation can recreate the activity while the native
-                # runtime survives. Isolate transfer checks from that startup case.
-                adb("shell", "am", "force-stop", PKG)
-                time.sleep(2)
-                adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
-                checkpoint(out, "02-transfer-library", "Import archive", "Archiv importieren")
-                steps.append("app restarted after installation before transfer checks")
+                steps.append("transfer checks started on first launch without an app restart")
                 if args.reader_fixture:
                     reader_smoke(out, args.reader_fixture.resolve(strict=True), steps)
                 else:
@@ -512,6 +506,11 @@ def main() -> int:
         finally:
             (out / "result.json").write_text(json.dumps(result, indent=2) + "\n")
             if emulator is not None:
+                try:
+                    (out / "activity-events.txt").write_text(adb("logcat", "-b", "events", "-d"))
+                    (out / "logcat.txt").write_text(adb("logcat", "-d"))
+                except Exception:
+                    pass
                 try:
                     adb("emu", "kill", timeout=10)
                 except Exception:

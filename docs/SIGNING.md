@@ -41,7 +41,7 @@ signing key's publication status.
 
 ## Release signing environment
 
-The publish job runs in the GitHub `release` environment, which only `v0.*`
+The sign job runs in the GitHub `release` environment, which only `v0.*`
 tags can deploy to and which holds `RELEASE_GPG_PRIVATE_KEY` (the signing
 subkey) and `RELEASE_GPG_PASSPHRASE`. No repository-level copies exist. The
 primary key only certifies and is kept outside CI. A tag ruleset limits
@@ -49,13 +49,28 @@ creating, moving and deleting `v*` tags to repository administrators.
 Signed publication fails while either SECURITY.md or README.md retains an
 unpublished fingerprint placeholder, even if unsigned publication is allowed.
 
-OIDC and attestation write permissions remain on the publish job because
-signing, attestation, and upload operate on the same finalized asset set.
+The signing step uses the primary key fingerprint published in SECURITY.md,
+which README.md must repeat exactly. gpg then selects that key's signing
+subkey, so a secret that lacks the published key cannot sign. After signing,
+the step verifies the signature and requires gpg to report the published
+fingerprint as the signer's primary key; any other key fails publication and
+removes the signature file.
+
+Three jobs share the finalized asset set as a workflow artifact, each with only
+the permissions it needs:
+
+- `sign` holds the environment secrets with read-only repository access and
+  uploads the checksummed downloads, manifest, and signature.
+- `attest` has OIDC and attestation write access, with read-only repository
+  access, and no secrets.
+- `publish` has repository write access to create the release, and no secrets
+  or OIDC access. It rechecks the exact asset inventory and checksums before
+  uploading.
 
 ## Planned Windows signing
 
-SignPath Foundation acceptance is pending and is at the Foundation's discretion.
-No SignPath signing integration is enabled. If accepted, official Windows
+garret has not applied to the SignPath Foundation, whose acceptance would be at
+its discretion. No SignPath signing integration is enabled. If accepted, official Windows
 installer executables and their installed application executable will be
 submitted for Authenticode signing. Signing will require a protected GitHub
 environment with the owner as required reviewer and a manual approval for

@@ -94,7 +94,6 @@ mod tests {
         let copy = retain(&path, 18, true).unwrap().unwrap();
         let activated = Store::open_existing(&path).unwrap();
         assert_eq!(activated.user_version().unwrap(), crate::store::READ_SCHEMA_VERSION);
-        assert!(crate::store::document_format::new_nodes_allowed());
         drop(activated);
         let reader = Store::open_readonly(&backup_bundle::db_path(&copy)).unwrap();
         assert_eq!(reader.user_version().unwrap(), 17);

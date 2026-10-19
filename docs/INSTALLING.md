@@ -23,7 +23,9 @@ license notices. The package manager installs WebKitGTK 4.1 and GTK 3 dependenci
 
 ## Windows
 
-Run `garret-VERSION-windows-x86_64-setup.exe`. It installs for the current user
+Choose `windows-x86_64` for Intel/AMD or `windows-arm64` for Windows on ARM
+(arm64 downloads start with the next release). Run the matching
+`garret-VERSION-windows-ARCH-setup.exe`. It installs for the current user
 and adds menu shortcuts. The embedded WebView2 bootstrapper installs the runtime
 if missing; that first runtime installation needs internet. Once installed,
 garret works offline. The portable zip remains available; extract the entire
@@ -31,10 +33,14 @@ archive and keep `dist` beside `garret.exe`.
 
 ## macOS
 
-Open the dmg for Apple Silicon (`arm64`) or Intel (`x86_64`) and drag garret into
-Applications. Close an existing copy before replacing it. The application zip
-remains available. These builds have no purchased signing identity or Apple
-notarization; native functionality still needs platform testing.
+Open the dmg for Apple Silicon (`arm64`) or Intel (`x86_64`), agree to the GPL
+license it shows, and drag garret into Applications. Close an existing copy
+before replacing it. The application zip remains available.
+
+The builds are not notarized by Apple, so the first launch shows "garret Not
+Opened". Choose Done, then open System Settings > Privacy & Security and choose
+Open Anyway next to the garret message. Alternatively, run
+`xattr -dr com.apple.quarantine /Applications/garret.app` once in Terminal.
 
 ## Upgrade, remove, or return to an older version
 

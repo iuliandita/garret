@@ -111,18 +111,20 @@ the gate before packaging. Tag publication checks the complete range from the
 previous reachable alpha tag and publishes the same checked source commit.
 
 Release downloads are checked before `SHA256SUMS` is generated over all package
-files and checksum sidecars. The publish job signs the manifest using only the
+files and checksum sidecars. The sign job signs the manifest using only the
 `release` environment secrets `RELEASE_GPG_PRIVATE_KEY` and
 `RELEASE_GPG_PASSPHRASE`, in a
-temporary GPG home that is removed after use. No key material is logged or
+temporary GPG home that is removed after use, with the key whose fingerprint is
+published in SECURITY.md and README.md. No key material is logged or
 uploaded. A missing key blocks publication unless the repository variable
 `ALLOW_UNSIGNED_RELEASE` is exactly `true`; a configured key that fails to sign
 or verify always blocks publication. A signed release also requires removing
 the unpublished fingerprint placeholder from both SECURITY.md and README.md.
 Configure environment restrictions before the first signed tag, as described
 in the signing policy. GitHub attestations cover the downloads,
-manifest, and available signature before release upload. Only the publish job
-has attestation and OIDC write permissions. The existing tag and CI eligibility
+manifest, and available signature before release upload. Only the attest job
+has attestation and OIDC write permissions, and only the publish job has
+repository write permission. The existing tag and CI eligibility
 checks still apply. See the [signing policy](SIGNING.md) and
 [verification instructions](../SECURITY.md#verifying-releases).
 
@@ -150,16 +152,28 @@ phase and thread wait channels before aborting, even if GTK stops dispatching
 or thread teardown stalls. Core dumps are disabled
 in these isolated test processes. Timestamped phase markers write directly to
 stderr, bypassing libtest capture, including watchdog reports. The CI runner
-uses `--nocapture` and prints its phase log on success or failure. Markers cover
+uses `--nocapture` and streams stderr to the job log as each phase occurs.
+Each marker is also appended without userspace buffering to `phases.log`;
+failure artifacts retain this file and the Xvfb and native diagnostic logs. Markers cover
 compilation, Xvfb startup, test-process entry, GTK initialization, the watchdog,
 WebKit creation, loading, pagination, render cleanup, test return, and Xvfb exit.
 The paginator CI step runs the three fixtures in
 separate processes under the same X display, with a 420-second
-process timeout and 30-second kill grace, including compilation and startup.
+supervisor deadline, including compilation and startup. At that deadline the
+supervisor saves live process/thread wait channels and attempts kernel stacks, then
+attempts native backtraces with GDB before sending TERM. Debugger collection
+has a 20-second total budget; five seconds after TERM, remaining processes
+receive KILL, followed by at most five seconds to reap the child. INT and TERM
+also trigger bounded process-group cleanup. The deadline returns status 124 even if the child exits while
+being inspected. CI enables ptrace on its disposable runner for native stacks;
+kernel stack permission errors are recorded when the kernel requires privileges.
 Run `bash ../../../scripts/test-proof-paginator` from the host crate directory;
 optional arguments select individual fixture names. Each invocation uses a fresh
 HOME and XDG_DATA_HOME. Its diagnostic directory is printed before startup and
-retains the phase log and Xvfb errors. Failures are not retried.
+retains the phase log and Xvfb errors. Only diagnostic logs are uploaded,
+excluding the temporary profile and data. Failures are not retried. Run
+`python3 scripts/test-proof-process-bound.py` to exercise live deadline capture,
+TERM flushing and nonzero exit propagation without GTK.
 It uses an isolated X display, software rendering, disabled compositing and
 DMA-BUF rendering, and no accessibility bridge.
 CI native stacks locate the intermittent stall after the test body, in WebKit
@@ -218,6 +232,18 @@ to three attempts, waiting 10 seconds between attempts. It prints disk-image
 diagnostics and detaches only images from the current build's bundle directory.
 Other bundler failures stop immediately. Signing, content verification and
 release eligibility checks still apply.
+
+After publishing, dispatch the "Package smoke" workflow with the release tag. It
+downloads each published installer, checks it against `SHA256SUMS`, installs it
+as a user would and launches it: deb on Ubuntu 24.04 and 26.04, rpm on Fedora,
+AppImage and the tar.gz on Ubuntu, the dmg on macOS Apple Silicon and Intel, the
+setup executable on Windows x64 and Windows on ARM, and the APK on an x86_64
+Android emulator. Linux launches run under Xvfb inside a D-Bus session, because
+the system WebKitGTK sandbox stays blank without one. A Linux or Windows job
+passes only when the window title shows the loaded Library. The macOS jobs also
+capture the first launch with the download quarantine flag, which shows the
+unsigned-app prompt. Screenshots and logs are uploaded per variant. Runners are
+server images, so this does not replace testing on real desktops.
 
 ## Source impact and assessments
 

@@ -114,7 +114,8 @@ def check_releases(root: Path) -> None:
     config = json.loads(git(root, "show", f"{revision}:app/shell-tauri/src-tauri/tauri.conf.json"))
     if released["tag"] != "v" + config["version"]:
         raise ValueError("Published tag differs from its source version.")
-    if set(released["downloads"]) != {"linux-x86_64", "windows-x86_64", "android", "macos-arm64", "macos-x86_64"}:
+    desktop_and_android = {"linux-x86_64", "windows-x86_64", "android", "macos-arm64", "macos-x86_64"}
+    if set(released["downloads"]) not in (desktop_and_android, desktop_and_android | {"windows-arm64"}):
         raise ValueError("Published platform inventory is incomplete.")
     if released["android_scope"] != "library-and-scene-editor-manual-transfer":
         raise ValueError("Android support must remain distinct from desktop support.")

@@ -82,11 +82,13 @@ def collect(platform: str) -> None:
     sources = {
         "linux": ROOT / "app/dist-linux/garret-linux-x86_64.tar.gz",
         "windows": ROOT / "app/dist-windows/garret-windows-x86_64.zip",
+        "windows-arm64": ROOT / "app/dist-windows/garret-windows-arm64.zip",
         "android": ROOT / f"app/dist-android/{revision}/garret-android.apk",
     }
     names = {
         "linux": f"garret-{value}-linux-x86_64.tar.gz",
         "windows": f"garret-{value}-windows-x86_64.zip",
+        "windows-arm64": f"garret-{value}-windows-arm64.zip",
         "android": f"garret-{value}-android.apk",
     }
     if platform.startswith("macos-"):
@@ -102,11 +104,12 @@ def collect(platform: str) -> None:
     installers = {
         "linux": (".deb", ".rpm", ".AppImage"),
         "windows": ("-setup.exe",),
+        "windows-arm64": ("-setup.exe",),
         "macos-arm64": (".dmg",),
         "macos-x86_64": (".dmg",),
     }
     for extension in installers.get(platform, ()):
-        architecture = platform if platform.startswith("macos-") else f"{platform}-x86_64"
+        architecture = platform if platform.startswith(("macos-", "windows-")) else f"{platform}-x86_64"
         source = sources[platform].parent / f"garret-{architecture}{extension}"
         shutil.copyfile(source, out / f"garret-{value}-{architecture}{extension}")
     if platform == "android":
@@ -126,7 +129,8 @@ def download_names() -> set[str]:
         for suffix in ("linux-x86_64.tar.gz", "windows-x86_64.zip", "android.apk",
                        "android-info.zip", "macos-arm64.zip", "macos-x86_64.zip",
                        "linux-x86_64.deb", "linux-x86_64.rpm", "linux-x86_64.AppImage",
-                       "windows-x86_64-setup.exe", "macos-arm64.dmg", "macos-x86_64.dmg")
+                       "windows-x86_64-setup.exe", "windows-arm64.zip", "windows-arm64-setup.exe",
+                       "macos-arm64.dmg", "macos-x86_64.dmg")
     }
     return names | {f"{name}.sha256" for name in names}
 
@@ -154,6 +158,37 @@ def write_manifest() -> None:
     (folder / "SHA256SUMS").write_text("".join(lines))
 
 
+FINGERPRINT_LABEL = "Release signing key fingerprint:"
+
+
+def published_fingerprint() -> str:
+    """SECURITY.md is the source of truth; README.md must publish the same key."""
+    found = {}
+    for name in ("SECURITY.md", "README.md"):
+        text = (ROOT / name).read_text()
+        if f"{FINGERPRINT_LABEL} not yet published" in text:
+            raise ValueError(f"Publish the release signing key fingerprint in {name} before signed publication.")
+        match = re.search(rf"^{re.escape(FINGERPRINT_LABEL)} `([^`\n]+)`$", text, re.M)
+        value = "".join(match[1].split()).upper() if match else ""
+        if not re.fullmatch(r"[0-9A-F]{40}", value):
+            raise ValueError(f"The release signing key fingerprint in {name} is missing or is not a 40-digit hex fingerprint.")
+        found[name] = value
+    if found["SECURITY.md"] != found["README.md"]:
+        raise ValueError("SECURITY.md and README.md publish different release signing key fingerprints.")
+    return found["SECURITY.md"]
+
+
+def require_published_signer(status: str, fingerprint: str) -> None:
+    """Accept the signature only if gpg reports a good signature by the published primary key."""
+    lines = [line.split() for line in status.splitlines() if line.startswith("[GNUPG:] ")]
+    good = [line for line in lines if line[1] == "GOODSIG"]
+    valid = [line for line in lines if line[1] == "VALIDSIG"]
+    if len(good) != 1 or len(valid) != 1 or len(valid[0]) < 12:
+        raise ValueError("The manifest signature did not verify as exactly one good signature.")
+    if valid[0][-1].upper() != fingerprint:
+        raise ValueError("The manifest was signed by a key other than the published release signing key.")
+
+
 def sign_manifest(allow_unsigned: bool = False) -> None:
     folder = ROOT / "app/dist-release/downloads"
     signature = folder / "SHA256SUMS.asc"
@@ -165,18 +200,16 @@ def sign_manifest(allow_unsigned: bool = False) -> None:
             raise ValueError("Unsigned publication is blocked; configure release signing or explicitly set ALLOW_UNSIGNED_RELEASE=true.")
         print("::warning::Unsigned publication explicitly allowed by ALLOW_UNSIGNED_RELEASE=true.")
         return
-    for name in ("SECURITY.md", "README.md"):
-        if "Release signing key fingerprint: not yet published" in (ROOT / name).read_text():
-            raise ValueError(f"Publish the release signing key fingerprint in {name} before signed publication.")
+    fingerprint = published_fingerprint()
     with tempfile.TemporaryDirectory(prefix="release-gnupg-") as home:
         env = {name: value for name, value in os.environ.items()
                if name not in {"RELEASE_GPG_PRIVATE_KEY", "RELEASE_GPG_PASSPHRASE"}}
         env["GNUPGHOME"] = home
         command = ["gpg", "--batch", "--no-tty", "--no-options"]
-        def gpg(args: list[str], data: str | None = None) -> None:
+        def gpg(args: list[str], data: str | None = None) -> str:
             try:
-                subprocess.run(command + args, input=data, text=True, env=env,
-                               stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, check=True)
+                return subprocess.run(command + args, input=data, text=True, env=env,
+                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True).stdout or ""
             except subprocess.CalledProcessError as error:
                 diagnostics = error.stderr or ""
                 for secret in (key, *key.splitlines(), os.environ.get("RELEASE_GPG_PASSPHRASE", "")):
@@ -185,13 +218,20 @@ def sign_manifest(allow_unsigned: bool = False) -> None:
                 if diagnostics:
                     print(diagnostics, file=sys.stderr)
                 raise
+        signed = False
         try:
             gpg(["--import"], key)
-            gpg(["--pinentry-mode", "loopback", "--passphrase-fd", "0", "--armor",
-                 "--detach-sign", "--output", str(signature), str(folder / "SHA256SUMS")],
+            # The published primary fingerprint, without "!", makes gpg pick that key's signing
+            # subkey; "!" would force the primary, which is only a stub in a subkey-only export.
+            gpg(["--pinentry-mode", "loopback", "--passphrase-fd", "0", "--local-user", fingerprint,
+                 "--armor", "--detach-sign", "--output", str(signature), str(folder / "SHA256SUMS")],
                 os.environ.get("RELEASE_GPG_PASSPHRASE", "") + "\n")
-            gpg(["--verify", str(signature), str(folder / "SHA256SUMS")])
+            require_published_signer(
+                gpg(["--status-fd", "1", "--verify", str(signature), str(folder / "SHA256SUMS")]), fingerprint)
+            signed = True
         finally:
+            if not signed:
+                signature.unlink(missing_ok=True)
             try:
                 subprocess.run(["gpgconf", "--kill", "gpg-agent"], env=env,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
@@ -208,7 +248,7 @@ def verify_remote_assets(names: set[str], complete: bool = False, allow_unsigned
         raise ValueError("The draft release has missing or unexpected assets; inspect it before publishing.")
 
 
-if __name__ == "__main__":
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check").add_argument("--tag")
@@ -219,7 +259,7 @@ if __name__ == "__main__":
     remote.add_argument("--complete", action="store_true")
     remote.add_argument("--allow-unsigned", action="store_true")
     commands.add_parser("set-version").add_argument("version")
-    commands.add_parser("collect").add_argument("platform", choices=["linux", "windows", "android", "macos-arm64", "macos-x86_64"])
+    commands.add_parser("collect").add_argument("platform", choices=["linux", "windows", "windows-arm64", "android", "macos-arm64", "macos-x86_64"])
     args = parser.parse_args()
     try:
         if args.command == "check":
@@ -239,3 +279,7 @@ if __name__ == "__main__":
             collect(args.platform)
     except (ValueError, OSError, subprocess.CalledProcessError) as error:
         parser.exit(1, f"Release preparation failed: {error}\n")
+
+
+if __name__ == "__main__":
+    main()

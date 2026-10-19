@@ -91,10 +91,12 @@ test("preset refusal and provider failure are localized without exposing native 
     expect(transferError("transfer_provider", locale)).toBe(m.transferProvider);
     for (const [code, message] of Object.entries({ transfer_busy: m.transferBusy, transfer_publish: m.transferPublish,
       transfer_library_unreadable: m.transferLibraryUnreadable, transfer_incomplete: m.transferIncomplete,
-      transfer_cancelled: m.transferCancelled, transfer_restart: m.transferRestart, transfer_disabled: m.transferDisabled })) {
+      transfer_cancelled: m.transferCancelled, transfer_lifecycle: m.transferLifecycle, transfer_restart: m.transferRestart, transfer_disabled: m.transferDisabled })) {
       expect(transferError(code, locale)).toBe(message);
       expect(message).not.toBe(m.transferInvalid);
     }
+    expect(m.transferLifecycle).not.toBe(m.transferRestart);
+    expect(m.transferLifecycle).not.toBe(m.transferStale);
     expect(transferError("native provider internals", locale)).toBe(m.transferInvalid);
   }
 });

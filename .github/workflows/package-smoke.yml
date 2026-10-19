@@ -1,0 +1,292 @@
+name: Package smoke
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to install
+        required: true
+        default: v0.0.7
+
+permissions:
+  contents: read
+
+env:
+  TAG: ${{ inputs.tag || 'v0.0.7' }}
+
+jobs:
+  linux:
+    name: Linux ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: deb-ubuntu-24.04, runner: ubuntu-24.04, kind: deb, container: '' }
+          - { name: deb-ubuntu-26.04, runner: ubuntu-26.04, kind: deb, container: '' }
+          - { name: appimage-ubuntu-24.04, runner: ubuntu-24.04, kind: appimage, container: '' }
+          - { name: tarball-ubuntu-24.04, runner: ubuntu-24.04, kind: tar, container: '' }
+          - { name: rpm-fedora, runner: ubuntu-24.04, kind: rpm, container: 'fedora:latest' }
+    steps:
+      - name: Download, verify and install
+        shell: bash
+        env:
+          KIND: ${{ matrix.kind }}
+        run: |
+          set -euo pipefail
+          ver="${TAG#v}"
+          base="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}"
+          sudo=""; [ "$(id -u)" = 0 ] || sudo=sudo
+          case "$KIND" in
+            deb) file="garret-$ver-linux-x86_64.deb" ;;
+            rpm) file="garret-$ver-linux-x86_64.rpm" ;;
+            appimage) file="garret-$ver-linux-x86_64.AppImage" ;;
+            tar) file="garret-$ver-linux-x86_64.tar.gz" ;;
+          esac
+          if [ "$KIND" = rpm ]; then
+            dnf install -y curl file xorg-x11-server-Xvfb xwininfo ImageMagick procps-ng dbus-daemon
+          else
+            $sudo apt-get update -qq
+            $sudo apt-get install -y -qq xvfb imagemagick x11-utils libegl-mesa0 libgl1-mesa-dri
+          fi
+          mkdir -p "$RUNNER_TEMP/pkg" "$RUNNER_TEMP/out"
+          cd "$RUNNER_TEMP/pkg"
+          curl -fsSLO "$base/$file"
+          curl -fsSLO "$base/SHA256SUMS"
+          awk -v f="$file" '$2 == f' SHA256SUMS | sha256sum -c -
+          case "$KIND" in
+            deb) $sudo apt-get install -y "./$file"; cmd=/usr/bin/garret ;;
+            rpm) dnf install -y "./$file"; cmd=/usr/bin/garret ;;
+            appimage) chmod +x "$file"; $sudo apt-get install -y -qq libfuse2t64 libegl1 libgles2; cmd="$PWD/$file" ;;
+            tar) $sudo apt-get install -y -qq libwebkit2gtk-4.1-0; tar -xzf "$file"; cmd="$(find "$PWD" -type f -name garret -perm -u+x | head -n1)" ;;
+          esac
+          echo "CMD=$cmd" >> "$GITHUB_ENV"
+          file -L "$cmd" | tee "$RUNNER_TEMP/out/binary.txt"
+      - name: Launch under Xvfb and capture
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/launch.sh" <<'EOF'
+          set -euo pipefail
+          label="$1"
+          out="$RUNNER_TEMP/out"
+          unset WAYLAND_DISPLAY
+          export DISPLAY=:99 GDK_BACKEND=x11 HOME="$RUNNER_TEMP/home-$label"
+          mkdir -p "$HOME"
+          dbus-run-session -- "$CMD" >"$out/app-$label.log" 2>&1 &
+          pid=$!
+          sleep 25
+          { xwininfo -root -tree || true; ps -eo pid,comm,args | grep -i -E "garret|webkit" | grep -v grep || true; } > "$out/diagnostics-$label.txt"
+          if ! kill -0 "$pid" 2>/dev/null; then
+            echo "garret exited during startup"; cat "$out/app-$label.log"; exit 1
+          fi
+          import -window root "$out/$label.png"
+          kill "$pid"; pkill -x garret || true; sleep 2
+          if ! grep -q '"Library - garret"' "$out/diagnostics-$label.txt"; then
+            echo "garret is running but its interface never loaded"; cat "$out/diagnostics-$label.txt" "$out/app-$label.log"; exit 1
+          fi
+          EOF
+          Xvfb :99 -screen 0 1280x800x24 >/dev/null 2>&1 &
+          sleep 2
+          bash "$RUNNER_TEMP/launch.sh" "${{ matrix.name }}"
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-${{ matrix.name }}
+          path: ${{ runner.temp }}/out
+          if-no-files-found: warn
+
+  macos:
+    name: macOS ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: arm64, runner: macos-15 }
+          - { arch: x86_64, runner: macos-15-intel }
+    steps:
+      - name: Download, verify and install the disk image
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          ver="${TAG#v}"
+          file="garret-$ver-macos-$ARCH.dmg"
+          base="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}"
+          out="$RUNNER_TEMP/out"; mkdir -p "$out"; cd "$RUNNER_TEMP"
+          curl -fsSLO "$base/$file"
+          curl -fsSLO "$base/SHA256SUMS"
+          awk -v f="$file" '$2 == f' SHA256SUMS | shasum -a 256 -c -
+          mnt="$({ yes || true; } | PAGER=cat hdiutil attach -nobrowse -readonly "$file" | awk -F'\t' '/\/Volumes\//{print $NF}')"
+          ls "$mnt" | tee "$out/dmg-contents.txt"
+          cp -R "$mnt/garret.app" /Applications/
+          hdiutil detach "$mnt"
+          file /Applications/garret.app/Contents/MacOS/garret | tee "$out/binary.txt"
+          codesign -dv /Applications/garret.app 2>&1 | tee "$out/codesign.txt" || true
+          spctl -a -vv /Applications/garret.app 2>&1 | tee "$out/gatekeeper.txt" || true
+      - name: Launch with the download quarantine flag, as a browser download would
+        timeout-minutes: 3
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/out"
+          xattr -w com.apple.quarantine "0081;$(printf %x "$(date +%s)");Safari;" /Applications/garret.app
+          perl -e 'alarm 20; exec @ARGV' open /Applications/garret.app || echo "open did not return: $?" | tee "$out/1-open.txt"
+          sleep 12
+          perl -e 'alarm 20; exec @ARGV' screencapture -x "$out/1-quarantined.png" || echo "screencapture did not finish"
+          pkill -x garret || true
+          killall CoreServicesUIAgent 2>/dev/null || true
+      - name: Launch after clearing quarantine and capture
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/out"
+          xattr -dr com.apple.quarantine /Applications/garret.app
+          perl -e 'alarm 20; exec @ARGV' open /Applications/garret.app
+          sleep 25
+          if ! pgrep -x garret >/dev/null; then
+            echo "garret is not running"; log show --last 2m --predicate 'process == "garret"' | tail -n 80; exit 1
+          fi
+          perl -e 'alarm 20; exec @ARGV' screencapture -x "$out/2-running.png"
+          pkill -x garret
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: macos-${{ matrix.arch }}
+          path: ${{ runner.temp }}/out
+          if-no-files-found: warn
+
+  windows:
+    name: Windows ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: x64, runner: windows-2025, arch: x86_64 }
+          - { name: arm64, runner: windows-11-arm, arch: arm64 }
+    steps:
+      - name: Download, verify, install silently, launch and capture
+        shell: pwsh
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $ver = $env:TAG.TrimStart('v')
+          $base = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:TAG"
+          $out = Join-Path $env:RUNNER_TEMP 'out'; New-Item -ItemType Directory $out | Out-Null
+          Set-Location $env:RUNNER_TEMP
+          Invoke-WebRequest "$base/SHA256SUMS" -OutFile SHA256SUMS
+          $file = "garret-$ver-windows-$env:ARCH-setup.exe"
+          if (-not (Get-Content SHA256SUMS | Where-Object { $_ -like "* $file" })) {
+            # Releases before native arm64 packages only ship the x86_64 installer.
+            $file = "garret-$ver-windows-x86_64-setup.exe"
+          }
+          "installer: $file" | Tee-Object (Join-Path $out 'installer.txt')
+          Invoke-WebRequest "$base/$file" -OutFile $file
+          $want = ((Get-Content SHA256SUMS | Where-Object { $_ -like "* $file" }) -split '\s+')[0]
+          $got = (Get-FileHash $file -Algorithm SHA256).Hash.ToLower()
+          if ($want -ne $got) { throw "checksum mismatch: $got" }
+          "$env:PROCESSOR_ARCHITECTURE" | Tee-Object (Join-Path $out 'arch.txt')
+          $setup = Start-Process (Resolve-Path $file) -ArgumentList '/S' -PassThru -Wait
+          if ($setup.ExitCode -ne 0) { throw "installer exit $($setup.ExitCode)" }
+          $exe = Join-Path $env:LOCALAPPDATA 'garret\garret.exe'
+          if (-not (Test-Path $exe)) { throw "not installed at $exe" }
+          Get-ChildItem (Split-Path $exe) | Format-Table Name, Length | Out-String | Tee-Object (Join-Path $out 'install.txt')
+          $p = Start-Process $exe -PassThru
+          Start-Sleep 25
+          if ($p.HasExited) { throw "garret exited with $($p.ExitCode)" }
+          $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+          $g = [System.Drawing.Graphics]::FromImage($bmp)
+          $g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+          $bmp.Save((Join-Path $out "windows-${{ matrix.name }}-screen.png"))
+          $p.Refresh()
+          "title: $($p.MainWindowTitle)" | Tee-Object (Join-Path $out 'window.txt')
+          if ($p.MainWindowTitle -ne 'Library - garret') { throw 'garret is running but its interface never loaded' }
+          Add-Type @'
+          using System; using System.Runtime.InteropServices;
+          public static class Win {
+            [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
+            [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+            [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr dc, uint f);
+          }
+          '@
+          $r = New-Object Win+RECT
+          [void][Win]::GetWindowRect($p.MainWindowHandle, [ref]$r)
+          $wb = New-Object System.Drawing.Bitmap ($r.R - $r.L), ($r.B - $r.T)
+          $wg = [System.Drawing.Graphics]::FromImage($wb)
+          $dc = $wg.GetHdc()
+          [void][Win]::PrintWindow($p.MainWindowHandle, $dc, 2)
+          $wg.ReleaseHdc($dc)
+          $wb.Save((Join-Path $out "windows-${{ matrix.name }}-window.png"))
+          Stop-Process -Id $p.Id
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows-${{ matrix.name }}
+          path: ${{ runner.temp }}/out
+          if-no-files-found: warn
+
+  android:
+    name: Android ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x86_64, runner: ubuntu-24.04 }
+    steps:
+      - name: Download and verify the APK
+        run: |
+          set -euo pipefail
+          ver="${TAG#v}"
+          file="garret-$ver-android.apk"
+          base="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}"
+          mkdir -p "$RUNNER_TEMP/out"; cd "$RUNNER_TEMP"
+          curl -fsSLO "$base/$file"
+          curl -fsSLO "$base/SHA256SUMS"
+          awk -v f="$file" '$2 == f' SHA256SUMS | sha256sum -c -
+          echo "APK=$RUNNER_TEMP/$file" >> "$GITHUB_ENV"
+          cat > "$RUNNER_TEMP/android.sh" <<'EOF'
+          set -euo pipefail
+          out="$RUNNER_TEMP/out"
+          adb shell getprop ro.product.cpu.abilist | tee "$out/abi.txt"
+          adb install -r "$APK"
+          adb shell dumpsys package com.usegarret.app | grep -E 'primaryCpuAbi|versionName' | tee -a "$out/abi.txt"
+          adb shell monkey -p com.usegarret.app -c android.intent.category.LAUNCHER 1
+          sleep 25
+          adb logcat -d > "$out/logcat.txt" || true
+          adb shell pidof com.usegarret.app
+          adb exec-out screencap -p > "$out/android-$ARCH.png"
+          EOF
+          ls -l /dev/kvm || echo "no /dev/kvm"
+      - name: Enable KVM
+        run: |
+          if [ -e /dev/kvm ]; then
+            echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+            sudo udevadm control --reload-rules
+            sudo udevadm trigger --name-match=kvm
+          fi
+      - uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        env:
+          ARCH: ${{ matrix.arch }}
+        with:
+          api-level: 36
+          target: google_apis
+          arch: ${{ matrix.arch }}
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bash "$RUNNER_TEMP/android.sh"
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: android-${{ matrix.arch }}
+          path: ${{ runner.temp }}/out
+          if-no-files-found: warn

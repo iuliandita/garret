@@ -128,7 +128,7 @@ Force pushes and branch deletion remain blocked.
 
 ## Alpha testing releases
 
-The **Alpha builds** workflow packages Linux x86_64, Windows x86_64, Android
+The **Alpha builds** workflow packages Linux x86_64, Windows x86_64/arm64, Android
 arm64/x86_64, and macOS for Apple Silicon and Intel. Packaging changes are
 built on pull requests. **Run workflow** makes testing artifacts without
 publishing a release. Android artifacts from these build-only runs use a
@@ -179,6 +179,9 @@ macOS packages use ad-hoc signing without notarization. They need native tester
 feedback; successful packaging does not certify platform behavior. Windows
 packages use `scripts/package-windows-native.ps1` on a native Windows builder;
 `scripts/package-windows` remains available for local Linux cross-builds.
+Windows arm64 uses `windows-11-arm` and `aarch64-pc-windows-msvc`. Both Windows
+jobs check the portable and installed executable architecture and run the
+installed app to create a sample book. This does not certify GUI behavior.
 
 ## Commit style
 
