@@ -4797,7 +4797,7 @@ describe("History persistence and operation ownership", () => {
 
 
 describe("publishing requires acknowledged prose", () => {
-  const epub = { documents: [], css: "", cover_data_uri: null, items: 1, words: 1 };
+  const epub = { documents: [], css: "", cover_data_uri: null, images: {}, items: 1, words: 1 };
   const pdf = { pages: [], css: "", leaves: 1, truncated: false, font: "Crimson Text", font_resolved: true,
     gutter_minimum_um: null, inner_um: 19050, items: 1, words: 1 };
   const design = { font: "Crimson Text", page: { width_um: 152400, height_um: 228600, name: "trade" },

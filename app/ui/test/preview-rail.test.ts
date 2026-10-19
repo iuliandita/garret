@@ -29,6 +29,7 @@ function preview(over: Partial<EpubPreview> = {}): EpubPreview {
     ],
     css: "body { margin: 0 5%; }\np { text-indent: 1.2em; }",
     cover_data_uri: null,
+    images: {},
     items: 1,
     words: 1,
     ...over,
@@ -291,7 +292,7 @@ describe("what it renders", () => {
         documents: [
           {
             name: "OEBPS/text/cover.xhtml",
-            xhtml: XHTML('<section><img src="../cover.png" alt="c"/></section>'),
+            xhtml: XHTML('<section class="cover"><img src="../cover.png" alt="c"/></section>'),
           },
         ],
       }),
@@ -300,6 +301,44 @@ describe("what it renders", () => {
     expect(document.querySelector<HTMLImageElement>("#preview-pages img")?.getAttribute("src")).toBe(
       "data:image/png;base64,AAA",
     );
+  });
+
+  test("a figure shows its own bytes and a cover replaces only the cover", async () => {
+    // With a cover the old rewrite pointed EVERY img at the cover, and without
+    // one a figure's `../assets/...` path never loaded under the page's CSP.
+    const h = mount(
+      {},
+      preview({
+        cover_data_uri: "data:image/png;base64,COVER",
+        images: { "assets/aa.png": "data:image/png;base64,FIG1", "assets/bb.jpg": "data:image/jpeg;base64,FIG2" },
+        documents: [
+          {
+            name: "OEBPS/text/cover.xhtml",
+            xhtml: XHTML('<section class="cover"><img src="../cover.png" alt="c"/></section>'),
+          },
+          {
+            name: "OEBPS/text/0001.xhtml",
+            xhtml: XHTML(
+              '<section><figure><img src="../assets/aa.png" alt="a"/></figure>'
+              + '<figure><img src="../assets/bb.jpg" alt="b"/></figure>'
+              + '<figure><img src="../assets/gone.png" alt="g"/></figure></section>',
+            ),
+          },
+        ],
+      }),
+    );
+    await h.rail.open("epub");
+    const sources = [...document.querySelectorAll<HTMLImageElement>("#preview-pages img")].map(i => i.getAttribute("src"));
+    expect(sources).toEqual([
+      "data:image/png;base64,COVER",
+      "data:image/png;base64,FIG1",
+      "data:image/jpeg;base64,FIG2",
+      "../assets/gone.png",
+    ]);
+    // A figure keeps its own alt text, so an edit to it is what a refresh shows.
+    const alts = [...document.querySelectorAll<HTMLImageElement>("#preview-pages img")].map(i => i.getAttribute("alt"));
+    expect(alts.slice(1)).toEqual(["a", "b", "g"]);
+    expect(alts[0]).not.toBe("c");
   });
 
   test("it states what the book is, so a writer can see the preview is of all of it", async () => {

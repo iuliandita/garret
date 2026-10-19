@@ -962,3 +962,25 @@ fn schema18_reader_exports_existing_nodes_without_the_fixture_override() {
     assert_eq!(store.load_doc(&id).unwrap().body, body);
     assert_eq!(store.user_version().unwrap(), 18);
 }
+
+#[test]
+fn the_epub_preview_carries_each_figure_image_the_documents_name() {
+    // The page's CSP allows `data:` and nothing that resolves a path inside the
+    // archive, so `../assets/<hash>.<ext>` never loads. Every figure src, minus
+    // its leading `../`, must be a key whose data URI is the stored original.
+    let fixture = fixture();
+    let preview = preview_of(&fixture.db, "Collected", &crate::identity::Vault::default(), crate::strings::Strings::english()).unwrap();
+    let sources: Vec<&str> = preview.documents.iter()
+        .flat_map(|doc| doc.xhtml.split("<img src=\"../").skip(1).map(|rest| rest.split('"').next().unwrap()))
+        .collect();
+    assert!(sources.len() >= 2, "{sources:?}");
+    let jpeg = include_bytes!("../../../fixtures/two-halves.jpg");
+    for (asset, original, mime) in [(&fixture.assets[0], crate::figures::tests::PNG, "image/png"), (&fixture.assets[1], &jpeg[..], "image/jpeg")] {
+        let ext = if mime == "image/png" { "png" } else { "jpg" };
+        let key = format!("assets/{}.{ext}", asset.sha256);
+        assert!(sources.contains(&key.as_str()), "{key} in {sources:?}");
+        assert_eq!(preview.images[&key], format!("data:{mime};base64,{}", crate::pictures::base64(original)));
+    }
+    assert!(sources.iter().all(|src| preview.images.contains_key(*src)));
+    assert!(preview.cover_data_uri.is_none());
+}

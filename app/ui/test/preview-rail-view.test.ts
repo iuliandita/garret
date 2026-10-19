@@ -33,6 +33,7 @@ const EPUB: EpubPreview = {
   documents: [{ name: "a.xhtml", xhtml: XHTML("<section><h2>One</h2><p>alpha</p></section>") }],
   css: "p { margin: 0; }",
   cover_data_uri: null,
+  images: {},
   items: 1,
   words: 1,
 };

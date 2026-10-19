@@ -837,11 +837,23 @@ pub(crate) struct EpubPreview {
     /// ARCHIVE and not from the file on disk, for this whole surface's reason:
     /// what is shown is what was packed.
     pub(crate) cover_data_uri: Option<String>,
+    /// Each figure image as a data URI, keyed by its path inside the OEBPS
+    /// folder (`assets/<hash>.png`), which is what the documents name once
+    /// their leading `../` is dropped. The page's CSP allows `data:` and
+    /// nothing that could resolve a path inside the archive. Bounded by
+    /// `PREVIEW_IMAGE_BYTES`; a figure past the bound is absent and the page
+    /// shows its alt text.
+    pub(crate) images: std::collections::BTreeMap<String, String>,
     /// The figures the rail states, so a writer can see the preview is of their
     /// whole book and not of part of it.
     pub(crate) items: u64,
     pub(crate) words: u64,
 }
+
+/// The most figure bytes (before base64) one preview carries. A single original
+/// may be 16 MiB, so without this a book of large plates would send the page
+/// hundreds of megabytes over one IPC call.
+const PREVIEW_IMAGE_BYTES: usize = 32 * 1024 * 1024;
 
 /// Render the book at `path` as an EPUB and read the archive back.
 ///
@@ -884,10 +896,32 @@ pub(crate) fn preview_of(
             };
             format!("data:{mime};base64,{}", crate::pictures::base64(bytes))
         });
+    let assets = format!("{}/assets/", crate::epub::OEBPS);
+    let mut budget = PREVIEW_IMAGE_BYTES;
+    let mut images = std::collections::BTreeMap::new();
+    for (n, bytes) in &entries {
+        let Some(href) = n.strip_prefix(&format!("{}/", crate::epub::OEBPS)) else {
+            continue;
+        };
+        if !n.starts_with(&assets) || bytes.len() > budget {
+            continue;
+        }
+        budget -= bytes.len();
+        let mime = if n.ends_with(".png") {
+            crate::pictures::Format::Png.mime()
+        } else {
+            crate::pictures::Format::Jpeg.mime()
+        };
+        images.insert(
+            href.to_string(),
+            format!("data:{mime};base64,{}", crate::pictures::base64(bytes)),
+        );
+    }
     Ok(EpubPreview {
         documents,
         css,
         cover_data_uri,
+        images,
         items,
         words,
     })

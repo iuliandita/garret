@@ -69,10 +69,17 @@ export function createPreviewWindow(
     if (body === null) slot.append(deps.problem(doc.name));
     else {
       const imported = document.importNode(body, true);
-      if (view.cover_data_uri !== null) {
-        for (const image of imported.querySelectorAll("img")) {
+      for (const image of imported.querySelectorAll("img")) {
+        if (image.closest("section.cover") !== null) {
+          if (view.cover_data_uri === null) continue;
           image.setAttribute("src", view.cover_data_uri);
           image.setAttribute("alt", deps.coverAlt());
+        } else {
+          // The document names `../assets/<hash>.png`; the host keys the bytes
+          // by `assets/<hash>.png`. A figure past the host's bound has no key
+          // and keeps a source that cannot load, so the alt text shows.
+          const uri = view.images[(image.getAttribute("src") ?? "").replace(/^\.\.\//, "")];
+          if (uri !== undefined) image.setAttribute("src", uri);
         }
       }
       slot.append(...imported.childNodes);
