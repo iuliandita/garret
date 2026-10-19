@@ -9428,7 +9428,7 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 .document-endnote { color: var(--accent-strong, var(--fg)); font: 0.65em system-ui, sans-serif; padding-inline: 0.2em; }
 .document-figure { border: 1px solid var(--border); margin: 1.5em 0; padding: 1em; color: var(--muted); }
 .document-figure > span, .document-figure figcaption { display: block; }
-.document-figure-alt-missing { font-size: 0.85em; font-style: italic; opacity: 0.8; }
+.document-figure-alt-missing { font-size: 0.85em; font-style: italic; }
 .document-scene-break { text-align: center; margin: 1.5em 0; color: var(--muted); }
 .document-scene-break::before { content: "* * *"; }
 

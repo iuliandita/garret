@@ -250,6 +250,13 @@ export function countWordsIn(doc: PmNode): number {
   return countWords(proseText(doc));
 }
 
+/** A stored document serialized the way `Editor.serialize` does, without the
+ *  trailing paragraph a writing editor seeds, so a hash of it is the hash of
+ *  what the store holds. */
+export function storedBody(json: PmNodeJson): string {
+  return JSON.stringify(schema.nodeFromJSON(json as unknown as Record<string, unknown>).toJSON());
+}
+
 /** Prose only; attribute fields are compared separately in history. */
 export function bodyText(body: string, blockSeparator = " "): string {
   const json = readableBody(body);
@@ -379,9 +386,6 @@ export function editorPlugins(): Plugin[] {
     // transaction at a time. Last, so it is outside every real one.
     spellRedrawPlugin(),
     numericSpellingPlugin(),
-    // Appends to the transaction that ended the document in an atom, so it
-    // needs no place in the order either.
-    trailingTextblockPlugin(),
   ];
 }
 
@@ -648,12 +652,18 @@ export function createEditor(
     pane.scrollTop = typewriterScrollTop(box.top, box.height, pane.scrollTop, caretTop);
   }
 
+  // Only the writer's editor keeps a textblock last. A read-only or review
+  // body is shown and diffed as stored, so it gets neither plugin nor seeding.
+  const createState = (base: PmNode): EditorState => EditorState.create({
+    doc: opts.authoring ? withTrailingTextblock(base) : base,
+    plugins: [...editorPlugins(), preserveAtoms(opts.authoring), ...(opts.authoring ? [trailingTextblockPlugin()] : [])],
+  });
   let editable = true;
   let authoring: DocumentAuthoring | undefined;
   let noteOffset = 0;
   const editSources = new EditSourceTracker();
   const view: EditorView = new EditorView(mount, {
-    state: EditorState.create({ doc: opts.authoring ? withTrailingTextblock(doc) : doc, plugins: [...editorPlugins(), preserveAtoms(opts.authoring)] }),
+    state: createState(doc),
     nodeViews: readerViews(opts.figurePreview, {
       editFigure: opts.authoring ? pos => { void authoring?.figure(pos); } : undefined,
       noteOffset: () => noteOffset,
@@ -711,7 +721,10 @@ export function createEditor(
         return;
       }
       if (tr.docChanged) editSources.prepare(tr);
-      view.updateState(before.apply(tr));
+      const next = before.apply(tr);
+      // A transaction filter refused the edit: nothing to record or report.
+      if (tr.docChanged && next === before) return;
+      view.updateState(next);
       if (tr.docChanged) refreshNoteReferences(view, noteOffset, opts.authoring);
       if (tr.docChanged) {
         const change = editSources.record(tr, before, view.state, () => countWordsIn(before.doc));
@@ -773,7 +786,7 @@ export function createEditor(
     replaceDoc(input: DocInput): void {
       if (authoring?.pending()) throw new Error("an endnote draft is still open");
       const next = schema.nodeFromJSON(docJsonFrom(input) as unknown as Record<string, unknown>);
-      view.updateState(EditorState.create({ doc: opts.authoring ? withTrailingTextblock(next) : next, plugins: [...editorPlugins(), preserveAtoms(opts.authoring)] }));
+      view.updateState(createState(next));
       editSources.reset();
       refreshNoteReferences(view, noteOffset, opts.authoring);
     },

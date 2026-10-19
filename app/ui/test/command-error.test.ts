@@ -86,6 +86,16 @@ test("known host failures read as one plain sentence naming the recovery", () =>
   expect(commandFailureMessage("application locked")).toBe(t("host-error.locked"));
 });
 
+test("the alternative-text refusal is classified as the preview and export commands deliver it", () => {
+  // The host passes the plan's message through unprefixed (commands/export.rs adds none).
+  const detail = "item 01900000-0000-7000-8000-000000000001: figure needs alternative text";
+  for (const operation of ["epub_preview", "proof_preview", "export_into"]) {
+    const error = new HostCommandError(operation, { version: 1, code: "operation_failed", operation, detail });
+    expect(error.problem).toBe(t("host-error.figure-alt"));
+    expect(error.detail).toBe(detail);
+  }
+});
+
 test("a banner can lift exactly the diagnostic out of a sentence built around it", () => {
   const error = new HostCommandError("project_open", { version: 1, code: "operation_failed", operation: "project_open", detail: "database is locked" });
   const wrapped = t("switch.error.kept", { name: "A", error: error.message });

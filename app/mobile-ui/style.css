@@ -101,7 +101,7 @@ body { margin: 0; }
 .document-endnote { color: var(--accent); font: 0.65em system-ui, sans-serif; padding-inline: 0.2em; }
 .document-figure { border: 1px solid var(--muted); margin: 1.5em 0; padding: 1em; color: var(--muted); }
 .document-figure > span, .document-figure figcaption { display: block; }
-.document-figure-alt-missing { font-size: 0.85em; font-style: italic; opacity: 0.8; }
+.document-figure-alt-missing { font-size: 0.85em; font-style: italic; }
 .document-scene-break { text-align: center; margin: 1.5em 0; color: var(--muted); }
 .document-scene-break::before { content: "* * *"; }
 

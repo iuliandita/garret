@@ -27,6 +27,11 @@ export function withTrailingTextblock(doc: PmNode): PmNode {
  *  it, which keeps it in the same undo event and the same change callback. */
 export function trailingTextblockPlugin(): Plugin {
   return new Plugin({
+    // Removing only the paragraph this plugin keeps would be put straight back,
+    // so the edit is refused instead of reported as a change that changes nothing.
+    filterTransaction(tr, state) {
+      return !tr.docChanged || endsInTextblock(tr.doc) || !withTrailingTextblock(tr.doc).eq(state.doc);
+    },
     appendTransaction(transactions, _old, state) {
       if (!transactions.some(tr => tr.docChanged)) return null;
       const tr = appendTrailingTextblock(state.tr);
