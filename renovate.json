@@ -20,6 +20,12 @@
         "github-actions"
       ],
       "groupName": "GitHub Actions"
+    },
+    {
+      "matchFileNames": [
+        "lab/**"
+      ],
+      "enabled": false
     }
   ]
 }
