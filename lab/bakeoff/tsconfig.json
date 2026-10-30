@@ -1,4 +1,0 @@
-{
-  "extends": "../tsconfig.json",
-  "include": ["editor-core", "harness", "build.ts"]
-}
