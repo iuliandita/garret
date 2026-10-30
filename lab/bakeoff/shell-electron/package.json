@@ -8,6 +8,6 @@
     "build": "bun build main.ts --target=node --format=cjs --external electron --outfile=main.js && bun build preload.ts --target=node --format=cjs --external electron --outfile=preload.js"
   },
   "devDependencies": {
-    "electron": "^33.0.0"
+    "electron": "^45.0.0"
   }
 }
