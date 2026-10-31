@@ -36,7 +36,7 @@ jobs:
           fi
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: "1.4.2"
+          bun-version: "1.4.4"
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.bun/install/cache
@@ -65,7 +65,7 @@ jobs:
             libjavascriptcoregtk-4.1-dev librsvg2-dev poppler-utils
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: "1.4.2"
+          bun-version: "1.4.4"
       - run: bun install --frozen-lockfile
       # The host embeds the built interface from app/shell-tauri/dist.
       - name: Build the interface for the host
@@ -73,7 +73,7 @@ jobs:
           (cd app/ui && bun run build)
           mkdir -p app/shell-tauri/dist
           cp -r app/ui/dist/. app/shell-tauri/dist/
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: app/shell-tauri/src-tauri
       - name: Host tests
@@ -99,7 +99,7 @@ jobs:
           bash ../../../scripts/test-proof-paginator
       - name: Retain proof paginator failure diagnostics
         if: failure() && steps.paginator.outputs.diagnostics != ''
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: proof-paginator-diagnostics
           path: ${{ steps.paginator.outputs.diagnostics }}/*.log
