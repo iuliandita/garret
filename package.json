@@ -9,7 +9,7 @@
     "typecheck": "bunx tsc --noEmit -p app/tsconfig.json"
   },
   "devDependencies": {
-    "@happy-dom/global-registrator": "20.11.2",
+    "@happy-dom/global-registrator": "20.14.6",
     "@tauri-apps/cli": "2.12.3",
     "@types/bun": "^1.2.0",
     "happy-dom": "20.11.2",
