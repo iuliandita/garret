@@ -73,8 +73,10 @@ const PAGE_MAX_UM: i64 = 1_000_000;
 /// The body fonts this application offers.
 ///
 /// Crimson Pro is bundled for proofs; other faces depend on the renderer.
+pub const CRIMSON_PRO: &str = "Crimson Pro";
+
 pub const FONTS: [&str; 5] = [
-    "Crimson Pro",
+    CRIMSON_PRO,
     "Crimson Text",
     "EB Garamond",
     "Libre Baskerville",
@@ -409,7 +411,7 @@ fn named(spec: &PageSizeSpec) -> PageSize {
 pub fn preset(id: &str) -> Option<BookDesign> {
     match id {
         PRESET_FICTION => Some(BookDesign {
-            font: "Crimson Pro".to_string(),
+            font: CRIMSON_PRO.to_string(),
             page: named(size("trade")),
             margins: Margins {
                 // 0.75 in: KDP's 0.5 in gutter minimum for a 151-300 page book,

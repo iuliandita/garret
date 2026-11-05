@@ -493,7 +493,7 @@ fn render_document(proof: &Proof, plan: &crate::publication_plan::Plan, notes_ti
         "markupLimit": proof.markup_limit,
     }));
 
-    let bundled_font = if proof.design.font == "Crimson Pro" {
+    let bundled_font = if proof.design.font == crate::design::CRIMSON_PRO {
         [
             ("normal", "400", include_bytes!("../../../ui/fonts/CrimsonPro-Regular.woff2").as_slice()),
             ("italic", "400", include_bytes!("../../../ui/fonts/CrimsonPro-Italic.woff2").as_slice()),
