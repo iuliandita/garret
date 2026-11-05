@@ -151,7 +151,7 @@ export function createStatusDot(deps: StatusDotDeps): StatusDot {
     el.className = "status-action";
     el.textContent = text;
     el.addEventListener("click", onAction);
-    const anchor = popover.querySelector(`#${after}`);
+    const anchor = after === "" ? null : popover.querySelector(`#${after}`);
     if (anchor !== null) anchor.after(el);
     else popover.append(el);
     actions.push({ el, run, wanted });
@@ -167,11 +167,8 @@ export function createStatusDot(deps: StatusDotDeps): StatusDot {
   addAction("status-open-changes", t("menu.mirror-changes"), "mirror-controls", deps.openChanges,
     () => states.mirror !== "off");
 
-  const encryptedLine = document.createElement("div");
-  encryptedLine.id = "status-encrypted-history";
-  encryptedLine.textContent = t("status.encrypted.history");
-  popover.append(encryptedLine);
-  addAction("status-encrypted-backups", t("status.encrypted.action"), encryptedLine.id, deps.openEncryptedBackups, () => true);
+  // No archive date is recorded, so this is a route to the section, never a claim that a backup exists.
+  addAction("status-encrypted-backups", t("status.encrypted.action"), "", deps.openEncryptedBackups, () => true);
 
   const paint = (): void => {
     const state = dotState(states);
@@ -236,7 +233,6 @@ export function createStatusDot(deps: StatusDotDeps): StatusDot {
         action.el.removeEventListener("click", onAction);
         action.el.remove();
       }
-      encryptedLine.remove();
       stopOutsideClick();
       tooltip.destroy();
       tooltip.anchor.remove();

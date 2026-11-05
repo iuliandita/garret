@@ -36,7 +36,6 @@ export const DE = {
   "transfer.legacy": "0.0.5 oder älter (Format 17, nur Romane)",
   "transfer.reader": "0.0.6 (Format 18, alle vier Buchtypen)",
   "transfer.section": "Auf ein anderes Gerät übertragen",
-  "status.encrypted.history": "Verlauf verschlüsselter Sicherungen nicht verfügbar",
   "status.encrypted.action": "Verschlüsselte Sicherungen…",
   "transfer.export": "Buch für ein anderes Gerät exportieren…",
   "transfer.recipient_unknown": "Prüfe oder aktualisiere die Empfänger-App vor dem Geräteexport.",
@@ -2009,9 +2008,9 @@ export const DE = {
   "archive.text.none": "Kein unverschlüsseltes Archiv erstellt",
   "archive.text.taken": "Unverschlüsseltes Archiv erstellt {when}",
   "archive.name.none":
-    "Geräteverlust: Es wurde noch kein gewöhnliches lokales Archiv erstellt. Verschlüsselte Archivdateien sind davon getrennt. Bringen Sie einen vollständigen Archivordner selbst von diesem Rechner weg.",
+    "Geräteverlust: Es wurde noch kein unverschlüsseltes Archiv erstellt. Verschlüsselte Archivdateien sind davon getrennt. Bringen Sie einen vollständigen Archivordner selbst von diesem Rechner weg.",
   "archive.name.taken":
-    "Geräteverlust: {when} wurde ein gewöhnliches lokales Archiv erstellt. Bringen Sie einen vollständigen Ordner selbst von diesem Rechner weg; ältere .db-Archive enthalten keine Bilder. Verschlüsselte Archivdateien sind davon getrennt.",
+    "Geräteverlust: {when} wurde ein unverschlüsseltes Archiv erstellt. Bringen Sie einen vollständigen Ordner selbst von diesem Rechner weg; ältere .db-Archive enthalten keine Bilder. Verschlüsselte Archivdateien sind davon getrennt.",
   "archive.notice.done": "Archiv geschrieben: {file}",
   "archive.notice.failed": "Es konnte kein Archiv geschrieben werden: {error}",
   "mirror.error.closed": "Für den lesbaren Ordner ist kein Buch geöffnet.",

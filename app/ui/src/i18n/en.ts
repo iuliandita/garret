@@ -40,7 +40,6 @@ export const EN = {
   "transfer.legacy": "0.0.5 or earlier (format 17, novels only)",
   "transfer.reader": "0.0.6 reader (format 18, all four book types)",
   "transfer.section": "Transfer to another device",
-  "status.encrypted.history": "Encrypted backup history unavailable",
   "status.encrypted.action": "Encrypted backups…",
   "transfer.export": "Export book for another device…",
   "transfer.recipient_unknown": "Check or update the receiving app before exporting for a device.",
@@ -2339,9 +2338,9 @@ export const EN = {
   "archive.text.none": "No unencrypted archive made",
   "archive.text.taken": "Unencrypted archive made {when}",
   "archive.name.none":
-    "Device loss: no ordinary local archive has been made yet. Encrypted archive files are separate. Move a complete archive folder off this computer yourself.",
+    "Device loss: no unencrypted archive has been made yet. Encrypted archive files are separate. Move a complete archive folder off this computer yourself.",
   "archive.name.taken":
-    "Device loss: an ordinary local archive was made {when}. Move a complete folder off this computer yourself; older .db archives omit pictures. Encrypted archive files are separate.",
+    "Device loss: an unencrypted archive was made {when}. Move a complete folder off this computer yourself; older .db archives omit pictures. Encrypted archive files are separate.",
   "archive.notice.done": "Archive written: {file}",
   "archive.notice.failed": "Could not write an archive: {error}",
   "mirror.error.closed": "No open book is available for the readable folder.",
