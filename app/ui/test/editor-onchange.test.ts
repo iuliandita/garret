@@ -117,3 +117,49 @@ describe("imported manual breaks", () => {
     }
   });
 });
+
+describe("the empty-scene hint", () => {
+  const empty: DocInput = { kind: "blocks", blocks: [{ type: "paragraph", text: "" }] };
+
+  test("shows on an empty editable document and goes on the first character", () => {
+    const mount = document.createElement("div");
+    const editor = createEditor(mount, empty, { authoring: true });
+    try {
+      const dom = mount.querySelector(".ProseMirror")!;
+      expect(dom.hasAttribute("data-placeholder")).toBe(false);
+      editor.setEmptyHint("Start writing here.");
+      expect(dom.getAttribute("data-placeholder")).toBe("Start writing here.");
+      expect(dom.getAttribute("aria-placeholder")).toBe("Start writing here.");
+      const before = editor.serialize();
+      expect(before).not.toContain("Start writing");
+
+      editor.caretToParagraph(0);
+      editor.typeChar("x");
+      expect(dom.hasAttribute("data-placeholder")).toBe(false);
+      expect(dom.hasAttribute("aria-placeholder")).toBe(false);
+      expect(editor.serialize()).not.toContain("Start writing");
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test("is withheld while read-only, when cleared, and over a document with text", () => {
+    const mount = document.createElement("div");
+    const editor = createEditor(mount, empty, { authoring: true });
+    try {
+      const dom = mount.querySelector(".ProseMirror")!;
+      editor.setEmptyHint("Start writing here.");
+      editor.setEditable(false);
+      expect(dom.hasAttribute("data-placeholder")).toBe(false);
+      editor.setEditable(true);
+      expect(dom.hasAttribute("data-placeholder")).toBe(true);
+      editor.setEmptyHint(null);
+      expect(dom.hasAttribute("data-placeholder")).toBe(false);
+      editor.setEmptyHint("Start writing here.");
+      editor.replaceDoc(input);
+      expect(dom.hasAttribute("data-placeholder")).toBe(false);
+    } finally {
+      editor.destroy();
+    }
+  });
+});
