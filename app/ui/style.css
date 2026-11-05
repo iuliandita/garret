@@ -8025,7 +8025,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   flex-direction: column;
   gap: 10px;
   /* 420px until the writer drags the divider; preview-rail.ts sets the
-     property, clamped to the window. The overlay rule below ignores it. */
+     property, clamped to the window. The full-surface rule below ignores it. */
   width: var(--preview-rail-width, 420px);
   /* The row is `minmax(0, 1fr)` and this is the flex-column half of the same
      rule: without it the pages box below refuses to shrink past its content and
@@ -8103,19 +8103,18 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   gap: 8px;
 }
 
-@media (max-width: 900px) {
-  /* Keep the proof controls reachable when three columns cannot fit. The rail
-     is an overlay here, so there is nothing to resize. */
-  #preview-divider {
-    display: none;
-  }
+/* Where the rail cannot sit beside a readable prose pane even without the
+   navigator (side-layout.ts), it is the whole workspace for as long as it is
+   open, rather than a box over part of the prose. Nothing to resize then. */
+body[data-side-layout="full"] #preview-divider {
+  display: none;
+}
 
-  #preview-rail {
-    position: fixed;
-    inset: 39px 0 34px auto;
-    z-index: 9;
-    width: min(420px, 100vw);
-  }
+body[data-side-layout="full"] #preview-rail {
+  position: fixed;
+  inset: 39px 0 34px 0;
+  z-index: 9;
+  width: auto;
 }
 
 #preview-rail-head h2 {

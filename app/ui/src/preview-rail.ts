@@ -40,9 +40,10 @@
 // THE WIDTH IS THE WRITER'S, within bounds: a divider in the rail's own grid
 // cell resizes it from 420px to about half the window, and the request is kept
 // per device. The rail stays the third column and a closed rail still measures
-// zero; under 900px it is still the overlay and has no divider. The width it
-// is given goes to side-layout.ts, which lets the navigator step aside when
-// the prose beside the rail would fall below a readable measure.
+// zero. The width it is given goes to side-layout.ts, which lets the
+// navigator step aside when the prose beside the rail would fall below a
+// readable measure, and makes the rail the whole workspace (no divider) when
+// no split fits.
 //
 // THE FRAMES ARE COSMETIC. With the device frame on, the same painted bytes sit
 // in a generic e-reader (paged by CSS columns) or tablet (one whole leaf); the
@@ -72,7 +73,6 @@ import {
   clampWidth,
   defaultStorage,
   halfWidth,
-  isOverlay,
   keyWidth,
   maxWidth,
   pageCount,
@@ -86,7 +86,7 @@ import {
   type DeviceStorage,
   type RailPref,
 } from "./preview-rail-layout";
-import { reportSide } from "./side-layout";
+import { decideSideLayout, reportSide } from "./side-layout";
 
 /** Which book the rail is showing. The ids are the host\u2019s
  *  (`export::Format::id`), exactly as `export-formats.ts` restates them. */
@@ -361,7 +361,8 @@ export function createPreviewRail(deps: PreviewRailDeps): PreviewRail {
 
   function paintDivider(): void {
     const w = windowWidth();
-    divider.hidden = rail.hidden || isOverlay(w);
+    const full = decideSideLayout({ windowWidth: w, sideWidth: appliedWidth, navColumn: false, navKept: false }) === "full";
+    divider.hidden = rail.hidden || full;
     divider.setAttribute("aria-valuemin", String(RAIL_MIN_WIDTH));
     divider.setAttribute("aria-valuemax", String(maxWidth(w)));
     divider.setAttribute("aria-valuenow", String(appliedWidth));
