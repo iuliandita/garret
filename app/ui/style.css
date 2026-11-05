@@ -9154,6 +9154,26 @@ body[data-inspector-open="true"] #scene-notes {
 #library-new-book-area { margin: 0 0 24px; }
 #library-existing-books { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 24px; }
 #library-existing-books button { min-height: 32px; }
+/* Empty: the row is not a box, so New book and the two routes stack as before. */
+#library-new-book-row { display: contents; }
+#library:not(.library-is-empty) #library-new-book-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 0 0 24px;
+}
+#library:not(.library-is-empty) #library-new-book-area,
+#library:not(.library-is-empty) #library-existing-books { margin: 0; gap: 8px; }
+#library:not(.library-is-empty) #library-existing-books button {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+#library:not(.library-is-empty) #library-existing-books button:hover:not(:disabled) {
+  background: var(--control-tone-hover);
+  color: var(--fg);
+}
 #library #library-new-book-tile { width: auto; }
 #library #library-new-book-name { border-style: solid; background: var(--control-bg); }
 #prefs-panel .prefs-choice-note {
@@ -9245,7 +9265,8 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
   #library:has(#library-desk:not([hidden])) .library-strip { margin-bottom: 0; }
   #library:has(#library-desk:not([hidden])) #library-heading-bio:empty { display: none; }
   #library:has(#library-desk:not([hidden])) #library-new-book-area,
-  #library:has(#library-desk:not([hidden])) #library-existing-books { margin-bottom: 0; }
+  #library:has(#library-desk:not([hidden])) #library-existing-books,
+  #library:has(#library-desk:not([hidden])) #library-new-book-row { margin-bottom: 0; }
   #library:has(#library-desk:not([hidden])) #library-desk {
     gap: 16px;
     padding-bottom: 12px;

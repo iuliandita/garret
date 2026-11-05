@@ -362,6 +362,11 @@ export function createLibrary(deps: LibraryDeps): Library {
     button.addEventListener("click", leaveFor(focus));
     existingBooks.append(button);
   }
+  // Once books exist, the rarer ways in sit quietly beside New book; an
+  // empty library keeps them on their own row as its starting routes.
+  const newBookRow = document.createElement("div");
+  newBookRow.id = "library-new-book-row";
+  newBookRow.append(newBookArea, existingBooks);
 
   const desk = document.createElement("div");
   desk.id = "library-desk";
@@ -399,7 +404,7 @@ export function createLibrary(deps: LibraryDeps): Library {
   timing.className = "library-timing";
   timing.setAttribute("aria-hidden", deps.diagnostics === true ? "false" : "true");
 
-  root.append(wordmark, strip, groupFilters, membershipPanel, headingRow, bioLine, newBookArea, existingBooks, desk, shelfHeading, empty, shelf, more, summaryPanel, timing);
+  root.append(wordmark, strip, groupFilters, membershipPanel, headingRow, bioLine, newBookRow, desk, shelfHeading, empty, shelf, more, summaryPanel, timing);
   document.body.append(root);
 
   const penNameForm = createPenNameForm({

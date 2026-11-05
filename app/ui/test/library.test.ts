@@ -226,8 +226,10 @@ describe("createLibrary", () => {
     const shelf = document.querySelectorAll("#library-shelf .shelf-tile");
     // Only books belong on the shelf; creation stays above the desk.
     expect(shelf.length).toBe(2);
+    // Import and Restore share New book's row, ahead of the desk.
     expect(document.querySelector("#library-new-book-area")?.nextElementSibling?.id).toBe("library-existing-books");
-    expect(document.querySelector("#library-existing-books")?.nextElementSibling?.id).toBe("library-desk");
+    expect(document.querySelector("#library-existing-books")?.parentElement?.id).toBe("library-new-book-row");
+    expect(document.querySelector("#library-new-book-row")?.nextElementSibling?.id).toBe("library-desk");
     expect(document.getElementById("library-new-book-tile")).not.toBeNull();
     expect(document.querySelector("#library-desk h3")?.textContent).toBe("A");
     expect(document.getElementById("library")?.classList.contains("library-is-empty")).toBe(false);
