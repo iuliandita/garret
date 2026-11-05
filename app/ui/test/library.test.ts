@@ -655,6 +655,31 @@ describe("createLibrary", () => {
     expect(document.getElementById("library-summary-activity")?.textContent).toContain("1 of 2");
     expect(document.getElementById("library-summary-activity")?.textContent).toContain("+5/−1");
   });
+  test("activity shrinks to one phrase only when every book answered and nothing changed", async () => {
+    const quiet = {
+      typing: { added: 0, deleted: 0 }, pasted: { added: 0, deleted: 0 },
+      imported: { added: 0, deleted: 0 }, restored: { added: 0, deleted: 0 },
+      unattributed: { added: 0, deleted: 0 },
+    };
+    const stats = (id: string, activity: typeof quiet | null): BookStats => ({
+      book_id: id, identity_id: null, membership: { version: 1, series: null, universe: null }, words: 10,
+      unreadable_documents: 0, documents: 1, activity, activity_interrupted: false,
+      activity_warning: activity === null ? "unavailable" : null, read_at_ms: Date.now(), took_ms: 1,
+    });
+    const r = rig();
+    r.answer = overview([book({ path: "a", book_id: "a" }), book({ path: "b", book_id: "b" })]);
+    r.stats.set("a", stats("a", quiet));
+    r.stats.set("b", stats("b", quiet));
+    r.library.open();
+    await flush();
+    expect(document.getElementById("library-summary-activity")?.textContent).toBe("No recorded changes.");
+    r.library.close();
+    r.stats.set("b", stats("b", null));
+    r.library.open();
+    await flush();
+    expect(document.getElementById("library-summary-activity")?.textContent).toBe("Recorded changes, from 1 of 2 books: no changes.");
+  });
+
   test("a changed pen-name pin is excluded and reported instead of counted in the old scope", async () => {
     const r = rig();
     r.answer = overview([book({ path: "a", book_id: "a", identity_id: "old" })], { selected_identity: "old" });

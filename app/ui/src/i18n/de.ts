@@ -2251,6 +2251,7 @@ export const DE = {
   "library.summary.activity-unavailable": "Erfasste Aktivität für diese Auswahl nicht verfügbar.",
   "library.summary.activity": "Erfasste Änderungen aus {counted} von {total} Büchern: {values}.",
   "library.summary.activity-none": "keine Änderungen",
+  "library.summary.activity-none-all": "Keine erfassten Änderungen.",
   "library.summary.source.typing": "getippt +{added}/−{deleted}",
   "library.summary.source.pasted": "eingefügt +{added}/−{deleted}",
   "library.summary.source.imported": "importiert +{added}/−{deleted}",

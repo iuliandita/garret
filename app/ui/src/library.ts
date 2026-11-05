@@ -830,10 +830,14 @@ export function createLibrary(deps: LibraryDeps): Library {
         .map((source) => t(`library.summary.source.${source}`, {
           added: formatNumber(totals[source].added), deleted: formatNumber(totals[source].deleted),
         }));
+      // Only a count every book answered may shrink to "nothing changed";
+      // partial coverage keeps saying how many books it is drawn from.
       activityLine.textContent = availableActivity === 0
         ? t("library.summary.activity-unavailable")
-        : t("library.summary.activity", { counted: formatNumber(availableActivity), total: formatNumber(checked),
-          values: activity.length === 0 ? t("library.summary.activity-none") : activity.join(", ") });
+        : activity.length === 0 && availableActivity === checked && checked === selection.candidates.length
+          ? t("library.summary.activity-none-all")
+          : t("library.summary.activity", { counted: formatNumber(availableActivity), total: formatNumber(checked),
+            values: activity.length === 0 ? t("library.summary.activity-none") : activity.join(", ") });
       // WHAT WAS LEFT OUT, one sentence per non-zero reason. The log
       // line this replaces printed nine counters, most of them zero.
       const left = ([
