@@ -5358,12 +5358,14 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 }
 
 /* AN EMPTY SCENE'S ONE LINE, drawn from the view's own attribute so it never
-   enters the document. Floated with no height so the caret still sits at the
+   enters the document. The pseudo-element sits on the element that carries the
+   attribute, because attr() reads its own host; it lands just before the empty
+   paragraph. Floated with no height so the caret still sits at the
    paragraph's start; no pointer events so a click lands in the paragraph. The
    empty alternative text keeps it out of the accessibility tree, where
    aria-placeholder already says it; an engine without that syntax keeps the
    first declaration. A composition hides it before its first character. */
-#editor .ProseMirror[data-placeholder]:not([data-composing]) > p:first-child::before {
+#editor .ProseMirror[data-placeholder]:not([data-composing])::before {
   content: attr(data-placeholder);
   content: attr(data-placeholder) / "";
   float: left;
