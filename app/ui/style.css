@@ -4002,10 +4002,10 @@ body.nav-hidden #nav-column {
   margin-left: 0.4em;
 }
 
-/* WHERE THIS ROW STANDS. One character, between the title and the count.
+/* WHERE THIS ROW STANDS. One drawn mark, between the title and the count.
 
-   THE FILL CARRIES THE STATE AND THE COLOUR ONLY REINFORCES IT. The marks are a
-   progression - an empty ring, a quarter, three quarters, a disc - so the row
+   THE SHAPE CARRIES THE STATE AND THE COLOUR ONLY REINFORCES IT. The marks are a
+   progression - a ring, a half, a disc, a disc with a tick - so the row
    still says where it stands in greyscale, in a screenshot, and to a reader who
    cannot tell two of the tints below apart. That is why there are no four new
    hues here: four state colours would need defining in the dark palette and in
@@ -4030,6 +4030,14 @@ body.nav-hidden #nav-column {
      24px line box costs no height either way. */
   font-size: var(--text-sm);
   color: var(--muted);
+}
+
+/* The shape is sized by the span's font-size, so it keeps the measured 13px
+   and sits in the row's line box without a height of its own. */
+#nav .nav-state svg {
+  display: block;
+  width: 1em;
+  height: 1em;
 }
 
 /* The two ends of the progression are the two the writer scans for: what has
@@ -6973,6 +6981,12 @@ body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="t
   display: inline-block;
   width: 1.2em;
   color: var(--muted);
+}
+
+.state-mark svg {
+  width: 0.9em;
+  height: 0.9em;
+  vertical-align: -0.1em;
 }
 
 /* The chosen one, said in weight as well as in aria-pressed - the same
