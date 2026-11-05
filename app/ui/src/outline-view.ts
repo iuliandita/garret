@@ -297,6 +297,7 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
     toolbar.append(button(t("outline-view.return"), deps.onReturn, false, "return"));
     const pagination = document.createElement("nav");
     pagination.className = "outline-view-pages";
+    pagination.hidden = projection.pages <= 1;
     pagination.setAttribute("aria-label", t("outline-view.pages.label"));
     pagination.append(
       button(t("outline-view.previous"), () => { page -= 1; paint(); }, page <= 1, "previous"),
@@ -717,6 +718,9 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
       Object.assign(document.createElement("span"), { textContent: t("reading.page", { page: formatNumber(page), pages: formatNumber(projection.pages) }) }),
       button(t("outline-view.next"), () => { page += 1; paintReading(); element.scrollTop = 0; }, page >= projection.pages, "next"),
     );
+    if (projection.pages <= 1) {
+      for (const child of Array.from(nav.children).slice(1)) child.remove();
+    }
     const surface = document.createElement("div");
     surface.className = "reading-documents";
     for (const row of projection.rows) {

@@ -5747,6 +5747,11 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   text-overflow: ellipsis;
 }
 
+.quick-open-path {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
 #quick-open-results [role="option"][aria-selected="true"] {
   background: var(--accent-soft);
 }

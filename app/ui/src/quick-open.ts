@@ -33,6 +33,7 @@ export interface QuickOpenItem {
   id: string;
   title: string;
   type: string;
+  parent_id?: string | null;
 }
 
 export interface QuickOpenDeps {
@@ -115,6 +116,7 @@ export function createQuickOpen(deps: QuickOpenDeps): QuickOpen {
   const input = document.createElement("input");
   input.id = "quick-open-query";
   input.type = "text";
+  input.placeholder = t("quick-open.query.label");
   input.setAttribute("aria-label", t("quick-open.query.label"));
   // The listbox this field drives, and the row it has highlighted. Without both,
   // a screen reader announces the typing and nothing about what it selected.
@@ -141,7 +143,9 @@ export function createQuickOpen(deps: QuickOpenDeps): QuickOpen {
   let active = 0;
 
   function paint(): void {
-    const { shown: matches, total } = matchItems(deps.items(), input.value);
+    const items = deps.items();
+    const byId = new Map(items.map((item) => [item.id, item]));
+    const { shown: matches, total } = matchItems(items, input.value);
     shown = matches;
     active = 0;
     const frag = document.createDocumentFragment();
@@ -153,6 +157,22 @@ export function createQuickOpen(deps: QuickOpenDeps): QuickOpen {
       row.dataset.itemType = item.type;
       row.setAttribute("aria-selected", index === 0 ? "true" : "false");
       row.textContent = item.title;
+      const path: string[] = [];
+      const seen = new Set([item.id]);
+      let parent = item.parent_id;
+      while (parent && !seen.has(parent)) {
+        seen.add(parent);
+        const ancestor = byId.get(parent);
+        if (!ancestor) break;
+        path.unshift(ancestor.title);
+        parent = ancestor.parent_id;
+      }
+      if (path.length) {
+        const context = document.createElement("span");
+        context.className = "quick-open-path";
+        context.textContent = ` ${path.join(" / ")}`;
+        row.append(context);
+      }
       frag.appendChild(row);
     }
     results.replaceChildren(frag);
