@@ -84,6 +84,7 @@ export interface StatusDotDeps {
   /** Opens the project panel, where the readable folder is turned on. Offered
    *  while the folder is off. */
   openMirrorSetup?: () => void;
+  openEncryptedBackups?: () => void;
 }
 
 export interface StatusDot {
@@ -166,6 +167,12 @@ export function createStatusDot(deps: StatusDotDeps): StatusDot {
   addAction("status-open-changes", t("menu.mirror-changes"), "mirror-controls", deps.openChanges,
     () => states.mirror !== "off");
 
+  const encryptedLine = document.createElement("div");
+  encryptedLine.id = "status-encrypted-history";
+  encryptedLine.textContent = t("status.encrypted.history");
+  popover.append(encryptedLine);
+  addAction("status-encrypted-backups", t("status.encrypted.action"), encryptedLine.id, deps.openEncryptedBackups, () => true);
+
   const paint = (): void => {
     const state = dotState(states);
     button.dataset.state = state;
@@ -229,6 +236,7 @@ export function createStatusDot(deps: StatusDotDeps): StatusDot {
         action.el.removeEventListener("click", onAction);
         action.el.remove();
       }
+      encryptedLine.remove();
       stopOutsideClick();
       tooltip.destroy();
       tooltip.anchor.remove();

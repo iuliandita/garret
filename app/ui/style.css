@@ -9452,3 +9452,12 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 #endnote-editor textarea { width: 100%; resize: vertical; }
 #endnote-editor .panel-body > div { display: grid; gap: var(--space-2); }
 #endnote-editor [data-resolution="flag"], #endnote-editor [data-resolution="warning"] { color: var(--color-warning, #a35d00); }
+
+#project-archive-key,
+#project-archive-encrypted { display: block; }
+#project-transfer-toggle { display: block; margin-top: 10px; }
+#project-transfer-body label,
+#project-transfer-body select { display: block; }
+#project-transfer-body select { max-width: 100%; margin: 4px 0 6px; }
+
+#project-encrypted-status { color: var(--muted); font-size: var(--text-xs); overflow-wrap: anywhere; }

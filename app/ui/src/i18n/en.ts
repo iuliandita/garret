@@ -39,6 +39,9 @@ export const EN = {
   "transfer.unknown": "Unknown: check or update the receiving app first",
   "transfer.legacy": "0.0.5 or earlier (format 17, novels only)",
   "transfer.reader": "0.0.6 reader (format 18, all four book types)",
+  "transfer.section": "Transfer to another device",
+  "status.encrypted.history": "Encrypted backup history unavailable",
+  "status.encrypted.action": "Encrypted backups…",
   "transfer.export": "Export book for another device…",
   "transfer.recipient_unknown": "Check or update the receiving app before exporting for a device.",
   "transfer.recipient_schema": "The receiving app cannot open this book format. Update it first.",
@@ -187,7 +190,7 @@ export const EN = {
   "help.about": "About {label}",
   "menu.review-proposals": "Review proposals…",
   "review.heading": "Review proposals",
-  "review.author": "Review author",
+  "review.author": "Acting as",
   "review.author-name": "New author name",
   "review.author-create": "Create author",
   "review.author-add": "Add reviewer",
@@ -2333,8 +2336,8 @@ export const EN = {
   // The application cannot see whether it left, has no dialog through
   // which to arrange it, and the failure this feature exists to prevent is a
   // writer believing they are protected when they are not.
-  "archive.text.none": "No ordinary local archive made",
-  "archive.text.taken": "Ordinary local archive made {when}",
+  "archive.text.none": "No unencrypted archive made",
+  "archive.text.taken": "Unencrypted archive made {when}",
   "archive.name.none":
     "Device loss: no ordinary local archive has been made yet. Encrypted archive files are separate. Move a complete archive folder off this computer yourself.",
   "archive.name.taken":

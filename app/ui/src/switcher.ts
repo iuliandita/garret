@@ -534,6 +534,9 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   archiveEncrypted.type = "button";
   archiveEncrypted.textContent = t("switcher.archive.encrypted.action");
   archiveEncrypted.hidden = deps.makeEncryptedArchive === undefined;
+  const encryptedStatus = document.createElement("div");
+  encryptedStatus.id = "project-encrypted-status";
+  encryptedStatus.setAttribute("role", "status");
   const recipientLabel = document.createElement("label");
   recipientLabel.textContent = t("transfer.recipient");
   const recipient = document.createElement("select");
@@ -542,7 +545,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const option = document.createElement("option"); option.value = value;
     option.textContent = t(`transfer.${key}`); recipient.append(option);
   }
-  recipientLabel.append(recipient);
+  recipientLabel.htmlFor = recipient.id;
   recipientLabel.hidden = deps.exportForDevice === undefined;
   const exportDevice = document.createElement("button");
   exportDevice.type = "button"; exportDevice.id = "project-export-device";
@@ -681,6 +684,14 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   explain(backupChoice, backupNote);
   explain(mirrorHeading, mirrorNote);
 
+  const transferToggle = disclosure("project-transfer-toggle", "project-transfer-body", "transfer.section");
+  const transferBody = document.createElement("div");
+  transferBody.id = "project-transfer-body";
+  transferBody.hidden = true;
+  transferBody.append(recipientLabel, recipient, exportDevice);
+  transferToggle.hidden = deps.exportForDevice === undefined;
+  transferToggle.addEventListener("click", () => expand(transferToggle, transferBody, transferBody.hidden));
+
   const copiesToggle = disclosure("project-copies-toggle", "project-copies", "switcher.copies");
   const copies = document.createElement("div");
   copies.id = "project-copies";
@@ -702,10 +713,11 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     backupChoice,
     archiveKey,
     archiveEncrypted,
-    recipientLabel,
-    exportDevice,
+    encryptedStatus,
     archiveVerify,
     archiveRestore,
+    transferToggle,
+    transferBody,
     mirrorHeading,
     mirrorWhere,
     mirrorState,
@@ -1552,6 +1564,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       try {
         const done = await action();
         if (done !== null && await (refreshShelf ? outcomeCurrent(path, opened) : archiveActionCurrent(mine, path, opened))) {
+          encryptedStatus.textContent = done;
           if (warning()) deps.onNotice(done);
           else deps.onDone(done);
           if (refreshShelf && !panel.hidden && mine === generation) await reload();
