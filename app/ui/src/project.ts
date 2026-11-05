@@ -198,6 +198,7 @@ export interface MountDeps {
   /** Open the project panel, where the readable folder is turned on. Owned by
    *  the switcher in main.ts; the status dot offers it while the folder is off. */
   openProjectPanel?: () => void;
+  openEncryptedBackups?: () => void;
 }
 
 export interface MountedProject {
@@ -1523,6 +1524,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     backupNow: invoke === undefined ? undefined : () => void recoveryIndicator?.backupNow(),
     makeArchive: invoke === undefined ? undefined : () => void archiveIndicator?.archiveNow(),
     openMirrorSetup: invoke === undefined ? undefined : deps.openProjectPanel,
+    openEncryptedBackups: deps.openEncryptedBackups,
   });
 
   let recoveryIndicator: RecoveryIndicator | null = null;

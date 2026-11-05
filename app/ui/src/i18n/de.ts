@@ -35,6 +35,8 @@ export const DE = {
   "transfer.unknown": "Unbekannt: Empfänger-App zuerst prüfen oder aktualisieren",
   "transfer.legacy": "0.0.5 oder älter (Format 17, nur Romane)",
   "transfer.reader": "0.0.6 (Format 18, alle vier Buchtypen)",
+  "transfer.section": "Auf ein anderes Gerät übertragen",
+  "status.encrypted.action": "Verschlüsselte Sicherungen…",
   "transfer.export": "Buch für ein anderes Gerät exportieren…",
   "transfer.recipient_unknown": "Prüfe oder aktualisiere die Empfänger-App vor dem Geräteexport.",
   "transfer.recipient_schema": "Die Empfänger-App kann dieses Buchformat nicht öffnen. Aktualisiere sie zuerst.",
@@ -183,7 +185,7 @@ export const DE = {
   "help.about": "Erklärung zu {label}",
   "menu.review-proposals": "Vorschläge prüfen…",
   "review.heading": "Vorschläge prüfen",
-  "review.author": "Name für die Prüfung",
+  "review.author": "Sie handeln als",
   "review.author-name": "Neuer Name",
   "review.author-create": "Namen anlegen",
   "review.author-add": "Prüfer hinzufügen",
@@ -2008,12 +2010,12 @@ export const DE = {
   "switcher.legacy.mirror.note": "Bewahren Sie diese älteren lesbaren Dateien auf und prüfen Sie sie. Der neue Ordner dieses Buchs überschreibt sie nicht.",
 
   // ---- archive-indicator.ts + switcher.ts: the copy that can leave --------
-  "archive.text.none": "Kein gewöhnliches lokales Archiv erstellt",
-  "archive.text.taken": "Gewöhnliches lokales Archiv erstellt {when}",
+  "archive.text.none": "Kein unverschlüsseltes Archiv erstellt",
+  "archive.text.taken": "Unverschlüsseltes Archiv erstellt {when}",
   "archive.name.none":
-    "Geräteverlust: Es wurde noch kein gewöhnliches lokales Archiv erstellt. Verschlüsselte Archivdateien sind davon getrennt. Bringen Sie einen vollständigen Archivordner selbst von diesem Rechner weg.",
+    "Geräteverlust: Es wurde noch kein unverschlüsseltes Archiv erstellt. Verschlüsselte Archivdateien sind davon getrennt. Bringen Sie einen vollständigen Archivordner selbst von diesem Rechner weg.",
   "archive.name.taken":
-    "Geräteverlust: {when} wurde ein gewöhnliches lokales Archiv erstellt. Bringen Sie einen vollständigen Ordner selbst von diesem Rechner weg; ältere .db-Archive enthalten keine Bilder. Verschlüsselte Archivdateien sind davon getrennt.",
+    "Geräteverlust: {when} wurde ein unverschlüsseltes Archiv erstellt. Bringen Sie einen vollständigen Ordner selbst von diesem Rechner weg; ältere .db-Archive enthalten keine Bilder. Verschlüsselte Archivdateien sind davon getrennt.",
   "archive.notice.done": "Archiv geschrieben: {file}",
   "archive.notice.failed": "Es konnte kein Archiv geschrieben werden: {error}",
   "mirror.error.closed": "Für den lesbaren Ordner ist kein Buch geöffnet.",
