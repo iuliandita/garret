@@ -682,6 +682,29 @@ describe("switcher activation", () => {
     teardown(rig);
   });
 
+  test("a book imported with losses offers its report again, on the problem channel, and only that book", async () => {
+    const rig = mount({
+      listProjects: () => Promise.resolve([
+        { path: "/p/one.mss", name: "one", modified_at: 2, import_losses: { ...ZERO_LOSSES, tables: 1, comments: 3 } },
+        { path: "/p/two.mss", name: "two", modified_at: 1, import_losses: ZERO_LOSSES },
+      ]),
+    });
+    await open(rig);
+    expect(optionFor(rig.container, "/p/two.mss").querySelector("[data-import-report-path]")).toBeNull();
+    const again = optionFor(rig.container, "/p/one.mss").querySelector<HTMLElement>("[data-import-report-path]");
+    expect(again?.textContent).toBe("Import report");
+    expect(again?.getAttribute("aria-label")).toBe("What the import of one left out");
+    click(again as HTMLElement);
+    await settle();
+    expect(rig.calls.switched).toEqual([]);
+    expect(rig.calls.dones).toEqual([]);
+    expect(rig.calls.notices).toHaveLength(1);
+    expect(rig.calls.notices[0]).toStartWith("one: ");
+    expect(rig.calls.notices[0]).toContain("table");
+    expect(rig.calls.notices[0]).toContain("comment");
+    teardown(rig);
+  });
+
   test("clicking a missing row itself explains, switches nothing and forgets nothing", async () => {
     const rig = mount();
     await open(rig);

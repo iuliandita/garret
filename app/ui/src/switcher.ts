@@ -52,6 +52,8 @@ export interface ProjectSummary {
    *  their file manager. The one kind of row that offers Forget. */
   missing?: boolean;
   registration_warning?: { token: string | null; kind?: "registration_pending" | "destination_preference" | "registration_unavailable"; error: string } | null;
+  /** What a DOCX import could not carry into this book, kept with it. */
+  import_losses?: ImportLosses | null;
 }
 
 export interface PendingRegistration {
@@ -766,6 +768,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   // display string and reconstructing an error from it would garble any
   // message containing the separator.
   const errors = new Map<string, string>();
+  const importReports = new Map<string, string>();
 
   function renderMessage(text: string): void {
     const row = document.createElement("div");
@@ -776,6 +779,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   function renderProjects(projects: readonly ProjectSummary[]): void {
     const current = deps.currentPath();
     errors.clear();
+    importReports.clear();
     if (projects.length === 0) {
       // An EMPTY STATE, for the reason renderImports already carries one: a
       // listbox that paints nothing is indistinguishable from one that failed to
@@ -843,6 +847,17 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
         if (row.hasAttribute("aria-label")) open.setAttribute("aria-label", row.getAttribute("aria-label")!);
         open.append(...Array.from(row.childNodes));
         row.append(open);
+        const report = project.import_losses ? lossesNotice(project.import_losses) : null;
+        if (report !== null) {
+          importReports.set(project.path, t("switcher.import-report.notice", { name: project.name, report }));
+          const again = document.createElement("button");
+          again.type = "button";
+          again.className = "switcher-import-report";
+          again.dataset.importReportPath = project.path;
+          again.textContent = t("switcher.import-report");
+          again.setAttribute("aria-label", t("switcher.import-report.label", { name: project.name }));
+          row.append(again);
+        }
       }
       frag.appendChild(row);
     }
@@ -1680,6 +1695,12 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const forgetButton = target.closest("[data-forget-path]");
     if (forgetButton instanceof HTMLElement && forgetButton.dataset.forgetPath !== undefined) {
       void forget(forgetButton.dataset.forgetPath);
+      return;
+    }
+    const reportButton = target.closest("[data-import-report-path]");
+    if (reportButton instanceof HTMLElement) {
+      const report = importReports.get(reportButton.dataset.importReportPath ?? "");
+      if (report !== undefined) deps.onNotice(report);
       return;
     }
     const row = target.closest("[data-project-path]");
