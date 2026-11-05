@@ -24,14 +24,11 @@
     },
     "editor": {
       "breaking": "none",
-      "docs": {
-        "README.md": "777991395f6ed5c5aee08fae3611b6832cfdb366d9362973b30b7b2465e5cb3b",
-        "docs/COMPATIBILITY.md": "8a892acb4694fb4265deedc3cdaa9323940c30f4d5d314f172e57df567e57079"
-      },
+      "docs": {},
       "migration": "",
-      "no_impact": "",
-      "note": "User-facing mirror strings become readable folder and the copies section is Copies everywhere; German uses Sie and Strg; menus size to their labels; Focus mode, Show outline and a Word export join the menus; the shortcuts command opens Help at the key table. README and the compatibility guide use the readable folder name.",
-      "source_sha256": "bd1f7f2ec1b0070076449610bbeee5adfa2d8af79aef4c4ca2261c1569fb4fd0"
+      "no_impact": "Reference prose face, the cast Add a picture action, distinct selection fill and focus ring, the empty-scene placeholder and the revision state marks change no documented workflow or compatibility guidance.",
+      "note": "Reference prose face, the cast Add a picture action, distinct selection fill and focus ring, the empty-scene placeholder and the revision state marks change no documented workflow or compatibility guidance.",
+      "source_sha256": "be075f127217de577586c857cefb29361ea0f93969484c15b5413563c7a64ea4"
     },
     "encryption": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
