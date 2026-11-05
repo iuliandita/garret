@@ -5748,6 +5748,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 }
 
 .quick-open-path {
+  margin-left: 0.5em;
   color: var(--muted);
   font-size: var(--text-sm);
 }

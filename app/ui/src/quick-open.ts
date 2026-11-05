@@ -170,7 +170,7 @@ export function createQuickOpen(deps: QuickOpenDeps): QuickOpen {
       if (path.length) {
         const context = document.createElement("span");
         context.className = "quick-open-path";
-        context.textContent = ` ${path.join(" / ")}`;
+        context.textContent = path.join(" / ");
         row.append(context);
       }
       frag.appendChild(row);
