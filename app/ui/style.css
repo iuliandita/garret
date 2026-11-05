@@ -7968,6 +7968,13 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 .saved-prose { user-select: text; overflow-wrap: anywhere; line-height: 1.6; }
 .saved-prose p { margin: 0 0 1em; }
 .reference-body { min-height: 0; overflow-y: auto; }
+#reference-rail .saved-prose {
+  font-family: var(--prose-family, "Crimson Pro", Georgia, "Times New Roman", serif);
+  font-size: 17px;
+  line-height: 1.65;
+}
+#reference-rail .saved-prose p { margin: 0; unicode-bidi: plaintext; }
+#reference-rail .saved-prose p + p { text-indent: 1.5em; }
 /* Docked in the inspector, which sets its place and width. */
 #craft-panel {
   color: var(--fg);
