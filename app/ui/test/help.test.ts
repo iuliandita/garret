@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
+import { chromeToggleChord } from "../src/chrome-toggles";
 import { createHelpPanel, SHORTCUTS } from "../src/help";
 import { createMenuBar } from "../src/menu-bar";
 import { t } from "../src/i18n";
@@ -583,4 +584,24 @@ test("Help dismissal restores caller focus", () => {
     document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
     expect(document.activeElement).toBe(target);
   } finally { panel.destroy(); container.remove(); target.remove(); }
+});
+
+describe("the header toggles' chords are bound and shown", () => {
+  test("the menu bar binds them through the shared predicate and the panel names both", () => {
+    const menu = readFileSync(join(SOURCE, "menu-bar.ts"), "utf8");
+    expect(menu).toContain("chromeToggleChord(event)");
+    const shown = claimed();
+    for (const key of ["menu.shortcut.focus-mode", "menu.shortcut.show-outline"]) {
+      expect(shown.has(t(key).toUpperCase())).toBe(true);
+    }
+  });
+
+  test("the predicate answers exactly the chords the panel shows", () => {
+    const chord = (key: string, init: KeyboardEventInit = {}) =>
+      chromeToggleChord(new KeyboardEvent("keydown", { key, ctrlKey: true, altKey: true, ...init }));
+    expect(t("menu.shortcut.focus-mode")).toBe("Ctrl+Alt+F");
+    expect(t("menu.shortcut.show-outline")).toBe("Ctrl+Alt+O");
+    expect([chord("f"), chord("O"), chord("m")]).toEqual(["focus", "outline", null]);
+    expect([chord("f", { shiftKey: true }), chord("o", { metaKey: true }), chord("f", { ctrlKey: false })]).toEqual([null, null, null]);
+  });
 });

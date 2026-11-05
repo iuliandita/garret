@@ -816,7 +816,7 @@ async function main(): Promise<void> {
       home.addEventListener("click", () => library.open());
       const homeTip = createTooltip({ control: home, name: t("chrome.home"), hint: t("chrome.home.hint") });
       outlineEl.before(homeTip.anchor);
-      createOutlineToggle({ container: outlineEl, body: document.body });
+      const outlineToggle = createOutlineToggle({ container: outlineEl, body: document.body });
       focusToggle = createFocusToggle({
         container: focusEl,
         initial: initialWritingModes.focus,
@@ -855,6 +855,10 @@ async function main(): Promise<void> {
         privacyShortcut: () => privacyStatus.shortcut,
         canLockPrivacy: () => privacyStatus.enabled && !privacyStatus.locked && !privacyStatus.recovery,
         openHelp: () => help.open(),
+        toggleFocus: () => focusToggle?.toggle(),
+        focusOn: () => focusToggle?.on() ?? false,
+        toggleOutline: () => outlineToggle.toggle(),
+        outlineShown: () => outlineToggle.shown(),
         openBookDesign: () => current.menuActions.openBookDesign(),
         openCovers: () => current.menuActions.openCovers(),
         openIdentities: () => current.menuActions.openIdentities(),

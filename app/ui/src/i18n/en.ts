@@ -1870,6 +1870,8 @@ export const EN = {
   "help.keys.continuous": "Alt+Page Up / Alt+Page Down",
   "menu.open-reference": "Open selection as reference",
   "menu.close-reference": "Close reference",
+  "menu.focus-mode": "Focus mode",
+  "menu.show-outline": "Show outline",
   "reference.label": "Saved reference",
   "reference.refresh": "Refresh",
   "reference.open-source": "Open source",
@@ -2037,6 +2039,8 @@ export const EN = {
   "menu.shortcut.move-out": "Alt+Left",
   "menu.shortcut.move-in": "Alt+Right",
   "menu.shortcut.export": "Ctrl+E",
+  "menu.shortcut.focus-mode": "Ctrl+Alt+F",
+  "menu.shortcut.show-outline": "Ctrl+Alt+O",
   "nav.context.label": "Outline item",
   // NUMBERED, not "Untitled". `{n}` is the lowest positive
   // integer not already used by an item of that type, so renaming Chapter 1
@@ -2735,6 +2739,7 @@ export const EN = {
   "library.busy.creating": "Creating book…",
   "library.done.book-created": "{name} created.",
   "help.library": "Open the library",
+  "help.focus-mode": "Turn focus mode on or off",
   "switch.error.closed-unnamed": "Could not open the selected book: {error}. Nothing is open. Choose a book to continue.",
   "switch.error.kept-unnamed": "Could not open the selected book: {error}. The book you were in is still open.",
   "switch.error.closed": "Could not open {name}: {error}. Nothing is open. Choose a book to continue.",

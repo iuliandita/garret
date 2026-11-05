@@ -4517,7 +4517,8 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 #outline-move-menu button[aria-disabled="true"]:hover {
   background: transparent;
 }
-#menu-panel [role="menuitemradio"][aria-checked="true"] .menu-item-label::before { content: "✓ "; color: var(--accent); }
+#menu-panel [role="menuitemradio"][aria-checked="true"] .menu-item-label::before,
+#menu-panel [role="menuitemcheckbox"][aria-checked="true"] .menu-item-label::before { content: "✓ "; color: var(--accent); }
 
 /* THE RECORDED EXCEPTION: a timeline's lanes ARE positioned
    descendants of #editor -- they are the pane's content while one is open,

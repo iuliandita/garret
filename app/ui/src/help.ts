@@ -113,6 +113,9 @@ export const SHORTCUTS: readonly ShortcutGroup[] = [
       // naming the identical chord -- application chrome, so it works
       // with nothing open, exactly like Alt+<key> above it.
       { keys: t("menu.shortcut.library"), description: t("help.library") },
+      // The two header buttons, bound beside Library for its reason.
+      { keys: t("menu.shortcut.focus-mode"), description: t("help.focus-mode") },
+      { keys: t("menu.shortcut.show-outline"), description: t("chrome.outline.hint") },
       { keys: t("help.keys.export"), description: t("help.export") },
       { keys: t("authoring.shortcut"), description: t("authoring.insert-note") },
       { keys: t("help.keys.escape"), description: t("help.menu.close") },

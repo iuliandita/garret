@@ -43,6 +43,9 @@ export interface MenuItemSpec {
   visible?: () => boolean;
   enabled?: () => boolean;
   checked?: () => boolean;
+  /** An on/off state of its own, rather than one choice among siblings
+   *  (`checked`): painted as a checkbox item. */
+  toggled?: () => boolean;
   /** Draw a separator above this item. The separator is not an item:
    *  it is not focusable, the arrows skip it, and it carries no id, so
    *  menu-cli's id count and menu-drive's parsed indices do not see it. */
@@ -215,8 +218,9 @@ export function createMenuPanel(opts: MenuPanelOptions): MenuPanel {
       const element = document.createElement("button");
       element.id = spec.id;
       element.type = "button";
-      element.setAttribute("role", spec.checked ? "menuitemradio" : "menuitem");
+      element.setAttribute("role", spec.checked ? "menuitemradio" : spec.toggled ? "menuitemcheckbox" : "menuitem");
       if (spec.checked) element.setAttribute("aria-checked", String(spec.checked()));
+      else if (spec.toggled) element.setAttribute("aria-checked", String(spec.toggled()));
       if (spec.children) element.setAttribute("aria-haspopup", "menu");
       else if (spec.opensDialog === true) element.setAttribute("aria-haspopup", "dialog");
       // Every item is reachable by ArrowDown from the opener, so none of them

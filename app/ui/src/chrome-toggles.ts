@@ -7,11 +7,24 @@ import { isCompositionKey } from "./composition-key";
 
 // TWO HEADER CONTROLS. Both are buttons with aria-pressed, which
 // makes them `toggle button` in ATK (nodes.ts's WANTED set). Neither is
-// pressed by any rig.
+// pressed by any rig. Each also has a menu item and a chord, which go through
+// the same `toggle()` the button's click does.
 
-/** On <body>. Session-only: no setting, no chord. A remembered collapse would
- *  move NAV_CLICK_X for every rig and wants its own slice. */
+/** On <body>. Session-only: no setting. A remembered collapse would move
+ *  NAV_CLICK_X for every rig and wants its own slice. */
 export const NAV_HIDDEN_CLASS = "nav-hidden";
+
+/** Ctrl+Alt+F for Focus mode, Ctrl+Alt+O for the outline: the application's
+ *  own Ctrl+Alt family, beside the note and lock chords. Shift is refused so
+ *  neither overlaps the find bar's Ctrl+F (which accepts Shift). An AltGr
+ *  character arrives as Ctrl+Alt on Windows but with its own `key` ("ó", not
+ *  "o"), so matching the letter is what leaves typing alone. */
+export function chromeToggleChord(event: KeyboardEvent): "focus" | "outline" | null {
+  if (isCompositionKey(event) || event.defaultPrevented || event.repeat) return null;
+  if (!event.ctrlKey || !event.altKey || event.shiftKey || event.metaKey) return null;
+  const key = event.key.toLowerCase();
+  return key === "f" ? "focus" : key === "o" ? "outline" : null;
+}
 
 export interface OutlineToggleDeps {
   container: HTMLElement;
@@ -19,6 +32,9 @@ export interface OutlineToggleDeps {
 }
 
 export interface OutlineToggle {
+  /** What a click on the button does, for the menu item and the chord. */
+  toggle(): void;
+  shown(): boolean;
   destroy(): void;
 }
 
@@ -94,6 +110,8 @@ export function createOutlineToggle(deps: OutlineToggleDeps): OutlineToggle {
   container.replaceChildren(tooltip.anchor);
 
   return {
+    toggle: onClick,
+    shown: () => !body.classList.contains(NAV_HIDDEN_CLASS),
     destroy(): void {
       button.removeEventListener("click", onClick);
       narrow.removeEventListener("change", onResize);
@@ -117,6 +135,9 @@ export interface FocusToggleDeps {
 
 export interface FocusToggle {
   set(mode: FocusMode): void;
+  /** What a click on the button does: asks the owner, never sets itself. */
+  toggle(): void;
+  on(): boolean;
   destroy(): void;
 }
 
@@ -149,6 +170,8 @@ export function createFocusToggle(deps: FocusToggleDeps): FocusToggle {
       mode = next;
       paint();
     },
+    toggle: onClick,
+    on: () => mode === "paragraph",
     destroy(): void {
       button.removeEventListener("click", onClick);
       tooltip.destroy();
