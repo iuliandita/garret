@@ -11,11 +11,11 @@ import { DEFAULT_SIDEBAR_WORD_COUNTS, type SidebarWordCounts } from "../sidebar-
 import { formatCount } from "../outline-counts";
 import {
   isRevisionState,
-  markFor,
   REVISION_STATES,
   STATE_LABELS,
   stateDescriptionId,
 } from "../revision-states";
+import { paintStateMark } from "../state-mark";
 import { project, type TreeNode, type VisibleRow } from "./visible";
 import { createVirtualList, type VirtualList } from "./virtual-list";
 import type { FixtureSource } from "../fixture/source";
@@ -470,7 +470,7 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
       // the next paint rebuild a pair this element already had.
       const blank = partsOf(el);
       blank.title.textContent = "";
-      blank.state.textContent = "";
+      paintStateMark(blank.state, null);
       blank.count.textContent = "";
       for (const part of Object.values(blank)) delete part.dataset.navHint;
       return;
@@ -594,7 +594,7 @@ export function createNavigator(opts: NavigatorOptions): ManuscriptNavigator {
     parts.synopsis.textContent = hasSynopsis ? "\u00a7" : "";
     parts.synopsis.removeAttribute("title");
     parts.appearances.textContent = hasAppearances ? "\u25c6" : "";
-    parts.state.textContent = markFor(row.state);
+    paintStateMark(parts.state, isRevisionState(row.state) ? row.state : null);
     // The subtree's total for a container, the document's own for a scene, and
     // NOTHING for an item nothing countable sits under - see outline-counts.ts
     // for why that is not a zero.

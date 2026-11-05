@@ -19,10 +19,10 @@ import {
   NO_STATE_LABEL,
   REVISION_STATES,
   STATE_LABELS,
-  STATE_MARKS,
   isRevisionState,
   type RevisionState,
 } from "./revision-states";
+import { paintStateMark } from "./state-mark";
 
 /** The row this panel is about, as the page currently sees it. */
 export interface SelectedRow {
@@ -128,7 +128,7 @@ export function createRevisionPanel(deps: RevisionPanelDeps): RevisionPanel {
    *  drop focus to <body>, which is the recorded history-panel defect. */
   const buttons = new Map<string, HTMLButtonElement>();
 
-  function addChoice(value: string, mark: string, label: string): void {
+  function addChoice(value: string, mark: RevisionState | null, label: string): void {
     const button = document.createElement("button");
     button.type = "button";
     button.id = `state-choice-${value === "" ? "none" : value}`;
@@ -139,7 +139,7 @@ export function createRevisionPanel(deps: RevisionPanelDeps): RevisionPanel {
     // The label beside it already says the word; a mark read aloud is a
     // character name.
     glyph.setAttribute("aria-hidden", "true");
-    glyph.textContent = mark;
+    paintStateMark(glyph, mark);
 
     const text = document.createElement("span");
     text.textContent = label;
@@ -150,12 +150,12 @@ export function createRevisionPanel(deps: RevisionPanelDeps): RevisionPanel {
   }
 
   for (const state of REVISION_STATES) {
-    addChoice(state, STATE_MARKS[state], STATE_LABELS[state]);
+    addChoice(state, state, STATE_LABELS[state]);
   }
   // LAST, and it is the default rather than a fifth state - see
   // revision-states.ts. It is offered because a writer who marked a row must be
   // able to unmark it, and the only spelling of that is the absence.
-  addChoice("", "", NO_STATE_LABEL);
+  addChoice("", null, NO_STATE_LABEL);
 
   panel.append(status, choices);
   // Close, Escape and a click elsewhere (the shell's). Built before planning
