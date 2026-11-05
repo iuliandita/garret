@@ -3563,13 +3563,7 @@ body.nav-hidden #nav-column {
   justify-self: end;
 }
 
-/* The comparison, under the list.
-
-   `max-height` plus its own scroll, because a diff is as long as the scene and
-   the panel is 420px wide: without it the whole snapshot half - the name field,
-   the button, every named moment - is pushed off the bottom of the panel by
-   whichever version the reader happened to compare, and the recorded
-   shortcuts-panel failure is that what sits below a fold does not exist. */
+/* The comparison, under the list. */
 #history-diff {
   margin-top: 8px;
   padding: 8px;
@@ -3611,8 +3605,7 @@ body.nav-hidden #nav-column {
 
 #history-diff-body {
   margin-top: 6px;
-  max-height: 200px;
-  overflow-y: auto;
+  font-family: var(--prose-family, "Crimson Pro", Georgia, "Times New Roman", serif);
   font-size: var(--text-sm);
   line-height: var(--leading-ui);
   color: var(--fg);
