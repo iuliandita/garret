@@ -332,6 +332,27 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
     if (!projection.rows.some((item) => item.id === activeId)) {
       activeId = projection.rows.find((item) => item.id === selectedId)?.id ?? projection.rows[0]!.id;
     }
+    // Cards group scenes under their part and chapter headings, so a page that
+    // opens partway through a chapter would otherwise lose which one it is in.
+    if (currentMode === "cards") {
+      const byId = new Map(items.map((entry) => [entry.id, entry]));
+      const path: string[] = [];
+      const seen = new Set<string>();
+      let parent = projection.rows[0]!.parent_id;
+      while (parent !== null && !seen.has(parent)) {
+        seen.add(parent);
+        const ancestor = byId.get(parent);
+        if (ancestor === undefined) break;
+        path.unshift(ancestor.title);
+        parent = ancestor.parent_id;
+      }
+      if (path.length > 0) {
+        const continued = document.createElement("p");
+        continued.className = "outline-view-continued";
+        continued.textContent = t("outline-view.continued", { path: path.join(" / ") });
+        rowsHost.append(continued);
+      }
+    }
     for (const item of projection.rows) {
       const row = document.createElement(currentMode === "table" ? "tr" : "article");
       row.className = "outline-view-row";
@@ -344,6 +365,9 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
       const counted = counts.get(item.id);
       const words = formatCount(counted) || t("outline-view.uncounted");
       const openable = isOpenableType(item.type);
+      // In Cards a part or chapter is a heading over its scenes, not a card.
+      const group = currentMode === "cards" && !openable;
+      if (group) row.classList.add("outline-view-group");
       // A title is text, and a link where the row opens: the bordered
       // chip read as a button beside the real buttons. Parts and chapters are
       // not openable, so theirs is plain text and the row itself selects.
@@ -358,11 +382,17 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
       const synopsisText = document.createElement("p");
       synopsisText.className = "outline-view-synopsis-text";
       synopsisText.dataset.synopsisId = item.id;
-      synopsisText.textContent = synopsisFailures.has(item.id)
-        ? t("outline-view.synopsis-unavailable")
-        : synopsisCache.has(item.id)
-          ? synopsisCache.get(item.id) || t("outline-view.no-synopsis")
-          : t("outline-view.synopsis-loading");
+      if (group) {
+        synopsisText.dataset.group = "true";
+        synopsisText.textContent = synopsisFailures.has(item.id) ? t("outline-view.synopsis-unavailable") : synopsisCache.get(item.id) ?? "";
+        synopsis.hidden = synopsisText.textContent === "";
+      } else {
+        synopsisText.textContent = synopsisFailures.has(item.id)
+          ? t("outline-view.synopsis-unavailable")
+          : synopsisCache.has(item.id)
+            ? synopsisCache.get(item.id) || t("outline-view.no-synopsis")
+            : t("outline-view.synopsis-loading");
+      }
       synopsis.append(synopsisText);
       const controls = document.createElement(currentMode === "table" ? "td" : "div");
       controls.className = "outline-view-row-actions";
@@ -451,14 +481,22 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
       const byId = new Map(synopses.map((synopsis) => [synopsis.item_id, synopsis.body]));
       for (const id of ids) synopsisCache.set(id, byId.get(id) ?? null);
       for (const node of element.querySelectorAll<HTMLElement>("[data-synopsis-id]")) {
-        node.textContent = synopsisCache.get(node.dataset.synopsisId ?? "") || t("outline-view.no-synopsis");
+        const text = synopsisCache.get(node.dataset.synopsisId ?? "");
+        if (node.dataset.group === "true") {
+          node.textContent = text ?? "";
+          if (node.parentElement !== null) node.parentElement.hidden = !text;
+        } else {
+          node.textContent = text || t("outline-view.no-synopsis");
+        }
       }
       tipTruncated(generation);
     }).catch((error: unknown) => {
       if (generation !== readGeneration || element.hidden) return;
       for (const id of ids) synopsisFailures.add(id);
       for (const node of element.querySelectorAll<HTMLElement>("[data-synopsis-id]")) {
-        if (ids.includes(node.dataset.synopsisId ?? "")) node.textContent = t("outline-view.synopsis-unavailable");
+        if (!ids.includes(node.dataset.synopsisId ?? "")) continue;
+        node.textContent = t("outline-view.synopsis-unavailable");
+        if (node.parentElement !== null) node.parentElement.hidden = false;
       }
       deps.onError(error);
     });

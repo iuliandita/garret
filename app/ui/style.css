@@ -4467,6 +4467,22 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 .outline-view-meta { margin: 0 0 var(--space-3); color: var(--muted); font-size: var(--text-sm); }
 .outline-view-cards .outline-view-synopsis { flex: 1; min-height: 3em; margin-bottom: var(--space-3); color: var(--muted); }
 .outline-view-cards .outline-view-row-actions { justify-content: flex-end; }
+/* Parts and chapters head their scenes rather than sitting among them as
+   cards: one full-width line with the title, its figures and Move. */
+.outline-view-cards .outline-view-row.outline-view-group {
+  display: grid; grid-column: 1 / -1; grid-template-columns: minmax(0, max-content) minmax(0, 1fr) auto;
+  align-items: baseline; column-gap: var(--space-3);
+  margin-top: var(--space-2); padding: var(--space-1) var(--space-3); background: none;
+}
+.outline-view-cards .outline-view-group:first-child { margin-top: 0; }
+.outline-view-cards .outline-view-group[data-selected="true"] { background: var(--accent-soft); }
+.outline-view-cards .outline-view-group h2 { margin: 0; font-size: var(--text-lg); }
+.outline-view-cards .outline-view-group[data-type="part"] h2 { font-size: var(--text-xl); }
+.outline-view-cards .outline-view-group .outline-view-meta { margin: 0; }
+.outline-view-cards .outline-view-group .outline-view-synopsis { grid-column: 1 / -1; min-height: 0; margin: var(--space-1) 0 0; }
+.outline-view-cards .outline-view-group .outline-view-synopsis[hidden] { display: none; }
+.outline-view-cards .outline-view-row:not(.outline-view-group) .outline-view-synopsis-text { -webkit-line-clamp: 4; }
+.outline-view-continued { grid-column: 1 / -1; margin: 0; padding: 0 var(--space-3); color: var(--muted); font-size: var(--text-sm); }
 
 /* The row's Move menu: the shared dropdown, opened under the pressed button.
    `fixed` for the context menu's reason: its left/top are viewport

@@ -1673,6 +1673,7 @@ export const DE = {
   "outline-view.page.one": "Seite {page} von {pages}, {count} Element",
   "outline-view.page.other": "Seite {page} von {pages}, {count} Elemente",
   "outline-view.empty": "Noch keine Manuskriptelemente.",
+  "outline-view.continued": "{path}, Fortsetzung",
   "outline-view.scope": "Manuskriptreihenfolge · Papierkorb und Bibel ausgeschlossen",
   "outline-view.scroll-hint": "Horizontal scrollen, um alle Spalten zu sehen.",
   "outline-view.column.title": "Titel",

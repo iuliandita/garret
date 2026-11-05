@@ -1910,6 +1910,7 @@ export const EN = {
   "outline-view.page.one": "Page {page} of {pages}, {count} item",
   "outline-view.page.other": "Page {page} of {pages}, {count} items",
   "outline-view.empty": "No manuscript items yet.",
+  "outline-view.continued": "{path}, continued",
   "outline-view.scope": "Manuscript order · Bin and Bible excluded",
   "outline-view.scroll-hint": "Scroll horizontally to see all columns.",
   "outline-view.column.title": "Title",
