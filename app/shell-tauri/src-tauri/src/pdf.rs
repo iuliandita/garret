@@ -1235,6 +1235,10 @@ mod tests {
         // "inner and outer rather than left and right" exists to prevent and it
         // is invisible in any single-page picture.
         let css = stylesheet(&design(), &plain());
+        let html = render(&[], HashMap::new());
+        assert!(html.contains("<html lang=\"en\">"));
+        assert!(html.contains("@font-face { font-family: 'Crimson Pro'"));
+        assert!(html.contains("data:font/woff2;base64,"));
         assert!(css.contains("text-indent: 0; text-align: center;"));
         assert!(css.contains("text-align: left; -webkit-hyphens: auto; hyphens: auto;"));
         assert!(css.contains("width: 152.4mm; height: 228.6mm;"), "{css}");
@@ -1251,15 +1255,10 @@ mod tests {
 
     #[test]
     fn the_book_font_is_named_with_the_same_fallback_the_epub_gives_it() {
-        // ONE STATEMENT OF THE FALLBACK STACK, shared with `epub.rs` rather
-        // than copied. This application ships no font files, so what both
-        // formats can do is name the face and fall back -- and two books of the
-        // same manuscript falling back to two different faces would be two
-        // answers to what the writer's book looks like.
         let css = stylesheet(&design(), &plain());
         assert!(
             css.contains(&format!(
-                "\"Crimson Text\", {}",
+                "\"Crimson Pro\", {}",
                 crate::design::FONT_FALLBACK
             )),
             "{css}"
