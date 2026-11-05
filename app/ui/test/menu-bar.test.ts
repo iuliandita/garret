@@ -565,6 +565,22 @@ describe("what the items do", () => {
     }
   });
 
+  test("the Word export also sits directly below the Markdown export, with the same words and action", () => {
+    const rig = mount();
+    try {
+      rig.title("menu-file").click();
+      const ids = [...rig.panel().querySelectorAll("button")].map((b) => b.id);
+      expect(ids.indexOf("menu-export-word")).toBe(ids.indexOf("menu-export") + 1);
+      const word = rig.item("menu-export-word")!;
+      expect(word.textContent).toBe("Export for an editor (Word)…");
+      expect(word.hasAttribute("aria-haspopup")).toBe(false);
+      word.click();
+      expect([rig.calls.exportedDocx, rig.calls.exported, rig.calls.exportedAs]).toEqual([1, 0, 0]);
+    } finally {
+      teardown(rig);
+    }
+  });
+
   test("menu-library sits below the exports, immediately above Preferences", () => {
     const rig = mount();
     try {
@@ -1614,6 +1630,7 @@ describe("the items that open a page dialog say so", () => {
     "menu-export": "menu-file",
     "menu-export-as": "menu-file",
     "menu-export-docx": "menu-file",
+    "menu-export-word": "menu-file",
     // A RAIL IS NOT A DIALOG. `aria-haspopup="dialog"` promises a surface that
     // takes over; the EPUB rail sits beside the prose, stays open while the
     // writer types, and has a Close instead of dismissing itself.
@@ -1929,7 +1946,7 @@ describe("short menu pages", () => {
       rig.title("menu-file").click();
       expect([...rig.panel().querySelectorAll("button")].map((item) => item.id)).toEqual([
         "menu-project-new", "menu-project-open", "menu-project-rename", "menu-import", "menu-export",
-        "menu-publishing", "menu-copies", "menu-library", "menu-preferences", "menu-privacy-lock", "menu-quit",
+        "menu-export-word", "menu-publishing", "menu-copies", "menu-library", "menu-preferences", "menu-privacy-lock", "menu-quit",
       ]);
       expect(rig.item("menu-export")?.getAttribute("aria-keyshortcuts")).toBe("Ctrl+E");
       rig.item("menu-copies")!.click();

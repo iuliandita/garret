@@ -252,6 +252,11 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
         { id: "menu-project-rename", label: () => t("menu.project-rename"), run: deps.renameProject },
         { id: "menu-import", label: () => t("menu.import"), run: deps.importProject },
         { id: "menu-export", label: () => t("menu.export"), shortcut: t("menu.shortcut.export"), run: deps.exportProject },
+        // BELOW Export and never above it: export-cli walks Down to Export
+        // against the save debounce, and one more row above it costs that rig
+        // its margin. The same action and words as Publishing's item, so the
+        // Word copy is beside the Markdown one without a second meaning.
+        { id: "menu-export-word", label: () => t("menu.export-docx"), run: () => deps.exportDocx() },
         {
           id: "menu-publishing", label: () => t("menu.publishing"), children: [
             { id: "menu-book-design", opensDialog: true, label: () => t("menu.book-design"), run: deps.openBookDesign },
