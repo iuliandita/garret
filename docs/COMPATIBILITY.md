@@ -179,6 +179,12 @@ for truncated originals. Damaged legacy covers remain non-fatal. A heading group
 directly before an interior plate travels with it.
 Legacy prose rendering and existing proof fixtures retain their behavior.
 
+From release 0.0.11 the PDF proof sets paragraphs ragged-right, because the
+renderer's hyphenation dictionaries are not guaranteed, and says so in its note;
+EPUB paragraphs request hyphenation from the reading system. New fiction designs
+default to Crimson Pro, which garret ships and embeds in the proof. Stored
+designs keep their chosen face; EPUB names the face but does not embed it.
+
 An advisory native Windows CI probe exercises the existing GUI PDF renderer and
 destination writer on a disposable seeded sample. It records page and leaf
 counts, requested trim dimensions, font resolution, and bounded diagnostics;
