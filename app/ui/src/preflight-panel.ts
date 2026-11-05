@@ -180,28 +180,6 @@ export function createPreflightPanel(deps: PreflightPanelDeps): PreflightPanel {
     }
     body.append(findings);
 
-    const history = section("history", t("preflight.history.heading"));
-    history.append(line(t("preflight.history.context"), "preflight-note"));
-    if (report.reason_history.state === "unavailable") {
-      history.append(line(t("preflight.history.unavailable"), "preflight-note"));
-    } else if (report.reason_history.entries.length === 0) {
-      history.append(line(t("preflight.history.none"), "preflight-note"));
-    } else {
-      for (const entry of report.reason_history.entries) {
-        const item = document.createElement("div");
-        item.className = "preflight-history-entry";
-        const detail = t("preflight.history.entry", {
-          check: warningKindName(entry.check),
-          format: formatName(entry.format),
-          surface: surfaceName(entry.surface),
-          at: formatDateTime(entry.at_ms),
-        });
-        item.append(line(detail, "preflight-history-detail"), line(entry.reason, "preflight-history-reason"));
-        history.append(item);
-      }
-    }
-    body.append(history);
-
     // 3. Every check and what it did.
     const checks = section("checks", t("preflight.checks.heading"));
     for (const check of report.checks) {
@@ -245,6 +223,30 @@ export function createPreflightPanel(deps: PreflightPanelDeps): PreflightPanel {
       surfaces.append(line(surfaceName(surface), "preflight-unchecked"));
     }
     body.append(surfaces);
+
+    if (report.reason_history.state === "unavailable" || report.reason_history.entries.length > 0) {
+    const history = section("history", t("preflight.history.heading"));
+    history.append(line(t("preflight.history.context"), "preflight-note"));
+    if (report.reason_history.state === "unavailable") {
+      history.append(line(t("preflight.history.unavailable"), "preflight-note"));
+    } else if (report.reason_history.entries.length === 0) {
+      history.append(line(t("preflight.history.none"), "preflight-note"));
+    } else {
+      for (const entry of report.reason_history.entries) {
+        const item = document.createElement("div");
+        item.className = "preflight-history-entry";
+        const detail = t("preflight.history.entry", {
+          check: warningKindName(entry.check),
+          format: formatName(entry.format),
+          surface: surfaceName(entry.surface),
+          at: formatDateTime(entry.at_ms),
+        });
+        item.append(line(detail, "preflight-history-detail"), line(entry.reason, "preflight-history-reason"));
+        history.append(item);
+      }
+    }
+    body.append(history);
+    }
   }
 
   const onPanelClick = (event: MouseEvent): void => {
