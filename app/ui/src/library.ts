@@ -38,6 +38,7 @@ import { createPresetChoice, projectPreset, type ProjectPreset } from "./project
 import type { LibraryCreateResult } from "./library-book-actions";
 import { isCompositionKey } from "./composition-key";
 import { closeOnOutsideClick } from "./dismiss-outside";
+import { COVERED_BY_SIDE, onSideLayout, sideCoversWorkspace } from "./side-layout";
 import { createMenuPanel } from "./menu-panel";
 import { createIcon } from "./icons";
 import { privacyShortcutLabel, type PrivacyShortcut } from "./privacy";
@@ -468,9 +469,15 @@ export function createLibrary(deps: LibraryDeps): Library {
     }
   };
   const observer = new MutationObserver(() => { if (isOpen) isolateWorkspace(); });
+  // A side surface can cover or uncover the work surfaces while the room is
+  // open; the room keeps them inert, and on leaving gives them the side
+  // layout's current answer, not one it held before the room opened.
+  const stopSideLayout = onSideLayout(() => { if (isOpen) isolateWorkspace(); });
   const releaseWorkspace = (): void => {
     observer.disconnect();
-    for (const [element, inert] of isolated) element.inert = inert;
+    for (const [element, inert] of isolated) {
+      element.inert = COVERED_BY_SIDE.includes(element.id) ? sideCoversWorkspace() : inert;
+    }
     isolated.clear();
   };
   // The slowest `bookWords` answer seen since the last `refresh()` -- never
@@ -1408,6 +1415,7 @@ export function createLibrary(deps: LibraryDeps): Library {
       releaseHosted();
       menu.destroy();
       releaseWorkspace();
+      stopSideLayout();
       penNameForm.destroy();
       root.remove();
     },

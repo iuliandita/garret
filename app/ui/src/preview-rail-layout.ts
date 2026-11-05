@@ -10,8 +10,6 @@
 
 /** The rail has always been this wide; it is also the smallest it may be. */
 export const RAIL_MIN_WIDTH = 420;
-/** At or below this the rail is a fixed overlay (style.css) and has no divider. */
-export const OVERLAY_MAX_WINDOW = 900;
 /** The half-window snap needs room for the navigator and a readable column. */
 export const HALF_MIN_WINDOW = 1200;
 export const KEY_STEP = 24;
@@ -21,7 +19,6 @@ export const SNAP_RADIUS = 28;
 
 export type RailPref = { readonly kind: "half" } | { readonly kind: "width"; readonly px: number };
 
-export const isOverlay = (windowWidth: number): boolean => windowWidth <= OVERLAY_MAX_WINDOW;
 export const canSnapHalf = (windowWidth: number): boolean => windowWidth >= HALF_MIN_WINDOW;
 export const halfWidth = (windowWidth: number): number => Math.floor(windowWidth / 2);
 

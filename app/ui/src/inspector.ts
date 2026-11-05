@@ -15,6 +15,8 @@
 // WHAT THIS UNIT OWNS is the rest of the rule, which no stylesheet can say:
 // one inspector at a time, the rails and the inspector sharing the column,
 // `data-inspector-open` on <body> for the rules that move with it, and F6.
+// Whether the column docks, yields the navigator or covers the prose in a
+// narrow window is side-layout.ts's, shared with the preview rail.
 // It HEARS an open rather than being told: every docked panel opens by
 // removing its own `hidden`, eight units with eight open paths, and an
 // observer on that one attribute is one place instead of eight call sites
@@ -27,6 +29,7 @@
 // unsaved work (review's drafts) refuses; its own close then asks its leave
 // question and the newcomer stands down.
 import { isCompositionKey } from "./composition-key";
+import { INSPECTOR_WIDTH, reportSide } from "./side-layout";
 
 export interface InspectorHost {
   /** Closes the preview and reference rails: the column is one column. */
@@ -48,8 +51,11 @@ let host: InspectorHost | null = null;
 
 function sync(doc: Document): void {
   if (doc.body === null) return;
-  if ([...docked].some((entry) => entry.open)) doc.body.dataset.inspectorOpen = "true";
+  const open = [...docked].some((entry) => entry.open);
+  if (open) doc.body.dataset.inspectorOpen = "true";
   else delete doc.body.dataset.inspectorOpen;
+  // What the open column leaves the prose is side-layout.ts's question.
+  reportSide("inspector", open ? INSPECTOR_WIDTH : null);
 }
 
 function opened(entry: Docked): void {
