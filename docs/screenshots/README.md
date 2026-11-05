@@ -4,15 +4,17 @@ These are captures of garret running with the first three chapters of
 Pride and Prejudice, Alice's Adventures in Wonderland, and Dracula.
 Cast descriptions, synopses, timelines, comments, revision tasks, review
 changes, and historical versions are sample editorial material, not claims
-about the authors' own working process.
+about the authors' own working process. The one exception is the oldest
+version in the history comparison: the same opening in Carroll's 1864
+manuscript, Alice's Adventures Under Ground.
 
 The [sample sources and rebuild instructions](../../app/fixtures/classics/README.md)
 are kept in the repository. Samples are not bundled into installable builds.
 Desktop captures use the Linux app; Android captures use the Android app
 in an emulator.
 
-The gallery shows the published [0.0.2 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.2),
-captured on October 9, 2026. Desktop images use the downloaded Linux package;
+The gallery shows the published [0.0.11 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.11),
+captured on November 5, 2026. Desktop images use the downloaded Linux package;
 Android images use the downloaded APK. The [provenance manifest](manifest.json)
 records each original image's hash, application version, and source revision.
 The images illustrate the interface; they do not certify every platform or
@@ -54,7 +56,8 @@ Anchored editorial comments and resolved conversations.
 
 ### History
 
-Compare previous scene versions and keep named snapshots.
+Compare a scene with an earlier version and keep named snapshots. Here the
+earlier version is Carroll's 1864 manuscript of the same opening.
 
 ![History](history.png)
 
@@ -90,13 +93,14 @@ Follow the cast across scenes.
 
 ### Timeline
 
-Linked scene events arranged along a story track.
+Harker's journal entries as linked scene events on three tracks.
 
 ![Timeline](timeline.png)
 
 ### Revision planning
 
-Organize work into revision passes and tasks.
+Organize work into revision passes and tasks; the navigator shows each
+scene's revision state.
 
 ![Revision planning](revision.png)
 
