@@ -399,7 +399,7 @@ export function createLibrary(deps: LibraryDeps): Library {
   timing.className = "library-timing";
   timing.setAttribute("aria-hidden", deps.diagnostics === true ? "false" : "true");
 
-  root.append(wordmark, strip, groupFilters, membershipPanel, headingRow, bioLine, newBookArea, existingBooks, desk, summaryPanel, shelfHeading, empty, shelf, more, timing);
+  root.append(wordmark, strip, groupFilters, membershipPanel, headingRow, bioLine, newBookArea, existingBooks, desk, shelfHeading, empty, shelf, more, summaryPanel, timing);
   document.body.append(root);
 
   const penNameForm = createPenNameForm({
@@ -1032,7 +1032,7 @@ export function createLibrary(deps: LibraryDeps): Library {
     const meta = document.createElement("p");
     meta.dataset.path = book.path;
     meta.className = "desk-meta";
-    meta.textContent = lastOpenedText(book, nowMs);
+    meta.textContent = metaJoin([book.series?.name ?? "", book.universe?.name ?? "", lastOpenedText(book, nowMs)]);
     const continueButton = document.createElement("button");
     continueButton.type = "button";
     continueButton.id = "library-continue";
@@ -1043,7 +1043,7 @@ export function createLibrary(deps: LibraryDeps): Library {
   }
 
   function shelfLabel(book: LibraryBook, when: string, words = ""): string {
-    return metaJoin([book.name, presetLabel(book), book.identity_name === null ? "" : t("library.by", { name: book.identity_name }), when, words]);
+    return metaJoin([book.name, presetLabel(book), book.identity_name === null ? "" : t("library.by", { name: book.identity_name }), book.series?.name ?? "", book.universe?.name ?? "", when, words]);
   }
 
   function paintShelf(books: readonly LibraryBook[], nowMs: number): void {
@@ -1073,7 +1073,7 @@ export function createLibrary(deps: LibraryDeps): Library {
       const meta = document.createElement("span");
       meta.className = "shelf-meta";
       meta.dataset.path = book.path;
-      meta.textContent = lastOpenedText(book, nowMs);
+      meta.textContent = metaJoin([book.series?.name ?? "", book.universe?.name ?? "", lastOpenedText(book, nowMs)]);
       tile.append(coverBox, title, kind, by, meta);
       if (book.missing || book.error !== null) {
         meta.removeAttribute("data-path");

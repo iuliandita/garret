@@ -302,7 +302,7 @@ export function importResultNotice(outcome: ImportOutcome): { message: string; p
   const warning = registrationNotice(outcome.summary);
   const omissions = lossesNotice(outcome.losses, outcome.derived_contents);
   const message = [warning, omissions].filter((part) => part !== null).join(" ");
-  return message === "" ? null : { message, problem: warning !== null };
+  return message === "" ? null : { message, problem: warning !== null || lossesNotice(outcome.losses) !== null };
 }
 
 export function createSwitcher(deps: SwitcherDeps): Switcher {

@@ -2246,6 +2246,8 @@ export const EN = {
 
   // ---- goals.ts: the daily figure -----------------------------------------
   // The four target spellings are NOT here; see the note above `prefs.off`.
+  "goals.cut.today": "{count} cut today",
+  "goals.cut.today.target": "{count} cut today, target {target}",
   "goals.today": "{count} typed today",
   "goals.today.target": "{count} of {target} typed today",
   "goals.spoken.cut.one": "{count} word cut",

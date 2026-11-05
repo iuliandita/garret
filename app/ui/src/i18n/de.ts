@@ -36,9 +36,9 @@ export const DE = {
   "transfer.legacy": "0.0.5 oder älter (Format 17, nur Romane)",
   "transfer.reader": "0.0.6 (Format 18, alle vier Buchtypen)",
   "transfer.export": "Buch für ein anderes Gerät exportieren…",
-  "transfer.recipient_unknown": "Prüfe oder aktualisiere die Empfänger-App vor dem Geräteexport.",
-  "transfer.recipient_schema": "Die Empfänger-App kann dieses Buchformat nicht öffnen. Aktualisiere sie zuerst.",
-  "transfer.recipient_preset": "Die Empfänger-App kann diesen Buchtyp nicht öffnen. Aktualisiere sie zuerst.",
+  "transfer.recipient_unknown": "Prüfen oder aktualisieren Sie die Empfänger-App vor dem Geräteexport.",
+  "transfer.recipient_schema": "Die Empfänger-App kann dieses Buchformat nicht öffnen. Aktualisieren Sie sie zuerst.",
+  "transfer.recipient_preset": "Die Empfänger-App kann diesen Buchtyp nicht öffnen. Aktualisieren Sie sie zuerst.",
   "figure.insert-title": "Abbildung einfügen",
   "figure.original-warning": "Die Originaldatei fehlt oder wurde geändert. Bildunterschrift und Alternativtext bleiben bearbeitbar; die Veröffentlichung bleibt bis zur Wiederherstellung gesperrt.",
   "figure.symlink": "Die Original-Bilddatei anstelle einer symbolischen Verknüpfung wählen.",
@@ -1949,6 +1949,8 @@ export const DE = {
   "words.progress.spoken": ", {progress}",
 
   // ---- goals.ts: the daily figure -----------------------------------------
+  "goals.cut.today": "{count} heute gestrichen",
+  "goals.cut.today.target": "{count} heute gestrichen, Ziel {target}",
   "goals.today": "{count} heute getippt",
   "goals.today.target": "{count} von {target} heute getippt",
   "goals.spoken.cut.one": "{count} Wort gestrichen",
