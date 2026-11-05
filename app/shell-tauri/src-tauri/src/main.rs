@@ -1099,6 +1099,7 @@ fn summary_of(project: &OpenProject) -> projects::ProjectSummary {
         error: None,
         missing: false,
         registration_warning: None,
+        import_losses: None,
     }
 }
 
@@ -1480,7 +1481,7 @@ fn import_path(
     let made = if let Some(package) = &package {
         projects::create_imported_package(dest_dir, package, strings)
             .map(|summary| book_registration::remember(data_home, dest_dir, summary))
-    } else { create_imported_into_dir(data_home, dest_dir, &parsed.name, &rows, strings) };
+    } else { create_imported_into_dir(data_home, dest_dir, &parsed.name, &rows, strings, &losses) };
     made.map(|summary| {
         ImportOutcome {
             summary,
@@ -1501,8 +1502,9 @@ fn create_imported_into_dir(
     name: &str,
     rows: &[store::ImportRow<'_>],
     strings: &strings::Strings,
+    losses: &docx_import::Losses,
 ) -> std::result::Result<projects::ProjectSummary, String> {
-    let made = projects::create_imported(dir, name, rows, strings)?;
+    let made = projects::create_imported_reporting(dir, name, rows, strings, losses)?;
     Ok(book_registration::remember(data_home, dir, made))
 }
 
@@ -8929,6 +8931,7 @@ mod tests {
             assert_eq!(outcome.losses, crate::docx_import::Losses::default());
             assert_eq!(std::fs::read_to_string(&path).unwrap(), source);
             assert_eq!(serde_json::to_value(&outcome).unwrap()["derived_contents"], "My contents");
+            assert_eq!(projects::summarize(Path::new(&outcome.summary.path)).import_losses, None);
         }
     }
 
@@ -8943,6 +8946,8 @@ mod tests {
             let outcome = if picked { import_path(dir.path(), &library, &path) }
                 else { import_named(dir.path(), &library, &drop_dir, "book.docx") }.unwrap();
             assert_eq!(outcome.losses, crate::docx_import::Losses { missing_note_bodies: 3, pictures: 1, ..Default::default() });
+            // Kept on the book, so the Books panel can show the report again.
+            assert_eq!(projects::summarize(Path::new(&outcome.summary.path)).import_losses, Some(outcome.losses.clone()));
             let store = crate::store::Store::open_readonly(Path::new(&outcome.summary.path)).unwrap();
             let bodies = store.documents().unwrap();
             assert_eq!(bodies.len(), 1);

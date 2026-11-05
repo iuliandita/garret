@@ -363,6 +363,11 @@ export function createLibrary(deps: LibraryDeps): Library {
     button.addEventListener("click", leaveFor(focus));
     existingBooks.append(button);
   }
+  // Once books exist, the rarer ways in sit quietly beside New book; an
+  // empty library keeps them on their own row as its starting routes.
+  const newBookRow = document.createElement("div");
+  newBookRow.id = "library-new-book-row";
+  newBookRow.append(newBookArea, existingBooks);
 
   const desk = document.createElement("div");
   desk.id = "library-desk";
@@ -400,7 +405,7 @@ export function createLibrary(deps: LibraryDeps): Library {
   timing.className = "library-timing";
   timing.setAttribute("aria-hidden", deps.diagnostics === true ? "false" : "true");
 
-  root.append(wordmark, strip, groupFilters, membershipPanel, headingRow, bioLine, newBookArea, existingBooks, desk, summaryPanel, shelfHeading, empty, shelf, more, timing);
+  root.append(wordmark, strip, groupFilters, membershipPanel, headingRow, bioLine, newBookRow, desk, shelfHeading, empty, shelf, more, summaryPanel, timing);
   document.body.append(root);
 
   const penNameForm = createPenNameForm({
@@ -763,11 +768,10 @@ export function createLibrary(deps: LibraryDeps): Library {
     const token = ++summaryGeneration;
     if (!isOpen || !summaryOpen) return;
     clear(summaryPanel);
-    // What the summary counts is the heading's help, not a paragraph
-    // above the figures.
-    const heading = document.createElement("h3");
-    heading.textContent = t("library.summary.title");
-    heading.append(createHelpTip({ label: t("library.summary.title"), definition: t("library.summary.definition"), id: "library-summary-help" }).anchor);
+    // One line under the shelf; what it counts is its help mark. Only what
+    // was left out, and the copies that need a choice, take more room.
+    const line = document.createElement("p");
+    line.id = "library-summary-line";
     const selection = selectSummary(latest.books, {
       identity: latest.selected_identity, series: selectedSeries, universe: selectedUniverse,
     }, representatives);
@@ -802,11 +806,17 @@ export function createLibrary(deps: LibraryDeps): Library {
       label.append(picker);
       duplicates.append(label);
     }
-    const result = document.createElement("p");
+    const result = document.createElement("span");
     result.id = "library-summary-result";
+    const activityLine = document.createElement("span");
+    activityLine.id = "library-summary-activity";
+    const readLine = document.createElement("span");
+    readLine.id = "library-summary-read";
+    line.append(result, " ", activityLine, " ", readLine, " ",
+      createHelpTip({ label: t("library.summary.title"), definition: t("library.summary.definition"), id: "library-summary-help" }).anchor);
     const coverage = document.createElement("p");
     coverage.id = "library-summary-coverage";
-    summaryPanel.append(heading, duplicates, result, coverage);
+    summaryPanel.append(line, duplicates, coverage);
     const totals: SourceTotals = {
       typing: { added: 0, deleted: 0 }, pasted: { added: 0, deleted: 0 },
       imported: { added: 0, deleted: 0 }, restored: { added: 0, deleted: 0 },
@@ -832,13 +842,14 @@ export function createLibrary(deps: LibraryDeps): Library {
         .map((source) => t(`library.summary.source.${source}`, {
           added: formatNumber(totals[source].added), deleted: formatNumber(totals[source].deleted),
         }));
-      const activityLine = document.getElementById("library-summary-activity") ?? document.createElement("p");
-      activityLine.id = "library-summary-activity";
+      // Only a count every book answered may shrink to "nothing changed";
+      // partial coverage keeps saying how many books it is drawn from.
       activityLine.textContent = availableActivity === 0
         ? t("library.summary.activity-unavailable")
-        : t("library.summary.activity", { counted: formatNumber(availableActivity), total: formatNumber(checked),
-          values: activity.length === 0 ? t("library.summary.activity-none") : activity.join(", ") });
-      if (!activityLine.isConnected) summaryPanel.append(activityLine);
+        : activity.length === 0 && availableActivity === checked && checked === selection.candidates.length
+          ? t("library.summary.activity-none-all")
+          : t("library.summary.activity", { counted: formatNumber(availableActivity), total: formatNumber(checked),
+            values: activity.length === 0 ? t("library.summary.activity-none") : activity.join(", ") });
       // WHAT WAS LEFT OUT, one sentence per non-zero reason. The log
       // line this replaces printed nine counters, most of them zero.
       const left = ([
@@ -850,8 +861,10 @@ export function createLibrary(deps: LibraryDeps): Library {
         ["library.summary.left.interrupted", interrupted],
         ["library.summary.left.omitted", latest.more],
       ] as const).filter(([, count]) => count > 0).map(([key, count]) => plural(key, count, { count: formatNumber(count) }));
-      coverage.textContent = [...left, latestReadAt === 0 ? t("library.summary.not-read")
-        : t("library.summary.read", { time: formatShortDateTime(latestReadAt) })].join(" ");
+      coverage.textContent = left.join(" ");
+      coverage.hidden = left.length === 0;
+      readLine.textContent = latestReadAt === 0 ? t("library.summary.not-read")
+        : t("library.summary.read", { time: formatShortDateTime(latestReadAt) });
     };
     render();
     for (const book of selection.candidates) {
@@ -1039,7 +1052,7 @@ export function createLibrary(deps: LibraryDeps): Library {
     const meta = document.createElement("p");
     meta.dataset.path = book.path;
     meta.className = "desk-meta";
-    meta.textContent = lastOpenedText(book, nowMs);
+    meta.textContent = metaJoin([book.series?.name ?? "", book.universe?.name ?? "", lastOpenedText(book, nowMs)]);
     const continueButton = document.createElement("button");
     continueButton.type = "button";
     continueButton.id = "library-continue";
@@ -1050,7 +1063,7 @@ export function createLibrary(deps: LibraryDeps): Library {
   }
 
   function shelfLabel(book: LibraryBook, when: string, words = ""): string {
-    return metaJoin([book.name, presetLabel(book), book.identity_name === null ? "" : t("library.by", { name: book.identity_name }), when, words]);
+    return metaJoin([book.name, presetLabel(book), book.identity_name === null ? "" : t("library.by", { name: book.identity_name }), book.series?.name ?? "", book.universe?.name ?? "", when, words]);
   }
 
   function paintShelf(books: readonly LibraryBook[], nowMs: number): void {
@@ -1080,7 +1093,7 @@ export function createLibrary(deps: LibraryDeps): Library {
       const meta = document.createElement("span");
       meta.className = "shelf-meta";
       meta.dataset.path = book.path;
-      meta.textContent = lastOpenedText(book, nowMs);
+      meta.textContent = metaJoin([book.series?.name ?? "", book.universe?.name ?? "", lastOpenedText(book, nowMs)]);
       tile.append(coverBox, title, kind, by, meta);
       if (book.missing || book.error !== null) {
         meta.removeAttribute("data-path");

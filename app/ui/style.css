@@ -2164,12 +2164,15 @@ body.nav-hidden #nav-column {
 
 /* A missing book's row: the sentence, then Forget at the row's end. The row
    stays inert like an errored one; only the button acts. */
-#project-list [role="listitem"]:has(.switcher-forget) {
+#project-list [role="listitem"]:has(.switcher-forget),
+#project-list [role="listitem"]:has(.switcher-import-report) {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-#project-list .switcher-forget {
+#project-list [role="listitem"]:has(.switcher-import-report) .switcher-open { flex: 1; min-width: 0; }
+#project-list .switcher-forget,
+#project-list .switcher-import-report {
   margin-left: auto;
   /* Inside a list row: compact, not the 30px panel box. */
   min-height: 0;
@@ -8556,11 +8559,10 @@ body[data-side-layout="full"] #preview-rail {
 
 #library-membership[hidden],
 #library-summary[hidden] { display: none; }
-/* The desk's own rule already closes the row above. */
-#library-desk + #library-summary { border-top: 0; padding-top: 0; }
+/* One quiet line after the shelf, ruled off from it; nothing below to close. */
+#library-summary { border-bottom: 0; padding-bottom: 0; margin-top: 24px; }
 
-#library-membership h3,
-#library-summary h3 { font: 500 var(--text-xl) var(--prose-family, serif); margin: 0 0 8px; }
+#library-membership h3 { font: 500 var(--text-xl) var(--prose-family, serif); margin: 0 0 8px; }
 #library-membership p,
 #library-summary p { color: var(--muted); line-height: var(--leading-ui); margin: 6px 0; }
 #library-membership .library-membership-row { display: flex; gap: 12px; align-items: end; margin: 10px 0; }
@@ -8569,8 +8571,10 @@ body[data-side-layout="full"] #preview-rail {
 #library-membership button { margin: 6px 10px 0 0; }
 #library-membership-discard { margin: 10px 0; color: var(--danger); }
 #library-summary label { display: grid; gap: 4px; max-width: 58em; margin: 12px 0; }
-#library-summary-result { font-family: var(--prose-family, serif); font-size: var(--text-xl); color: var(--fg) !important; }
-#library-summary-coverage { font-size: var(--text-xs); }
+#library-summary-line { font-size: var(--text-sm); }
+#library-summary-result { color: var(--fg); }
+#library-summary-coverage { font-size: var(--text-sm); color: var(--fg) !important; }
+#library-summary-coverage[hidden] { display: none; }
 
 #library-menu-anchor { position: relative; }
 #library button#library-menu { display: inline-flex; align-items: center; padding: 7px 9px; }
@@ -9172,6 +9176,26 @@ body[data-side-layout="full"] #scene-notes {
 #library-new-book-area { margin: 0 0 24px; }
 #library-existing-books { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 24px; }
 #library-existing-books button { min-height: 32px; }
+/* Empty: the row is not a box, so New book and the two routes stack as before. */
+#library-new-book-row { display: contents; }
+#library:not(.library-is-empty) #library-new-book-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 0 0 24px;
+}
+#library:not(.library-is-empty) #library-new-book-area,
+#library:not(.library-is-empty) #library-existing-books { margin: 0; gap: 8px; }
+#library:not(.library-is-empty) #library-existing-books button {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+#library:not(.library-is-empty) #library-existing-books button:hover:not(:disabled) {
+  background: var(--control-tone-hover);
+  color: var(--fg);
+}
 #library #library-new-book-tile { width: auto; }
 #library #library-new-book-name { border-style: solid; background: var(--control-bg); }
 #prefs-panel .prefs-choice-note {
@@ -9263,7 +9287,8 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
   #library:has(#library-desk:not([hidden])) .library-strip { margin-bottom: 0; }
   #library:has(#library-desk:not([hidden])) #library-heading-bio:empty { display: none; }
   #library:has(#library-desk:not([hidden])) #library-new-book-area,
-  #library:has(#library-desk:not([hidden])) #library-existing-books { margin-bottom: 0; }
+  #library:has(#library-desk:not([hidden])) #library-existing-books,
+  #library:has(#library-desk:not([hidden])) #library-new-book-row { margin-bottom: 0; }
   #library:has(#library-desk:not([hidden])) #library-desk {
     gap: 16px;
     padding-bottom: 12px;

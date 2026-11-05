@@ -52,8 +52,11 @@ use std::collections::HashMap;
 
 /// What this build could not carry from a DOCX, by kind, every field a
 /// `u64` so a huge foreign file cannot overflow it into a wrapped count that
-/// reads as small. Reaches the writer through `main::ImportOutcome`.
-#[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize)]
+/// reads as small. Reaches the writer through `main::ImportOutcome`, and is
+/// kept on the new book under `core_constants::IMPORT_LOSSES_KEY` so the loss report can be read again.
+/// Every field defaults, so a row written by another build still reads.
+#[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct Losses {
     /// `w:tbl`: the subtree is skipped whole and counted ONCE per table,
     /// however many rows or nested tables it holds. Its text is LOST rather

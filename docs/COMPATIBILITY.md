@@ -205,7 +205,11 @@ display; Windows and macOS layout qualification remains external.
 Release 0.0.6 imports DOCX as prose and reports omitted notes and pictures.
 Release 0.0.7 converts footnotes and endnotes to owned plain-text endnotes;
 note formatting and unsupported pictures remain counted losses. Keep the original
-DOCX to retain its formatting and pictures. Import creates a separate current-format
+DOCX to retain its formatting and pictures. Release 0.0.11 keeps a non-empty loss
+count on the imported book as an optional `import.losses` row in its existing
+metadata table, so Books can show the report again; there is no schema change,
+older builds ignore the row, and a damaged row is dropped rather than refusing
+the book. Import creates a separate current-format
 book. Back up closed books and adjacent originals; rollback uses the previous
 package with a separate complete pre-upgrade copy.
 

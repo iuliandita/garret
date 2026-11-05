@@ -1324,6 +1324,9 @@ export const EN = {
   "switcher.forget": "Forget",
   "switcher.forget.label": "Forget {name}",
   "switcher.forget.hint": "Remove this book from the list. No file is touched.",
+  "switcher.import-report": "Import report",
+  "switcher.import-report.label": "What the import of {name} left out",
+  "switcher.import-report.notice": "{name}: {report}",
   "switcher.error.list": "Could not list books.",
   "switcher.refuse.no-name": "Type a name for the new book, then Create.",
   "switcher.import.heading": "Import",
@@ -2253,6 +2256,8 @@ export const EN = {
 
   // ---- goals.ts: the daily figure -----------------------------------------
   // The four target spellings are NOT here; see the note above `prefs.off`.
+  "goals.cut.today": "{count} cut today",
+  "goals.cut.today.target": "{count} cut today, target {target}",
   "goals.today": "{count} typed today",
   "goals.today.target": "{count} of {target} typed today",
   "goals.spoken.cut.one": "{count} word cut",
@@ -2666,8 +2671,9 @@ export const EN = {
   "library.summary.words.one": "{count} saved word",
   "library.summary.words.other": "{count} saved words",
   "library.summary.activity-unavailable": "Recorded activity unavailable for this selection.",
-  "library.summary.activity": "Recorded changes, from {counted} of {total} books: {values}",
+  "library.summary.activity": "Recorded changes, from {counted} of {total} books: {values}.",
   "library.summary.activity-none": "no changes",
+  "library.summary.activity-none-all": "No recorded changes.",
   "library.summary.source.typing": "typing +{added}/−{deleted}",
   "library.summary.source.pasted": "pasted +{added}/−{deleted}",
   "library.summary.source.imported": "imported +{added}/−{deleted}",
