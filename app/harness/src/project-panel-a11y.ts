@@ -162,7 +162,7 @@ export function evaluateProjectPanelA11y(walk: PanelA11yWalk): GateResult[] {
   const explanatory = [
     ["project-recovery-note-help", "About Recovery points on this device", "Restoring adds a new book. Nothing is replaced. New recovery point folders include referenced original pictures. Older database-only points do not."],
     ["project-archive-note-help", "About If you lose this computer", "A new archive is one complete, unencrypted folder. Anyone with access to it can read your book. To protect against losing this computer, move the whole folder off this computer yourself: onto a USB stick, another machine, or a sync folder. Older .db archives did not include pictures."],
-    ["project-mirror-note-help", "About A readable copy you can open anywhere", "The mirror keeps your manuscript as ordinary Markdown files, one per scene, within ten seconds of what you have typed. It is a copy to read and edit elsewhere, not a backup: it is on this computer, and this application writes it rather than reading it back."],
+    ["project-mirror-note-help", "About A readable folder you can open anywhere", "The readable folder keeps your manuscript as ordinary Markdown files, one per scene, within ten seconds of what you have typed. It is a copy to read and edit elsewhere, not a backup: it is on this computer, and this application writes it rather than reading it back."],
   ] as const;
   const headings = [
     // Sentence case (no uppercase labels); the notes as the catalog has held
@@ -171,7 +171,7 @@ export function evaluateProjectPanelA11y(walk: PanelA11yWalk): GateResult[] {
     ["project-recovery-heading", "Recovery points on this device"],
     ["project-archive-heading", "If you lose this computer"],
     ["project-encrypted-archive-heading", "Encrypted backups"],
-    ["project-mirror-heading", "A readable copy you can open anywhere"],
+    ["project-mirror-heading", "A readable folder you can open anywhere"],
   ] as const;
   const ordered = [
     "project-list", "project-move", "project-new-name", "project-new-choose", "project-create",
@@ -181,7 +181,7 @@ export function evaluateProjectPanelA11y(walk: PanelA11yWalk): GateResult[] {
     "project-encrypted-archive-heading",
     "project-mirror-heading", "project-mirror-note-help", "project-mirror-toggle", "mirror-check",
   ];
-  const controls = [["project-new-name", "entry", "New book name"], ["project-create", "button", "Create"], ["project-new-choose", "button", "Choose a folder…"], ["project-move", "button", "Move this book…"], ["project-archive-now", "button", "Make unencrypted archive"], ["project-mirror-toggle", "button", "Turn the mirror on"]] as const;
+  const controls = [["project-new-name", "entry", "New book name"], ["project-create", "button", "Create"], ["project-new-choose", "button", "Choose a folder…"], ["project-move", "button", "Move this book…"], ["project-archive-now", "button", "Make unencrypted archive"], ["project-mirror-toggle", "button", "Turn the readable folder on"]] as const;
   const uniqueIds = (ids: readonly string[]): boolean => ids.every((id) => unique(walk, id));
   const listOk = scope.valid && uniqueIds(listboxes.map(([id]) => id)) && listboxes.every(([id, name, empty, actionable]) => {
     const container = node(scope, id);
@@ -219,12 +219,12 @@ export function evaluateProjectPanelA11y(walk: PanelA11yWalk): GateResult[] {
   }) && orderedNodes.every((n) => n !== undefined) && orderedNodes.every((n, i) => i === 0 || n!.order > orderedNodes[i - 1]!.order);
   const controlsOk = scope.valid && uniqueIds(controls.map(([id]) => id)) && controls.every(([id, role, name]) => node(scope, id)?.role.toLowerCase() === role && node(scope, id)?.name === name && states(node(scope, id), true));
   const check = node(scope, "mirror-check");
-  const checkOff = scope.valid && uniqueIds(["mirror-check"]) && check?.role.toLowerCase() === "button" && check.name === "Check the mirror thoroughly" && states(check, false);
+  const checkOff = scope.valid && uniqueIds(["mirror-check"]) && check?.role.toLowerCase() === "button" && check.name === "Check the readable folder thoroughly" && states(check, false);
   return [
     { gate: "project_panel_open", value: scope.valid ? `${panel?.role ?? "absent"} ${JSON.stringify(panel?.name ?? "")}` : scope.reason, threshold: 'one AT-SPI dialog named "Books"', verdict: scope.valid && panel?.role.toLowerCase() === "dialog" && panel.name === "Books" && states(panel, true) ? "PASS" : "FAIL" },
     { gate: "project_panel_listboxes", value: listboxes.map(([id]) => `${id}=${node(scope, id)?.name ?? "absent"}`).join("; "), threshold: "four named visible containers: populated lists expose rows and their actions; empty containers expose truthful empty messages", verdict: listOk ? "PASS" : "FAIL" },
     { gate: "project_panel_actions", value: controls.map(([id]) => `${id}=${node(scope, id)?.name ?? "absent"}`).join(", "), threshold: "named create input and enabled Create, Choose folder, Move, Archive and mirror buttons", verdict: controlsOk ? "PASS" : "FAIL" },
-    { gate: "project_panel_mirror_check_off", value: check === undefined ? "absent" : check.name, threshold: "named mirror check is visibly disabled while the mirror is off", verdict: checkOff ? "PASS" : "FAIL" },
+    { gate: "project_panel_mirror_check_off", value: check === undefined ? "absent" : check.name, threshold: "named readable-folder check is visibly disabled while the folder is off", verdict: checkOff ? "PASS" : "FAIL" },
     { gate: "project_panel_explanations", value: notes.every(Boolean) ? "exact recovery, archive and mirror descriptions exposed" : "one or more exact explanatory texts are absent", threshold: "named visible help buttons expose full recovery, archive and mirror descriptions", verdict: scope.valid && uniqueIds(explanatory.map(([id]) => id)) && notes.every(Boolean) ? "PASS" : "FAIL" },
     { gate: "project_panel_reading_order", value: orderedNodes.map((n) => n?.order ?? "absent").join(" < "), threshold: "visible named headings in Create, Import, Recovery, Archive, Encrypted backups, Mirror order, with explanations before actions", verdict: scope.valid && uniqueIds([...ordered, ...headings.map(([id]) => id)]) && orderOk ? "PASS" : "FAIL" },
   ];

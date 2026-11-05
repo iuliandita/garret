@@ -17,15 +17,14 @@
 // nothing is missing the day a category is selected that this file has no arm
 // for.
 //
-// THE CHORD SPELLINGS ARE NOT TRANSLATED. `Ctrl`, `Alt`, `Shift` and the four
-// Alt+<letter> menu chords name keys the page actually binds -- the letters
-// live in `menu-bar.ts` as `key: "f"` and the rest, and `help.test.ts` compares
-// this catalog's claim against them. A German spelling here would be a claim
-// about a chord nothing listens for.
+// THE CONTROL KEY IS `Strg`, the word a German keyboard prints on it, in every
+// shortcut label. `Alt`, `Shift` and the arrow names stay as written. The four
+// Alt+<letter> menu chords read their letter from `menu.<x>.key` below, and
+// `help.test.ts` compares the panel's claim against the bar's own keys.
 //
 // THE PRODUCT WORDS ARE FIXED, and are the same word every time they appear:
 // Szene, Kapitel, Teil, Buch, Manuskript, Gliederung, Schnappschuss,
-// Wiederherstellungspunkt, Archiv, Spiegelordner, Notiz, Figurenverzeichnis,
+// Wiederherstellungspunkt, Archiv, lesbarer Ordner, Notiz, Figurenverzeichnis,
 // Bibel, Pseudonym, Fokusmodus, Schreibmaschinenmodus.
 
 export const DE = {
@@ -122,7 +121,7 @@ export const DE = {
   "menu.views": "Ansichten…",
   "menu.review": "Überprüfen…",
   "menu.publishing": "Veröffentlichen…",
-  "menu.copies": "Sicherungskopien…",
+  "menu.copies": "Kopien…",
   "menu.book-pages": "Buchseiten",
   "registration.preference": "Unter {path} gespeichert und in der Bibliothek verfügbar. Der Ordner für zukünftige Bücher konnte jedoch nicht gespeichert werden.",
   "registration.unavailable": "Eine Datei wurde unter {path} gespeichert, aber ihre Buchidentität konnte nicht geprüft werden. Bewahren Sie diese Datei auf; sie kann hier nicht zur Bibliothek hinzugefügt werden.",
@@ -158,7 +157,7 @@ export const DE = {
   "help.guide.export.title": "Das Manuskript exportieren",
   "help.guide.export.body": "Datei > Veröffentlichen bietet Markdown für lesbaren Text und Word für die Redaktion. EPUB-Vorschau und PDF-Korrektur zeigen das Buch im Veröffentlichungslayout. Legen Sie Buchgestaltung, Umschläge und Pseudonyme vor einer Veröffentlichung fest. Geben Sie eine Markdown-Datei zusammen mit dem benachbarten Ordner assets weiter. Die Umwandlung des neuen Formats ist in dieser Version deaktiviert. Exporte sind Kopien; Sie schreiben im ursprünglichen Buch weiter.",
   "help.guide.protect.title": "Kopien Ihrer Arbeit schützen",
-  "help.guide.protect.body": "garret speichert Ihre Texte während des Schreibens. Datei > Sicherungskopien > Wiederherstellungspunkt erstellen bewahrt eine Wiederherstellungskopie auf diesem Gerät auf.\n\nZum Schutz bei Verlust Ihres Computers öffnen Sie Datei > Sicherungskopien > Verschlüsselte Sicherungen. Erstellen Sie einen Wiederherstellungsschlüssel, bewahren Sie eine Ersatzkopie getrennt auf und erstellen Sie dann ein verschlüsseltes Archiv. Wählen Sie einen Sicherungsordner in Google Drive, Dropbox oder auf einem USB-Laufwerk, oder kopieren Sie das Archiv später dorthin. Wiederholen Sie dies regelmäßig und behalten Sie einige ältere Kopien.\n\nVerschlüsseltes Archiv prüfen überprüft Ihre Sicherung; Verschlüsseltes Archiv wiederherstellen erstellt ein separates Buch. Öffnen Sie es aus Ihrer Bibliothek.\n\nBewahren Sie Ihr Arbeitsbuch außerhalb von Cloud-Ordnern auf. Ein lesbarer Ordner ist keine vollständige Sicherung. Die Privatsphärensperre verbirgt das Fenster; sie verschlüsselt Ihr Buch nicht.",
+  "help.guide.protect.body": "garret speichert Ihre Texte während des Schreibens. Datei > Kopien > Wiederherstellungspunkt erstellen bewahrt eine Wiederherstellungskopie auf diesem Gerät auf.\n\nZum Schutz bei Verlust Ihres Computers öffnen Sie Datei > Kopien > Verschlüsselte Sicherungen. Erstellen Sie einen Wiederherstellungsschlüssel, bewahren Sie eine Ersatzkopie getrennt auf und erstellen Sie dann ein verschlüsseltes Archiv. Wählen Sie einen Sicherungsordner in Google Drive, Dropbox oder auf einem USB-Laufwerk, oder kopieren Sie das Archiv später dorthin. Wiederholen Sie dies regelmäßig und behalten Sie einige ältere Kopien.\n\nVerschlüsseltes Archiv prüfen überprüft Ihre Sicherung; Verschlüsseltes Archiv wiederherstellen erstellt ein separates Buch. Öffnen Sie es aus Ihrer Bibliothek.\n\nBewahren Sie Ihr Arbeitsbuch außerhalb von Cloud-Ordnern auf. Ein lesbarer Ordner ist keine vollständige Sicherung. Die Privatsphärensperre verbirgt das Fenster; sie verschlüsselt Ihr Buch nicht.",
   "menu.outline.group.create": "Zum Buch hinzufügen",
   "menu.outline.group.navigate": "Navigation",
   "menu.outline.group.structure": "Gliederung ordnen",
@@ -1208,7 +1207,7 @@ export const DE = {
   "switcher.where.choose": "Einen Ordner wählen…",
   "switcher.here": "Dieses Buch liegt in {folder}",
   "switcher.book-required": "Öffnen Sie ein Buch, um Wiederherstellungspunkte, Archive oder einen lesbaren Ordner zu erstellen.",
-  "switcher.copies": "Sicherungen und Archive",
+  "switcher.copies": "Kopien",
   "switcher.import.show": "Importordner anzeigen",
   "switcher.move": "Dieses Buch verschieben…",
   "switcher.move.hint": "Die Datenbank mit ihren Bilder- und Rechercheordnern zusammen verschieben. Der Name bleibt.",
@@ -1480,7 +1479,7 @@ export const DE = {
   "preflight.surface.export_directory": "was sonst im Exportordner liegt",
   "preflight.surface.window_title": "der Fenstertitel",
   "preflight.surface.diagnostics": "die Absturzdatei",
-  "preflight.surface.readable_mirror": "der Spiegelordner",
+  "preflight.surface.readable_mirror": "der lesbare Ordner",
   "preflight.surface.series_name": "Namen von Reihen",
   "preflight.surface.universe_name": "Namen von Universen",
   "preflight.error.load": "Die Exportprüfungen konnten nicht ausgeführt werden: {error}",
@@ -1723,7 +1722,7 @@ export const DE = {
   "menu.identities": "Pseudonyme…",
   "menu.backup-now": "Wiederherstellungspunkt erstellen",
   "menu.encrypted-backups": "Verschlüsselte Sicherungen…",
-  "menu.mirror-changes": "Änderungen in Ihrem Spiegelordner…",
+  "menu.mirror-changes": "Änderungen in Ihrem lesbaren Ordner…",
   "menu.library": "Bibliothek…",
   "menu.preferences": "Einstellungen…",
   "menu.quit": "Beenden",
@@ -2047,21 +2046,21 @@ export const DE = {
   "switcher.archive.encrypted.failed": "Aktion für verschlüsseltes Archiv fehlgeschlagen: {error}",
 
   // ---- mirror ------------------------------------------------------------
-  "switcher.mirror.heading": "Eine lesbare Kopie, die Sie überall öffnen können",
+  "switcher.mirror.heading": "Ein lesbarer Ordner, den Sie überall öffnen können",
   "switcher.mirror.note":
-    "Der Spiegelordner hält Ihr Manuskript als gewöhnliche Markdown-Dateien, eine je Szene, mit höchstens zehn Sekunden Rückstand auf das, was Sie getippt haben. Er ist eine Kopie zum Lesen und Bearbeiten anderswo, keine Sicherung: Er liegt auf diesem Rechner, und diese Anwendung schreibt ihn, statt ihn zurückzulesen.",
-  "switcher.mirror.where": "Der Spiegelordner wird nach {dir} geschrieben",
-  "switcher.mirror.off": "Der Spiegelordner ist für dieses Buch aus.",
+    "Der lesbare Ordner hält Ihr Manuskript als gewöhnliche Markdown-Dateien, eine je Szene, mit höchstens zehn Sekunden Rückstand auf das, was Sie getippt haben. Er ist eine Kopie zum Lesen und Bearbeiten anderswo, keine Sicherung: Er liegt auf diesem Rechner, und diese Anwendung schreibt ihn, statt ihn zurückzulesen.",
+  "switcher.mirror.where": "Der lesbare Ordner wird nach {dir} geschrieben",
+  "switcher.mirror.off": "Der lesbare Ordner ist für dieses Buch aus.",
   "switcher.mirror.on.one": "{count} Datei, zuletzt geschrieben {when}.",
   "switcher.mirror.on.other": "{count} Dateien, zuletzt geschrieben {when}.",
-  "switcher.mirror.pending": "Der Spiegelordner ist ein. Es wurde noch nichts geschrieben.",
-  "switcher.mirror.enable": "Spiegelordner einschalten",
-  "switcher.mirror.disable": "Spiegelordner ausschalten",
-  "switcher.mirror.working": "Spiegelordner wird geschrieben…",
-  "switcher.mirror.check": "Spiegelordner gründlich prüfen",
-  "switcher.mirror.checking": "Spiegelordner wird gründlich geprüft…",
-  "switcher.mirror.error": "Der Spiegelordner konnte nicht gelesen werden.",
-  "switcher.mirror.previewing": "Es wird geprüft, was der Spiegelordner offenlegt…",
+  "switcher.mirror.pending": "Der lesbare Ordner ist ein. Es wurde noch nichts geschrieben.",
+  "switcher.mirror.enable": "Lesbaren Ordner einschalten",
+  "switcher.mirror.disable": "Lesbaren Ordner ausschalten",
+  "switcher.mirror.working": "Der lesbare Ordner wird geschrieben…",
+  "switcher.mirror.check": "Lesbaren Ordner gründlich prüfen",
+  "switcher.mirror.checking": "Der lesbare Ordner wird gründlich geprüft…",
+  "switcher.mirror.error": "Der lesbare Ordner konnte nicht gelesen werden.",
+  "switcher.mirror.previewing": "Es wird geprüft, was der lesbare Ordner offenlegt…",
   "switcher.mirror.preview.heading": "Bevor Sie den lesbaren Ordner einschalten",
   "switcher.mirror.preview.plaintext": "Dadurch werden unverschlüsselte Dateien auf diesem Computer geschrieben. Wenn der Zielordner synchronisiert wird, kann der Synchronisierungsdienst sie kopieren. Den Verlauf des Betriebssystems oder des Synchronisierungsdienstes kann die Anwendung nicht prüfen.",
   "switcher.mirror.preview.destination": "Tatsächliches Ziel: {dir}",
@@ -2070,7 +2069,7 @@ export const DE = {
   "switcher.mirror.preview.pin.pinned": "Dieses Buch hat ein zugewiesenes Pseudonym. Namen und Aliasse der anderen bekannten Identitäten wurden geprüft.",
   "switcher.mirror.preview.pin.stale": "Das zugewiesene Pseudonym dieses Buchs ist älter als die private Liste. Die Vorschau hat die Zuweisung nicht geändert.",
   "switcher.mirror.preview.scope.destination": "Tatsächlicher Zielpfad",
-  "switcher.mirror.preview.scope.project_name": "Buchname und Spiegelmanifest",
+  "switcher.mirror.preview.scope.project_name": "Buchname und Ordnermanifest",
   "switcher.mirror.preview.scope.markdown": "Dateinamen, Überschriften und Text der geplanten Dateien",
   "switcher.mirror.preview.scope.wordlist": "Buchwortliste",
   "switcher.mirror.preview.state.ran": "Bekannte Namen und Aliasse anderer Identitäten wurden geprüft. Sehen Sie die Funde unten durch, bevor Sie einschalten.",
@@ -2083,11 +2082,11 @@ export const DE = {
   "switcher.mirror.preview.limit.external": "Der Verlauf des Betriebssystems und von Synchronisierungsdiensten kann hier nicht geprüft werden.",
   "switcher.mirror.preview.confirm": "Diesen unverschlüsselten Ordner schreiben",
   "switcher.mirror.preview.cancel": "Abbrechen; nichts schreiben",
-  "mirror.notice.enabled": "Der Spiegelordner ist ein. Ihr Manuskript liegt in {dir}",
-  "mirror.notice.disabled": "Der Spiegelordner ist aus. Die bereits geschriebenen Dateien liegen weiterhin in {dir}",
-  "mirror.notice.failed": "Der Spiegelordner konnte nicht geschrieben werden: {error}",
-  "mirror.notice.checked": "Spiegeldateien geprüft: {entries}. Geändert: {changed}. Fehlend: {deleted}.",
-  "mirror.notice.check-failed": "Der Spiegelordner konnte nicht gründlich geprüft werden.",
+  "mirror.notice.enabled": "Der lesbare Ordner ist ein. Ihr Manuskript liegt in {dir}",
+  "mirror.notice.disabled": "Der lesbare Ordner ist aus. Die bereits geschriebenen Dateien liegen weiterhin in {dir}",
+  "mirror.notice.failed": "Der lesbare Ordner konnte nicht geschrieben werden: {error}",
+  "mirror.notice.checked": "Dateien im lesbaren Ordner geprüft: {entries}. Geändert: {changed}. Fehlend: {deleted}.",
+  "mirror.notice.check-failed": "Der lesbare Ordner konnte nicht gründlich geprüft werden.",
 
   // ---- mirror-indicator.ts ------------------------------------------------
   "mirror.when.never": "nie",
@@ -2100,26 +2099,26 @@ export const DE = {
   "mirror.text.unavailable": "Ordner aktuell, Identitätsprüfung nicht verfügbar",
   "mirror.text.not_applicable": "Ordner aktuell, keine Vergleichsnamen hinterlegt",
   "mirror.text.off": "Lesbarer Ordner aus",
-  "mirror.name.current": "Der Spiegelordner stimmt mit dem überein, was Sie getippt haben",
-  "mirror.name.updating": "Der Spiegelordner wird gerade geschrieben",
+  "mirror.name.current": "Der lesbare Ordner stimmt mit dem überein, was Sie getippt haben",
+  "mirror.name.updating": "Der lesbare Ordner wird gerade geschrieben",
   "mirror.name.paused.one":
-    "Der Spiegelordner wurde zuletzt {when} aktualisiert. 1 Datei, die Sie anderswo geändert haben, wartet auf Sie, und diese Anwendung schreibt nicht darüber.",
+    "Der lesbare Ordner wurde zuletzt {when} aktualisiert. 1 Datei, die Sie anderswo geändert haben, wartet auf Sie, und diese Anwendung schreibt nicht darüber.",
   "mirror.name.paused.other":
-    "Der Spiegelordner wurde zuletzt {when} aktualisiert. {count} Dateien, die Sie anderswo geändert haben, warten auf Sie, und diese Anwendung schreibt nicht darüber.",
+    "Der lesbare Ordner wurde zuletzt {when} aktualisiert. {count} Dateien, die Sie anderswo geändert haben, warten auf Sie, und diese Anwendung schreibt nicht darüber.",
   "mirror.name.failing":
-    "Der Spiegelordner wurde zuletzt {when} aktualisiert. Der letzte Schreibversuch ist nicht fertig geworden: {error}",
-  "mirror.name.stale": "Der Spiegelordner wurde zuletzt {when} aktualisiert",
+    "Der lesbare Ordner wurde zuletzt {when} aktualisiert. Der letzte Schreibversuch ist nicht fertig geworden: {error}",
+  "mirror.name.stale": "Der lesbare Ordner wurde zuletzt {when} aktualisiert",
   "mirror.name.finding":
-    "Der Spiegelordner stimmt mit dem überein, was Sie getippt haben. Eine Datei lohnt einen Blick: {where}",
-  "mirror.name.unavailable": "Der Spiegelordner stimmt mit Ihren Eingaben überein, aber die Identitätsprüfung ist nicht verfügbar. Prüfen Sie den Ordner vor dem Teilen oder Synchronisieren.",
-  "mirror.name.not_applicable": "Der Spiegelordner stimmt mit Ihren Eingaben überein. Es waren keine bekannten Pseudonyme oder Aliasse zum Vergleichen vorhanden; daher wurde eine Offenlegung von Identitäten nicht geprüft.",
-  "mirror.name.off": "Für dieses Buch wird kein Spiegelordner geschrieben",
+    "Der lesbare Ordner stimmt mit dem überein, was Sie getippt haben. Eine Datei lohnt einen Blick: {where}",
+  "mirror.name.unavailable": "Der lesbare Ordner stimmt mit Ihren Eingaben überein, aber die Identitätsprüfung ist nicht verfügbar. Prüfen Sie den Ordner vor dem Teilen oder Synchronisieren.",
+  "mirror.name.not_applicable": "Der lesbare Ordner stimmt mit Ihren Eingaben überein. Es waren keine bekannten Pseudonyme oder Aliasse zum Vergleichen vorhanden; daher wurde eine Offenlegung von Identitäten nicht geprüft.",
+  "mirror.name.off": "Für dieses Buch wird kein lesbarer Ordner geschrieben",
 
   // ---- mirror-changes.ts --------------------------------------------------
-  "mirror.changes.heading": "Änderungen in Ihrem Spiegelordner",
+  "mirror.changes.heading": "Änderungen in Ihrem lesbaren Ordner",
   "mirror.changes.note":
     "Was jede Datei jetzt enthält, und worin sie sich von Ihrem Buch unterscheidet. Hinsehen ändert nichts. Die Wörter einer Datei zu übernehmen ersetzt diese Szene in Ihrem Buch, und was ersetzt wurde, bleibt in der Verlaufsansicht.",
-  "mirror.changes.empty": "Nichts in Ihrem Spiegelordner unterscheidet sich von Ihrem Buch.",
+  "mirror.changes.empty": "Nichts in Ihrem lesbaren Ordner unterscheidet sich von Ihrem Buch.",
   "mirror.changes.error": "Der Ordner konnte nicht gelesen werden: {error}",
   "mirror.changes.status.one": "1 Datei unterscheidet sich von Ihrem Buch",
   "mirror.changes.status.other": "{count} Dateien unterscheiden sich von Ihrem Buch",

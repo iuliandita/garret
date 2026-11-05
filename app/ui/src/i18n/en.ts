@@ -1302,8 +1302,8 @@ export const EN = {
   // WHERE THE OPEN BOOK IS, and the one act that changes it. The path is the
   // fact a writer needs when they go looking for their file in a file manager.
   "switcher.here": "This book is in {folder}",
-  "switcher.book-required": "Open a book to make recovery points, archives, or a readable mirror.",
-  "switcher.copies": "Backups and archives",
+  "switcher.book-required": "Open a book to make recovery points, archives, or a readable folder.",
+  "switcher.copies": "Copies",
   "switcher.import.show": "Show the import folder",
   "switcher.move": "Move this book\u2026",
   "switcher.move.hint": "Move the database and its pictures and research folders together. The name stays.",
@@ -1966,7 +1966,7 @@ export const EN = {
   // "Folder" is the mirror's own word everywhere else in this catalog, and the
   // ellipsis is this menu's convention for an item that opens something rather
   // than doing something.
-  "menu.mirror-changes": "Changes in your folder\u2026",
+  "menu.mirror-changes": "Changes in your readable folder\u2026",
   // The switcher on the list, below the exports and above
   // Preferences -- the File menu's last unspent slot above Export stays
   // unspent, because this is not on the export route.
@@ -2385,21 +2385,21 @@ export const EN = {
   // away. This is the writer's own manuscript in ordinary Markdown, kept
   // current, so they can open one scene in any editor. It protects nothing and
   // must never say it does.
-  "switcher.mirror.heading": "A readable copy you can open anywhere",
+  "switcher.mirror.heading": "A readable folder you can open anywhere",
   "switcher.mirror.note":
-    "The mirror keeps your manuscript as ordinary Markdown files, one per scene, within ten seconds of what you have typed. It is a copy to read and edit elsewhere, not a backup: it is on this computer, and this application writes it rather than reading it back.",
-  "switcher.mirror.where": "The mirror is written to {dir}",
-  "switcher.mirror.off": "The mirror is off for this book.",
+    "The readable folder keeps your manuscript as ordinary Markdown files, one per scene, within ten seconds of what you have typed. It is a copy to read and edit elsewhere, not a backup: it is on this computer, and this application writes it rather than reading it back.",
+  "switcher.mirror.where": "The readable folder is written to {dir}",
+  "switcher.mirror.off": "The readable folder is off for this book.",
   "switcher.mirror.on.one": "{count} file, last written {when}.",
   "switcher.mirror.on.other": "{count} files, last written {when}.",
-  "switcher.mirror.pending": "The mirror is on. Nothing has been written yet.",
-  "switcher.mirror.enable": "Turn the mirror on",
-  "switcher.mirror.disable": "Turn the mirror off",
-  "switcher.mirror.working": "Writing the mirror…",
-  "switcher.mirror.check": "Check the mirror thoroughly",
-  "switcher.mirror.checking": "Checking the mirror thoroughly…",
-  "switcher.mirror.error": "The mirror could not be read.",
-  "switcher.mirror.previewing": "Checking what the mirror will expose…",
+  "switcher.mirror.pending": "The readable folder is on. Nothing has been written yet.",
+  "switcher.mirror.enable": "Turn the readable folder on",
+  "switcher.mirror.disable": "Turn the readable folder off",
+  "switcher.mirror.working": "Writing the readable folder…",
+  "switcher.mirror.check": "Check the readable folder thoroughly",
+  "switcher.mirror.checking": "Checking the readable folder thoroughly…",
+  "switcher.mirror.error": "The readable folder could not be read.",
+  "switcher.mirror.previewing": "Checking what the readable folder will expose…",
   "switcher.mirror.preview.heading": "Before turning on the readable folder",
   "switcher.mirror.preview.plaintext": "This writes ordinary plaintext files on this computer. If the destination syncs, the sync service may copy them. The application cannot inspect operating-system or sync-service history.",
   "switcher.mirror.preview.destination": "Resolved destination: {dir}",
@@ -2408,7 +2408,7 @@ export const EN = {
   "switcher.mirror.preview.pin.pinned": "This book has a pinned pen name. Names and aliases of the other known identities were checked.",
   "switcher.mirror.preview.pin.stale": "This book's pinned pen name is older than the private list. The pin was not changed by this preview.",
   "switcher.mirror.preview.scope.destination": "Resolved destination path",
-  "switcher.mirror.preview.scope.project_name": "Book name and mirror manifest",
+  "switcher.mirror.preview.scope.project_name": "Book name and folder manifest",
   "switcher.mirror.preview.scope.markdown": "Rendered file names, headings and prose",
   "switcher.mirror.preview.scope.wordlist": "Book wordlist",
   "switcher.mirror.preview.state.ran": "Known other-identity names and aliases were checked. Review the findings below before enabling.",
@@ -2421,14 +2421,14 @@ export const EN = {
   "switcher.mirror.preview.limit.external": "Operating-system and sync-service history cannot be checked here.",
   "switcher.mirror.preview.confirm": "Write this plaintext folder",
   "switcher.mirror.preview.cancel": "Cancel; write nothing",
-  "mirror.notice.enabled": "The mirror is on. Your manuscript is in {dir}",
+  "mirror.notice.enabled": "The readable folder is on. Your manuscript is in {dir}",
   // Says what it did NOT do. Deleting a folder of the writer's prose because a
   // preference was switched off is not a thing this application gets to do,
   // and a writer who expects the files gone would otherwise not know.
-  "mirror.notice.disabled": "The mirror is off. The files already written are still in {dir}",
-  "mirror.notice.failed": "Could not write the mirror: {error}",
-  "mirror.notice.checked": "Checked {entries} mirror files. Changed: {changed}. Missing: {deleted}.",
-  "mirror.notice.check-failed": "Could not check the mirror thoroughly.",
+  "mirror.notice.disabled": "The readable folder is off. The files already written are still in {dir}",
+  "mirror.notice.failed": "Could not write the readable folder: {error}",
+  "mirror.notice.checked": "Checked {entries} files in the readable folder. Changed: {changed}. Missing: {deleted}.",
+  "mirror.notice.check-failed": "Could not check the readable folder thoroughly.",
 
   // ---- mirror-indicator.ts ------------------------------------------------
   // The bar's third statement, and the one that is NOT a protection. Every
@@ -2490,7 +2490,7 @@ export const EN = {
   // what a file now holds; taking it into the book is a later slice and does
   // not exist. `mirror-strings.test.ts` is what keeps that true one string at
   // a time.
-  "mirror.changes.heading": "Changes in your folder",
+  "mirror.changes.heading": "Changes in your readable folder",
   // THIS SENTENCE WAS FALSE FROM THE START, and a capture is what said
   // so: it read "Looking here changes nothing in your book" beside a control
   // that changes the book. Looking still changes nothing; the panel is no

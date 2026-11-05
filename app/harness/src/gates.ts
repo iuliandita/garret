@@ -4966,7 +4966,7 @@ export interface MirrorActsMetrics {
    *  rig handed the host, computed by the rig against the path it owns.
    *
    *  A BOOLEAN AND NOT A CONTAINMENT DONE HERE, for two reasons that point the
-   *  same way. The sentence is "The mirror is written to {dir}", so a check
+   *  same way. The sentence was "The mirror is written to {dir}", so a check
    *  against the directory's BASENAME passed on the word "mirror" appearing in
    *  its own sentence -- a fixture that was a fact about itself, caught on this
    *  rig's first green run. And the real directory is a scratch path, which a

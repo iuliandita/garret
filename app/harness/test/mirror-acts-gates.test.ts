@@ -12,7 +12,7 @@ const GREEN: MirrorActsMetrics = {
   state_sentence: "Mirroring 5 files.",
   state_sentence_expected_count: 5,
   where_names_the_directory: true,
-  where_sentence_redacted: "The mirror is written to <scratch>/my-novel",
+  where_sentence_redacted: "The readable folder is written to <scratch>/my-novel",
   settings_mirrored_book_ids: ["0123456789abcdef0123456789abcdef"],
   book_id: "0123456789abcdef0123456789abcdef",
 
