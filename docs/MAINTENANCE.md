@@ -84,7 +84,10 @@ Mirror fixtures cover matching-schema copies, relative media and format markers;
 the unchanged existing reader's retained-extra-key behavior rejects those markers.
 Stored-atom refusal remains independent of marker presence. Production new-format
 mirror output refuses before creating a destination. Run the complete mirror suite
-to retain the existing pause, conflict-copy, acceptance and undo checks.
+to retain the existing pause, conflict-copy, acceptance and undo checks. Acceptance tests also save a newer
+file after the change-set read and before settlement. Only unchanged accepted
+bytes settle; a newer save keeps the previous baseline and pause for review.
+The regression runs the next outbound pass and verifies those newer words survive.
 
 ## Checks
 
