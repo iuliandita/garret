@@ -197,7 +197,7 @@ pub fn stylesheet(design: &BookDesign, style: &ChapterStyle) -> String {
          .proof-title h1 {{ font-size: 2.1em; margin: 0; }}\n\
          .story-byline {{ text-align: center; text-indent: 0; margin: 0.5em 0 1em; break-after: avoid; }}\n\
          .proof-title .proof-byline {{ font-size: 1.1em; margin: 1.6em 0 0; \
-         text-indent: 0; }}\n\
+         text-indent: 0; text-align: center; }}\n\
          .proof-plate {{ height: 100%; display: flex; }}\n\
          .proof-plate img {{ width: 100%; height: 100%; object-fit: contain; }}\n\
          .proof-plate[data-fit=\"fill\"] img {{ object-fit: cover; }}\n\
@@ -652,6 +652,9 @@ pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), include_str!(
       current = next();
       current.querySelector(".proof-runhead").textContent =
         current.getAttribute("data-side") === "verso" ? meta.book : running;
+    }
+    if (opensLeaf && block.classList.contains("start")) {
+      current.querySelector(".proof-runhead").style.visibility = "hidden";
     }
     if (sink !== null && SINK[sink]) {
       block.style.marginTop = Math.round(textOf(current).clientHeight * SINK[sink]) + "px";
@@ -1223,6 +1226,7 @@ mod tests {
         // "inner and outer rather than left and right" exists to prevent and it
         // is invisible in any single-page picture.
         let css = stylesheet(&design(), &plain());
+        assert!(css.contains("text-indent: 0; text-align: center;"));
         assert!(css.contains("width: 152.4mm; height: 228.6mm;"), "{css}");
         assert!(
             css.contains("[data-side=\"recto\"] { padding: 15.875mm 15.875mm 19.05mm 19.05mm; }"),
