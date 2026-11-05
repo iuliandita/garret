@@ -77,7 +77,10 @@ export function localDate(now: Date): string {
  */
 export function progressDisplay(today: number, target: DailyTarget): string {
   const words = targetWords(target);
-  const count = today < 0 ? `−${formatNumber(Math.abs(today))}` : formatNumber(today);
+  const count = formatNumber(Math.abs(today));
+  if (today < 0) return words === null
+    ? t("goals.cut.today", { count })
+    : t("goals.cut.today.target", { count, target: formatNumber(words) });
   return words === null
     ? t("goals.today", { count })
     : t("goals.today.target", { count, target: formatNumber(words) });

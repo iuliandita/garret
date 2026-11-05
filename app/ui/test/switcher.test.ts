@@ -682,6 +682,29 @@ describe("switcher activation", () => {
     teardown(rig);
   });
 
+  test("a book imported with losses offers its report again, on the problem channel, and only that book", async () => {
+    const rig = mount({
+      listProjects: () => Promise.resolve([
+        { path: "/p/one.mss", name: "one", modified_at: 2, import_losses: { ...ZERO_LOSSES, tables: 1, comments: 3 } },
+        { path: "/p/two.mss", name: "two", modified_at: 1, import_losses: ZERO_LOSSES },
+      ]),
+    });
+    await open(rig);
+    expect(optionFor(rig.container, "/p/two.mss").querySelector("[data-import-report-path]")).toBeNull();
+    const again = optionFor(rig.container, "/p/one.mss").querySelector<HTMLElement>("[data-import-report-path]");
+    expect(again?.textContent).toBe("Import report");
+    expect(again?.getAttribute("aria-label")).toBe("What the import of one left out");
+    click(again as HTMLElement);
+    await settle();
+    expect(rig.calls.switched).toEqual([]);
+    expect(rig.calls.dones).toEqual([]);
+    expect(rig.calls.notices).toHaveLength(1);
+    expect(rig.calls.notices[0]).toStartWith("one: ");
+    expect(rig.calls.notices[0]).toContain("table");
+    expect(rig.calls.notices[0]).toContain("comment");
+    teardown(rig);
+  });
+
   test("clicking a missing row itself explains, switches nothing and forgets nothing", async () => {
     const rig = mount();
     await open(rig);
@@ -1266,7 +1289,7 @@ describe("switcher import", () => {
     teardown(rig);
   });
 
-  test("a completed DOCX import with losses names them, in order, on the good-news channel", async () => {
+  test("a completed DOCX import with losses names them, in order, on the problem channel", async () => {
     const rig = mount({
       listImports: () => Promise.resolve(["book.docx"]),
       importProject: (filename) =>
@@ -1278,8 +1301,8 @@ describe("switcher import", () => {
     await open(rig, "import");
     click(rig.container.querySelector('[data-import-file="book.docx"]') as HTMLElement);
     await settle();
-    expect(rig.calls.dones).toHaveLength(1);
-    const notice = rig.calls.dones[0] ?? "";
+    expect(rig.calls.notices).toHaveLength(1);
+    const notice = rig.calls.notices[0] ?? "";
     // Tables named before links -- the fixed order the plan states -- and a
     // loss this run did NOT have (pictures) is absent from the sentence.
     expect(notice.indexOf("table")).toBeGreaterThanOrEqual(0);
@@ -1299,10 +1322,10 @@ describe("switcher import", () => {
     await open(rig, "import");
     click(rig.container.querySelector('[data-import-file="review.docx"]') as HTMLElement);
     await settle();
-    expect(rig.calls.dones).toHaveLength(1);
-    expect(rig.calls.dones[0]).toContain("2 tracked revisions");
-    expect(rig.calls.dones[0]).toContain("authors were not retained");
-    expect(rig.calls.dones[0]).toContain("Keep the original DOCX for review");
+    expect(rig.calls.notices).toHaveLength(1);
+    expect(rig.calls.notices[0]).toContain("2 tracked revisions");
+    expect(rig.calls.notices[0]).toContain("authors were not retained");
+    expect(rig.calls.notices[0]).toContain("Keep the original DOCX for review");
     teardown(rig);
   });
 
@@ -1879,6 +1902,26 @@ describe("the copy that leaves this computer", () => {
     await settle();
     expect(rig.calls.dones).toEqual([]);
     expect(rig.calls.notices).toEqual([]);
+    teardown(rig);
+  });
+
+  test("an encrypted archive's status stays with its own book", async () => {
+    let path = "/p/one.mss";
+    const rig = mount({
+      currentPath: () => path,
+      encryptedBackupDestination: async () => "/backups",
+      makeEncryptedArchive: async () => ({ file: "one.age", recipient: "age1public", encrypted: true }),
+    });
+    await open(rig, "backups");
+    click(el(rig.container, "project-archive-encrypted"));
+    await settle();
+    const status = el(rig.container, "project-encrypted-status");
+    expect(status.textContent).not.toBe("");
+    await open(rig, "backups");
+    expect(status.textContent).not.toBe("");
+    path = "/p/two.mss";
+    await open(rig, "backups");
+    expect(status.textContent).toBe("");
     teardown(rig);
   });
 

@@ -227,6 +227,7 @@ async function main(): Promise<void> {
       sidebarWordCounts: () => sidebarWordCounts,
       privacyLocked: () => privacyStatus.locked || privacyStatus.recovery,
       openProjectPanel: () => switcherHandle?.open("copies"),
+      openEncryptedBackups: () => switcherHandle?.open("backups"),
       // Through the panel, not straight to the host: the panel holds the
       // list it paints, and a word that reached the host behind its back
       // would be missing from Preferences until the next project switch.

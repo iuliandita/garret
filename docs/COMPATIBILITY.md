@@ -67,7 +67,7 @@ Android checks schema first, then book type: absent, novel, short, nonfiction
 and collection are supported; empty and unknown presets refuse. Desktop can
 retain an unknown preset, but it cannot send it as a supported mobile book.
 
-For a device copy, use Books > Copies > Export book for another device and
+For a device copy, use Books > Copies > Transfer to another device > Export book for another device and
 check the app version on the receiving device first. Android export requires
 the same explicit capability check. Unknown capability refuses; update or check
 the receiving app before retrying. The host checks the source schema before
@@ -205,7 +205,11 @@ display; Windows and macOS layout qualification remains external.
 Release 0.0.6 imports DOCX as prose and reports omitted notes and pictures.
 Release 0.0.7 converts footnotes and endnotes to owned plain-text endnotes;
 note formatting and unsupported pictures remain counted losses. Keep the original
-DOCX to retain its formatting and pictures. Import creates a separate current-format
+DOCX to retain its formatting and pictures. Release 0.0.11 keeps a non-empty loss
+count on the imported book as an optional `import.losses` row in its existing
+metadata table, so Books can show the report again; there is no schema change,
+older builds ignore the row, and a damaged row is dropped rather than refusing
+the book. Import creates a separate current-format
 book. Back up closed books and adjacent originals; rollback uses the previous
 package with a separate complete pre-upgrade copy.
 
