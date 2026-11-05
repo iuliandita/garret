@@ -137,7 +137,9 @@ export interface HelpPanelDeps {
 }
 
 export interface HelpPanel {
-  open(): void;
+  /** `"shortcuts"` opens at the key table, with focus on its heading so a
+   *  screen reader starts reading there; anything else opens at the top. */
+  open(at?: "shortcuts"): void;
   close(): void;
   destroy(): void;
 }
@@ -181,6 +183,9 @@ export function createHelpPanel(deps: HelpPanelDeps): HelpPanel {
     guide.append(details);
   }
   const shortcutsTitle = document.createElement("h3");
+  shortcutsTitle.id = "help-shortcuts-heading";
+  // A focus target for open("shortcuts"), never a tab stop.
+  shortcutsTitle.tabIndex = -1;
   shortcutsTitle.textContent = t("help.shortcuts.heading");
   panel.append(guide, shortcutsTitle);
 
@@ -237,10 +242,19 @@ export function createHelpPanel(deps: HelpPanelDeps): HelpPanel {
 
   let destroyed = false;
   return {
-    open(): void {
+    open(at?: "shortcuts"): void {
       if (privacyKeys) privacyKeys.textContent = privacyShortcutLabel(deps.privacyShortcut?.() ?? "ctrl_alt_l") || t("privacy.shortcut.off");
       panel.hidden = false;
-      panel.focus();
+      if (at === "shortcuts") {
+        shortcutsTitle.focus({ preventScroll: true });
+        // Only the panel's own scroll boxes move: scrollIntoView would also
+        // scroll whatever holds the header, and the page behind must not move.
+        for (let box: HTMLElement | null = shortcutsTitle.parentElement; box !== null; box = box === panel ? null : box.parentElement) {
+          box.scrollTop += shortcutsTitle.getBoundingClientRect().top - box.getBoundingClientRect().top;
+        }
+      } else {
+        panel.focus();
+      }
     },
     close,
     destroy(): void {

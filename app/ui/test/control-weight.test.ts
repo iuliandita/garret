@@ -393,6 +393,7 @@ describe("the units set the weight the design assigns", () => {
     ["timeline-card", "timeline-card.ts", "panel"],
     ["review-panel", "review-panel.ts", "panel"],
     ["craft-panel", "craft-panel.ts", "panel"],
+    ["help-shortcuts-heading", "help.ts", "shortcutsTitle"],
   ];
 
   test("every panel whose ring is suppressed is not a tab stop", async () => {

@@ -122,6 +122,25 @@ describe("the panel itself", () => {
     }
   });
 
+  test("the shortcuts command opens at the key table with focus on its heading", () => {
+    const { container, panel } = mount();
+    try {
+      panel.open("shortcuts");
+      const heading = container.querySelector<HTMLElement>("#help-panel #help-shortcuts-heading");
+      expect(heading?.textContent).toBe(t("help.shortcuts.heading"));
+      expect(heading?.tabIndex).toBe(-1);
+      expect(document.activeElement?.id).toBe("help-shortcuts-heading");
+      panel.close();
+      panel.open();
+      expect(document.activeElement?.id).toBe("help-panel");
+      const main = readFileSync(join(SOURCE, "main.ts"), "utf8");
+      expect(main).toContain('openHelp: () => help.open("shortcuts")');
+    } finally {
+      panel.destroy();
+      container.remove();
+    }
+  });
+
   test("Escape inside the panel closes it", () => {
     const { container, panel } = mount();
     try {

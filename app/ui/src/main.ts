@@ -854,7 +854,10 @@ async function main(): Promise<void> {
         lockPrivacy,
         privacyShortcut: () => privacyStatus.shortcut,
         canLockPrivacy: () => privacyStatus.enabled && !privacyStatus.locked && !privacyStatus.recovery,
-        openHelp: () => help.open(),
+        // The menu's command is "guide and shortcuts", and a writer who reaches
+        // for it mid-session is looking up a key: open at the table, with the
+        // guide one scroll above it.
+        openHelp: () => help.open("shortcuts"),
         toggleFocus: () => focusToggle?.toggle(),
         focusOn: () => focusToggle?.on() ?? false,
         toggleOutline: () => outlineToggle.toggle(),
