@@ -24,13 +24,11 @@
     },
     "editor": {
       "breaking": "none",
-      "docs": {
-        "docs/COMPATIBILITY.md": "4161cbd90661b55e6f39c32302043dafcc2791ce8c342dfb638c7baa05f4799e"
-      },
+      "docs": {},
       "migration": "",
-      "no_impact": "",
-      "note": "Encrypted backups reorder into folder, key and archive; device transfer moves into its own disclosure; the footer popover gains a route to encrypted backups; the review identity label is renamed. The compatibility guide's device export path follows the new disclosure.",
-      "source_sha256": "5ecaa0008984ad13dcc2364d1427fee5c474b85d3ed7af05e30f5fed75a08264"
+      "no_impact": "Scene links in revision tasks and appearances, Cards container headings, quieter pagers and the quick-open parent path change no documented workflow or compatibility guidance.",
+      "note": "Scene links in revision tasks and appearances, Cards container headings, quieter pagers and the quick-open parent path change no documented workflow or compatibility guidance.",
+      "source_sha256": "3d99f9680c082fba9bb8c66db42c65129159b1700f70ac922b6eb0127f55f764"
     },
     "encryption": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",

@@ -123,6 +123,7 @@ export function createContinuousChapter(deps: {
     });
     const previous = button(t("continuous.previous"), () => api.page(-1), projection.start === 0);
     const next = button(t("continuous.next"), () => api.page(1), projection.start + projection.scenes.length >= projection.total);
+    previous.hidden = next.hidden = projection.total <= CONTINUOUS_WINDOW;
     const active = document.createElement("strong");
     active.textContent = t("continuous.editing", { title: projection.scenes[activeIndex]?.title ?? "" });
     toolbar.replaceChildren(scope, count, active, previous, next, button(t("continuous.return"), deps.onReturn));
