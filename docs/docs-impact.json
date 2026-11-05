@@ -26,9 +26,9 @@
       "breaking": "none",
       "docs": {},
       "migration": "",
-      "no_impact": "Reference prose face, the cast Add a picture action, distinct selection fill and focus ring, the empty-scene placeholder and the revision state marks change no documented workflow or compatibility guidance.",
-      "note": "Reference prose face, the cast Add a picture action, distinct selection fill and focus ring, the empty-scene placeholder and the revision state marks change no documented workflow or compatibility guidance.",
-      "source_sha256": "be075f127217de577586c857cefb29361ea0f93969484c15b5413563c7a64ea4"
+      "no_impact": "The reading pager builds its page controls only when there is more than one page, and two unused catalog keys are removed; no visible behavior changes.",
+      "note": "The reading pager builds its page controls only when there is more than one page, and two unused catalog keys are removed; no visible behavior changes.",
+      "source_sha256": "a02d46caf68e11ee7a29ad00bc3115d6d7e70d564db3df60299f7a7dbad0ac93"
     },
     "encryption": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
