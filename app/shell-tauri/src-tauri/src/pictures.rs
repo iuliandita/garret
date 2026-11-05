@@ -610,7 +610,10 @@ impl PictureDir {
             use rustix::fs::{fstat, openat, FileType, Mode, OFlags};
             let fd = openat(&self.handle, name, OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC, Mode::empty())?;
             let meta = fstat(&fd)?;
-            if FileType::from_raw_mode(meta.st_mode) != FileType::RegularFile || meta.st_nlink != 1 {
+            // Hard links are allowed: attach shares equal originals inside this
+            // directory, and a received folder cannot carry a hard link to a
+            // file outside what it brought with it.
+            if FileType::from_raw_mode(meta.st_mode) != FileType::RegularFile {
                 return Err(unreadable_file());
             }
             fd.into()
@@ -707,8 +710,10 @@ fn read_state(error: std::io::Error) -> &'static str {
 /// face the day the writer tidies their downloads or unplugs a drive -- and it
 /// would be an ABSOLUTE path in the database, which is what "a relative path and
 /// nothing else" forbids and what would leak a private path into a recovery
-/// manifest and a salvage output. Each attachment is an independent file,
-/// including when its bytes match an existing picture.
+/// manifest and a salvage output. Within this directory only, equal originals
+/// may share a hard-linked inode after exact-byte verification; each attachment
+/// still has a fresh name and its own thumbnail. This is best effort: concurrent
+/// first attaches may both copy, and a filesystem that cannot link falls back.
 ///
 /// THE CEILING IS READ OFF THE METADATA FIRST, so a refusal for size costs one
 /// `stat` rather than a copy of the file it is refusing.
@@ -737,13 +742,75 @@ pub fn attach(dir: &Path, source: &Path) -> Result<String, PictureError> {
         .map_err(|e| PictureError::Io(format!("{}: {e}", dir.display())))?;
     let directory = PictureDir::open(dir)
         .map_err(|e| PictureError::Io(format!("{}: {e}", dir.display())))?;
-    directory.write_new(&name, &data)
-        .map_err(|e| PictureError::Io(format!("{name}: {e}")))?;
+    #[cfg(target_os = "linux")]
+    let linked = link_existing_original(dir, &directory, &name, format, &data)?;
+    #[cfg(not(target_os = "linux"))]
+    let linked = false;
+    if !linked {
+        directory.write_new(&name, &data)
+            .map_err(|e| PictureError::Io(format!("{name}: {e}")))?;
+    }
     // Publish the original first; a missing cache can always be regenerated.
     if let Err(e) = directory.write_cache(&thumb_at, &thumb) {
         eprintln!("pictures: could not cache {thumb_at}: {e}");
     }
     Ok(name)
+}
+
+/// Link one verified stored original to this attachment's fresh name. The
+/// candidate is linked before it is read, so a replacement after enumeration
+/// cannot make the returned name refer to bytes this attach did not validate.
+/// `linkat` without AT_SYMLINK_FOLLOW links a symlink itself, which the
+/// no-follow read then refuses.
+#[cfg(target_os = "linux")]
+fn link_existing_original(
+    dir: &Path,
+    directory: &PictureDir,
+    name: &str,
+    format: Format,
+    data: &[u8],
+) -> Result<bool, PictureError> {
+    let directory_entries = match std::fs::read_dir(dir) {
+        Ok(entries) => entries,
+        Err(e) => {
+            eprintln!("pictures: could not enumerate {} for deduplication: {e}", dir.display());
+            return Ok(false);
+        }
+    };
+    let mut names: Vec<String> = directory_entries
+        .filter_map(|entry| entry.ok()?.file_name().into_string().ok())
+        .filter(|candidate| {
+            !candidate.starts_with("fig-")
+                && is_stored_name(candidate)
+                && !candidate.ends_with(THUMB_SUFFIX)
+                && candidate.ends_with(format.extension())
+        })
+        .collect();
+    names.sort();
+    for candidate in names {
+        match directory.open_regular(&candidate).and_then(|file| file.metadata()) {
+            Ok(meta) if meta.len() == data.len() as u64 => {}
+            _ => continue,
+        }
+        if let Err(e) = rustix::fs::linkat(
+            &directory.handle,
+            candidate.as_str(),
+            &directory.handle,
+            name,
+            rustix::fs::AtFlags::empty(),
+        ) {
+            eprintln!("pictures: could not link {candidate} for deduplication: {e}");
+            return Ok(false);
+        }
+        if matches!(directory.read(name), Ok(read) if read == data) {
+            return Ok(true);
+        }
+        directory
+            .unlink(name)
+            .map_err(|e| PictureError::Io(format!("{name}: {e}")))?;
+        eprintln!("pictures: rejected mismatched deduplication candidate");
+    }
+    Ok(false)
 }
 
 /// What to show for a member's picture: one of four states, and a thumbnail
@@ -1065,7 +1132,7 @@ mod tests {
     #[test]
     fn no_follow_originals_refuse_links_and_special_files_even_with_a_cache() {
         use std::os::unix::fs::symlink;
-        for kind in ["symlink", "hardlink", "directory", "fifo"] {
+        for kind in ["symlink", "directory", "fifo"] {
             let root = tempdir().unwrap();
             let dir = root.path().join("book.pictures");
             std::fs::create_dir(&dir).unwrap();
@@ -1073,7 +1140,6 @@ mod tests {
             let entry = dir.join("cover.png");
             match kind {
                 "symlink" => symlink(&outside, &entry).unwrap(),
-                "hardlink" => std::fs::hard_link(&outside, &entry).unwrap(),
                 "directory" => std::fs::create_dir(&entry).unwrap(),
                 _ => rustix::fs::mkfifoat(rustix::fs::CWD, &entry, rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR).unwrap(),
             }
@@ -1463,19 +1529,23 @@ mod tests {
 
     #[cfg(target_os = "linux")]
     #[test]
-    fn duplicate_attachments_keep_originals_source_and_caches_independent() {
+    fn duplicate_attachments_share_original_bytes_but_keep_source_and_caches_independent() {
         let root = tempdir().unwrap();
         let dir = root.path().join("p.pictures");
         let source = write(root.path(), "photo.jpg", JPEG);
         let a = attach(&dir, &source).unwrap();
         let b = attach(&dir, &source).unwrap();
 
-        assert_ne!(
+        assert_eq!(
             std::fs::metadata(dir.join(&a)).unwrap().ino(),
             std::fs::metadata(dir.join(&b)).unwrap().ino()
         );
-        assert_eq!(std::fs::metadata(dir.join(&a)).unwrap().nlink(), 1);
-        assert_eq!(std::fs::metadata(dir.join(&b)).unwrap().nlink(), 1);
+        // A shared original stays readable through every path that reads it.
+        for name in [&a, &b] {
+            assert_eq!(view(&dir, Some(name)).state, VIEW_PRESENT);
+            assert_eq!(full(&dir, Some(name)).state, VIEW_PRESENT);
+            assert!(original(&dir, name).is_some() && dimensions(&dir, name).is_some());
+        }
         assert_ne!(
             std::fs::metadata(&source).unwrap().ino(),
             std::fs::metadata(dir.join(&a)).unwrap().ino()
@@ -1488,6 +1558,58 @@ mod tests {
         remove(&dir, &a);
         assert_eq!(std::fs::read(dir.join(&b)).unwrap(), JPEG);
         assert_eq!(view(&dir, Some(&b)).state, VIEW_PRESENT);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn a_same_length_different_candidate_does_not_hide_a_later_exact_candidate() {
+        let root = tempdir().unwrap();
+        let dir = root.path().join("p.pictures");
+        std::fs::create_dir_all(&dir).unwrap();
+        let source_bytes = encode_png(&Rgb {
+            width: 1,
+            height: 1,
+            pixels: vec![1, 2, 3],
+        })
+        .unwrap();
+        let different = encode_png(&Rgb {
+            width: 1,
+            height: 1,
+            pixels: vec![4, 5, 6],
+        })
+        .unwrap();
+        assert_eq!(source_bytes.len(), different.len());
+        let rejected = dir.join("a-mismatch.png");
+        let exact = dir.join("z-exact.png");
+        std::fs::write(&rejected, &different).unwrap();
+        std::fs::write(&exact, &source_bytes).unwrap();
+
+        let stored = attach(&dir, &write(root.path(), "source.png", &source_bytes)).unwrap();
+
+        assert_eq!(std::fs::read(&rejected).unwrap(), different);
+        assert_eq!(
+            std::fs::metadata(dir.join(&stored)).unwrap().ino(),
+            std::fs::metadata(&exact).unwrap().ino()
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn thumbnails_and_symlinks_are_not_deduplication_candidates() {
+        let root = tempdir().unwrap();
+        let dir = root.path().join("p.pictures");
+        std::fs::create_dir_all(&dir).unwrap();
+        let thumbnail = dir.join("ignored.thumb.png");
+        std::fs::write(&thumbnail, PNG).unwrap();
+        let source = write(root.path(), "outside.png", PNG);
+        std::os::unix::fs::symlink(&source, dir.join("ignored-link.png")).unwrap();
+
+        let stored = attach(&dir, &source).unwrap();
+
+        let meta = std::fs::symlink_metadata(dir.join(&stored)).unwrap();
+        assert!(meta.file_type().is_file());
+        assert_ne!(meta.ino(), std::fs::metadata(&thumbnail).unwrap().ino());
+        assert_ne!(meta.ino(), std::fs::metadata(&source).unwrap().ino());
     }
 
     #[cfg(unix)]

@@ -4955,7 +4955,7 @@ pub(crate) mod tests {
     #[test]
     fn no_follow_salvage_records_linked_pictures_and_covers_as_losses() {
         use std::os::unix::fs::symlink;
-        for kind in ["symlink", "directory-link", "hardlink", "fifo"] {
+        for kind in ["symlink", "directory-link", "fifo"] {
             let dir = tempdir().unwrap();
             let db = dir.path().join("book.db");
             let members = fixture_with_everything(&db).2;
@@ -4975,7 +4975,6 @@ pub(crate) mod tests {
                     std::fs::remove_file(pictures.join(name)).unwrap();
                     match kind {
                         "symlink" => symlink(&target, pictures.join(name)).unwrap(),
-                        "hardlink" => std::fs::hard_link(&target, pictures.join(name)).unwrap(),
                         _ => rustix::fs::mkfifoat(rustix::fs::CWD, &pictures.join(name), rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR).unwrap(),
                     }
                 }

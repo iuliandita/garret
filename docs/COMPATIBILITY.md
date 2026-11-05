@@ -113,14 +113,12 @@ is tracked in [issue 403](https://github.com/iuliandita/garret/issues/403).
 `design-apply` requires schema 18; older books require consented migration first.
 Batch saves and retained-document validation share one schema/registry read.
 
-Cast and cover pictures use independent regular files in a real adjacent
-`<stem>.pictures` directory. The app refuses linked or non-regular originals
-and thumbnail entries; a missing thumbnail is regenerated. On Unix, originals
-and caches with more than one hard link are unreadable. New attachments keep
-independent copies even when their bytes match. For older shared originals,
-close the app, preserve a complete backup, and replace each shared entry with
-an independent copy before reopening. No database migration runs.
-Salvage records unreadable cast pictures and covers as losses and keeps the
+Cast and cover pictures are regular files in a real adjacent
+`<stem>.pictures` directory. The app refuses symlinked or non-regular originals
+and thumbnail entries, and a symlinked pictures directory; a missing thumbnail
+is regenerated. Hard-linked originals that the app shared between equal
+attachments stay readable. Existing books need no changes and no database
+migration runs. Salvage records unreadable cast pictures and covers as losses and keeps the
 other readable content. Keep the closed database, adjacent originals and
 profile before upgrading; rollback uses a separate complete copy with the
 previous package. Linux tests cover these file rules; native Windows and macOS
