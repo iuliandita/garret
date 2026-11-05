@@ -6631,12 +6631,20 @@ body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="t
    and a deleted member's sheet still standing after the list went empty. */
 #cast-sheet-record {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 96px;
+  grid-template-columns: minmax(0, 1fr);
   column-gap: 16px;
+}
+
+/* THE PICTURE TRACK EXISTS ONLY WHILE A PICTURE IS DRAWN. Without one the
+   aliases and the summary run the sheet's full width straight under the name;
+   an empty reserved square outranked the character's own words. */
+#cast-sheet-record[data-picture="shown"] {
+  grid-template-columns: minmax(0, 1fr) 96px;
 }
 
 .cast-sheet-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
@@ -6676,22 +6684,19 @@ body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="t
   flex: 0 0 auto;
 }
 
-/* THE PICTURE COLUMN, AT THE TOP RIGHT (the column fix
-   above replaces the float this used to be -- see #cast-sheet-record). Its
-   own grid column, second and last, so it never shares a row with the
-   summary's text or the fields below overrun it.
-
-   NO FIXED HEIGHT HERE: the 96px square is real -- both
-   .cast-sheet-picture-frame and .cast-sheet-picture-empty state it
-   themselves, below -- but the COLUMN also holds the Add-a-picture button
-   under an empty square, and a fixed 96px on this element left that button
-   with nowhere to sit but overflowing onto .cast-sheet-fields underneath.
-   The column now sizes to whichever content it actually holds. */
-.cast-sheet-picture {
+/* THE PICTURE COLUMN, AT THE TOP RIGHT, only while a picture is drawn (see
+   #cast-sheet-record). Its own grid column, second and last, so it never
+   shares a row with the summary's text or the fields below overrun it. With
+   no picture the block spans the sheet and holds at most the missing-original
+   sentence. */
+#cast-sheet-record[data-picture="shown"] .cast-sheet-picture {
   grid-column: 2;
   grid-row: 2;
   width: 96px;
-  text-align: center;
+}
+
+.cast-sheet-picture {
+  grid-column: 1 / -1;
 }
 
 .cast-sheet-picture-frame {
@@ -6709,40 +6714,20 @@ body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="t
   object-fit: cover;
 }
 
-/* THE EMPTY SQUARE (ticket 07): --nav-bg and a 1px border rather than the
-   "No picture yet." sentence the form still carries -- that sentence is
-   Edit's, this square is Read's. Its own explicit 96x96, not a percentage
-   of the column: the column no longer states a height for it to be a
-   percentage OF (see above). */
-.cast-sheet-picture-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 96px;
-  height: 96px;
-  background: var(--nav-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
+/* A PICTURE THE RECORD NAMES BUT THIS BUILD CANNOT SHOW: the form's quiet
+   sentence, so a missing original never reads as a member with no picture. */
+#cast-sheet-picture-state {
+  margin: 0 0 8px;
   color: var(--muted);
-}
-
-.cast-sheet-picture-empty svg {
-  width: 24px;
-  height: 24px;
+  font-size: var(--text-sm);
 }
 
 #cast-sheet-picture-add {
-  display: block;
-  width: 100%;
-  margin-top: 4px;
-  text-align: center;
-  /* ALLOWED TO WRAP inside the 96px column, unlike every other button in
-     this panel -- "Add a picture..." is the widest label in the narrowest
-     box on the sheet, and clipping or overflowing it was the second half of
-     the capture's defect: it wrapped onto its own line fine
-     once the picture stopped floating, but a button's own default is still
-     stated explicitly here rather than left to inherit. */
-  white-space: normal;
+  flex: 0 0 auto;
+}
+
+#cast-sheet-picture-add[hidden] {
+  display: none;
 }
 
 /* ALSO CALLED, before the summary -- who this is, then what they are

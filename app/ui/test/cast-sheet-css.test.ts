@@ -30,9 +30,9 @@ function hasHiddenOverride(selector: string): boolean {
 
 // EVERY ID THIS PANEL EVER ASSIGNS `.hidden = true/false` TO, read straight
 // off cast-panel.ts rather than guessed: #cast-panel, #cast-detail,
-// #cast-sheet, #cast-sheet-record, #cast-sheet-summary, #cast-sheet-fields
-// and #cast-new-row. THE PICTURE BLOCKS ARE NOT HERE, deliberately: neither
-// `#cast-picture-block` nor `#cast-sheet-picture` is ever hidden -- their
+// #cast-sheet, #cast-sheet-record, #cast-sheet-summary, #cast-sheet-fields,
+// #cast-new-row and #cast-sheet-picture-add. THE PICTURE BLOCKS ARE NOT
+// HERE, deliberately: neither `#cast-picture-block` nor `#cast-sheet-picture` is ever hidden -- their
 // CONTENTS are replaced per state (`paintPicture`, `paintSheetPicture`), so
 // there is no `[hidden]` toggle for a stylesheet rule to defeat.
 const TOGGLED_IDS = [
@@ -43,6 +43,7 @@ const TOGGLED_IDS = [
   "#cast-sheet-fields",
   "#cast-detail",
   "#cast-new-row",
+  "#cast-sheet-picture-add",
 ];
 
 describe("every block the cast panel hides carries its own [hidden] override", () => {
