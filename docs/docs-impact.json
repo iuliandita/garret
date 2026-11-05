@@ -26,9 +26,9 @@
       "breaking": "none",
       "docs": {},
       "migration": "",
-      "no_impact": "Scene links in revision tasks and appearances, Cards container headings, quieter pagers and the quick-open parent path change no documented workflow or compatibility guidance.",
-      "note": "Scene links in revision tasks and appearances, Cards container headings, quieter pagers and the quick-open parent path change no documented workflow or compatibility guidance.",
-      "source_sha256": "3d99f9680c082fba9bb8c66db42c65129159b1700f70ac922b6eb0127f55f764"
+      "no_impact": "The shared side-layout rule, full-surface panels, preferences placement and the compare diff scroll change no documented workflow or compatibility guidance.",
+      "note": "The shared side-layout rule, full-surface panels, preferences placement and the compare diff scroll change no documented workflow or compatibility guidance.",
+      "source_sha256": "e137d052daa8746c23cce7b940ca4aa4f1cb3982b15fe4db3fc388317aa3c320"
     },
     "encryption": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
