@@ -82,7 +82,8 @@ const PAGE_MAX_UM: i64 = 1_000_000;
 /// what is stored is a NAME and whether the machine rendering the book has it is
 /// 043's and 044's problem, with a generic fallback. That gap is recorded rather
 /// than papered over.
-pub const FONTS: [&str; 4] = [
+pub const FONTS: [&str; 5] = [
+    "Crimson Pro",
     "Crimson Text",
     "EB Garamond",
     "Libre Baskerville",
@@ -419,7 +420,7 @@ pub fn preset(id: &str) -> Option<BookDesign> {
         PRESET_FICTION => Some(BookDesign {
             // "a font family for book production in the tradition of beautiful
             // oldstyle typefaces" -- the project's own description.
-            font: "Crimson Text".to_string(),
+            font: "Crimson Pro".to_string(),
             page: named(size("trade")),
             margins: Margins {
                 // 0.75 in: KDP's 0.5 in gutter minimum for a 151-300 page book,
@@ -1138,6 +1139,7 @@ mod tests {
         // every undesigned book differently from the button that claims to
         // match it.
         assert_eq!(default_design(), preset(PRESET_FICTION).unwrap());
+        assert_eq!(default_design().font, "Crimson Pro");
     }
 
     #[test]

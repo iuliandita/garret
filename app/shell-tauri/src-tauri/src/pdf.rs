@@ -493,10 +493,21 @@ fn render_document(proof: &Proof, plan: &crate::publication_plan::Plan, notes_ti
         "markupLimit": proof.markup_limit,
     }));
 
+    let bundled_font = if proof.design.font == "Crimson Pro" {
+        [
+            ("normal", "400", include_bytes!("../../../ui/fonts/CrimsonPro-Regular.woff2").as_slice()),
+            ("italic", "400", include_bytes!("../../../ui/fonts/CrimsonPro-Italic.woff2").as_slice()),
+            ("normal", "700", include_bytes!("../../../ui/fonts/CrimsonPro-Bold.woff2").as_slice()),
+            ("italic", "700", include_bytes!("../../../ui/fonts/CrimsonPro-BoldItalic.woff2").as_slice()),
+        ].iter().map(|(style, weight, bytes)| format!(
+            "@font-face {{ font-family: 'Crimson Pro'; font-style: {style}; font-weight: {weight}; src: url(data:font/woff2;base64,{}) format('woff2'); }}\n",
+            crate::pictures::base64(bytes)
+        )).collect::<String>()
+    } else { String::new() };
     Ok(format!(
         "<!DOCTYPE html>\n<html lang=\"{language}\">\n<head>\n\
          <meta charset=\"utf-8\">\n<title>{title}</title>\n\
-         <style>{css}</style>\n\
+         <style>{bundled_font}{css}</style>\n\
          <script type=\"application/json\" id=\"proof-meta\">{meta}</script>\n\
          </head>\n<body>\n\
          <div id=\"proof-flow\">\n{flow}</div>\n\
@@ -967,13 +978,11 @@ pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), include_str!(
   }
   }
   var images = Array.from(flow.querySelectorAll("figure img"));
-  if (images.length) {
-    window.__proofReady = Promise.all(images.map(function(image) {
-      return image.decode();
-    })).then(paginate).catch(function() {
-      window.__proofError = "a proof image did not decode";
-    });
-  } else { paginate(); }
+  window.__proofReady = Promise.all([document.fonts.ready].concat(images.map(function(image) {
+    return image.decode();
+  }))).then(paginate).catch(function() {
+    window.__proofError = "a proof resource did not load";
+  });
 })();
 "#);
 
