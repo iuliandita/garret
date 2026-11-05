@@ -1,19 +1,24 @@
 # Published and development builds
 
-The current published release is [0.0.10 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.10).
+The current published release is [0.0.11 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.11).
 Its source and platform inventory are recorded in [releases.json](releases.json).
 Earlier releases are listed in the [changelog](../CHANGELOG.md).
 That record is an explicit observation of published state, not an automatic
 claim that the current develop commit has shipped. Update it only after the
 release and complete downloads are public and verified.
 
-The release fixes figure editing. A figure at the end of a scene always has a
-writable paragraph after it, alternative text sits on the image instead of
-showing as a second caption, a missing description is marked on the figure, and
-publishing without one names Figure properties instead of a generic error. The
-EPUB preview shows figure images, including after a refresh. The stored format
-is unchanged from 0.0.9, and the Android package `com.usegarret.app` keeps its
-signing certificate.
+The release is a round of interface fixes. A DOCX import's loss report stays
+on screen and can be shown again from Books. A day spent cutting reads as words
+cut. Side panels and the publishing preview make room instead of covering the
+prose, and take the whole window when no split fits. Encrypted backups read
+folder, key, then archive, with device transfer in its own disclosure. Revision
+tasks and Who appears where open their scenes, and Cards shows chapters as
+headings. The PDF proof centres its byline, sets paragraphs ragged-right and
+defaults new fiction designs to the bundled Crimson Pro. German uses formal
+address and Strg throughout, and Focus mode, the outline and the Word export
+have menu entries. The stored format is unchanged from 0.0.10; a DOCX import
+adds one optional metadata row that older builds ignore. The Android package
+`com.usegarret.app` keeps its signing certificate.
 
 Linux x86_64, Windows x86_64 and arm64, Android, and macOS Apple Silicon and
 Intel packages are published. Install-and-launch checks on CI runners are not
@@ -22,17 +27,9 @@ and does not synchronize books automatically.
 
 ## Develop-only work
 
-The next release is a round of interface fixes. A DOCX import's loss report
-stays on screen and can be shown again from Books. A day spent cutting reads as
-words cut. Side panels and the publishing preview make room instead of covering
-the prose, and take the whole window when no split fits. Encrypted backups read
-folder, key, then archive, with device transfer in its own disclosure. Revision
-tasks and Who appears where open their scenes. Cards shows chapters as
-headings. The PDF proof centres its byline, sets paragraphs ragged-right and
-defaults new fiction designs to the bundled Crimson Pro. German uses formal
-address and Strg throughout, and Focus mode, the outline and the Word export
-have menu entries. The stored format is unchanged from 0.0.10; a DOCX import
-adds one optional metadata row that older builds ignore.
+Nothing user-visible is pending on develop. Future user-visible capabilities
+awaiting release belong here and in the
+separate `develop_only` list in releases.json.
 
 ## Preparing the next release
 
