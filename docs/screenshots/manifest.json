@@ -1,211 +1,211 @@
 {
   "images": {
     "android-editor-dark.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original Android screenshot from the published APK in a disposable API 36 emulator. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited. This is not physical-device certification.",
-      "package_sha256": "42baa93282886bb7b603d968733d8045db1d3a67a1145115dd5cdfdd4e3687db",
+      "package_sha256": "1a8d6c1f4edac01a4f418424911ca2755566d722244e989984a0f5f5eea2864f",
       "platform": "android",
-      "sha256": "4df27e4e9fd57d767e86e5dbfb373fa96171d2deca63b35572874154b2bb26b1",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "3dcd72d58c84949d6a215f98888f076919edf8d4ff06ec8407cc3b1661dbc7e9",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "android-editor-light.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original Android screenshot from the published APK in a disposable API 36 emulator. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited. This is not physical-device certification.",
-      "package_sha256": "42baa93282886bb7b603d968733d8045db1d3a67a1145115dd5cdfdd4e3687db",
+      "package_sha256": "1a8d6c1f4edac01a4f418424911ca2755566d722244e989984a0f5f5eea2864f",
       "platform": "android",
-      "sha256": "99d717019fb9a96600bb049e99893caa8b68bec19705d49f61ca7aea5dba8b59",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "dcbcd63d865c84cf3360554b689449e0d048c20aeec6d896db503aa800d16db8",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "android-library-light.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original Android screenshot from the published APK in a disposable API 36 emulator. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited. This is not physical-device certification.",
-      "package_sha256": "42baa93282886bb7b603d968733d8045db1d3a67a1145115dd5cdfdd4e3687db",
+      "package_sha256": "1a8d6c1f4edac01a4f418424911ca2755566d722244e989984a0f5f5eea2864f",
       "platform": "android",
-      "sha256": "85011b94f99a54985ec4664c941ee607dc0465e2ace26125ebc7814c67b1c670",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "682650491ea3990af2646a3db8dd990c1b485fe6f9805e3e9bbc577de557943e",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "appearances.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "c8984560c8e485c848e2e27084aa6a3d07bf83b7294f9d238afe62c7bfaf74c6",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "a4e62da2994a5c91ff724d509a81c9436bc32e98e70136141fe11dd6329cd64a",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "authors.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "59d0d95ef46c43d6d873ce61e6d774b11b8c672a4b7e1b3aca8639b81fd4b220",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "9f641e2dc34926c5a5dc0e796cb7d448a355a0c2db14b8751dda95a338937e19",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "cards.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "4f166b5fbff929c01953293e9ac4fb129d040cf00777e637680d781bb4c99750",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "1f763f4731398bc5f24240764b4caf457b3da7ef298ebcaa55218d356699d969",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "cast.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "ac22b3782d4305d5cb33c37811ea7f68a86231f4a6cdfedca1027eb7c21da7dd",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "19d0664cb82c551ec9462d252495c02d01a54f567e3e76de92596351409febc3",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "comments.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
       "sha256": "52449e42e5a1775cd332a78170b247e1cf3c74bab9b12818c182d4c013fbbb2a",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "dark.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "8606b13906520e5f5a1dd20b259cf815da55e37b3ee94db5cdfbb6abbfe6e028",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "c8c6aee508022abbfbe54fecbecdcaf69abb1bea286cf4c76faa5ff461af1d7d",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "editor-light.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "da70b119806399cbf33b0ac981409e01caf0262c9f4840c45374152a8e8f82f3",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "ec41af0fae21cda0321cc829f300c3c06546eeb04714e3d81318a751f318dec6",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "epub.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "1a2b636946090154144f22fd79ebaf2fff66bb3023f6f55b0b09d462ade40ee7",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "1ab2683101e902a3239172e30147c811a8954d119f297767e7e7015995494c95",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "formatting.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "09e3225794951a851a2df212c16f22f7423779aa5f126a846aa1dd92f92664ed",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "2b3af8f803d62895b1bca3b2467537c43210616eaa19f0c48f5286cc3fed289a",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "history.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
-      "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
+      "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; the oldest compared version is the matching opening of Carroll's 1864 manuscript, Alice's Adventures Under Ground; images were visually inspected and pixels were not edited.",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "751674fe631a6868595c9ddef54191f347ee4deb09b95d5f75a9b5783da16b14",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "01dc88bf9878cd6d28284ae3c68abae42e2403866275f45b564887a164cf86cb",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "library.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "05b90be20c2c52e577b522983cf5f0f0219b7942da3035a82564152216859056",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "0b32c52e7c39318f640ee1666895f6c9636b4e9f977e4a63d0985f05b67207a3",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "outline.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "c06450e57eadc2eed26659c8025ed9c258a8576531dc4515962fda9dc4c99333",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "c35db3ab9a92e61242be26a0d70b4482cddbda7cbc20e9cafec258acaa5956c0",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "pdf.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "860ed91fb318f384f85efb3b69861392593f7674a42f232e210fbbe8a3365bea",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "47a8ae842f7c83457c987858291e5ef2a454d4ca9b0b61dae66d7740eb25d019",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "preferences.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "62a1ec243d35b4b3f7b22497faace9461f647518c8fdbdfa03114faaa51a6eab",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "46006d0626b956adb6e66dd0e1043cc7a5556e3a0548f132d522babd61ae9236",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "review.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "2dc333f4e9ef80e1479a64b707d6939997bfdeb43715186da6fc4258d41f2a5c",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "76fed4fd07671b12d03aedc1b528a596626c1ffb10a1db698218cc3ccd18ae8a",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "revision.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "87d296a9fa4efb74c4a021cd1ed4ed72747af402e0956c000a5fdb7678815833",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "deb7f3356e5bb4c1c75dc2fa55240e59d8cdd24366a31ea77ba31b0fb1e37fb6",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "search.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "dae4ecb4cd2c243cf43d8a0d18706987a700c3e90b8d5a3414786d6f8fa30aef",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "94ac1238324aa5d909a7edeaed6e6e3b5973ed3ef122230a67228e11e9bb3fc5",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "statistics.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "e89ca5a38ca1e60b384f4ff40e0fc79dec4f28b52b4d2d1b39e1554a4dfa0cae",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "e74525e0cc45932e0727a4fbf151ab83707240decde4c6dd24a00a3f516a0a22",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "synopsis.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "b5f5944c49a9c47ae7e2a249043089f608ead3c4da88978409da0c7175892550",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "3ee1a6fc20f5542bdfeb0093fd746e05b8539121884b94f8b198809d21d1fc3f",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     },
     "timeline.png": {
-      "app_version": "0.0.2",
-      "capture_date": "2026-10-09",
+      "app_version": "0.0.11",
+      "capture_date": "2026-11-05",
       "capture_note": "Original native Linux window capture from the published package on an isolated X11 display. Classic-book excerpts include sample editorial annotations; images were visually inspected and pixels were not edited.",
-      "package_sha256": "19d35e236c5457ad2b6a8a8a56371742f4d2aa92b8ca809a0b95baf5d58a0a9a",
+      "package_sha256": "b212ec2c16afb877e222a538a8ef9886cda14edd6fe3262508cffca447f7569e",
       "platform": "linux",
-      "sha256": "bacecad2535496a5bb7ef7eba1a4c75368c728d2f6e62f377f7fec4d110b1951",
-      "source_revision": "1ffa7b2a31e01d9a5dc8005cd0bfd80cf295bc15"
+      "sha256": "c9e29c58e438b5333a34e9611a244e31a9bb40f297c4b476b4c3a971299c4433",
+      "source_revision": "ad93c60409fc23a6023efecbb5a65e9695ff658a"
     }
   },
   "version": 1

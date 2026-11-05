@@ -26,3 +26,11 @@ for index in range(3):
         scene_index += 1
 assert scene_index == len(SCENES)
 (ROOT / "manuscript.md").write_text("\n\n".join(parts) + "\n", encoding="utf-8")
+
+# Carroll's 1864 manuscript opens with the same scene in earlier wording; its
+# first three paragraphs are the sample's earlier draft of the first scene.
+draft = (ROOT / "under-ground.txt").read_text(encoding="utf-8-sig")
+start = draft.index("Alice was beginning to get very tired")
+paragraphs = [" ".join(p.split()) for p in draft[start:].split("\n\n")[:3]]
+assert paragraphs[2].startswith("The rabbit-hole went straight on")
+(ROOT / "earlier-draft.md").write_text("\n\n".join(paragraphs) + "\n", encoding="utf-8")
