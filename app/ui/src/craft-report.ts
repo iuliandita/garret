@@ -1,3 +1,4 @@
+import { csvText } from "./csv-text";
 import { readableBody, schema } from "./editor";
 import { foldForFind } from "./find-locate";
 import { messages, t } from "./i18n";
@@ -376,8 +377,7 @@ export function createCraftReport(input: ReportOptions): {
 
 function csvCell(value: unknown, text: boolean): string {
   let cell = String(value ?? "");
-  if (text && /^[\s\u0000-\u001f]*[=+\-@]/.test(cell)) cell = `'${cell}`;
-  if (text && /^[\u0000-\u001f]/.test(cell)) cell = `'${cell}`;
+  if (text) cell = csvText(cell);
   return '"' + cell.replaceAll('"', '""') + '"';
 }
 
