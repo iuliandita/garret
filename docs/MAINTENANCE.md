@@ -53,6 +53,13 @@ must retain develop's prose and counted note/picture losses, ignore note-body
 parts, and store no atoms. Test the owned-note path separately with an isolated
 open policy; its formatting, missing-body, and drawing losses count affected notes.
 
+Publication-image tests inspect media read back from EPUB and DOCX packages and
+from published Markdown asset folders. Keep metadata-bearing PNG/JPEG fixtures,
+orientation and rendering-chunk controls, immutable-original checks, and separate
+preflight checks for images present, absent, and unreadable. Byte filtering must
+handle JPEG metadata between scans, reject truncated segment/chunk bounds, and
+produce deterministic content hashes without adding metadata to retained files.
+
 Scoped EPUB tests cover note restarts and placement, reference/backlink targets,
 contents order, escaped figure text, relative PNG/JPEG media, and explicit
 publication refusals. Set `GARRET_EPUB_TEST_OUTPUT` to a disposable directory

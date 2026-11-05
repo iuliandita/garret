@@ -1597,7 +1597,7 @@ export const EN = {
   "preflight.check.missing_metadata": "Required fields",
   "preflight.check.broken_links": "Links",
   "preflight.check.validator": "Format validator",
-  "preflight.check.assets": "Alt text, fonts and images",
+  "preflight.check.assets": "Publication image metadata",
   "preflight.state.ran": "checked",
   "preflight.state.vacuous": "nothing to check",
   "preflight.state.not_applicable": "does not apply",
