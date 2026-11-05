@@ -750,14 +750,13 @@ export function createOutlineView(deps: OutlineViewDeps): OutlineView {
     const nav = document.createElement("nav");
     nav.className = "outline-view-pages";
     nav.setAttribute("aria-label", t("reading.pages"));
-    nav.append(
-      button(t("outline-view.return"), deps.onReturn, false, "return"),
-      button(t("outline-view.previous"), () => { page -= 1; paintReading(); element.scrollTop = 0; }, page <= 1, "previous"),
-      Object.assign(document.createElement("span"), { textContent: t("reading.page", { page: formatNumber(page), pages: formatNumber(projection.pages) }) }),
-      button(t("outline-view.next"), () => { page += 1; paintReading(); element.scrollTop = 0; }, page >= projection.pages, "next"),
-    );
-    if (projection.pages <= 1) {
-      for (const child of Array.from(nav.children).slice(1)) child.remove();
+    nav.append(button(t("outline-view.return"), deps.onReturn, false, "return"));
+    if (projection.pages > 1) {
+      nav.append(
+        button(t("outline-view.previous"), () => { page -= 1; paintReading(); element.scrollTop = 0; }, page <= 1, "previous"),
+        Object.assign(document.createElement("span"), { textContent: t("reading.page", { page: formatNumber(page), pages: formatNumber(projection.pages) }) }),
+        button(t("outline-view.next"), () => { page += 1; paintReading(); element.scrollTop = 0; }, page >= projection.pages, "next"),
+      );
     }
     const surface = document.createElement("div");
     surface.className = "reading-documents";
