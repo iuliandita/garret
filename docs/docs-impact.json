@@ -44,12 +44,12 @@
     "maintenance": {
       "breaking": "none",
       "docs": {
-        "docs/MAINTENANCE.md": "bcff9e9c3c5b4068477b27e3bee1360f35ea404a221614bb413748aef1651e17"
+        "docs/MAINTENANCE.md": "72d0381a1dcb4a2a7d5730849d6cd99e4e5e0ca643e23058798f472d987047fa"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Document settlement coverage for saves made while readable-folder acceptance runs.",
-      "source_sha256": "05d5a2253dd2c06f435d70d4e4a6b3ec4c3e846d9aa3c9ca7ac2756de5df2f66"
+      "note": "Document the deterministic concurrent-save regression and restored-previous-content case.",
+      "source_sha256": "396f25be1d805a3484167b49b8e05ef5846bae34c5048e63effefd37e206d505"
     },
     "native-packaging": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
@@ -66,12 +66,12 @@
     "project-format": {
       "breaking": "none",
       "docs": {
-        "docs/MAINTENANCE.md": "bcff9e9c3c5b4068477b27e3bee1360f35ea404a221614bb413748aef1651e17"
+        "docs/MAINTENANCE.md": "72d0381a1dcb4a2a7d5730849d6cd99e4e5e0ca643e23058798f472d987047fa"
       },
       "migration": "",
       "no_impact": "",
-      "note": "Document the deterministic acceptance race regression and retained pause behavior; stored book and mirror formats are unchanged.",
-      "source_sha256": "58f794008a6cd41a8bbdbfbee6d688456c1b768ee28830514fd181dbb141c882"
+      "note": "Document settlement against exact accepted file bytes, including concurrent saves that restore the previous mirror contents; persistent formats are unchanged.",
+      "source_sha256": "7742823664deca14a768364dc66d964e6fb84aa30063072cb7074496a1780ae8"
     },
     "schema": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
