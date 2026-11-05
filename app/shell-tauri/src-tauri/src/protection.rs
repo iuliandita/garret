@@ -89,19 +89,21 @@ fn recovery_manifest_matches(dir: &Path, kind: &str, stem: &str) -> bool {
     })
 }
 
+pub(crate) fn mirror_path_safe(path: &str) -> bool {
+    !path.is_empty()
+        && !Path::new(path).is_absolute()
+        && !path.contains(['\\', '\0'])
+        && !matches!(path.as_bytes(), [letter, b':', ..] if letter.is_ascii_alphabetic())
+        && path.split('/').all(|part| !part.is_empty() && part != "." && part != "..")
+        && Path::new(path).components().all(|component| matches!(component, Component::Normal(_)))
+}
+
 fn mirror_manifest_matches(dir: &Path, stem: &str) -> bool {
     crate::recovery::read_manifest::<crate::mirror::MirrorEntry>(dir).is_some_and(|manifest| {
         manifest.manifest_version == 1
             && manifest.kind == crate::recovery::KIND_MIRROR
             && manifest.project.slug == stem
-            && manifest.entries.iter().all(|entry| {
-                !entry.path.is_empty()
-                    && !Path::new(&entry.path).is_absolute()
-                    && !entry.path.contains('\\')
-                    && Path::new(&entry.path)
-                        .components()
-                        .all(|component| matches!(component, Component::Normal(_)))
-            })
+            && manifest.entries.iter().all(|entry| mirror_path_safe(&entry.path))
     })
 }
 

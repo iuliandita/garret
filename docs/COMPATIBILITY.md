@@ -350,6 +350,15 @@ removal. Ordinary books keep their existing bidirectional, pause, conflict-copy
 and undo behavior. Removing a marker and importing as ordinary Markdown is a
 lossy conversion, not a mirror round-trip.
 
+Readable-folder writes, scans and cleanup refuse symlinked files or directories
+below the selected folder. Keep actual files there instead of links. Manifest
+paths must contain ordinary relative components; absolute paths and parent
+traversal refuse the pass. Files read from the folder have the same 64 MiB cap
+as manuscript imports. Oversized changed files remain unreadable and paused;
+reduce or move the external file before reviewing it again. These checks do
+not change the book schema or valid mirror format. Complete backups and
+separate-copy rollback instructions still apply.
+
 The default `garret search book.db QUERY --json` result adds a `locators` array
 to each hit, retaining the existing keys. Each locator contains `field`,
 `item_id`, `instance_id`, `from`, and `to`. Consumers that require an exact key

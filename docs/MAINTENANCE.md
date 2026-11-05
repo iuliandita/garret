@@ -84,7 +84,15 @@ Mirror fixtures cover matching-schema copies, relative media and format markers;
 the unchanged existing reader's retained-extra-key behavior rejects those markers.
 Stored-atom refusal remains independent of marker presence. Production new-format
 mirror output refuses before creating a destination. Run the complete mirror suite
-to retain the existing pause, conflict-copy, acceptance and undo checks.
+to retain the existing pause, conflict-copy, acceptance and undo checks. Mirror
+I/O tests exercise refused manifest traversal, file and parent-directory
+symlinks, conflict-copy writes, self-loop walks, external cleanup targets and
+the 64 MiB read cap. Unix operations walk directory handles with no-follow
+opens; the Windows path rejects reparse points and needs native qualification.
+Inline Markdown tests compare the indexed closer with the original reader on
+representative and exhaustive short inputs. The 480 KB unclosed-emphasis case
+checks linear work and a five-second ceiling through the actual inline parser.
+
 
 ## Checks
 
