@@ -67,6 +67,13 @@ if [[ ${ANDROID_UNSIGNED:-0} == 1 ]]; then
   printf 'Unsigned APK: %s\n' "$out/unsigned.apk"
   exit 0
 fi
+# The build container could write anywhere in the worktree, so sign only a
+# regular unsigned APK inside the expected output directory.
+[[ $(realpath -e -- "$out") == "$(realpath -e -- "$repo")/app/dist-android/$revision" ]] || {
+  echo 'unexpected Android output directory' >&2; exit 1; }
+[[ -f "$out/unsigned.apk" && ! -L "$out/unsigned.apk" ]] || {
+  echo 'unsigned APK is not a regular file' >&2; exit 1; }
+rm -f -- "$out/aligned.apk" "$out/garret-android.apk"
 keys="${ANDROID_SIGNING_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/garret/android-signing}"
 if [[ ${CI:-} == true && ${ANDROID_ALLOW_NEW_KEY:-0} != 1 ]]; then
   [[ -s "$keys/preview.jks" && -s "$keys/password" ]] || {
@@ -82,8 +89,16 @@ if [[ ! -f "$keys/password" ]]; then
 fi
 export APK_SIGNING_PASSWORD
 APK_SIGNING_PASSWORD=$(cat "$keys/password")
+# Signing sees only the output directory and the keys, not the worktree,
+# caches or build home that dependency code could write.
+signer=(docker run --rm --network none --cpus "$cpus" --user "$(id -u):$(id -g)"
+  --mount "type=bind,src=$out,dst=/out"
+  --mount "type=bind,src=$keys,dst=/signing"
+  --env HOME=/tmp --env APK_SIGNING_PASSWORD
+  --env "JAVA_TOOL_OPTIONS=-XX:ActiveProcessorCount=$cpus"
+  --workdir /out)
 # shellcheck disable=SC2016 # Variables expand inside the signing container.
-"${container[@]}" --mount "type=bind,src=$keys,dst=/signing" --env APK_SIGNING_PASSWORD garret-android sh -eu -c '
+"${signer[@]}" garret-android sh -eu -c '
   if [ ! -f /signing/preview.jks ]; then
     keytool -genkeypair -keystore /signing/preview.jks \
       -storepass:env APK_SIGNING_PASSWORD -keypass:env APK_SIGNING_PASSWORD \
@@ -96,7 +111,7 @@ APK_SIGNING_PASSWORD=$(cat "$keys/password")
     --out "$1/garret-android.apk" "$1/aligned.apk"
   "$tools/apksigner" verify --verbose "$1/garret-android.apk"
   "$tools/zipalign" -c -P 16 4 "$1/garret-android.apk"
-' sh "$build_root/app/dist-android/$revision"
+' sh /out
 unset APK_SIGNING_PASSWORD
 {
   printf 'Source revision: %s\n' "$revision"
