@@ -174,3 +174,13 @@ test("unit changes preserve drafts and write canonical micrometres", async () =>
   expect(writes[0]?.margins.inner_um).toBe(25_400);
   mm.click(); setup.destroy();
 });
+
+test("proof controls use the unit selected in Book design", async () => {
+  setMarginUnit("in");
+  container = document.createElement("div"); document.body.append(container);
+  const setup = createProofPageSetup(container, { readDesign: async () => view, writeDesign: async (next) => next, refresh: async () => {}, onNotice: () => {} });
+  await setup.show();
+  expect(container.querySelector<HTMLInputElement>("#proof-page-margins input")!.value).toBe("0.75");
+  expect(container.querySelector('[data-proof-margin-unit="in"]')!.getAttribute("aria-pressed")).toBe("true");
+  setup.destroy();
+});
