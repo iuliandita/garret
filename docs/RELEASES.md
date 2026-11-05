@@ -22,9 +22,17 @@ and does not synchronize books automatically.
 
 ## Develop-only work
 
-Nothing user-visible is pending on develop. Future user-visible capabilities
-awaiting release belong here and in the
-separate `develop_only` list in releases.json.
+The next release is a round of interface fixes. A DOCX import's loss report
+stays on screen and can be shown again from Books. A day spent cutting reads as
+words cut. Side panels and the publishing preview make room instead of covering
+the prose, and take the whole window when no split fits. Encrypted backups read
+folder, key, then archive, with device transfer in its own disclosure. Revision
+tasks and Who appears where open their scenes. Cards shows chapters as
+headings. The PDF proof centres its byline, sets paragraphs ragged-right and
+defaults new fiction designs to the bundled Crimson Pro. German uses formal
+address and Strg throughout, and Focus mode, the outline and the Word export
+have menu entries. The stored format is unchanged from 0.0.10; a DOCX import
+adds one optional metadata row that older builds ignore.
 
 ## Preparing the next release
 
