@@ -587,7 +587,7 @@ describe("captured review integration", () => {
     const mounted = await mountProject(deps({ invoke, generation: 19 }));
     try {
       await openTransport(mounted);
-      document.querySelector<HTMLButtonElement>("#review-transport button:nth-of-type(2)")!.click(); await settle();
+      document.querySelector<HTMLButtonElement>("#review-transport-start-return")!.click(); await settle();
       chooseReturnAuthors();
       document.querySelector<HTMLButtonElement>("#review-transport-apply")!.click(); await settle();
       expect(calls.find((call) => call.cmd === "review_return_preview")?.args).toEqual({ generation: 19, itemId: "scene-0" });
@@ -618,7 +618,7 @@ describe("captured review integration", () => {
     const mounted = await mountProject(deps({ invoke }));
     try {
       await openTransport(mounted);
-      document.querySelector<HTMLButtonElement>("#review-transport button:nth-of-type(2)")!.click(); await settle();
+      document.querySelector<HTMLButtonElement>("#review-transport-start-return")!.click(); await settle();
       chooseReturnAuthors();
       document.querySelector<HTMLButtonElement>("#review-transport-apply")!.click(); await settle(); await settle();
       expect(mounted.reviewPending()).toBe(false);
@@ -645,7 +645,7 @@ describe("captured review integration", () => {
       await openTransport(mounted);
       expect(await mounted.session!.switchTo("scene-1")).toBe("switched");
       const before = mounted.editor.serialize();
-      document.querySelector<HTMLButtonElement>("#review-transport button:nth-of-type(2)")!.click(); await settle();
+      document.querySelector<HTMLButtonElement>("#review-transport-start-return")!.click(); await settle();
       chooseReturnAuthors(); document.querySelector<HTMLButtonElement>("#review-transport-apply")!.click(); await settle(); await settle();
       expect(calls.find((call) => call.cmd === "review_return_preview")?.args?.itemId).toBe("scene-0");
       expect(mounted.session!.activeDocId()).toBe("scene-1");
@@ -665,7 +665,7 @@ describe("captured review integration", () => {
     const mounted = await mountProject(deps({ invoke }));
     try {
       await openTransport(mounted);
-      document.querySelector<HTMLButtonElement>("#review-transport button:nth-of-type(2)")!.click(); await settle();
+      document.querySelector<HTMLButtonElement>("#review-transport-start-return")!.click(); await settle();
       const keep = mounted.prepareToLeave();
       document.querySelector<HTMLButtonElement>("#review-leave button:first-of-type")!.click();
       expect(await keep).toBe(false);
@@ -689,7 +689,7 @@ describe("captured review integration", () => {
     const mounted = await mountProject(deps({ invoke }));
     try {
       await openTransport(mounted);
-      document.querySelector<HTMLButtonElement>("#review-transport button:nth-of-type(2)")!.click(); await settle();
+      document.querySelector<HTMLButtonElement>("#review-transport-start-return")!.click(); await settle();
       expect(document.querySelector<HTMLButtonElement>("#review-transport-apply")).not.toBeNull();
       mounted.reviewPrivacyChanged(); await settle();
       expect(document.querySelector<HTMLButtonElement>("#review-transport-apply")).toBeNull();
@@ -711,7 +711,7 @@ describe("captured review integration", () => {
     try {
       await openTransport(mounted);
       mounted.editor.typeChar("x");
-      document.querySelector<HTMLButtonElement>("#review-transport button:first-of-type")!.click(); await settle(); await settle();
+      document.querySelector<HTMLButtonElement>("#review-transport-start-export")!.click(); await settle(); await settle();
       const flushed = calls.findIndex((call) => call.cmd === "doc_flush");
       const preview = calls.findIndex((call) => call.cmd === "review_export_preview");
       expect(flushed).toBeGreaterThan(-1);
@@ -733,7 +733,7 @@ describe("captured review integration", () => {
     const mounted = await mountProject(deps({ invoke }));
     try {
       await openTransport(mounted);
-      document.querySelector<HTMLButtonElement>("#review-transport button:nth-of-type(2)")!.click(); await settle();
+      document.querySelector<HTMLButtonElement>("#review-transport-start-return")!.click(); await settle();
       expect(mounted.reviewPending()).toBe(true);
       expect(await mounted.prepareToLeave()).toBe(false);
       mounted.navigator.selectById("scene-1"); mounted.navigator.activate(); await settle();
@@ -761,7 +761,7 @@ describe("captured review integration", () => {
       try {
         if (command === "review_return_preview") {
           await openTransport(mounted);
-          document.querySelector<HTMLButtonElement>("#review-transport button:nth-of-type(2)")!.click();
+          document.querySelector<HTMLButtonElement>("#review-transport-start-return")!.click();
         } else {
           mounted.menuActions.openReviewProposals(); await settle();
           if (command === "review_decide") await selectDecision();

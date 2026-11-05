@@ -57,6 +57,9 @@ export interface AppearancesMapDeps {
   /** Every tag in the project, by item id. ONE call for the whole book. */
   read(): Promise<ItemAppearances>;
   onNotice(message: string): void;
+  /** Selects and opens a row named in the by-member list, through the page's
+   *  guarded open. Leaves this panel open. */
+  openItem?(itemId: string): void;
   /** Where focus goes when the panel is dismissed with Escape. Not called for
    *  an outside click: a click already says where the writer wants to be. */
   onDismiss(): void;
@@ -68,6 +71,8 @@ export interface AppearancesMap {
   isOpen(): boolean;
   destroy(): void;
 }
+
+const TITLES_SLOT = "\u0000";
 
 export function createAppearancesMap(deps: AppearancesMapDeps): AppearancesMap {
   const { container } = deps;
@@ -135,13 +140,16 @@ export function createAppearancesMap(deps: AppearancesMapDeps): AppearancesMap {
     inBook: ReadonlySet<string>,
   ): void {
     members.replaceChildren();
-    const titlesOf = new Map<string, string[]>();
+    const rowsOf = new Map<string, ProjectItem[]>();
+    const titleCount = new Map<string, number>();
+    const byId = new Map(items.map((item) => [item.id, item]));
     for (const item of items) {
       if (!inBook.has(item.id)) continue;
+      titleCount.set(item.title, (titleCount.get(item.title) ?? 0) + 1);
       for (const id of perItem[item.id] ?? []) {
-        const list = titlesOf.get(id);
-        if (list === undefined) titlesOf.set(id, [item.title]);
-        else list.push(item.title);
+        const list = rowsOf.get(id);
+        if (list === undefined) rowsOf.set(id, [item]);
+        else list.push(item);
       }
     }
     const heading3 = document.createElement("h3");
@@ -153,11 +161,32 @@ export function createAppearancesMap(deps: AppearancesMapDeps): AppearancesMap {
       const p = document.createElement("p");
       p.className = "appears-map-member";
       p.dataset.memberId = member.id;
-      const titles = titlesOf.get(member.id);
-      p.textContent =
-        titles === undefined
-          ? t("appears.map.member.nowhere", { name: member.name })
-          : t("appears.map.member.in", { name: member.name, titles: titles.join(", ") });
+      const rows = rowsOf.get(member.id);
+      if (rows === undefined) {
+        p.textContent = t("appears.map.member.nowhere", { name: member.name });
+      } else if (deps.openItem === undefined) {
+        p.textContent = t("appears.map.member.in", { name: member.name, titles: rows.map((row) => row.title).join(", ") });
+      } else {
+        // The catalog owns the word order around the titles; the slot is cut
+        // out of the sentence so the titles can be buttons inside it.
+        const [before = "", after = ""] = t("appears.map.member.in", { name: member.name, titles: TITLES_SLOT }).split(TITLES_SLOT);
+        p.append(before);
+        rows.forEach((row, index) => {
+          if (index > 0) p.append(", ");
+          const go = document.createElement("button");
+          go.type = "button";
+          go.className = "appears-map-member-scene";
+          go.dataset.id = row.id;
+          go.textContent = row.title;
+          const parent = row.parent_id === null ? undefined : byId.get(row.parent_id);
+          if ((titleCount.get(row.title) ?? 0) > 1 && parent !== undefined) {
+            go.setAttribute("aria-label", t("appears.map.member.title-in", { title: row.title, parent: parent.title }));
+          }
+          go.addEventListener("click", () => deps.openItem?.(row.id));
+          p.append(go);
+        });
+        p.append(after);
+      }
       members.append(p);
     }
   }

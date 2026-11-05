@@ -362,7 +362,21 @@ pub fn create_imported(
     rows: &[crate::store::ImportRow<'_>],
     strings: &crate::strings::Strings,
 ) -> Result<ProjectSummary, String> {
-    create_imported_with(library, name, rows, strings, |_| {})
+    create_imported_with(library, name, rows, strings, None, |_| {})
+}
+
+/// `create_imported`, keeping a non-empty DOCX loss report on the new book in
+/// the same transaction that fills it, so the report cannot be lost between
+/// the import and its first listing.
+pub(crate) fn create_imported_reporting(
+    library: &Path,
+    name: &str,
+    rows: &[crate::store::ImportRow<'_>],
+    strings: &crate::strings::Strings,
+    losses: &crate::docx_import::Losses,
+) -> Result<ProjectSummary, String> {
+    let report = (*losses != crate::docx_import::Losses::default()).then_some(losses);
+    create_imported_with(library, name, rows, strings, report, |_| {})
 }
 
 pub(crate) fn create_imported_package(
@@ -389,10 +403,17 @@ fn create_imported_with(
     name: &str,
     rows: &[crate::store::ImportRow<'_>],
     strings: &crate::strings::Strings,
+    losses: Option<&crate::docx_import::Losses>,
     before_create: impl FnOnce(&Path),
 ) -> Result<ProjectSummary, String> {
     crate::store::document_format::validate_import(rows).map_err(|e| e.to_string())?;
     create_book_with(library, name, before_create, |store, path| {
+        if let Some(losses) = losses {
+            let report = serde_json::to_string(losses).map_err(|e| e.to_string())?;
+            store
+                .set_meta(crate::core_constants::IMPORT_LOSSES_KEY, &report)
+                .map_err(|e| format!("{}: cannot keep the import report: {e}", path.display()))?;
+        }
         store.import_tree(rows).map(|_| ()).map_err(|e| {
             format!(
                 "{}: cannot write the imported manuscript: {e}",
@@ -602,6 +623,11 @@ pub struct ProjectSummary {
     pub missing: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub registration_warning: Option<crate::book_registration::Warning>,
+    /// What a DOCX import could not carry into this book, kept so the writer
+    /// can read the report again. Absent for every other book, and for a row
+    /// that no longer parses: a damaged report must not make a book unopenable.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub import_losses: Option<crate::docx_import::Losses>,
 }
 
 /// 0 rather than an error: an unreadable mtime costs the list its ordering, not
@@ -634,14 +660,22 @@ pub(crate) fn summarize(path: &Path) -> ProjectSummary {
     // open_readonly, never open: `open` creates schema v1 on a blank file, so
     // listing a library with `open` would WRITE to every file it looked at and
     // leave -wal/-shm beside them. A listing must not modify what it lists.
+    let mut import_losses = None;
     let (name, error) = match Store::open_readonly(path) {
-        Ok(store) => match store.get_meta(NAME_KEY) {
-            Ok(Some(n)) if !n.is_empty() => (n, None),
-            // Opened fine, just has no name: a project from before names were
-            // recorded. The file stem is a true answer, not an error.
-            Ok(_) => (stem, None),
-            Err(e) => (stem, Some(e.to_string())),
-        },
+        Ok(store) => {
+            import_losses = store
+                .get_meta(crate::core_constants::IMPORT_LOSSES_KEY)
+                .ok()
+                .flatten()
+                .and_then(|raw| serde_json::from_str(&raw).ok());
+            match store.get_meta(NAME_KEY) {
+                Ok(Some(n)) if !n.is_empty() => (n, None),
+                // Opened fine, just has no name: a project from before names were
+                // recorded. The file stem is a true answer, not an error.
+                Ok(_) => (stem, None),
+                Err(e) => (stem, Some(e.to_string())),
+            }
+        }
         Err(e) => (stem, Some(e.to_string())),
     };
     ProjectSummary {
@@ -652,6 +686,7 @@ pub(crate) fn summarize(path: &Path) -> ProjectSummary {
         // Lookup errors do not establish absence; the read error stays visible.
         missing: book_is_missing(path).unwrap_or(false),
         registration_warning: None,
+        import_losses,
     }
 }
 
@@ -2954,7 +2989,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let created = std::cell::Cell::new(false);
         let future = r#"{"type":"doc","content":[{"type":"future"}]}"#;
-        let error = super::create_imported_with(dir.path(), "Book", &[(None, "scene", "Scene", Some(future))], &english(), |_| created.set(true)).unwrap_err();
+        let error = super::create_imported_with(dir.path(), "Book", &[(None, "scene", "Scene", Some(future))], &english(), None, |_| created.set(true)).unwrap_err();
         assert!(error.contains("document format refused"));
         assert!(!created.get());
         assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 0);
@@ -2985,6 +3020,7 @@ mod tests {
                     "Book",
                     &[(None, "scene", "Imported scene", Some(crate::test_support::body("Imported prose").as_str()))],
                     &english(),
+                    None,
                     arrive,
                 )
             } else {
@@ -3019,7 +3055,7 @@ mod tests {
             (None, "chapter", "First", None),
             (Some(1usize), "scene", "Invalid parent", None),
         ];
-        let result = super::create_imported_with(dir.path(), "Book", &rows, &english(), |path| {
+        let result = super::create_imported_with(dir.path(), "Book", &rows, &english(), None, |path| {
             let (store, files) = competing_creation_book(path);
             competing = Some(store);
             before = files;
@@ -3125,6 +3161,7 @@ mod tests {
                         "Book",
                         &[(None, "scene", "Imported", Some(crate::test_support::body("Prose").as_str()))],
                         &english(),
+                        None,
                         arrive,
                     )
                 } else {

@@ -2165,12 +2165,15 @@ body.nav-hidden #nav-column {
 
 /* A missing book's row: the sentence, then Forget at the row's end. The row
    stays inert like an errored one; only the button acts. */
-#project-list [role="listitem"]:has(.switcher-forget) {
+#project-list [role="listitem"]:has(.switcher-forget),
+#project-list [role="listitem"]:has(.switcher-import-report) {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-#project-list .switcher-forget {
+#project-list [role="listitem"]:has(.switcher-import-report) .switcher-open { flex: 1; min-width: 0; }
+#project-list .switcher-forget,
+#project-list .switcher-import-report {
   margin-left: auto;
   /* Inside a list row: compact, not the 30px panel box. */
   min-height: 0;
@@ -2619,6 +2622,20 @@ body.nav-hidden #nav-column {
   overflow-y: auto;
 }
 
+/* THE PROSE IS THE PREVIEW of font, size and width, so the panel keeps off it
+   where it can. With the navigator showing, the panel opens over the navigator
+   instead of the prose's right side. Without one there is no side to spare, so
+   it is shorter, and the whole lines below it show the change. */
+body:not(.nav-hidden):not(.nav-narrow) #prefs-panel {
+  right: auto;
+  left: 12px;
+}
+
+body.nav-hidden #prefs-panel,
+body.nav-narrow #prefs-panel {
+  max-height: 55vh;
+}
+
 #prefs-panel[hidden] {
   display: none;
 }
@@ -2686,6 +2703,7 @@ body.nav-hidden #nav-column {
 #prefs-panel .prefs-choices button,
 #design-panel .design-choices button,
 #design-panel .design-margin-choices button,
+#proof-page-margins .design-margin-choices button,
 #preview-rail .preview-choices button,
 #app .segmented button {
   font-size: var(--text-sm);
@@ -3564,13 +3582,7 @@ body.nav-hidden #nav-column {
   justify-self: end;
 }
 
-/* The comparison, under the list.
-
-   `max-height` plus its own scroll, because a diff is as long as the scene and
-   the panel is 420px wide: without it the whole snapshot half - the name field,
-   the button, every named moment - is pushed off the bottom of the panel by
-   whichever version the reader happened to compare, and the recorded
-   shortcuts-panel failure is that what sits below a fold does not exist. */
+/* The comparison, under the list. */
 #history-diff {
   margin-top: 8px;
   padding: 8px;
@@ -3612,8 +3624,7 @@ body.nav-hidden #nav-column {
 
 #history-diff-body {
   margin-top: 6px;
-  max-height: 200px;
-  overflow-y: auto;
+  font-family: var(--prose-family, "Crimson Pro", Georgia, "Times New Roman", serif);
   font-size: var(--text-sm);
   line-height: var(--leading-ui);
   color: var(--fg);
@@ -4389,6 +4400,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 .outline-view-actions,
 .outline-view-row-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
 .outline-view-pages span { color: var(--muted); font-variant-numeric: tabular-nums; }
+.outline-view-pages[hidden] { display: none; }
 
 /* THE TABLE. No mid-word breaks anywhere: the old `overflow-wrap:
    anywhere` let the synopsis column shrink to one letter per line
@@ -4468,6 +4480,22 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 .outline-view-meta { margin: 0 0 var(--space-3); color: var(--muted); font-size: var(--text-sm); }
 .outline-view-cards .outline-view-synopsis { flex: 1; min-height: 3em; margin-bottom: var(--space-3); color: var(--muted); }
 .outline-view-cards .outline-view-row-actions { justify-content: flex-end; }
+/* Parts and chapters head their scenes rather than sitting among them as
+   cards: one full-width line with the title, its figures and Move. */
+.outline-view-cards .outline-view-row.outline-view-group {
+  display: grid; grid-column: 1 / -1; grid-template-columns: minmax(0, max-content) minmax(0, 1fr) auto;
+  align-items: baseline; column-gap: var(--space-3);
+  margin-top: var(--space-2); padding: var(--space-1) var(--space-3); background: none;
+}
+.outline-view-cards .outline-view-group:first-child { margin-top: 0; }
+.outline-view-cards .outline-view-group[data-selected="true"] { background: var(--accent-soft); }
+.outline-view-cards .outline-view-group h2 { margin: 0; font-size: var(--text-lg); }
+.outline-view-cards .outline-view-group[data-type="part"] h2 { font-size: var(--text-xl); }
+.outline-view-cards .outline-view-group .outline-view-meta { margin: 0; }
+.outline-view-cards .outline-view-group .outline-view-synopsis { grid-column: 1 / -1; min-height: 0; margin: var(--space-1) 0 0; }
+.outline-view-cards .outline-view-group .outline-view-synopsis[hidden] { display: none; }
+.outline-view-cards .outline-view-row:not(.outline-view-group) .outline-view-synopsis-text { -webkit-line-clamp: 4; }
+.outline-view-continued { grid-column: 1 / -1; margin: 0; padding: 0 var(--space-3); color: var(--muted); font-size: var(--text-sm); }
 
 /* The row's Move menu: the shared dropdown, opened under the pressed button.
    `fixed` for the context menu's reason: its left/top are viewport
@@ -5775,6 +5803,12 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   text-overflow: ellipsis;
 }
 
+.quick-open-path {
+  margin-left: 0.5em;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
 #quick-open-results [role="option"][aria-selected="true"] {
   background: var(--accent-soft);
 }
@@ -6309,6 +6343,18 @@ body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="t
   color: var(--muted); font-size: var(--text-xs); overflow-wrap: anywhere;
 }
 #revision-planning .planning-done { text-decoration: line-through; }
+#revision-planning button.planning-target,
+.appears-map-member button.appears-map-member-scene {
+  min-height: 0; padding: 0; font: inherit; color: inherit; text-align: left;
+  background: none; border: 0; cursor: pointer; overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 30%, transparent);
+  text-underline-offset: 3px;
+}
+#revision-planning button.planning-target:hover,
+.appears-map-member button.appears-map-member-scene:hover { background: none; text-decoration-color: currentColor; }
+#revision-planning button.planning-target:focus-visible,
+.appears-map-member button.appears-map-member-scene:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
 
 /* WHAT THIS IS ABOUT. Opened from Outline > Synopsis..., docked in the inspector, which sets its place and
    width; the old anchored-popover position and size rules were deleted here. */
@@ -7239,7 +7285,8 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   flex: none;
 }
 
-#design-panel .design-margin-choices {
+#design-panel .design-margin-choices,
+#proof-page-margins .design-margin-choices {
   display: inline-flex;
   gap: 4px;
   margin-left: 4px;
@@ -8060,7 +8107,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   flex-direction: column;
   gap: 10px;
   /* 420px until the writer drags the divider; preview-rail.ts sets the
-     property, clamped to the window. The overlay rule below ignores it. */
+     property, clamped to the window. The full-surface rule below ignores it. */
   width: var(--preview-rail-width, 420px);
   /* The row is `minmax(0, 1fr)` and this is the flex-column half of the same
      rule: without it the pages box below refuses to shrink past its content and
@@ -8138,19 +8185,18 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   gap: 8px;
 }
 
-@media (max-width: 900px) {
-  /* Keep the proof controls reachable when three columns cannot fit. The rail
-     is an overlay here, so there is nothing to resize. */
-  #preview-divider {
-    display: none;
-  }
+/* Where the rail cannot sit beside a readable prose pane even without the
+   navigator (side-layout.ts), it is the whole workspace for as long as it is
+   open, rather than a box over part of the prose. Nothing to resize then. */
+body[data-side-layout="full"] #preview-divider {
+  display: none;
+}
 
-  #preview-rail {
-    position: fixed;
-    inset: 39px 0 34px auto;
-    z-index: 9;
-    width: min(420px, 100vw);
-  }
+body[data-side-layout="full"] #preview-rail {
+  position: fixed;
+  inset: 39px 0 34px 0;
+  z-index: 9;
+  width: auto;
 }
 
 #preview-rail-head h2 {
@@ -8543,11 +8589,10 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 
 #library-membership[hidden],
 #library-summary[hidden] { display: none; }
-/* The desk's own rule already closes the row above. */
-#library-desk + #library-summary { border-top: 0; padding-top: 0; }
+/* One quiet line after the shelf, ruled off from it; nothing below to close. */
+#library-summary { border-bottom: 0; padding-bottom: 0; margin-top: 24px; }
 
-#library-membership h3,
-#library-summary h3 { font: 500 var(--text-xl) var(--prose-family, serif); margin: 0 0 8px; }
+#library-membership h3 { font: 500 var(--text-xl) var(--prose-family, serif); margin: 0 0 8px; }
 #library-membership p,
 #library-summary p { color: var(--muted); line-height: var(--leading-ui); margin: 6px 0; }
 #library-membership .library-membership-row { display: flex; gap: 12px; align-items: end; margin: 10px 0; }
@@ -8556,8 +8601,10 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 #library-membership button { margin: 6px 10px 0 0; }
 #library-membership-discard { margin: 10px 0; color: var(--danger); }
 #library-summary label { display: grid; gap: 4px; max-width: 58em; margin: 12px 0; }
-#library-summary-result { font-family: var(--prose-family, serif); font-size: var(--text-xl); color: var(--fg) !important; }
-#library-summary-coverage { font-size: var(--text-xs); }
+#library-summary-line { font-size: var(--text-sm); }
+#library-summary-result { color: var(--fg); }
+#library-summary-coverage { font-size: var(--text-sm); color: var(--fg) !important; }
+#library-summary-coverage[hidden] { display: none; }
 
 #library-menu-anchor { position: relative; }
 #library button#library-menu { display: inline-flex; align-items: center; padding: 7px 9px; }
@@ -9129,55 +9176,56 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   }
 }
 
-/* BELOW 440px OF PROSE PANE THE INSPECTOR OVERLAYS, beneath the header and
-   above the footer, the way both rails do at 900px. 320 + 360 + 440 = 1120
-   with the navigator, 800 without it. A narrower pane would set the prose in
-   a column a few words wide; covering its right side is the lesser cost, and
-   Close or Escape gives the whole width back. */
-@media (max-width: 1119.98px) {
-  body:not(.nav-hidden) #inspector-dock .panel-shell {
-    position: fixed;
-    inset: 39px 0 34px auto;
-    z-index: 9;
-    width: min(360px, 100vw);
-    box-shadow: var(--shadow-panel);
-    border-left: 1px solid var(--panel-edge);
-  }
+/* THE INSPECTOR NEVER COVERS PART OF THE PROSE. Where the pane beside it would
+   fall below a readable measure, the navigator yields first (side-layout.ts,
+   through `.nav-hidden`); where even that cannot fit, `data-side-layout="full"`
+   gives the side surface the whole workspace and the prose under it is inert
+   until Close or Escape. A slice of lines cut at the panel's edge reads as
+   prose a writer can use, and it is not. */
+body[data-side-layout="full"] #inspector-dock .panel-shell {
+  position: fixed;
+  inset: 39px 0 34px 0;
+  z-index: 9;
+  width: auto;
 }
 
-@media (max-width: 799.98px) {
-  body.nav-hidden #inspector-dock .panel-shell {
-    position: fixed;
-    inset: 39px 0 34px auto;
-    z-index: 9;
-    width: min(360px, 100vw);
-    box-shadow: var(--shadow-panel);
-    border-left: 1px solid var(--panel-edge);
-  }
-}
+/* The writer can still open the outline over a full surface. */
+body[data-side-layout="full"] #outline-backdrop { z-index: 10; }
+body.nav-narrow[data-side-layout="full"]:not(.nav-hidden) #nav-column { z-index: 11; }
 
-/* The scene's note count moves off the pane to the prose's own right edge.
-   Where the inspector overlays, that edge is under it, and the count would
-   sit on the prose itself: it steps aside until the inspector closes. */
+/* The scene's note count moves off the pane to the prose's own right edge,
+   and has no prose to sit beside while a surface covers it. */
 body[data-inspector-open="true"] #scene-notes {
   right: calc(360px + 14px);
 }
 
-@media (max-width: 1119.98px) {
-  body:not(.nav-hidden)[data-inspector-open="true"] #scene-notes {
-    display: none;
-  }
-}
-
-@media (max-width: 799.98px) {
-  body.nav-hidden[data-inspector-open="true"] #scene-notes {
-    display: none;
-  }
+body[data-side-layout="full"] #scene-notes {
+  display: none;
 }
 
 #library-new-book-area { margin: 0 0 24px; }
 #library-existing-books { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 24px; }
 #library-existing-books button { min-height: 32px; }
+/* Empty: the row is not a box, so New book and the two routes stack as before. */
+#library-new-book-row { display: contents; }
+#library:not(.library-is-empty) #library-new-book-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 0 0 24px;
+}
+#library:not(.library-is-empty) #library-new-book-area,
+#library:not(.library-is-empty) #library-existing-books { margin: 0; gap: 8px; }
+#library:not(.library-is-empty) #library-existing-books button {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+#library:not(.library-is-empty) #library-existing-books button:hover:not(:disabled) {
+  background: var(--control-tone-hover);
+  color: var(--fg);
+}
 #library #library-new-book-tile { width: auto; }
 #library #library-new-book-name { border-style: solid; background: var(--control-bg); }
 #prefs-panel .prefs-choice-note {
@@ -9269,7 +9317,8 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
   #library:has(#library-desk:not([hidden])) .library-strip { margin-bottom: 0; }
   #library:has(#library-desk:not([hidden])) #library-heading-bio:empty { display: none; }
   #library:has(#library-desk:not([hidden])) #library-new-book-area,
-  #library:has(#library-desk:not([hidden])) #library-existing-books { margin-bottom: 0; }
+  #library:has(#library-desk:not([hidden])) #library-existing-books,
+  #library:has(#library-desk:not([hidden])) #library-new-book-row { margin-bottom: 0; }
   #library:has(#library-desk:not([hidden])) #library-desk {
     gap: 16px;
     padding-bottom: 12px;
@@ -9480,3 +9529,11 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 #endnote-editor textarea { width: 100%; resize: vertical; }
 #endnote-editor .panel-body > div { display: grid; gap: var(--space-2); }
 #endnote-editor [data-resolution="flag"], #endnote-editor [data-resolution="warning"] { color: var(--color-warning, #a35d00); }
+
+#project-archive-key,
+#project-archive-encrypted { display: block; }
+#project-transfer-body label,
+#project-transfer-body select { display: block; }
+#project-transfer-body select { max-width: 100%; margin: 4px 0 6px; }
+
+#project-encrypted-status { color: var(--muted); font-size: var(--text-xs); overflow-wrap: anywhere; }

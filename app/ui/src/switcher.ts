@@ -52,6 +52,8 @@ export interface ProjectSummary {
    *  their file manager. The one kind of row that offers Forget. */
   missing?: boolean;
   registration_warning?: { token: string | null; kind?: "registration_pending" | "destination_preference" | "registration_unavailable"; error: string } | null;
+  /** What a DOCX import could not carry into this book, kept with it. */
+  import_losses?: ImportLosses | null;
 }
 
 export interface PendingRegistration {
@@ -302,7 +304,7 @@ export function importResultNotice(outcome: ImportOutcome): { message: string; p
   const warning = registrationNotice(outcome.summary);
   const omissions = lossesNotice(outcome.losses, outcome.derived_contents);
   const message = [warning, omissions].filter((part) => part !== null).join(" ");
-  return message === "" ? null : { message, problem: warning !== null };
+  return message === "" ? null : { message, problem: warning !== null || lossesNotice(outcome.losses) !== null };
 }
 
 export function createSwitcher(deps: SwitcherDeps): Switcher {
@@ -533,7 +535,12 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   archiveEncrypted.id = "project-archive-encrypted";
   archiveEncrypted.type = "button";
   archiveEncrypted.textContent = t("switcher.archive.encrypted.action");
+  // The section's one step that makes the copy; folder and key lead to it.
+  archiveEncrypted.dataset.weight = "primary";
   archiveEncrypted.hidden = deps.makeEncryptedArchive === undefined;
+  const encryptedStatus = document.createElement("div");
+  encryptedStatus.id = "project-encrypted-status";
+  encryptedStatus.setAttribute("role", "status");
   const recipientLabel = document.createElement("label");
   recipientLabel.textContent = t("transfer.recipient");
   const recipient = document.createElement("select");
@@ -542,7 +549,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const option = document.createElement("option"); option.value = value;
     option.textContent = t(`transfer.${key}`); recipient.append(option);
   }
-  recipientLabel.append(recipient);
+  recipientLabel.htmlFor = recipient.id;
   recipientLabel.hidden = deps.exportForDevice === undefined;
   const exportDevice = document.createElement("button");
   exportDevice.type = "button"; exportDevice.id = "project-export-device";
@@ -681,6 +688,14 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   explain(backupChoice, backupNote);
   explain(mirrorHeading, mirrorNote);
 
+  const transferToggle = disclosure("project-transfer-toggle", "project-transfer-body", "transfer.section");
+  const transferBody = document.createElement("div");
+  transferBody.id = "project-transfer-body";
+  transferBody.hidden = true;
+  transferBody.append(recipientLabel, recipient, exportDevice);
+  transferToggle.hidden = deps.exportForDevice === undefined;
+  transferToggle.addEventListener("click", () => expand(transferToggle, transferBody, transferBody.hidden));
+
   const copiesToggle = disclosure("project-copies-toggle", "project-copies", "switcher.copies");
   const copies = document.createElement("div");
   copies.id = "project-copies";
@@ -702,10 +717,11 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     backupChoice,
     archiveKey,
     archiveEncrypted,
-    recipientLabel,
-    exportDevice,
+    encryptedStatus,
     archiveVerify,
     archiveRestore,
+    transferToggle,
+    transferBody,
     mirrorHeading,
     mirrorWhere,
     mirrorState,
@@ -766,6 +782,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   // display string and reconstructing an error from it would garble any
   // message containing the separator.
   const errors = new Map<string, string>();
+  const importReports = new Map<string, string>();
 
   function renderMessage(text: string): void {
     const row = document.createElement("div");
@@ -776,6 +793,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   function renderProjects(projects: readonly ProjectSummary[]): void {
     const current = deps.currentPath();
     errors.clear();
+    importReports.clear();
     if (projects.length === 0) {
       // An EMPTY STATE, for the reason renderImports already carries one: a
       // listbox that paints nothing is indistinguishable from one that failed to
@@ -843,6 +861,17 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
         if (row.hasAttribute("aria-label")) open.setAttribute("aria-label", row.getAttribute("aria-label")!);
         open.append(...Array.from(row.childNodes));
         row.append(open);
+        const report = project.import_losses ? lossesNotice(project.import_losses) : null;
+        if (report !== null) {
+          importReports.set(project.path, t("switcher.import-report.notice", { name: project.name, report }));
+          const again = document.createElement("button");
+          again.type = "button";
+          again.className = "switcher-import-report";
+          again.dataset.importReportPath = project.path;
+          again.textContent = t("switcher.import-report");
+          again.setAttribute("aria-label", t("switcher.import-report.label", { name: project.name }));
+          row.append(again);
+        }
       }
       frag.appendChild(row);
     }
@@ -1517,6 +1546,9 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
 
   let encryptedBusy = false;
   let destinationGeneration = 0;
+  // The status line answers for the book it was written for; another book's
+  // panel must not show it.
+  let encryptedStatusPath: string | null = null;
   function renderBackupDestination(dir: string | null): void {
     backupWhere.textContent = dir === null
       ? t("switcher.archive.destination.none")
@@ -1528,6 +1560,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const request = ++destinationGeneration;
     const path = deps.currentPath();
     const opened = deps.currentGeneration?.();
+    if (encryptedStatusPath !== path) encryptedStatus.textContent = "";
     backupWhere.textContent = t("switcher.archive.destination.loading");
     try {
       const dir = await deps.encryptedBackupDestination();
@@ -1552,6 +1585,8 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
       try {
         const done = await action();
         if (done !== null && await (refreshShelf ? outcomeCurrent(path, opened) : archiveActionCurrent(mine, path, opened))) {
+          encryptedStatus.textContent = done;
+          encryptedStatusPath = path;
           if (warning()) deps.onNotice(done);
           else deps.onDone(done);
           if (refreshShelf && !panel.hidden && mine === generation) await reload();
@@ -1680,6 +1715,12 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const forgetButton = target.closest("[data-forget-path]");
     if (forgetButton instanceof HTMLElement && forgetButton.dataset.forgetPath !== undefined) {
       void forget(forgetButton.dataset.forgetPath);
+      return;
+    }
+    const reportButton = target.closest("[data-import-report-path]");
+    if (reportButton instanceof HTMLElement) {
+      const report = importReports.get(reportButton.dataset.importReportPath ?? "");
+      if (report !== undefined) deps.onNotice(report);
       return;
     }
     const row = target.closest("[data-project-path]");

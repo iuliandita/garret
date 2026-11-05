@@ -105,6 +105,7 @@ describe("the export report", () => {
       }] },
     });
     await rig.panel.open("markdown");
+    expect(rig.container.querySelector("[data-preflight-section=history]")).toBeNull();
     const input = rig.container.querySelector<HTMLTextAreaElement>(".preflight-reason-input")!;
     input.value = "The byline is intentionally blank.";
     input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -112,6 +113,9 @@ describe("the export report", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(rig.appended).toEqual([{ format: "markdown", token: "0123456789abcdef", reason: "The byline is intentionally blank." }]);
     expect(textOf(rig, ".preflight-history-reason")).toBe("The byline is intentionally blank.");
+    const sections = [...rig.container.querySelectorAll<HTMLElement>("[data-preflight-section]")].map((section) => section.dataset.preflightSection);
+    expect(sections.indexOf("history")).toBeGreaterThan(sections.indexOf("surfaces"));
+    expect(sections.indexOf("history")).toBeGreaterThan(sections.indexOf("skipped"));
     expect(textOf(rig, ".preflight-history-detail")).toContain(EN["preflight.history.kind.identity_unset"]);
     expect(rig.container.querySelector<HTMLElement>(".preflight-finding")?.dataset.preflightSeverity).toBe("warning");
     expect(textOf(rig, "[data-preflight-section='history'] .preflight-note")).toContain("do not clear");

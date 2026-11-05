@@ -215,6 +215,29 @@ describe("outline view", () => {
     }
   });
 
+  test("cards head scenes with their part and chapter, and a page opening mid-chapter names it", async () => {
+    const editor = document.createElement("main"); document.body.append(editor);
+    const child = (id: string, parent: string, type: string, depth: number): ProjectItem => ({ ...item(id, type, depth), parent_id: parent });
+    const scenes = Array.from({ length: 100 }, (_, i) => child(`s${String(i).padStart(3, "0")}`, "c1", "scene", 2));
+    const items = [item("p", "part"), child("c1", "p", "chapter", 1), ...scenes, child("c2", "p", "chapter", 1)];
+    const view = createOutlineView({ ...noDeps(), editor, items, readSynopses: async () => [{ item_id: "p", body: "The first movement" }] });
+    view.show("cards"); await tick();
+    const groups = [...view.element.querySelectorAll<HTMLElement>(".outline-view-group")];
+    expect(groups.map((group) => group.dataset.itemId)).toEqual(["p", "c1"]);
+    expect(groups.every((group) => group.tagName === "ARTICLE" && group.querySelector("h2") !== null)).toBe(true);
+    expect(groups[1]!.querySelector('button[data-action="move"]')?.getAttribute("aria-label")).toBe("Move Title c1");
+    expect(groups[0]!.textContent).toContain("The first movement");
+    expect(groups[1]!.textContent).not.toContain("No synopsis");
+    expect(groups[1]!.querySelector<HTMLElement>(".outline-view-synopsis")!.hidden).toBe(true);
+    expect(view.element.querySelector(".outline-view-continued")).toBeNull();
+    view.element.querySelector<HTMLButtonElement>('button[data-action="next"]')!.click(); await tick();
+    expect(view.element.querySelector(".outline-view-continued")?.textContent).toBe("Title p / Title c1, continued");
+    expect([...view.element.querySelectorAll<HTMLElement>(".outline-view-group")].map((group) => group.dataset.itemId)).toEqual(["c2"]);
+    view.show("table");
+    expect(view.element.querySelector(".outline-view-group, .outline-view-continued")).toBeNull();
+    view.destroy(); editor.remove();
+  });
+
   test("focus stays on the same row after selection and count refresh, then moves to a live page control", () => {
     const editor = document.createElement("main"); document.body.append(editor);
     const view = createOutlineView({ editor, items: Array.from({ length: 101 }, (_, i) => item(`s${i}`)), readSynopses: async () => [], onSelect: () => undefined, onOpen: () => undefined, onMove: () => undefined, onUndo: () => undefined, onRedo: () => undefined, onReturn: () => undefined, onError: () => undefined });

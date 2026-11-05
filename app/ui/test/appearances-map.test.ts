@@ -63,7 +63,7 @@ interface Rig {
 
 const rigs: Rig[] = [];
 
-function rig(): Rig {
+function rig(openItem?: (id: string) => void): Rig {
   const container = document.createElement("div");
   document.body.append(container);
   const r: Rig = {
@@ -88,6 +88,7 @@ function rig(): Rig {
       return r.stored;
     },
     onNotice: (message) => r.notices.push(message),
+    openItem,
     onDismiss: () => {
       r.dismissals += 1;
     },
@@ -478,6 +479,22 @@ describe("by member", () => {
     // Direct tags only, in the walk's order: the chapter before its scene, and
     // no derived presence on Part One.
     expect(ada.textContent).toBe("Ada: Chapter One, The letter");
+  });
+
+  test("each title is a button that opens its row and the line still reads as a sentence", async () => {
+    const opened: string[] = [];
+    const r = rig((id) => opened.push(id));
+    r.items = [...BOOK, row("c2", "p1", 1, "chapter", "Chapter Two"), row("s3", "c2", 2, "scene", "The letter")];
+    r.stored = { s2: ["m-ada"], c1: ["m-ada"], s3: ["m-ada"], s1: ["m-harbour"] };
+    await r.panel.open();
+    const ada = document.querySelector<HTMLElement>('.appears-map-member[data-member-id="m-ada"]')!;
+    expect(ada.textContent).toBe("Ada: Chapter One, The letter, The letter");
+    const buttons = [...ada.querySelectorAll<HTMLButtonElement>("button.appears-map-member-scene")];
+    expect(buttons.map((b) => b.dataset.id)).toEqual(["c1", "s2", "s3"]);
+    expect(buttons.map((b) => b.getAttribute("aria-label"))).toEqual([null, "The letter, in Chapter One", "The letter, in Chapter Two"]);
+    buttons[2]!.click();
+    expect(opened).toEqual(["s3"]);
+    expect(r.panel.isOpen()).toBe(true);
   });
 
   test("a member placed nowhere says so instead of being left off", async () => {

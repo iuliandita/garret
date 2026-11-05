@@ -173,7 +173,7 @@ describe("what the panel offers", () => {
 });
 
 describe("revision planning", () => {
-  function planningRig() {
+  function planningRig(over: Partial<RevisionPanelDeps> = {}) {
     let selected: SelectedRow | null = { id: "one", title: "First scene", state: null };
     const passes: RevisionPassRow[] = [{ id: 7, name: "Structure", purpose: null, open_count: 1, done_count: 0 }];
     const tasks: RevisionTaskRow[] = [{ id: 11, body: "Fix turn", item_id: "one", target_caption: "First scene",
@@ -198,7 +198,7 @@ describe("revision planning", () => {
       setDone: async (id, done) => { tasks.find((t) => t.id === id)!.done = done; },
       deleteTask: async (id) => { tasks.splice(tasks.findIndex((t) => t.id === id), 1); },
     };
-    const rig = mount({ selected: () => selected, planning: api });
+    const rig = mount({ selected: () => selected, planning: api, ...over });
     return { rig, passes, tasks, created, select: (row: SelectedRow | null) => { selected = row; },
       fail: (value: boolean) => { fail = value; },
       deferCreate: () => { pendingCreate = new Promise<void>((resolve) => { releaseCreate = resolve; }); },
@@ -232,6 +232,32 @@ describe("revision planning", () => {
         .find((b) => b.textContent === "Save task")!.click();
       await settle();
       expect(p.created).toEqual([{ body: "Strengthen the ending", itemId: "one", passId: null }]);
+    } finally { teardown(p.rig); }
+  });
+
+  test("a live target opens its item; a binned or removed one says it cannot be opened", async () => {
+    const opened: string[] = [];
+    const p = planningRig({ openTarget: (id) => opened.push(id) });
+    p.tasks.push(
+      { id: 21, body: "Trim", item_id: "gone", target_caption: "Old scene", target_title: "Old scene", binned: true, pass_id: null, done: false },
+      { id: 22, body: "Cut", item_id: null, target_caption: "Lost scene", target_title: null, binned: false, pass_id: null, done: false },
+      { id: 23, body: "Theme", item_id: null, target_caption: null, target_title: null, binned: false, pass_id: null, done: false },
+    );
+    try {
+      p.rig.panel.open();
+      await settle();
+      const row = (id: number) => p.rig.el().querySelector<HTMLElement>(`.planning-task[data-task-id="${id}"]`)!;
+      const live = row(11).querySelector<HTMLButtonElement>('button[data-action="open-target"]')!;
+      expect(live.textContent).toBe("First scene");
+      expect(live.getAttribute("aria-label")).toBe("Open First scene");
+      live.click();
+      expect(opened).toEqual(["one"]);
+      for (const id of [21, 22, 23]) expect(row(id).querySelector('[data-action="open-target"]')).toBeNull();
+      expect(row(21).querySelector("small")!.textContent).toBe("Old scene is in the bin, so it cannot be opened from here.");
+      expect(row(22).querySelector("small")!.textContent).toBe("Lost scene no longer exists, so it cannot be opened.");
+      expect(row(23).querySelector("small")!.textContent).toBe("Book");
+      row(21).querySelector<HTMLButtonElement>('[data-action="edit"]')!.click();
+      expect(p.rig.el().querySelector("#planning-task-target")!.textContent).toBe("Target: Old scene (in bin)");
     } finally { teardown(p.rig); }
   });
 

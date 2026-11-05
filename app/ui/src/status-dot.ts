@@ -84,6 +84,7 @@ export interface StatusDotDeps {
   /** Opens the project panel, where the readable folder is turned on. Offered
    *  while the folder is off. */
   openMirrorSetup?: () => void;
+  openEncryptedBackups?: () => void;
 }
 
 export interface StatusDot {
@@ -150,7 +151,7 @@ export function createStatusDot(deps: StatusDotDeps): StatusDot {
     el.className = "status-action";
     el.textContent = text;
     el.addEventListener("click", onAction);
-    const anchor = popover.querySelector(`#${after}`);
+    const anchor = after === "" ? null : popover.querySelector(`#${after}`);
     if (anchor !== null) anchor.after(el);
     else popover.append(el);
     actions.push({ el, run, wanted });
@@ -165,6 +166,9 @@ export function createStatusDot(deps: StatusDotDeps): StatusDot {
   // it always was; hidden only while the folder is off, when setup replaces it.
   addAction("status-open-changes", t("menu.mirror-changes"), "mirror-controls", deps.openChanges,
     () => states.mirror !== "off");
+
+  // No archive date is recorded, so this is a route to the section, never a claim that a backup exists.
+  addAction("status-encrypted-backups", t("status.encrypted.action"), "", deps.openEncryptedBackups, () => true);
 
   const paint = (): void => {
     const state = dotState(states);

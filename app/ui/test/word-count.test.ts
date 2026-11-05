@@ -692,7 +692,7 @@ describe("word count: today's progress", () => {
   test("a day spent cutting reaches both channels", async () => {
     const rig = mount({ dailyTarget: "500", projectProgress: progress(1100, -900) });
     await rig.view.refreshProject();
-    expect(text(rig, "word-count-today")).toBe("−900 of 500 typed today");
+    expect(text(rig, "word-count-today")).toBe("900 cut today, target 500");
     expect(rig.container.getAttribute("aria-label")).toContain("900 words cut today");
   });
 });
