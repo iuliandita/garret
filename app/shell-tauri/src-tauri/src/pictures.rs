@@ -43,9 +43,7 @@
 // `Limits` guard; the box filter below is arithmetic this crate can test and
 // mutate, and the pixel ceiling is a check read off the HEADER before any buffer
 // is allocated, which is stronger than a limit handed to a facade.
-#[cfg(target_os = "linux")]
-use std::io::Read;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 /// The suffix appended to the project file's stem to name its picture
@@ -204,10 +202,8 @@ pub fn dir_for(project_db: &Path) -> PathBuf {
 /// Whether `name` is something this application could have written into a
 /// picture directory, and therefore something it may join to one.
 ///
-/// THE CHECK IS ON THE NAME, exactly as `projects::import_name_ok` is, and for
-/// the same reason: a name with no separator and no `..` cannot address anything
-/// outside the one directory it is joined to, so there is nothing here for a
-/// race to invalidate -- unlike an `exists()` probe or a canonicalize-and-compare.
+/// This checks spelling only. Filesystem access also uses a checked directory
+/// handle and refuses linked or non-regular entries.
 ///
 /// LOWERCASE EXTENSIONS ONLY. Every name this application writes is
 /// `<uuid>.png` or `<uuid>.jpg`; accepting `.PNG` would widen the set for a
@@ -537,6 +533,167 @@ pub(crate) fn inspect_original(data: &[u8]) -> Result<(Format, u32, u32), Pictur
     Ok((format, image.width, image.height))
 }
 
+/// All names passed to this handle are validated bare picture/cache names or
+/// host-generated temporary names. Unix operations stay relative to the opened
+/// directory even if its path is replaced while a picture is being rendered.
+pub(crate) struct PictureDir {
+    #[cfg(unix)]
+    handle: std::fs::File,
+    #[cfg(not(unix))]
+    path: PathBuf,
+    #[cfg(windows)]
+    _handle: std::fs::File,
+}
+
+fn unreadable_file() -> std::io::Error {
+    std::io::Error::new(std::io::ErrorKind::InvalidData, "not an independent regular picture file")
+}
+
+#[cfg(not(unix))]
+fn unlinked_metadata(path: &Path) -> std::io::Result<std::fs::Metadata> {
+    let meta = std::fs::symlink_metadata(path)?;
+    if meta.file_type().is_symlink() {
+        return Err(unreadable_file());
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        if meta.file_attributes() & 0x0000_0400 != 0 {
+            return Err(unreadable_file());
+        }
+    }
+    Ok(meta)
+}
+
+impl PictureDir {
+    pub(crate) fn open(dir: &Path) -> std::io::Result<Self> {
+        // Drop trailing separators/dots so NOFOLLOW applies to the directory
+        // entry itself, including a caller spelling it as `book.pictures/`.
+        let dir: PathBuf = dir.components().collect();
+        #[cfg(unix)]
+        {
+            use rustix::fs::{open, Mode, OFlags};
+            let handle = open(&dir, OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC, Mode::empty())?;
+            Ok(Self { handle: handle.into() })
+        }
+        #[cfg(not(unix))]
+        {
+            if !unlinked_metadata(&dir)?.is_dir() {
+                return Err(unreadable_file());
+            }
+            #[cfg(windows)]
+            let handle = {
+                use std::os::windows::fs::{MetadataExt, OpenOptionsExt};
+                let handle = std::fs::OpenOptions::new().read(true)
+                    // BACKUP_SEMANTICS opens directories; OPEN_REPARSE_POINT
+                    // exposes reparse metadata. Deny directory replacement.
+                    .custom_flags(0x0200_0000 | 0x0020_0000).share_mode(0x0000_0003)
+                    .open(&dir)?;
+                let meta = handle.metadata()?;
+                if !meta.is_dir() || meta.file_attributes() & 0x0000_0400 != 0 {
+                    return Err(unreadable_file());
+                }
+                handle
+            };
+            Ok(Self {
+                path: dir,
+                #[cfg(windows)]
+                _handle: handle,
+            })
+        }
+    }
+
+    /// Open a validated bare stored name without following its directory entry.
+    pub(crate) fn open_regular(&self, name: &str) -> std::io::Result<std::fs::File> {
+        #[cfg(unix)]
+        let file: std::fs::File = {
+            use rustix::fs::{fstat, openat, FileType, Mode, OFlags};
+            let fd = openat(&self.handle, name, OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC, Mode::empty())?;
+            let meta = fstat(&fd)?;
+            if FileType::from_raw_mode(meta.st_mode) != FileType::RegularFile || meta.st_nlink != 1 {
+                return Err(unreadable_file());
+            }
+            fd.into()
+        };
+        #[cfg(not(unix))]
+        let file = {
+            let path = self.path.join(name);
+            if !unlinked_metadata(&path)?.is_file() {
+                return Err(unreadable_file());
+            }
+            crate::backup_bundle::open_regular_with_limit(&path, MAX_PICTURE_BYTES)
+                .map_err(|reason| std::io::Error::new(std::io::ErrorKind::InvalidData, reason))?
+        };
+        if file.metadata()?.len() > MAX_PICTURE_BYTES {
+            return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "picture exceeds byte limit"));
+        }
+        Ok(file)
+    }
+
+    pub(crate) fn read(&self, name: &str) -> std::io::Result<Vec<u8>> {
+        read_picture(self.open_regular(name)?)
+    }
+
+    fn create_new(&self, name: &str) -> std::io::Result<std::fs::File> {
+        #[cfg(unix)]
+        {
+            use rustix::fs::{openat, Mode, OFlags};
+            Ok(openat(&self.handle, name, OFlags::WRONLY | OFlags::CREATE | OFlags::EXCL | OFlags::NOFOLLOW | OFlags::CLOEXEC, Mode::RUSR | Mode::WUSR)?.into())
+        }
+        #[cfg(not(unix))]
+        {
+            std::fs::OpenOptions::new().write(true).create_new(true).open(self.path.join(name))
+        }
+    }
+
+    fn unlink(&self, name: &str) -> std::io::Result<()> {
+        #[cfg(unix)]
+        {
+            rustix::fs::unlinkat(&self.handle, name, rustix::fs::AtFlags::empty()).map_err(Into::into)
+        }
+        #[cfg(not(unix))]
+        {
+            std::fs::remove_file(self.path.join(name))
+        }
+    }
+
+    pub(crate) fn write_new(&self, name: &str, data: &[u8]) -> std::io::Result<()> {
+        let mut file = self.create_new(name)?;
+        let result = file.write_all(data);
+        drop(file);
+        if result.is_err() {
+            let _ = self.unlink(name);
+        }
+        result
+    }
+
+    fn write_cache(&self, name: &str, data: &[u8]) -> std::io::Result<()> {
+        let temp = format!(".{name}.{}.tmp", uuid::Uuid::now_v7());
+        self.write_new(&temp, data)?;
+        #[cfg(unix)]
+        let result = rustix::fs::renameat(&self.handle, temp.as_str(), &self.handle, name).map_err(Into::into);
+        #[cfg(not(unix))]
+        let result = std::fs::rename(self.path.join(&temp), self.path.join(name));
+        if result.is_err() {
+            let _ = self.unlink(&temp);
+        }
+        result
+    }
+}
+
+fn read_picture(file: std::fs::File) -> std::io::Result<Vec<u8>> {
+    let mut data = Vec::new();
+    file.take(MAX_PICTURE_BYTES + 1).read_to_end(&mut data)?;
+    if data.len() as u64 > MAX_PICTURE_BYTES {
+        return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "picture exceeds byte limit"));
+    }
+    Ok(data)
+}
+
+fn read_state(error: std::io::Error) -> &'static str {
+    if error.kind() == std::io::ErrorKind::NotFound { VIEW_MISSING } else { VIEW_UNREADABLE }
+}
+
 /// Take a picture into this project: check it, retain the writer's bytes under
 /// a fresh name, and cache a thumbnail beside them. Returns the name the
 /// database stores.
@@ -550,10 +707,8 @@ pub(crate) fn inspect_original(data: &[u8]) -> Result<(Format, u32, u32), Pictur
 /// face the day the writer tidies their downloads or unplugs a drive -- and it
 /// would be an ABSOLUTE path in the database, which is what "a relative path and
 /// nothing else" forbids and what would leak a private path into a recovery
-/// manifest and a salvage output. Within this directory only, equal originals
-/// may share a hard-linked inode after exact-byte verification; each attachment
-/// still has a fresh name and its own thumbnail. This is best effort: concurrent
-/// first attaches may both copy, and a filesystem that cannot link falls back.
+/// manifest and a salvage output. Each attachment is an independent file,
+/// including when its bytes match an existing picture.
 ///
 /// THE CEILING IS READ OFF THE METADATA FIRST, so a refusal for size costs one
 /// `stat` rather than a copy of the file it is refusing.
@@ -580,124 +735,15 @@ pub fn attach(dir: &Path, source: &Path) -> Result<String, PictureError> {
     let thumb_at = thumb_name(&name).ok_or(PictureError::UnknownFormat)?;
     std::fs::create_dir_all(dir)
         .map_err(|e| PictureError::Io(format!("{}: {e}", dir.display())))?;
-    let original = dir.join(&name);
-    #[cfg(target_os = "linux")]
-    let linked = link_existing_original(dir, &name, format, &data)?;
-    #[cfg(not(target_os = "linux"))]
-    let linked = false;
-    if !linked {
-        write_new_original(&original, &data)?;
-    }
-    // THE ORIGINAL FIRST, THE CACHE SECOND. A thumbnail with no original behind
-    // it is a file nothing can regenerate or delete; an original with no
-    // thumbnail is regenerated on the next read.
-    if let Err(e) = std::fs::write(dir.join(&thumb_at), &thumb) {
+    let directory = PictureDir::open(dir)
+        .map_err(|e| PictureError::Io(format!("{}: {e}", dir.display())))?;
+    directory.write_new(&name, &data)
+        .map_err(|e| PictureError::Io(format!("{name}: {e}")))?;
+    // Publish the original first; a missing cache can always be regenerated.
+    if let Err(e) = directory.write_cache(&thumb_at, &thumb) {
         eprintln!("pictures: could not cache {thumb_at}: {e}");
     }
     Ok(name)
-}
-
-/// Link one verified stored original to this attachment's fresh name. The
-/// candidate is linked before it is read, so a replacement after enumeration
-/// cannot make the returned name refer to bytes this attach did not validate.
-#[cfg(target_os = "linux")]
-fn link_existing_original(
-    dir: &Path,
-    name: &str,
-    format: Format,
-    data: &[u8],
-) -> Result<bool, PictureError> {
-    let directory_entries = match std::fs::read_dir(dir) {
-        Ok(entries) => entries,
-        Err(e) => {
-            eprintln!(
-                "pictures: could not enumerate {} for deduplication: {e}",
-                dir.display()
-            );
-            return Ok(false);
-        }
-    };
-    let mut entries = Vec::new();
-    for entry in directory_entries {
-        match entry {
-            Ok(entry) => entries.push(entry),
-            Err(e) => eprintln!("pictures: could not inspect a deduplication candidate: {e}"),
-        }
-    }
-    entries.sort_by_key(|entry| entry.file_name());
-    let destination = dir.join(name);
-    for entry in entries {
-        let candidate_name = entry.file_name();
-        let Some(candidate_name) = candidate_name.to_str() else {
-            continue;
-        };
-        if candidate_name.starts_with("fig-") || !is_stored_name(candidate_name)
-            || candidate_name.ends_with(THUMB_SUFFIX)
-            || !candidate_name.ends_with(format.extension())
-        {
-            continue;
-        }
-        let candidate = entry.path();
-        let metadata = match std::fs::symlink_metadata(&candidate) {
-            Ok(metadata) => metadata,
-            Err(e) => {
-                eprintln!(
-                    "pictures: could not inspect {} for deduplication: {e}",
-                    candidate.display()
-                );
-                continue;
-            }
-        };
-        if !metadata.file_type().is_file() || metadata.len() != data.len() as u64 {
-            continue;
-        }
-        if let Err(e) = std::fs::hard_link(&candidate, &destination) {
-            eprintln!(
-                "pictures: could not link {} for deduplication: {e}",
-                candidate.display()
-            );
-            return Ok(false);
-        }
-        let linked = read_verified_new_entry(&destination, data);
-        if matches!(linked, Ok(true)) {
-            return Ok(true);
-        }
-        if let Err(e) = std::fs::remove_file(&destination) {
-            return Err(PictureError::Io(format!("{}: {e}", destination.display())));
-        }
-        match linked {
-            Ok(false) => eprintln!("pictures: rejected mismatched deduplication candidate"),
-            Err(e) => eprintln!("pictures: could not verify linked deduplication candidate: {e}"),
-            Ok(true) => unreachable!(),
-        }
-    }
-    Ok(false)
-}
-
-/// Read only the fresh linked entry, with one extra byte to distinguish an
-/// exact match from a candidate that grew after the length filter.
-#[cfg(target_os = "linux")]
-fn read_verified_new_entry(path: &Path, data: &[u8]) -> std::io::Result<bool> {
-    if !std::fs::symlink_metadata(path)?.file_type().is_file() {
-        return Ok(false);
-    }
-    let mut read = Vec::with_capacity(data.len() + 1);
-    std::fs::File::open(path)?
-        .take(data.len() as u64 + 1)
-        .read_to_end(&mut read)?;
-    Ok(read.len() == data.len() && read == data)
-}
-
-/// The fallback never truncates: a rejected hard link must be gone before a
-/// new exclusive destination can hold the validated source bytes.
-fn write_new_original(path: &Path, data: &[u8]) -> Result<(), PictureError> {
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)
-        .map_err(|e| PictureError::Io(format!("{}: {e}", path.display())))?;
-    file.write_all(data)
-        .map_err(|e| PictureError::Io(format!("{}: {e}", path.display())))
 }
 
 /// What to show for a member's picture: one of four states, and a thumbnail
@@ -727,25 +773,33 @@ pub fn view(dir: &Path, stored: Option<&str>) -> PictureView {
     // `thumb_of` and not `thumb_name`: the gate above is the gate, and a second
     // one here would cover for it -- see `thumb_of`.
     let thumb_at = thumb_of(name);
-    if let Ok(cached) = std::fs::read(dir.join(&thumb_at)) {
-        return PictureView {
+    let directory = match PictureDir::open(dir) {
+        Ok(directory) => directory,
+        Err(error) => return tagged(read_state(error)),
+    };
+    // Validate the original even when a cache exists: a cache is no evidence
+    // that its original is still an independent regular file.
+    let original = match directory.open_regular(name) {
+        Ok(file) => file,
+        Err(error) => return tagged(read_state(error)),
+    };
+    match directory.read(&thumb_at) {
+        Ok(cached) => return PictureView {
             state: VIEW_PRESENT.to_string(),
-            data_uri: Some(format!(
-                "data:{};base64,{}",
-                Format::Png.mime(),
-                base64(&cached)
-            )),
-        };
+            data_uri: Some(format!("data:{};base64,{}", Format::Png.mime(), base64(&cached))),
+        },
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {},
+        Err(_) => return tagged(VIEW_UNREADABLE),
     }
     // `render_original` and not four arms restated here: `full` needs the same
     // read, the same sniff, the same decode and the same encoder at a different
     // bound, and two copies of that sequence are two places a format can be
-    // added to. It assumes a validated name, which the gate above is.
-    let thumb = match render_original(dir, name, THUMB_MAX) {
+    // added to. It consumes the already checked original handle.
+    let thumb = match render_original(original, THUMB_MAX) {
         Ok(bytes) => bytes,
         Err(state) => return tagged(state),
     };
-    if let Err(e) = std::fs::write(dir.join(&thumb_at), &thumb) {
+    if let Err(e) = directory.write_cache(&thumb_at, &thumb) {
         eprintln!("pictures: could not cache {thumb_at}: {e}");
     }
     PictureView {
@@ -777,11 +831,19 @@ pub fn remove(dir: &Path, stored: &str) {
         eprintln!("pictures: {stored:?} is not a picture this build wrote; nothing was deleted");
         return;
     };
+    let directory = match PictureDir::open(dir) {
+        Ok(directory) => directory,
+        Err(error) => {
+            if error.kind() != std::io::ErrorKind::NotFound {
+                eprintln!("pictures: could not open picture directory: {error}");
+            }
+            return;
+        }
+    };
     for name in [stored.to_string(), thumb_at] {
-        let path = dir.join(&name);
-        if path.exists() {
-            if let Err(e) = std::fs::remove_file(&path) {
-                eprintln!("pictures: could not delete {}: {e}", path.display());
+        if let Err(error) = directory.unlink(&name) {
+            if error.kind() != std::io::ErrorKind::NotFound {
+                eprintln!("pictures: could not delete {name}: {error}");
             }
         }
     }
@@ -828,21 +890,16 @@ pub fn dimensions(dir: &Path, stored: &str) -> Option<(u32, u32)> {
     if !is_stored_name(stored) {
         return None;
     }
-    header_size(&std::fs::read(dir.join(stored)).ok()?)
+    let directory = PictureDir::open(dir).ok()?;
+    header_size(&read_picture(directory.open_regular(stored).ok()?).ok()?)
 }
 
 /// The original, decoded, scaled to `max` and re-encoded, or which of the two
 /// broken states it is in.
 ///
-/// IT ASSUMES A VALIDATED NAME and says so, exactly as `thumb_of` does and for
-/// the same recorded reason: `view` gated with `is_stored_name` and then called
-/// something that gated again, so deleting `view`'s own check survived the whole
-/// suite -- two rules refusing one input cover for each other. One gate per
-/// path, and the gate lives on the path.
-fn render_original(dir: &Path, name: &str, max: u32) -> Result<Vec<u8>, &'static str> {
-    let Ok(data) = std::fs::read(dir.join(name)) else {
-        return Err(VIEW_MISSING);
-    };
+/// The file has already passed the directory and regular-file checks.
+fn render_original(file: std::fs::File, max: u32) -> Result<Vec<u8>, &'static str> {
+    let data = read_picture(file).map_err(read_state)?;
     let Some(format) = sniff(&data) else {
         return Err(VIEW_UNREADABLE);
     };
@@ -897,7 +954,9 @@ pub fn full(dir: &Path, stored: Option<&str>) -> PictureView {
     if !is_stored_name(name) {
         return tagged(VIEW_UNREADABLE);
     }
-    match render_original(dir, name, FULL_MAX) {
+    let rendered = PictureDir::open(dir).and_then(|directory| directory.open_regular(name))
+        .map_err(read_state).and_then(|file| render_original(file, FULL_MAX));
+    match rendered {
         Ok(bytes) => PictureView {
             state: VIEW_PRESENT.to_string(),
             data_uri: Some(format!(
@@ -927,7 +986,8 @@ pub fn original(dir: &Path, stored: &str) -> Option<(Format, Vec<u8>)> {
     if !is_stored_name(stored) {
         return None;
     }
-    let bytes = std::fs::read(dir.join(stored)).ok()?;
+    let directory = PictureDir::open(dir).ok()?;
+    let bytes = read_picture(directory.open_regular(stored).ok()?).ok()?;
     let format = sniff(&bytes)?;
     Some((format, bytes))
 }
@@ -936,7 +996,7 @@ pub fn original(dir: &Path, stored: &str) -> Option<(Format, Vec<u8>)> {
 mod tests {
     use super::*;
     #[cfg(target_os = "linux")]
-    use std::os::unix::fs::{symlink, MetadataExt};
+    use std::os::unix::fs::MetadataExt;
     use std::path::Path;
     use tempfile::tempdir;
 
@@ -968,6 +1028,143 @@ mod tests {
         let p = dir.join(name);
         std::fs::write(&p, bytes).unwrap();
         p
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn no_follow_thumbnail_links_are_unreadable_and_never_written_through() {
+        use std::os::unix::fs::symlink;
+        for dangling in [true, false] {
+            let root = tempdir().unwrap();
+            let dir = root.path().join("book.pictures");
+            std::fs::create_dir(&dir).unwrap();
+            write(&dir, "cover.png", PNG);
+            let outside = root.path().join("outside.png");
+            if !dangling {
+                std::fs::write(&outside, JPEG).unwrap();
+            }
+            let cache = dir.join("cover.thumb.png");
+            symlink(&outside, &cache).unwrap();
+
+            let shown = view(&dir, Some("cover.png"));
+            let unchanged = if dangling {
+                !outside.exists()
+            } else {
+                std::fs::read(&outside).unwrap() == JPEG
+            };
+            assert!(unchanged, "thumbnail caching changed the linked target");
+            assert_eq!(shown.state, VIEW_UNREADABLE);
+            assert_eq!(shown.data_uri, None);
+            std::fs::remove_file(&cache).unwrap();
+            assert_eq!(view(&dir, Some("cover.png")).state, VIEW_PRESENT);
+            assert!(std::fs::symlink_metadata(&cache).unwrap().is_file());
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn no_follow_originals_refuse_links_and_special_files_even_with_a_cache() {
+        use std::os::unix::fs::symlink;
+        for kind in ["symlink", "hardlink", "directory", "fifo"] {
+            let root = tempdir().unwrap();
+            let dir = root.path().join("book.pictures");
+            std::fs::create_dir(&dir).unwrap();
+            let outside = write(root.path(), "outside.png", PNG);
+            let entry = dir.join("cover.png");
+            match kind {
+                "symlink" => symlink(&outside, &entry).unwrap(),
+                "hardlink" => std::fs::hard_link(&outside, &entry).unwrap(),
+                "directory" => std::fs::create_dir(&entry).unwrap(),
+                _ => rustix::fs::mkfifoat(rustix::fs::CWD, &entry, rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR).unwrap(),
+            }
+            write(&dir, "cover.thumb.png", PNG);
+            // A cache must not hide an unreadable original. Check the cached
+            // path first so a broken FIFO reader cannot park this test.
+            assert_eq!(view(&dir, Some("cover.png")).state, VIEW_UNREADABLE, "{kind}");
+            assert_eq!((original(&dir, "cover.png").is_none(), dimensions(&dir, "cover.png")), (true, None), "{kind}");
+            assert_eq!(full(&dir, Some("cover.png")).state, VIEW_UNREADABLE, "{kind}");
+            assert_eq!(std::fs::read(&outside).unwrap(), PNG);
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn no_follow_cover_original_and_dimensions_refuse_links() {
+        use std::os::unix::fs::symlink;
+        let root = tempdir().unwrap();
+        let dir = root.path().join("book.pictures");
+        std::fs::create_dir(&dir).unwrap();
+        let outside = write(root.path(), "outside.png", PNG);
+        symlink(&outside, dir.join("cover.png")).unwrap();
+        assert_eq!((original(&dir, "cover.png").is_none(), dimensions(&dir, "cover.png")), (true, None));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn no_follow_directory_handle_keeps_cache_writes_and_removal_in_the_opened_directory() {
+        use std::os::unix::fs::symlink;
+        let root = tempdir().unwrap();
+        let dir = root.path().join("book.pictures");
+        std::fs::create_dir(&dir).unwrap();
+        write(&dir, "cover.png", PNG);
+        let outside = root.path().join("outside");
+        std::fs::create_dir(&outside).unwrap();
+        let target = write(&outside, "cover.png", JPEG);
+        symlink(&target, dir.join("cover.thumb.png")).unwrap();
+        let directory = PictureDir::open(&dir).unwrap();
+        let moved = root.path().join("moved.pictures");
+        std::fs::rename(&dir, &moved).unwrap();
+        symlink(&outside, &dir).unwrap();
+
+        assert_eq!(directory.read("cover.png").unwrap(), PNG);
+        directory.write_cache("cover.thumb.png", PNG).unwrap();
+        assert_eq!(std::fs::read(&target).unwrap(), JPEG);
+        assert_eq!(std::fs::read(moved.join("cover.thumb.png")).unwrap(), PNG);
+        assert!(!std::fs::symlink_metadata(moved.join("cover.thumb.png")).unwrap().file_type().is_symlink());
+        directory.unlink("cover.png").unwrap();
+        assert!(!moved.join("cover.png").exists());
+        assert_eq!(std::fs::read(&target).unwrap(), JPEG);
+        assert_eq!(std::fs::read_dir(&outside).unwrap().count(), 1);
+        assert_eq!(std::fs::read_dir(&moved).unwrap().count(), 1);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn no_follow_picture_directory_refuses_reads_attach_and_remove() {
+        use std::os::unix::fs::symlink;
+        let root = tempdir().unwrap();
+        let outside = root.path().join("outside");
+        std::fs::create_dir(&outside).unwrap();
+        write(&outside, "cover.png", PNG);
+        write(&outside, "cover.thumb.png", PNG);
+        let dir = root.path().join("book.pictures");
+        symlink(&outside, &dir).unwrap();
+        let source = write(root.path(), "source.png", JPEG);
+        let refused_attach = attach(&dir, &source).is_err();
+        let refused_reads = original(&dir, "cover.png").is_none()
+            && dimensions(&dir, "cover.png").is_none()
+            && view(&dir, Some("cover.png")).state == VIEW_UNREADABLE
+            && full(&dir, Some("cover.png")).state == VIEW_UNREADABLE;
+        remove(&dir, "cover.png");
+        assert!(refused_attach && refused_reads, "linked directory was accepted");
+        assert_eq!(std::fs::read(outside.join("cover.png")).unwrap(), PNG);
+        assert_eq!(std::fs::read(outside.join("cover.thumb.png")).unwrap(), PNG);
+        assert_eq!(std::fs::read_dir(&outside).unwrap().count(), 2);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn no_follow_remove_unlinks_dangling_entries_and_leaves_targets_alone() {
+        use std::os::unix::fs::symlink;
+        let root = tempdir().unwrap();
+        let dir = root.path().join("book.pictures");
+        std::fs::create_dir(&dir).unwrap();
+        let outside = write(root.path(), "outside.png", PNG);
+        symlink(&outside, dir.join("cover.png")).unwrap();
+        symlink(root.path().join("absent.png"), dir.join("cover.thumb.png")).unwrap();
+        remove(&dir, "cover.png");
+        assert_eq!(std::fs::read(&outside).unwrap(), PNG);
+        assert_eq!(std::fs::read_dir(&dir).unwrap().count(), 0);
     }
 
     #[test]
@@ -1266,17 +1463,19 @@ mod tests {
 
     #[cfg(target_os = "linux")]
     #[test]
-    fn duplicate_attachments_share_original_bytes_but_keep_source_and_caches_independent() {
+    fn duplicate_attachments_keep_originals_source_and_caches_independent() {
         let root = tempdir().unwrap();
         let dir = root.path().join("p.pictures");
         let source = write(root.path(), "photo.jpg", JPEG);
         let a = attach(&dir, &source).unwrap();
         let b = attach(&dir, &source).unwrap();
 
-        assert_eq!(
+        assert_ne!(
             std::fs::metadata(dir.join(&a)).unwrap().ino(),
             std::fs::metadata(dir.join(&b)).unwrap().ino()
         );
+        assert_eq!(std::fs::metadata(dir.join(&a)).unwrap().nlink(), 1);
+        assert_eq!(std::fs::metadata(dir.join(&b)).unwrap().nlink(), 1);
         assert_ne!(
             std::fs::metadata(&source).unwrap().ino(),
             std::fs::metadata(dir.join(&a)).unwrap().ino()
@@ -1291,71 +1490,15 @@ mod tests {
         assert_eq!(view(&dir, Some(&b)).state, VIEW_PRESENT);
     }
 
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn a_same_length_different_candidate_does_not_hide_a_later_exact_candidate() {
-        let root = tempdir().unwrap();
-        let dir = root.path().join("p.pictures");
-        std::fs::create_dir_all(&dir).unwrap();
-        let source_bytes = encode_png(&Rgb {
-            width: 1,
-            height: 1,
-            pixels: vec![1, 2, 3],
-        })
-        .unwrap();
-        let different = encode_png(&Rgb {
-            width: 1,
-            height: 1,
-            pixels: vec![4, 5, 6],
-        })
-        .unwrap();
-        assert_eq!(source_bytes.len(), different.len());
-        let rejected = dir.join("a-mismatch.png");
-        let exact = dir.join("z-exact.png");
-        std::fs::write(&rejected, &different).unwrap();
-        std::fs::write(&exact, &source_bytes).unwrap();
-
-        let stored = attach(&dir, &write(root.path(), "source.png", &source_bytes)).unwrap();
-
-        assert_eq!(std::fs::read(&rejected).unwrap(), different);
-        assert_eq!(
-            std::fs::metadata(dir.join(&stored)).unwrap().ino(),
-            std::fs::metadata(&exact).unwrap().ino()
-        );
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn thumbnails_and_symlinks_are_not_deduplication_candidates() {
-        let root = tempdir().unwrap();
-        let dir = root.path().join("p.pictures");
-        std::fs::create_dir_all(&dir).unwrap();
-        let thumbnail = dir.join("ignored.thumb.png");
-        std::fs::write(&thumbnail, PNG).unwrap();
-        let source = write(root.path(), "outside.png", PNG);
-        symlink(&source, dir.join("ignored-link.png")).unwrap();
-
-        let stored = attach(&dir, &source).unwrap();
-
-        assert_ne!(
-            std::fs::metadata(dir.join(&stored)).unwrap().ino(),
-            std::fs::metadata(&thumbnail).unwrap().ino()
-        );
-        assert_ne!(
-            std::fs::metadata(dir.join(&stored)).unwrap().ino(),
-            std::fs::metadata(&source).unwrap().ino()
-        );
-    }
-
-    #[cfg(target_os = "linux")]
+    #[cfg(unix)]
     #[test]
     fn exclusive_copy_refuses_an_existing_hard_link_without_changing_its_original() {
         let root = tempdir().unwrap();
         let source = write(root.path(), "source.png", PNG);
         let destination = root.path().join("destination.png");
         std::fs::hard_link(&source, &destination).unwrap();
-
-        assert!(write_new_original(&destination, JPEG).is_err());
+        let directory = PictureDir::open(root.path()).unwrap();
+        assert!(directory.write_new("destination.png", JPEG).is_err());
         assert_eq!(std::fs::read(&source).unwrap(), PNG);
         assert_eq!(std::fs::read(&destination).unwrap(), PNG);
     }
