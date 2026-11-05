@@ -10,9 +10,7 @@ import {
   NO_STATE_LABEL,
   REVISION_STATES,
   STATE_LABELS,
-  STATE_MARKS,
   isRevisionState,
-  markFor,
   stateDescriptionId,
   stateDistribution,
 } from "../src/revision-states";
@@ -55,38 +53,17 @@ describe("the set is closed and both languages agree on it", () => {
     expect(isRevisionState(undefined)).toBe(false);
   });
 
-  test("every state has a label and a mark, and no two share either", () => {
-    // A duplicate mark is the failure this feature would be worst at: two states
-    // that look identical in the navigator, in a surface a writer scans rather
-    // than reads.
+  test("every state has a label, and no two share one", () => {
+    // The marks are drawn shapes now; nav-row-state.test.ts holds them apart.
     const labels = REVISION_STATES.map((s) => STATE_LABELS[s]);
-    const marks = REVISION_STATES.map((s) => STATE_MARKS[s]);
     expect(new Set(labels).size).toBe(REVISION_STATES.length);
-    expect(new Set(marks).size).toBe(REVISION_STATES.length);
     for (const label of labels) expect(label.length).toBeGreaterThan(2);
-    // One character each: the row is a box of exactly ROW_HEIGHT and a mark that
-    // wrapped would break every rig computing a click from it.
-    for (const mark of marks) expect([...mark].length).toBe(1);
     expect(labels).not.toContain(NO_STATE_LABEL);
   });
 
   test("a description id is distinct per state", () => {
     const ids = REVISION_STATES.map(stateDescriptionId);
     expect(new Set(ids).size).toBe(ids.length);
-  });
-});
-
-describe("markFor", () => {
-  test("a known state gets its mark", () => {
-    expect(markFor("done")).toBe(STATE_MARKS.done);
-  });
-
-  test("no state, and a state from a newer build, both get nothing", () => {
-    // Not a placeholder and not a question mark: the second is the surface
-    // claiming to know something about a word it has never heard of.
-    expect(markFor(null)).toBe("");
-    expect(markFor(undefined)).toBe("");
-    expect(markFor("abandoned")).toBe("");
   });
 });
 

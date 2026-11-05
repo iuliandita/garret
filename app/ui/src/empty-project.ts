@@ -82,6 +82,7 @@ function inertEditor(): Editor {
     caretToParagraph: () => undefined,
     replaceDoc: () => undefined,
     setEditable: () => undefined,
+    setEmptyHint: () => undefined,
     revealMatch: () => false,
     setCommentAnchors: (_anchors: readonly CommentAnchor[]) => undefined,
     setCastNames: (_names: readonly CastNamePair[]) => undefined,

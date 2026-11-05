@@ -624,6 +624,10 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     sceneNameEl.hidden = text === "";
     sceneHeadingEl.textContent = text;
     editorEl.classList.toggle("references-open", isReferencesPage(latestItems, itemId));
+    // Scenes only: a bible note or the references page is not where a book
+    // starts, and a verify run never types.
+    const scene = persistMode === "write" && itemId !== undefined && typeOf(itemId) === "scene";
+    editor.setEmptyHint(scene ? t("editor.empty-hint") : null);
   };
   const navigator = createNavigator({
     sidebarWordCounts: deps.sidebarWordCounts?.(),
