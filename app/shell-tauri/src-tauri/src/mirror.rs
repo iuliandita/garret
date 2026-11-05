@@ -1979,9 +1979,26 @@ mod tests {
     }
 
 
+    #[cfg(unix)]
+    #[test]
+    fn a_title_with_a_backslash_or_drive_like_prefix_still_mirrors() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("mirror");
+        io::create(&root).unwrap();
+        for name in ["0001-Act-I-\\-Part-2.md", "C:notes/0002-scene.md"] {
+            io::write(&root, name, b"words").unwrap();
+            assert_eq!(io::read_text(&root, name).unwrap(), "words");
+        }
+    }
+
     #[test]
     fn unsafe_manifest_paths_are_refused_before_file_access() {
-        for path in ["../outside.md", "/outside.md", "folder/../../outside.md", "C:/outside.md", r"folder\outside.md"] {
+        let mut paths = vec!["../outside.md", "/outside.md", "folder/../../outside.md"];
+        // Path syntax only on Windows; on Unix these are names inside the folder.
+        if cfg!(windows) {
+            paths.extend(["C:/outside.md", r"folder\outside.md"]);
+        }
+        for path in paths {
             let tmp = tempfile::tempdir().unwrap();
             let m = mirrored(tmp.path());
             let outside = tmp.path().join("outside.md");
