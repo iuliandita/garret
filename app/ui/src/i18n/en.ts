@@ -39,6 +39,8 @@ export const EN = {
   "transfer.unknown": "Unknown: check or update the receiving app first",
   "transfer.legacy": "0.0.5 or earlier (format 17, novels only)",
   "transfer.reader": "0.0.6 reader (format 18, all four book types)",
+  "transfer.section": "Transfer to another device",
+  "status.encrypted.action": "Encrypted backups…",
   "transfer.export": "Export book for another device…",
   "transfer.recipient_unknown": "Check or update the receiving app before exporting for a device.",
   "transfer.recipient_schema": "The receiving app cannot open this book format. Update it first.",
@@ -182,12 +184,13 @@ export const EN = {
   "document.clipboard-refused": "This content could not be pasted safely. Figure originals must be copied through the book first.",
   "document.picture-refused": "Pictures can't be pasted into the manuscript yet.",
   "editor.name": "Manuscript editor",
+  "editor.empty-hint": "Start writing here.",
   // panel-shell.ts: the Close icon every anchored panel shares.
   "panel.close": "Close {title}",
   "help.about": "About {label}",
   "menu.review-proposals": "Review proposals…",
   "review.heading": "Review proposals",
-  "review.author": "Review author",
+  "review.author": "Acting as",
   "review.author-name": "New author name",
   "review.author-create": "Create author",
   "review.author-add": "Add reviewer",
@@ -248,7 +251,10 @@ export const EN = {
   "review.saved": "Review saved.",
   "review.transport.tab": "Review in Word",
   "review.transport.heading": "Review in Word",
-  "review.transport.scope": "For {title} only. Word changes this app cannot read are refused, and the Word file never replaces your manuscript.",
+  "review.transport.scope": "For {title} only.",
+  "review.transport.safety": "Word changes this app cannot read are refused, and the Word file never replaces your manuscript.",
+  "review.transport.send-stage": "Send for review",
+  "review.transport.return-stage": "Bring back edits",
   "review.transport.export": "Prepare review copy",
   "review.transport.return": "Open the returned Word file",
   "review.transport.export-preview": "Before saving the review copy",
@@ -877,6 +883,9 @@ export const EN = {
   "planning.target": "Target: {title}",
   "planning.target-binned": "{title} (in bin)",
   "planning.target-removed": "{title} (item removed)",
+  "planning.target-binned-note": "{title} is in the bin, so it cannot be opened from here.",
+  "planning.target-removed-note": "{title} no longer exists, so it cannot be opened.",
+  "planning.open-target": "Open {title}",
   "planning.no-selection": "Select an item first.",
   "planning.done": "Done",
   "planning.reopen": "Reopen",
@@ -1285,6 +1294,7 @@ export const EN = {
   "appears.map.members.heading": "By member",
   "appears.map.member.in": "{name}: {titles}",
   "appears.map.member.nowhere": "{name}: no appearances in this map",
+  "appears.map.member.title-in": "{title}, in {parent}",
   "appears.map.below": "Further down: {names}",
   "appears.map.error.read": "Could not read who appears where: {error}",
 
@@ -1302,8 +1312,8 @@ export const EN = {
   // WHERE THE OPEN BOOK IS, and the one act that changes it. The path is the
   // fact a writer needs when they go looking for their file in a file manager.
   "switcher.here": "This book is in {folder}",
-  "switcher.book-required": "Open a book to make recovery points, archives, or a readable mirror.",
-  "switcher.copies": "Backups and archives",
+  "switcher.book-required": "Open a book to make recovery points, archives, or a readable folder.",
+  "switcher.copies": "Copies",
   "switcher.import.show": "Show the import folder",
   "switcher.move": "Move this book\u2026",
   "switcher.move.hint": "Move the database and its pictures and research folders together. The name stays.",
@@ -1318,6 +1328,9 @@ export const EN = {
   "switcher.forget": "Forget",
   "switcher.forget.label": "Forget {name}",
   "switcher.forget.hint": "Remove this book from the list. No file is touched.",
+  "switcher.import-report": "Import report",
+  "switcher.import-report.label": "What the import of {name} left out",
+  "switcher.import-report.notice": "{name}: {report}",
   "switcher.error.list": "Could not list books.",
   "switcher.refuse.no-name": "Type a name for the new book, then Create.",
   "switcher.import.heading": "Import",
@@ -1778,7 +1791,7 @@ export const EN = {
   // in a decision record: a writer who sent this to a printer expecting bleed
   // and a spine would find out from the printer.
   "preview.pdf.note":
-    "A proof copy to read or send to a first reader, laid out at the page size and margins selected here. Not a printer\u2019s file: no bleed, no spreads. Press Refresh after you write more.",
+    "A proof copy to read or send to a first reader, laid out at the page size and margins selected here. Not a printer\u2019s file: no bleed, no spreads. Press Refresh after you write more. Paragraphs are ragged-right because automatic hyphenation is not guaranteed.",
   "preview.legend.ornament": "Chapter ornament",
   "preview.name.ornament": "The ornament for each chapter title",
   "preview.glyph.none": "None",
@@ -1870,6 +1883,8 @@ export const EN = {
   "help.keys.continuous": "Alt+Page Up / Alt+Page Down",
   "menu.open-reference": "Open selection as reference",
   "menu.close-reference": "Close reference",
+  "menu.focus-mode": "Focus mode",
+  "menu.show-outline": "Show outline",
   "reference.label": "Saved reference",
   "reference.refresh": "Refresh",
   "reference.open-source": "Open source",
@@ -1906,6 +1921,7 @@ export const EN = {
   "outline-view.page.one": "Page {page} of {pages}, {count} item",
   "outline-view.page.other": "Page {page} of {pages}, {count} items",
   "outline-view.empty": "No manuscript items yet.",
+  "outline-view.continued": "{path}, continued",
   "outline-view.scope": "Manuscript order · Bin and Bible excluded",
   "outline-view.scroll-hint": "Scroll horizontally to see all columns.",
   "outline-view.column.title": "Title",
@@ -1966,7 +1982,7 @@ export const EN = {
   // "Folder" is the mirror's own word everywhere else in this catalog, and the
   // ellipsis is this menu's convention for an item that opens something rather
   // than doing something.
-  "menu.mirror-changes": "Changes in your folder\u2026",
+  "menu.mirror-changes": "Changes in your readable folder\u2026",
   // The switcher on the list, below the exports and above
   // Preferences -- the File menu's last unspent slot above Export stays
   // unspent, because this is not on the export route.
@@ -2037,6 +2053,8 @@ export const EN = {
   "menu.shortcut.move-out": "Alt+Left",
   "menu.shortcut.move-in": "Alt+Right",
   "menu.shortcut.export": "Ctrl+E",
+  "menu.shortcut.focus-mode": "Ctrl+Alt+F",
+  "menu.shortcut.show-outline": "Ctrl+Alt+O",
   "nav.context.label": "Outline item",
   // NUMBERED, not "Untitled". `{n}` is the lowest positive
   // integer not already used by an item of that type, so renaming Chapter 1
@@ -2246,6 +2264,8 @@ export const EN = {
 
   // ---- goals.ts: the daily figure -----------------------------------------
   // The four target spellings are NOT here; see the note above `prefs.off`.
+  "goals.cut.today": "{count} cut today",
+  "goals.cut.today.target": "{count} cut today, target {target}",
   "goals.today": "{count} typed today",
   "goals.today.target": "{count} of {target} typed today",
   "goals.spoken.cut.one": "{count} word cut",
@@ -2333,12 +2353,12 @@ export const EN = {
   // The application cannot see whether it left, has no dialog through
   // which to arrange it, and the failure this feature exists to prevent is a
   // writer believing they are protected when they are not.
-  "archive.text.none": "No ordinary local archive made",
-  "archive.text.taken": "Ordinary local archive made {when}",
+  "archive.text.none": "No unencrypted archive made",
+  "archive.text.taken": "Unencrypted archive made {when}",
   "archive.name.none":
-    "Device loss: no ordinary local archive has been made yet. Encrypted archive files are separate. Move a complete archive folder off this computer yourself.",
+    "Device loss: no unencrypted archive has been made yet. Encrypted archive files are separate. Move a complete archive folder off this computer yourself.",
   "archive.name.taken":
-    "Device loss: an ordinary local archive was made {when}. Move a complete folder off this computer yourself; older .db archives omit pictures. Encrypted archive files are separate.",
+    "Device loss: an unencrypted archive was made {when}. Move a complete folder off this computer yourself; older .db archives omit pictures. Encrypted archive files are separate.",
   "archive.notice.done": "Archive written: {file}",
   "archive.notice.failed": "Could not write an archive: {error}",
   "mirror.error.closed": "No open book is available for the readable folder.",
@@ -2385,21 +2405,21 @@ export const EN = {
   // away. This is the writer's own manuscript in ordinary Markdown, kept
   // current, so they can open one scene in any editor. It protects nothing and
   // must never say it does.
-  "switcher.mirror.heading": "A readable copy you can open anywhere",
+  "switcher.mirror.heading": "A readable folder you can open anywhere",
   "switcher.mirror.note":
-    "The mirror keeps your manuscript as ordinary Markdown files, one per scene, within ten seconds of what you have typed. It is a copy to read and edit elsewhere, not a backup: it is on this computer, and this application writes it rather than reading it back.",
-  "switcher.mirror.where": "The mirror is written to {dir}",
-  "switcher.mirror.off": "The mirror is off for this book.",
+    "The readable folder keeps your manuscript as ordinary Markdown files, one per scene, within ten seconds of what you have typed. It is a copy to read and edit elsewhere, not a backup: it is on this computer, and this application writes it rather than reading it back.",
+  "switcher.mirror.where": "The readable folder is written to {dir}",
+  "switcher.mirror.off": "The readable folder is off for this book.",
   "switcher.mirror.on.one": "{count} file, last written {when}.",
   "switcher.mirror.on.other": "{count} files, last written {when}.",
-  "switcher.mirror.pending": "The mirror is on. Nothing has been written yet.",
-  "switcher.mirror.enable": "Turn the mirror on",
-  "switcher.mirror.disable": "Turn the mirror off",
-  "switcher.mirror.working": "Writing the mirror…",
-  "switcher.mirror.check": "Check the mirror thoroughly",
-  "switcher.mirror.checking": "Checking the mirror thoroughly…",
-  "switcher.mirror.error": "The mirror could not be read.",
-  "switcher.mirror.previewing": "Checking what the mirror will expose…",
+  "switcher.mirror.pending": "The readable folder is on. Nothing has been written yet.",
+  "switcher.mirror.enable": "Turn the readable folder on",
+  "switcher.mirror.disable": "Turn the readable folder off",
+  "switcher.mirror.working": "Writing the readable folder…",
+  "switcher.mirror.check": "Check the readable folder thoroughly",
+  "switcher.mirror.checking": "Checking the readable folder thoroughly…",
+  "switcher.mirror.error": "The readable folder could not be read.",
+  "switcher.mirror.previewing": "Checking what the readable folder will expose…",
   "switcher.mirror.preview.heading": "Before turning on the readable folder",
   "switcher.mirror.preview.plaintext": "This writes ordinary plaintext files on this computer. If the destination syncs, the sync service may copy them. The application cannot inspect operating-system or sync-service history.",
   "switcher.mirror.preview.destination": "Resolved destination: {dir}",
@@ -2408,7 +2428,7 @@ export const EN = {
   "switcher.mirror.preview.pin.pinned": "This book has a pinned pen name. Names and aliases of the other known identities were checked.",
   "switcher.mirror.preview.pin.stale": "This book's pinned pen name is older than the private list. The pin was not changed by this preview.",
   "switcher.mirror.preview.scope.destination": "Resolved destination path",
-  "switcher.mirror.preview.scope.project_name": "Book name and mirror manifest",
+  "switcher.mirror.preview.scope.project_name": "Book name and folder manifest",
   "switcher.mirror.preview.scope.markdown": "Rendered file names, headings and prose",
   "switcher.mirror.preview.scope.wordlist": "Book wordlist",
   "switcher.mirror.preview.state.ran": "Known other-identity names and aliases were checked. Review the findings below before enabling.",
@@ -2421,14 +2441,14 @@ export const EN = {
   "switcher.mirror.preview.limit.external": "Operating-system and sync-service history cannot be checked here.",
   "switcher.mirror.preview.confirm": "Write this plaintext folder",
   "switcher.mirror.preview.cancel": "Cancel; write nothing",
-  "mirror.notice.enabled": "The mirror is on. Your manuscript is in {dir}",
+  "mirror.notice.enabled": "The readable folder is on. Your manuscript is in {dir}",
   // Says what it did NOT do. Deleting a folder of the writer's prose because a
   // preference was switched off is not a thing this application gets to do,
   // and a writer who expects the files gone would otherwise not know.
-  "mirror.notice.disabled": "The mirror is off. The files already written are still in {dir}",
-  "mirror.notice.failed": "Could not write the mirror: {error}",
-  "mirror.notice.checked": "Checked {entries} mirror files. Changed: {changed}. Missing: {deleted}.",
-  "mirror.notice.check-failed": "Could not check the mirror thoroughly.",
+  "mirror.notice.disabled": "The readable folder is off. The files already written are still in {dir}",
+  "mirror.notice.failed": "Could not write the readable folder: {error}",
+  "mirror.notice.checked": "Checked {entries} files in the readable folder. Changed: {changed}. Missing: {deleted}.",
+  "mirror.notice.check-failed": "Could not check the readable folder thoroughly.",
 
   // ---- mirror-indicator.ts ------------------------------------------------
   // The bar's third statement, and the one that is NOT a protection. Every
@@ -2490,7 +2510,7 @@ export const EN = {
   // what a file now holds; taking it into the book is a later slice and does
   // not exist. `mirror-strings.test.ts` is what keeps that true one string at
   // a time.
-  "mirror.changes.heading": "Changes in your folder",
+  "mirror.changes.heading": "Changes in your readable folder",
   // THIS SENTENCE WAS FALSE FROM THE START, and a capture is what said
   // so: it read "Looking here changes nothing in your book" beside a control
   // that changes the book. Looking still changes nothing; the panel is no
@@ -2659,8 +2679,9 @@ export const EN = {
   "library.summary.words.one": "{count} saved word",
   "library.summary.words.other": "{count} saved words",
   "library.summary.activity-unavailable": "Recorded activity unavailable for this selection.",
-  "library.summary.activity": "Recorded changes, from {counted} of {total} books: {values}",
+  "library.summary.activity": "Recorded changes, from {counted} of {total} books: {values}.",
   "library.summary.activity-none": "no changes",
+  "library.summary.activity-none-all": "No recorded changes.",
   "library.summary.source.typing": "typing +{added}/−{deleted}",
   "library.summary.source.pasted": "pasted +{added}/−{deleted}",
   "library.summary.source.imported": "imported +{added}/−{deleted}",
@@ -2735,6 +2756,7 @@ export const EN = {
   "library.busy.creating": "Creating book…",
   "library.done.book-created": "{name} created.",
   "help.library": "Open the library",
+  "help.focus-mode": "Turn focus mode on or off",
   "switch.error.closed-unnamed": "Could not open the selected book: {error}. Nothing is open. Choose a book to continue.",
   "switch.error.kept-unnamed": "Could not open the selected book: {error}. The book you were in is still open.",
   "switch.error.closed": "Could not open {name}: {error}. Nothing is open. Choose a book to continue.",

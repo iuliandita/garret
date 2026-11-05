@@ -19,7 +19,19 @@ afterEach(() => {
 
 import { t } from "../src/i18n";
 import { createNavigator } from "../src/navigator/index";
-import { REVISION_STATES, STATE_MARKS, stateDescriptionId } from "../src/revision-states";
+import { REVISION_STATES, stateDescriptionId } from "../src/revision-states";
+import { createStateMark } from "../src/state-mark";
+
+/** The state the row's mark draws, or null when it draws nothing. Read from
+ *  the span's `data-mark` AND its single shape, so a stale attribute over an
+ *  emptied span cannot pass. */
+function drawnMark(row: Element): string | null {
+  const host = row.querySelector<HTMLElement>(".nav-state");
+  const shapes = host?.querySelectorAll("svg").length ?? 0;
+  const mark = host?.dataset.mark ?? null;
+  if ((mark === null) !== (shapes === 0) || shapes > 1) throw new Error(`mark ${mark} with ${shapes} shapes`);
+  return mark;
+}
 
 function makeContainer(clientHeight = 400): HTMLElement {
   const container = document.createElement("div");
@@ -72,14 +84,14 @@ describe("a row wears its revision state", () => {
 
     const part = rowNamed(container, "Part One");
     expect(part.dataset.state).toBe("done");
-    expect(part.querySelector(".nav-state")?.textContent).toBe(STATE_MARKS.done);
+    expect(drawnMark(part)).toBe("done");
     expect(part.getAttribute("aria-describedby")).toBe(stateDescriptionId("done"));
     // The load-bearing one: a part at depth 3 inside a scene, marked `outline`
     // while the shallower rows are further along. Nothing about its depth or its
     // type predicts its state.
     const deep = rowNamed(container, "Deep Part");
     expect(deep.dataset.state).toBe("outline");
-    expect(deep.querySelector(".nav-state")?.textContent).toBe(STATE_MARKS.outline);
+    expect(drawnMark(deep)).toBe("outline");
 
     nav.destroy();
     container.remove();
@@ -97,7 +109,7 @@ describe("a row wears its revision state", () => {
 
     const unmarked = rowNamed(container, "Ch A");
     expect(unmarked.dataset.state).toBeUndefined();
-    expect(unmarked.querySelector(".nav-state")?.textContent).toBe("");
+    expect(drawnMark(unmarked)).toBeNull();
     expect(unmarked.hasAttribute("aria-describedby")).toBe(false);
 
     nav.destroy();
@@ -156,7 +168,7 @@ describe("a row wears its revision state", () => {
     // without ever touching the defect.
     expect(after).toBe(recycled);
     expect(after.dataset.state).toBe("revising");
-    expect(after.querySelector(".nav-state")?.textContent).toBe(STATE_MARKS.revising);
+    expect(drawnMark(after)).toBe("revising");
     expect(after.getAttribute("aria-describedby")).toBe(stateDescriptionId("revising"));
 
     nav.destroy();
@@ -184,7 +196,7 @@ describe("a row wears its revision state", () => {
     const after = elementAt(2);
     expect(after).toBe(recycled);
     expect(after.dataset.state).toBeUndefined();
-    expect(after.querySelector(".nav-state")?.textContent).toBe("");
+    expect(drawnMark(after)).toBeNull();
     expect(after.hasAttribute("aria-describedby")).toBe(false);
 
     nav.destroy();
@@ -234,7 +246,7 @@ describe("a row wears its revision state", () => {
 
     const row = rowNamed(container, "Part One");
     expect(row.dataset.state).toBeUndefined();
-    expect(row.querySelector(".nav-state")?.textContent).toBe("");
+    expect(drawnMark(row)).toBeNull();
     expect(row.hasAttribute("aria-describedby")).toBe(false);
 
     nav.destroy();
@@ -296,10 +308,9 @@ describe("the stylesheet draws the state without changing the row's box", () => 
     // the marks are already a fill progression - an empty ring through to a
     // solid disc - so the row still says where it stands in greyscale and to a
     // reader who cannot tell two tints apart. What this pins is that the four
-    // MARKS are four distinct characters; a palette can then do what it likes.
-    const marks = REVISION_STATES.map((s) => STATE_MARKS[s]);
+    // MARKS are four distinct shapes; a palette can then do what it likes.
+    const marks = REVISION_STATES.map((s) => createStateMark(s).innerHTML);
     expect(new Set(marks).size).toBe(marks.length);
-    for (const mark of marks) expect(mark.length).toBe(1);
   });
 
   test("any state colour rule carries [role=treeitem]", () => {

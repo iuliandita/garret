@@ -19,10 +19,10 @@ import {
   NO_STATE_LABEL,
   REVISION_STATES,
   STATE_LABELS,
-  STATE_MARKS,
   isRevisionState,
   type RevisionState,
 } from "./revision-states";
+import { paintStateMark } from "./state-mark";
 
 /** The row this panel is about, as the page currently sees it. */
 export interface SelectedRow {
@@ -71,6 +71,8 @@ export interface RevisionPanelDeps {
    *  has been re-read, so `selected()` afterwards is the new truth. */
   setState(itemId: string, state: RevisionState | null): Promise<SetStateOutcome>;
   planning?: RevisionPlanningApi;
+  /** Selects and opens a task's live target through the page's guarded open. */
+  openTarget?(itemId: string): void;
   /** Where focus goes when the panel is dismissed with Escape. */
   onDismiss(): void;
 }
@@ -128,7 +130,7 @@ export function createRevisionPanel(deps: RevisionPanelDeps): RevisionPanel {
    *  drop focus to <body>, which is the recorded history-panel defect. */
   const buttons = new Map<string, HTMLButtonElement>();
 
-  function addChoice(value: string, mark: string, label: string): void {
+  function addChoice(value: string, mark: RevisionState | null, label: string): void {
     const button = document.createElement("button");
     button.type = "button";
     button.id = `state-choice-${value === "" ? "none" : value}`;
@@ -139,7 +141,7 @@ export function createRevisionPanel(deps: RevisionPanelDeps): RevisionPanel {
     // The label beside it already says the word; a mark read aloud is a
     // character name.
     glyph.setAttribute("aria-hidden", "true");
-    glyph.textContent = mark;
+    paintStateMark(glyph, mark);
 
     const text = document.createElement("span");
     text.textContent = label;
@@ -150,12 +152,12 @@ export function createRevisionPanel(deps: RevisionPanelDeps): RevisionPanel {
   }
 
   for (const state of REVISION_STATES) {
-    addChoice(state, STATE_MARKS[state], STATE_LABELS[state]);
+    addChoice(state, state, STATE_LABELS[state]);
   }
   // LAST, and it is the default rather than a fifth state - see
   // revision-states.ts. It is offered because a writer who marked a row must be
   // able to unmark it, and the only spelling of that is the absence.
-  addChoice("", "", NO_STATE_LABEL);
+  addChoice("", null, NO_STATE_LABEL);
 
   panel.append(status, choices);
   // Close, Escape and a click elsewhere (the shell's). Built before planning
@@ -441,14 +443,32 @@ function mountPlanning(panel: HTMLElement, deps: RevisionPanelDeps): { refresh()
       const body = document.createElement("p");
       body.textContent = task.body;
       if (task.done) body.className = "planning-done";
-      const context = document.createElement("small");
-      context.textContent = task.item_id === null && task.target_caption === null
+      const targetTitle = task.target_title ?? task.target_caption ?? "";
+      const targetLabel = task.item_id === null && task.target_caption === null
         ? t("planning.scope-book")
         : task.item_id === null
           ? t("planning.target-removed", { title: task.target_caption ?? "" })
           : task.binned
-            ? t("planning.target-binned", { title: task.target_title ?? task.target_caption ?? "" })
-            : task.target_title ?? task.target_caption ?? "";
+            ? t("planning.target-binned", { title: targetTitle })
+            : targetTitle;
+      const context = document.createElement("small");
+      const liveTarget = task.item_id !== null && !task.binned ? task.item_id : null;
+      if (liveTarget !== null && deps.openTarget !== undefined) {
+        const go = document.createElement("button");
+        go.type = "button";
+        go.className = "planning-target";
+        go.dataset.action = "open-target";
+        go.textContent = targetTitle;
+        go.setAttribute("aria-label", t("planning.open-target", { title: targetTitle }));
+        go.addEventListener("click", () => deps.openTarget?.(liveTarget));
+        context.append(go);
+      } else {
+        context.textContent = task.item_id === null && task.target_caption !== null
+          ? t("planning.target-removed-note", { title: task.target_caption })
+          : task.binned
+            ? t("planning.target-binned-note", { title: targetTitle })
+            : targetLabel;
+      }
       const actions = document.createElement("div");
       actions.className = "planning-actions";
       const done = action(task.done ? "planning.reopen" : "planning.done");
@@ -467,7 +487,7 @@ function mountPlanning(panel: HTMLElement, deps: RevisionPanelDeps): { refresh()
           return;
         }
         editingTask = task.id;
-        draftTarget = { id: task.item_id, title: context.textContent ?? "" };
+        draftTarget = { id: task.item_id, title: targetLabel };
         taskBody.value = task.body;
         syncLimit();
         taskPass.value = task.pass_id === null ? "" : String(task.pass_id);

@@ -12,7 +12,7 @@
 //      leaves nothing to write and the folder stays empty. That cost this
 //      script three runs.
 //   2. After a file is rewritten from outside, the scan at open notices it,
-//      the entry is paused, and File > Changes in your folder... has something
+//      the entry is paused, and File > Changes in your readable folder... has something
 //      to say.
 //
 // THE OTHER THING THAT COST THREE RUNS: `xdotool windowfocus` before typing.

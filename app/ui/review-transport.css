@@ -19,3 +19,6 @@
   #review-transport .review-transport-choice { grid-template-columns: 1fr; }
   #review-transport .review-transport-choice input { grid-column: 1; }
 }
+
+#review-transport > .review-actions { display: grid; gap: 1.25rem; }
+#review-transport > .review-actions > section { display: grid; justify-items: start; gap: .4rem; }

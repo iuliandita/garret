@@ -49,33 +49,6 @@ export const STATE_LABELS: Record<RevisionState, string> = {
  *  NOTHING in the navigator, for the same reason an absent word count does. */
 export const NO_STATE_LABEL = t("state.label.none");
 
-/** The mark a row wears.
- *
- *  A FILL PROGRESSION, NOT A PALETTE, and that is the whole reason these are
- *  glyphs rather than four coloured dots. Colour alone cannot carry the state:
- *  about one man in twelve cannot tell the red from the green half of any scale
- *  built that way, and a manuscript printed or screenshotted in grey loses it
- *  entirely. An empty ring filling to a solid disc says how far along a row is
- *  with no colour at all; the stylesheet then tints them, so the two channels
- *  agree and either one alone is enough.
- *
- *  ONE CHARACTER EACH. The row is a flex line of exactly ROW_HEIGHT and a mark
- *  that wrapped would break every geometry rig that computes a click from it.
- */
-export const STATE_MARKS: Record<RevisionState, string> = {
-  outline: "○", // ○ empty ring
-  draft: "◔", // ◔ a quarter filled
-  revising: "◕", // ◕ three quarters filled
-  done: "●", // ● solid
-};
-
-/** The mark for a row, or "" for a row with no state. Never a placeholder: a
- *  marker for "unset" on most rows of a manuscript nobody has marked yet is
- *  noise in the surface a writer scans. */
-export function markFor(state: string | null | undefined): string {
-  return isRevisionState(state) ? STATE_MARKS[state] : "";
-}
-
 /** The id of the element a row's `aria-describedby` points at.
  *
  *  A DESCRIPTION, NOT A NAME, and the distinction is load-bearing. Two graded

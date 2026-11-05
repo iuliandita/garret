@@ -38,7 +38,7 @@ afterEach(() => { for (const panel of mounted.splice(0)) panel.destroy(); docume
 
 test("export discloses names and immutable discussion before native save and never receives a path", async () => {
   const r = rig(); await r.panel.setTarget("scene", "Arrival", []);
-  r.click("#review-transport button:first-of-type"); await tick();
+  r.click("#review-transport-start-export"); await tick();
   expect(r.calls.previews).toEqual(["export:scene"]);
   expect(r.get<HTMLElement>("#review-transport-preview").textContent).toContain("Mara, Ari");
   expect(r.get<HTMLElement>("#review-transport-preview").textContent).toContain("A private note");
@@ -51,7 +51,7 @@ test("export discloses names and immutable discussion before native save and nev
 
 test("return needs a deliberate actor and Word-name mapping, then submits token and choices only", async () => {
   const r = rig(); await r.panel.setTarget("scene", "Arrival", [{ id: 3, display_name: "Mara", created_at: 1 }]);
-  r.click("#review-transport button:nth-of-type(2)"); await tick();
+  r.click("#review-transport-start-return"); await tick();
   const apply = r.get<HTMLButtonElement>("#review-transport-apply");
   expect(apply.disabled).toBe(true);
   expect(r.get<HTMLElement>("#review-transport-preview").querySelectorAll("script")).toHaveLength(0);
@@ -71,7 +71,7 @@ test("return needs a deliberate actor and Word-name mapping, then submits token 
 test("a refused apply keeps attribution visible but requires a fresh preview", async () => {
   const r = rig({ returnApply: async () => { throw new Error("stale source"); } });
   await r.panel.setTarget("scene", "Arrival", [{ id: 3, display_name: "Mara", created_at: 1 }]);
-  r.click("#review-transport button:nth-of-type(2)"); await tick();
+  r.click("#review-transport-start-return"); await tick();
   const actor = r.get<HTMLSelectElement>("[data-actor] select"); actor.value = "existing:3"; actor.dispatchEvent(new Event("change"));
   const mapped = r.get<HTMLSelectElement>('[data-source="Word Writer"] select'); mapped.value = "existing:3"; mapped.dispatchEvent(new Event("change"));
   r.click("#review-transport-apply"); await tick();
@@ -79,7 +79,7 @@ test("a refused apply keeps attribution visible but requires a fresh preview", a
   expect(mapped.value).toBe("existing:3");
   expect(r.panel.hasPendingReturn()).toBe(true);
   expect(r.get<HTMLElement>("#review-transport-status").textContent).toContain("stale source");
-  r.click("#review-transport button:nth-of-type(2)"); await tick();
+  r.click("#review-transport-start-return"); await tick();
   expect(r.calls.cancels).toEqual(["secret-2"]);
   expect(r.get<HTMLButtonElement>("#review-transport-apply").disabled).toBe(true);
 });
@@ -91,7 +91,7 @@ test("a page-busy apply keeps the token and author mappings for a retry", async 
     if (attempts.length === 1) throw new ReviewBusyError("another review is running");
   } });
   await r.panel.setTarget("scene", "Arrival", [{ id: 3, display_name: "Mara", created_at: 1 }]);
-  r.click("#review-transport button:nth-of-type(2)"); await tick();
+  r.click("#review-transport-start-return"); await tick();
   const actor = r.get<HTMLSelectElement>("[data-actor] select"); actor.value = "existing:3"; actor.dispatchEvent(new Event("change"));
   const mapped = r.get<HTMLSelectElement>('[data-source="Word Writer"] select'); mapped.value = "create"; mapped.dispatchEvent(new Event("change"));
   const name = r.get<HTMLInputElement>('[data-source="Word Writer"] input'); name.value = "Bob"; name.dispatchEvent(new Event("input"));
@@ -111,7 +111,7 @@ test("a page-busy apply keeps the token and author mappings for a retry", async 
 test("a committed return with a failed page reconcile is no longer pending", async () => {
   const r = rig({ returnApply: async () => { throw new ReviewAppliedViewError("view could not reload"); } });
   await r.panel.setTarget("scene", "Arrival", [{ id: 3, display_name: "Mara", created_at: 1 }]);
-  r.click("#review-transport button:nth-of-type(2)"); await tick();
+  r.click("#review-transport-start-return"); await tick();
   const actor = r.get<HTMLSelectElement>("[data-actor] select"); actor.value = "existing:3"; actor.dispatchEvent(new Event("change"));
   const mapped = r.get<HTMLSelectElement>('[data-source="Word Writer"] select'); mapped.value = "existing:3"; mapped.dispatchEvent(new Event("change"));
   r.click("#review-transport-apply"); await tick();
@@ -126,9 +126,9 @@ test("pending picker freezes departure and cancellation clears only its token", 
   const pending = deferred<typeof returned>();
   const r = rig({ returnPreview: () => pending.promise });
   await r.panel.setTarget("scene", "Arrival", []);
-  r.click("#review-transport button:nth-of-type(2)");
+  r.click("#review-transport-start-return");
   expect(r.panel.busy()).toBe(true);
-  expect(r.get<HTMLButtonElement>("#review-transport button:first-of-type").disabled).toBe(true);
+  expect(r.get<HTMLButtonElement>("#review-transport-start-export").disabled).toBe(true);
   pending.resolve(returned); await tick();
   expect(r.panel.hasPendingReturn()).toBe(true);
   await r.panel.discard();
@@ -141,7 +141,7 @@ test("invalidating a locked in-flight picker ignores its late answer and stays b
   const pending = deferred<typeof returned>();
   const r = rig({ returnPreview: () => pending.promise });
   await r.panel.setTarget("scene", "Arrival", []);
-  r.click("#review-transport button:nth-of-type(2)");
+  r.click("#review-transport-start-return");
   expect(r.panel.busy()).toBe(true);
   const invalidating = r.panel.discard(); await invalidating;
   expect(r.panel.busy()).toBe(true);
@@ -155,7 +155,7 @@ test("save failure invalidates the prepared export; picker cancel keeps it", asy
   let fail = false;
   const r = rig({ exportSave: async () => { if (fail) throw new Error("write failed"); return false; } });
   await r.panel.setTarget("scene", "Arrival", []);
-  r.click("#review-transport button:first-of-type"); await tick();
+  r.click("#review-transport-start-export"); await tick();
   r.click("#review-transport-save"); await tick();
   expect(r.get<HTMLButtonElement>("#review-transport-save").disabled).toBe(false);
   fail = true; r.click("#review-transport-save"); await tick();
@@ -171,7 +171,7 @@ test("a page-busy save keeps the prepared export for retry", async () => {
     return true;
   } });
   await r.panel.setTarget("scene", "Arrival", []);
-  r.click("#review-transport button:first-of-type"); await tick();
+  r.click("#review-transport-start-export"); await tick();
   r.click("#review-transport-save"); await tick();
   expect(r.panel.hasPreview()).toBe(true);
   expect(r.get<HTMLButtonElement>("#review-transport-save").disabled).toBe(false);
@@ -185,7 +185,7 @@ test("a completed save or apply is success news, never the problem channel", asy
   // A capture showed "Returned review applied." painted red: both outcomes
   // went through onNotice, which the page raises in the problem tone.
   const r = rig(); await r.panel.setTarget("scene", "Arrival", []);
-  r.click("#review-transport button:first-of-type"); await tick();
+  r.click("#review-transport-start-export"); await tick();
   r.click("#review-transport-save"); await tick();
   expect(r.calls.successes).toEqual([t("review.transport.saved")]);
   expect(r.calls.notices).toEqual([]);

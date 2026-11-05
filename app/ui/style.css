@@ -732,6 +732,15 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
   --control-tone: color-mix(in srgb, var(--fg) 7%, transparent);
   --control-tone-hover: color-mix(in srgb, var(--fg) 11%, transparent);
   --control-tone-active: color-mix(in srgb, var(--fg) 16%, transparent);
+  /* A chosen value is a fill and keyboard focus is a ring, never the same
+     line. The fill mixes accent into --accent-soft because --accent-soft alone
+     sits about 1.05:1 against a resting control in the light palettes; this
+     holds 1.3:1 or more there and 1.8:1 in the dark ones, with ink text at
+     6:1 or better. Accent text drops below 4.5:1 on it, so chosen controls
+     keep --fg. The ring is ink, 5.4:1 or more on every surface and 3.9:1 on
+     the fill, and sits 2px clear of the box so it never merges with a fill. */
+  --selection-fill: color-mix(in srgb, var(--accent) 24%, var(--accent-soft));
+  --focus-ring: color-mix(in srgb, var(--fg) 70%, transparent);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --dur-fast: 120ms;
   --dur: 180ms;
@@ -757,6 +766,14 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus { -webkit-text-fill-c
 
 * {
   box-sizing: border-box;
+}
+
+/* Zero specificity: any surface not named in the focus list below still rings
+   in the same ink instead of the engine's own blue, and every rule that draws
+   or removes a ring on purpose wins without a fight. */
+:where(:focus-visible) {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 html,
@@ -801,7 +818,7 @@ body {
 }
 
 #scene-notes:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -1539,8 +1556,8 @@ body {
 #timeline-branch-form input:focus-visible,
 #timeline-branch-form select:focus-visible,
 #close-prompt-panel button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 /* THE FIVE PANELS THAT TAKE FOCUS THEMSELVES DRAW NO RING.
@@ -1571,6 +1588,7 @@ body {
 #design-panel:focus,
 #picture-viewer:focus,
 #help-panel:focus,
+#help-shortcuts-heading:focus,
 #stats-panel:focus,
 #state-panel:focus,
 #mirror-changes:focus,
@@ -1642,7 +1660,7 @@ body {
 }
 
 :where(input[type="checkbox"]):focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -1839,7 +1857,7 @@ body.nav-hidden #nav-column {
 }
 
 #status-dot:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
@@ -1868,7 +1886,7 @@ body.nav-hidden #nav-column {
 }
 
 #status-popover:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
 }
 
 /* One action under the sentence it answers, on the default control
@@ -1932,7 +1950,7 @@ body.nav-hidden #nav-column {
 }
 
 #project-name-label:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
@@ -2164,12 +2182,15 @@ body.nav-hidden #nav-column {
 
 /* A missing book's row: the sentence, then Forget at the row's end. The row
    stays inert like an errored one; only the button acts. */
-#project-list [role="listitem"]:has(.switcher-forget) {
+#project-list [role="listitem"]:has(.switcher-forget),
+#project-list [role="listitem"]:has(.switcher-import-report) {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-#project-list .switcher-forget {
+#project-list [role="listitem"]:has(.switcher-import-report) .switcher-open { flex: 1; min-width: 0; }
+#project-list .switcher-forget,
+#project-list .switcher-import-report {
   margin-left: auto;
   /* Inside a list row: compact, not the 30px panel box. */
   min-height: 0;
@@ -2618,6 +2639,20 @@ body.nav-hidden #nav-column {
   overflow-y: auto;
 }
 
+/* THE PROSE IS THE PREVIEW of font, size and width, so the panel keeps off it
+   where it can. With the navigator showing, the panel opens over the navigator
+   instead of the prose's right side. Without one there is no side to spare, so
+   it is shorter, and the whole lines below it show the change. */
+body:not(.nav-hidden):not(.nav-narrow) #prefs-panel {
+  right: auto;
+  left: 12px;
+}
+
+body.nav-hidden #prefs-panel,
+body.nav-narrow #prefs-panel {
+  max-height: 55vh;
+}
+
 #prefs-panel[hidden] {
   display: none;
 }
@@ -2685,6 +2720,7 @@ body.nav-hidden #nav-column {
 #prefs-panel .prefs-choices button,
 #design-panel .design-choices button,
 #design-panel .design-margin-choices button,
+#proof-page-margins .design-margin-choices button,
 #preview-rail .preview-choices button,
 #app .segmented button {
   font-size: var(--text-sm);
@@ -2703,8 +2739,8 @@ body.nav-hidden #nav-column {
 }
 
 #app .segmented button[aria-pressed="true"] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: var(--selection-fill);
+  border-color: transparent;
   color: var(--fg);
 }
 
@@ -2908,7 +2944,7 @@ body.nav-hidden #nav-column {
   color: var(--muted);
 }
 
-/* The chosen value in each group. A tint and a stronger border rather than an
+/* The chosen value in each group. A borderless fill rather than an
    inverted block, matching the navigator's selection treatment -- and
    aria-pressed carries the same fact to a screen reader, so this is the visual
    half of a state that is already announced.
@@ -2920,8 +2956,8 @@ body.nav-hidden #nav-column {
    matching, and silently overridden, which is exactly the defect that shipped
    in #nav for one screenshot. */
 #prefs-panel button[aria-pressed="true"] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: var(--selection-fill);
+  border-color: transparent;
   color: var(--fg);
 }
 
@@ -2935,8 +2971,8 @@ body.nav-hidden #nav-column {
    stated above this: the panel is inside #project-bar and a bare selector loses
    to `#project-bar button:hover`. */
 #design-panel button[aria-pressed="true"] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: var(--selection-fill);
+  border-color: transparent;
   color: var(--fg);
 }
 
@@ -2953,8 +2989,8 @@ body.nav-hidden #nav-column {
    The report panel does NOT join it, for the covers panel's reason: it holds one
    control and that control closes it. */
 #identity-panel button[aria-pressed="true"] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: var(--selection-fill);
+  border-color: transparent;
   color: var(--fg);
 }
 
@@ -2966,8 +3002,8 @@ body.nav-hidden #nav-column {
    `display: contents` list: that is for panel ANCHORS in the bar's flex row,
    and the rail is a grid column with a box of its own. */
 #preview-rail button[aria-pressed="true"] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: var(--selection-fill);
+  border-color: transparent;
   color: var(--fg);
 }
 
@@ -2978,8 +3014,8 @@ body.nav-hidden #nav-column {
    EPUB rail's own case. */
 #library button[aria-pressed="true"],
 #project-panel .pill[aria-pressed="true"] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: var(--selection-fill);
+  border-color: transparent;
   color: var(--fg);
 }
 
@@ -2989,8 +3025,8 @@ body.nav-hidden #nav-column {
    everybody else, #design-panel's own first-capture defect. Not a
    descendant of #project-bar either, #preview-rail's own case. */
 #timeline-scale-panel button[aria-pressed="true"] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: var(--selection-fill);
+  border-color: transparent;
   color: var(--fg);
 }
 
@@ -3563,13 +3599,7 @@ body.nav-hidden #nav-column {
   justify-self: end;
 }
 
-/* The comparison, under the list.
-
-   `max-height` plus its own scroll, because a diff is as long as the scene and
-   the panel is 420px wide: without it the whole snapshot half - the name field,
-   the button, every named moment - is pushed off the bottom of the panel by
-   whichever version the reader happened to compare, and the recorded
-   shortcuts-panel failure is that what sits below a fold does not exist. */
+/* The comparison, under the list. */
 #history-diff {
   margin-top: 8px;
   padding: 8px;
@@ -3611,8 +3641,7 @@ body.nav-hidden #nav-column {
 
 #history-diff-body {
   margin-top: 6px;
-  max-height: 200px;
-  overflow-y: auto;
+  font-family: var(--prose-family, "Crimson Pro", Georgia, "Times New Roman", serif);
   font-size: var(--text-sm);
   line-height: var(--leading-ui);
   color: var(--fg);
@@ -3820,7 +3849,7 @@ body.nav-hidden #nav-column {
 }
 
 #nav:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
 
@@ -3985,10 +4014,10 @@ body.nav-hidden #nav-column {
   margin-left: 0.4em;
 }
 
-/* WHERE THIS ROW STANDS. One character, between the title and the count.
+/* WHERE THIS ROW STANDS. One drawn mark, between the title and the count.
 
-   THE FILL CARRIES THE STATE AND THE COLOUR ONLY REINFORCES IT. The marks are a
-   progression - an empty ring, a quarter, three quarters, a disc - so the row
+   THE SHAPE CARRIES THE STATE AND THE COLOUR ONLY REINFORCES IT. The marks are a
+   progression - a ring, a half, a disc, a disc with a tick - so the row
    still says where it stands in greyscale, in a screenshot, and to a reader who
    cannot tell two of the tints below apart. That is why there are no four new
    hues here: four state colours would need defining in the dark palette and in
@@ -4013,6 +4042,14 @@ body.nav-hidden #nav-column {
      24px line box costs no height either way. */
   font-size: var(--text-sm);
   color: var(--muted);
+}
+
+/* The shape is sized by the span's font-size, so it keeps the measured 13px
+   and sits in the row's line box without a height of its own. */
+#nav .nav-state svg {
+  display: block;
+  width: 1em;
+  height: 1em;
 }
 
 /* The two ends of the progression are the two the writer scans for: what has
@@ -4357,7 +4394,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 
 #outline-view:not([hidden]):has(.outline-view-table-scroll) > :not(.outline-view-table-scroll) { flex-shrink: 0; }
 .outline-view-table-scroll { min-height: 0; overflow: auto; }
-.outline-view-table-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-view-table-scroll:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 .outline-view-scroll-hint { display: none; }
 #outline-view:has(.outline-view-table-scroll[data-overflow="true"]) .outline-view-scroll-hint { display: block; margin: 0 0 8px; color: var(--muted); font-size: var(--text-sm); }
 .outline-view-table td.outline-view-row-actions,
@@ -4388,6 +4425,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 .outline-view-actions,
 .outline-view-row-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
 .outline-view-pages span { color: var(--muted); font-variant-numeric: tabular-nums; }
+.outline-view-pages[hidden] { display: none; }
 
 /* THE TABLE. No mid-word breaks anywhere: the old `overflow-wrap:
    anywhere` let the synopsis column shrink to one letter per line
@@ -4413,8 +4451,8 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 .outline-view-row { outline: none; }
 .outline-view-row[data-selected="true"] > td,
 .outline-view-cards .outline-view-row[data-selected="true"] { background: var(--accent-soft); }
-.outline-view-table .outline-view-row:focus-visible > td { box-shadow: inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
-.outline-view-cards .outline-view-row:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.outline-view-table .outline-view-row:focus-visible > td { box-shadow: inset 0 2px 0 var(--focus-ring), inset 0 -2px 0 var(--focus-ring); }
+.outline-view-cards .outline-view-row:focus-visible { box-shadow: 0 0 0 2px var(--focus-ring); }
 
 /* The grip: a pointer-only affordance, quiet until its row is under the
    pointer. The keyboard's route to the same act is Alt+Arrow and Move. */
@@ -4451,7 +4489,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 .outline-view-row[data-type="part"] button.outline-view-title { font-weight: 600; }
 .outline-view-row[data-type="chapter"] button.outline-view-title { font-weight: 500; }
 #outline-view button.outline-view-title:hover { background: none; text-decoration-color: currentColor; }
-#outline-view button.outline-view-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+#outline-view button.outline-view-title:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 2px; }
 
 /* The synopsis: two lines, then an ellipsis. The whole text stays in the DOM
    for the accessibility tree; a pointer reader gets it from the tip. */
@@ -4467,6 +4505,22 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 .outline-view-meta { margin: 0 0 var(--space-3); color: var(--muted); font-size: var(--text-sm); }
 .outline-view-cards .outline-view-synopsis { flex: 1; min-height: 3em; margin-bottom: var(--space-3); color: var(--muted); }
 .outline-view-cards .outline-view-row-actions { justify-content: flex-end; }
+/* Parts and chapters head their scenes rather than sitting among them as
+   cards: one full-width line with the title, its figures and Move. */
+.outline-view-cards .outline-view-row.outline-view-group {
+  display: grid; grid-column: 1 / -1; grid-template-columns: minmax(0, max-content) minmax(0, 1fr) auto;
+  align-items: baseline; column-gap: var(--space-3);
+  margin-top: var(--space-2); padding: var(--space-1) var(--space-3); background: none;
+}
+.outline-view-cards .outline-view-group:first-child { margin-top: 0; }
+.outline-view-cards .outline-view-group[data-selected="true"] { background: var(--accent-soft); }
+.outline-view-cards .outline-view-group h2 { margin: 0; font-size: var(--text-lg); }
+.outline-view-cards .outline-view-group[data-type="part"] h2 { font-size: var(--text-xl); }
+.outline-view-cards .outline-view-group .outline-view-meta { margin: 0; }
+.outline-view-cards .outline-view-group .outline-view-synopsis { grid-column: 1 / -1; min-height: 0; margin: var(--space-1) 0 0; }
+.outline-view-cards .outline-view-group .outline-view-synopsis[hidden] { display: none; }
+.outline-view-cards .outline-view-row:not(.outline-view-group) .outline-view-synopsis-text { -webkit-line-clamp: 4; }
+.outline-view-continued { grid-column: 1 / -1; margin: 0; padding: 0 var(--space-3); color: var(--muted); font-size: var(--text-sm); }
 
 /* The row's Move menu: the shared dropdown, opened under the pressed button.
    `fixed` for the context menu's reason: its left/top are viewport
@@ -4517,7 +4571,8 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 #outline-move-menu button[aria-disabled="true"]:hover {
   background: transparent;
 }
-#menu-panel [role="menuitemradio"][aria-checked="true"] .menu-item-label::before { content: "✓ "; color: var(--accent); }
+#menu-panel [role="menuitemradio"][aria-checked="true"] .menu-item-label::before,
+#menu-panel [role="menuitemcheckbox"][aria-checked="true"] .menu-item-label::before { content: "✓ "; color: var(--accent); }
 
 /* THE RECORDED EXCEPTION: a timeline's lanes ARE positioned
    descendants of #editor -- they are the pane's content while one is open,
@@ -4693,7 +4748,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
    INSET ring on just the lanes area answers the same need -- a keyboard user
    can see where focus is -- without covering chrome that is not the lanes. */
 #timeline-lanes:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
 
@@ -4732,7 +4787,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 }
 
 .timeline-lane-action:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
 
@@ -5021,8 +5076,8 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 }
 
 .timeline-branch-header button[aria-pressed="true"] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: var(--selection-fill);
+  border-color: transparent;
   color: var(--fg);
 }
 
@@ -5332,6 +5387,24 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   margin-bottom: 0.75em;
 }
 
+/* AN EMPTY SCENE'S ONE LINE, drawn from the view's own attribute so it never
+   enters the document. The pseudo-element sits on the element that carries the
+   attribute, because attr() reads its own host; it lands just before the empty
+   paragraph. Floated with no height so the caret still sits at the
+   paragraph's start; no pointer events so a click lands in the paragraph. The
+   empty alternative text keeps it out of the accessibility tree, where
+   aria-placeholder already says it; an engine without that syntax keeps the
+   first declaration. A composition hides it before its first character. */
+#editor .ProseMirror[data-placeholder]:not([data-composing])::before {
+  content: attr(data-placeholder);
+  content: attr(data-placeholder) / "";
+  float: left;
+  height: 0;
+  color: var(--muted);
+  pointer-events: none;
+  user-select: none;
+}
+
 /* The selection under long text was left to the platform for a while; the
    calm-panels record now themes it per palette (::selection near the top): a
    translucent accent under the ink, whose contrast was checked per palette. */
@@ -5444,9 +5517,33 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   display: none;
 }
 
+/* Sized by its longest label, not by the 160px list it is positioned against:
+   with only `right` set, shrink-to-fit resolved against that list and wrapped
+   German labels onto three lines with the window half empty. The cap is the
+   room left of the list, so a label wraps only when the window truly has no
+   more. Two columns: labels, then shortcuts, shared by every row through
+   subgrid so the shortcuts start on one line. */
 #menu-panel {
+  width: max-content;
   min-width: min(240px, calc(100vw - 188px));
   max-width: calc(100vw - 188px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+
+#menu-panel > * {
+  grid-column: 1 / -1;
+}
+
+#menu-panel > button {
+  display: grid;
+  grid-template-columns: subgrid;
+  gap: 0;
+  justify-content: normal;
+}
+
+#menu-panel .menu-item-label:only-child {
+  grid-column: 1 / -1;
 }
 
 #app-menu-list:has(#menu-outline[aria-expanded="true"]) #menu-panel {
@@ -5592,7 +5689,9 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   overflow-wrap: anywhere;
 }
 #menu-panel .menu-item-shortcut {
-  flex-shrink: 0;
+  /* Padding, not column-gap: a page with no shortcut at all keeps an empty
+     second column and would otherwise carry the gap as dead space. */
+  padding-left: 24px;
   white-space: nowrap;
 }
 
@@ -5745,6 +5844,12 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.quick-open-path {
+  margin-left: 0.5em;
+  color: var(--muted);
+  font-size: var(--text-sm);
 }
 
 #quick-open-results [role="option"][aria-selected="true"] {
@@ -5931,7 +6036,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 }
 
 .app-banner-dismiss:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
@@ -6281,6 +6386,18 @@ body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="t
   color: var(--muted); font-size: var(--text-xs); overflow-wrap: anywhere;
 }
 #revision-planning .planning-done { text-decoration: line-through; }
+#revision-planning button.planning-target,
+.appears-map-member button.appears-map-member-scene {
+  min-height: 0; padding: 0; font: inherit; color: inherit; text-align: left;
+  background: none; border: 0; cursor: pointer; overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 30%, transparent);
+  text-underline-offset: 3px;
+}
+#revision-planning button.planning-target:hover,
+.appears-map-member button.appears-map-member-scene:hover { background: none; text-decoration-color: currentColor; }
+#revision-planning button.planning-target:focus-visible,
+.appears-map-member button.appears-map-member-scene:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
 
 /* WHAT THIS IS ABOUT. Opened from Outline > Synopsis..., docked in the inspector, which sets its place and
    width; the old anchored-popover position and size rules were deleted here. */
@@ -6582,7 +6699,7 @@ body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="t
   position: absolute;
   inset: 0 6px;
   border-radius: var(--radius-control);
-  box-shadow: inset 0 0 0 2px var(--accent);
+  box-shadow: inset 0 0 0 2px var(--focus-ring);
   z-index: -1;
 }
 
@@ -6631,12 +6748,20 @@ body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="t
    and a deleted member's sheet still standing after the list went empty. */
 #cast-sheet-record {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 96px;
+  grid-template-columns: minmax(0, 1fr);
   column-gap: 16px;
+}
+
+/* THE PICTURE TRACK EXISTS ONLY WHILE A PICTURE IS DRAWN. Without one the
+   aliases and the summary run the sheet's full width straight under the name;
+   an empty reserved square outranked the character's own words. */
+#cast-sheet-record[data-picture="shown"] {
+  grid-template-columns: minmax(0, 1fr) 96px;
 }
 
 .cast-sheet-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
@@ -6676,22 +6801,19 @@ body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="t
   flex: 0 0 auto;
 }
 
-/* THE PICTURE COLUMN, AT THE TOP RIGHT (the column fix
-   above replaces the float this used to be -- see #cast-sheet-record). Its
-   own grid column, second and last, so it never shares a row with the
-   summary's text or the fields below overrun it.
-
-   NO FIXED HEIGHT HERE: the 96px square is real -- both
-   .cast-sheet-picture-frame and .cast-sheet-picture-empty state it
-   themselves, below -- but the COLUMN also holds the Add-a-picture button
-   under an empty square, and a fixed 96px on this element left that button
-   with nowhere to sit but overflowing onto .cast-sheet-fields underneath.
-   The column now sizes to whichever content it actually holds. */
-.cast-sheet-picture {
+/* THE PICTURE COLUMN, AT THE TOP RIGHT, only while a picture is drawn (see
+   #cast-sheet-record). Its own grid column, second and last, so it never
+   shares a row with the summary's text or the fields below overrun it. With
+   no picture the block spans the sheet and holds at most the missing-original
+   sentence. */
+#cast-sheet-record[data-picture="shown"] .cast-sheet-picture {
   grid-column: 2;
   grid-row: 2;
   width: 96px;
-  text-align: center;
+}
+
+.cast-sheet-picture {
+  grid-column: 1 / -1;
 }
 
 .cast-sheet-picture-frame {
@@ -6709,40 +6831,20 @@ body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="t
   object-fit: cover;
 }
 
-/* THE EMPTY SQUARE (ticket 07): --nav-bg and a 1px border rather than the
-   "No picture yet." sentence the form still carries -- that sentence is
-   Edit's, this square is Read's. Its own explicit 96x96, not a percentage
-   of the column: the column no longer states a height for it to be a
-   percentage OF (see above). */
-.cast-sheet-picture-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 96px;
-  height: 96px;
-  background: var(--nav-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
+/* A PICTURE THE RECORD NAMES BUT THIS BUILD CANNOT SHOW: the form's quiet
+   sentence, so a missing original never reads as a member with no picture. */
+#cast-sheet-picture-state {
+  margin: 0 0 8px;
   color: var(--muted);
-}
-
-.cast-sheet-picture-empty svg {
-  width: 24px;
-  height: 24px;
+  font-size: var(--text-sm);
 }
 
 #cast-sheet-picture-add {
-  display: block;
-  width: 100%;
-  margin-top: 4px;
-  text-align: center;
-  /* ALLOWED TO WRAP inside the 96px column, unlike every other button in
-     this panel -- "Add a picture..." is the widest label in the narrowest
-     box on the sheet, and clipping or overflowing it was the second half of
-     the capture's defect: it wrapped onto its own line fine
-     once the picture stopped floating, but a button's own default is still
-     stated explicitly here rather than left to inherit. */
-  white-space: normal;
+  flex: 0 0 auto;
+}
+
+#cast-sheet-picture-add[hidden] {
+  display: none;
 }
 
 /* ALSO CALLED, before the summary -- who this is, then what they are
@@ -6957,11 +7059,18 @@ body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="t
   color: var(--muted);
 }
 
+.state-mark svg {
+  width: 0.9em;
+  height: 0.9em;
+  vertical-align: -0.1em;
+}
+
 /* The chosen one, said in weight as well as in aria-pressed - the same
    treatment the preferences panel's groups get. */
 #state-choices button[aria-pressed="true"] {
-  border-color: var(--accent);
-  color: var(--accent);
+  background: var(--selection-fill);
+  border-color: transparent;
+  color: var(--fg);
   font-weight: 600;
 }
 
@@ -7117,7 +7226,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 }
 
 #cast-card-open:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -7211,7 +7320,8 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   flex: none;
 }
 
-#design-panel .design-margin-choices {
+#design-panel .design-margin-choices,
+#proof-page-margins .design-margin-choices {
   display: inline-flex;
   gap: 4px;
   margin-left: 4px;
@@ -7333,8 +7443,9 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
    ids and attributes and loses on the element, so the pressed state would stop
    painting while the rule sits in the file matching. (2,1,0) wins. */
 #comments-panel #comments-show-resolved[aria-pressed="true"] {
-  border-color: var(--accent);
-  color: var(--accent);
+  background: var(--selection-fill);
+  border-color: transparent;
+  color: var(--fg);
   font-weight: 600;
 }
 
@@ -7968,6 +8079,13 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 .saved-prose { user-select: text; overflow-wrap: anywhere; line-height: 1.6; }
 .saved-prose p { margin: 0 0 1em; }
 .reference-body { min-height: 0; overflow-y: auto; }
+#reference-rail .saved-prose {
+  font-family: var(--prose-family, "Crimson Pro", Georgia, "Times New Roman", serif);
+  font-size: 17px;
+  line-height: 1.65;
+}
+#reference-rail .saved-prose p { margin: 0; unicode-bidi: plaintext; }
+#reference-rail .saved-prose p + p { text-indent: 1.5em; }
 /* Docked in the inspector, which sets its place and width. */
 #craft-panel {
   color: var(--fg);
@@ -8032,7 +8150,7 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   flex-direction: column;
   gap: 10px;
   /* 420px until the writer drags the divider; preview-rail.ts sets the
-     property, clamped to the window. The overlay rule below ignores it. */
+     property, clamped to the window. The full-surface rule below ignores it. */
   width: var(--preview-rail-width, 420px);
   /* The row is `minmax(0, 1fr)` and this is the flex-column half of the same
      rule: without it the pages box below refuses to shrink past its content and
@@ -8110,19 +8228,18 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   gap: 8px;
 }
 
-@media (max-width: 900px) {
-  /* Keep the proof controls reachable when three columns cannot fit. The rail
-     is an overlay here, so there is nothing to resize. */
-  #preview-divider {
-    display: none;
-  }
+/* Where the rail cannot sit beside a readable prose pane even without the
+   navigator (side-layout.ts), it is the whole workspace for as long as it is
+   open, rather than a box over part of the prose. Nothing to resize then. */
+body[data-side-layout="full"] #preview-divider {
+  display: none;
+}
 
-  #preview-rail {
-    position: fixed;
-    inset: 39px 0 34px auto;
-    z-index: 9;
-    width: min(420px, 100vw);
-  }
+body[data-side-layout="full"] #preview-rail {
+  position: fixed;
+  inset: 39px 0 34px 0;
+  z-index: 9;
+  width: auto;
 }
 
 #preview-rail-head h2 {
@@ -8515,11 +8632,10 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 
 #library-membership[hidden],
 #library-summary[hidden] { display: none; }
-/* The desk's own rule already closes the row above. */
-#library-desk + #library-summary { border-top: 0; padding-top: 0; }
+/* One quiet line after the shelf, ruled off from it; nothing below to close. */
+#library-summary { border-bottom: 0; padding-bottom: 0; margin-top: 24px; }
 
-#library-membership h3,
-#library-summary h3 { font: 500 var(--text-xl) var(--prose-family, serif); margin: 0 0 8px; }
+#library-membership h3 { font: 500 var(--text-xl) var(--prose-family, serif); margin: 0 0 8px; }
 #library-membership p,
 #library-summary p { color: var(--muted); line-height: var(--leading-ui); margin: 6px 0; }
 #library-membership .library-membership-row { display: flex; gap: 12px; align-items: end; margin: 10px 0; }
@@ -8528,8 +8644,10 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 #library-membership button { margin: 6px 10px 0 0; }
 #library-membership-discard { margin: 10px 0; color: var(--danger); }
 #library-summary label { display: grid; gap: 4px; max-width: 58em; margin: 12px 0; }
-#library-summary-result { font-family: var(--prose-family, serif); font-size: var(--text-xl); color: var(--fg) !important; }
-#library-summary-coverage { font-size: var(--text-xs); }
+#library-summary-line { font-size: var(--text-sm); }
+#library-summary-result { color: var(--fg); }
+#library-summary-coverage { font-size: var(--text-sm); color: var(--fg) !important; }
+#library-summary-coverage[hidden] { display: none; }
 
 #library-menu-anchor { position: relative; }
 #library button#library-menu { display: inline-flex; align-items: center; padding: 7px 9px; }
@@ -9101,55 +9219,56 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   }
 }
 
-/* BELOW 440px OF PROSE PANE THE INSPECTOR OVERLAYS, beneath the header and
-   above the footer, the way both rails do at 900px. 320 + 360 + 440 = 1120
-   with the navigator, 800 without it. A narrower pane would set the prose in
-   a column a few words wide; covering its right side is the lesser cost, and
-   Close or Escape gives the whole width back. */
-@media (max-width: 1119.98px) {
-  body:not(.nav-hidden) #inspector-dock .panel-shell {
-    position: fixed;
-    inset: 39px 0 34px auto;
-    z-index: 9;
-    width: min(360px, 100vw);
-    box-shadow: var(--shadow-panel);
-    border-left: 1px solid var(--panel-edge);
-  }
+/* THE INSPECTOR NEVER COVERS PART OF THE PROSE. Where the pane beside it would
+   fall below a readable measure, the navigator yields first (side-layout.ts,
+   through `.nav-hidden`); where even that cannot fit, `data-side-layout="full"`
+   gives the side surface the whole workspace and the prose under it is inert
+   until Close or Escape. A slice of lines cut at the panel's edge reads as
+   prose a writer can use, and it is not. */
+body[data-side-layout="full"] #inspector-dock .panel-shell {
+  position: fixed;
+  inset: 39px 0 34px 0;
+  z-index: 9;
+  width: auto;
 }
 
-@media (max-width: 799.98px) {
-  body.nav-hidden #inspector-dock .panel-shell {
-    position: fixed;
-    inset: 39px 0 34px auto;
-    z-index: 9;
-    width: min(360px, 100vw);
-    box-shadow: var(--shadow-panel);
-    border-left: 1px solid var(--panel-edge);
-  }
-}
+/* The writer can still open the outline over a full surface. */
+body[data-side-layout="full"] #outline-backdrop { z-index: 10; }
+body.nav-narrow[data-side-layout="full"]:not(.nav-hidden) #nav-column { z-index: 11; }
 
-/* The scene's note count moves off the pane to the prose's own right edge.
-   Where the inspector overlays, that edge is under it, and the count would
-   sit on the prose itself: it steps aside until the inspector closes. */
+/* The scene's note count moves off the pane to the prose's own right edge,
+   and has no prose to sit beside while a surface covers it. */
 body[data-inspector-open="true"] #scene-notes {
   right: calc(360px + 14px);
 }
 
-@media (max-width: 1119.98px) {
-  body:not(.nav-hidden)[data-inspector-open="true"] #scene-notes {
-    display: none;
-  }
-}
-
-@media (max-width: 799.98px) {
-  body.nav-hidden[data-inspector-open="true"] #scene-notes {
-    display: none;
-  }
+body[data-side-layout="full"] #scene-notes {
+  display: none;
 }
 
 #library-new-book-area { margin: 0 0 24px; }
 #library-existing-books { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 24px; }
 #library-existing-books button { min-height: 32px; }
+/* Empty: the row is not a box, so New book and the two routes stack as before. */
+#library-new-book-row { display: contents; }
+#library:not(.library-is-empty) #library-new-book-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 0 0 24px;
+}
+#library:not(.library-is-empty) #library-new-book-area,
+#library:not(.library-is-empty) #library-existing-books { margin: 0; gap: 8px; }
+#library:not(.library-is-empty) #library-existing-books button {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+#library:not(.library-is-empty) #library-existing-books button:hover:not(:disabled) {
+  background: var(--control-tone-hover);
+  color: var(--fg);
+}
 #library #library-new-book-tile { width: auto; }
 #library #library-new-book-name { border-style: solid; background: var(--control-bg); }
 #prefs-panel .prefs-choice-note {
@@ -9199,7 +9318,7 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 #creation-more > summary::-webkit-details-marker,
 #prefs-writing-aids > summary::-webkit-details-marker,
 #help-guide summary::-webkit-details-marker { display: none; }
-#help-guide summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#help-guide summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 #help-guide p { margin: 6px 0 12px; max-width: 70ch; font-size: var(--text-sm); line-height: var(--leading-ui); }
 @media (max-width: 700px) {
   #help-columns { grid-template-columns: minmax(0, 45%) minmax(0, 1fr); }
@@ -9241,7 +9360,8 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
   #library:has(#library-desk:not([hidden])) .library-strip { margin-bottom: 0; }
   #library:has(#library-desk:not([hidden])) #library-heading-bio:empty { display: none; }
   #library:has(#library-desk:not([hidden])) #library-new-book-area,
-  #library:has(#library-desk:not([hidden])) #library-existing-books { margin-bottom: 0; }
+  #library:has(#library-desk:not([hidden])) #library-existing-books,
+  #library:has(#library-desk:not([hidden])) #library-new-book-row { margin-bottom: 0; }
   #library:has(#library-desk:not([hidden])) #library-desk {
     gap: 16px;
     padding-bottom: 12px;
@@ -9354,7 +9474,7 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 #nav-header > .tip-anchor { flex: 0 0 auto; }
 #book-create:hover, #bible-create:hover, #home-button:hover { background: var(--control-tone); }
 #book-create:focus-visible, #bible-create:focus-visible, #home-button:focus-visible {
-  outline: 2px solid var(--accent); outline-offset: 2px;
+  outline: 2px solid var(--focus-ring); outline-offset: 2px;
 }
 .bible-create-anchor { position: fixed; z-index: 2; height: 24px; }
 .bible-create-anchor[hidden] { display: none; }
@@ -9385,7 +9505,7 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 }
 #creation-chooser summary { cursor: pointer; padding: var(--space-2) 0; }
 #creation-chooser button:focus-visible, #creation-chooser summary:focus-visible {
-  outline: 2px solid var(--accent); outline-offset: 2px;
+  outline: 2px solid var(--focus-ring); outline-offset: 2px;
 }
 .nav-indicator-tip {
   position: fixed; z-index: 8; max-width: min(28rem, calc(100vw - 8px));
@@ -9452,3 +9572,46 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 #endnote-editor textarea { width: 100%; resize: vertical; }
 #endnote-editor .panel-body > div { display: grid; gap: var(--space-2); }
 #endnote-editor [data-resolution="flag"], #endnote-editor [data-resolution="warning"] { color: var(--color-warning, #a35d00); }
+
+#project-archive-key,
+#project-archive-encrypted { display: block; }
+#project-transfer-body label,
+#project-transfer-body select { display: block; }
+#project-transfer-body select { max-width: 100%; margin: 4px 0 6px; }
+
+#project-encrypted-status { color: var(--muted); font-size: var(--text-xs); overflow-wrap: anywhere; }
+
+/* FORCED COLORS drop author fills and box-shadows, which is how a chosen value
+   and two of the focus rings are drawn. A chosen control becomes the system
+   highlight, a selected row keeps an edge in it, and the box-shadow rings
+   become outlines. `!important` only here: every pressed rule above is
+   id-qualified, and this has to win over all of them in one place. */
+@media (forced-colors: active) {
+  button[aria-pressed="true"] {
+    forced-color-adjust: none;
+    background: Highlight !important;
+    color: HighlightText !important;
+  }
+
+  button[aria-pressed="true"] * {
+    color: inherit !important;
+  }
+
+  #nav [role="treeitem"][aria-selected="true"]::before {
+    forced-color-adjust: none;
+    background: transparent;
+    border: 2px solid Highlight;
+  }
+
+  #cast-entries .cast-entry[aria-pressed="true"]::before,
+  #cast-entries .cast-entry:focus-visible::before {
+    content: none;
+  }
+
+  #cast-entries .cast-entry:focus-visible,
+  .outline-view-cards .outline-view-row:focus-visible,
+  .outline-view-table .outline-view-row:focus-visible {
+    outline: 2px solid CanvasText;
+    outline-offset: -2px;
+  }
+}

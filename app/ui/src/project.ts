@@ -198,6 +198,7 @@ export interface MountDeps {
   /** Open the project panel, where the readable folder is turned on. Owned by
    *  the switcher in main.ts; the status dot offers it while the folder is off. */
   openProjectPanel?: () => void;
+  openEncryptedBackups?: () => void;
 }
 
 export interface MountedProject {
@@ -623,6 +624,10 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     sceneNameEl.hidden = text === "";
     sceneHeadingEl.textContent = text;
     editorEl.classList.toggle("references-open", isReferencesPage(latestItems, itemId));
+    // Scenes only: a bible note or the references page is not where a book
+    // starts, and a verify run never types.
+    const scene = persistMode === "write" && itemId !== undefined && typeOf(itemId) === "scene";
+    editor.setEmptyHint(scene ? t("editor.empty-hint") : null);
   };
   const navigator = createNavigator({
     sidebarWordCounts: deps.sidebarWordCounts?.(),
@@ -1523,6 +1528,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     backupNow: invoke === undefined ? undefined : () => void recoveryIndicator?.backupNow(),
     makeArchive: invoke === undefined ? undefined : () => void archiveIndicator?.archiveNow(),
     openMirrorSetup: invoke === undefined ? undefined : deps.openProjectPanel,
+    openEncryptedBackups: deps.openEncryptedBackups,
   });
 
   let recoveryIndicator: RecoveryIndicator | null = null;
@@ -2380,6 +2386,15 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     });
   }
 
+  // A panel naming an item opens it through openDocument, which refuses while
+  // an unsaved atom draft is unconfirmed or another operation holds the page.
+  const openFromPanel = (itemId: string): void => {
+    navigator.revealAndSelectById?.(itemId);
+    void openDocument?.(itemId).catch((err: unknown) => {
+      raiseNotice(t("project.error.open-document", { error: String(err) }));
+    });
+  };
+
   // Revision states. The state lives on a store item.
   let revisionPanel: RevisionPanel | null = null;
   const stateEl = document.getElementById("state-controls");
@@ -2417,6 +2432,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         setDone: (id, done) => invoke("revision_task_set_done", { id, done }),
         deleteTask: (id) => invoke("revision_task_delete", { id }),
       },
+      openTarget: openFromPanel,
       onDismiss: () => editor.focus(),
     });
   }
@@ -3013,6 +3029,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       cast: async () => (await invoke("cast_list")) as CastMemberRow[],
       read: readAll,
       onNotice: raiseNotice,
+      openItem: openFromPanel,
       onDismiss: () => editor.focus(),
     });
   }

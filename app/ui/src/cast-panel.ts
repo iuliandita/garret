@@ -404,12 +404,20 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
   editButton.textContent = t("cast.edit");
   editButton.dataset.weight = "quiet";
 
-  sheetHeader.append(sheetIcon, sheetName, editButton);
+  // ADD A PICTURE SITS BESIDE EDIT, not under an empty square: a reserved
+  // portrait box outranked the character's own words and pushed the summary
+  // down the sheet. Shown only while the sheet has no picture to draw.
+  // REUSES `cast.picture.choose` and `onChoosePicture`, the same act as the form's.
+  const sheetAddPicture = document.createElement("button");
+  sheetAddPicture.type = "button";
+  sheetAddPicture.id = "cast-sheet-picture-add";
+  sheetAddPicture.dataset.weight = "quiet";
 
-  // THE PICTURE, A 96PX SQUARE. `paintSheetPicture` rebuilds this per state,
-  // `paintPicture`'s own reason: an `<img>` with no source is a broken-image
-  // glyph in every engine, and a control whose whole answer is "there is
-  // nothing to show" exists to disappoint.
+  sheetHeader.append(sheetIcon, sheetName, sheetAddPicture, editButton);
+
+  // THE PICTURE, A 96PX SQUARE, only once a picture exists. `paintSheetPicture`
+  // rebuilds this per state, `paintPicture`'s own reason: an `<img>` with no
+  // source is a broken-image glyph in every engine.
   const sheetPicture = document.createElement("div");
   sheetPicture.id = "cast-sheet-picture";
   sheetPicture.className = "cast-sheet-picture";
@@ -588,30 +596,25 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
       frame.append(img);
       frame.addEventListener("click", onViewPicture);
       sheetPicture.append(frame);
+      sheetRecord.dataset.picture = "shown";
+      sheetAddPicture.hidden = true;
       return;
     }
-    // MISSING AND UNREADABLE FOLD INTO THE SAME SQUARE AS NONE, deliberately:
-    // the sheet is the quick read and the repair for all three is the same
-    // button that adds one in the first place (`onChoosePicture`, which
-    // replaces whatever is or is not there). The three-way distinction and
-    // the Remove control that answers "it is there and broken" stay in Edit,
-    // where the sentences that name them already live -- ticket 07's "No
-    // picture yet." sentence goes from the SHEET, not from the form.
-    const empty = document.createElement("div");
-    empty.className = "cast-sheet-picture-empty";
-    empty.setAttribute("aria-hidden", "true");
-    empty.append(createIcon("image"));
-    sheetPicture.append(empty);
-    const add = document.createElement("button");
-    add.type = "button";
-    add.id = "cast-sheet-picture-add";
-    // REUSES `cast.picture.choose` ("Add a picture…") rather than a new key:
-    // it is the same sentence for the same act, and the plan's own text asks
-    // for the reuse if the wording already matches.
-    add.textContent = t("cast.picture.choose");
-    add.dataset.weight = "quiet";
-    add.addEventListener("click", onChoosePicture);
-    sheetPicture.append(add);
+    delete sheetRecord.dataset.picture;
+    sheetAddPicture.hidden = false;
+    // NONE SAYS NOTHING; MISSING AND UNREADABLE SAY SO. A record that claims a
+    // picture this build cannot show must not read like a member who never had
+    // one, so the sheet keeps the form's sentence for those two and the action
+    // offers to change the picture rather than to add a first one.
+    if (view.state === "none") {
+      sheetAddPicture.textContent = t("cast.picture.choose");
+      return;
+    }
+    const warning = document.createElement("p");
+    warning.id = "cast-sheet-picture-state";
+    warning.textContent = pictureSentence(view.state);
+    sheetPicture.append(warning);
+    sheetAddPicture.textContent = t("cast.picture.replace");
   }
 
   /** Paint the read sheet from what the STORE holds -- never a draft, which
@@ -1269,6 +1272,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
   removeButton.addEventListener("click", onRemove);
   addField.addEventListener("click", onAddField);
   chooseButton.addEventListener("click", onChoosePicture);
+  sheetAddPicture.addEventListener("click", onChoosePicture);
   detail.addEventListener("input", onFormInput);
   editButton.addEventListener("click", onEdit);
   cancelButton.addEventListener("click", onCancel);
@@ -1347,6 +1351,7 @@ export function createCastPanel(deps: CastPanelDeps): CastPanel {
       removeButton.removeEventListener("click", onRemove);
       addField.removeEventListener("click", onAddField);
       chooseButton.removeEventListener("click", onChoosePicture);
+      sheetAddPicture.removeEventListener("click", onChoosePicture);
       // The Remove control is rebuilt per paint and lives inside `picture`, so
       // it leaves with the element rather than needing a removal of its own --
       // it binds to nothing outside itself.

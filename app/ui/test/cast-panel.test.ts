@@ -1448,15 +1448,32 @@ describe("the sheet is read, the form is Edit", () => {
     expect(el("cast-sheet").hidden).toBe(true);
   });
 
-  test("a member with no picture shows the image glyph and an Add-a-picture text button", async () => {
+  test("a member with no picture reserves no square: Add a picture sits beside Edit", async () => {
     const r = rig([member({ id: "a", name: "Ilse" })]);
     await r.panel.open();
     entryNamed("Ilse").click();
     await settle();
 
     expect(present("cast-picture-full")).toBe(false);
-    expect(present("cast-sheet-picture-add")).toBe(true);
-    expect(el("cast-sheet-picture-add").textContent).toBe("Add a picture…");
+    expect(el("cast-sheet-picture").childElementCount).toBe(0);
+    expect(el("cast-sheet-record").dataset.picture).toBeUndefined();
+    const add = el<HTMLButtonElement>("cast-sheet-picture-add");
+    expect(add.hidden).toBe(false);
+    expect(add.textContent).toBe("Add a picture…");
+    expect(add.nextElementSibling?.id).toBe("cast-edit");
+  });
+
+  test("the sheet names a missing original rather than reading as no picture", async () => {
+    const r = rig([member({ picture_path: "gone.jpg" })]);
+    r.views.set("m1", { state: "missing", data_uri: null });
+    await r.panel.open();
+    entryNamed("Ilse").click();
+    await settle();
+
+    expect(el("cast-sheet-picture-state").textContent).toBe(
+      "The picture file is not where this book keeps it.",
+    );
+    expect(el("cast-sheet-picture-add").textContent).toBe("Change picture…");
   });
 
   test("a present picture is the clickable square, and clicking it views full size", async () => {
@@ -1466,7 +1483,8 @@ describe("the sheet is read, the form is Edit", () => {
     entryNamed("Ilse").click();
     await settle();
 
-    expect(present("cast-sheet-picture-add")).toBe(false);
+    expect(el("cast-sheet-picture-add").hidden).toBe(true);
+    expect(el("cast-sheet-record").dataset.picture).toBe("shown");
     el("cast-picture-full").click();
     await settle();
 

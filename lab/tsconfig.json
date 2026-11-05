@@ -8,6 +8,5 @@
     "types": ["bun-types"],
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
-  "include": ["fixtures", "throttle", "bakeoff", "fault-rig", "shared"],
-  "exclude": ["bakeoff/shell-electron", "bakeoff/shell-tauri"]
+  "include": ["fixtures"]
 }

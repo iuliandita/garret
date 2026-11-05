@@ -5,16 +5,6 @@
   </picture>
 </p>
 
-New desktop books offer Novel, Short fiction, Nonfiction, and Story collection project types.
-Short fiction starts with one scene and grows structure as needed. Nonfiction
-starts with its own book design, calls the Bible Reference notes, and keeps
-fiction tools available under Planning > More. A single-scene manuscript
-exports without generated contents or outline headings; front and back matter
-remain included. Collections keep stories in one book, with their own titles,
-optional authors, status and word counts. Use Story details from a story's
-navigator context menu to edit its fields or export it alone in Markdown, EPUB,
-PDF or Word. See [collection export rules](docs/COMPATIBILITY.md).
-
 ## A writing studio for the whole book.
 
 **garret** <img src="assets/brand/garret/garret-middle-dot.svg" alt="·" width="8" height="16"> is a powerful writing studio for novelists, completely free and open
@@ -26,8 +16,8 @@ or an internet connection to write. Your books stay on your own disk.
 
 > **Early alpha.** garret moves fast; keep backups of your work.
 
-The current published build is [0.0.9 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.9).
-See [published and development changes](docs/RELEASES.md) and the
+The current published build is [0.0.10 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.10).
+See the [changelog](CHANGELOG.md), [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
 
 From 0.0.7, desktop upgrades books to schema 18 after consent and a verified
@@ -45,6 +35,16 @@ See the compatibility guide before upgrading or transferring a book.
 Write in a calm editor with formatting, book-wide search, undo/redo, and
 scene history. Arrange parts, chapters, and scenes with outlines and cards.
 Choose light or dark mode, in English or German.
+
+New desktop books offer Novel, Short fiction, Nonfiction, and Story collection project types.
+Short fiction starts with one scene and grows structure as needed. Nonfiction
+starts with its own book design, calls the Bible Reference notes, and keeps
+fiction tools available under Planning > More. A single-scene manuscript
+exports without generated contents or outline headings; front and back matter
+remain included. Collections keep stories in one book, with their own titles,
+optional authors, status and word counts. Use Story details from a story's
+navigator context menu to edit its fields or export it alone in Markdown, EPUB,
+PDF or Word. See [collection export rules](docs/COMPATIBILITY.md).
 
 On desktop, Edit > Insert or edit endnote (Ctrl+Alt+N) opens a plain-text note
 with Save/Cancel and isolated undo. Choose book, chapter or story numbering in
@@ -86,7 +86,7 @@ and an optional refresh runs after you stop typing.
 ### Keep control of your work
 
 Books live on your own disk. Recovery copies, scene history, salvage tools,
-and a readable mirror folder help you recover work. Encrypted portable archives
+and a readable folder help you recover work. Encrypted portable archives
 include a separate recovery key. An optional PIN lock conceals the app when
 you step away; it does not encrypt manuscript files.
 
@@ -162,7 +162,7 @@ release for you:
 
 1. Add `https://github.com/iuliandita/garret` as an app source.
 2. Pick the asset whose name ends in `-android.apk`, for example
-   `garret-0.0.10-android.apk`. The `-android-info.zip` asset holds instructions
+   `garret-0.0.11-android.apk`. The `-android-info.zip` asset holds instructions
    and build details; it is not installable.
 3. Check the signing certificate. Obtainium shows the certificate hash for the
    installed app on its app page; the SHA-256 digest must be

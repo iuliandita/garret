@@ -113,6 +113,9 @@ export const SHORTCUTS: readonly ShortcutGroup[] = [
       // naming the identical chord -- application chrome, so it works
       // with nothing open, exactly like Alt+<key> above it.
       { keys: t("menu.shortcut.library"), description: t("help.library") },
+      // The two header buttons, bound beside Library for its reason.
+      { keys: t("menu.shortcut.focus-mode"), description: t("help.focus-mode") },
+      { keys: t("menu.shortcut.show-outline"), description: t("chrome.outline.hint") },
       { keys: t("help.keys.export"), description: t("help.export") },
       { keys: t("authoring.shortcut"), description: t("authoring.insert-note") },
       { keys: t("help.keys.escape"), description: t("help.menu.close") },
@@ -134,7 +137,9 @@ export interface HelpPanelDeps {
 }
 
 export interface HelpPanel {
-  open(): void;
+  /** `"shortcuts"` opens at the key table, with focus on its heading so a
+   *  screen reader starts reading there; anything else opens at the top. */
+  open(at?: "shortcuts"): void;
   close(): void;
   destroy(): void;
 }
@@ -178,6 +183,9 @@ export function createHelpPanel(deps: HelpPanelDeps): HelpPanel {
     guide.append(details);
   }
   const shortcutsTitle = document.createElement("h3");
+  shortcutsTitle.id = "help-shortcuts-heading";
+  // A focus target for open("shortcuts"), never a tab stop.
+  shortcutsTitle.tabIndex = -1;
   shortcutsTitle.textContent = t("help.shortcuts.heading");
   panel.append(guide, shortcutsTitle);
 
@@ -234,10 +242,19 @@ export function createHelpPanel(deps: HelpPanelDeps): HelpPanel {
 
   let destroyed = false;
   return {
-    open(): void {
+    open(at?: "shortcuts"): void {
       if (privacyKeys) privacyKeys.textContent = privacyShortcutLabel(deps.privacyShortcut?.() ?? "ctrl_alt_l") || t("privacy.shortcut.off");
       panel.hidden = false;
-      panel.focus();
+      if (at === "shortcuts") {
+        shortcutsTitle.focus({ preventScroll: true });
+        // Only the panel's own scroll boxes move: scrollIntoView would also
+        // scroll whatever holds the header, and the page behind must not move.
+        for (let box: HTMLElement | null = shortcutsTitle.parentElement; box !== null; box = box === panel ? null : box.parentElement) {
+          box.scrollTop += shortcutsTitle.getBoundingClientRect().top - box.getBoundingClientRect().top;
+        }
+      } else {
+        panel.focus();
+      }
     },
     close,
     destroy(): void {

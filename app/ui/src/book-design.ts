@@ -166,3 +166,16 @@ export function designName(area: "page" | "preset", id: string): string {
   const key = `design.${area}.${id}`;
   return messages.has(key) ? t(key) : id;
 }
+
+export type MarginUnit = "mm" | "in";
+let marginUnit: MarginUnit = "mm";
+export function getMarginUnit(): MarginUnit { return marginUnit; }
+const unitListeners = new Set<(unit: MarginUnit) => void>();
+export function setMarginUnit(unit: MarginUnit): void {
+  marginUnit = unit;
+  for (const listener of unitListeners) listener(unit);
+}
+export function onMarginUnitChange(listener: (unit: MarginUnit) => void): () => void {
+  unitListeners.add(listener);
+  return () => unitListeners.delete(listener);
+}

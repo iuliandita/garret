@@ -1,7 +1,6 @@
 // app/ui/src/measure/stats.ts
-// Nearest-rank percentiles, matching the method discovery used so the numbers
-// carry the same meaning (lab/bakeoff/editor-core/src/stats.ts). Restated, not
-// imported: lab is frozen.
+// Nearest-rank percentiles, matching the method the discovery phase used so
+// the numbers carry the same meaning.
 export interface Percentiles {
   p50: number;
   p95: number;

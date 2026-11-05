@@ -2980,7 +2980,7 @@ mod tests {
             })
             .unwrap();
             assert_eq!(view.font_resolved, resolved);
-            assert_eq!(view.font, "Crimson Text");
+            assert_eq!(view.font, "Crimson Pro");
         }
     }
 

@@ -1,14 +1,14 @@
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { afterEach, expect, test } from "bun:test";
 import { createProofPageSetup } from "../src/proof-page-setup";
-import type { BookDesign, BookDesignView } from "../src/book-design";
+import { setMarginUnit, type BookDesign, type BookDesignView } from "../src/book-design";
 
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
 const design: BookDesign = { font: "EB Garamond", page: { width_um: 152400, height_um: 228600, name: "trade" }, margins: { inner_um: 19050, outer_um: 15875, top_um: 15875, bottom_um: 19050 } };
 const view: BookDesignView = { design, fonts: ["EB Garamond"], page_sizes: [{ name: "trade", width_um: 152400, height_um: 228600 }, { name: "a4", width_um: 210000, height_um: 297000 }], presets: [] };
 let container: HTMLElement | null = null;
-afterEach(() => container?.remove());
+afterEach(() => { container?.remove(); setMarginUnit("mm"); });
 
 test("writes only the changed page setup and preserves the font", async () => {
   container = document.createElement("div"); document.body.append(container);
@@ -151,5 +151,38 @@ test("custom dimensions are named and cannot be selected as a fake preset", asyn
   expect(option.textContent).toContain("180");
   expect(option.textContent).toContain("240");
   expect(option.disabled).toBe(true);
+  setup.destroy();
+});
+
+test("unit changes preserve drafts and write canonical micrometres", async () => {
+  container = document.createElement("div"); document.body.append(container);
+  const writes: BookDesign[] = [];
+  const notices: string[] = [];
+  const setup = createProofPageSetup(container, { readDesign: async () => view, writeDesign: async (next) => { writes.push(next); return next; }, refresh: async () => {}, onNotice: (message) => notices.push(message) });
+  await setup.show();
+  const input = container.querySelector<HTMLInputElement>("#proof-page-margins input")!;
+  const inches = container.querySelector<HTMLButtonElement>('[data-proof-margin-unit="in"]')!;
+  const mm = container.querySelector<HTMLButtonElement>('[data-proof-margin-unit="mm"]')!;
+  input.value = "20"; inches.click();
+  expect(input.value).toBe("0.7874");
+  expect(writes).toHaveLength(0);
+  input.value = "unfinished"; mm.click();
+  expect(input.value).toBe("unfinished");
+  expect(notices.at(-1)).toContain("unfinished");
+  input.value = "1"; input.dispatchEvent(new Event("change"));
+  await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+  expect(writes[0]?.margins.inner_um).toBe(25_400);
+  mm.click(); setup.destroy();
+});
+
+test("proof controls use the unit selected in Book design", async () => {
+  setMarginUnit("in");
+  container = document.createElement("div"); document.body.append(container);
+  const setup = createProofPageSetup(container, { readDesign: async () => view, writeDesign: async (next) => next, refresh: async () => {}, onNotice: () => {} });
+  await setup.show();
+  expect(container.querySelector<HTMLInputElement>("#proof-page-margins input")!.value).toBe("0.75");
+  expect(container.querySelector('[data-proof-margin-unit="in"]')!.getAttribute("aria-pressed")).toBe("true");
+  setMarginUnit("mm");
+  expect(container.querySelector<HTMLInputElement>("#proof-page-margins input")!.value).toBe("19.05");
   setup.destroy();
 });

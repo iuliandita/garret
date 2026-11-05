@@ -417,6 +417,10 @@ export interface Editor {
   /** Prevent document-changing transactions while a host-side replacement is
    *  being reconciled. DOM editability alone does not stop toolbar commands. */
   setEditable(editable: boolean): void;
+  /** The muted line an empty, editable document shows where the first words
+   *  go, or null for none. A view attribute drawn by the stylesheet, never a
+   *  node: it cannot reach the body, history, counts or exports. */
+  setEmptyHint(text: string | null): void;
   /** Select the first occurrence of `query` in the open document and scroll it
    *  into view. Returns whether it landed.
    *
@@ -560,6 +564,13 @@ export interface ActiveMarks {
   underline: boolean;
 }
 
+/** One textblock holding nothing: what a new scene is. A scene break, a figure
+ *  or a second paragraph is already writing. */
+function isEmptyDoc(doc: PmNode): boolean {
+  const first = doc.firstChild;
+  return doc.childCount === 1 && first !== null && first.isTextblock && first.content.size === 0;
+}
+
 export interface EditorOptions {
   authoring?: boolean;
   pickFigure?: () => Promise<import("./document-authoring").FigureAsset | null>;
@@ -659,6 +670,7 @@ export function createEditor(
     plugins: [...editorPlugins(), preserveAtoms(opts.authoring), ...(opts.authoring ? [trailingTextblockPlugin()] : [])],
   });
   let editable = true;
+  let emptyHint: string | null = null;
   let authoring: DocumentAuthoring | undefined;
   let noteOffset = 0;
   const editSources = new EditSourceTracker();
@@ -680,9 +692,20 @@ export function createEditor(
       }
       return false;
     },
-    attributes: { role: "textbox", "aria-multiline": "true", "aria-label": t("editor.name"), lang: "" },
+    attributes: (state): Record<string, string> => {
+      const attrs: Record<string, string> = { role: "textbox", "aria-multiline": "true", "aria-label": t("editor.name"), lang: "" };
+      if (emptyHint !== null && editable && !authoring?.pending() && isEmptyDoc(state.doc)) {
+        attrs["data-placeholder"] = emptyHint;
+        attrs["aria-placeholder"] = emptyHint;
+      }
+      return attrs;
+    },
     clipboardTextSerializer: slice => clipboardPlaintext(slice.content, plaintextLabels()),
     handleDOMEvents: {
+      // A composition can open before its first character reaches the
+      // document; the hint goes with the composition, not with that character.
+      compositionstart(eventView) { eventView.dom.setAttribute("data-composing", ""); return false; },
+      compositionend(eventView) { eventView.dom.removeAttribute("data-composing"); return false; },
       paste(_view, event) {
         if (!refusesPicture(event.clipboardData)) return false;
         event.preventDefault();
@@ -793,6 +816,11 @@ export function createEditor(
     setEditable(next: boolean): void {
       editable = next;
       view.setProps({ editable: () => editable && !authoring?.pending() });
+    },
+    setEmptyHint(text: string | null): void {
+      if (emptyHint === text) return;
+      emptyHint = text;
+      view.setProps({});
     },
     revealMatch(query: string, locator?: FieldLocator): boolean {
       const at = locateFirstMatch(view.state.doc, query, locator);

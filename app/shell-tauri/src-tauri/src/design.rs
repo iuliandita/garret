@@ -61,11 +61,7 @@ pub const FONT_MAX_CHARS: usize = 100;
 /// What a book's font falls back to when the machine rendering it has no such
 /// face.
 ///
-/// ONE STATEMENT, SHARED BY BOTH BOOK FORMATS. This application ships no font
-/// files (040's recorded gap), so what a renderer can do is name the family and
-/// put a stack behind it -- and two formats of one manuscript falling back to
-/// two different faces would be two answers to what the writer's book looks
-/// like. `epub.rs` and `pdf.rs` both write this and neither owns it.
+/// Shared by both book formats when the selected face is unavailable.
 pub const FONT_FALLBACK: &str = "Georgia, \"Times New Roman\", serif";
 
 /// The smallest and largest page this application will store, in micrometres.
@@ -76,13 +72,11 @@ const PAGE_MAX_UM: i64 = 1_000_000;
 
 /// The body fonts this application offers.
 ///
-/// All four are libre text faces under the SIL Open Font License whose own
-/// projects describe them as made for setting long-form text; the decision
-/// record cites each. NOT BUNDLED -- this application ships no font files, so
-/// what is stored is a NAME and whether the machine rendering the book has it is
-/// 043's and 044's problem, with a generic fallback. That gap is recorded rather
-/// than papered over.
-pub const FONTS: [&str; 4] = [
+/// Crimson Pro is bundled for proofs; other faces depend on the renderer.
+pub const CRIMSON_PRO: &str = "Crimson Pro";
+
+pub const FONTS: [&str; 5] = [
+    CRIMSON_PRO,
     "Crimson Text",
     "EB Garamond",
     "Libre Baskerville",
@@ -417,9 +411,7 @@ fn named(spec: &PageSizeSpec) -> PageSize {
 pub fn preset(id: &str) -> Option<BookDesign> {
     match id {
         PRESET_FICTION => Some(BookDesign {
-            // "a font family for book production in the tradition of beautiful
-            // oldstyle typefaces" -- the project's own description.
-            font: "Crimson Text".to_string(),
+            font: CRIMSON_PRO.to_string(),
             page: named(size("trade")),
             margins: Margins {
                 // 0.75 in: KDP's 0.5 in gutter minimum for a 151-300 page book,
@@ -1138,6 +1130,7 @@ mod tests {
         // every undesigned book differently from the button that claims to
         // match it.
         assert_eq!(default_design(), preset(PRESET_FICTION).unwrap());
+        assert_eq!(default_design().font, "Crimson Pro");
     }
 
     #[test]
