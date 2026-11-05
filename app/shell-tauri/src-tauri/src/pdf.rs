@@ -978,11 +978,15 @@ pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), include_str!(
   }
   }
   var images = Array.from(flow.querySelectorAll("figure img"));
-  window.__proofReady = Promise.all([document.fonts.ready].concat(images.map(function(image) {
-    return image.decode();
-  }))).then(paginate).catch(function() {
-    window.__proofError = "a proof resource did not load";
-  });
+  // An embedded face still loading would measure lines in its fallback; wait
+  // for it only then, so a proof with nothing pending paginates at once.
+  var waits = images.map(function(image) { return image.decode(); });
+  if (document.fonts && document.fonts.status !== "loaded") waits.push(document.fonts.ready);
+  if (waits.length) {
+    window.__proofReady = Promise.all(waits).then(paginate).catch(function() {
+      window.__proofError = "a proof image did not decode";
+    });
+  } else { paginate(); }
 })();
 "#);
 
