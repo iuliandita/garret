@@ -48,7 +48,8 @@ export function decideSideLayout(input: SideLayoutInput): SideLayout {
 export type SideSurface = "inspector" | "rail";
 
 /** The work surfaces a full-width side surface covers. */
-const COVERED = ["editor", "outline-view"];
+export const COVERED_BY_SIDE: readonly string[] = ["editor", "outline-view"];
+const COVERED = COVERED_BY_SIDE;
 
 const open = new Map<SideSurface, number>();
 const listeners = new Set<() => void>();
@@ -123,6 +124,13 @@ export function setNavColumn(shown: boolean): void {
 export function keepNav(): void {
   navKept = true;
   apply();
+}
+
+/** Whether a full-width side surface is covering the work surfaces now. Another
+ *  owner of `inert` (the library's isolation) restores from this rather than
+ *  from a snapshot taken while a surface was covering them. */
+export function sideCoversWorkspace(): boolean {
+  return layout === "full";
 }
 
 export function navYielded(): boolean {
