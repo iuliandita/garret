@@ -533,6 +533,8 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
   archiveEncrypted.id = "project-archive-encrypted";
   archiveEncrypted.type = "button";
   archiveEncrypted.textContent = t("switcher.archive.encrypted.action");
+  // The section's one step that makes the copy; folder and key lead to it.
+  archiveEncrypted.dataset.weight = "primary";
   archiveEncrypted.hidden = deps.makeEncryptedArchive === undefined;
   const encryptedStatus = document.createElement("div");
   encryptedStatus.id = "project-encrypted-status";

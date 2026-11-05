@@ -9455,7 +9455,6 @@ body.nav-narrow:not(.nav-hidden) #nav-column {
 
 #project-archive-key,
 #project-archive-encrypted { display: block; }
-#project-transfer-toggle { display: block; margin-top: 10px; }
 #project-transfer-body label,
 #project-transfer-body select { display: block; }
 #project-transfer-body select { max-width: 100%; margin: 4px 0 6px; }
