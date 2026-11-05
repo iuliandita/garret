@@ -1571,6 +1571,7 @@ body {
 #design-panel:focus,
 #picture-viewer:focus,
 #help-panel:focus,
+#help-shortcuts-heading:focus,
 #stats-panel:focus,
 #state-panel:focus,
 #mirror-changes:focus,
@@ -4545,7 +4546,8 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 #outline-move-menu button[aria-disabled="true"]:hover {
   background: transparent;
 }
-#menu-panel [role="menuitemradio"][aria-checked="true"] .menu-item-label::before { content: "✓ "; color: var(--accent); }
+#menu-panel [role="menuitemradio"][aria-checked="true"] .menu-item-label::before,
+#menu-panel [role="menuitemcheckbox"][aria-checked="true"] .menu-item-label::before { content: "✓ "; color: var(--accent); }
 
 /* THE RECORDED EXCEPTION: a timeline's lanes ARE positioned
    descendants of #editor -- they are the pane's content while one is open,
@@ -5472,9 +5474,33 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   display: none;
 }
 
+/* Sized by its longest label, not by the 160px list it is positioned against:
+   with only `right` set, shrink-to-fit resolved against that list and wrapped
+   German labels onto three lines with the window half empty. The cap is the
+   room left of the list, so a label wraps only when the window truly has no
+   more. Two columns: labels, then shortcuts, shared by every row through
+   subgrid so the shortcuts start on one line. */
 #menu-panel {
+  width: max-content;
   min-width: min(240px, calc(100vw - 188px));
   max-width: calc(100vw - 188px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+
+#menu-panel > * {
+  grid-column: 1 / -1;
+}
+
+#menu-panel > button {
+  display: grid;
+  grid-template-columns: subgrid;
+  gap: 0;
+  justify-content: normal;
+}
+
+#menu-panel .menu-item-label:only-child {
+  grid-column: 1 / -1;
 }
 
 #app-menu-list:has(#menu-outline[aria-expanded="true"]) #menu-panel {
@@ -5620,7 +5646,9 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
   overflow-wrap: anywhere;
 }
 #menu-panel .menu-item-shortcut {
-  flex-shrink: 0;
+  /* Padding, not column-gap: a page with no shortcut at all keeps an empty
+     second column and would otherwise carry the gap as dead space. */
+  padding-left: 24px;
   white-space: nowrap;
 }
 

@@ -99,7 +99,7 @@ const PANEL_MS = 1_200;
 
 /** The project panel's mirror controls, restated from `switcher.ts`. The
  *  TOGGLE IS PRESSED BY ID and never by name: its label is the act it will
- *  perform ("Turn the mirror on" / "Turn the mirror off"), so the name changes
+ *  perform ("Turn the readable folder on" / "Turn the readable folder off"), so the name changes
  *  under the press it is meant to identify. */
 const MIRROR_TOGGLE_ID = "project-mirror-toggle";
 const MIRROR_STATE_ID = "project-mirror-state";
@@ -567,7 +567,7 @@ try {
     if (pressed === null) throw new Error(`${MIRROR_TOGGLE_ID} was not in the tree`);
     // `mirror_enable` runs the pass itself and only then answers, so the
     // folder is written by the time the label stops saying "Writing the
-    // mirror...". This waits for that answer and the paint after it.
+    // readable folder...". This waits for that answer and the paint after it.
     await Bun.sleep(4000);
     filesAfter = mirrorFiles().length;
     mirroredAfter = settingsMirrored();
@@ -575,7 +575,7 @@ try {
     const texts = readTexts(pid, [MIRROR_STATE_ID, MIRROR_WHERE_ID]);
     stateSentence = texts[MIRROR_STATE_ID] ?? "";
     const where = texts[MIRROR_WHERE_ID] ?? "";
-    // THE WHOLE PATH, never its basename. The sentence is "The mirror is
+    // THE WHOLE PATH, never its basename. The sentence was "The mirror is
     // written to {dir}", so a check against the last component passed on the
     // word "mirror" inside its own sentence -- the recorded
     // fixture-is-a-fact-about-itself shape, found on this rig's first green

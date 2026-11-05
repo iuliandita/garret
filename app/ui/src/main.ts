@@ -817,7 +817,7 @@ async function main(): Promise<void> {
       home.addEventListener("click", () => library.open());
       const homeTip = createTooltip({ control: home, name: t("chrome.home"), hint: t("chrome.home.hint") });
       outlineEl.before(homeTip.anchor);
-      createOutlineToggle({ container: outlineEl, body: document.body });
+      const outlineToggle = createOutlineToggle({ container: outlineEl, body: document.body });
       focusToggle = createFocusToggle({
         container: focusEl,
         initial: initialWritingModes.focus,
@@ -855,7 +855,14 @@ async function main(): Promise<void> {
         lockPrivacy,
         privacyShortcut: () => privacyStatus.shortcut,
         canLockPrivacy: () => privacyStatus.enabled && !privacyStatus.locked && !privacyStatus.recovery,
-        openHelp: () => help.open(),
+        // The menu's command is "guide and shortcuts", and a writer who reaches
+        // for it mid-session is looking up a key: open at the table, with the
+        // guide one scroll above it.
+        openHelp: () => help.open("shortcuts"),
+        toggleFocus: () => focusToggle?.toggle(),
+        focusOn: () => focusToggle?.on() ?? false,
+        toggleOutline: () => outlineToggle.toggle(),
+        outlineShown: () => outlineToggle.shown(),
         openBookDesign: () => current.menuActions.openBookDesign(),
         openCovers: () => current.menuActions.openCovers(),
         openIdentities: () => current.menuActions.openIdentities(),

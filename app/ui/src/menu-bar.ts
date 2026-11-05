@@ -25,6 +25,7 @@ import type { ProjectPreset } from "./project-preset";
 // project panel already own all of that, and two places deciding one thing is
 // how they drift.
 
+import { chromeToggleChord } from "./chrome-toggles";
 import { isCompositionKey } from "./composition-key";
 import { t } from "./i18n";
 import { privacyShortcutLabel, type PrivacyShortcut } from "./privacy";
@@ -205,6 +206,13 @@ export interface MenuBarDeps {
   openCovers: () => void;
   openIdentities: () => void;
   openHelp: () => void;
+  /** The header's Focus and outline buttons, through their own `toggle()`, so
+   *  the menu item, the chord and the button are one action. Session state
+   *  stays where it was: Focus in Preferences, the outline on <body>. */
+  toggleFocus?: () => void;
+  focusOn?: () => boolean;
+  toggleOutline?: () => void;
+  outlineShown?: () => boolean;
   /** Leave. Hands the window to the host, which runs the SAME close path a
    *  title-bar click runs -- flush, then the unsaved-work prompt if there is
    *  anything to lose. This menu does not close a window and does not decide
@@ -244,6 +252,11 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
         { id: "menu-project-rename", label: () => t("menu.project-rename"), run: deps.renameProject },
         { id: "menu-import", label: () => t("menu.import"), run: deps.importProject },
         { id: "menu-export", label: () => t("menu.export"), shortcut: t("menu.shortcut.export"), run: deps.exportProject },
+        // BELOW Export and never above it: export-cli walks Down to Export
+        // against the save debounce, and one more row above it costs that rig
+        // its margin. The same action and words as Publishing's item, so the
+        // Word copy is beside the Markdown one without a second meaning.
+        { id: "menu-export-word", label: () => t("menu.export-docx"), run: () => deps.exportDocx() },
         {
           id: "menu-publishing", label: () => t("menu.publishing"), children: [
             { id: "menu-book-design", opensDialog: true, label: () => t("menu.book-design"), run: deps.openBookDesign },
@@ -468,7 +481,10 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
             { id: "menu-view-reading", label: () => t("menu.view.reading"), checked: () => deps.outlineViewMode() === "reading", run: deps.showReadThrough },
             { id: "menu-view-continuous", label: () => t("menu.view.continuous"), checked: () => deps.outlineViewMode() === "continuous", run: deps.showContinuousChapter },
             { id: "menu-open-reference", label: () => t("menu.open-reference"), run: deps.openReference },
-            { id: "menu-close-reference", label: () => t("menu.close-reference"), run: deps.closeReference }
+            { id: "menu-close-reference", label: () => t("menu.close-reference"), run: deps.closeReference },
+            // APPENDED at the end of a page, so no index a rig parses moves.
+            { id: "menu-focus-mode", separatorBefore: true, label: () => t("menu.focus-mode"), toggled: () => deps.focusOn?.() ?? false, shortcut: t("menu.shortcut.focus-mode"), run: () => deps.toggleFocus?.() },
+            { id: "menu-show-outline", label: () => t("menu.show-outline"), toggled: () => deps.outlineShown?.() ?? false, shortcut: t("menu.shortcut.show-outline"), run: () => deps.toggleOutline?.() }
           ], run: () => {}
         },
         {
@@ -676,6 +692,16 @@ export function createMenuBar(deps: MenuBarDeps): MenuBar {
     ) {
       event.preventDefault();
       deps.openLibrary();
+      return;
+    }
+    // Application chrome for the same reason as Ctrl+Shift+L: the two header
+    // buttons outlive every project switch, and so must their chords.
+    const toggle = chromeToggleChord(event);
+    if (toggle !== null) {
+      event.preventDefault();
+      close();
+      if (toggle === "focus") deps.toggleFocus?.();
+      else deps.toggleOutline?.();
       return;
     }
     if (event.altKey && !event.ctrlKey && !event.metaKey) {

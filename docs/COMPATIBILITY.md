@@ -634,7 +634,7 @@ in the change review.
 Use a disposable book to verify an encrypted archive with its separately saved
 key and restore it as a separate book before relying on the backup. Encryption
 protects the portable archive, not the working database, ordinary recovery
-copies, readable mirror, or temporary plaintext staging files. Read the
+copies, readable folder, or temporary plaintext staging files. Read the
 [backup and interrupted-archive instructions](../README.md#keep-a-safe-copy-of-your-book).
 
 There is no automatic schema downgrade. For rollback, close garret, preserve

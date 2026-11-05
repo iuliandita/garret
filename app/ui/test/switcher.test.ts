@@ -1947,7 +1947,7 @@ describe("the copy that leaves this computer", () => {
     // whose next step happens outside this application.
     const rig = mount();
     await open(rig);
-    // Inside Backups and archives.
+    // Inside Copies.
     const body = el(rig.container, "project-copies");
     const ids = [...body.children].map((c) => c.id).filter((id) => id !== "");
     expect(ids).toContain("project-archive-heading");
@@ -2021,13 +2021,13 @@ describe("the copy that leaves this computer", () => {
     const rig = mount();
     await open(rig);
     expect(el(rig.container, "project-mirror-state").textContent).toContain(
-      "The mirror is off",
+      "The readable folder is off",
     );
     expect(el(rig.container, "project-mirror-where").textContent).toContain(
       "/data/mirror/one",
     );
     expect(el(rig.container, "project-mirror-toggle").textContent).toBe(
-      "Turn the mirror on",
+      "Turn the readable folder on",
     );
     teardown(rig);
   });
@@ -2047,7 +2047,7 @@ describe("the copy that leaves this computer", () => {
     await open(built);
     const check = el(built.container, "mirror-check") as HTMLButtonElement;
     expect(check.disabled).toBe(false);
-    expect(check.textContent).toBe("Check the mirror thoroughly");
+    expect(check.textContent).toBe("Check the readable folder thoroughly");
     teardown(built);
   });
 
@@ -2062,7 +2062,7 @@ describe("the copy that leaves this computer", () => {
     expect(rig.calls.checked).toBe(1);
     expect(rig.calls.notices).toEqual([]);
     expect(rig.calls.dones).toEqual([
-      "Checked 11 mirror files. Changed: 2. Missing: 1.",
+      "Checked 11 files in the readable folder. Changed: 2. Missing: 1.",
     ]);
     teardown(rig);
   });
@@ -2083,10 +2083,10 @@ describe("the copy that leaves this computer", () => {
     const check = el(rig.container, "mirror-check");
     click(check);
     await settle();
-    expect(rig.calls.notices).toEqual(["Could not check the mirror thoroughly."]);
+    expect(rig.calls.notices).toEqual(["Could not check the readable folder thoroughly."]);
     expect(rig.calls.notices.join(" ")).not.toContain("/private/");
     expect((check as HTMLButtonElement).disabled).toBe(false);
-    expect(check.textContent).toBe("Check the mirror thoroughly");
+    expect(check.textContent).toBe("Check the readable folder thoroughly");
     click(check);
     await settle();
     expect(rig.calls.checked).toBe(2);
@@ -2111,7 +2111,7 @@ describe("the copy that leaves this computer", () => {
     await settle();
     expect((check as HTMLButtonElement).disabled).toBe(true);
     expect((toggle as HTMLButtonElement).disabled).toBe(true);
-    expect(check.textContent).toBe("Checking the mirror thoroughly…");
+    expect(check.textContent).toBe("Checking the readable folder thoroughly…");
     click(check);
     click(toggle);
     await settle();
@@ -2146,7 +2146,7 @@ describe("the copy that leaves this computer", () => {
     expect(rig.calls.dones.some((d) => d.includes("/data/mirror/one"))).toBe(true);
     expect(rig.calls.notices).toEqual([]);
     expect(el(rig.container, "project-mirror-toggle").textContent).toBe(
-      "Turn the mirror off",
+      "Turn the readable folder off",
     );
     teardown(rig);
   });
@@ -2197,7 +2197,7 @@ describe("the copy that leaves this computer", () => {
     });
     await open(rig);
     expect(el(rig.container, "project-mirror-toggle").textContent).toBe(
-      "Turn the mirror off",
+      "Turn the readable folder off",
     );
     click(el(rig.container, "project-mirror-toggle"));
     await settle();
@@ -2216,7 +2216,7 @@ describe("the copy that leaves this computer", () => {
     const rig = mount({ mirrorStatus: () => Promise.reject(new Error("permission denied")) });
     await open(rig);
     const state = el(rig.container, "project-mirror-state");
-    expect(state.textContent).not.toContain("The mirror is off");
+    expect(state.textContent).not.toContain("The readable folder is off");
     expect(state.textContent).toContain("could not be read");
     expect(rig.calls.notices.some((n) => n.includes("permission denied"))).toBe(true);
     teardown(rig);
@@ -2635,7 +2635,7 @@ describe("progressive disclosure in the project panel", () => {
       ["project-recovery-heading", "Recovery points on this device"],
       ["project-archive-heading", "If you lose this computer"],
       ["project-encrypted-archive-heading", "Encrypted backups"],
-      ["project-mirror-heading", "A readable copy you can open anywhere"],
+      ["project-mirror-heading", "A readable folder you can open anywhere"],
     ]) {
       const heading = el(rig.container, id!);
       expect(heading.getAttribute("role")).toBe("heading");
