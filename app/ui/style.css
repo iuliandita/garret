@@ -4388,6 +4388,7 @@ body[data-continuous-open="true"] #editor .ProseMirror { flex: 0 0 auto; }
 .outline-view-actions,
 .outline-view-row-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
 .outline-view-pages span { color: var(--muted); font-variant-numeric: tabular-nums; }
+.outline-view-pages[hidden] { display: none; }
 
 /* THE TABLE. No mid-word breaks anywhere: the old `overflow-wrap:
    anywhere` let the synopsis column shrink to one letter per line
