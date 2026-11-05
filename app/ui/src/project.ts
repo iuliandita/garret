@@ -2380,6 +2380,15 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
     });
   }
 
+  // A panel naming an item opens it through openDocument, which refuses while
+  // an unsaved atom draft is unconfirmed or another operation holds the page.
+  const openFromPanel = (itemId: string): void => {
+    navigator.revealAndSelectById?.(itemId);
+    void openDocument?.(itemId).catch((err: unknown) => {
+      raiseNotice(t("project.error.open-document", { error: String(err) }));
+    });
+  };
+
   // Revision states. The state lives on a store item.
   let revisionPanel: RevisionPanel | null = null;
   const stateEl = document.getElementById("state-controls");
@@ -2417,6 +2426,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
         setDone: (id, done) => invoke("revision_task_set_done", { id, done }),
         deleteTask: (id) => invoke("revision_task_delete", { id }),
       },
+      openTarget: openFromPanel,
       onDismiss: () => editor.focus(),
     });
   }
