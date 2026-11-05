@@ -5719,7 +5719,9 @@ pub(crate) mod tests {
     /// Set every design row this build knows.
     fn with_design(db: &Path) {
         let store = Store::open(db).unwrap();
-        crate::design::write_design(&store, &crate::design::default_design()).unwrap();
+        let mut design = crate::design::default_design();
+        design.font = "Crimson Text".to_string();
+        crate::design::write_design(&store, &design).unwrap();
         crate::design::write_chapter_style(
             &store,
             &crate::design::ChapterStyle {

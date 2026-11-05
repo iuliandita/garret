@@ -86,7 +86,7 @@ and an optional refresh runs after you stop typing.
 ### Keep control of your work
 
 Books live on your own disk. Recovery copies, scene history, salvage tools,
-and a readable mirror folder help you recover work. Encrypted portable archives
+and a readable folder help you recover work. Encrypted portable archives
 include a separate recovery key. An optional PIN lock conceals the app when
 you step away; it does not encrypt manuscript files.
 

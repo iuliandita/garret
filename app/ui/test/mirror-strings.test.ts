@@ -15,6 +15,7 @@
 // quietly taking it back.
 
 import { describe as suite, expect, test } from "bun:test";
+import { DE } from "../src/i18n/de";
 import { EN } from "../src/i18n/en";
 
 const mirrorKeys = () =>
@@ -24,7 +25,7 @@ const valueOf = (key: string): string => ((EN as Record<string, string>)[key] ??
 
 suite("the mirror never describes itself as protection", () => {
   test("the thorough check is named plainly and reports the writer-facing counts", () => {
-    expect(valueOf("switcher.mirror.check")).toBe("check the mirror thoroughly");
+    expect(valueOf("switcher.mirror.check")).toBe("check the readable folder thoroughly");
     for (const name of ["entries", "changed", "deleted"]) {
       expect(valueOf("mirror.notice.checked")).toContain(`{${name}}`);
     }
@@ -131,5 +132,41 @@ suite("the mirror never describes itself as protection", () => {
     expect(finding).not.toContain("failing");
     expect(finding).not.toContain("last updated");
     expect(finding).toContain("current");
+  });
+});
+
+suite("one name for the folder and one for the room", () => {
+  const strip = (value: string | undefined): string => (value ?? "").replace(/(?:\.\.\.|…)$/, "");
+
+  test("no user-facing string calls the readable folder a mirror", () => {
+    // `mirror` is the code's word. A writer meets the same folder in the
+    // menu, the footer popover and the panel, and it has one name there.
+    const en = Object.entries(EN).filter(([, value]) => /mirror/i.test(value));
+    expect(en).toEqual([]);
+    const de = Object.entries(DE).filter(([, value]) => /spiegel/i.test(value.replace(/Satzspiegel/g, "")));
+    expect(de).toEqual([]);
+  });
+
+  test("the menu, the panel section and the status popover share one word for copies", () => {
+    for (const catalog of [EN, DE] as Record<string, string>[]) {
+      const room = catalog["status.popover.label"];
+      expect(strip(catalog["menu.copies"])).toBe(room!);
+      expect(catalog["switcher.copies"]).toBe(room!);
+    }
+  });
+
+  test("the changes entry opens a panel with its own name", () => {
+    for (const catalog of [EN, DE] as Record<string, string>[]) {
+      expect(strip(catalog["menu.mirror-changes"])).toBe(catalog["mirror.changes.heading"]!);
+    }
+  });
+
+  test("encrypted archives keep a name of their own", () => {
+    // Copies is the room; an encrypted backup is the one thing in it that
+    // leaves this computer readable by nobody without the key.
+    for (const catalog of [EN, DE] as Record<string, string>[]) {
+      expect(strip(catalog["menu.encrypted-backups"])).toBe(catalog["switcher.archive.encrypted.heading"]!);
+      expect(catalog["switcher.archive.encrypted.heading"]).not.toBe(catalog["switcher.copies"]!);
+    }
   });
 });

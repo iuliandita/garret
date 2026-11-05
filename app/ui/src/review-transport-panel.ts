@@ -66,14 +66,19 @@ function button(key: string, action: () => void): HTMLButtonElement {
 export function createReviewTransportPanel(deps: ReviewTransportDeps): ReviewTransportPanel {
   const root = node("section"); root.id = "review-transport";
   const heading = node("h3", t("review.transport.heading"));
-  const note = node("p", t("review.transport.scope"));
+  const scope = node("p");
+  const note = node("p", t("review.transport.safety"));
   const actions = node("div"); actions.className = "review-actions";
   const startExport = button("review.transport.export", () => { void previewExport(); });
   const startReturn = button("review.transport.return", () => { void previewReturn(); });
-  actions.append(startExport, startReturn);
+  startExport.id = "review-transport-start-export";
+  startReturn.id = "review-transport-start-return";
+  const outgoing = node("section"); outgoing.append(node("h4", t("review.transport.send-stage")), startExport);
+  const returning = node("section"); returning.append(node("h4", t("review.transport.return-stage")), startReturn);
+  actions.append(outgoing, returning);
   const status = node("p"); status.id = "review-transport-status"; status.setAttribute("role", "status");
   const preview = node("section"); preview.id = "review-transport-preview"; preview.hidden = true; preview.tabIndex = -1;
-  root.append(heading, note, actions, status, preview);
+  root.append(heading, scope, actions, note, status, preview);
   deps.container.append(root);
 
   let itemId: string | null = null, authors: ReviewAuthor[] = [];
@@ -275,7 +280,7 @@ export function createReviewTransportPanel(deps: ReviewTransportDeps): ReviewTra
   return {
     async setTarget(id, caption, localAuthors) {
       if (itemId !== id) await discard();
-      itemId = id; note.textContent = t("review.transport.scope", { title: caption });
+      itemId = id; scope.textContent = t("review.transport.scope", { title: caption });
       authors = [...localAuthors]; update();
     },
     setAuthors(value) { authors = [...value]; update(); },

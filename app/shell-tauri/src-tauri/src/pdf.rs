@@ -182,7 +182,7 @@ pub fn stylesheet(design: &BookDesign, style: &ChapterStyle) -> String {
          .proof-leaf[data-kind=\"plate\"] .proof-folio {{ display: none; }}\n\
          body {{ font-family: {family}; font-size: 11pt; line-height: 1.45; \
          text-rendering: optimizeLegibility; }}\n\
-         p {{ margin: 0; text-indent: 1.4em; text-align: justify; hyphens: auto; overflow-wrap: anywhere; }}\n\
+         p {{ margin: 0; text-indent: 1.4em; text-align: left; -webkit-hyphens: auto; hyphens: auto; overflow-wrap: anywhere; }}\n\
          p.{OPENING_CLASS}, p.proof-continued, .{ORNAMENT_CLASS} + p, \
          h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p {{ text-indent: 0; }}\n\
          h1, h2, h3, h4, h5, h6 {{ font-weight: normal; text-align: center; \
@@ -197,7 +197,7 @@ pub fn stylesheet(design: &BookDesign, style: &ChapterStyle) -> String {
          .proof-title h1 {{ font-size: 2.1em; margin: 0; }}\n\
          .story-byline {{ text-align: center; text-indent: 0; margin: 0.5em 0 1em; break-after: avoid; }}\n\
          .proof-title .proof-byline {{ font-size: 1.1em; margin: 1.6em 0 0; \
-         text-indent: 0; }}\n\
+         text-indent: 0; text-align: center; }}\n\
          .proof-plate {{ height: 100%; display: flex; }}\n\
          .proof-plate img {{ width: 100%; height: 100%; object-fit: contain; }}\n\
          .proof-plate[data-fit=\"fill\"] img {{ object-fit: cover; }}\n\
@@ -493,10 +493,21 @@ fn render_document(proof: &Proof, plan: &crate::publication_plan::Plan, notes_ti
         "markupLimit": proof.markup_limit,
     }));
 
+    let bundled_font = if proof.design.font == crate::design::CRIMSON_PRO {
+        [
+            ("normal", "400", include_bytes!("../../../ui/fonts/CrimsonPro-Regular.woff2").as_slice()),
+            ("italic", "400", include_bytes!("../../../ui/fonts/CrimsonPro-Italic.woff2").as_slice()),
+            ("normal", "700", include_bytes!("../../../ui/fonts/CrimsonPro-Bold.woff2").as_slice()),
+            ("italic", "700", include_bytes!("../../../ui/fonts/CrimsonPro-BoldItalic.woff2").as_slice()),
+        ].iter().map(|(style, weight, bytes)| format!(
+            "@font-face {{ font-family: 'Crimson Pro'; font-style: {style}; font-weight: {weight}; src: url(data:font/woff2;base64,{}) format('woff2'); }}\n",
+            crate::pictures::base64(bytes)
+        )).collect::<String>()
+    } else { String::new() };
     Ok(format!(
         "<!DOCTYPE html>\n<html lang=\"{language}\">\n<head>\n\
          <meta charset=\"utf-8\">\n<title>{title}</title>\n\
-         <style>{css}</style>\n\
+         <style>{bundled_font}{css}</style>\n\
          <script type=\"application/json\" id=\"proof-meta\">{meta}</script>\n\
          </head>\n<body>\n\
          <div id=\"proof-flow\">\n{flow}</div>\n\
@@ -652,6 +663,9 @@ pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), include_str!(
       current = next();
       current.querySelector(".proof-runhead").textContent =
         current.getAttribute("data-side") === "verso" ? meta.book : running;
+    }
+    if (opensLeaf && block.classList.contains("start")) {
+      current.querySelector(".proof-runhead").style.visibility = "hidden";
     }
     if (sink !== null && SINK[sink]) {
       block.style.marginTop = Math.round(textOf(current).clientHeight * SINK[sink]) + "px";
@@ -964,10 +978,12 @@ pub const PAGINATOR_JS: &str = concat!(include_str!("pdf/dpi.js"), include_str!(
   }
   }
   var images = Array.from(flow.querySelectorAll("figure img"));
-  if (images.length) {
-    window.__proofReady = Promise.all(images.map(function(image) {
-      return image.decode();
-    })).then(paginate).catch(function() {
+  // An embedded face still loading would measure lines in its fallback; wait
+  // for it only then, so a proof with nothing pending paginates at once.
+  var waits = images.map(function(image) { return image.decode(); });
+  if (document.fonts && document.fonts.status !== "loaded") waits.push(document.fonts.ready);
+  if (waits.length) {
+    window.__proofReady = Promise.all(waits).then(paginate).catch(function() {
       window.__proofError = "a proof image did not decode";
     });
   } else { paginate(); }
@@ -1223,6 +1239,12 @@ mod tests {
         // "inner and outer rather than left and right" exists to prevent and it
         // is invisible in any single-page picture.
         let css = stylesheet(&design(), &plain());
+        let html = render(&[], HashMap::new());
+        assert!(html.contains("<html lang=\"en\">"));
+        assert!(html.contains("@font-face { font-family: 'Crimson Pro'"));
+        assert!(html.contains("data:font/woff2;base64,"));
+        assert!(css.contains("text-indent: 0; text-align: center;"));
+        assert!(css.contains("text-align: left; -webkit-hyphens: auto; hyphens: auto;"));
         assert!(css.contains("width: 152.4mm; height: 228.6mm;"), "{css}");
         assert!(
             css.contains("[data-side=\"recto\"] { padding: 15.875mm 15.875mm 19.05mm 19.05mm; }"),
@@ -1237,15 +1259,10 @@ mod tests {
 
     #[test]
     fn the_book_font_is_named_with_the_same_fallback_the_epub_gives_it() {
-        // ONE STATEMENT OF THE FALLBACK STACK, shared with `epub.rs` rather
-        // than copied. This application ships no font files, so what both
-        // formats can do is name the face and fall back -- and two books of the
-        // same manuscript falling back to two different faces would be two
-        // answers to what the writer's book looks like.
         let css = stylesheet(&design(), &plain());
         assert!(
             css.contains(&format!(
-                "\"Crimson Text\", {}",
+                "\"Crimson Pro\", {}",
                 crate::design::FONT_FALLBACK
             )),
             "{css}"

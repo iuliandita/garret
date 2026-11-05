@@ -75,9 +75,9 @@ describe("the menu source parses into routes", () => {
   });
 
   test("indices follow the current page and count its visible Back row", () => {
-    const file = ["menu-project-new", "menu-project-open", "menu-project-rename", "menu-import", "menu-export", "menu-publishing", "menu-copies", "menu-library", "menu-preferences", "menu-privacy-lock", "menu-quit"];
-    expect(file.map((id) => menuRoute(id, REAL).index)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    expect(menuRoute("menu-export-docx", REAL).path).toEqual([{ index: 5, count: 11 }, { index: 4, count: 8 }]);
+    const file = ["menu-project-new", "menu-project-open", "menu-project-rename", "menu-import", "menu-export", "menu-export-word", "menu-publishing", "menu-copies", "menu-library", "menu-preferences", "menu-privacy-lock", "menu-quit"];
+    expect(file.map((id) => menuRoute(id, REAL).index)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(menuRoute("menu-export-docx", REAL).path).toEqual([{ index: 6, count: 12 }, { index: 4, count: 8 }]);
     expect(menuRoute("menu-new-afterword", REAL).path).toEqual([
       { index: 0, count: 8 }, { index: 4, count: 5 }, { index: 4, count: 5 }, { index: 4, count: 6 },
     ]);

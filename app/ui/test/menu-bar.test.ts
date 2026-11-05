@@ -47,6 +47,8 @@ interface Calls {
   outlineUndo: number;
   outlineRedo: number;
   library: number;
+  focusToggles: number;
+  outlineToggles: number;
 }
 
 interface Rig {
@@ -110,6 +112,8 @@ function mount(privacy?: { enabled: boolean; calls: number; shortcut?: "ctrl_alt
     outlineUndo: 0,
     outlineRedo: 0,
     library: 0,
+    focusToggles: 0,
+    outlineToggles: 0,
   };
   const selection = { trashed: false };
   const trail = { back: true, forward: true };
@@ -184,6 +188,10 @@ function mount(privacy?: { enabled: boolean; calls: number; shortcut?: "ctrl_alt
     openCovers: () => (calls.help += 1),
     openIdentities: () => (calls.help += 1),
     openHelp: () => (calls.help += 1),
+    toggleFocus: () => (calls.focusToggles += 1),
+    focusOn: () => false,
+    toggleOutline: () => (calls.outlineToggles += 1),
+    outlineShown: () => true,
   });
 
   const byId = <T extends HTMLElement>(id: string): T | null =>
@@ -552,6 +560,22 @@ describe("what the items do", () => {
       const ids = [...rig.panel().querySelectorAll("button")].map((b) => b.id);
       expect(ids.indexOf("menu-export-docx")).toBe(ids.indexOf("menu-export-as") + 1);
       expect(ids).not.toContain("menu-export");
+    } finally {
+      teardown(rig);
+    }
+  });
+
+  test("the Word export also sits directly below the Markdown export, with the same words and action", () => {
+    const rig = mount();
+    try {
+      rig.title("menu-file").click();
+      const ids = [...rig.panel().querySelectorAll("button")].map((b) => b.id);
+      expect(ids.indexOf("menu-export-word")).toBe(ids.indexOf("menu-export") + 1);
+      const word = rig.item("menu-export-word")!;
+      expect(word.textContent).toBe("Export for an editor (Word)…");
+      expect(word.hasAttribute("aria-haspopup")).toBe(false);
+      word.click();
+      expect([rig.calls.exportedDocx, rig.calls.exported, rig.calls.exportedAs]).toEqual([1, 0, 0]);
     } finally {
       teardown(rig);
     }
@@ -1606,6 +1630,7 @@ describe("the items that open a page dialog say so", () => {
     "menu-export": "menu-file",
     "menu-export-as": "menu-file",
     "menu-export-docx": "menu-file",
+    "menu-export-word": "menu-file",
     // A RAIL IS NOT A DIALOG. `aria-haspopup="dialog"` promises a surface that
     // takes over; the EPUB rail sits beside the prose, stays open while the
     // writer types, and has a Close instead of dismissing itself.
@@ -1790,7 +1815,7 @@ describe("Outline Undo and Redo", () => {
       rig.title("menu-outline").click();
       const ids = [...rig.panel().querySelectorAll("[role='menuitem']")].map((el) => el.id);
       rig.item("menu-views")!.click();
-      expect([...rig.panel().querySelectorAll("button")].slice(-2).map((el) => el.id)).toEqual(["menu-open-reference", "menu-close-reference"]);
+      expect([...rig.panel().querySelectorAll("button")].slice(-4, -2).map((el) => el.id)).toEqual(["menu-open-reference", "menu-close-reference"]);
     } finally {
       teardown(rig);
     }
@@ -1921,7 +1946,7 @@ describe("short menu pages", () => {
       rig.title("menu-file").click();
       expect([...rig.panel().querySelectorAll("button")].map((item) => item.id)).toEqual([
         "menu-project-new", "menu-project-open", "menu-project-rename", "menu-import", "menu-export",
-        "menu-publishing", "menu-copies", "menu-library", "menu-preferences", "menu-privacy-lock", "menu-quit",
+        "menu-export-word", "menu-publishing", "menu-copies", "menu-library", "menu-preferences", "menu-privacy-lock", "menu-quit",
       ]);
       expect(rig.item("menu-export")?.getAttribute("aria-keyshortcuts")).toBe("Ctrl+E");
       rig.item("menu-copies")!.click();
@@ -2043,4 +2068,35 @@ test("nonfiction moves fiction tools under More and rechecks after switching boo
   expect(document.getElementById("menu-cast")).not.toBeNull();
   expect(document.getElementById("menu-fiction-more")).toBeNull();
   r.bar.destroy();
+});
+
+test("Focus mode and Show outline are checkbox items and chords for the header buttons", () => {
+  const rig = mount();
+  try {
+    rig.title("menu-outline").click();
+    const focus = rig.item("menu-focus-mode")!;
+    expect(focus.getAttribute("role")).toBe("menuitemcheckbox");
+    expect(focus.getAttribute("aria-checked")).toBe("false");
+    expect(focus.getAttribute("aria-keyshortcuts")).toBe("Ctrl+Alt+F");
+    focus.click();
+    expect(rig.calls.focusToggles).toBe(1);
+
+    rig.title("menu-outline").click();
+    const outline = rig.item("menu-show-outline")!;
+    expect(outline.getAttribute("aria-checked")).toBe("true");
+    expect(outline.getAttribute("aria-keyshortcuts")).toBe("Ctrl+Alt+O");
+    outline.click();
+    expect(rig.calls.outlineToggles).toBe(1);
+
+    press("f", { ctrlKey: true, altKey: true });
+    press("O", { ctrlKey: true, altKey: true });
+    expect([rig.calls.focusToggles, rig.calls.outlineToggles]).toEqual([2, 2]);
+    // Ctrl+Shift+F is the find bar's, and a held key does not flicker the chrome.
+    press("f", { ctrlKey: true, altKey: true, shiftKey: true });
+    press("f", { ctrlKey: true, altKey: true, repeat: true });
+    press("o", { altKey: true });
+    expect([rig.calls.focusToggles, rig.calls.outlineToggles]).toEqual([2, 2]);
+  } finally {
+    teardown(rig);
+  }
 });

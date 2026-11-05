@@ -71,6 +71,8 @@ export interface RevisionPanelDeps {
    *  has been re-read, so `selected()` afterwards is the new truth. */
   setState(itemId: string, state: RevisionState | null): Promise<SetStateOutcome>;
   planning?: RevisionPlanningApi;
+  /** Selects and opens a task's live target through the page's guarded open. */
+  openTarget?(itemId: string): void;
   /** Where focus goes when the panel is dismissed with Escape. */
   onDismiss(): void;
 }
@@ -441,14 +443,32 @@ function mountPlanning(panel: HTMLElement, deps: RevisionPanelDeps): { refresh()
       const body = document.createElement("p");
       body.textContent = task.body;
       if (task.done) body.className = "planning-done";
-      const context = document.createElement("small");
-      context.textContent = task.item_id === null && task.target_caption === null
+      const targetTitle = task.target_title ?? task.target_caption ?? "";
+      const targetLabel = task.item_id === null && task.target_caption === null
         ? t("planning.scope-book")
         : task.item_id === null
           ? t("planning.target-removed", { title: task.target_caption ?? "" })
           : task.binned
-            ? t("planning.target-binned", { title: task.target_title ?? task.target_caption ?? "" })
-            : task.target_title ?? task.target_caption ?? "";
+            ? t("planning.target-binned", { title: targetTitle })
+            : targetTitle;
+      const context = document.createElement("small");
+      const liveTarget = task.item_id !== null && !task.binned ? task.item_id : null;
+      if (liveTarget !== null && deps.openTarget !== undefined) {
+        const go = document.createElement("button");
+        go.type = "button";
+        go.className = "planning-target";
+        go.dataset.action = "open-target";
+        go.textContent = targetTitle;
+        go.setAttribute("aria-label", t("planning.open-target", { title: targetTitle }));
+        go.addEventListener("click", () => deps.openTarget?.(liveTarget));
+        context.append(go);
+      } else {
+        context.textContent = task.item_id === null && task.target_caption !== null
+          ? t("planning.target-removed-note", { title: task.target_caption })
+          : task.binned
+            ? t("planning.target-binned-note", { title: targetTitle })
+            : targetLabel;
+      }
       const actions = document.createElement("div");
       actions.className = "planning-actions";
       const done = action(task.done ? "planning.reopen" : "planning.done");
@@ -467,7 +487,7 @@ function mountPlanning(panel: HTMLElement, deps: RevisionPanelDeps): { refresh()
           return;
         }
         editingTask = task.id;
-        draftTarget = { id: task.item_id, title: context.textContent ?? "" };
+        draftTarget = { id: task.item_id, title: targetLabel };
         taskBody.value = task.body;
         syncLimit();
         taskPass.value = task.pass_id === null ? "" : String(task.pass_id);

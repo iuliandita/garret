@@ -52,7 +52,7 @@ suite("what the report is saying", () => {
     const view = describe(report({ newest_verified_ms: NOW - 3 * HOUR, archives: 1 }), NOW);
     expect(view.state).toBe("taken");
     expect(view.text).toContain("3 hours ago");
-    expect(view.text).toContain("Ordinary local archive");
+    expect(view.text).toContain("Unencrypted archive");
     // IT IS STILL ON THIS COMPUTER UNTIL THE WRITER MOVES IT. The accessible
     // name is the only channel with room to say so, and saying so is the
     // design's whole point: the application has no way to know the file left.
