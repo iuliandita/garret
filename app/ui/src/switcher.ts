@@ -1529,6 +1529,9 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
 
   let encryptedBusy = false;
   let destinationGeneration = 0;
+  // The status line answers for the book it was written for; another book's
+  // panel must not show it.
+  let encryptedStatusPath: string | null = null;
   function renderBackupDestination(dir: string | null): void {
     backupWhere.textContent = dir === null
       ? t("switcher.archive.destination.none")
@@ -1540,6 +1543,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
     const request = ++destinationGeneration;
     const path = deps.currentPath();
     const opened = deps.currentGeneration?.();
+    if (encryptedStatusPath !== path) encryptedStatus.textContent = "";
     backupWhere.textContent = t("switcher.archive.destination.loading");
     try {
       const dir = await deps.encryptedBackupDestination();
@@ -1565,6 +1569,7 @@ export function createSwitcher(deps: SwitcherDeps): Switcher {
         const done = await action();
         if (done !== null && await (refreshShelf ? outcomeCurrent(path, opened) : archiveActionCurrent(mine, path, opened))) {
           encryptedStatus.textContent = done;
+          encryptedStatusPath = path;
           if (warning()) deps.onNotice(done);
           else deps.onDone(done);
           if (refreshShelf && !panel.hidden && mine === generation) await reload();
