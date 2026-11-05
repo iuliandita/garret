@@ -33,6 +33,7 @@ import {
   editableInches,
   getMarginUnit,
   setMarginUnit,
+  onMarginUnitChange,
   marginOf,
   micrometresFromInches,
   micrometresFromMillimetres,
@@ -349,6 +350,16 @@ export function createDesignPanel(deps: DesignPanelDeps): DesignPanel {
     }
   }
 
+  const stopUnitSync = onMarginUnitChange((next) => {
+    if (next === marginUnit) return;
+    if (current === null) { marginUnit = next; return; }
+    const drafts = [...marginFields.values()].map((input) => ({ input, um: parseMargin(input.value) }));
+    if (drafts.some((draft) => draft.um === null)) return;
+    marginUnit = next;
+    for (const draft of drafts) draft.input.value = formatMargin(draft.um!);
+    paintMarginUnit();
+  });
+
   function buildGroup(id: string, legend: string, name: string): HTMLElement {
     const group = document.createElement("div");
     group.id = id;
@@ -651,6 +662,7 @@ export function createDesignPanel(deps: DesignPanelDeps): DesignPanel {
     destroy(): void {
       if (destroyed) return;
       destroyed = true;
+      stopUnitSync();
       panel.removeEventListener("click", onPanelClick);
       unitChoices.removeEventListener("mousedown", onUnitMouseDown);
       for (const input of marginFields.values()) {

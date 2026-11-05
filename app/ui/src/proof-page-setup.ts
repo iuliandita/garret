@@ -6,6 +6,7 @@ import {
   editableInches,
   getMarginUnit,
   setMarginUnit,
+  onMarginUnitChange,
   micrometresFromInches,
   marginOf,
   micrometresFromMillimetres,
@@ -82,6 +83,15 @@ export function createProofPageSetup(container: HTMLElement, deps: ProofPageSetu
       input.nextElementSibling!.textContent = t(`design.margin.abbr.${unit}`);
     }
   };
+  const stopUnitSync = onMarginUnitChange((next) => {
+    if (next === unit) return;
+    if (current === null) { unit = next; paintUnit(); return; }
+    const drafts = [...fields.values()].map((input) => ({ input, um: parse(input.value) }));
+    if (drafts.some((draft) => draft.um === null)) return;
+    unit = next;
+    for (const draft of drafts) draft.input.value = format(draft.um!);
+    paintUnit();
+  });
   let destroyed = false;
   let generation = 0;
   let saving = false;
@@ -188,6 +198,6 @@ export function createProofPageSetup(container: HTMLElement, deps: ProofPageSetu
       } catch (error) { if (!destroyed && mine === generation) { clear(); deps.onNotice(t("proof.setup.error", { error: messageOf(error) })); } }
     },
     hide(): void { generation += 1; clear(); group.hidden = true; },
-    destroy(): void { destroyed = true; generation += 1; clear(); group.remove(); },
+    destroy(): void { destroyed = true; stopUnitSync(); generation += 1; clear(); group.remove(); },
   };
 }

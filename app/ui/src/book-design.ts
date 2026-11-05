@@ -170,4 +170,12 @@ export function designName(area: "page" | "preset", id: string): string {
 export type MarginUnit = "mm" | "in";
 let marginUnit: MarginUnit = "mm";
 export function getMarginUnit(): MarginUnit { return marginUnit; }
-export function setMarginUnit(unit: MarginUnit): void { marginUnit = unit; }
+const unitListeners = new Set<(unit: MarginUnit) => void>();
+export function setMarginUnit(unit: MarginUnit): void {
+  marginUnit = unit;
+  for (const listener of unitListeners) listener(unit);
+}
+export function onMarginUnitChange(listener: (unit: MarginUnit) => void): () => void {
+  unitListeners.add(listener);
+  return () => unitListeners.delete(listener);
+}

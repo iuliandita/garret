@@ -182,5 +182,7 @@ test("proof controls use the unit selected in Book design", async () => {
   await setup.show();
   expect(container.querySelector<HTMLInputElement>("#proof-page-margins input")!.value).toBe("0.75");
   expect(container.querySelector('[data-proof-margin-unit="in"]')!.getAttribute("aria-pressed")).toBe("true");
+  setMarginUnit("mm");
+  expect(container.querySelector<HTMLInputElement>("#proof-page-margins input")!.value).toBe("19.05");
   setup.destroy();
 });
