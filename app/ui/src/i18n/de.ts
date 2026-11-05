@@ -1199,6 +1199,7 @@ export const DE = {
   "appears.map.members.heading": "Nach Eintrag",
   "appears.map.member.in": "{name}: {titles}",
   "appears.map.member.nowhere": "{name}: keine Auftritte in dieser Übersicht",
+  "appears.map.member.title-in": "{title}, unter {parent}",
   "appears.map.below": "Weiter unten: {names}",
   "appears.map.error.read": "Es konnte nicht gelesen werden, wer wo auftritt: {error}",
 

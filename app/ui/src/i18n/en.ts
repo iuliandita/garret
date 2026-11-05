@@ -1288,6 +1288,7 @@ export const EN = {
   "appears.map.members.heading": "By member",
   "appears.map.member.in": "{name}: {titles}",
   "appears.map.member.nowhere": "{name}: no appearances in this map",
+  "appears.map.member.title-in": "{title}, in {parent}",
   "appears.map.below": "Further down: {names}",
   "appears.map.error.read": "Could not read who appears where: {error}",
 

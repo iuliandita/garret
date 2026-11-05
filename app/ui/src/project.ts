@@ -3023,6 +3023,7 @@ export async function mountProject(deps: MountDeps): Promise<MountedProject> {
       cast: async () => (await invoke("cast_list")) as CastMemberRow[],
       read: readAll,
       onNotice: raiseNotice,
+      openItem: openFromPanel,
       onDismiss: () => editor.focus(),
     });
   }

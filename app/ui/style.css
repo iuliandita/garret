@@ -6287,15 +6287,18 @@ body.chrome-hidden:not(.nav-hidden):not(.nav-narrow):not([data-reference-open="t
   color: var(--muted); font-size: var(--text-xs); overflow-wrap: anywhere;
 }
 #revision-planning .planning-done { text-decoration: line-through; }
-#revision-planning button.planning-target {
+#revision-planning button.planning-target,
+.appears-map-member button.appears-map-member-scene {
   min-height: 0; padding: 0; font: inherit; color: inherit; text-align: left;
   background: none; border: 0; cursor: pointer; overflow-wrap: anywhere;
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, currentColor 30%, transparent);
   text-underline-offset: 3px;
 }
-#revision-planning button.planning-target:hover { background: none; text-decoration-color: currentColor; }
-#revision-planning button.planning-target:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+#revision-planning button.planning-target:hover,
+.appears-map-member button.appears-map-member-scene:hover { background: none; text-decoration-color: currentColor; }
+#revision-planning button.planning-target:focus-visible,
+.appears-map-member button.appears-map-member-scene:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
 
 /* WHAT THIS IS ABOUT. Opened from Outline > Synopsis..., docked in the inspector, which sets its place and
    width; the old anchored-popover position and size rules were deleted here. */
