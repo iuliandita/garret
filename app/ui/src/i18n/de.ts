@@ -246,7 +246,10 @@ export const DE = {
   "review.saved": "Prüfung gespeichert.",
   "review.transport.tab": "Prüfung in Word",
   "review.transport.heading": "Prüfung in Word",
-  "review.transport.scope": "Nur für {title}. Word-Änderungen, die diese App nicht lesen kann, werden abgelehnt, und die Word-Datei ersetzt nie Ihr Manuskript.",
+  "review.transport.scope": "Nur für {title}.",
+  "review.transport.safety": "Word-Änderungen, die diese App nicht lesen kann, werden abgelehnt, und die Word-Datei ersetzt nie Ihr Manuskript.",
+  "review.transport.send-stage": "Zur Prüfung senden",
+  "review.transport.return-stage": "Änderungen zurückbringen",
   "review.transport.export": "Prüfkopie vorbereiten",
   "review.transport.return": "Zurückgegebene Word-Datei öffnen",
   "review.transport.export-preview": "Vor dem Sichern der Prüfkopie",
@@ -1572,7 +1575,7 @@ export const DE = {
   "preview.epub.note":
     "Aus dem Buch im gespeicherten Stand erzeugt. Drücken Sie Aktualisieren, wenn Sie weitergeschrieben haben. Wie ein Lesegerät die Seite setzt, auch wie weit unten ein Kapitel beginnt, wird abweichen. Das EPUB enthält das vordere Cover, aber nicht das hintere.",
   "preview.pdf.note":
-    "Ein Andruck zum Lesen oder für eine erste Leserin, gesetzt in der hier gewählten Seitengröße und den Rändern. Keine Druckerei-Datei: kein Anschnitt, keine Doppelseiten. Drücken Sie Aktualisieren, wenn Sie weitergeschrieben haben.",
+    "Ein Andruck zum Lesen oder für eine erste Leserin, gesetzt in der hier gewählten Seitengröße und den Rändern. Keine Druckerei-Datei: kein Anschnitt, keine Doppelseiten. Drücken Sie Aktualisieren, wenn Sie weitergeschrieben haben. Absätze stehen im Flattersatz, da die automatische Silbentrennung nicht gewährleistet ist.",
   "preview.legend.ornament": "Kapitelschmuck",
   "preview.name.ornament": "Der Schmuck zu jedem Kapiteltitel",
   "preview.glyph.none": "Keiner",

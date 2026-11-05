@@ -3,6 +3,7 @@ use sha2::{Digest, Sha256};
 
 #[test]
 fn legacy_fixture_exports_match_golden_bytes() {
+    let mut mismatches = Vec::new();
     let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures");
     for fixture in [
         "sample",
@@ -55,18 +56,17 @@ fn legacy_fixture_exports_match_golden_bytes() {
         }
         for (format, bytes) in [("markdown", markdown), ("docx", docx), ("epub", epub)] {
             let actual = format!("{fixture} {format} {:x}", Sha256::digest(&bytes));
-            assert!(
-                include_str!("legacy-exports.sha256")
-                    .lines()
-                    .any(|line| line == actual),
-                "{actual}"
-            );
+            if !include_str!("legacy-exports.sha256").lines().any(|line| line == actual) {
+                mismatches.push(actual);
+            }
         }
     }
+    assert!(mismatches.is_empty(), "{}", mismatches.join("\n"));
 }
 
 #[test]
 fn retained_legacy_epub_bodies_match_golden_bytes() {
+    let mut mismatches = Vec::new();
     for (case, body) in [
         ("no-content", r#"{"type":"doc"}"#),
         ("empty", ""),
@@ -125,12 +125,9 @@ fn retained_legacy_epub_bodies_match_golden_bytes() {
                 .collect::<Vec<_>>(),
         );
         let actual = format!("{case} {:x}", Sha256::digest(&normalized));
-        assert!(
-            include_str!("legacy-retained-epub.sha256")
-                .lines()
-                .any(|line| line == actual),
-            "{actual}"
-        );
+        if !include_str!("legacy-retained-epub.sha256").lines().any(|line| line == actual) {
+            mismatches.push(actual);
+        }
         if let Some(out) = std::env::var_os("GARRET_EPUB_TEST_OUTPUT") {
             std::fs::create_dir_all(&out).unwrap();
             std::fs::write(
@@ -140,4 +137,5 @@ fn retained_legacy_epub_bodies_match_golden_bytes() {
             .unwrap();
         }
     }
+    assert!(mismatches.is_empty(), "{}", mismatches.join("\n"));
 }

@@ -250,7 +250,10 @@ export const EN = {
   "review.saved": "Review saved.",
   "review.transport.tab": "Review in Word",
   "review.transport.heading": "Review in Word",
-  "review.transport.scope": "For {title} only. Word changes this app cannot read are refused, and the Word file never replaces your manuscript.",
+  "review.transport.scope": "For {title} only.",
+  "review.transport.safety": "Word changes this app cannot read are refused, and the Word file never replaces your manuscript.",
+  "review.transport.send-stage": "Send for review",
+  "review.transport.return-stage": "Bring back edits",
   "review.transport.export": "Prepare review copy",
   "review.transport.return": "Open the returned Word file",
   "review.transport.export-preview": "Before saving the review copy",
@@ -1787,7 +1790,7 @@ export const EN = {
   // in a decision record: a writer who sent this to a printer expecting bleed
   // and a spine would find out from the printer.
   "preview.pdf.note":
-    "A proof copy to read or send to a first reader, laid out at the page size and margins selected here. Not a printer\u2019s file: no bleed, no spreads. Press Refresh after you write more.",
+    "A proof copy to read or send to a first reader, laid out at the page size and margins selected here. Not a printer\u2019s file: no bleed, no spreads. Press Refresh after you write more. Paragraphs are ragged-right because automatic hyphenation is not guaranteed.",
   "preview.legend.ornament": "Chapter ornament",
   "preview.name.ornament": "The ornament for each chapter title",
   "preview.glyph.none": "None",

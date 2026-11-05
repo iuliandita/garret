@@ -2702,6 +2702,7 @@ body.nav-narrow #prefs-panel {
 #prefs-panel .prefs-choices button,
 #design-panel .design-choices button,
 #design-panel .design-margin-choices button,
+#proof-page-margins .design-margin-choices button,
 #preview-rail .preview-choices button,
 #app .segmented button {
   font-size: var(--text-sm);
@@ -7256,7 +7257,8 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   flex: none;
 }
 
-#design-panel .design-margin-choices {
+#design-panel .design-margin-choices,
+#proof-page-margins .design-margin-choices {
   display: inline-flex;
   gap: 4px;
   margin-left: 4px;

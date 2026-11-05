@@ -31,6 +31,9 @@ import {
   MARGIN_AXES,
   designName,
   editableInches,
+  getMarginUnit,
+  setMarginUnit,
+  onMarginUnitChange,
   marginOf,
   micrometresFromInches,
   micrometresFromMillimetres,
@@ -243,7 +246,7 @@ export function createDesignPanel(deps: DesignPanelDeps): DesignPanel {
   /** An answer resolving after a newer open, or after the panel closed, must
    *  not repaint: the writer would be shown a book they are no longer in. */
   let generation = 0;
-  let marginUnit: "mm" | "in" = "mm";
+  let marginUnit = getMarginUnit();
   let pendingPreview: DesignTransferPreview | null = null;
   let transferBusy = false;
 
@@ -346,6 +349,16 @@ export function createDesignPanel(deps: DesignPanelDeps): DesignPanel {
       if (suffix !== null) suffix.textContent = t(`design.margin.abbr.${marginUnit}`);
     }
   }
+
+  const stopUnitSync = onMarginUnitChange((next) => {
+    if (next === marginUnit) return;
+    if (current === null) { marginUnit = next; return; }
+    const drafts = [...marginFields.values()].map((input) => ({ input, um: parseMargin(input.value) }));
+    if (drafts.some((draft) => draft.um === null)) return;
+    marginUnit = next;
+    for (const draft of drafts) draft.input.value = formatMargin(draft.um!);
+    paintMarginUnit();
+  });
 
   function buildGroup(id: string, legend: string, name: string): HTMLElement {
     const group = document.createElement("div");
@@ -479,6 +492,7 @@ export function createDesignPanel(deps: DesignPanelDeps): DesignPanel {
         return;
       }
       marginUnit = next;
+      setMarginUnit(next);
       for (const draft of drafts) draft.input.value = formatMargin(draft.um!);
       paintMarginUnit();
       return;
@@ -588,6 +602,7 @@ export function createDesignPanel(deps: DesignPanelDeps): DesignPanel {
   return {
     async open(): Promise<void> {
       generation += 1;
+      marginUnit = getMarginUnit();
       const mine = generation;
       pendingPreview = null;
       review.hidden = true;
@@ -647,6 +662,7 @@ export function createDesignPanel(deps: DesignPanelDeps): DesignPanel {
     destroy(): void {
       if (destroyed) return;
       destroyed = true;
+      stopUnitSync();
       panel.removeEventListener("click", onPanelClick);
       unitChoices.removeEventListener("mousedown", onUnitMouseDown);
       for (const input of marginFields.values()) {

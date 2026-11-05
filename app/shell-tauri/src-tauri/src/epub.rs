@@ -322,7 +322,7 @@ fn stylesheet(font: &str, style: &ChapterStyle) -> String {
          margin: 0 5%; line-height: 1.5; }}\n\
          h1, h2, h3, h4, h5, h6 {{ font-weight: normal; text-align: center; \
          margin: 2em 0 1em; page-break-after: avoid; break-after: avoid; }}\n\
-         p {{ margin: 0; text-indent: 1.2em; text-align: justify; }}\n\
+         p {{ margin: 0; text-indent: 1.2em; text-align: justify; -webkit-hyphens: auto; hyphens: auto; }}\n\
          p.{OPENING_CLASS}, h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p, .{ORNAMENT_CLASS} + p \
          {{ text-indent: 0; }}\n\
          .{ORNAMENT_CLASS} {{ text-align: center; text-indent: 0; margin: 1.5em 0; }}\n\
@@ -1718,6 +1718,7 @@ mod tests {
         e.font = "EB Garamond";
         let css = named(&render(&e), &format!("{OEBPS}/{CSS_HREF}"));
         assert!(css.contains("\"EB Garamond\", Georgia"), "{css}");
+        assert!(css.contains("-webkit-hyphens: auto; hyphens: auto;"), "{css}");
     }
 
     #[test]
