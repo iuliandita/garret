@@ -9094,50 +9094,31 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
   }
 }
 
-/* BELOW 440px OF PROSE PANE THE INSPECTOR OVERLAYS, beneath the header and
-   above the footer, the way both rails do at 900px. 320 + 360 + 440 = 1120
-   with the navigator, 800 without it. A narrower pane would set the prose in
-   a column a few words wide; covering its right side is the lesser cost, and
-   Close or Escape gives the whole width back. */
-@media (max-width: 1119.98px) {
-  body:not(.nav-hidden) #inspector-dock .panel-shell {
-    position: fixed;
-    inset: 39px 0 34px auto;
-    z-index: 9;
-    width: min(360px, 100vw);
-    box-shadow: var(--shadow-panel);
-    border-left: 1px solid var(--panel-edge);
-  }
+/* THE INSPECTOR NEVER COVERS PART OF THE PROSE. Where the pane beside it would
+   fall below a readable measure, the navigator yields first (side-layout.ts,
+   through `.nav-hidden`); where even that cannot fit, `data-side-layout="full"`
+   gives the side surface the whole workspace and the prose under it is inert
+   until Close or Escape. A slice of lines cut at the panel's edge reads as
+   prose a writer can use, and it is not. */
+body[data-side-layout="full"] #inspector-dock .panel-shell {
+  position: fixed;
+  inset: 39px 0 34px 0;
+  z-index: 9;
+  width: auto;
 }
 
-@media (max-width: 799.98px) {
-  body.nav-hidden #inspector-dock .panel-shell {
-    position: fixed;
-    inset: 39px 0 34px auto;
-    z-index: 9;
-    width: min(360px, 100vw);
-    box-shadow: var(--shadow-panel);
-    border-left: 1px solid var(--panel-edge);
-  }
-}
+/* The writer can still open the outline over a full surface. */
+body[data-side-layout="full"] #outline-backdrop { z-index: 10; }
+body.nav-narrow[data-side-layout="full"]:not(.nav-hidden) #nav-column { z-index: 11; }
 
-/* The scene's note count moves off the pane to the prose's own right edge.
-   Where the inspector overlays, that edge is under it, and the count would
-   sit on the prose itself: it steps aside until the inspector closes. */
+/* The scene's note count moves off the pane to the prose's own right edge,
+   and has no prose to sit beside while a surface covers it. */
 body[data-inspector-open="true"] #scene-notes {
   right: calc(360px + 14px);
 }
 
-@media (max-width: 1119.98px) {
-  body:not(.nav-hidden)[data-inspector-open="true"] #scene-notes {
-    display: none;
-  }
-}
-
-@media (max-width: 799.98px) {
-  body.nav-hidden[data-inspector-open="true"] #scene-notes {
-    display: none;
-  }
+body[data-side-layout="full"] #scene-notes {
+  display: none;
 }
 
 #library-new-book-area { margin: 0 0 24px; }
