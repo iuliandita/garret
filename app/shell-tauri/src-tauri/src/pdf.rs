@@ -182,7 +182,7 @@ pub fn stylesheet(design: &BookDesign, style: &ChapterStyle) -> String {
          .proof-leaf[data-kind=\"plate\"] .proof-folio {{ display: none; }}\n\
          body {{ font-family: {family}; font-size: 11pt; line-height: 1.45; \
          text-rendering: optimizeLegibility; }}\n\
-         p {{ margin: 0; text-indent: 1.4em; text-align: justify; hyphens: auto; overflow-wrap: anywhere; }}\n\
+         p {{ margin: 0; text-indent: 1.4em; text-align: left; -webkit-hyphens: auto; hyphens: auto; overflow-wrap: anywhere; }}\n\
          p.{OPENING_CLASS}, p.proof-continued, .{ORNAMENT_CLASS} + p, \
          h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p {{ text-indent: 0; }}\n\
          h1, h2, h3, h4, h5, h6 {{ font-weight: normal; text-align: center; \
@@ -1236,6 +1236,7 @@ mod tests {
         // is invisible in any single-page picture.
         let css = stylesheet(&design(), &plain());
         assert!(css.contains("text-indent: 0; text-align: center;"));
+        assert!(css.contains("text-align: left; -webkit-hyphens: auto; hyphens: auto;"));
         assert!(css.contains("width: 152.4mm; height: 228.6mm;"), "{css}");
         assert!(
             css.contains("[data-side=\"recto\"] { padding: 15.875mm 15.875mm 19.05mm 19.05mm; }"),

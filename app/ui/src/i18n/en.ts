@@ -1781,7 +1781,7 @@ export const EN = {
   // in a decision record: a writer who sent this to a printer expecting bleed
   // and a spine would find out from the printer.
   "preview.pdf.note":
-    "A proof copy to read or send to a first reader, laid out at the page size and margins selected here. Not a printer\u2019s file: no bleed, no spreads. Press Refresh after you write more.",
+    "A proof copy to read or send to a first reader, laid out at the page size and margins selected here. Not a printer\u2019s file: no bleed, no spreads. Press Refresh after you write more. Paragraphs are ragged-right because automatic hyphenation is not guaranteed.",
   "preview.legend.ornament": "Chapter ornament",
   "preview.name.ornament": "The ornament for each chapter title",
   "preview.glyph.none": "None",

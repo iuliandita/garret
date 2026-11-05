@@ -1566,7 +1566,7 @@ export const DE = {
   "preview.epub.note":
     "Aus dem Buch im gespeicherten Stand erzeugt. Drücken Sie Aktualisieren, wenn Sie weitergeschrieben haben. Wie ein Lesegerät die Seite setzt, auch wie weit unten ein Kapitel beginnt, wird abweichen. Das EPUB enthält das vordere Cover, aber nicht das hintere.",
   "preview.pdf.note":
-    "Ein Andruck zum Lesen oder für eine erste Leserin, gesetzt in der hier gewählten Seitengröße und den Rändern. Keine Druckerei-Datei: kein Anschnitt, keine Doppelseiten. Drücken Sie Aktualisieren, wenn Sie weitergeschrieben haben.",
+    "Ein Andruck zum Lesen oder für eine erste Leserin, gesetzt in der hier gewählten Seitengröße und den Rändern. Keine Druckerei-Datei: kein Anschnitt, keine Doppelseiten. Drücken Sie Aktualisieren, wenn Sie weitergeschrieben haben. Absätze stehen im Flattersatz, da die automatische Silbentrennung nicht gewährleistet ist.",
   "preview.legend.ornament": "Kapitelschmuck",
   "preview.name.ornament": "Der Schmuck zu jedem Kapiteltitel",
   "preview.glyph.none": "Keiner",
