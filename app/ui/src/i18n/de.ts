@@ -2249,7 +2249,7 @@ export const DE = {
   "library.summary.words.one": "{count} gespeicherten Wort",
   "library.summary.words.other": "{count} gespeicherten Wörtern",
   "library.summary.activity-unavailable": "Erfasste Aktivität für diese Auswahl nicht verfügbar.",
-  "library.summary.activity": "Erfasste Änderungen aus {counted} von {total} Büchern: {values}",
+  "library.summary.activity": "Erfasste Änderungen aus {counted} von {total} Büchern: {values}.",
   "library.summary.activity-none": "keine Änderungen",
   "library.summary.source.typing": "getippt +{added}/−{deleted}",
   "library.summary.source.pasted": "eingefügt +{added}/−{deleted}",

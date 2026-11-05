@@ -666,7 +666,10 @@ describe("createLibrary", () => {
     r.library.open();
     await flush();
     expect(document.getElementById("library-summary-result")?.textContent).not.toContain("900");
-    expect(document.getElementById("library-summary-coverage")?.textContent).toBe("1 book could not be read. Not read yet.");
+    // The left-out reason stays visible beside the one summary line.
+    expect(document.getElementById("library-summary-coverage")?.textContent).toBe("1 book could not be read.");
+    expect(document.getElementById("library-summary-coverage")?.hidden).toBe(false);
+    expect(document.getElementById("library-summary-read")?.textContent).toBe("Not read yet.");
   });
 
   test("destroy invalidates a pending summary before another book is read", async () => {

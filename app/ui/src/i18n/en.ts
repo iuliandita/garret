@@ -2664,7 +2664,7 @@ export const EN = {
   "library.summary.words.one": "{count} saved word",
   "library.summary.words.other": "{count} saved words",
   "library.summary.activity-unavailable": "Recorded activity unavailable for this selection.",
-  "library.summary.activity": "Recorded changes, from {counted} of {total} books: {values}",
+  "library.summary.activity": "Recorded changes, from {counted} of {total} books: {values}.",
   "library.summary.activity-none": "no changes",
   "library.summary.source.typing": "typing +{added}/−{deleted}",
   "library.summary.source.pasted": "pasted +{added}/−{deleted}",

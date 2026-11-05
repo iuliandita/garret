@@ -8518,11 +8518,10 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 
 #library-membership[hidden],
 #library-summary[hidden] { display: none; }
-/* The desk's own rule already closes the row above. */
-#library-desk + #library-summary { border-top: 0; padding-top: 0; }
+/* One quiet line after the shelf, ruled off from it; nothing below to close. */
+#library-summary { border-bottom: 0; padding-bottom: 0; margin-top: 24px; }
 
-#library-membership h3,
-#library-summary h3 { font: 500 var(--text-xl) var(--prose-family, serif); margin: 0 0 8px; }
+#library-membership h3 { font: 500 var(--text-xl) var(--prose-family, serif); margin: 0 0 8px; }
 #library-membership p,
 #library-summary p { color: var(--muted); line-height: var(--leading-ui); margin: 6px 0; }
 #library-membership .library-membership-row { display: flex; gap: 12px; align-items: end; margin: 10px 0; }
@@ -8531,8 +8530,10 @@ body.chrome-hidden #editor .ProseMirror .cast-mark {
 #library-membership button { margin: 6px 10px 0 0; }
 #library-membership-discard { margin: 10px 0; color: var(--danger); }
 #library-summary label { display: grid; gap: 4px; max-width: 58em; margin: 12px 0; }
-#library-summary-result { font-family: var(--prose-family, serif); font-size: var(--text-xl); color: var(--fg) !important; }
-#library-summary-coverage { font-size: var(--text-xs); }
+#library-summary-line { font-size: var(--text-sm); }
+#library-summary-result { color: var(--fg); }
+#library-summary-coverage { font-size: var(--text-sm); color: var(--fg) !important; }
+#library-summary-coverage[hidden] { display: none; }
 
 #library-menu-anchor { position: relative; }
 #library button#library-menu { display: inline-flex; align-items: center; padding: 7px 9px; }
