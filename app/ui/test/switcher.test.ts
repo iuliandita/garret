@@ -1905,6 +1905,26 @@ describe("the copy that leaves this computer", () => {
     teardown(rig);
   });
 
+  test("an encrypted archive's status stays with its own book", async () => {
+    let path = "/p/one.mss";
+    const rig = mount({
+      currentPath: () => path,
+      encryptedBackupDestination: async () => "/backups",
+      makeEncryptedArchive: async () => ({ file: "one.age", recipient: "age1public", encrypted: true }),
+    });
+    await open(rig, "backups");
+    click(el(rig.container, "project-archive-encrypted"));
+    await settle();
+    const status = el(rig.container, "project-encrypted-status");
+    expect(status.textContent).not.toBe("");
+    await open(rig, "backups");
+    expect(status.textContent).not.toBe("");
+    path = "/p/two.mss";
+    await open(rig, "backups");
+    expect(status.textContent).toBe("");
+    teardown(rig);
+  });
+
   test("destroyed switcher ignores a late encrypted restore result", async () => {
     let release: ((project: ProjectSummary) => void) | undefined;
     const pending = new Promise<ProjectSummary>((resolve) => { release = resolve; });

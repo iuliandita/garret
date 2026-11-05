@@ -19,6 +19,7 @@ import {
 import { createLibraryBookActions } from "../src/library-book-actions";
 import { askUpgrade } from "../src/upgrade-prompt";
 import type { BookStats, LibraryMembership, MembershipEdit } from "../src/library-summary";
+import { reportSide } from "../src/side-layout";
 
 function book(over: Partial<LibraryBook> = {}): LibraryBook {
   return {
@@ -773,6 +774,22 @@ describe("Library keyboard ownership", () => {
     expect(r.library.isOpen()).toBe(false);
     expect(editor.inert).toBe(false);
     expect(document.activeElement === prose).toBe(true);
+  });
+
+  test("a side surface that closes while the room is open leaves the editor editable", async () => {
+    const editor = document.createElement("div");
+    editor.id = "editor";
+    document.body.append(editor);
+    reportSide("inspector", window.innerWidth);
+    expect(editor.inert).toBe(true);
+    const r = rig();
+    r.library.open();
+    await flush();
+    reportSide("inspector", null);
+    expect(editor.inert).toBe(true);
+    r.library.close();
+    expect(editor.inert).toBe(false);
+    editor.remove();
   });
 
   for (const operation of ["open", "create"] as const) {

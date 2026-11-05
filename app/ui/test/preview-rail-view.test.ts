@@ -175,10 +175,13 @@ describe("the divider", () => {
     expect(valueNow()).toBe(420);
   });
 
-  test("the overlay width has no divider", async () => {
-    const h = mount({ width: 900 });
+  test("a window too narrow for a split has no divider, and 900px still has one", async () => {
+    const h = mount({ width: 800 });
     await h.rail.open("epub");
     expect(divider().hidden).toBe(true);
+    h.win.width = 900;
+    window.dispatchEvent(new Event("resize"));
+    expect(divider().hidden).toBe(false);
   });
 
   test("a drag follows the pointer, snaps near half, and is remembered", async () => {
