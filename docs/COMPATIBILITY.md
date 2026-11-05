@@ -67,7 +67,7 @@ Android checks schema first, then book type: absent, novel, short, nonfiction
 and collection are supported; empty and unknown presets refuse. Desktop can
 retain an unknown preset, but it cannot send it as a supported mobile book.
 
-For a device copy, use Books > Copies > Export book for another device and
+For a device copy, use Books > Copies > Transfer to another device > Export book for another device and
 check the app version on the receiving device first. Android export requires
 the same explicit capability check. Unknown capability refuses; update or check
 the receiving app before retrying. The host checks the source schema before
