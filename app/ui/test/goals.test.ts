@@ -61,8 +61,7 @@ describe("what the bar reads", () => {
   });
 
   test("a day spent cutting reads as a loss rather than as zero", () => {
-    // U+2212 MINUS SIGN, not a hyphen: this is a negative quantity, and the
-    // hyphen-minus renders visibly short beside the digits it belongs to.
+    // The verb carries the sign, so the count is never shown negative.
     expect(progressDisplay(-900, "off")).toBe("900 cut today");
     expect(progressDisplay(-900, "500")).toBe("900 cut today, target 500");
     expect(progressDisplay(-1234, "off")).toBe("1,234 cut today");
