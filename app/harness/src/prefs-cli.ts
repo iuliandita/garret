@@ -62,11 +62,12 @@ const WINDOW_H = 900;
 //
 // STILL REQUIRED after the menu port, for a different control than before. The
 // original reason was #prefs-toggle at x=1339, and that button no longer exists
-// — the panel is opened by keystroke now, which is clamped by nothing. But
-// #prefs-panel is `position: absolute; right: 12px` against #project-bar, so in
-// a 1400px window its buttons sit far past 1280 and the three clicks that choose
-// the preference would all land off-screen. The window itself must stay 1400
-// wide for the measure gate (below), so the screen must stay wider than it.
+// — the panel is opened by keystroke now, which is clamped by nothing. Then
+// #prefs-panel sat at the bar's right end, where in a 1400px window its buttons
+// were past 1280; with the navigator showing it now opens over the navigator,
+// but any control on the window's right-hand side would still be unclickable on
+// a narrower screen. The window itself must stay 1400 wide for the measure gate
+// (below), so the screen stays wider than it.
 //
 // -s 0 and -noreset are carried over unchanged; only the screen is wider.
 const SERVER_ARGS_WIDE = "-screen 0 1600x1024x24 -s 0 -noreset";

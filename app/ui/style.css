@@ -2618,6 +2618,20 @@ body.nav-hidden #nav-column {
   overflow-y: auto;
 }
 
+/* THE PROSE IS THE PREVIEW of font, size and width, so the panel keeps off it
+   where it can. With the navigator showing, the panel opens over the navigator
+   instead of the prose's right side. Without one there is no side to spare, so
+   it is shorter, and the whole lines below it show the change. */
+body:not(.nav-hidden):not(.nav-narrow) #prefs-panel {
+  right: auto;
+  left: 12px;
+}
+
+body.nav-hidden #prefs-panel,
+body.nav-narrow #prefs-panel {
+  max-height: 55vh;
+}
+
 #prefs-panel[hidden] {
   display: none;
 }
