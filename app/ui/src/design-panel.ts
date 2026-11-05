@@ -31,6 +31,8 @@ import {
   MARGIN_AXES,
   designName,
   editableInches,
+  getMarginUnit,
+  setMarginUnit,
   marginOf,
   micrometresFromInches,
   micrometresFromMillimetres,
@@ -243,7 +245,7 @@ export function createDesignPanel(deps: DesignPanelDeps): DesignPanel {
   /** An answer resolving after a newer open, or after the panel closed, must
    *  not repaint: the writer would be shown a book they are no longer in. */
   let generation = 0;
-  let marginUnit: "mm" | "in" = "mm";
+  let marginUnit = getMarginUnit();
   let pendingPreview: DesignTransferPreview | null = null;
   let transferBusy = false;
 
@@ -479,6 +481,7 @@ export function createDesignPanel(deps: DesignPanelDeps): DesignPanel {
         return;
       }
       marginUnit = next;
+      setMarginUnit(next);
       for (const draft of drafts) draft.input.value = formatMargin(draft.um!);
       paintMarginUnit();
       return;
@@ -588,6 +591,7 @@ export function createDesignPanel(deps: DesignPanelDeps): DesignPanel {
   return {
     async open(): Promise<void> {
       generation += 1;
+      marginUnit = getMarginUnit();
       const mine = generation;
       pendingPreview = null;
       review.hidden = true;

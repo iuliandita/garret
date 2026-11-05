@@ -166,3 +166,8 @@ export function designName(area: "page" | "preset", id: string): string {
   const key = `design.${area}.${id}`;
   return messages.has(key) ? t(key) : id;
 }
+
+export type MarginUnit = "mm" | "in";
+let marginUnit: MarginUnit = "mm";
+export function getMarginUnit(): MarginUnit { return marginUnit; }
+export function setMarginUnit(unit: MarginUnit): void { marginUnit = unit; }

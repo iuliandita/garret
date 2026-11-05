@@ -4,7 +4,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 if (typeof globalThis.document === "undefined") GlobalRegistrator.register();
 
 import { createDesignPanel, type DesignPanel, type DesignTransferPreview } from "../src/design-panel";
-import type { BookDesign, BookDesignView } from "../src/book-design";
+import { setMarginUnit, type BookDesign, type BookDesignView } from "../src/book-design";
 import { EN } from "../src/i18n";
 
 const FICTION: BookDesign = {
@@ -118,6 +118,7 @@ function mount(options: Options = {}): Rig {
 }
 
 afterEach(() => {
+  setMarginUnit("mm");
   open?.panel.destroy();
   open?.container.remove();
   open = null;
