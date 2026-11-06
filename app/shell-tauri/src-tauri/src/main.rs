@@ -4136,7 +4136,7 @@ fn main() {
             eprintln!("another window is already open on this library; asked it to come forward");
             process::exit(0);
         }
-        instance::Claim::Unavailable(why) => {
+        instance::Claim::Unavailable(why) | instance::Claim::UnverifiedPeer(why) => {
             eprintln!(
                 "cannot guard against a second window on this library, running without: {why}"
             );

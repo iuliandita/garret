@@ -20,9 +20,12 @@
 //! unguarded and says so on stderr; refusing to open a writer's book over a
 //! convenience would be the wrong priority.
 
-use std::io::Write;
+use std::io::{self, Read, Write};
+use std::os::fd::AsRawFd;
+use std::os::unix::fs::{DirBuilderExt, MetadataExt};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 /// The socket path length Linux accepts, minus the terminating byte.
 const SOCKET_PATH_MAX: usize = 107;
@@ -36,6 +39,8 @@ pub(crate) enum Claim {
     Forwarded,
     /// No guard could be established; run unguarded.
     Unavailable(String),
+    /// A connected peer could not be verified; run without forwarding.
+    UnverifiedPeer(String),
 }
 
 /// FNV-1a over the path bytes. Not a security boundary: the only requirement
@@ -55,31 +60,112 @@ pub(crate) fn socket_path(runtime_dir: &Path, data_home: &Path) -> PathBuf {
     runtime_dir.join(format!("cc.local.app-{:016x}.sock", library_key(data_home)))
 }
 
-/// The runtime directory this user has, or the system temp directory when the
-/// session set none (a rig that launches with a scrubbed environment, a
-/// console login).
-fn runtime_dir() -> PathBuf {
-    std::env::var_os("XDG_RUNTIME_DIR")
-        .map(PathBuf::from)
-        .filter(|dir| dir.is_absolute())
-        .unwrap_or_else(std::env::temp_dir)
+/// Create privately, then check the existing entry without following symlinks.
+fn fallback_dir(temp: &Path, uid: u32) -> Result<PathBuf, String> {
+    let dir = temp.join(format!("cc.local.app-{uid}"));
+    match std::fs::DirBuilder::new().mode(0o700).create(&dir) {
+        Ok(()) => (),
+        Err(error) if error.kind() == io::ErrorKind::AlreadyExists => (),
+        Err(error) => return Err(format!("{}: {error}", dir.display())),
+    }
+    let meta =
+        std::fs::symlink_metadata(&dir).map_err(|error| format!("{}: {error}", dir.display()))?;
+    if !meta.is_dir() || meta.uid() != uid || meta.mode() & 0o077 != 0 {
+        return Err(format!(
+            "{}: instance directory must be private and owned by this user",
+            dir.display()
+        ));
+    }
+    Ok(dir)
 }
 
-/// The runtime directory first, the temp directory when that one cannot hold
-/// a socket (a session whose `XDG_RUNTIME_DIR` is itself too long, which a
-/// harness scratch directory is).
+/// Use the session runtime directory when it can hold the socket, otherwise a
+/// checked per-user directory beneath the system temp directory.
 pub(crate) fn claim(data_home: &Path) -> Claim {
-    let first = claim_in(&runtime_dir(), data_home);
-    match first {
-        Claim::Unavailable(_) => claim_in(&std::env::temp_dir(), data_home),
-        settled => settled,
+    let runtime = std::env::var_os("XDG_RUNTIME_DIR").map(PathBuf::from);
+    if let Some(dir) = runtime.filter(|dir| dir.is_absolute()) {
+        match claim_in(&dir, data_home) {
+            Claim::Unavailable(_) => (),
+            settled => return settled,
+        }
     }
+    match fallback_dir(&std::env::temp_dir(), rustix::process::geteuid().as_raw()) {
+        Ok(dir) => claim_in(&dir, data_home),
+        Err(error) => Claim::Unavailable(error),
+    }
+}
+
+#[cfg(any(target_os = "linux", target_os = "android"))]
+fn peer_uid(stream: &UnixStream) -> io::Result<u32> {
+    let mut credentials = std::mem::MaybeUninit::<libc::ucred>::uninit();
+    let mut len = std::mem::size_of::<libc::ucred>() as libc::socklen_t;
+    // SAFETY: the live socket fd and writable buffer/length describe exactly
+    // one ucred. The buffer is read only after success and a full-size result.
+    let result = unsafe {
+        libc::getsockopt(
+            stream.as_raw_fd(),
+            libc::SOL_SOCKET,
+            libc::SO_PEERCRED,
+            credentials.as_mut_ptr().cast(),
+            &mut len,
+        )
+    };
+    if result != 0 {
+        return Err(io::Error::last_os_error());
+    }
+    if len as usize != std::mem::size_of::<libc::ucred>() {
+        return Err(io::Error::other("incomplete instance peer credentials"));
+    }
+    Ok(unsafe { credentials.assume_init() }.uid)
+}
+
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "freebsd",
+    target_os = "openbsd",
+    target_os = "netbsd",
+    target_os = "dragonfly"
+))]
+fn peer_uid(stream: &UnixStream) -> io::Result<u32> {
+    let mut uid = 0;
+    let mut gid = 0;
+    // SAFETY: the socket fd is live and both output pointers are valid.
+    if unsafe { libc::getpeereid(stream.as_raw_fd(), &mut uid, &mut gid) } != 0 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(uid)
+}
+
+#[cfg(not(any(
+    target_os = "linux",
+    target_os = "android",
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "freebsd",
+    target_os = "openbsd",
+    target_os = "netbsd",
+    target_os = "dragonfly"
+)))]
+fn peer_uid(_stream: &UnixStream) -> io::Result<u32> {
+    Err(io::Error::new(
+        io::ErrorKind::Unsupported,
+        "instance peer credentials are unavailable",
+    ))
 }
 
 /// Bind, or ask the process that did to come forward. A socket file with no
 /// process behind it (the last window was killed rather than closed) is taken
 /// over, because a connection to it is refused rather than accepted.
 pub(crate) fn claim_in(runtime_dir: &Path, data_home: &Path) -> Claim {
+    claim_in_with(runtime_dir, data_home, peer_uid)
+}
+
+fn claim_in_with(
+    runtime_dir: &Path,
+    data_home: &Path,
+    check_peer: impl Fn(&UnixStream) -> io::Result<u32>,
+) -> Claim {
     let path = socket_path(runtime_dir, data_home);
     if path.as_os_str().len() > SOCKET_PATH_MAX {
         return Claim::Unavailable(format!(
@@ -92,6 +178,19 @@ pub(crate) fn claim_in(runtime_dir: &Path, data_home: &Path) -> Claim {
         Err(bind_err) if bind_err.kind() == std::io::ErrorKind::AddrInUse => {
             match UnixStream::connect(&path) {
                 Ok(mut stream) => {
+                    match check_peer(&stream) {
+                        Ok(uid) if uid == rustix::process::geteuid().as_raw() => (),
+                        Ok(_) => {
+                            return Claim::UnverifiedPeer(
+                                "instance peer belongs to another user".into(),
+                            )
+                        }
+                        Err(error) => {
+                            return Claim::UnverifiedPeer(format!(
+                                "cannot verify instance peer: {error}"
+                            ))
+                        }
+                    }
                     // The connection is the message; the byte is so the
                     // listener has something to read to completion.
                     let _ = stream.write_all(b"focus\n");
@@ -117,17 +216,24 @@ pub(crate) fn claim_in(runtime_dir: &Path, data_home: &Path) -> Claim {
 }
 
 /// Accepts forever on its own thread; every connection is one request to come
-/// forward. Reading the byte to completion is what keeps the second process's
-/// write from failing with a reset before it exits.
+/// forward. A bounded read drains the short request without waiting for EOF;
+/// idle connections time out so the listener can accept the next launch.
 pub(crate) fn serve(listener: UnixListener, on_focus: impl Fn() + Send + 'static) {
     std::thread::Builder::new()
         .name("instance".into())
         .spawn(move || {
             for stream in listener.incoming() {
                 if let Ok(mut stream) = stream {
-                    let mut sink = Vec::new();
-                    let _ = std::io::Read::read_to_end(&mut stream, &mut sink);
-                    on_focus();
+                    if stream
+                        .set_read_timeout(Some(Duration::from_secs(1)))
+                        .is_err()
+                    {
+                        continue;
+                    }
+                    let mut message = [0; 6];
+                    if stream.read(&mut message).is_ok() {
+                        on_focus();
+                    }
                 }
             }
         })
@@ -145,6 +251,78 @@ mod tests {
     use std::sync::mpsc;
     use std::time::Duration;
     use tempfile::tempdir;
+
+    #[test]
+    fn an_unverified_listener_is_not_forwarded_or_removed() {
+        let run = tempdir().unwrap();
+        let home = Path::new("/library");
+        let path = socket_path(run.path(), home);
+        let listener = UnixListener::bind(&path).unwrap();
+        for result in [
+            Ok(rustix::process::geteuid().as_raw().wrapping_add(1)),
+            Err(io::Error::other("credentials unavailable")),
+        ] {
+            let result = std::cell::RefCell::new(Some(result));
+            assert!(matches!(
+                claim_in_with(run.path(), home, |_| result.borrow_mut().take().unwrap()),
+                Claim::UnverifiedPeer(_)
+            ));
+            let (mut peer, _) = listener.accept().unwrap();
+            let mut message = Vec::new();
+            peer.read_to_end(&mut message).unwrap();
+            assert!(
+                message.is_empty(),
+                "unverified peers receive no focus request"
+            );
+            assert!(path.exists(), "a listening socket must not be removed");
+        }
+    }
+
+    #[test]
+    fn fallback_directory_is_private_and_refuses_wrong_mode_owner_and_symlinks() {
+        use std::os::unix::fs::{symlink, PermissionsExt};
+        let run = tempdir().unwrap();
+        std::fs::set_permissions(run.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let uid = rustix::process::geteuid().as_raw();
+        let dir = fallback_dir(run.path(), uid).unwrap();
+        assert_eq!(
+            std::fs::symlink_metadata(&dir).unwrap().mode() & 0o777,
+            0o700
+        );
+        assert_eq!(fallback_dir(run.path(), uid).unwrap(), dir);
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o750)).unwrap();
+        assert!(fallback_dir(run.path(), uid).is_err());
+        std::fs::remove_dir(&dir).unwrap();
+        symlink(run.path(), &dir).unwrap();
+        assert!(fallback_dir(run.path(), uid).is_err());
+        // The expected uid is injected so this exercises ownership without root.
+        let other = uid.wrapping_add(1);
+        let other_dir = run.path().join(format!("cc.local.app-{other}"));
+        std::fs::DirBuilder::new()
+            .mode(0o700)
+            .create(other_dir)
+            .unwrap();
+        assert!(fallback_dir(run.path(), other).is_err());
+    }
+
+    #[test]
+    fn an_idle_client_does_not_block_the_next_focus_request() {
+        let run = tempdir().unwrap();
+        let home = Path::new("/library");
+        let listener = match claim_in(run.path(), home) {
+            Claim::Owned(listener, _) => listener,
+            _ => panic!("the first launch must own the socket"),
+        };
+        let idle = UnixStream::connect(socket_path(run.path(), home)).unwrap();
+        let (tx, rx) = mpsc::channel();
+        serve(listener, move || {
+            let _ = tx.send(());
+        });
+        assert!(matches!(claim_in(run.path(), home), Claim::Forwarded));
+        let focused = rx.recv_timeout(Duration::from_secs(3));
+        drop(idle);
+        focused.expect("serve must resume while the idle client is still connected");
+    }
 
     #[test]
     fn the_first_launch_owns_the_socket_and_the_second_is_forwarded_to_it() {
