@@ -34,6 +34,13 @@ mod figures;
 #[cfg(target_os = "android")]
 #[path = "research.rs"]
 mod research;
+// Figures share the verified, metadata-free image copy with desktop publication.
+#[cfg(target_os = "android")]
+mod publication_plan {
+    mod asset;
+    pub(crate) mod image_metadata;
+    pub(crate) use asset::Asset;
+}
 #[cfg(target_os = "android")]
 #[path = "review_validation.rs"]
 mod review_validation;
