@@ -231,13 +231,21 @@ fn parse_attrs(s: &str) -> Vec<(String, String)> {
 /// (`collect_styles`, `walk_body`, `walk_para_content`) into a stack
 /// overflow.
 const MAX_XML_DEPTH: usize = 256;
-const MAX_XML_NODES: usize = 1_000_000;
+/// Word writes several elements per run (`w:rPr`, fonts, sizes, language), so
+/// a long novel's document part can hold well over a million nodes. This
+/// bounds tree memory without refusing real manuscripts that fit the 128 MiB
+/// expansion limit.
+const MAX_XML_NODES: usize = 8_000_000;
 
 /// The whole tree under the (implicit) document root: a stack-based build
 /// over a flat scan of `<tag>`, `</tag>` and text between them. The XML
 /// declaration and comments are skipped outright; a CDATA section's text is
 /// read out and kept.
 fn build_tree(xml: &str) -> Result<Vec<Node>, String> {
+    build_tree_bounded(xml, MAX_XML_NODES)
+}
+
+fn build_tree_bounded(xml: &str, max_nodes: usize) -> Result<Vec<Node>, String> {
     let mut root: Vec<Node> = Vec::new();
     let mut stack: Vec<(String, Vec<(String, String)>, Vec<Node>)> = Vec::new();
     let mut i = 0usize;
@@ -270,7 +278,7 @@ fn build_tree(xml: &str) -> Result<Vec<Node>, String> {
                 };
                 if !text.is_empty() {
                     nodes += 1;
-                    if nodes > MAX_XML_NODES { return Err(format!("XML exceeds {MAX_XML_NODES} nodes; refusing to parse further")); }
+                    if nodes > max_nodes { return Err(format!("XML exceeds {max_nodes} nodes; refusing to parse further")); }
                     push_node(&mut stack, &mut root, Node::Text(text.to_string()));
                 }
                 i += advance;
@@ -309,7 +317,7 @@ fn build_tree(xml: &str) -> Result<Vec<Node>, String> {
                 None => (body, ""),
             };
             nodes += 1;
-            if nodes > MAX_XML_NODES { return Err(format!("XML exceeds {MAX_XML_NODES} nodes; refusing to parse further")); }
+            if nodes > max_nodes { return Err(format!("XML exceeds {max_nodes} nodes; refusing to parse further")); }
             let name = local_name(name_part).to_string();
             let attrs = parse_attrs(rest);
             if self_close {
@@ -324,7 +332,7 @@ fn build_tree(xml: &str) -> Result<Vec<Node>, String> {
             let end = xml[i..].find('<').map(|p| i + p).unwrap_or(bytes.len());
             if end > i {
                 nodes += 1;
-                if nodes > MAX_XML_NODES { return Err(format!("XML exceeds {MAX_XML_NODES} nodes; refusing to parse further")); }
+                if nodes > max_nodes { return Err(format!("XML exceeds {max_nodes} nodes; refusing to parse further")); }
             }
             let text = decode_entities(&xml[i..end]);
             if !text.is_empty() {
@@ -1138,8 +1146,11 @@ mod tests {
 
     #[test]
     fn xml_node_budget_refuses_excess() {
-        let xml = "<x/>".repeat(MAX_XML_NODES + 1);
-        assert!(build_tree(&xml).err().unwrap().contains("nodes"));
+        // Elements and text both count; exactly the limit still parses.
+        let xml = "<x>t</x>".repeat(50);
+        assert_eq!(build_tree_bounded(&xml, 100).unwrap().len(), 50);
+        assert!(build_tree_bounded(&xml, 99).err().unwrap().contains("nodes"));
+        assert!(MAX_XML_NODES >= 8_000_000, "the production limit refuses long real manuscripts");
     }
 
     #[test]
