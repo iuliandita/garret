@@ -120,22 +120,27 @@ fn document_with_original(caption: &str, original: Option<Vec<u8>>) -> String {
         orientation,
     };
     let plan = Plan::build(&book, &bodies, Scopes::book(&book), |_| {
-        Asset::verified(&record, bytes.clone())
+        Asset::verified_original(&record, bytes.clone())
     })
     .unwrap();
     if record.mime == "image/png" && record.orientation == 6 {
         assert_eq!((width_px, height_px), (300, 200));
-        let docx = crate::docx::render_planned(&book, &bodies, "en", Some(&plan)).unwrap();
+        let publication = Plan::build(&book, &bodies, Scopes::book(&book), |_| {
+            Asset::verified(&record, bytes.clone())
+        }).unwrap();
+        let clean = &publication.assets[asset_id].bytes;
+        assert_ne!(clean, &bytes);
+        let docx = crate::docx::render_planned(&book, &bodies, "en", Some(&publication)).unwrap();
         let entries = crate::epub::read_zip(&docx.bytes).unwrap();
-        assert!(entries.iter().any(|(name, data)| name.starts_with("word/media/") && data == &bytes));
+        assert!(entries.iter().any(|(name, data)| name.starts_with("word/media/") && data == clean));
         let xml = &entries.iter().find(|(name, _)| name == "word/document.xml").unwrap().1;
         assert!(String::from_utf8_lossy(xml).contains("<wp:extent cx=\"5943600\" cy=\"3962400\"/>"));
-        let epub = crate::epub::render(&crate::epub::Epub { book: &book, plan: Some(&plan),
+        let epub = crate::epub::render(&crate::epub::Epub { book: &book, plan: Some(&publication),
             notes_title: "Notes", bodies: &bodies, book_id: None, story_id: None,
             language: "en", font: "serif", style: Default::default(),
             openings: Default::default(), cover: None, modified: "2026-10-17T00:00:00Z", pin: None });
         let entries = crate::epub::read_zip(&epub).unwrap();
-        assert!(entries.iter().any(|(name, data)| name.ends_with(".png") && data == &bytes));
+        assert!(entries.iter().any(|(name, data)| name.ends_with(".png") && data == clean));
         let css = &entries.iter().find(|(name, _)| name == "OEBPS/style.css").unwrap().1;
         assert!(String::from_utf8_lossy(css).contains("height: auto"));
     }

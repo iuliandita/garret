@@ -944,13 +944,12 @@ pub fn check(subject: &Subject<'_>) -> Preflight {
         state: STATE_NOT_APPLICABLE,
     });
 
-    // 6. Alt text, fonts and images. No asset model exists inside a manuscript;
-    //    a cover is checked by its own panel against the page it is printed on,
-    //    which is 042's decision and not this one's. Named so the list of
-    //    section 12's checks is visibly complete rather than quietly short.
+    // 6. Publication image metadata. The export boundary marks this check as
+    //    ran only after preparing sanitized figure/cover copies. With no
+    //    copied images it is vacuous. Font and print checks live elsewhere.
     checks.push(CheckState {
         name: CHECK_ASSETS,
-        state: STATE_NOT_APPLICABLE,
+        state: STATE_VACUOUS,
     });
 
     let skipped: Vec<&'static str> = checks
@@ -988,6 +987,14 @@ pub fn check(subject: &Subject<'_>) -> Preflight {
     };
     report.warning_tokens = crate::warning_history::current_tokens(&report);
     report
+}
+
+pub(crate) fn publication_assets_checked(report: &mut Preflight, present: bool) {
+    let state = if present { STATE_RAN } else { STATE_VACUOUS };
+    report.checks.iter_mut().filter(|check| check.name == CHECK_ASSETS)
+        .for_each(|check| check.state = state);
+    report.skipped = report.checks.iter().filter(|check| check.state != STATE_RAN)
+        .map(|check| check.name).collect();
 }
 
 /// Whether a link parses as a web URL.
