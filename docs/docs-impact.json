@@ -47,7 +47,7 @@
       "migration": "",
       "no_impact": "The Windows import-name check and the privacy window's handling of WM_DESTROY change no command, maintenance procedure or contributor check.",
       "note": "The Windows import-name check and the privacy window's handling of WM_DESTROY change no command, maintenance procedure or contributor check.",
-      "source_sha256": "f5532e29c33f77e3c1ae2978972d30cc707bca1beedc8891aa986bd5df43712b"
+      "source_sha256": "a00e45bb3a8c1ac7bc9df8dc654b6ca43279a756c8cd7da1041960d7b9339e21"
     },
     "native-packaging": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
@@ -67,7 +67,7 @@
       "migration": "",
       "no_impact": "On Windows the import folder refuses names containing a colon, which would name another drive's folder or an alternate stream; the project format, stored books and imports on other platforms are unchanged.",
       "note": "On Windows the import folder refuses names containing a colon, which would name another drive's folder or an alternate stream; the project format, stored books and imports on other platforms are unchanged.",
-      "source_sha256": "3304f1923f3ee68d04a558da9e05972e03d660d2f75e0cba405364a28029a667"
+      "source_sha256": "bdaf8a3b183eb85a572019530914bc31b7f83f2ebfc6522933cd436a425bc803"
     },
     "schema": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
