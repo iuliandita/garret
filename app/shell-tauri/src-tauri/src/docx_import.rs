@@ -231,25 +231,34 @@ fn parse_attrs(s: &str) -> Vec<(String, String)> {
 /// (`collect_styles`, `walk_body`, `walk_para_content`) into a stack
 /// overflow.
 const MAX_XML_DEPTH: usize = 256;
-/// Word writes several elements per run (`w:rPr`, fonts, sizes, language), so
-/// a long novel's document part can hold well over a million nodes. This
-/// bounds tree memory without refusing real manuscripts that fit the 128 MiB
-/// expansion limit.
-const MAX_XML_NODES: usize = 8_000_000;
+/// An estimate of the tree's allocation, not a node count: a part made of
+/// minimal tags costs about a hundred bytes of tree per four bytes of XML, so
+/// counting nodes alone does not bound memory. Word spends roughly 25 bytes of
+/// XML per node, which keeps a long novel far below this.
+const MAX_TREE_BYTES: usize = 512 * 1024 * 1024;
+/// Per-node overhead charged on top of its name, attribute and text bytes.
+const NODE_COST: usize = std::mem::size_of::<Node>() + 32;
 
 /// The whole tree under the (implicit) document root: a stack-based build
 /// over a flat scan of `<tag>`, `</tag>` and text between them. The XML
 /// declaration and comments are skipped outright; a CDATA section's text is
 /// read out and kept.
 fn build_tree(xml: &str) -> Result<Vec<Node>, String> {
-    build_tree_bounded(xml, MAX_XML_NODES)
+    build_tree_bounded(xml, MAX_TREE_BYTES)
 }
 
-fn build_tree_bounded(xml: &str, max_nodes: usize) -> Result<Vec<Node>, String> {
+fn build_tree_bounded(xml: &str, budget: usize) -> Result<Vec<Node>, String> {
     let mut root: Vec<Node> = Vec::new();
     let mut stack: Vec<(String, Vec<(String, String)>, Vec<Node>)> = Vec::new();
     let mut i = 0usize;
-    let mut nodes = 0usize;
+    let mut spent = 0usize;
+    let mut charge = |bytes: usize| -> Result<(), String> {
+        spent = spent.saturating_add(NODE_COST).saturating_add(bytes);
+        if spent > budget {
+            return Err(format!("XML tree exceeds {budget} bytes; refusing to parse further"));
+        }
+        Ok(())
+    };
     let bytes = xml.as_bytes();
 
     let push_node = |stack: &mut Vec<(String, Vec<(String, String)>, Vec<Node>)>,
@@ -277,8 +286,7 @@ fn build_tree_bounded(xml: &str, max_nodes: usize) -> Result<Vec<Node>, String> 
                     None => (rest, "<![CDATA[".len() + rest.len()),
                 };
                 if !text.is_empty() {
-                    nodes += 1;
-                    if nodes > max_nodes { return Err(format!("XML exceeds {max_nodes} nodes; refusing to parse further")); }
+                    charge(text.len())?;
                     push_node(&mut stack, &mut root, Node::Text(text.to_string()));
                 }
                 i += advance;
@@ -316,8 +324,8 @@ fn build_tree_bounded(xml: &str, max_nodes: usize) -> Result<Vec<Node>, String> 
                 Some(p) => (&body[..p], &body[p..]),
                 None => (body, ""),
             };
-            nodes += 1;
-            if nodes > max_nodes { return Err(format!("XML exceeds {max_nodes} nodes; refusing to parse further")); }
+            // The raw attribute text bounds what `parse_attrs` allocates.
+            charge(name_part.len() + rest.len())?;
             let name = local_name(name_part).to_string();
             let attrs = parse_attrs(rest);
             if self_close {
@@ -331,8 +339,7 @@ fn build_tree_bounded(xml: &str, max_nodes: usize) -> Result<Vec<Node>, String> 
         } else {
             let end = xml[i..].find('<').map(|p| i + p).unwrap_or(bytes.len());
             if end > i {
-                nodes += 1;
-                if nodes > max_nodes { return Err(format!("XML exceeds {max_nodes} nodes; refusing to parse further")); }
+                charge(end - i)?;
             }
             let text = decode_entities(&xml[i..end]);
             if !text.is_empty() {
@@ -1145,12 +1152,16 @@ mod tests {
     }
 
     #[test]
-    fn xml_node_budget_refuses_excess() {
-        // Elements and text both count; exactly the limit still parses.
+    fn xml_tree_budget_charges_every_node_and_refuses_excess() {
+        // Each `<x>t</x>` charges an element and a text node, one byte each
+        // on top of the per-node cost; exactly the budget still parses.
         let xml = "<x>t</x>".repeat(50);
-        assert_eq!(build_tree_bounded(&xml, 100).unwrap().len(), 50);
-        assert!(build_tree_bounded(&xml, 99).err().unwrap().contains("nodes"));
-        assert!(MAX_XML_NODES >= 8_000_000, "the production limit refuses long real manuscripts");
+        let exact = 100 * (NODE_COST + 1);
+        assert_eq!(build_tree_bounded(&xml, exact).unwrap().len(), 50);
+        assert!(build_tree_bounded(&xml, exact - 1).err().unwrap().contains("XML tree exceeds"));
+        // Attribute text is charged too, so wide attributes cannot hide.
+        let wide = format!(r#"<x a="{}"/>"#, "v".repeat(1000));
+        assert!(build_tree_bounded(&wide, NODE_COST + 100).is_err());
     }
 
     #[test]
