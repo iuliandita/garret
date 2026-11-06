@@ -2510,7 +2510,7 @@ fn changes_in(
     // wider walk than the pass writes would offer the writer rows for files the
     // mirror never made.
     let items = store::manuscript_items(items);
-    let entries: Vec<mirror::MirrorEntry> = recovery::read_manifest(dir)
+    let entries: Vec<mirror::MirrorEntry> = mirror::read_manifest(dir).ok().flatten()
         .map(|m: recovery::Manifest<mirror::MirrorEntry>| m.entries)
         .unwrap_or_default();
     mirror::change_set(dir, &entries, &items, &bodies, &doc_revs, found)
@@ -2677,19 +2677,13 @@ fn mirror_accept(
     // not land when they did.
     let settled = mirror::settle_accepted(
         &dir,
-        &outcome.paths,
+        &rows,
         &outcome.report.documents,
         store::now_ms(),
     );
     match settled {
         Err(error) => eprintln!("mirror: could not settle the accepted files: {error}"),
-        Ok(()) => {
-            let resolved: PauseIds = outcome
-                .report
-                .documents
-                .iter()
-                .map(|landed| landed.item_id.clone())
-                .collect();
+        Ok(resolved) => {
             match mirror::clear_persisted_pauses(&dir, &resolved) {
                 Ok(()) => {
                     if let Ok(mut set) = context.paused.lock() {
@@ -3272,7 +3266,9 @@ fn spawn_mirror_watcher(app: &tauri::AppHandle) {
             | WatchMask::MOVED_TO
             | WatchMask::MOVED_FROM
             | WatchMask::CREATE
-            | WatchMask::DELETE;
+            | WatchMask::DELETE
+            | WatchMask::DONT_FOLLOW
+            | WatchMask::ONLYDIR;
         let mut buffer = [0u8; 4096];
         let mut armed: Option<PathBuf> = None;
         let mut want: Option<PathBuf> = None;

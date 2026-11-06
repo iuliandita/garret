@@ -1,7 +1,7 @@
 //! A page token selects one host-owned review copy or plan, never a page-supplied path or body.
 use super::dialogs::{ask_for_export_path, ask_for_named_open, SaveDialog};
 use crate::review_document::{FragmentToken, ReviewHunk};
-use crate::review_docx::{self, Manifest, OldDecision, ReviewPackage, ReviewPlan};
+use crate::review_docx::{self, Manifest, OldDecision, ReviewPackage, ReviewPlan, SceneSnapshot};
 use crate::store::review::{ReviewAuthorChoice, ReviewReturnAuthors};
 use crate::{
     locked, open_project, open_project_mut, privacy_host, DataHome, MirrorDirty, OpenProject,
@@ -119,7 +119,7 @@ fn ownership(
         Ok(())
     }
 }
-fn current(project: &OpenProject, expected: &Manifest) -> Result<(), String> {
+fn current(project: &OpenProject, expected: &Manifest) -> Result<SceneSnapshot, String> {
     let snapshot = project
         .store
         .review_scene_snapshot(&expected.item_id)
@@ -127,7 +127,7 @@ fn current(project: &OpenProject, expected: &Manifest) -> Result<(), String> {
     if review_docx::manifest(&snapshot)? != *expected {
         return Err("review source changed; reopen the preview; no changes were applied".into());
     }
-    Ok(())
+    Ok(snapshot)
 }
 fn title(project: &OpenProject, item: &str) -> Result<String, String> {
     project
@@ -139,6 +139,89 @@ fn title(project: &OpenProject, item: &str) -> Result<String, String> {
         .map(|i| i.title)
         .ok_or_else(|| "review scene no longer exists".into())
 }
+fn check_export_identity(
+    project: &OpenProject,
+    data_home: &Path,
+    snapshot: &SceneSnapshot,
+) -> Result<String, String> {
+    let vault = crate::identity::read_vault(data_home).map_err(|e| e.to_string())?;
+    let pin = crate::identity::pin_of_project(&project.store)?;
+    let scene_title = title(project, &snapshot.item_id)?;
+    let prose = crate::store::document_text(&snapshot.body).ok_or("invalid review body")?;
+    let mut planning = Vec::new();
+    let mut include = |surface, text: String| {
+        planning.push(crate::identity::PlanningText {
+            surface,
+            item_id: Some(snapshot.item_id.clone()),
+            text,
+        })
+    };
+    for group in &snapshot.groups {
+        include("review_author", group.author_name.clone());
+        for hunk in &group.hunks {
+            for (surface, tokens) in [
+                ("review_before", &hunk.original.before),
+                ("review_after", &hunk.original.after),
+            ] {
+                let mut text = String::new();
+                for token in tokens {
+                    match token {
+                        FragmentToken::Text { text: run, .. } => text.push_str(run),
+                        FragmentToken::Open | FragmentToken::Close => text.push('\n'),
+                        FragmentToken::Atom { .. } => {
+                            return Err("unsupported review fragment".into())
+                        }
+                    }
+                }
+                include(surface, text);
+            }
+        }
+        for message in &group.messages {
+            include("review_author", message.author_name.clone());
+            include("review_message", message.body.clone());
+        }
+    }
+    let report = crate::identity::check(&crate::identity::Subject {
+        format: crate::export::Format::Docx,
+        project_name: "",
+        titles: &[(snapshot.item_id.as_str(), scene_title.as_str())],
+        bodies: &[(snapshot.item_id.as_str(), prose)],
+        planning: &planning,
+        pin: pin.as_ref(),
+        vault: &vault,
+    });
+    if report.blockers > 0 {
+        return Err(crate::identity::blocked_message(&report.findings));
+    }
+    Ok(scene_title)
+}
+
+fn prepare_export(
+    project: &OpenProject,
+    data_home: &Path,
+    item_id: &str,
+) -> Result<(String, ReviewPackage), String> {
+    let snapshot = project
+        .store
+        .review_scene_snapshot(item_id)
+        .map_err(|e| e.to_string())?;
+    let package = review_docx::export(&snapshot)?;
+    if package.bytes.len() as u64 > MAX_FILE {
+        return Err("review copy exceeds the file limit".into());
+    }
+    let scene_title = check_export_identity(project, data_home, &snapshot)?;
+    Ok((scene_title, package))
+}
+
+fn checked_current_export(
+    project: &OpenProject,
+    data_home: &Path,
+    expected: &Manifest,
+) -> Result<String, String> {
+    let snapshot = current(project, expected)?;
+    check_export_identity(project, data_home, &snapshot)
+}
+
 #[derive(Serialize)]
 pub(crate) struct MessagePreview {
     author_name: String,
@@ -247,6 +330,7 @@ pub(crate) fn review_export_preview(
     app: tauri::AppHandle,
     state: State<'_, StoreState>,
     pending: State<'_, Pending>,
+    data_home: State<'_, DataHome>,
     generation: u64,
     item_id: String,
 ) -> Result<ExportPreview, String> {
@@ -256,19 +340,12 @@ pub(crate) fn review_export_preview(
     access(&app, project, generation, owner_epoch)?;
     let token = pending.begin(generation, owner_epoch, item_id.clone())?;
     let result = (|| {
-        let snapshot = project
-            .store
-            .review_scene_snapshot(&item_id)
-            .map_err(|e| e.to_string())?;
-        let package = review_docx::export(&snapshot)?;
-        if package.bytes.len() as u64 > MAX_FILE {
-            return Err("review copy exceeds the file limit".into());
-        }
+        let (scene_title, package) = prepare_export(project, &data_home.0, &item_id)?;
         let preview = ExportPreview {
             token: token.clone(),
             item_id,
-            scene_title: title(project, &snapshot.item_id)?,
-            doc_rev: snapshot.doc_rev,
+            scene_title,
+            doc_rev: package.manifest.doc_rev,
             authors: package.disclosure.authors.clone(),
             messages: package
                 .disclosure
@@ -376,7 +453,7 @@ pub(crate) async fn review_export_save(
         let Operation::Export(package) = &ticket.operation else {
             return Err("review export is not ready".into());
         };
-        current(project, &package.manifest)?;
+        checked_current_export(project, &data_home.0, &package.manifest)?;
         let name = title(project, &ticket.item_id)?;
         let old = std::mem::replace(&mut ticket.operation, Operation::Preparing);
         if let Operation::Export(package) = old {
@@ -409,7 +486,7 @@ pub(crate) async fn review_export_save(
             let Operation::Saving(package) = &ticket.operation else {
                 return Err("review export is not ready".into());
             };
-            current(project, &package.manifest)?;
+            checked_current_export(project, &data_home.0, &package.manifest)?;
             let Some(chosen) = chosen else {
                 let old = std::mem::replace(&mut ticket.operation, Operation::Preparing);
                 if let Operation::Saving(package) = old {
@@ -439,7 +516,7 @@ pub(crate) async fn review_export_save(
                 let Operation::Saving(package) = &ticket.operation else {
                     return Err("review export is not ready".into());
                 };
-                current(project, &package.manifest)?;
+                checked_current_export(project, &home, &package.manifest)?;
                 destination(&dest, &project.path, &home).map(|_| ())
             })?;
             *slot = None;
@@ -691,6 +768,212 @@ mod tests {
         let project = opened(&dir.path().join("book.db"));
         let scene = project.store.item_create(None, "scene", "Scene").unwrap();
         review_docx::export(&project.store.review_scene_snapshot(&scene.id).unwrap()).unwrap()
+    }
+    fn identity_fixture(
+        dir: &Path,
+        scene_title: &str,
+        accepted: &str,
+    ) -> (OpenProject, String, crate::identity::Vault) {
+        use crate::identity::{Identity, Public, Vault, VAULT_VERSION};
+        let project = opened(&dir.join("book.db"));
+        let scene = project
+            .store
+            .item_create(None, "scene", scene_title)
+            .unwrap();
+        project
+            .store
+            .flush(&[crate::store::FlushEntry {
+                item_id: scene.id.clone(),
+                body: body(accepted),
+                base_rev: scene.doc_rev.unwrap(),
+                comments: None,
+            }])
+            .unwrap();
+        let vault = Vault {
+            version: VAULT_VERSION,
+            identities: vec![
+                Identity {
+                    id: "book".into(),
+                    public: Public {
+                        name: "Book Byline".into(),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                Identity {
+                    id: "other".into(),
+                    public: Public {
+                        name: "Other Byline".into(),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            ],
+        };
+        crate::identity::set_pin(
+            &project.store,
+            Some(&crate::identity::pin_of(&vault.identities[0], 1)),
+        )
+        .unwrap();
+        crate::identity::write_vault(dir, &vault).unwrap();
+        (project, scene.id, vault)
+    }
+    fn fragment(text: &str) -> Vec<FragmentToken> {
+        vec![FragmentToken::Text {
+            text: text.into(),
+            marks: vec![],
+        }]
+    }
+    #[test]
+    fn review_transport_export_checks_scene_and_disclosed_review_text() {
+        for surface in [
+            "title",
+            "body",
+            "after",
+            "proposal author",
+            "message body",
+            "message author",
+            "clean",
+        ] {
+            let dir = tempfile::tempdir().unwrap();
+            let accepted = if surface == "body" {
+                "Other Byline"
+            } else {
+                "Book Byline"
+            };
+            let scene_title = if surface == "title" {
+                "Other Byline"
+            } else {
+                "Scene"
+            };
+            let (project, item_id, vault) = identity_fixture(dir.path(), scene_title, accepted);
+            let author = project
+                .store
+                .review_author_create(if surface == "proposal author" {
+                    "Other Byline"
+                } else {
+                    "Reviewer"
+                })
+                .unwrap();
+            let after = if surface == "after" {
+                vec![
+                    FragmentToken::Text {
+                        text: "Other ".into(),
+                        marks: vec![],
+                    },
+                    FragmentToken::Text {
+                        text: "Byline".into(),
+                        marks: vec![crate::review_document::Mark::Strong],
+                    },
+                ]
+            } else {
+                fragment("revised")
+            };
+            let hunk = ReviewHunk {
+                from: 1,
+                to: 1 + accepted.encode_utf16().count(),
+                before: fragment(accepted),
+                after,
+            };
+            let doc = project.store.load_doc(&item_id).unwrap();
+            let group = project
+                .store
+                .review_group_create(&item_id, doc.rev, author.id, &[hunk])
+                .unwrap();
+            let commenter = project
+                .store
+                .review_author_create(if surface == "message author" {
+                    "Other Byline"
+                } else {
+                    "Commenter"
+                })
+                .unwrap();
+            project
+                .store
+                .review_message_add(
+                    group.id,
+                    group.rev,
+                    commenter.id,
+                    if surface == "message body" {
+                        "Other Byline"
+                    } else {
+                        "A note"
+                    },
+                )
+                .unwrap();
+            let dest = dir.path().join("ordinary.docx");
+            let ordinary = super::super::export::export_as(
+                &project.path,
+                &project.name,
+                &dest,
+                crate::export::Format::Docx,
+                &vault,
+                crate::strings::Strings::english(),
+            );
+            let review = prepare_export(&project, dir.path(), &item_id);
+            if matches!(surface, "title" | "body") {
+                assert!(ordinary.unwrap_err().contains("Other Byline"), "{surface}");
+                assert!(!dest.exists());
+            } else {
+                ordinary.unwrap();
+                assert!(dest.exists());
+            }
+            if surface == "clean" {
+                let (name, package) = review.unwrap();
+                assert_eq!(name, "Scene");
+                assert!(!package.bytes.is_empty());
+                assert_eq!(package.disclosure.authors, vec!["Commenter", "Reviewer"]);
+                assert_eq!(
+                    checked_current_export(&project, dir.path(), &package.manifest).unwrap(),
+                    name
+                );
+            } else {
+                let Err(error) = review else { panic!("review export should refuse {surface}") };
+                assert!(error.contains("Other Byline"), "{surface}");
+            }
+        }
+    }
+    #[test]
+    fn review_transport_export_rechecks_vault_and_pin_before_save() {
+        for changed in ["vault", "pin"] {
+            let dir = tempfile::tempdir().unwrap();
+            let (project, item_id, vault) = identity_fixture(dir.path(), "Scene", "Other Byline");
+            if changed == "vault" {
+                crate::identity::write_vault(dir.path(), &crate::identity::Vault::default())
+                    .unwrap();
+            } else {
+                crate::identity::set_pin(
+                    &project.store,
+                    Some(&crate::identity::pin_of(&vault.identities[1], 1)),
+                )
+                .unwrap();
+            }
+            let (_, package) = prepare_export(&project, dir.path(), &item_id).unwrap();
+            if changed == "vault" {
+                crate::identity::write_vault(dir.path(), &vault).unwrap();
+            } else {
+                crate::identity::set_pin(
+                    &project.store,
+                    Some(&crate::identity::pin_of(&vault.identities[0], 1)),
+                )
+                .unwrap();
+            }
+            assert!(
+                checked_current_export(&project, dir.path(), &package.manifest)
+                    .unwrap_err()
+                    .contains("Other Byline"),
+                "{changed}"
+            );
+        }
+    }
+    #[test]
+    fn review_transport_export_refuses_an_unreadable_vault() {
+        let dir = tempfile::tempdir().unwrap();
+        let (project, item_id, _) = identity_fixture(dir.path(), "Scene", "clean");
+        let (_, package) = prepare_export(&project, dir.path(), &item_id).unwrap();
+        fs::write(crate::identity::vault_path(dir.path()), b"invalid").unwrap();
+        assert!(prepare_export(&project, dir.path(), &item_id).is_err());
+        assert!(checked_current_export(&project, dir.path(), &package.manifest).is_err());
     }
     #[test]
     fn review_transport_ticket_replacement_cancel_replay_and_busy_are_bounded() {

@@ -113,6 +113,17 @@ is tracked in [issue 403](https://github.com/iuliandita/garret/issues/403).
 `design-apply` requires schema 18; older books require consented migration first.
 Batch saves and retained-document validation share one schema/registry read.
 
+Cast and cover pictures are regular files in a real adjacent
+`<stem>.pictures` directory. The app refuses symlinked or non-regular originals
+and thumbnail entries, and a symlinked pictures directory; a missing thumbnail
+is regenerated. Hard-linked originals that the app shared between equal
+attachments stay readable. Existing books need no changes and no database
+migration runs. Salvage records unreadable cast pictures and covers as losses and keeps the
+other readable content. Keep the closed database, adjacent originals and
+profile before upgrading; rollback uses a separate complete copy with the
+previous package. Linux tests cover these file rules; native Windows and macOS
+qualification remain separate.
+
 Proof paginator test diagnostics use isolated temporary profiles and timestamped
 phase logs. They do not change PDF output, stored books, profile migration, or
 the application's rendering settings.
@@ -360,6 +371,15 @@ every document-format marker; stored atoms also prevent acceptance after marker
 removal. Ordinary books keep their existing bidirectional, pause, conflict-copy
 and undo behavior. Removing a marker and importing as ordinary Markdown is a
 lossy conversion, not a mirror round-trip.
+
+Readable-folder writes, scans and cleanup refuse symlinked files or directories
+below the selected folder. Keep actual files there instead of links. Manifest
+paths must contain ordinary relative components; absolute paths and parent
+traversal refuse the pass. Files read from the folder have the same 64 MiB cap
+as manuscript imports. Oversized changed files remain unreadable and paused;
+reduce or move the external file before reviewing it again. These checks do
+not change the book schema or valid mirror format. Complete backups and
+separate-copy rollback instructions still apply.
 
 The default `garret search book.db QUERY --json` result adds a `locators` array
 to each hit, retaining the existing keys. Each locator contains `field`,
