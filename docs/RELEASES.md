@@ -27,6 +27,16 @@ and does not synchronize books automatically.
 
 ## Develop-only work
 
+The next release is a round of hardening. Pictures, the readable folder and
+salvage refuse links instead of following them, and a save made while the
+readable folder's changes are being accepted is kept. Review copies get the
+pen-name check, statistics CSV exports keep formula-like text as plain text,
+and published files drop embedded image metadata. DOCX imports bound note
+expansion and long Markdown imports stay fast. New application data is private
+to the user, a second launch checks the running instance before handing over,
+and Windows refuses import names with a colon. The stored format is unchanged
+from 0.0.11.
+
 Develop pins the desktop main window to the app origin and refuses page-created
 windows. Clipboard HTML validation uses an inert document, and Android's CSP
 refuses base URLs and form submissions, matching desktop. These changes preserve
