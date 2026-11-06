@@ -3489,8 +3489,11 @@ fn main_navigation_allowed(url: &tauri::Url) -> bool {
     } else {
         ("appdist", "localhost")
     };
+    // Only the app page itself: another path on the app origin would replace
+    // the page and drop unsaved in-page state.
     url.scheme() == scheme && url.host_str() == Some(host)
         && url.port().is_none() && url.username().is_empty() && url.password().is_none()
+        && matches!(url.path(), "/" | "/index.html")
 }
 
 fn appdist_theme_hash() -> String {
@@ -8589,7 +8592,7 @@ mod tests {
     #[test]
     fn main_navigation_keeps_reload_routes_and_refuses_other_origins() {
         let origin = if cfg!(windows) { "http://appdist.localhost" } else { "appdist://localhost" };
-        for path in ["/", "/index.html", "/index.html?reload=1#editor", "/assets/page.html"] {
+        for path in ["/", "/index.html", "/index.html?reload=1#editor"] {
             let url = format!("{origin}{path}").parse().unwrap();
             assert!(super::main_navigation_allowed(&url), "{url}");
         }
@@ -8603,6 +8606,10 @@ mod tests {
             "about:blank", "proof://localhost/nonce", "http://proof.localhost/nonce",
         ] {
             assert!(!super::main_navigation_allowed(&url.parse().unwrap()), "{url}");
+        }
+        // Another document on the app origin, such as a relative book link.
+        for path in ["/assets/page.html", "/chapter-2.xhtml", "/index.html/x"] {
+            assert!(!super::main_navigation_allowed(&format!("{origin}{path}").parse().unwrap()), "{path}");
         }
         let other_platform = if cfg!(windows) { "appdist://localhost/" } else { "http://appdist.localhost/" };
         assert!(!super::main_navigation_allowed(&other_platform.parse().unwrap()));
