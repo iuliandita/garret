@@ -1,5 +1,9 @@
 # Compatibility and recovery
 
+Webview hardening on `develop` changes no stored books, originals, settings or
+archive formats. Clipboard validation keeps the existing supported paste output.
+Desktop reloads stay within the app origin; proof windows keep their own policy.
+
 SQLite schema: 18. The reader ceiling and creation/migration target share one
 version constant. The 17-to-18 ladder step uses the same figure-registry SQL as
 the schema-18 reader fixtures. On desktop, opening an existing book for writing requires consent before upgrading to 18;
@@ -113,6 +117,17 @@ is tracked in [issue 403](https://github.com/iuliandita/garret/issues/403).
 `design-apply` requires schema 18; older books require consented migration first.
 Batch saves and retained-document validation share one schema/registry read.
 
+Cast and cover pictures are regular files in a real adjacent
+`<stem>.pictures` directory. The app refuses symlinked or non-regular originals
+and thumbnail entries, and a symlinked pictures directory; a missing thumbnail
+is regenerated. Hard-linked originals that the app shared between equal
+attachments stay readable. Existing books need no changes and no database
+migration runs. Salvage records unreadable cast pictures and covers as losses and keeps the
+other readable content. Keep the closed database, adjacent originals and
+profile before upgrading; rollback uses a separate complete copy with the
+previous package. Linux tests cover these file rules; native Windows and macOS
+qualification remain separate.
+
 Proof paginator test diagnostics use isolated temporary profiles and timestamped
 phase logs. They do not change PDF output, stored books, profile migration, or
 the application's rendering settings.
@@ -125,6 +140,17 @@ The schema-18 reader shares figure UUID validation and one reader-version export
 Legacy-node refusal and picture-paste detection retain their existing acceptance
 rules, including the file-list fallback. These cleanups do not enable authoring,
 change stored data, or add migration, backup, upgrade, or rollback steps.
+
+EPUB, DOCX, and Markdown packages and the PDF proof use publication copies of
+PNG/JPEG figures; the EPUB front cover uses one too.
+These copies omit embedded EXIF, XMP, IPTC, comments, PNG text, and timestamps;
+JPEG keeps a minimal orientation-only EXIF record when rotation or reflection is
+needed. PNG color profiles, gamma, chromaticity, and rendering chunks remain.
+Publication asset filenames use the SHA-256 of the filtered bytes. Stored figure
+and cover originals, their registry hashes, backups, and recovery copies remain
+unchanged; there is no schema migration. The preflight's publication image
+metadata check reports checked only after preparing image copies, and reports
+nothing to check for a publication without images.
 
 EPUB and DOCX exports replace vertical tabs and form feeds with spaces and remove
 the other XML 1.0-forbidden characters from prose, item and book titles, contents
@@ -349,6 +375,15 @@ every document-format marker; stored atoms also prevent acceptance after marker
 removal. Ordinary books keep their existing bidirectional, pause, conflict-copy
 and undo behavior. Removing a marker and importing as ordinary Markdown is a
 lossy conversion, not a mirror round-trip.
+
+Readable-folder writes, scans and cleanup refuse symlinked files or directories
+below the selected folder. Keep actual files there instead of links. Manifest
+paths must contain ordinary relative components; absolute paths and parent
+traversal refuse the pass. Files read from the folder have the same 64 MiB cap
+as manuscript imports. Oversized changed files remain unreadable and paused;
+reduce or move the external file before reviewing it again. These checks do
+not change the book schema or valid mirror format. Complete backups and
+separate-copy rollback instructions still apply.
 
 The default `garret search book.db QUERY --json` result adds a `locators` array
 to each hit, retaining the existing keys. Each locator contains `field`,
@@ -681,3 +716,10 @@ warning; caption and alternative text remain editable, while publication still
 requires valid originals. DPI estimates precede caption and heading layout;
 the proof checks the final placed size. Figure copy/paste is refused, including
 within the same book; use insertion and explicit deletion with undo instead.
+
+On Unix, newly created book databases and settings files use owner-only file
+permissions (0600), and newly created application storage directories use 0700.
+SQLite WAL and shared-memory files inherit the book database's permissions.
+Existing file and directory permissions are preserved; this does not change
+permissions on older installations. Exports saved to user-chosen destinations
+keep their ordinary permissions. Windows behavior is unchanged.

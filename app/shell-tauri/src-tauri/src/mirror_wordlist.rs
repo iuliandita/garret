@@ -227,21 +227,13 @@ pub fn maintain(dir: &std::path::Path, words: Result<Vec<String>, String>) -> Ou
 /// produces, and only plain files: a symlink wearing the name is neither
 /// followed nor removed.
 fn reap_temps(dir: &std::path::Path) {
-    let Ok(read) = std::fs::read_dir(dir) else {
-        return;
-    };
-    for entry in read.flatten() {
-        if !entry.file_name().to_str().is_some_and(is_temp) {
-            continue;
-        }
-        let path = entry.path();
-        if !std::fs::symlink_metadata(&path).is_ok_and(|meta| meta.file_type().is_file()) {
-            continue;
-        }
-        match std::fs::remove_file(&path) {
-            Ok(()) => {}
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-            Err(error) => eprintln!("mirror: could not remove {}: {error}", path.display()),
+    let Ok(entries) = crate::mirror::io::walk(dir) else { return; };
+    for (path, directory) in entries {
+        if directory || path.contains('/') || !is_temp(&path) { continue; }
+        if let Err(error) = crate::mirror::io::remove(dir, &path, false) {
+            if error.kind() != std::io::ErrorKind::NotFound {
+                eprintln!("mirror: could not remove {path}: {error}");
+            }
         }
     }
 }
@@ -276,17 +268,12 @@ fn write_owner(dir: &std::path::Path, record: &Ownership) -> Result<(), String> 
 /// this module owns is refused: following one would write the list wherever
 /// the link points.
 fn read_regular(path: &std::path::Path) -> Result<Option<Vec<u8>>, String> {
-    match std::fs::symlink_metadata(path) {
+    let parent = path.parent().ok_or("wordlist has no directory")?;
+    let name = path.file_name().and_then(|name| name.to_str()).ok_or("invalid wordlist name")?;
+    match crate::mirror::io::read(parent, name, crate::MAX_IMPORT_BYTES) {
+        Ok(bytes) => Ok(Some(bytes)),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
         Err(error) => Err(format!("{}: {error}", path.display())),
-        Ok(meta) if !meta.file_type().is_file() => Err(format!(
-            "{}: not a regular file; the readable folder will not replace it. Remove it to let \
-             the application write the list again.",
-            path.display()
-        )),
-        Ok(_) => std::fs::read(path)
-            .map(Some)
-            .map_err(|error| format!("{}: {error}", path.display())),
     }
 }
 
@@ -297,41 +284,9 @@ fn read_regular(path: &std::path::Path) -> Result<Option<Vec<u8>>, String> {
 fn write_atomically(dir: &std::path::Path, name: &str, bytes: &[u8]) -> Result<(), String> {
     static NEXT_TEMP: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let ordinal = NEXT_TEMP.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let tmp = dir.join(format!(
-        "{TEMP_PREFIX}{}.{}.tmp",
-        std::process::id(),
-        ordinal
-    ));
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&tmp)
-        .map_err(|error| format!("{}: {error}", tmp.display()))?;
-    use std::io::Write;
-    if let Err(error) = file.write_all(bytes).and_then(|_| file.sync_all()) {
-        let _ = std::fs::remove_file(&tmp);
-        return Err(format!("{}: {error}", tmp.display()));
-    }
-    let dest = dir.join(name);
-    std::fs::rename(&tmp, &dest).map_err(|error| {
-        let _ = std::fs::remove_file(&tmp);
-        format!("{}: {error}", dest.display())
-    })?;
-    sync_dir(dir)
-}
-
-#[cfg(unix)]
-fn sync_dir(dir: &std::path::Path) -> Result<(), String> {
-    std::fs::File::open(dir)
-        .and_then(|handle| handle.sync_all())
-        .map_err(|error| format!("{}: {error}", dir.display()))
-}
-
-// std offers no directory sync on Windows, where a directory cannot be opened
-// as a file; the rename is the last step there.
-#[cfg(not(unix))]
-fn sync_dir(_dir: &std::path::Path) -> Result<(), String> {
-    Ok(())
+    let temp = format!("{TEMP_PREFIX}{}.{}.tmp", std::process::id(), ordinal);
+    crate::mirror::io::atomic(dir, name, &temp, bytes)
+        .map_err(|error| format!("{}: {error}", dir.join(name).display()))
 }
 
 #[cfg(test)]

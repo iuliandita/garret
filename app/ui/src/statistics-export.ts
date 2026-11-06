@@ -14,6 +14,7 @@
 // number is `StatRow.raw`, never the formatted `value`: a locale's thousands
 // separator is not a thing a data file should have to be parsed around.
 import { t } from "./i18n";
+import { csvText } from "./csv-text";
 import {
   computeStatistics,
   statisticRows,
@@ -66,7 +67,7 @@ export function statisticsCsv(groups: readonly StatGroup[]): string {
     for (const row of group.rows) {
       lines.push(
         [group.heading, row.key, row.label, rawText(row.raw), row.detail ?? "", row.definition]
-          .map(csvField)
+          .map((cell, index) => csvField(index === 3 ? cell : csvText(cell)))
           .join(","),
       );
     }

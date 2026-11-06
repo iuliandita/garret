@@ -145,6 +145,9 @@ SDK licenses. Platform tools follow the stable SDK package; record the installed
 revision with build evidence. Image creation alone verifies neither the app
 build nor runtime behavior.
 
+Packaging mounts Git metadata read-only and disables filesystem monitors,
+hooks and the untracked cache for its Git checks on the host.
+
 Build `garret-android` from `scripts/android/Dockerfile`, then run
 `scripts/package-android` from a clean committed checkout. It rebuilds the UI,
 builds both native architectures, signs with a retained private local key,
@@ -165,7 +168,11 @@ shared `scripts/android/build-release` installs the frozen Bun lockfile inside
 the container, remaps Rust/C/C++ source paths, fixes locale/timezone and derives
 `SOURCE_DATE_EPOCH` from the source commit. Generated Gradle archives use stable
 ordering and timestamps. `ANDROID_UNSIGNED=1 scripts/package-android` builds
-without opening signing material; `ANDROID_BUILD_ROOT` changes the container
+without opening signing material. After that succeeds, run
+`ANDROID_SIGN_ONLY=1 scripts/package-android` to sign the existing unsigned APK
+for the same revision without rebuilding dependencies. CI restores its retained
+key only between these two steps. The two modes are mutually exclusive.
+`ANDROID_BUILD_ROOT` changes the container
 source path for independent reproducibility checks. See the
 [F-Droid draft and submission checklist](../../fastlane/fdroid/README.md).
 Before release assets are merged, Gradle canonicalizes the generated Tauri

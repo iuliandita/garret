@@ -26,10 +26,10 @@ const ITEMS: ProjectItem[] = [
 ];
 const COUNTS = { s1: { words: 120, sentences: 4, paragraphs: 1 } };
 
-const groups = (): readonly StatGroup[] =>
+const groups = (items: readonly ProjectItem[] = ITEMS): readonly StatGroup[] =>
   statisticRows(
     computeStatistics({
-      items: ITEMS,
+      items,
       perDoc: COUNTS,
       openItemId: "s1",
       session: { added: 3, deleted: 5, net: -2 },
@@ -49,6 +49,7 @@ const settle = async (): Promise<void> => {
 describe("csvField", () => {
   test("bare when nothing needs quoting, quoted and doubled otherwise", () => {
     expect(csvField("plain words")).toBe("plain words");
+    expect(csvField("=SUM(1)")).toBe("=SUM(1)");
     expect(csvField("a, b")).toBe('"a, b"');
     expect(csvField('say "hi"')).toBe('"say ""hi"""');
     expect(csvField("two\nlines")).toBe('"two\nlines"');
@@ -56,6 +57,23 @@ describe("csvField", () => {
 });
 
 describe("statisticsCsv", () => {
+  test.each(['=HYPERLINK("https://example.com")', "@SUM(1+1)"])(
+    "keeps a formula-leading item title as text: %s",
+    (title) => {
+      const figures = groups(ITEMS.map((entry) => entry.id === "c1" ? { ...entry, title } : entry));
+      const chapter = statisticsCsv(figures).split("\n").find((line) => line.startsWith("Words,chapter,"));
+      expect(chapter).toContain(`,${csvField(`'${title}`)},`);
+    },
+  );
+
+  test("keeps all text columns literal and negative values numeric", () => {
+    const text = statisticsCsv([{ heading: "+group", rows: [{
+      key: "-key", label: "@label", value: "-5", raw: -5,
+      detail: " \t=detail", definition: "\u0000+definition",
+    }] }]);
+    expect(text).toBe("group,key,label,value,detail,definition\n'+group,'-key,'@label,-5,' \t=detail,'\u0000+definition\n");
+  });
+
   test("one header, one line per row, raw numbers and empty cells for absences", () => {
     const text = statisticsCsv(groups());
     const lines = text.split("\n");

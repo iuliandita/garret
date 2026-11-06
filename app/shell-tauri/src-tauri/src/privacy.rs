@@ -311,7 +311,7 @@ impl Privacy {
     }
     fn persist(&self, record: &Record) -> Result<(), Error> {
         let parent = self.path.parent().ok_or(Error::Persist)?;
-        fs::create_dir_all(parent).map_err(|_| Error::Persist)?;
+        crate::private_fs::create_dir_all(parent).map_err(|_| Error::Persist)?;
         let mut temp = tempfile::NamedTempFile::new_in(parent).map_err(|_| Error::Persist)?;
         #[cfg(unix)]
         {

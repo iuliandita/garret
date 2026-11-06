@@ -70,6 +70,7 @@ mod privacy_windows;
 mod privacy_windows_file;
 #[cfg(target_os = "linux")]
 mod privacy_lifecycle;
+mod private_fs;
 mod projects;
 mod protection;
 mod recovery;
@@ -2510,7 +2511,7 @@ fn changes_in(
     // wider walk than the pass writes would offer the writer rows for files the
     // mirror never made.
     let items = store::manuscript_items(items);
-    let entries: Vec<mirror::MirrorEntry> = recovery::read_manifest(dir)
+    let entries: Vec<mirror::MirrorEntry> = mirror::read_manifest(dir).ok().flatten()
         .map(|m: recovery::Manifest<mirror::MirrorEntry>| m.entries)
         .unwrap_or_default();
     mirror::change_set(dir, &entries, &items, &bodies, &doc_revs, found)
@@ -2677,19 +2678,13 @@ fn mirror_accept(
     // not land when they did.
     let settled = mirror::settle_accepted(
         &dir,
-        &outcome.paths,
+        &rows,
         &outcome.report.documents,
         store::now_ms(),
     );
     match settled {
         Err(error) => eprintln!("mirror: could not settle the accepted files: {error}"),
-        Ok(()) => {
-            let resolved: PauseIds = outcome
-                .report
-                .documents
-                .iter()
-                .map(|landed| landed.item_id.clone())
-                .collect();
+        Ok(resolved) => {
             match mirror::clear_persisted_pauses(&dir, &resolved) {
                 Ok(()) => {
                     if let Ok(mut set) = context.paused.lock() {
@@ -2792,6 +2787,9 @@ fn pass_scenes_while_held(
     // AFTER the pass lock. A thorough check may have discovered an edit while
     // this writer waited, and this snapshot must see the installed pause.
     let paused = paused_ids(&context.paused);
+    if root.is_none() {
+        private_fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    }
     let report = mirror::pass_for_book(
         &context.path,
         &context.book_id,
@@ -3272,7 +3270,9 @@ fn spawn_mirror_watcher(app: &tauri::AppHandle) {
             | WatchMask::MOVED_TO
             | WatchMask::MOVED_FROM
             | WatchMask::CREATE
-            | WatchMask::DELETE;
+            | WatchMask::DELETE
+            | WatchMask::DONT_FOLLOW
+            | WatchMask::ONLYDIR;
         let mut buffer = [0u8; 4096];
         let mut armed: Option<PathBuf> = None;
         let mut want: Option<PathBuf> = None;
@@ -3481,6 +3481,20 @@ fn mime_for(path: &Path) -> &'static str {
 // authorize its own scripts. The UI build copies index.html without rewriting it.
 const APPDIST_INDEX: &str = include_str!("../../../ui/index.html");
 const APPDIST_DENY_CSP: &str = "default-src 'none'; script-src 'none'; style-src 'none'";
+
+fn main_navigation_allowed(url: &tauri::Url) -> bool {
+    // WebView2 maps custom protocols to HTTP; WebKit keeps the custom scheme.
+    let (scheme, host) = if cfg!(windows) {
+        ("http", "appdist.localhost")
+    } else {
+        ("appdist", "localhost")
+    };
+    // Only the app page itself: another path on the app origin would replace
+    // the page and drop unsaved in-page state.
+    url.scheme() == scheme && url.host_str() == Some(host)
+        && url.port().is_none() && url.username().is_empty() && url.password().is_none()
+        && matches!(url.path(), "/" | "/index.html")
+}
 
 fn appdist_theme_hash() -> String {
     use sha2::{Digest, Sha256};
@@ -4010,7 +4024,7 @@ fn open_from_library(
     let path = match choice {
         Choice::Newest(p) => p,
         _ => {
-            if let Err(e) = fs::create_dir_all(library) {
+            if let Err(e) = private_fs::create_dir_all(library) {
                 eprintln!("cannot create {}: {e}", library.display());
                 process::exit(1);
             }
@@ -4844,6 +4858,8 @@ fn main() {
                     "appdist://localhost/index.html".parse().expect("valid url"),
                 ),
             )
+            .on_navigation(main_navigation_allowed)
+            .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
             .title(initial_title.as_str())
             .visible(false)
             // The recorded size, floored but not yet fitted to the screen: the
@@ -8571,6 +8587,65 @@ mod tests {
     #[test]
     fn page_images_are_served_as_png() {
         assert_eq!(mime_for(Path::new("dist/garret-favicon.png")), "image/png");
+    }
+
+    #[test]
+    fn main_navigation_keeps_reload_routes_and_refuses_other_origins() {
+        let origin = if cfg!(windows) { "http://appdist.localhost" } else { "appdist://localhost" };
+        for path in ["/", "/index.html", "/index.html?reload=1#editor"] {
+            let url = format!("{origin}{path}").parse().unwrap();
+            assert!(super::main_navigation_allowed(&url), "{url}");
+        }
+        for url in [
+            "https://example.com/", "http://localhost/index.html",
+            "https://appdist.localhost/index.html", "appdist://other/index.html",
+            "appdist://localhost.example.com/index.html", "http://appdist.localhost.example.com/",
+            "appdist://localhost:8080/", "http://appdist.localhost:8080/",
+            "appdist://user@localhost/", "http://user:password@appdist.localhost/",
+            "file:///index.html", "data:text/html,prose", "javascript:void(0)",
+            "about:blank", "proof://localhost/nonce", "http://proof.localhost/nonce",
+        ] {
+            assert!(!super::main_navigation_allowed(&url.parse().unwrap()), "{url}");
+        }
+        // Another document on the app origin, such as a relative book link.
+        for path in ["/assets/page.html", "/chapter-2.xhtml", "/index.html/x"] {
+            assert!(!super::main_navigation_allowed(&format!("{origin}{path}").parse().unwrap()), "{path}");
+        }
+        let other_platform = if cfg!(windows) { "appdist://localhost/" } else { "http://appdist.localhost/" };
+        assert!(!super::main_navigation_allowed(&other_platform.parse().unwrap()));
+        // Proof windows own their separate navigation policy, including their blank bootstrap.
+        assert!(crate::printer::proof_navigation_allowed("about:blank", "nonce"));
+        assert!(crate::printer::proof_navigation_allowed("http://proof.localhost/nonce", "nonce"));
+    }
+
+    fn main_window_builder_source() -> &'static str {
+        // The mock runtime discards these callbacks. Check their installation without a display.
+        let source = include_str!("main.rs").split("#[cfg(test)]\nmod tests {").next().unwrap();
+        source.split("let window = WebviewWindowBuilder::new(").nth(1).unwrap()
+            .split("window.build()?").next().unwrap()
+    }
+
+    #[test]
+    fn main_navigation_policy_is_installed_on_the_main_builder() {
+        assert!(main_window_builder_source().contains(".on_navigation(main_navigation_allowed)"));
+    }
+
+    #[test]
+    fn main_new_windows_are_denied_on_the_main_builder() {
+        assert!(main_window_builder_source().contains(".on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)"));
+    }
+
+    #[test]
+    fn android_csp_refuses_base_and_form_targets_like_desktop() {
+        for config in [include_str!("../tauri.android.conf.json"), include_str!("../tauri.conf.json")] {
+            let config: serde_json::Value = serde_json::from_str(config).unwrap();
+            let policy: tauri::utils::config::Csp = serde_json::from_value(config["app"]["security"]["csp"].clone()).unwrap();
+            let directives: std::collections::HashMap<String, tauri::utils::config::CspDirectiveSources> = policy.into();
+            for directive in ["base-uri", "form-action"] {
+                let sources: Vec<String> = directives.get(directive).expect(directive).clone().into();
+                assert_eq!(sources, ["'none'"], "{directive}");
+            }
+        }
     }
 
     fn configured_appdist_csp() -> tauri::utils::config::Csp {

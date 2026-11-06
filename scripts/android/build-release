@@ -5,7 +5,7 @@ umask 022
 repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 export TZ=UTC LC_ALL=C.UTF-8 LANG=C.UTF-8
 export SOURCE_DATE_EPOCH
-SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH:-$(git -C "$repo" log -1 --format=%ct)}
+SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH:-$(git -c core.fsmonitor=false -c core.hooksPath=/dev/null -c core.untrackedCache=false -C "$repo" log -1 --format=%ct)}
 [[ $(bun --version) == 1.4.2 ]] || { echo 'Bun 1.4.2 required' >&2; exit 1; }
 [[ $(node --version) == v26.11.1 ]] || { echo 'Node 26.11.1 required' >&2; exit 1; }
 [[ $(rustc --version) == 'rustc 1.98.1 '* ]] || { echo 'Rust 1.98.1 required' >&2; exit 1; }

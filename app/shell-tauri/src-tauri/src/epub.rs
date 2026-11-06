@@ -661,7 +661,7 @@ fn render_checked(epub: &Epub) -> Result<Vec<u8>, String> {
         ));
         later.push(Entry {
             name: format!("{OEBPS}/{image}"),
-            bytes: cover.bytes.clone(),
+            bytes: crate::publication_plan::image_metadata::sanitize(&cover.bytes)?,
         });
         manifest.push_str(&format!(
             "<item id=\"cover\" href=\"{TEXT_DIR}/{COVER_HREF}\" \
@@ -1737,7 +1737,7 @@ mod tests {
         let bodies = bodies(&[]);
         let mut e = input(&book, &bodies);
         e.cover = Some(Cover {
-            bytes: vec![1, 2, 3],
+            bytes: crate::figures::tests::PNG.to_vec(),
             media_type: "image/png",
             extension: "png",
         });
@@ -1753,7 +1753,7 @@ mod tests {
             read.iter()
                 .find(|(n, _)| n == &format!("{OEBPS}/cover.png"))
                 .map(|(_, b)| b.clone()),
-            Some(vec![1, 2, 3])
+            Some(crate::figures::tests::PNG.to_vec())
         );
     }
 

@@ -174,7 +174,7 @@ pub(crate) fn sync_project_dictionary(
         Err(_) => return,
     };
     let dir = dict_dir(data_home);
-    if std::fs::create_dir_all(&dir).is_err() {
+    if crate::private_fs::create_dir_all(&dir).is_err() {
         return;
     }
     let mut body = String::new();
