@@ -49,7 +49,7 @@
       "migration": "No migration occurs. Existing books and modes remain readable; keep normal closed-book backups for rollback.",
       "no_impact": "",
       "note": "Documented creation-only permission handling and unchanged existing data; recovery and rollback remain compatible.",
-      "source_sha256": "2cdbb185620694d2ff7e4a885cb5498370ec29ce20a36bc260bcabf5eef4b12f"
+      "source_sha256": "fb8ea2c8fc9e65db50affe08b02a5c5606c9529a7890332cf7db08da7bcde936"
     },
     "native-packaging": {
       "breaking": "none",
@@ -71,7 +71,7 @@
       "migration": "none",
       "no_impact": "",
       "note": "New Unix books and settings are owner-only; existing modes and user-picked exports stay unchanged.",
-      "source_sha256": "8f74ae7eaf4ba2e909f51f42473cde7fe30b329fd9c9ba2904c0ab0ef6cd646c"
+      "source_sha256": "f69f36c70137b37778d4b5bf9ed00452367930b9f4bac7dbc741961d7beaf20e"
     },
     "schema": {
       "breaking": "none",

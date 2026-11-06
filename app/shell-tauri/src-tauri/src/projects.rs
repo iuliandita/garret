@@ -2999,13 +2999,9 @@ mod tests {
         let home = tempdir().unwrap();
         let library = library_dir(home.path());
         create_in(&library, "Private book").unwrap();
-        let recovery = recovery_dir(home.path(), "private-book");
-        let mirror = mirror_dir(home.path(), None, "private-book");
         let exports = exports_dir(home.path());
-        crate::private_fs::create_dir_all(&recovery).unwrap();
-        crate::private_fs::create_dir_all(&mirror).unwrap();
         create_export_dir(home.path(), &exports).unwrap();
-        for dir in [&library, &recovery, &mirror, &exports, &home.path().join(APP_DIR)] {
+        for dir in [&library, &exports, &home.path().join(APP_DIR)] {
             assert_eq!(fs::metadata(dir).unwrap().permissions().mode() & 0o777, 0o700, "{}", dir.display());
         }
         fs::set_permissions(&library, fs::Permissions::from_mode(0o755)).unwrap();

@@ -365,7 +365,7 @@ fn encrypted_backup_start(data_home: &Path) -> Result<PathBuf, String> {
         Some(path) => canonical_backup_destination(Path::new(&path)),
         None => {
             let dir = export_dir(data_home);
-            fs::create_dir_all(&dir).map_err(|e| format!("archive destination unavailable: {e}"))?;
+            projects::create_export_dir(data_home, &dir).map_err(|e| format!("archive destination unavailable: {e}"))?;
             Ok(dir)
         }
     }
@@ -1014,7 +1014,7 @@ pub(crate) async fn project_import_pick(
     strings: State<'_, HostStrings>,
 ) -> std::result::Result<Option<crate::ImportOutcome>, String> {
     let dir = imports_dir(&data_home.0);
-    fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    crate::private_fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
 
     let Some(source) = ask_for_import_path(&app, &dir).await else {
         return Ok(None);
