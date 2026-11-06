@@ -484,6 +484,9 @@ fn connection_version(conn: &Connection) -> Result<i64> {
 
 impl Store {
     pub fn open(path: &Path) -> Result<Store> {
+        #[cfg(unix)]
+        crate::private_fs::prepare_database(path)
+            .map_err(|e| StoreError::Corrupt(format!("cannot create book: {e}")))?;
         Self::prepare_writable(open_connection(path, rusqlite::OpenFlags::default())?)
     }
 
@@ -675,6 +678,9 @@ impl Store {
     /// `vacuum_into_adopts_a_zero_byte_destination_rather_than_refusing_it` so
     /// nobody credits the refusal for more than it does.
     pub fn vacuum_into(&self, dest: &Path) -> Result<()> {
+        #[cfg(unix)]
+        crate::private_fs::prepare_database(dest)
+            .map_err(|e| StoreError::Corrupt(format!("cannot create book copy: {e}")))?;
         // BOUND, never formatted: a project slug reaches this path.
         self.conn
             .execute("VACUUM INTO ?1", [dest.to_string_lossy().as_ref()])?;

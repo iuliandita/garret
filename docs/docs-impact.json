@@ -26,9 +26,9 @@
       "breaking": "none",
       "docs": {},
       "migration": "",
-      "no_impact": "The reading pager builds its page controls only when there is more than one page, and two unused catalog keys are removed; no visible behavior changes.",
-      "note": "The reading pager builds its page controls only when there is more than one page, and two unused catalog keys are removed; no visible behavior changes.",
-      "source_sha256": "a02d46caf68e11ee7a29ad00bc3115d6d7e70d564db3df60299f7a7dbad0ac93"
+      "no_impact": "Clipboard validation now parses in a detached document with the same supported paste output. Main-window navigation and Android CSP hardening add no editor controls or manuscript changes.",
+      "note": "Clipboard validation now parses in a detached document with the same supported paste output. Main-window navigation and Android CSP hardening add no editor controls or manuscript changes.",
+      "source_sha256": "333ffbcffc866024853c22c180773aabb5dd19cd77e5c39488d3552ba89386b6"
     },
     "encryption": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",

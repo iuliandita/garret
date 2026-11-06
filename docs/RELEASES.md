@@ -27,14 +27,21 @@ and does not synchronize books automatically.
 
 ## Develop-only work
 
-Nothing user-visible is pending on develop. Future user-visible capabilities
-awaiting release belong here and in the
+Develop pins the desktop main window to the app origin and refuses page-created
+windows. Clipboard HTML validation uses an inert document, and Android's CSP
+refuses base URLs and form submissions, matching desktop. These changes preserve
+the stored book format. A WebKitGTK/WebView2 runtime CSP rig has not been added.
+Future user-visible capabilities awaiting release belong here and in the
 separate `develop_only` list in releases.json.
 
 Storage hardening rejects negative book schema versions, applies defensive
 SQLite connection settings, and publishes migration records atomically. Backup
 errors identify the deliberate cleanup command. See the
 [compatibility guide](COMPATIBILITY.md) for archive authentication limits.
+
+Unix storage permission changes apply only to newly created application data;
+existing file permissions and user-chosen export destinations keep their modes.
+See [compatibility and recovery](COMPATIBILITY.md) for the creation rules.
 
 ## Preparing the next release
 

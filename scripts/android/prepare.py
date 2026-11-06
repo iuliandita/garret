@@ -24,6 +24,11 @@ tree = ET.parse(manifest)
 application = tree.getroot().find("application")
 if application is None:
     raise SystemExit("generated Android manifest has no application")
+# Transfers use the system document picker rather than a FileProvider.
+for provider in application.findall("provider"):
+    if provider.get(f"{{{namespace}}}name") == "androidx.core.content.FileProvider":
+        application.remove(provider)
+(main / "res/xml/file_paths.xml").unlink(missing_ok=True)
 application.set(f"{{{namespace}}}allowBackup", "false")
 application.set(f"{{{namespace}}}fullBackupContent", "false")
 application.set(f"{{{namespace}}}dataExtractionRules", "@xml/data_extraction_rules")

@@ -69,6 +69,8 @@ windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Graph
 windows = { version = "0.61.3", features = ["Win32_Foundation", "Win32_System_Com", "Win32_UI_Shell", "Win32_UI_Shell_Common"] }
 
 [target.'cfg(unix)'.dependencies]
+# Unix socket peer credentials; already present in the locked dependency graph.
+libc = "0.2.189"
 # Safe effective-UID lookup for private encrypted staging; already in the lock graph.
 rustix = { version = "1.1.4", default-features = false, features = ["process", "fs"] }
 

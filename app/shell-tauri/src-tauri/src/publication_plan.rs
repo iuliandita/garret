@@ -4,6 +4,8 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap};
 
+pub(crate) mod image_metadata;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Numbering {
     Book,
@@ -154,6 +156,14 @@ pub(crate) struct Asset {
 
 impl Asset {
     pub(crate) fn verified(record: &FigureAsset, bytes: Vec<u8>) -> Result<Self, String> {
+        let mut asset = Self::verified_original(record, bytes)?;
+        asset.bytes = image_metadata::sanitize(&asset.bytes)?;
+        let extension = asset.href.rsplit('.').next().unwrap();
+        asset.href = format!("assets/{:x}.{extension}", Sha256::digest(&asset.bytes));
+        Ok(asset)
+    }
+
+    pub(crate) fn verified_original(record: &FigureAsset, bytes: Vec<u8>) -> Result<Self, String> {
         if bytes.len() as u64 != record.bytes
             || format!("{:x}", Sha256::digest(&bytes)) != record.sha256
         {
@@ -331,16 +341,16 @@ impl Plan {
         store: &store::Store,
         db: &std::path::Path,
     ) -> Result<Self, String> {
-        Self::from_store_mode(book, bodies, scopes, store, db, true)
+        Self::from_store_mode(book, bodies, scopes, store, db, true, true)
     }
 
     pub(crate) fn for_copy(book: &crate::export::Book, bodies: &HashMap<String, String>, scopes: Scopes,
         store: &store::Store, db: &std::path::Path) -> Result<Self, String> {
-        Self::from_store_mode(book, bodies, scopes, store, db, false)
+        Self::from_store_mode(book, bodies, scopes, store, db, false, false)
     }
 
     fn from_store_mode(book: &crate::export::Book, bodies: &HashMap<String, String>, scopes: Scopes,
-        store: &store::Store, db: &std::path::Path, publication: bool) -> Result<Self, String> {
+        store: &store::Store, db: &std::path::Path, publication: bool, sanitize: bool) -> Result<Self, String> {
         let records: HashMap<_, _> = store
             .figure_assets()
             .map_err(|e| e.to_string())?
@@ -369,7 +379,7 @@ impl Plan {
                 .take(crate::pictures::MAX_PICTURE_BYTES + 1)
                 .read_to_end(&mut bytes)
                 .map_err(|e| e.to_string())?;
-            Asset::verified(record, bytes)
+            if sanitize { Asset::verified(record, bytes) } else { Asset::verified_original(record, bytes) }
         }, publication)
     }
 }
