@@ -45,9 +45,9 @@
       "breaking": "none",
       "docs": {},
       "migration": "",
-      "no_impact": "The Windows import-name check and the privacy window's handling of WM_DESTROY change no command, maintenance procedure or contributor check.",
-      "note": "The Windows import-name check and the privacy window's handling of WM_DESTROY change no command, maintenance procedure or contributor check.",
-      "source_sha256": "a00e45bb3a8c1ac7bc9df8dc654b6ca43279a756c8cd7da1041960d7b9339e21"
+      "no_impact": "Module layout only: the figure image check is shared with the Android library; behavior, formats and documented guidance are unchanged.",
+      "note": "Shared figure image check for the Android library.",
+      "source_sha256": "5456773f91e4d745efb0e4964ad2412a2aa933dc3b0c0762d2cdfee8a21576eb"
     },
     "native-packaging": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
