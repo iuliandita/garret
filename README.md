@@ -19,6 +19,7 @@ or an internet connection to write. Your books stay on your own disk.
 The current published build is [0.0.11 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.11).
 See the [changelog](CHANGELOG.md), [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
+Webview hardening on `develop` is listed separately from published features.
 
 From 0.0.7, desktop upgrades books to schema 18 after consent and a verified
 pre-upgrade copy; Android keeps schema-17 books at 17. Apps 0.0.5 and earlier refuse the upgraded book; 0.0.6 reads it.

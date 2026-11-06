@@ -1,6 +1,6 @@
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { readFileSync } from "node:fs";
-import { expect, test } from "bun:test";
+import { expect, spyOn, test } from "bun:test";
 import { DOMSerializer, Fragment, Slice } from "prosemirror-model";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { bodyText, countWordsIn, createEditor, plaintextLabels, readableBody, schema, toggleMark } from "../src/editor";
@@ -75,6 +75,21 @@ test("clipboard remints each instance, preserves shared assets, and rejects dupl
   expect(() => remintClipboard(duplicate, () => id(next++))).toThrow("duplicate");
   expect(() => remintClipboard(slice, () => id(10), new Set([figure.attrs.asset_id as string]))).toThrow("collision");
   expect(() => validateClipboardHtml('<sup data-garret-endnote=\'{"id":"bad","fmt":"html","body":"lost"}\'>lost</sup>')).toThrow();
+});
+
+test("clipboard validation parses atoms outside the editor document", () => {
+  const query = Element.prototype.querySelectorAll;
+  const inert: boolean[] = [];
+  const probe = spyOn(Element.prototype, "querySelectorAll").mockImplementation(function (this: Element, selector: string) {
+    if (selector === "[data-garret-endnote],[data-garret-figure]") inert.push(this.ownerDocument !== document);
+    return query.call(this, selector);
+  });
+  const html = `<p>Prose <sup data-garret-endnote='${JSON.stringify(note.attrs)}'>1</sup></p>`;
+  try {
+    expect(() => validateClipboardHtml(html)).not.toThrow();
+    expect(() => validateClipboardHtml(html + html)).toThrow("invalid clipboard atom");
+    expect(inert).toEqual([true, true]);
+  } finally { probe.mockRestore(); }
 });
 
 test("formatting and comment ranges preserve whole atoms beside astral characters", () => {

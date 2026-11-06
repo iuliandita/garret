@@ -23,7 +23,7 @@ export function refusesPicture(data: DataTransfer | null): boolean {
 
 export function validateClipboardHtml(html: string): void {
   if (!html.includes("data-garret-")) return;
-  const root = document.createElement("div");
+  const root = document.implementation.createHTMLDocument().createElement("div");
   root.innerHTML = html;
   const ids = new Set<string>();
   for (const element of root.querySelectorAll("[data-garret-endnote],[data-garret-figure]")) {

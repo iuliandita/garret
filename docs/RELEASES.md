@@ -27,8 +27,11 @@ and does not synchronize books automatically.
 
 ## Develop-only work
 
-Nothing user-visible is pending on develop. Future user-visible capabilities
-awaiting release belong here and in the
+Develop pins the desktop main window to the app origin and refuses page-created
+windows. Clipboard HTML validation uses an inert document, and Android's CSP
+refuses base URLs and form submissions, matching desktop. These changes preserve
+the stored book format. A WebKitGTK/WebView2 runtime CSP rig has not been added.
+Future user-visible capabilities awaiting release belong here and in the
 separate `develop_only` list in releases.json.
 
 Unix storage permission changes apply only to newly created application data;
