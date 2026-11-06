@@ -1,5 +1,9 @@
 # Compatibility and recovery
 
+Webview hardening on `develop` changes no stored books, originals, settings or
+archive formats. Clipboard validation keeps the existing supported paste output.
+Desktop reloads stay within the app origin; proof windows keep their own policy.
+
 SQLite schema: 18. The reader ceiling and creation/migration target share one
 version constant. The 17-to-18 ladder step uses the same figure-registry SQL as
 the schema-18 reader fixtures. On desktop, opening an existing book for writing requires consent before upgrading to 18;
