@@ -315,7 +315,7 @@ pub(crate) fn preflight_reason_add(
         .duration_since(std::time::UNIX_EPOCH).map_err(|e| e.to_string())?
         .as_millis() as i64;
     project.store.with_immediate(|store| {
-        let mut report = crate::commands::export::preflight_of_store(store, &project.name, format, &vault)?;
+        let mut report = crate::commands::export::preflight_of_store(store, &project.path, &project.name, format, &vault)?;
         report.reason_history = crate::warning_history::append(store, &report, &token, &reason, now_ms)?;
         Ok(report)
     })

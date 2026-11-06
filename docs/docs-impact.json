@@ -24,11 +24,13 @@
     },
     "editor": {
       "breaking": "none",
-      "docs": {},
+      "docs": {
+        "docs/COMPATIBILITY.md": "281b651c7165096682592cc58d351b981da273bf5cb213038ab695b7556df6d5"
+      },
       "migration": "",
-      "no_impact": "The reading pager builds its page controls only when there is more than one page, and two unused catalog keys are removed; no visible behavior changes.",
-      "note": "The reading pager builds its page controls only when there is more than one page, and two unused catalog keys are removed; no visible behavior changes.",
-      "source_sha256": "a02d46caf68e11ee7a29ad00bc3115d6d7e70d564db3df60299f7a7dbad0ac93"
+      "no_impact": "",
+      "note": "The publication image metadata row is named in English and German and reports completed copy preparation.",
+      "source_sha256": "d787461b9a63670272c833356636624562ad8eaa9bafb1b9b27e78a2972e4a09"
     },
     "encryption": {
       "breaking": "none",
