@@ -5,6 +5,28 @@ signatures are on [GitHub Releases](https://github.com/iuliandita/garret/release
 Read [compatibility and recovery](docs/COMPATIBILITY.md) before upgrading, and
 keep a backup of your books before trying a new version.
 
+## 0.0.12 - 2026-11-06
+
+- Pictures, the readable folder and salvage refuse symbolic links and other
+  link types instead of following them; salvage records them as losses.
+- A save made while the readable folder's changes are being accepted is kept
+  instead of being settled over.
+- Review copies get the same pen-name check as other exports.
+- Statistics CSV exports keep text that starts like a spreadsheet formula as
+  plain text.
+- Images in EPUB, PDF proof, Word and Markdown package exports drop embedded
+  metadata such as camera details and location; your originals stay unchanged.
+- DOCX imports bound note expansion, and long Markdown imports with unclosed
+  emphasis stay fast.
+- New application data is created private to your user account on Linux and
+  macOS; existing files keep their permissions.
+- A second launch checks that the running instance belongs to you before
+  handing over.
+- The desktop window stays on the app's own pages and refuses page-opened
+  windows; pasted HTML is checked in an inert document.
+- Windows refuses import file names that contain a colon.
+- The stored book format is unchanged from 0.0.11.
+
 ## 0.0.11 - 2026-11-05
 
 - A DOCX import's loss report stays on screen until dismissed and can be shown
