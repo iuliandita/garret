@@ -45,9 +45,9 @@
       "breaking": "none",
       "docs": {},
       "migration": "",
-      "no_impact": "The DOCX note-expansion and node limits require no maintenance procedure change.",
-      "note": "The DOCX note-expansion and node limits require no maintenance procedure change.",
-      "source_sha256": "0e234e6aa16a2a8dd0b7f2a937d998c6c325bc641e4a3c017ae11b96399dee1d"
+      "no_impact": "The DOCX note-expansion and tree-size limits require no maintenance procedure change.",
+      "note": "The DOCX note-expansion and tree-size limits require no maintenance procedure change.",
+      "source_sha256": "bbbc6dc908281b593a0439316211836bf9ac44bd696a890e49577642e5c7cb88"
     },
     "native-packaging": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
@@ -65,9 +65,9 @@
       "breaking": "none",
       "docs": {},
       "migration": "",
-      "no_impact": "DOCX import refuses note expansion past the 128 MiB limit and XML trees past eight million nodes; the project format and ordinary imports are unchanged.",
-      "note": "DOCX import refuses note expansion past the 128 MiB limit and XML trees past eight million nodes; the project format and ordinary imports are unchanged.",
-      "source_sha256": "dc3dc6f11e8cde6ef8d1667c280b0520839e18461e4f7234406b1dc822fd7ea5"
+      "no_impact": "DOCX import refuses note expansion past the 128 MiB limit and XML trees past an estimated 512 MiB; the project format and ordinary imports are unchanged.",
+      "note": "DOCX import refuses note expansion past the 128 MiB limit and XML trees past an estimated 512 MiB; the project format and ordinary imports are unchanged.",
+      "source_sha256": "72f22730af7a2501c82ee2926dbb192e77406f279afb9460ad6b4acd534cf2e0"
     },
     "schema": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
