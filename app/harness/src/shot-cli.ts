@@ -2343,6 +2343,28 @@ function demoOlderBody(body: string): string {
   });
 }
 
+function earlierDraftBody(markdown: string): string {
+  const paragraphs = markdown.split(/\n\s*\n/).map((text) => text.trim()).filter((text) => text !== "");
+  return JSON.stringify({
+    type: "doc",
+    content: paragraphs.map((text) => ({ type: "paragraph", content: [{ type: "text", text }] })),
+  });
+}
+
+function documentWords(body: string): number {
+  // The page's rule: runs of non-whitespace, with inline text joined inside a
+  // block and blocks kept apart.
+  let text = "";
+  const walk = (node: { text?: string; content?: unknown[] }): void => {
+    if (typeof node.text === "string") text += node.text;
+    if (node.content === undefined) return;
+    for (const child of node.content) walk(child as { text?: string; content?: unknown[] });
+    text += "\n";
+  };
+  walk(readLegacyDocument(body) as { text?: string; content?: unknown[] });
+  return text.split(/\p{White_Space}+/u).filter((word) => word !== "").length;
+}
+
 function plantAnalyticsDemo(path: string): void {
   const db = new Database(path);
   try {
@@ -2417,15 +2439,20 @@ function plantDemoHistory(path: string): void {
     // with a panel honestly reporting "No difference" - a picture of the empty
     // state rather than of the feature, and one that reads exactly like a diff
     // that failed to run.
-    const olderBody = demoOlderBody(first.body);
+    // A classic fixture can carry the author's own earlier draft of its first
+    // scene; its versions then also carry their real word counts.
+    const draftPath = join(FIXTURE, "src", "earlier-draft.md");
+    const draft = existsSync(draftPath) ? earlierDraftBody(readFileSync(draftPath, "utf8")) : null;
+    const olderBody = draft ?? demoOlderBody(first.body);
     ages.forEach((age, index) => {
       const key = `shot-demo-${index}`;
       const body = index === ages.length - 1 ? olderBody : first.body;
+      const words = draft === null ? (counts[index] ?? 0) : documentWords(body);
       db.run("INSERT OR REPLACE INTO blob (key, body) VALUES (?1, ?2)", [key, body]);
       db.run(
         `INSERT INTO doc_version (item_id, blob_key, created_at, words, snapshot_id)
          VALUES (?1, ?2, ?3, ?4, ?5)`,
-        [first.item_id, key, now - age, counts[index] ?? 0, index === 1 ? snapshotId : null],
+        [first.item_id, key, now - age, words, index === 1 ? snapshotId : null],
       );
     });
   } finally {
@@ -2713,18 +2740,32 @@ function plantDemoMarks(path: string): void {
       text: text.slice(from, to),
       ...(marks.length === 0 ? {} : { marks: marks.map((type) => ({ type })) }),
     });
-    // Cuts, in order, covering the paragraph exactly once. The first carries all
-    // three; the rest sit past the demo comment's anchors.
-    first!.content = [
-      run(0, 6, ["strong", "em", "underline"]),
-      run(6, 34, []),
-      run(34, 42, ["strong"]),
-      run(42, 48, []),
-      run(48, 56, ["em"]),
-      run(56, 62, []),
-      run(62, 72, ["underline"]),
-      run(72, text.length, []),
-    ].filter((n) => n.text.length > 0);
+    // Whole words only: a mark that starts or ends inside a word reads as a
+    // rendering fault. Each span is the words that begin inside its window,
+    // without trailing punctuation.
+    const words = (from: number, to: number): [number, number] => {
+      const inside = [...text.matchAll(/\S+/g)].filter((m) => m.index >= from && m.index < to);
+      const last = inside.at(-1);
+      if (last === undefined) throw new Error(`--marks-demo found no word between ${from} and ${to}`);
+      const end = last.index + last[0].replace(/[^\p{L}\p{N}]+$/u, "").length;
+      return [inside[0]!.index, end];
+    };
+    // In order, past the demo comment's anchors; the first carries all three.
+    const spans: [[number, number], string[]][] = [
+      [words(0, 6), ["strong", "em", "underline"]],
+      [words(34, 42), ["strong"]],
+      [words(48, 56), ["em"]],
+      [words(62, 72), ["underline"]],
+    ];
+    const runs: Run[] = [];
+    let at = 0;
+    for (const [[from, to], marks] of spans) {
+      if (from < at) throw new Error("--marks-demo spans overlap");
+      runs.push(run(at, from, []), run(from, to, marks));
+      at = to;
+    }
+    runs.push(run(at, text.length, []));
+    first!.content = runs.filter((n) => n.text.length > 0);
     db.query("UPDATE doc SET body = ?1 WHERE item_id = ?2").run(JSON.stringify(parsed), row.id);
   } finally {
     db.close();

@@ -68,21 +68,42 @@ fn digest(body: &[u8]) -> String {
 }
 
 fn write_new(path: &Path, body: &[u8]) -> Result<(), String> {
-    let mut options = OpenOptions::new();
-    options.write(true).create_new(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        options.mode(0o600);
-    }
-    let mut file = options
-        .open(path)
-        .map_err(|error| format!("cannot create {}: {error}", path.display()))?;
+    write_new_with(path, |file| file.write_all(body))
+}
+
+fn write_new_with(
+    path: &Path,
+    write: impl FnOnce(&mut fs::File) -> std::io::Result<()>,
+) -> Result<(), String> {
+    let parent = path.parent().ok_or("migration record has no parent")?;
+    let mut temp = tempfile::Builder::new()
+        .prefix(".garret-journal-")
+        .tempfile_in(parent)
+        .map_err(|error| error.to_string())?;
     #[cfg(windows)]
-    crate::privacy_windows_file::restrict(path).map_err(|error| error.to_string())?;
-    file.write_all(body)
-        .and_then(|_| file.sync_all())
-        .map_err(|error| error.to_string())
+    crate::privacy_windows_file::restrict(temp.path()).map_err(|error| error.to_string())?;
+    write(temp.as_file_mut()).map_err(|error| error.to_string())?;
+    temp.as_file().sync_all().map_err(|error| error.to_string())?;
+    #[cfg(windows)]
+    clear_temporary_attribute(temp.path())?;
+    move_new(temp.path(), path)?;
+    crate::backup_bundle::sync_directory(parent)
+}
+
+/// tempfile marks its files FILE_ATTRIBUTE_TEMPORARY; a published record must not keep it.
+#[cfg(windows)]
+fn clear_temporary_attribute(path: &Path) -> Result<(), String> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::Storage::FileSystem::{SetFileAttributesW, FILE_ATTRIBUTE_NORMAL};
+    let mut wide: Vec<u16> = path.as_os_str().encode_wide().collect();
+    if wide.contains(&0) {
+        return Err("application data path contains NUL".into());
+    }
+    wide.push(0);
+    if unsafe { SetFileAttributesW(wide.as_ptr(), FILE_ATTRIBUTE_NORMAL) } == 0 {
+        return Err(std::io::Error::last_os_error().to_string());
+    }
+    Ok(())
 }
 
 fn move_new(from: &Path, to: &Path) -> Result<(), String> {
@@ -1110,6 +1131,29 @@ mod tests {
         tempfile::Builder::new()
             .prefix("migration-")
             .tempdir_in(crate::projects::home_dir().unwrap())
+    }
+
+    #[test]
+    fn migration_record_is_atomic_on_interruption_and_never_replaces_existing_data() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join(INTENT);
+        let error = write_new_with(&path, |file| {
+            file.write_all(b"{\"version\":")?;
+            assert!(!path.exists(), "an incomplete journal must not be visible");
+            Err(std::io::Error::other("interrupted journal write"))
+        }).unwrap_err();
+        assert!(error.contains("interrupted journal write"));
+        assert!(!path.exists());
+        assert_eq!(fs::read_dir(root.path()).unwrap().count(), 0);
+        let intent = Intent {
+            version: 1, source_identity: None, settings_before: None, settings_after: None,
+        };
+        let body = serde_json::to_vec(&intent).unwrap();
+        write_new(&path, &body).unwrap();
+        let saved: Intent = serde_json::from_slice(&bytes(&path).unwrap()).unwrap();
+        assert_eq!(saved.version, 1);
+        assert!(write_new(&path, b"replacement").is_err());
+        assert_eq!(fs::read(&path).unwrap(), body);
     }
 
     fn isolated_case(test: &str, home: &Path, data: &Path, temp: &Path) {

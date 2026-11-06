@@ -1,8 +1,12 @@
 //! Publication-only numbering and verified relative media, independent of writes.
-use crate::store::{self, figure_assets::FigureAsset, BookWalk, Item};
+use crate::store::{self, BookWalk, Item};
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap};
+
+mod asset;
+pub(crate) mod image_metadata;
+
+pub(crate) use asset::Asset;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Numbering {
@@ -143,35 +147,6 @@ impl Scopes {
                 .unwrap_or_default(),
             by_item: ids.into_iter().map(|id| (id, 0)).collect(),
         }
-    }
-}
-
-pub(crate) struct Asset {
-    pub(crate) href: String,
-    pub(crate) mime: String,
-    pub(crate) bytes: Vec<u8>,
-}
-
-impl Asset {
-    pub(crate) fn verified(record: &FigureAsset, bytes: Vec<u8>) -> Result<Self, String> {
-        if bytes.len() as u64 != record.bytes
-            || format!("{:x}", Sha256::digest(&bytes)) != record.sha256
-        {
-            return Err(format!(
-                "figure {}: original hash or size mismatch",
-                record.id
-            ));
-        }
-        let (format, width, height) =
-            crate::pictures::inspect_original(&bytes).map_err(|e| e.to_string())?;
-        if format.mime() != record.mime || (width, height) != (record.width_px, record.height_px) {
-            return Err(format!("figure {}: original media mismatch", record.id));
-        }
-        Ok(Self {
-            href: format!("assets/{}.{}", record.sha256, format.extension()),
-            mime: record.mime.clone(),
-            bytes,
-        })
     }
 }
 
@@ -331,16 +306,16 @@ impl Plan {
         store: &store::Store,
         db: &std::path::Path,
     ) -> Result<Self, String> {
-        Self::from_store_mode(book, bodies, scopes, store, db, true)
+        Self::from_store_mode(book, bodies, scopes, store, db, true, true)
     }
 
     pub(crate) fn for_copy(book: &crate::export::Book, bodies: &HashMap<String, String>, scopes: Scopes,
         store: &store::Store, db: &std::path::Path) -> Result<Self, String> {
-        Self::from_store_mode(book, bodies, scopes, store, db, false)
+        Self::from_store_mode(book, bodies, scopes, store, db, false, false)
     }
 
     fn from_store_mode(book: &crate::export::Book, bodies: &HashMap<String, String>, scopes: Scopes,
-        store: &store::Store, db: &std::path::Path, publication: bool) -> Result<Self, String> {
+        store: &store::Store, db: &std::path::Path, publication: bool, sanitize: bool) -> Result<Self, String> {
         let records: HashMap<_, _> = store
             .figure_assets()
             .map_err(|e| e.to_string())?
@@ -369,7 +344,7 @@ impl Plan {
                 .take(crate::pictures::MAX_PICTURE_BYTES + 1)
                 .read_to_end(&mut bytes)
                 .map_err(|e| e.to_string())?;
-            Asset::verified(record, bytes)
+            if sanitize { Asset::verified(record, bytes) } else { Asset::verified_original(record, bytes) }
         }, publication)
     }
 }

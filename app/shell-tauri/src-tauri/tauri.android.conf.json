@@ -4,8 +4,8 @@
   "app": {
     "windows": [{ "label": "main", "title": "garret" }],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'"
     }
   },
-  "bundle": { "resources": null, "android": { "minSdkVersion": 24, "versionCode": 11 } }
+  "bundle": { "resources": null, "android": { "minSdkVersion": 24, "versionCode": 12 } }
 }

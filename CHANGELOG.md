@@ -5,6 +5,53 @@ signatures are on [GitHub Releases](https://github.com/iuliandita/garret/release
 Read [compatibility and recovery](docs/COMPATIBILITY.md) before upgrading, and
 keep a backup of your books before trying a new version.
 
+## 0.0.12 - 2026-11-06
+
+- Pictures, the readable folder and salvage refuse symbolic links and other
+  link types instead of following them; salvage records them as losses.
+- A save made while the readable folder's changes are being accepted is kept
+  instead of being settled over.
+- Review copies get the same pen-name check as other exports.
+- Statistics CSV exports keep text that starts like a spreadsheet formula as
+  plain text.
+- Images in EPUB, PDF proof, Word and Markdown package exports drop embedded
+  metadata such as camera details and location; your originals stay unchanged.
+- DOCX imports bound note expansion, and long Markdown imports with unclosed
+  emphasis stay fast.
+- New application data is created private to your user account on Linux and
+  macOS; existing files keep their permissions.
+- A second launch checks that the running instance belongs to you before
+  handing over.
+- The desktop window stays on the app's own pages and refuses page-opened
+  windows; pasted HTML is checked in an inert document.
+- Windows refuses import file names that contain a colon.
+- The stored book format is unchanged from 0.0.11.
+
+## 0.0.11 - 2026-11-05
+
+- A DOCX import's loss report stays on screen until dismissed and can be shown
+  again from Books > Import report.
+- A day spent cutting reads "846 cut today" instead of a negative typed count.
+- Side panels and the publishing preview make room beside the prose, the
+  outline steps aside when needed, and a panel takes the whole window when no
+  split fits.
+- Encrypted backups read folder, key, then Make encrypted archive; device
+  transfer has its own disclosure. The footer popover offers Encrypted backups.
+- Revision tasks and Who appears where open their scenes. Cards shows parts and
+  chapters as headings. Ctrl+P shows each result's parent path.
+- The library shows the shelf before a one-line summary, with Import and
+  Restore beside New book, and each book's series and universe.
+- The PDF proof centres its byline and sets paragraphs ragged-right; new fiction
+  designs default to the bundled Crimson Pro. PDF margins follow the mm/in
+  choice.
+- Readable folder and Copies are used everywhere. German uses formal address
+  and Strg. Menus fit their labels; Focus mode, Show outline and Export for an
+  editor (Word) have menu entries; the shortcuts command opens Help at the key
+  table.
+- Empty scenes show a quiet "Start writing here.", selection and keyboard focus
+  look different, and the four revision marks have distinct shapes.
+- The stored format is unchanged from 0.0.10.
+
 ## 0.0.10 - 2026-10-19
 
 - A figure at the end of a scene always has a writable paragraph after it, so

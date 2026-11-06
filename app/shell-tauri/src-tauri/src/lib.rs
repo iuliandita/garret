@@ -2,6 +2,7 @@ mod daily_target;
 pub mod core_constants;
 pub mod mobile_core;
 mod package_format;
+mod private_fs;
 
 // Both desktop and Android compile these same source files. There is one schema,
 // migration ladder, transaction implementation, and ProseMirror body format.
@@ -33,6 +34,13 @@ mod figures;
 #[cfg(target_os = "android")]
 #[path = "research.rs"]
 mod research;
+// Figures share the verified, metadata-free image copy with desktop publication.
+#[cfg(target_os = "android")]
+mod publication_plan {
+    mod asset;
+    pub(crate) mod image_metadata;
+    pub(crate) use asset::Asset;
+}
 #[cfg(target_os = "android")]
 #[path = "review_validation.rs"]
 mod review_validation;

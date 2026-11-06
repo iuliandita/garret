@@ -15,6 +15,7 @@ writing identities. Screenshot runs use an isolated vault containing those autho
 | Pride and Prejudice, Jane Austen | [Project Gutenberg 1342](https://www.gutenberg.org/ebooks/1342) |
 | Alice's Adventures in Wonderland, Lewis Carroll | [Project Gutenberg 11](https://www.gutenberg.org/ebooks/11) |
 | Dracula, Bram Stoker | [Project Gutenberg 345](https://www.gutenberg.org/ebooks/345) |
+| Alice's Adventures Under Ground, Lewis Carroll | [Project Gutenberg 19002](https://www.gutenberg.org/ebooks/19002) |
 
 The original English texts are listed as public domain in the USA by Project
 Gutenberg. Each `src/source.txt` retains the complete source, credits, and
@@ -22,6 +23,12 @@ Project Gutenberg license. No modern translation, cover, or character art is
 used. Print wrapping and illustration captions are removed where needed for
 import. Alice's shaped tail poem keeps its words but loses its print indentation.
 The source notes in each book describe these adjustments.
+
+Alice's Adventures Under Ground is Carroll's 1864 manuscript of the same story.
+Its first three paragraphs, kept in `alice/src/earlier-draft.md` and retained in
+full in `alice/src/under-ground.txt`, are the earlier version that
+`--history-demo` plants for Alice, so the history comparison shows a real
+revision rather than placeholder text.
 
 ## Build openable books
 

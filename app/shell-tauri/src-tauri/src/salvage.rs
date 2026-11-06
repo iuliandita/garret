@@ -927,7 +927,7 @@ fn extract(
     out_dir: &Path,
     strings: crate::strings::Strings,
 ) -> Result<Salvage, String> {
-    let conn = rusqlite::Connection::open_with_flags(
+    let conn = crate::store::open_connection(
         &work.db,
         rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
     )
@@ -2637,7 +2637,20 @@ fn write_pictures(
         return Ok((0, 0, None));
     }
     let from = crate::pictures::dir_for(source);
+    let directory = crate::pictures::PictureDir::open(&from);
     let into = out_dir.join(PICTURES_DIR);
+    let mut copied = std::collections::BTreeSet::new();
+    let mut copy_picture = |name: &str| -> std::io::Result<()> {
+        if copied.contains(name) {
+            return Ok(());
+        }
+        let source = directory.as_ref()
+            .map_err(|error| std::io::Error::new(error.kind(), error.to_string()))?;
+        let bytes = source.read(name)?;
+        crate::pictures::PictureDir::open(&into)?.write_new(name, &bytes)?;
+        copied.insert(name.to_string());
+        Ok(())
+    };
     let mut recovered = 0u64;
     let mut covers_recovered = 0u64;
     let mut made = false;
@@ -2663,7 +2676,7 @@ fn write_pictures(
             std::fs::create_dir_all(&into).map_err(|e| e.to_string())?;
             made = true;
         }
-        match std::fs::copy(from.join(name), into.join(name)) {
+        match copy_picture(name) {
             Ok(_) => recovered += 1,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => losses.push(Loss {
                 kind: KIND_MISSING_PICTURE.into(),
@@ -2702,7 +2715,7 @@ fn write_pictures(
             std::fs::create_dir_all(&into).map_err(|e| e.to_string())?;
             made = true;
         }
-        match std::fs::copy(from.join(name), into.join(name)) {
+        match copy_picture(name) {
             Ok(_) => covers_recovered += 1,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => losses.push(Loss {
                 kind: KIND_MISSING_COVER.into(),
@@ -3038,12 +3051,14 @@ fn write_covers(
     if recovered == 0 {
         return Ok(None);
     }
+    let pictures = crate::pictures::PictureDir::open(&out_dir.join(PICTURES_DIR))
+        .map_err(|error| error.to_string())?;
     let mut text = format!(
         "# {}\n",
         strings.f("salvage.title.covers", &[("name", name)])
     );
     for (side, stored) in covers {
-        if !crate::pictures::is_stored_name(stored) {
+        if !crate::pictures::is_stored_name(stored) || pictures.open_regular(stored).is_err() {
             continue;
         }
         let heading = match *side {
@@ -4934,6 +4949,55 @@ pub(crate) mod tests {
         );
         assert!(!out.join("secret.png").exists());
         let _ = members;
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn no_follow_salvage_records_linked_pictures_and_covers_as_losses() {
+        use std::os::unix::fs::symlink;
+        for kind in ["symlink", "directory-link", "fifo"] {
+            let dir = tempdir().unwrap();
+            let db = dir.path().join("book.db");
+            let members = fixture_with_everything(&db).2;
+            let portrait = with_picture(&db, &members[0]);
+            let cover = with_cover(&db, crate::covers::SIDE_FRONT);
+            let good_cover = with_cover(&db, crate::covers::SIDE_BACK);
+            let pictures = crate::pictures::dir_for(&db);
+            let outside = dir.path().join("outside");
+            if kind == "directory-link" {
+                std::fs::rename(&pictures, &outside).unwrap();
+                symlink(&outside, &pictures).unwrap();
+            } else {
+                std::fs::create_dir(&outside).unwrap();
+                let target = outside.join("image.png");
+                std::fs::write(&target, PNG).unwrap();
+                for name in [&portrait, &cover] {
+                    std::fs::remove_file(pictures.join(name)).unwrap();
+                    match kind {
+                        "symlink" => symlink(&target, pictures.join(name)).unwrap(),
+                        _ => rustix::fs::mkfifoat(rustix::fs::CWD, &pictures.join(name), rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR).unwrap(),
+                    }
+                }
+            }
+            let out = dir.path().join("out");
+            let recovered = salvage(&db, &out).unwrap();
+            let expected_covers = u64::from(kind != "directory-link");
+            assert_eq!((recovered.pictures_recovered, recovered.covers_recovered), (0, expected_covers), "{kind}");
+            assert!(!recovered.complete);
+            for kind in [KIND_UNREADABLE_PICTURE, KIND_UNREADABLE_COVER] {
+                assert!(recovered.losses.iter().any(|loss| loss.kind == kind), "{:?}", recovered.losses);
+            }
+            assert!(!out.join(PICTURES_DIR).join(&portrait).exists());
+            assert!(!out.join(PICTURES_DIR).join(&cover).exists());
+            if expected_covers == 0 {
+                assert!(!out.join(PICTURES_DIR).exists());
+            } else {
+                assert_eq!(std::fs::read(out.join(PICTURES_DIR).join(&good_cover)).unwrap(), PNG);
+                let covers = read(&out.join(COVERS_NAME));
+                assert!(covers.contains(&good_cover));
+                assert!(!covers.contains(&cover));
+            }
+        }
     }
 
     // ------------------------------------------------------------------- covers

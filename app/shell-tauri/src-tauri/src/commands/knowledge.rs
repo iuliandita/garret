@@ -411,7 +411,7 @@ pub(crate) async fn craft_report_export_as(
         return Err("application locked".into());
     }
     let dir = export_dir(&data_home.0);
-    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    crate::projects::create_export_dir(&data_home.0, &dir).map_err(|e| e.to_string())?;
     let title = crate::commands::export::strings_for(&data_home.0).t("research.dialog.report");
     let default_name = format!(
         "{}-craft-report.{extension}",
