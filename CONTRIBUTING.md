@@ -172,8 +172,9 @@ Android tag builds require repository secrets `ANDROID_KEYSTORE_BASE64` and
 `ANDROID_KEYSTORE_PASSWORD`, containing the retained testing keystore and its
 password. The keystore uses alias `preview`. Keep an offline copy: a new key
 cannot update an app installed with the old one. Release builds refuse missing
-signing material. Keys are restored only for tag builds and removed from the
-runner afterward. No app store or paid signing account is required.
+signing material. Keys are restored only for tag builds, after the unsigned build
+and source checks finish, immediately before the separate signing step. They are
+removed from the runner afterward. No app store or paid signing account is required.
 
 macOS packages use ad-hoc signing without notarization. They need native tester
 feedback; successful packaging does not certify platform behavior. Windows
