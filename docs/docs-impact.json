@@ -33,13 +33,13 @@
     "encryption": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
       "docs": {
-        "README.md": "b9766f450cde5d9e81782f867dbf538dbafd6c056635fd5b8c3b97d47a6d6927",
+        "README.md": "3b6279025842849cbda658b2319ffa20b63ed43f9b8483a74e88513799fdda8a",
         "docs/COMPATIBILITY.md": "cfbc53477ce2a2b20e4505c269bb604f77575f5d32f13f1817882ff12ea1203a"
       },
       "migration": "none: ceiling unchanged, writes refused. Existing schema-17 books remain compatible with previous builds; no upgrade migration runs. Keep closed-book backups with adjacent originals, and restore the complete previous copy for rollback, omitting later edits. Reader-only creation and migration remain at 17; fixture construction stays test-only. Upgrade preparation adds a consent boundary and retains a verified complete rollback bundle before format activation. Production remains at schema 17 with new-node authoring disabled. Activation now migrates 17 to 18 after explicit consent and a verified complete pre-upgrade copy. Read-only opens remain unchanged. Roll back by restoring the retained schema-17 copy as a separate book; later writing is absent. See docs/COMPATIBILITY.md.",
       "no_impact": "",
       "note": "Archive contents authenticate to the recovery-key holder only, without sender authentication; the public recipient can create archives restored as separate books. Cleanup keeps retained files until deliberate action.",
-      "source_sha256": "92b887e79807faed88a8907c34a7258c283c5d9e7c33bfec39fa7300b60ed64d"
+      "source_sha256": "018b75c987f70fce8acd3d8a308614f8a4ea03697501c33911863e38e129edb8"
     },
     "maintenance": {
       "breaking": "none",
@@ -52,14 +52,14 @@
     "native-packaging": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
       "docs": {
-        "README.md": "b9766f450cde5d9e81782f867dbf538dbafd6c056635fd5b8c3b97d47a6d6927",
+        "README.md": "3b6279025842849cbda658b2319ffa20b63ed43f9b8483a74e88513799fdda8a",
         "docs/COMPATIBILITY.md": "cfbc53477ce2a2b20e4505c269bb604f77575f5d32f13f1817882ff12ea1203a",
-        "docs/RELEASES.md": "b45504ef46b49585c9408377281ad3aa67bea6c8a9a55b1f4628311c5f6ef5c2"
+        "docs/RELEASES.md": "8efb465aae9fa66516b5af578ffb274261317066f203ed0aa5217008af13eb92"
       },
       "migration": "Desktop identifier changes leave books, settings, and SQLite schema 17 unchanged. Windows retains its previous WebView2 profile; Android now requires the separate package migration below. macOS starts fresh regenerable caches and native window restore state, leaving old entries untouched. Keep the normal closed-book and profile backup before upgrade; rollback uses the previous package and preserved files. Android migration: update the previous cc.local.app to transfer-capable 0.0.3, export a complete backup copy of each book archive and separate recovery key, install com.usegarret.app alongside it, import and compare manuscripts, notes and pictures before removing the old app. Preferences need resetting; both apps stay independent. Keep exports and old books for rollback; later edits require fresh exports into a compatible build. Retain the signing key and keep increasing version codes during release preparation. none: ceiling unchanged, writes refused. Existing schema-17 books remain compatible with previous builds; no upgrade migration runs. Keep closed-book backups with adjacent originals, and restore the complete previous copy for rollback, omitting later edits. Creation and migration remain at schema 17; no upgrade runs. Schema-18 books retain their version and figure registry. Back up closed databases, originals and profiles; rollback uses a separate complete schema-17 pre-activation copy with the previous package, omitting later writing. See docs/COMPATIBILITY.md. Reader-only creation and migration remain at 17; fixture construction stays test-only. Upgrade preparation adds a consent boundary and retains a verified complete rollback bundle before format activation. Production remains at schema 17 with new-node authoring disabled. Activation now migrates 17 to 18 after explicit consent and a verified complete pre-upgrade copy. Read-only opens remain unchanged. Roll back by restoring the retained schema-17 copy as a separate book; later writing is absent. See docs/COMPATIBILITY.md.",
       "no_impact": "",
       "note": "The README, release preparation notes and compatibility guide describe connection hardening, atomic records and retained-stage cleanup. Packaging and supported platforms stay unchanged.",
-      "source_sha256": "4834988cdb029dcf921d0226dba6c954220d02aa7a89bc628cc0c3f61398a00b"
+      "source_sha256": "2d6431692c89710a05d73c311f61c2afd2f924f846593dd337b1bb542155357a"
     },
     "project-format": {
       "breaking": "none",
