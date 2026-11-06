@@ -126,7 +126,8 @@ Legacy-node refusal and picture-paste detection retain their existing acceptance
 rules, including the file-list fallback. These cleanups do not enable authoring,
 change stored data, or add migration, backup, upgrade, or rollback steps.
 
-EPUB, DOCX, and Markdown packages use publication copies of PNG/JPEG images.
+EPUB, DOCX, and Markdown packages and the PDF proof use publication copies of
+PNG/JPEG figures; the EPUB front cover uses one too.
 These copies omit embedded EXIF, XMP, IPTC, comments, PNG text, and timestamps;
 JPEG keeps a minimal orientation-only EXIF record when rotation or reflection is
 needed. PNG color profiles, gamma, chromaticity, and rendering chunks remain.
@@ -134,8 +135,7 @@ Publication asset filenames use the SHA-256 of the filtered bytes. Stored figure
 and cover originals, their registry hashes, backups, and recovery copies remain
 unchanged; there is no schema migration. The preflight's publication image
 metadata check reports checked only after preparing image copies, and reports
-nothing to check for a publication without images. The existing PDF image path
-still renders originals into the proof.
+nothing to check for a publication without images.
 
 EPUB and DOCX exports replace vertical tabs and form feeds with spaces and remove
 the other XML 1.0-forbidden characters from prose, item and book titles, contents

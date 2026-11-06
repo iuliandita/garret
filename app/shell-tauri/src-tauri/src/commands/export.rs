@@ -395,7 +395,7 @@ fn render_scope_with(
 
     let (plan, cover) = publication_media(&store, path, format, &book, &bodies, story.is_none())?;
     let mut preflight = checked(format, name, vault, pin.as_ref(), &items, &bodies, &planning);
-    crate::identity::publication_assets_checked(&mut preflight, format != crate::export::Format::Pdf && (plan.as_ref().is_some_and(|p| !p.assets.is_empty()) || cover.is_some()));
+    crate::identity::publication_assets_checked(&mut preflight, plan.as_ref().is_some_and(|p| !p.assets.is_empty()) || cover.is_some());
     publication_disclosures(&mut preflight, &publication, format, export_pin.as_ref(), story.is_some(), single_scene);
     preflight.reason_history = crate::warning_history::read(&store)?;
     // A CROSS-IDENTITY LEAK BLOCKS AND CANNOT BE DISMISSED. Section 8 says so in
@@ -421,15 +421,16 @@ fn render_scope_with(
             let cover = |side: &str| -> std::result::Result<Option<crate::pdf::Cover>, String> {
                 if story.is_some() { return Ok(None); }
                 let fit = crate::covers::fit_of(&store, side)?;
-                Ok(crate::covers::cover_of(&store, side)?
+                crate::covers::cover_of(&store, side)?
                     .and_then(|stored| {
                         crate::pictures::original(&crate::pictures::dir_for(path), &stored)
                     })
-                    .map(|(f, bytes)| crate::pdf::Cover {
-                        bytes,
+                    .map(|(f, bytes)| Ok(crate::pdf::Cover {
+                        bytes: crate::publication_plan::image_metadata::sanitize(&bytes)?,
                         media_type: f.mime(),
                         fit,
                     }))
+                    .transpose()
             };
             let html = crate::pdf::proof_document_planned(&crate::pdf::Proof {
                 language: strings.tag(),
@@ -591,11 +592,9 @@ fn publication_media(
         if matches!(format, crate::export::Format::Epub | crate::export::Format::Docx) {
             for scope in &mut scopes.rows { strip_xml_text(&mut scope.label); }
         }
-        Some(if format == crate::export::Format::Pdf {
-            crate::publication_plan::Plan::for_proof(book, bodies, scopes, store, path)?
-        } else {
-            crate::publication_plan::Plan::from_store(book, bodies, scopes, store, path)?
-        })
+        // The proof uses the same sanitized copies: not every platform's PDF
+        // renderer re-encodes the images it is handed.
+        Some(crate::publication_plan::Plan::from_store(book, bodies, scopes, store, path)?)
     } else { None };
     // A missing cover still leaves the book exportable, without changing its
     // stored selection. Only the whole-book EPUB publishes the front cover.
@@ -716,7 +715,7 @@ pub(crate) fn preflight_of_store(
     };
     let (plan, cover) = publication_media(store, path, format, &book, &bodies, true)?;
     let mut report = checked(format, &name, vault, pin.as_ref(), &items, &bodies, &planning);
-    crate::identity::publication_assets_checked(&mut report, format != crate::export::Format::Pdf && (plan.as_ref().is_some_and(|p| !p.assets.is_empty()) || cover.is_some()));
+    crate::identity::publication_assets_checked(&mut report, plan.as_ref().is_some_and(|p| !p.assets.is_empty()) || cover.is_some());
     publication_disclosures(&mut report, &publication, format, pin.as_ref(), false, single_scene);
     report.reason_history = crate::warning_history::read(store)?;
     Ok(report)

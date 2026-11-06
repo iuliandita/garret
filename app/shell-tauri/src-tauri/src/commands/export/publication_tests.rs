@@ -188,11 +188,16 @@ fn publication_package_strips_image_metadata(format: crate::export::Format) {
         assert_eq!(std::fs::read(crate::pictures::dir_for(&db).join(cover_name)).unwrap(), *original);
     }
     if format == crate::export::Format::Epub {
-        let (proof, _, _, _, _) = render_project(&db, "Book", crate::export::Format::Pdf,
+        let (proof, _, _, report, _) = render_project(&db, "Book", crate::export::Format::Pdf,
             &crate::identity::Vault::default(), crate::strings::Strings::english()).unwrap();
-        for original in &originals {
-            assert!(proof.text().contains(&crate::pictures::base64(original)));
+        // The proof embeds the same sanitized copies, never the originals.
+        for (asset, original) in assets.iter().zip(&originals) {
+            let clean = Asset::verified(asset, original.clone()).unwrap().bytes;
+            assert!(proof.text().contains(&crate::pictures::base64(&clean)));
+            assert!(!proof.text().contains(&crate::pictures::base64(original)));
         }
+        assert_eq!(report.checks.iter().find(|check| check.name == crate::identity::CHECK_ASSETS).unwrap().state,
+            crate::identity::STATE_RAN);
     }
     for (asset, original) in assets.iter().zip(&originals) {
         assert_eq!(std::fs::read(crate::pictures::dir_for(&db).join(&asset.stored_name)).unwrap(), *original);

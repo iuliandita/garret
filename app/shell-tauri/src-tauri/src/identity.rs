@@ -946,8 +946,7 @@ pub fn check(subject: &Subject<'_>) -> Preflight {
 
     // 6. Publication image metadata. The export boundary marks this check as
     //    ran only after preparing sanitized figure/cover copies. With no
-    //    copied images it is vacuous; PDF renders pixels instead of embedding
-    //    originals. Font and print checks live elsewhere.
+    //    copied images it is vacuous. Font and print checks live elsewhere.
     checks.push(CheckState {
         name: CHECK_ASSETS,
         state: STATE_VACUOUS,

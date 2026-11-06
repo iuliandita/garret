@@ -344,11 +344,6 @@ impl Plan {
         Self::from_store_mode(book, bodies, scopes, store, db, true, true)
     }
 
-    pub(crate) fn for_proof(book: &crate::export::Book, bodies: &HashMap<String, String>, scopes: Scopes,
-        store: &store::Store, db: &std::path::Path) -> Result<Self, String> {
-        Self::from_store_mode(book, bodies, scopes, store, db, true, false)
-    }
-
     pub(crate) fn for_copy(book: &crate::export::Book, bodies: &HashMap<String, String>, scopes: Scopes,
         store: &store::Store, db: &std::path::Path) -> Result<Self, String> {
         Self::from_store_mode(book, bodies, scopes, store, db, false, false)
