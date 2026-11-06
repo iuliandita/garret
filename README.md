@@ -88,7 +88,9 @@ and an optional refresh runs after you stop typing.
 Books live on your own disk. Recovery copies, scene history, salvage tools,
 and a readable folder help you recover work. Encrypted portable archives
 include a separate recovery key. An optional PIN lock conceals the app when
-you step away; it does not encrypt manuscript files.
+you step away; it does not encrypt manuscript files. On Unix, new books and
+settings are owner-only; existing permissions stay unchanged. See the
+[compatibility guide](docs/COMPATIBILITY.md) for the storage boundary.
 
 Series, optional session analytics, and local craft and consistency reports
 are included too. All of these tools are free.

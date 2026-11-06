@@ -463,7 +463,7 @@ pub(crate) async fn review_export_save(
     };
     let result = async {
         let dir = crate::projects::exports_dir(&data_home.0);
-        fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        crate::projects::create_export_dir(&data_home.0, &dir).map_err(|e| e.to_string())?;
         let strings = privacy_host::strings(&app);
         let title = strings.t("review.transport.save");
         let label = strings.t("review.transport.filter");
