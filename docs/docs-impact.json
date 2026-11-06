@@ -48,7 +48,7 @@
       "migration": "",
       "no_impact": "The DOCX note-expansion and tree-size limits require no maintenance procedure change.",
       "note": "The DOCX note-expansion and tree-size limits require no maintenance procedure change.",
-      "source_sha256": "bbbc6dc908281b593a0439316211836bf9ac44bd696a890e49577642e5c7cb88"
+      "source_sha256": "8abab073c1921f571c30c266559e217177542333c9cd393f233ec709089b0793"
     },
     "native-packaging": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
@@ -66,7 +66,7 @@
       "migration": "",
       "no_impact": "DOCX import refuses note expansion past the 128 MiB limit and XML trees past an estimated 512 MiB; the project format and ordinary imports are unchanged.",
       "note": "DOCX import refuses note expansion past the 128 MiB limit and XML trees past an estimated 512 MiB; the project format and ordinary imports are unchanged.",
-      "source_sha256": "72f22730af7a2501c82ee2926dbb192e77406f279afb9460ad6b4acd534cf2e0"
+      "source_sha256": "93203352f0db533a10714e963d3847264cf553c89fe3944cd4f671098bb70686"
     },
     "schema": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
