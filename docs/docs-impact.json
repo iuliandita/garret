@@ -34,9 +34,9 @@
       "breaking": "none",
       "docs": {},
       "migration": "",
-      "no_impact": "Extract the existing mirror path component check for manifest and filesystem boundaries; encrypted archive formats, key handling, and protection claims are unchanged.",
-      "note": "Extract the existing mirror path component check for manifest and filesystem boundaries; encrypted archive formats, key handling, and protection claims are unchanged.",
-      "source_sha256": "99b67262b25be4812304e22e1297298e8106cf098ca0c998b3126884d900edfe"
+      "no_impact": "The shared mirror path check treats backslashes and drive prefixes as path syntax only on Windows; encrypted archive formats, key handling and protection claims are unchanged.",
+      "note": "The shared mirror path check treats backslashes and drive prefixes as path syntax only on Windows; encrypted archive formats, key handling and protection claims are unchanged.",
+      "source_sha256": "83abf778e3a7361db89a27a639db53a908a1e4abdad569e91d50f112f7f62547"
     },
     "maintenance": {
       "breaking": "none",
@@ -46,7 +46,7 @@
       "migration": "",
       "no_impact": "",
       "note": "Document focused mirror filesystem boundary checks, parser equivalence and linear-work coverage, and the separate native Windows qualification limit.",
-      "source_sha256": "4fbaf719f7bbcef213838e997e718d2b4204ecd3195bc26f3c19c061adc083a7"
+      "source_sha256": "393ba37d88f50da679a276e83b71635a5518d0f6b8730e9e306447f701ac5919"
     },
     "native-packaging": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
@@ -67,7 +67,7 @@
       "migration": "",
       "no_impact": "",
       "note": "Document no-follow readable-folder operations, invalid path refusal, the existing import-size cap, and unchanged Markdown parsing semantics and book formats.",
-      "source_sha256": "0d65daaa987b8ec75697391b70e104cb5026b6f3ced79e1bd1b476cc54bcd23f"
+      "source_sha256": "99f793fd955159008e4d50aa1978e352f2104c037bfea2ae2ed4f55190998a1d"
     },
     "schema": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
