@@ -1,5 +1,5 @@
 # Private APK build environment; no app data or signing keys in this image.
-FROM rust:1.98.1-bookworm@sha256:c49256cbe5ea0188bc658a689500d70c41eb51f009a7a7be209caf60a944f3ec
+FROM rust:1.99.1-bookworm@sha256:4715c3ad743951a3cea90e8b432f2a17e0ef5f3f3c3abf75108879e783b396f0
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends openjdk-17-jdk-headless unzip python3 \
