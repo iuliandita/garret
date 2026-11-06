@@ -284,7 +284,8 @@ fn stage(parent: &Path, scope: StageScope) -> Result<Stage, String> {
             StageScope::Destination => "destination temporary encrypted files",
         };
         let cleanup = format!("garret archive-stage-clean {} {}", command_argument(&parent.to_string_lossy()), command_argument(name));
-        return Err(format!("unfinished encrypted archive staging {name}; {scope}; parent directory: {}; retained stage: {}; inspect and preserve these files before deliberately discarding them; then run: {cleanup}", parent.display(), parent.join(name).display()));
+        let shell = if cfg!(windows) { " in PowerShell" } else { "" };
+        return Err(format!("unfinished encrypted archive staging {name}; {scope}; parent directory: {}; retained stage: {}; inspect and preserve these files before deliberately discarding them; then run{shell}: {cleanup}", parent.display(), parent.join(name).display()));
     }
     let temp = Builder::new().prefix(STAGE_PREFIX).tempdir_in(parent)
         .map_err(|e| format!("archive staging unavailable: {e}"))?;

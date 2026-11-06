@@ -84,8 +84,26 @@ fn write_new_with(
     crate::privacy_windows_file::restrict(temp.path()).map_err(|error| error.to_string())?;
     write(temp.as_file_mut()).map_err(|error| error.to_string())?;
     temp.as_file().sync_all().map_err(|error| error.to_string())?;
+    #[cfg(windows)]
+    clear_temporary_attribute(temp.path())?;
     move_new(temp.path(), path)?;
     crate::backup_bundle::sync_directory(parent)
+}
+
+/// tempfile marks its files FILE_ATTRIBUTE_TEMPORARY; a published record must not keep it.
+#[cfg(windows)]
+fn clear_temporary_attribute(path: &Path) -> Result<(), String> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::Storage::FileSystem::{SetFileAttributesW, FILE_ATTRIBUTE_NORMAL};
+    let mut wide: Vec<u16> = path.as_os_str().encode_wide().collect();
+    if wide.contains(&0) {
+        return Err("application data path contains NUL".into());
+    }
+    wide.push(0);
+    if unsafe { SetFileAttributesW(wide.as_ptr(), FILE_ATTRIBUTE_NORMAL) } == 0 {
+        return Err(std::io::Error::last_os_error().to_string());
+    }
+    Ok(())
 }
 
 fn move_new(from: &Path, to: &Path) -> Result<(), String> {
