@@ -717,6 +717,33 @@ requires valid originals. DPI estimates precede caption and heading layout;
 the proof checks the final placed size. Figure copy/paste is refused, including
 within the same book; use insertion and explicit deletion with undo instead.
 
+Book connections disable SQLite trusted schemas and enable defensive mode before
+reading application tables, including read-only validation, backup and salvage
+connections. Negative schema versions are refused without migrating the book.
+No supported book feature requires trusted schemas. These connection settings
+do not change the stored format or require conversion of existing books.
+
+Encrypted archives authenticate their contents to the recovery-key holder only;
+they do not authenticate the sender. Anyone with the public recipient key can
+create an archive that restores as a separate new book. Restore never overwrites
+an existing book. Keep the recovery key private and check who supplied an archive
+before treating it as that person's work.
+
+Retained encrypted-backup staging continues to block backups in that directory
+until deliberate cleanup. The error includes the exact `garret archive-stage-clean`
+command, with the parent directory and stage name quoted for the platform shell
+(PowerShell on Windows). Close garret, inspect and preserve the files first.
+Unknown or active stages are never automatically removed.
+
+Migration journals and receipts are written to a temporary file in the same
+directory, synced, then renamed exclusively into place. Unix also syncs the
+parent directory. An interrupted write cannot publish a partial journal or
+replace an existing record. A crash can leave an unpublished temporary file;
+it is not a migration journal and does not block startup. Existing migration
+records and rollback copies remain readable. No schema conversion is added;
+keep normal closed-book and profile backups before upgrading, and use the
+previous package with a separate complete copy for rollback.
+
 On Unix, newly created book databases and settings files use owner-only file
 permissions (0600), and newly created application storage directories use 0700.
 SQLite WAL and shared-memory files inherit the book database's permissions.

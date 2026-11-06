@@ -244,6 +244,9 @@ local recovery copy; it cannot protect your work if you lose the device.
 
 garret remembers the backup destination folder. Making and saving each archive
 is manual. **Restore encrypted archive** restores it as a separate book.
+Archives do not prove who sent them; anyone with the public recipient key can
+create one. See [compatibility and recovery](docs/COMPATIBILITY.md) for this
+trust boundary.
 
 ### Move a book between desktop and Android
 
@@ -276,6 +279,7 @@ limits. Android transfer is not certified on physical devices.
 ### If a backup was interrupted
 
 Open the error's **Details** for the exact parent directory and retained folder.
+Details also includes the exact cleanup command for that retained folder.
 Close garret, preserve a local copy of that folder, and inspect it first.
 Application-private temporary files may contain unencrypted writing; keep them
 out of cloud folders. To list retained folders, replace the placeholders below

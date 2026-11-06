@@ -12,7 +12,7 @@ use std::path::Path;
 /// reporting command would put every future caller one field access away from a
 /// write. The no-migration rule belongs here, at the shared validator's open.
 pub(crate) fn readonly_conn(path: &Path) -> Result<rusqlite::Connection, String> {
-    let conn = rusqlite::Connection::open_with_flags(
+    let conn = crate::store::open_connection(
         path,
         rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
     )

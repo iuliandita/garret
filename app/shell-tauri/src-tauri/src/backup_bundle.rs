@@ -133,7 +133,7 @@ fn check_figure(path: &Path, figures: &BTreeMap<String, crate::store::figure_ass
 fn research_expectations(db: &Path) -> Result<BTreeMap<String, u64>, String> {
     let store = Store::open_readonly(db).map_err(|_| "database unreadable".to_string())?;
     if store.user_version().map_err(|e| e.to_string())? < 16 {
-        let conn = rusqlite::Connection::open_with_flags(db, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+        let conn = crate::store::open_connection(db, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
             .map_err(|e| e.to_string())?;
         let present: bool = conn.query_row(
             "SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'research_resource' COLLATE NOCASE)",
@@ -158,7 +158,7 @@ fn research_references(db: &Path) -> Result<Vec<String>, String> {
 }
 
 fn set_marker(db: &Path, marker: &Marker) -> Result<(), String> {
-    let conn = rusqlite::Connection::open_with_flags(
+    let conn = crate::store::open_connection(
         db,
         rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
     )
@@ -180,7 +180,7 @@ fn set_marker(db: &Path, marker: &Marker) -> Result<(), String> {
 }
 
 pub fn clear_marker(db: &Path) -> Result<(), String> {
-    let conn = rusqlite::Connection::open_with_flags(
+    let conn = crate::store::open_connection(
         db,
         rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
     )
