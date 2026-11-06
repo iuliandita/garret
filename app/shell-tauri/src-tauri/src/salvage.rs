@@ -927,7 +927,7 @@ fn extract(
     out_dir: &Path,
     strings: crate::strings::Strings,
 ) -> Result<Salvage, String> {
-    let conn = rusqlite::Connection::open_with_flags(
+    let conn = crate::store::open_connection(
         &work.db,
         rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
     )

@@ -31,6 +31,11 @@ Nothing user-visible is pending on develop. Future user-visible capabilities
 awaiting release belong here and in the
 separate `develop_only` list in releases.json.
 
+Storage hardening rejects negative book schema versions, applies defensive
+SQLite connection settings, and publishes migration records atomically. Backup
+errors identify the deliberate cleanup command. See the
+[compatibility guide](COMPATIBILITY.md) for archive authentication limits.
+
 ## Preparing the next release
 
 Follow the [alpha release procedure](../CONTRIBUTING.md#alpha-testing-releases).
