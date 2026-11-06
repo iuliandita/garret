@@ -97,7 +97,7 @@ webkit2gtk = { version = "2", features = ["v2_40"] }
 # adding one -- the argument this crate already made for `webkit2gtk` itself.
 # `gtk` is what states a sheet size and asks for the file print backend;
 # `javascriptcore-rs` is the type `evaluate_javascript` answers with.
-gtk = "0.18"
+gtk = "0.19"
 javascriptcore-rs = "1.1"
 
 [[bin]]
