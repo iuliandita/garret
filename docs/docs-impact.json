@@ -36,7 +36,7 @@
       "migration": "",
       "no_impact": "Naming the existing Unix credential dependency directly changes no archive encryption, staging, keys, or stored data. Existing encryption and compatibility guidance remains applicable.",
       "note": "Naming the existing Unix credential dependency directly changes no archive encryption, staging, keys, or stored data. Existing encryption and compatibility guidance remains applicable.",
-      "source_sha256": "9d2e13903b413b928a2abc869c8a75dd8110b3bc181d9d306fa00da7a8765268"
+      "source_sha256": "02844ae4e93d46ba261bdccdec4948f28c727c80ccdfb2148d329de761afab7d"
     },
     "maintenance": {
       "breaking": "none",
@@ -44,7 +44,7 @@
       "migration": "",
       "no_impact": "The instance guard checks its directory and peer and bounds request reads. Its library scope, CLI commands, stored books, and contributor check commands are unchanged, so existing maintenance and compatibility guidance remains applicable.",
       "note": "The instance guard checks its directory and peer and bounds request reads. Its library scope, CLI commands, stored books, and contributor check commands are unchanged, so existing maintenance and compatibility guidance remains applicable.",
-      "source_sha256": "b71da4404eb305f551227370b96153f81afca75f4f79305f7500195c3592b055"
+      "source_sha256": "48d4d9abd08665a492585a8dd2e8fcec27844d1c52b873b206fcccbeb51531d5"
     },
     "native-packaging": {
       "breaking": "none",
@@ -52,7 +52,7 @@
       "migration": "",
       "no_impact": "Unix instance sockets use a checked private fallback directory and same-user peer credentials, with bounded reads. Build and installation steps are unchanged; guard failures still report to stderr and allow startup. Existing packaging documentation remains applicable.",
       "note": "Unix instance sockets use a checked private fallback directory and same-user peer credentials, with bounded reads. Build and installation steps are unchanged; guard failures still report to stderr and allow startup. Existing packaging documentation remains applicable.",
-      "source_sha256": "2483234666fd23c1d5a1d06cc990b158605533382fdedfb7b0ad535a9e0b6f68"
+      "source_sha256": "f53912b8fffb6e3d8560847d4561d0ac8bb30a031e028a74c128197b49d25a0e"
     },
     "project-format": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
