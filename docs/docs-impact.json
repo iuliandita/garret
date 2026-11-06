@@ -43,13 +43,11 @@
     },
     "maintenance": {
       "breaking": "none",
-      "docs": {
-        "docs/MAINTENANCE.md": "72d0381a1dcb4a2a7d5730849d6cd99e4e5e0ca643e23058798f472d987047fa"
-      },
+      "docs": {},
       "migration": "",
-      "no_impact": "",
-      "note": "Document the deterministic concurrent-save regression and restored-previous-content case.",
-      "source_sha256": "eb9bedb7f0319d1479ce4b4fc3b9fb8db5192ee4a86a6d31dc2baeff15a40786"
+      "no_impact": "Review copies now use the existing pen-name preflight before preview and save. Contributor commands, host test isolation, and packaging stay the same; focused host tests cover the new checks.",
+      "note": "Review copies now use the existing pen-name preflight before preview and save. Contributor commands, host test isolation, and packaging stay the same; focused host tests cover the new checks.",
+      "source_sha256": "61efefdc1260e6eff9fb1eeaeaa87afe9ca447a9204c61ffc792c15052ca22cc"
     },
     "native-packaging": {
       "breaking": "none",
