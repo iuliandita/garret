@@ -15,17 +15,17 @@
     "backup-recovery": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "a67c2a106903d2cdbaa51a670aa88f5033d05f8d4f26e1e6ed51d5ee44b37f94"
+        "docs/COMPATIBILITY.md": "d7ce51cca86cf170997e142c7e0ad1c8c716ebb9b975f2e5f857c75e11553be5"
       },
       "migration": "none",
       "no_impact": "",
       "note": "New recovery storage directories and database copies use private creation modes.",
-      "source_sha256": "689874d42d962ad8780d5c29c2a993e518c309edd1a3bfaf5edffa7d4d1913f7"
+      "source_sha256": "0e65710c3f05311018d7a8079ca63d4ce9ac2a2af6358dd2c0738360cf006670"
     },
     "editor": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "281b651c7165096682592cc58d351b981da273bf5cb213038ab695b7556df6d5"
+        "docs/COMPATIBILITY.md": "d7ce51cca86cf170997e142c7e0ad1c8c716ebb9b975f2e5f857c75e11553be5"
       },
       "migration": "",
       "no_impact": "",
@@ -35,50 +35,50 @@
     "encryption": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "a67c2a106903d2cdbaa51a670aa88f5033d05f8d4f26e1e6ed51d5ee44b37f94"
+        "docs/COMPATIBILITY.md": "d7ce51cca86cf170997e142c7e0ad1c8c716ebb9b975f2e5f857c75e11553be5"
       },
       "migration": "none",
       "no_impact": "",
       "note": "New application staging parents use private creation modes; archive format and key handling stay unchanged.",
-      "source_sha256": "4a4aaad72a880484afc8198a9e4e16bd02cb4003319fd59ce8cb62468b88dd98"
+      "source_sha256": "39985558526a75ae78a73220eb5d44e06ad16a707546b88a68250e2467cf7361"
     },
     "maintenance": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "a67c2a106903d2cdbaa51a670aa88f5033d05f8d4f26e1e6ed51d5ee44b37f94",
+        "docs/COMPATIBILITY.md": "d7ce51cca86cf170997e142c7e0ad1c8c716ebb9b975f2e5f857c75e11553be5",
         "docs/RELEASES.md": "1e2ae604157c80a2a21b5a145e9c11f8caf43376ff1d54609e1015b672944ecf"
       },
       "migration": "No migration occurs. Existing books and modes remain readable; keep normal closed-book backups for rollback.",
       "no_impact": "",
       "note": "Documented creation-only permission handling and unchanged existing data; recovery and rollback remain compatible.",
-      "source_sha256": "fb8ea2c8fc9e65db50affe08b02a5c5606c9529a7890332cf7db08da7bcde936"
+      "source_sha256": "8c1457ed9fcb9d499a5b8929a60ba45ff4e2ca0d3e53d5cec3f262c8c93dce0c"
     },
     "native-packaging": {
       "breaking": "none",
       "docs": {
         "README.md": "1622ed7d8d56a48313fa0ee01dcba468af1a488c10f80c4a5f9da274596fb4cd",
-        "docs/COMPATIBILITY.md": "a67c2a106903d2cdbaa51a670aa88f5033d05f8d4f26e1e6ed51d5ee44b37f94",
+        "docs/COMPATIBILITY.md": "d7ce51cca86cf170997e142c7e0ad1c8c716ebb9b975f2e5f857c75e11553be5",
         "docs/RELEASES.md": "1e2ae604157c80a2a21b5a145e9c11f8caf43376ff1d54609e1015b672944ecf"
       },
       "migration": "",
       "no_impact": "",
       "note": "Documented Unix creation permissions without changing packaging or published release records.",
-      "source_sha256": "4c395601a5bea63bcfc2eb3c9b8a2aa93303543fc9b3f1ab2c3d10eb6f65821c"
+      "source_sha256": "e89930296064cbe152df9dea07a2383707cb940bcc6622e0f78628e9531a1cc1"
     },
     "project-format": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "a67c2a106903d2cdbaa51a670aa88f5033d05f8d4f26e1e6ed51d5ee44b37f94"
+        "docs/COMPATIBILITY.md": "d7ce51cca86cf170997e142c7e0ad1c8c716ebb9b975f2e5f857c75e11553be5"
       },
       "migration": "none",
       "no_impact": "",
       "note": "New Unix books and settings are owner-only; existing modes and user-picked exports stay unchanged.",
-      "source_sha256": "f69f36c70137b37778d4b5bf9ed00452367930b9f4bac7dbc741961d7beaf20e"
+      "source_sha256": "284c5023724782187cf5832e856f66985e4a3a8cd77a7c63aa57b2e5eced2d9e"
     },
     "schema": {
       "breaking": "none",
       "docs": {
-        "docs/COMPATIBILITY.md": "a67c2a106903d2cdbaa51a670aa88f5033d05f8d4f26e1e6ed51d5ee44b37f94"
+        "docs/COMPATIBILITY.md": "d7ce51cca86cf170997e142c7e0ad1c8c716ebb9b975f2e5f857c75e11553be5"
       },
       "migration": "none",
       "no_impact": "",
