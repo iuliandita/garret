@@ -718,7 +718,7 @@ fn take_point_inner(
             return Err("the book identity changed before recovery could run".to_string());
         }
     }
-    std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    crate::private_fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     let _lock = lock_manifest(dir)?;
     let (id, path) = pick_point_path(dir, &point_id(now_ms));
 
@@ -879,7 +879,7 @@ fn take_archive_inner(
             return Err("the book identity changed before archive could run".to_string());
         }
     }
-    std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    crate::private_fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     let _lock = lock_manifest(dir)?;
     // The project name comes before the timestamp so the writer can identify
     // its archive folder in a file manager.
@@ -1400,7 +1400,7 @@ pub fn attempt_in_dir(
 ) -> Result<Point, String> {
     // Before `take`, because a directory that cannot be created has nowhere to
     // record the failure either; the error is returned rather than swallowed.
-    std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    crate::private_fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
 
     let outcome = take(path, slug, name, &dir, now_ms).and_then(|point| {
         if point.verified {
@@ -1450,7 +1450,7 @@ pub fn attempt_archive(
     take: impl FnOnce(&Path, &str, &str, &Path, i64) -> Result<Archive, String>,
 ) -> Result<Archive, String> {
     let dir = crate::projects::archives_dir(data_home, slug);
-    std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    crate::private_fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
 
     let outcome = take(path, slug, name, &dir, now_ms);
     if let Err(e) = &outcome {

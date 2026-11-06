@@ -384,7 +384,18 @@ fn render_scope_with(
     let planning = if crate::identity::has_needles(vault, pin.as_ref()) {
         planning_texts(&store)?
     } else { Vec::new() };
+    let has_new = items.iter().filter_map(|(id, _, _)| bodies.get(id)).any(|body| crate::figure_salvage::has_new_nodes(body));
+    #[cfg(test)]
+    let fixture = PUBLICATION_FIXTURE.get();
+    #[cfg(not(test))]
+    let fixture = false;
+    if has_new && !fixture && store.user_version().map_err(|e| e.to_string())? < store::document_format::READ_SCHEMA_VERSION {
+        return Err("This document format cannot be exported by this build".into());
+    }
+
+    let (plan, cover) = publication_media(&store, path, format, &book, &bodies, story.is_none())?;
     let mut preflight = checked(format, name, vault, pin.as_ref(), &items, &bodies, &planning);
+    crate::identity::publication_assets_checked(&mut preflight, plan.as_ref().is_some_and(|p| !p.assets.is_empty()) || cover.is_some());
     publication_disclosures(&mut preflight, &publication, format, export_pin.as_ref(), story.is_some(), single_scene);
     preflight.reason_history = crate::warning_history::read(&store)?;
     // A CROSS-IDENTITY LEAK BLOCKS AND CANNOT BE DISMISSED. Section 8 says so in
@@ -396,24 +407,8 @@ fn render_scope_with(
         return Err(crate::identity::blocked_message(&preflight.findings));
     }
 
-    let has_new = items.iter().filter_map(|(id, _, _)| bodies.get(id)).any(|body| crate::figure_salvage::has_new_nodes(body));
-    #[cfg(test)]
-    let fixture = PUBLICATION_FIXTURE.get();
-    #[cfg(not(test))]
-    let fixture = false;
-    if has_new && !fixture && store.user_version().map_err(|e| e.to_string())? < store::document_format::READ_SCHEMA_VERSION {
-        return Err("This document format cannot be exported by this build".into());
-    }
-
-    let xml_scopes = || -> Result<crate::publication_plan::Scopes, String> {
-        let mut scopes = publication_scopes(&store)?;
-        for scope in &mut scopes.rows { strip_xml_text(&mut scope.label); }
-        Ok(scopes)
-    };
     let written = match format {
         crate::export::Format::Markdown => {
-            let plan = if has_new { Some(crate::publication_plan::Plan::from_store(
-                &book, &bodies, publication_scopes(&store)?, &store, path)?) } else { None };
             crate::export::manuscript_planned(&book, &bodies, plan.as_ref())
         },
         // A PROOF COPY, and what the render answers with is HTML: the
@@ -426,21 +421,17 @@ fn render_scope_with(
             let cover = |side: &str| -> std::result::Result<Option<crate::pdf::Cover>, String> {
                 if story.is_some() { return Ok(None); }
                 let fit = crate::covers::fit_of(&store, side)?;
-                Ok(crate::covers::cover_of(&store, side)?
+                crate::covers::cover_of(&store, side)?
                     .and_then(|stored| {
                         crate::pictures::original(&crate::pictures::dir_for(path), &stored)
                     })
-                    .map(|(f, bytes)| crate::pdf::Cover {
-                        bytes,
+                    .map(|(f, bytes)| Ok(crate::pdf::Cover {
+                        bytes: crate::publication_plan::image_metadata::sanitize(&bytes)?,
                         media_type: f.mime(),
                         fit,
                     }))
+                    .transpose()
             };
-            let plan = if has_new {
-                Some(crate::publication_plan::Plan::from_store(
-                    &book, &bodies, publication_scopes(&store)?, &store, path,
-                )?)
-            } else { None };
             let html = crate::pdf::proof_document_planned(&crate::pdf::Proof {
                 language: strings.tag(),
                 book: &book,
@@ -468,24 +459,6 @@ fn render_scope_with(
         crate::export::Format::Epub => {
             let design = crate::design::design_of(&store)?;
             let style = crate::design::chapter_style_of(&store)?;
-            // THE FRONT COVER ONLY, and a cover whose file has gone leaves the
-            // book without one rather than refusing the export. 038's rule --
-            // a missing file does not clear the claim -- with the consequence
-            // that belongs to an export: what went missing is the cover, not
-            // the manuscript.
-            let cover = if story.is_some() { None } else { crate::covers::cover_of(&store, crate::covers::SIDE_FRONT)? }
-                .and_then(|stored| {
-                    crate::pictures::original(&crate::pictures::dir_for(path), &stored)
-                })
-                .map(|(f, bytes)| crate::epub::Cover {
-                    bytes,
-                    media_type: f.mime(),
-                    extension: f.extension(),
-                });
-            let plan = if items.iter().filter_map(|(id, _, _)| bodies.get(id))
-                .any(|body| crate::figure_salvage::has_new_nodes(body)) {
-                Some(crate::publication_plan::Plan::from_store(&book, &bodies, xml_scopes()?, &store, path)?)
-            } else { None };
             let mut notes_title = strings.t("book.notes");
             if plan.as_ref().is_some_and(|plan| !plan.notes.is_empty()) {
                 xml_characters_removed += strip_xml_text(&mut notes_title);
@@ -512,11 +485,6 @@ fn render_scope_with(
         // to be valid, so `docx::render` asks this function for nothing but
         // the book, the bodies and the language.
         crate::export::Format::Docx => {
-            let plan = if has_new {
-                Some(crate::publication_plan::Plan::from_store(
-                    &book, &bodies, xml_scopes()?, &store, path,
-                )?)
-            } else { None };
             crate::docx::render_planned(&book, &bodies, strings.tag(), plan.as_ref())?
         },
     };
@@ -613,6 +581,34 @@ struct Walked {
     openings: crate::export::ChapterOpenings,
 }
 
+fn publication_media(
+    store: &store::Store, path: &Path, format: crate::export::Format,
+    book: &crate::export::Book, bodies: &std::collections::HashMap<String, String>, include_cover: bool,
+) -> Result<(Option<crate::publication_plan::Plan>, Option<crate::epub::Cover>), String> {
+    let has_new = book.front.iter().chain(book.chapters).chain(book.back)
+        .filter_map(|(id, _, _)| bodies.get(id)).any(|body| crate::figure_salvage::has_new_nodes(body));
+    let plan = if has_new {
+        let mut scopes = publication_scopes(store)?;
+        if matches!(format, crate::export::Format::Epub | crate::export::Format::Docx) {
+            for scope in &mut scopes.rows { strip_xml_text(&mut scope.label); }
+        }
+        // The proof uses the same sanitized copies: not every platform's PDF
+        // renderer re-encodes the images it is handed.
+        Some(crate::publication_plan::Plan::from_store(book, bodies, scopes, store, path)?)
+    } else { None };
+    // A missing cover still leaves the book exportable, without changing its
+    // stored selection. Only the whole-book EPUB publishes the front cover.
+    let cover = if format == crate::export::Format::Epub && include_cover {
+        crate::covers::cover_of(store, crate::covers::SIDE_FRONT)?
+            .and_then(|stored| crate::pictures::original(&crate::pictures::dir_for(path), &stored))
+            .map(|(format, bytes)| Ok::<_, String>(crate::epub::Cover {
+                bytes: crate::publication_plan::image_metadata::sanitize(&bytes)?,
+                media_type: format.mime(), extension: format.extension(),
+            })).transpose()?
+    } else { None };
+    Ok((plan, cover))
+}
+
 fn publication_scopes(store: &store::Store) -> Result<crate::publication_plan::Scopes, String> {
     let walk = store::book_walk(store.items().map_err(|e| e.to_string())?);
     let collection = store.project_preset().map_err(|e| e.to_string())? == "collection";
@@ -694,11 +690,12 @@ pub(crate) fn preflight_of(
     vault: &crate::identity::Vault,
 ) -> std::result::Result<crate::identity::Preflight, String> {
     let store = store::Store::open_readonly(path).map_err(|e| e.to_string())?;
-    preflight_of_store(&store, name, format, vault)
+    preflight_of_store(&store, path, name, format, vault)
 }
 
 pub(crate) fn preflight_of_store(
     store: &store::Store,
+    path: &Path,
     name: &str,
     format: crate::export::Format,
     vault: &crate::identity::Vault,
@@ -712,7 +709,13 @@ pub(crate) fn preflight_of_store(
     let planning = if crate::identity::has_needles(vault, pin.as_ref()) {
         planning_texts(&store)?
     } else { Vec::new() };
+    let book = crate::export::Book {
+        publication: publication.contents.is_some().then_some(&publication),
+        single_scene, name: &name, contents_title: "", front: &front, chapters: &chapters, back: &back,
+    };
+    let (plan, cover) = publication_media(store, path, format, &book, &bodies, true)?;
     let mut report = checked(format, &name, vault, pin.as_ref(), &items, &bodies, &planning);
+    crate::identity::publication_assets_checked(&mut report, plan.as_ref().is_some_and(|p| !p.assets.is_empty()) || cover.is_some());
     publication_disclosures(&mut report, &publication, format, pin.as_ref(), false, single_scene);
     report.reason_history = crate::warning_history::read(store)?;
     Ok(report)
@@ -1065,7 +1068,7 @@ pub(crate) fn export_open_project(
     let vault = vault_for(data_home)?;
 
     let dir = export_dir(data_home);
-    fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    projects::create_export_dir(data_home, &dir).map_err(|e| format!("{}: {e}", dir.display()))?;
 
     export(
         &path,
@@ -1120,11 +1123,12 @@ pub(crate) fn epub_preview_image(
     state: State<'_, StoreState>,
     key: String,
 ) -> std::result::Result<String, String> {
-    let (asset, path) = {
+    let (records, path) = {
         let guard = locked(&state);
         let project = open_project(&guard)?;
-        (crate::figures::archive_asset(&project.store, &key)?, project.path.clone())
+        (project.store.figure_assets().map_err(|error| error.to_string())?, project.path.clone())
     };
+    let asset = crate::figures::archive_asset(&records, &path, &key)?;
     crate::figures::archive_image(&path, &asset)
 }
 

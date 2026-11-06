@@ -2,6 +2,7 @@ mod daily_target;
 pub mod core_constants;
 pub mod mobile_core;
 mod package_format;
+mod private_fs;
 
 // Both desktop and Android compile these same source files. There is one schema,
 // migration ladder, transaction implementation, and ProseMirror body format.
