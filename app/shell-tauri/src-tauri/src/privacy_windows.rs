@@ -3,7 +3,7 @@ use crate::{
     privacy_host as host,
 };
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     collections::{HashMap, VecDeque},
     ffi::OsString,
     os::windows::ffi::{OsStrExt, OsStringExt},
@@ -113,6 +113,8 @@ static APP: OnceLock<tauri::AppHandle> = OnceLock::new();
 thread_local! {
     static SURFACE: RefCell<Option<Surface>> = const { RefCell::new(None) };
     static ACTIVE_PICKER: RefCell<Option<IFileDialog>> = const { RefCell::new(None) };
+    // Any process on the desktop can post WM_DESTROY; only our own DestroyWindow ends the loop.
+    static DESTROYING: Cell<bool> = const { Cell::new(false) };
 }
 
 enum Mode {
@@ -299,6 +301,7 @@ fn run_window(
             if session_events {
                 WTSUnRegisterSessionNotification(window);
             }
+            DESTROYING.with(|flag| flag.set(true));
             DestroyWindow(window);
             let _ = ready.send(Err(std::io::Error::last_os_error()));
             return;
@@ -1004,6 +1007,7 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) ->
                 }
                 Some(0)
             }
+            WM_DESTROY if !DESTROYING.with(Cell::get) => Some(0),
             WM_DESTROY => {
                 KillTimer(hwnd, TIMER_IDLE);
                 if surface.session_events {

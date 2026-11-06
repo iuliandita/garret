@@ -324,9 +324,13 @@ pub fn import_name_ok(name: &str) -> bool {
     // check was here as belt and braces and is GONE: on Linux it is unreachable
     // behind the scan above, no input could kill it, and an unfalsifiable guard
     // on a security boundary is worse than none — it invites the reader to
-    // credit it for the refusal. What would make it live is a Windows path
-    // prefix, and this application is Linux-only by scope decision.
+    // credit it for the refusal.
     if name.contains('/') || name.contains('\\') || name.contains('\0') {
+        return false;
+    }
+    // On Windows `C:x.md` resolves against another drive's current folder and
+    // `x.md:s` names an alternate stream. Elsewhere `:` is an ordinary character.
+    if cfg!(windows) && name.contains(':') {
         return false;
     }
     let lower = name.to_ascii_lowercase();
@@ -3309,6 +3313,9 @@ mod tests {
             ".hidden.docx",
         ] {
             assert!(!import_name_ok(bad), "{bad:?} should be refused");
+        }
+        for colon in ["C:book.md", "book.md:stream.md", "Chapter 1: Start.md"] {
+            assert_eq!(import_name_ok(colon), !cfg!(windows), "{colon:?}");
         }
     }
 
