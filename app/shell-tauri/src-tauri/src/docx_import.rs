@@ -231,6 +231,7 @@ fn parse_attrs(s: &str) -> Vec<(String, String)> {
 /// (`collect_styles`, `walk_body`, `walk_para_content`) into a stack
 /// overflow.
 const MAX_XML_DEPTH: usize = 256;
+const MAX_XML_NODES: usize = 1_000_000;
 
 /// The whole tree under the (implicit) document root: a stack-based build
 /// over a flat scan of `<tag>`, `</tag>` and text between them. The XML
@@ -240,6 +241,7 @@ fn build_tree(xml: &str) -> Result<Vec<Node>, String> {
     let mut root: Vec<Node> = Vec::new();
     let mut stack: Vec<(String, Vec<(String, String)>, Vec<Node>)> = Vec::new();
     let mut i = 0usize;
+    let mut nodes = 0usize;
     let bytes = xml.as_bytes();
 
     let push_node = |stack: &mut Vec<(String, Vec<(String, String)>, Vec<Node>)>,
@@ -267,6 +269,8 @@ fn build_tree(xml: &str) -> Result<Vec<Node>, String> {
                     None => (rest, "<![CDATA[".len() + rest.len()),
                 };
                 if !text.is_empty() {
+                    nodes += 1;
+                    if nodes > MAX_XML_NODES { return Err(format!("XML exceeds {MAX_XML_NODES} nodes; refusing to parse further")); }
                     push_node(&mut stack, &mut root, Node::Text(text.to_string()));
                 }
                 i += advance;
@@ -304,6 +308,8 @@ fn build_tree(xml: &str) -> Result<Vec<Node>, String> {
                 Some(p) => (&body[..p], &body[p..]),
                 None => (body, ""),
             };
+            nodes += 1;
+            if nodes > MAX_XML_NODES { return Err(format!("XML exceeds {MAX_XML_NODES} nodes; refusing to parse further")); }
             let name = local_name(name_part).to_string();
             let attrs = parse_attrs(rest);
             if self_close {
@@ -316,6 +322,10 @@ fn build_tree(xml: &str) -> Result<Vec<Node>, String> {
             }
         } else {
             let end = xml[i..].find('<').map(|p| i + p).unwrap_or(bytes.len());
+            if end > i {
+                nodes += 1;
+                if nodes > MAX_XML_NODES { return Err(format!("XML exceeds {MAX_XML_NODES} nodes; refusing to parse further")); }
+            }
             let text = decode_entities(&xml[i..end]);
             if !text.is_empty() {
                 push_node(&mut stack, &mut root, Node::Text(text));
@@ -534,6 +544,27 @@ fn note_bodies(entries: &[(String, Vec<u8>)]) -> Result<NoteBodies, String> {
         }
     }
     Ok(result)
+}
+
+fn check_note_expansion(tree: &[Node], notes: &NoteBodies) -> Result<(), String> {
+    fn visit(nodes: &[Node], notes: &NoteBodies, total: &mut usize) -> Result<(), String> {
+        for node in nodes {
+            if let Node::Element { name, attrs, children } = node {
+                if matches!(name.as_str(), "footnoteReference" | "endnoteReference") {
+                    let key = (name.clone(), attr_val(attrs, "id").unwrap_or("").to_string());
+                    if let Some(note) = notes.get(&key) {
+                        *total = total.checked_add(note.body.len()).ok_or("note body expansion exceeds limit")?;
+                        if *total > MAX_PACKAGE_EXPANDED_BYTES {
+                            return Err(format!("note body expansion exceeds {MAX_PACKAGE_EXPANDED_BYTES} bytes; refusing to import"));
+                        }
+                    }
+                }
+                visit(children, notes, total)?;
+            }
+        }
+        Ok(())
+    }
+    visit(tree, notes, &mut 0)
 }
 
 /// A run's marks, from its own `w:rPr` (`w:b`, `w:i`, `w:u`), each read
@@ -1061,6 +1092,7 @@ fn parse_with_policy(bytes: &[u8], stem: &str, allow_new: bool) -> Result<DocxIm
 
     let tree = build_tree(&document_text)?;
     let notes = if allow_new { Some(note_bodies(&entries)?) } else { None };
+    if let Some(notes) = &notes { check_note_expansion(&tree, notes)?; }
     let mut losses = Losses::default();
     losses.revisions = count_revisions(&tree);
     let mut paras: Vec<ParaClass> = Vec::new();
@@ -1090,6 +1122,24 @@ mod tests {
                     block["content"].as_array().into_iter().flatten().filter(|node| node["type"] == "endnote").cloned()
                 }).collect::<Vec<_>>()
             }).collect()
+    }
+
+    #[test]
+    fn repeated_large_note_exceeds_expansion_budget() {
+        let reference = r#"<w:footnoteReference w:id="1"/>"#;
+        let document = doc(&format!("<w:p><w:r>{}</w:r></w:p>", reference.repeat(2050)));
+        let footnotes = format!(r#"<w:footnotes xmlns:w="{W_NS}"><w:footnote w:id="1"><w:p><w:r><w:t>{}</w:t></w:r></w:p></w:footnote></w:footnotes>"#, "x".repeat(64 * 1024));
+        let bytes = crate::epub::zip(&[
+            crate::epub::Entry::text("word/document.xml", &document),
+            crate::epub::Entry::text("word/footnotes.xml", &footnotes),
+        ]);
+        assert!(parse(&bytes, "notes").err().unwrap().contains("note body expansion exceeds"));
+    }
+
+    #[test]
+    fn xml_node_budget_refuses_excess() {
+        let xml = "<x/>".repeat(MAX_XML_NODES + 1);
+        assert!(build_tree(&xml).err().unwrap().contains("nodes"));
     }
 
     #[test]
