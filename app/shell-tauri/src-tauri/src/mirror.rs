@@ -1436,6 +1436,11 @@ pub struct Change {
     /// bring them back. The figure is on the ROW so the writer is told before
     /// they press; a notice afterwards is an apology.
     pub store_underlined: u64,
+    /// Hash of the exact source bytes parsed for this row, kept inside the host.
+    #[serde(skip)]
+    pub file_hash: Option<String>,
+    #[serde(skip)]
+    pub file_bytes: u64,
 }
 
 /// The prose changed and the book has not moved under it. **The only
@@ -1511,6 +1516,8 @@ pub fn change_set(
         error: None,
         can_accept: false,
         store_underlined: 0,
+        file_hash: None,
+        file_bytes: 0,
     };
 
     let mut rows: Vec<Change> = Vec::new();
@@ -1572,9 +1579,10 @@ pub fn change_set(
             .map(|i| i.title.clone())
             .unwrap_or_default();
 
-        let read = std::fs::read_to_string(dir.join(&entry.path))
-            .map_err(|e| e.to_string())
-            .and_then(|text| read_file(&text));
+        let source = std::fs::read_to_string(dir.join(&entry.path));
+        let file_bytes = source.as_ref().map(|text| text.len() as u64).unwrap_or(0);
+        let file_hash = source.as_ref().ok().map(|text| format!("{:016x}", hash64(text.as_bytes())));
+        let read = source.map_err(|e| e.to_string()).and_then(|text| read_file(&text));
         let file = match read {
             Ok(file) => file,
             Err(error) => {
@@ -1628,6 +1636,8 @@ pub fn change_set(
         let mut row = blank(id.clone(), entry.path.clone(), state, title);
         row.store_body = bodies.get(id.as_str()).cloned();
         row.file_body = file.body;
+        row.file_hash = file_hash;
+        row.file_bytes = file_bytes;
         // A prose row is applicable outright. A conflict is applicable only
         // with the book's side already on disk beside it -- the pass that
         // honours the pause writes it, and until it has, the accept would be
@@ -1731,7 +1741,9 @@ pub fn accept_plan(
 /// ever not byte-stable, wrong in content too.
 ///
 /// **THE TWO HALVES COME FROM OPPOSITE SIDES, DELIBERATELY.** `bytes`, `hash`
-/// and `mtime_ms` are re-stat-ed from the file the WRITER has; `doc_rev` and
+/// and `mtime_ms` describe the accepted file only if its hash still matches
+/// the change-set read. A newer save keeps its pause against the exact accepted
+/// bytes, including when it restores the earlier baseline. `doc_rev` and
 /// `words` describe what the BOOK now holds. Recording the store's own
 /// rendering of the accepted body instead would make the manifest describe a
 /// file that is not on disk, which is the one thing a baseline may never do.
@@ -1743,16 +1755,17 @@ pub fn accept_plan(
 /// is somewhere the application can put back.
 pub fn settle_accepted(
     dir: &std::path::Path,
-    paths: &[String],
+    rows: &[Change],
     accepted: &[crate::store::history::AcceptedDoc],
     now_ms: i64,
-) -> Result<(), String> {
+) -> Result<std::collections::HashSet<String>, String> {
     let Some(mut manifest) = crate::recovery::read_manifest::<MirrorEntry>(dir) else {
         // No manifest is not an error here: the acceptance already committed,
         // and a mirror with nothing to settle is a mirror the next pass builds
         // from scratch. Failing would report a lost accept that did not happen.
-        return Ok(());
+        return Ok(std::collections::HashSet::new());
     };
+    let mut resolved = std::collections::HashSet::new();
     let by_id: std::collections::HashMap<&str, &crate::store::history::AcceptedDoc> =
         accepted.iter().map(|a| (a.item_id.as_str(), a)).collect();
     for entry in &mut manifest.entries {
@@ -1761,19 +1774,30 @@ pub fn settle_accepted(
         };
         let full = dir.join(&entry.path);
         let bytes = std::fs::read(&full).map_err(|e| format!("{}: {e}", full.display()))?;
+        let hash = format!("{:016x}", hash64(&bytes));
+        let Some(row) = rows.iter().find(|row| row.id == entry.id && row.path == entry.path) else {
+            continue;
+        };
+        let Some(accepted_hash) = &row.file_hash else { continue; };
+        let unchanged = *accepted_hash == hash;
+        if unchanged { resolved.insert(entry.id.clone()); }
         entry.doc_rev = landed.rev;
-        entry.bytes = bytes.len() as u64;
-        entry.hash = format!("{:016x}", hash64(&bytes));
-        entry.mtime_ms = file_mtime_ms(&full).unwrap_or(now_ms);
+        entry.bytes = row.file_bytes;
+        entry.hash = accepted_hash.clone();
+        // Force a scan when a newer save differs, even if its size/time match an older baseline.
+        entry.mtime_ms = if unchanged { file_mtime_ms(&full).unwrap_or(now_ms) } else { i64::MIN };
         entry.words = crate::store::document_text(&landed.body)
             .map(|t| crate::words::count_words(&t))
             .unwrap_or(0);
     }
     manifest.generated_at = now_ms;
-    for path in paths {
-        let _ = std::fs::remove_file(dir.join(from_project_path(path)));
+    for entry in &manifest.entries {
+        if resolved.contains(&entry.id) {
+            let _ = std::fs::remove_file(dir.join(from_project_path(&entry.path)));
+        }
     }
-    crate::recovery::write_manifest(dir, &manifest)
+    crate::recovery::write_manifest(dir, &manifest)?;
+    Ok(resolved)
 }
 
 /// What one mirror file says, read back.
@@ -4703,8 +4727,49 @@ mod tests {
             .accept_from_mirror(&plan.accepts, "Before accepting from the readable folder")
             .unwrap();
         drop(store);
-        settle_accepted(&m.out, &plan.paths, &report.documents, NOW + 30_000).unwrap();
+        settle_accepted(&m.out, &rows, &report.documents, NOW + 30_000).unwrap();
         plan.paths
+    }
+
+    #[test]
+    fn a_save_between_change_set_and_settle_stays_pending() {
+        for restore_previous in [false, true] {
+            let tmp = tempfile::tempdir().unwrap();
+            let m = mirrored(tmp.path());
+            let entry = prose_entry(&m);
+            let original = std::fs::read(m.out.join(&entry.path)).unwrap();
+            rewrite_prose(&m, &entry, "the version being accepted");
+            let found = detect_and_persist(&m.out, &HashSet::new()).unwrap();
+            let rows = changes_now(&m);
+            let store = crate::store::Store::open(&m.src).unwrap();
+            let plan = accept_plan(&rows, &store.document_revs().unwrap(), &[entry.id.clone()]).unwrap();
+            // The change-set read is complete; simulate the other editor's next save.
+            if restore_previous {
+                std::fs::write(m.out.join(&entry.path), &original).unwrap();
+            } else {
+                rewrite_prose(&m, &entry, "a newer save that must remain in the folder");
+            }
+            let newer = std::fs::read(m.out.join(&entry.path)).unwrap();
+            let report = store.accept_from_mirror(&plan.accepts, "Before accepting from the readable folder").unwrap();
+            assert_eq!(crate::store::document_text(&report.documents[0].body).unwrap(), "the version being accepted");
+            drop(store);
+            let resolved = settle_accepted(&m.out, &rows, &report.documents, NOW + 30_000).unwrap();
+            clear_persisted_pauses(&m.out, &resolved).unwrap();
+            let paused = persisted_pauses(&m.out).unwrap();
+            let after = detect_and_persist(&m.out, &paused).unwrap();
+            pass(&m.src, "my-book", "My Book", &m.out, NOW + 40_000, &HashSet::new()).unwrap();
+            assert_eq!(std::fs::read(m.out.join(&entry.path)).unwrap(), newer);
+            assert!(!resolved.contains(&entry.id));
+            assert!(after.changed.contains(&entry.id));
+            let manifest: Manifest<MirrorEntry> = crate::recovery::read_manifest(&m.out).unwrap();
+            let baseline = manifest.entries.iter().find(|row| row.id == entry.id).unwrap();
+            assert_eq!(baseline.hash, rows[0].file_hash.as_deref().unwrap());
+            assert_eq!(baseline.bytes, rows[0].file_bytes);
+            let pending = changes_now(&m);
+            assert_eq!(pending[0].id, entry.id);
+            assert!(pending[0].can_accept);
+            assert!(found.changed.contains(&entry.id));
+        }
     }
 
     #[test]
