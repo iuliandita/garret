@@ -326,7 +326,7 @@ pub(crate) fn analytics_raw_export(
         current(&mut guard, generation, session_id.as_deref())?;
     }
     let dir = crate::export_dir(&data_home.0);
-    std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
+    crate::projects::create_export_dir(&data_home.0, &dir).map_err(|error| error.to_string())?;
     let mut staged = tempfile::NamedTempFile::new_in(&dir).map_err(|error| error.to_string())?;
     staged.write_all(&raw).map_err(|error| error.to_string())?;
     staged

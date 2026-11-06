@@ -89,19 +89,28 @@ fn recovery_manifest_matches(dir: &Path, kind: &str, stem: &str) -> bool {
     })
 }
 
+/// Mirror segments keep the writer's characters, so on Unix a backslash or a
+/// leading `X:` is an ordinary file name; only Windows reads them as path syntax.
+pub(crate) fn mirror_path_safe(path: &str) -> bool {
+    let windows_syntax = path.contains('\\')
+        || matches!(path.as_bytes(), [letter, b':', ..] if letter.is_ascii_alphabetic());
+    !path.is_empty()
+        && !Path::new(path).is_absolute()
+        && !path.contains('\0')
+        && !(cfg!(windows) && windows_syntax)
+        && path.split('/').all(|part| !part.is_empty() && part != "." && part != "..")
+        && Path::new(path).components().all(|component| matches!(component, Component::Normal(_)))
+}
+
 fn mirror_manifest_matches(dir: &Path, stem: &str) -> bool {
     crate::recovery::read_manifest::<crate::mirror::MirrorEntry>(dir).is_some_and(|manifest| {
         manifest.manifest_version == 1
             && manifest.kind == crate::recovery::KIND_MIRROR
             && manifest.project.slug == stem
-            && manifest.entries.iter().all(|entry| {
-                !entry.path.is_empty()
-                    && !Path::new(&entry.path).is_absolute()
-                    && !entry.path.contains('\\')
-                    && Path::new(&entry.path)
-                        .components()
-                        .all(|component| matches!(component, Component::Normal(_)))
-            })
+            && manifest
+                .entries
+                .iter()
+                .all(|entry| !entry.path.contains('\\') && mirror_path_safe(&entry.path))
     })
 }
 
@@ -257,6 +266,17 @@ mod tests {
 
     const ID: &str = "0123456789abcdef0123456789abcdef";
     const OTHER: &str = "fedcba9876543210fedcba9876543210";
+
+    #[test]
+    fn mirror_paths_refuse_traversal_but_keep_unix_title_characters() {
+        for refused in ["", "/abs.md", "a/../b.md", "./a.md", "a//b.md", "a\0b.md"] {
+            assert!(!mirror_path_safe(refused), "{refused:?}");
+        }
+        let titled = ["0001-Act-I-\\-Part-2.md", "C:notes/0001-a.md"];
+        for path in titled {
+            assert_eq!(mirror_path_safe(path), !cfg!(windows), "{path:?}");
+        }
+    }
 
     fn candidate(home: &Path) -> PathBuf {
         let path = home.join("book.db");

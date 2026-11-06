@@ -149,34 +149,29 @@ fn verified_original(path: &Path, asset: &FigureAsset) -> Result<Vec<u8>, String
     Ok(data)
 }
 
-/// The registered figure behind one `assets/<sha256>.<png|jpg>` key of an EPUB
-/// preview. The key must be `assets/` plus a known extension, and its stem must
-/// EQUAL a registered lowercase SHA-256 and the extension that asset's media
-/// type: equality against the registry is the whole hex check, so nothing the
-/// page sends is ever joined to a path.
-pub(crate) fn archive_asset(store: &Store, key: &str) -> Result<FigureAsset, String> {
+/// Resolve a publication hash against registered originals, outside the store
+/// lock. The native registry supplies every filename; the key never becomes a path.
+pub(crate) fn archive_asset(records: &[FigureAsset], db: &Path, key: &str) -> Result<FigureAsset, String> {
     let malformed = || "figure image key is malformed".to_string();
-    let (sha, ext) = key
-        .strip_prefix("assets/")
-        .and_then(|name| name.split_once('.'))
-        .ok_or_else(malformed)?;
-    let format = [pictures::Format::Png, pictures::Format::Jpeg]
-        .into_iter()
-        .find(|format| format.extension() == ext)
-        .ok_or_else(malformed)?;
-    store
-        .figure_assets()
-        .map_err(|e| e.to_string())?
-        .into_iter()
-        .find(|asset| asset.sha256 == sha && asset.mime == format.mime())
-        .ok_or_else(|| "unregistered figure image".to_string())
+    let (sha, ext) = key.strip_prefix("assets/").and_then(|name| name.split_once('.')).ok_or_else(malformed)?;
+    if sha.len() != 64 || !sha.bytes().all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c)) {
+        return Err(malformed());
+    }
+    let format = [pictures::Format::Png, pictures::Format::Jpeg].into_iter()
+        .find(|format| format.extension() == ext).ok_or_else(malformed)?;
+    for record in records.iter().filter(|record| record.mime == format.mime()) {
+        let copy = verified_original(&pictures::dir_for(db).join(&record.stored_name), record)
+            .and_then(|bytes| crate::publication_plan::image_metadata::sanitize(&bytes));
+        if copy.is_ok_and(|bytes| format!("{:x}", Sha256::digest(&bytes)) == sha) { return Ok(record.clone()); }
+    }
+    Err("unregistered figure image".into())
 }
 
-/// The original of an `archive_asset`, hash-verified and bounded by
-/// `MAX_PICTURE_BYTES`, as a `data:` URI.
+/// The same sanitized bytes named by the publication's content hash.
 pub(crate) fn archive_image(db: &Path, asset: &FigureAsset) -> Result<String, String> {
     let data = verified_original(&pictures::dir_for(db).join(&asset.stored_name), asset)?;
-    Ok(format!("data:{};base64,{}", asset.mime, pictures::base64(&data)))
+    let copy = crate::publication_plan::Asset::verified(asset, data)?;
+    Ok(format!("data:{};base64,{}", copy.mime, pictures::base64(&copy.bytes)))
 }
 
 /// Resolve a placement to a verified original; return only a bounded preview.

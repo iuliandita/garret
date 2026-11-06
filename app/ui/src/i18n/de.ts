@@ -1443,7 +1443,7 @@ export const DE = {
   "preflight.check.missing_metadata": "Erforderliche Felder",
   "preflight.check.broken_links": "Links",
   "preflight.check.validator": "Formatprüfung",
-  "preflight.check.assets": "Alternativtexte, Schriften und Bilder",
+  "preflight.check.assets": "Metadaten veröffentlichter Bilder",
   "preflight.state.ran": "geprüft",
   "preflight.state.vacuous": "nichts zu prüfen",
   "preflight.state.not_applicable": "nicht anwendbar",

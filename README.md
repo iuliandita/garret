@@ -19,6 +19,7 @@ or an internet connection to write. Your books stay on your own disk.
 The current published build is [0.0.11 alpha](https://github.com/iuliandita/garret/releases/tag/v0.0.11).
 See the [changelog](CHANGELOG.md), [published and development changes](docs/RELEASES.md) and the
 [compatibility and rollback guide](docs/COMPATIBILITY.md).
+Webview hardening on `develop` is listed separately from published features.
 
 From 0.0.7, desktop upgrades books to schema 18 after consent and a verified
 pre-upgrade copy; Android keeps schema-17 books at 17. Apps 0.0.5 and earlier refuse the upgraded book; 0.0.6 reads it.
@@ -88,7 +89,9 @@ and an optional refresh runs after you stop typing.
 Books live on your own disk. Recovery copies, scene history, salvage tools,
 and a readable folder help you recover work. Encrypted portable archives
 include a separate recovery key. An optional PIN lock conceals the app when
-you step away; it does not encrypt manuscript files.
+you step away; it does not encrypt manuscript files. On Unix, new books and
+settings are owner-only; existing permissions stay unchanged. See the
+[compatibility guide](docs/COMPATIBILITY.md) for the storage boundary.
 
 Series, optional session analytics, and local craft and consistency reports
 are included too. All of these tools are free.
@@ -241,6 +244,9 @@ local recovery copy; it cannot protect your work if you lose the device.
 
 garret remembers the backup destination folder. Making and saving each archive
 is manual. **Restore encrypted archive** restores it as a separate book.
+Archives do not prove who sent them; anyone with the public recipient key can
+create one. See [compatibility and recovery](docs/COMPATIBILITY.md) for this
+trust boundary.
 
 ### Move a book between desktop and Android
 
@@ -273,6 +279,7 @@ limits. Android transfer is not certified on physical devices.
 ### If a backup was interrupted
 
 Open the error's **Details** for the exact parent directory and retained folder.
+Details also includes the exact cleanup command for that retained folder.
 Close garret, preserve a local copy of that folder, and inspect it first.
 Application-private temporary files may contain unencrypted writing; keep them
 out of cloud folders. To list retained folders, replace the placeholders below

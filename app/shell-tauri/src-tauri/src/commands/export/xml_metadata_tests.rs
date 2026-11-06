@@ -13,13 +13,13 @@ fn xml_preflight_and_export_share_cleaned_blockers_and_warning_tokens() {
     for format in [crate::export::Format::Epub, crate::export::Format::Docx] {
         let pin = Pin { identity_id: "mine".into(), public: Public { name: "My\u{b}Name".into(), ..Default::default() }, publishing: crate::identity::Publishing { imprint: "My\u{1}Press".into(), rights: String::new() }, ..Default::default() };
         store.set_meta(crate::core_constants::PIN_KEY, &serde_json::to_string(&pin).unwrap()).unwrap();
-        let report = preflight_of_store(&store, "Book", format, &vault).unwrap();
+        let report = preflight_of_store(&store, &db, "Book", format, &vault).unwrap();
         assert!(report.blockers > 0);
         assert!(report.findings.iter().any(|finding| finding.surface == "document_body" && finding.matched == "Ada Vane"));
         assert!(report.fields.iter().all(|field| !field.value.contains(['\u{1}', '\u{b}'])));
         assert_eq!(render_project(&db, "Book", format, &vault, crate::strings::Strings::english()).err().unwrap(), crate::identity::blocked_message(&report.findings));
         store.delete_meta(crate::core_constants::PIN_KEY).unwrap();
-        let report = preflight_of_store(&store, "Book", format, &vault).unwrap();
+        let report = preflight_of_store(&store, &db, "Book", format, &vault).unwrap();
         let token = report.warning_tokens.iter().find(|token| report.findings[token.finding_index].surface == "item_title").unwrap();
         let finding = &report.findings[token.finding_index];
         assert_eq!(finding.offset, Some(0));

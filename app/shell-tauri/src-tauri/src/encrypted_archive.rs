@@ -248,7 +248,7 @@ fn checked_stage_directory(path: &Path, private: bool) -> Result<(), String> {
 #[cfg(not(target_os = "android"))]
 fn private_stage_root(data_home: &Path) -> Result<PathBuf, String> {
     let app_dir = data_home.join(crate::APP_DIR);
-    fs::create_dir_all(&app_dir).map_err(|_| "application staging parent unavailable")?;
+    crate::private_fs::create_dir_all(&app_dir).map_err(|_| "application staging parent unavailable")?;
     checked_stage_directory(&app_dir, false)?;
     let root = app_dir.join(PRIVATE_STAGE_DIR);
     let mut builder = fs::DirBuilder::new();
@@ -268,6 +268,14 @@ fn private_stage_root(data_home: &Path) -> Result<PathBuf, String> {
 #[derive(Clone, Copy)]
 enum StageScope { Private, Destination }
 
+fn command_argument(value: &str) -> String {
+    #[cfg(windows)]
+    let escaped = value.replace('\'', "''");
+    #[cfg(not(windows))]
+    let escaped = value.replace('\'', "'\\''");
+    format!("'{escaped}'")
+}
+
 fn stage(parent: &Path, scope: StageScope) -> Result<Stage, String> {
     let lock = stage_lock(parent)?;
     if let Some(name) = list_stages(parent)?.first() {
@@ -275,7 +283,9 @@ fn stage(parent: &Path, scope: StageScope) -> Result<Stage, String> {
             StageScope::Private => "application-private temporary backup files (may contain plaintext)",
             StageScope::Destination => "destination temporary encrypted files",
         };
-        return Err(format!("unfinished encrypted archive staging {name}; {scope}; parent directory: {}; retained stage: {}; inspect and preserve these files before deliberately discarding them", parent.display(), parent.join(name).display()));
+        let cleanup = format!("garret archive-stage-clean {} {}", command_argument(&parent.to_string_lossy()), command_argument(name));
+        let shell = if cfg!(windows) { " in PowerShell" } else { "" };
+        return Err(format!("unfinished encrypted archive staging {name}; {scope}; parent directory: {}; retained stage: {}; inspect and preserve these files before deliberately discarding them; then run{shell}: {cleanup}", parent.display(), parent.join(name).display()));
     }
     let temp = Builder::new().prefix(STAGE_PREFIX).tempdir_in(parent)
         .map_err(|e| format!("archive staging unavailable: {e}"))?;
@@ -787,6 +797,14 @@ mod tests {
     }
 
     #[test]
+    fn stage_cleanup_command_quotes_spaces_quotes_and_shell_expansion() {
+        #[cfg(windows)]
+        assert_eq!(command_argument("backup's $copies folder"), "'backup''s $copies folder'");
+        #[cfg(not(windows))]
+        assert_eq!(command_argument("backup's $copies folder"), "'backup'\\''s $copies folder'");
+    }
+
+    #[test]
     fn cleanup_only_accepts_an_owned_marked_stage() {
         let root = tempfile::tempdir().unwrap();
         let temp = stage(root.path(), StageScope::Destination).unwrap();
@@ -807,6 +825,8 @@ mod tests {
         assert!(error.contains("destination temporary encrypted files"));
         assert!(error.contains(&format!("parent directory: {}", root.path().display())));
         assert!(error.contains(&format!("retained stage: {}", retained.display())));
+        let cleanup = format!("garret archive-stage-clean {} {}", command_argument(&root.path().to_string_lossy()), command_argument(&name));
+        assert!(error.contains(&format!("then run: {cleanup}")), "{error}");
         assert_eq!(fs::read(retained.join("cipher.age")).unwrap(), b"partial");
         fs::write(retained.join(STAGE_MARKER), b"unrecognized").unwrap();
         assert!(cleanup_stage(root.path(), &name).unwrap_err().contains("marker missing or unrecognized"));

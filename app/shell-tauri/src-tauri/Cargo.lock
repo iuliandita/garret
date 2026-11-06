@@ -1360,6 +1360,7 @@ dependencies = [
  "gtk",
  "inotify",
  "javascriptcore-rs",
+ "libc",
  "miniz_oxide",
  "png 0.18.1",
  "quick-xml",

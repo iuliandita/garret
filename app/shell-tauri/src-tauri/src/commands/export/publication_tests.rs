@@ -135,6 +135,126 @@ fn epub(book: &crate::export::Book, walk: &Walked, plan: &Plan) -> Vec<u8> {
     .bytes
 }
 
+fn publication_package_strips_image_metadata(format: crate::export::Format) {
+    use crate::publication_plan::image_metadata::tests::{assert_no_metadata, jpeg_fixture, png_fixture};
+    use sha2::{Digest, Sha256};
+    let root = tempfile::tempdir().unwrap();
+    let db = root.path().join("book.db");
+    let store = store::Store::open(&db).unwrap();
+    store::figure_assets::test_support::install(&store);
+    let source = root.path().join("selected.image");
+    let originals = [png_fixture(), jpeg_fixture(6)];
+    let mut assets = Vec::new();
+    for (index, bytes) in originals.iter().enumerate() {
+        std::fs::write(&source, bytes).unwrap();
+        let asset = crate::figures::test_support::import(&db, &store, &source);
+        let scene = store.item_create(None, "scene", &format!("Scene {index}")).unwrap();
+        rusqlite::Connection::open(&db).unwrap().execute(
+            "UPDATE doc SET body=?1 WHERE item_id=?2",
+            rusqlite::params![crate::figures::tests::body(&asset), scene.id],
+        ).unwrap();
+        assets.push(asset);
+    }
+    for original in &originals {
+        std::fs::write(&source, original).unwrap();
+        let cover_name = crate::pictures::attach(&crate::pictures::dir_for(&db), &source).unwrap();
+        crate::covers::set_cover(&store, "front", &cover_name).unwrap();
+        {
+            let (written, _, _, report, _) = publishing_fixture(|| render_project(
+                &db, "Book", format, &crate::identity::Vault::default(), crate::strings::Strings::english(),
+            )).unwrap();
+            assert_eq!(report.checks.iter().find(|check| check.name == crate::identity::CHECK_ASSETS).unwrap().state,
+                crate::identity::STATE_RAN);
+            let media = if format == crate::export::Format::Markdown {
+                let out = tempfile::tempdir().unwrap();
+                crate::markdown_package::publish(&out.path().join("book.md"), &written.bytes, &written.assets).unwrap();
+                written.assets.keys().map(|name| (name.clone(), std::fs::read(out.path().join(name)).unwrap())).collect::<Vec<_>>()
+            } else {
+                crate::epub::read_zip(&written.bytes).unwrap().into_iter().filter(|(name, _)|
+                    name.starts_with("OEBPS/assets/") || name.starts_with("word/media/") ||
+                    (name.starts_with("OEBPS/cover.") && !name.ends_with(".xhtml"))).collect::<Vec<_>>()
+            };
+            assert_eq!(media.len(), if format == crate::export::Format::Epub { 3 } else { 2 });
+            for (name, bytes) in &media {
+                assert_no_metadata(bytes);
+                assert!(crate::pictures::inspect_original(bytes).is_ok(), "{name}");
+                if !name.starts_with("OEBPS/cover.") {
+                    let hash = format!("{:x}", Sha256::digest(bytes));
+                    assert!(name.contains(&hash), "{name}");
+                    assert!(assets.iter().all(|asset| !name.contains(&asset.sha256)));
+                }
+            }
+        }
+        assert_eq!(std::fs::read(crate::pictures::dir_for(&db).join(cover_name)).unwrap(), *original);
+    }
+    if format == crate::export::Format::Epub {
+        let (proof, _, _, report, _) = render_project(&db, "Book", crate::export::Format::Pdf,
+            &crate::identity::Vault::default(), crate::strings::Strings::english()).unwrap();
+        // The proof embeds the same sanitized copies, never the originals.
+        for (asset, original) in assets.iter().zip(&originals) {
+            let clean = Asset::verified(asset, original.clone()).unwrap().bytes;
+            assert!(proof.text().contains(&crate::pictures::base64(&clean)));
+            assert!(!proof.text().contains(&crate::pictures::base64(original)));
+        }
+        assert_eq!(report.checks.iter().find(|check| check.name == crate::identity::CHECK_ASSETS).unwrap().state,
+            crate::identity::STATE_RAN);
+    }
+    for (asset, original) in assets.iter().zip(&originals) {
+        assert_eq!(std::fs::read(crate::pictures::dir_for(&db).join(&asset.stored_name)).unwrap(), *original);
+        crate::figures::verify_original(&crate::pictures::dir_for(&db).join(&asset.stored_name), asset).unwrap();
+        let copy = Asset::verified(asset, original.clone()).unwrap();
+        let served = crate::figures::archive_asset(&assets, &db, &copy.href).unwrap();
+        assert_eq!(crate::figures::archive_image(&db, &served).unwrap(),
+            format!("data:{};base64,{}", copy.mime, crate::pictures::base64(&copy.bytes)));
+    }
+}
+
+#[test]
+fn publication_epub_strips_image_metadata_and_keeps_originals() {
+    publication_package_strips_image_metadata(crate::export::Format::Epub);
+}
+
+#[test]
+fn publication_docx_strips_image_metadata_and_keeps_originals() {
+    publication_package_strips_image_metadata(crate::export::Format::Docx);
+}
+
+#[test]
+fn publication_markdown_strips_image_metadata_and_keeps_originals() {
+    publication_package_strips_image_metadata(crate::export::Format::Markdown);
+}
+
+#[test]
+fn publication_preflight_checks_images_only_after_sanitizing_them() {
+    let root = tempfile::tempdir().unwrap();
+    let db = root.path().join("book.db");
+    let store = store::Store::open(&db).unwrap();
+    let vault = crate::identity::Vault::default();
+    let check = |format| preflight_of_store(&store, &db, "Book", format, &vault);
+    let state = |report: &crate::identity::Preflight| report.checks.iter()
+        .find(|check| check.name == crate::identity::CHECK_ASSETS).unwrap().state;
+    assert_eq!(state(&check(crate::export::Format::Epub).unwrap()), crate::identity::STATE_VACUOUS);
+    let source = root.path().join("cover.png");
+    std::fs::write(&source, crate::publication_plan::image_metadata::tests::png_fixture()).unwrap();
+    let cover = crate::pictures::attach(&crate::pictures::dir_for(&db), &source).unwrap();
+    crate::covers::set_cover(&store, "front", &cover).unwrap();
+    let report = check(crate::export::Format::Epub).unwrap();
+    assert_eq!(state(&report), crate::identity::STATE_RAN);
+    assert!(!report.skipped.contains(&crate::identity::CHECK_ASSETS));
+    assert_eq!(state(&check(crate::export::Format::Markdown).unwrap()), crate::identity::STATE_VACUOUS);
+    store::figure_assets::test_support::install(&store);
+    let asset = crate::figures::test_support::import(&db, &store, &source);
+    let scene = store.item_create(None, "scene", "Scene").unwrap();
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    conn.execute("UPDATE doc SET body=?1 WHERE item_id=?2", rusqlite::params![crate::figures::tests::body(&asset), scene.id]).unwrap();
+    for format in [crate::export::Format::Markdown, crate::export::Format::Docx, crate::export::Format::Epub] {
+        assert_eq!(state(&check(format).unwrap()), crate::identity::STATE_RAN);
+    }
+    // A registered file that no longer verifies cannot earn a positive check.
+    std::fs::write(crate::pictures::dir_for(&db).join(&asset.stored_name), b"changed").unwrap();
+    assert!(check(crate::export::Format::Markdown).unwrap_err().contains("mismatch"));
+}
+
 #[test]
 fn docx_publication_uses_native_notes_scopes_and_inline_media() {
     for (numbering, selected, sections, expected_numbers) in [
@@ -635,7 +755,7 @@ fn unknown_note_numbering_does_not_block_legacy_exports_or_preflight() {
             crate::strings::Strings::english(),
         )
         .unwrap();
-        preflight_of_store(&store, "Book", format, &vault).unwrap();
+        preflight_of_store(&store, &db, "Book", format, &vault).unwrap();
     }
 }
 
@@ -984,7 +1104,7 @@ fn the_epub_preview_lists_each_figure_image_and_serves_it_by_key() {
     for (asset, original, mime, ext) in [(&fixture.assets[0], crate::figures::tests::PNG, "image/png", "png"), (&fixture.assets[1], &jpeg[..], "image/jpeg", "jpg")] {
         let key = format!("assets/{}.{ext}", asset.sha256);
         assert!(listed.contains(&key.as_str()), "{key} in {listed:?}");
-        let served = crate::figures::archive_asset(&fixture.store, &key).unwrap();
+        let served = crate::figures::archive_asset(&fixture.store.figure_assets().unwrap(), &fixture.db, &key).unwrap();
         assert_eq!(
             crate::figures::archive_image(&fixture.db, &served).unwrap(),
             format!("data:{mime};base64,{}", crate::pictures::base64(original))
@@ -1014,7 +1134,7 @@ fn a_preview_image_key_is_only_ever_a_registered_hash() {
         format!("assets/{}.png", fixture.assets[0].stored_name),
         format!("assets/{unregistered}.png"),
     ] {
-        assert!(crate::figures::archive_asset(&fixture.store, &key).is_err(), "{key:?}");
+        assert!(crate::figures::archive_asset(&fixture.store.figure_assets().unwrap(), &fixture.db, &key).is_err(), "{key:?}");
     }
 }
 
@@ -1022,7 +1142,7 @@ fn a_preview_image_key_is_only_ever_a_registered_hash() {
 fn a_preview_image_that_changed_on_disk_is_refused() {
     let fixture = fixture();
     let asset = &fixture.assets[0];
-    let served = crate::figures::archive_asset(&fixture.store, &format!("assets/{}.png", asset.sha256)).unwrap();
+    let served = crate::figures::archive_asset(&fixture.store.figure_assets().unwrap(), &fixture.db, &format!("assets/{}.png", asset.sha256)).unwrap();
     std::fs::write(crate::pictures::dir_for(&fixture.db).join(&asset.stored_name), b"changed").unwrap();
     assert!(crate::figures::archive_image(&fixture.db, &served).unwrap_err().contains("mismatch"));
 }

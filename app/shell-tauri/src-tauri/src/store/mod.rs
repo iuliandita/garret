@@ -462,15 +462,38 @@ pub fn fold_for_sort(s: &str) -> String {
     out
 }
 
+/// Apply the same connection policy before reading any book schema.
+pub(crate) fn open_connection(
+    path: impl AsRef<Path>,
+    flags: rusqlite::OpenFlags,
+) -> rusqlite::Result<Connection> {
+    use rusqlite::config::DbConfig;
+    let conn = Connection::open_with_flags(path, flags)?;
+    conn.set_db_config(DbConfig::SQLITE_DBCONFIG_TRUSTED_SCHEMA, false)?;
+    conn.set_db_config(DbConfig::SQLITE_DBCONFIG_DEFENSIVE, true)?;
+    Ok(conn)
+}
+
+fn connection_version(conn: &Connection) -> Result<i64> {
+    let version: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
+    if version < 0 {
+        return Err(StoreError::Corrupt("negative book schema version".into()));
+    }
+    Ok(version)
+}
+
 impl Store {
     pub fn open(path: &Path) -> Result<Store> {
-        Self::prepare_writable(Connection::open(path)?)
+        #[cfg(unix)]
+        crate::private_fs::prepare_database(path)
+            .map_err(|e| StoreError::Corrupt(format!("cannot create book: {e}")))?;
+        Self::prepare_writable(open_connection(path, rusqlite::OpenFlags::default())?)
     }
 
     pub fn open_existing(path: &Path) -> Result<Store> {
-        let conn = Connection::open_with_flags(path,
+        let conn = open_connection(path,
             rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX)?;
-        let version: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
+        let version = connection_version(&conn)?;
         if version == 0 {
             return Err(StoreError::Corrupt("the selected file is not an initialized book".into()));
         }
@@ -483,12 +506,12 @@ impl Store {
 
     /// Restores stay usable by the source reader; legacy bookkeeping needs 17.
     pub(crate) fn open_restored(path: &Path) -> Result<Store> {
-        let conn = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE)?;
+        let conn = open_connection(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE)?;
         Self::prepare_writable_to(conn, 17)
     }
 
     fn prepare_writable_to(conn: Connection, ceiling: i64) -> Result<Store> {
-        let version: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
+        let version = connection_version(&conn)?;
         if version > READ_SCHEMA_VERSION {
             return Err(StoreError::NewerSchema { found: version, supported: READ_SCHEMA_VERSION });
         }
@@ -534,7 +557,7 @@ impl Store {
     }
 
     pub fn open_readonly(path: &Path) -> Result<Store> {
-        let conn = Connection::open_with_flags(
+        let conn = open_connection(
             path,
             rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
         )?;
@@ -556,7 +579,10 @@ impl Store {
         if &header[..16] != b"SQLite format 3\0" {
             return Err(invalid());
         }
-        let version = u32::from_be_bytes(header[60..64].try_into().unwrap()) as i64;
+        let version = i32::from_be_bytes(header[60..64].try_into().unwrap()) as i64;
+        if version < 0 {
+            return Err(StoreError::Corrupt("negative book schema version".into()));
+        }
         if version > READ_SCHEMA_VERSION {
             return Err(StoreError::NewerSchema {
                 found: version,
@@ -597,7 +623,7 @@ impl Store {
             }
         }
         uri.push_str(suffix);
-        let conn = Connection::open_with_flags(
+        let conn = open_connection(
             uri,
             rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY
                 | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX
@@ -652,6 +678,9 @@ impl Store {
     /// `vacuum_into_adopts_a_zero_byte_destination_rather_than_refusing_it` so
     /// nobody credits the refusal for more than it does.
     pub fn vacuum_into(&self, dest: &Path) -> Result<()> {
+        #[cfg(unix)]
+        crate::private_fs::prepare_database(dest)
+            .map_err(|e| StoreError::Corrupt(format!("cannot create book copy: {e}")))?;
         // BOUND, never formatted: a project slug reaches this path.
         self.conn
             .execute("VACUUM INTO ?1", [dest.to_string_lossy().as_ref()])?;
@@ -659,9 +688,7 @@ impl Store {
     }
 
     pub fn user_version(&self) -> Result<i64> {
-        Ok(self
-            .conn
-            .query_row("PRAGMA user_version", [], |r| r.get(0))?)
+        connection_version(&self.conn)
     }
 
     /// A LADDER, one step per version, each step applied only to a file behind
@@ -2620,6 +2647,42 @@ pub(crate) fn historical_test_store(path: &Path, version: i64) -> Store {
 mod tests {
     use super::*;
     use crate::test_support::body;
+
+    #[test]
+    fn received_book_connections_use_defensive_untrusted_schemas() {
+        use rusqlite::config::DbConfig;
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("book.db");
+        for open in [Store::open, Store::open_existing, Store::open_restored, Store::open_readonly, Store::open_mobile_probe] {
+            let store = open(&path).unwrap();
+            assert!(!store.conn.db_config(DbConfig::SQLITE_DBCONFIG_TRUSTED_SCHEMA).unwrap());
+            assert!(store.conn.db_config(DbConfig::SQLITE_DBCONFIG_DEFENSIVE).unwrap());
+            assert_eq!(store.user_version().unwrap(), SCHEMA_VERSION);
+        }
+        let store = Store::open_existing(&path).unwrap();
+        store.set_meta("connection_probe", "writable").unwrap();
+        let before: i64 = store.conn.pragma_query_value(None, "schema_version", |row| row.get(0)).unwrap();
+        store.conn.pragma_update(None, "schema_version", before + 1).unwrap();
+        let after: i64 = store.conn.pragma_query_value(None, "schema_version", |row| row.get(0)).unwrap();
+        assert_eq!(after, before, "defensive mode must ignore schema-version writes");
+    }
+
+    #[test]
+    fn received_books_with_negative_schema_versions_are_refused_without_changes() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("book.db");
+        let store = Store::open(&path).unwrap();
+        store.set_meta("preserve", "original manuscript").unwrap();
+        drop(store);
+        Connection::open(&path).unwrap().pragma_update(None, "user_version", -1).unwrap();
+        for open in [Store::open, Store::open_existing, Store::open_restored, Store::open_readonly, Store::open_mobile_probe] {
+            let error = open(&path).unwrap_err();
+            assert!(matches!(error, StoreError::Corrupt(ref reason) if reason == "negative book schema version"), "{error}");
+        }
+        let original = Connection::open(&path).unwrap();
+        assert_eq!(original.pragma_query_value(None, "user_version", |row| row.get::<_, i64>(0)).unwrap(), -1);
+        assert_eq!(original.query_row("SELECT value FROM meta WHERE key = 'preserve'", [], |row| row.get::<_, String>(0)).unwrap(), "original manuscript");
+    }
 
     #[test]
     fn fold_for_sort_lowers_case_and_strips_latin_diacritics() {

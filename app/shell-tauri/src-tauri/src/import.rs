@@ -216,26 +216,60 @@ fn can_close(text: &str, at: usize, width: usize, c: u8) -> bool {
 /// differing length, which is a parser of its own and buys nothing for a subset
 /// with two marks. A file that leans on it imports with those delimiters
 /// visible, which is the stated floor.
-fn closer(text: &str, bytes: &[u8], from: usize, width: usize, c: u8) -> Option<usize> {
-    let mut i = from;
-    while i < bytes.len() {
-        if bytes[i] == b'\\' {
-            // An escaped delimiter is not a delimiter. Skipping two bytes is
-            // safe: `\` is ASCII, so i+1 is a character boundary.
-            i += 2;
-            continue;
-        }
-        if bytes[i] == c {
-            let w = run_width(bytes, i, c);
-            if w == width && can_close(text, i, w, c) {
-                return Some(i);
+struct Closers {
+    positions: [Vec<usize>; 6],
+    cursors: [usize; 6],
+    #[cfg(test)]
+    work: usize,
+}
+
+impl Closers {
+    fn new(text: &str) -> Self {
+        let bytes = text.as_bytes();
+        let mut out = Self {
+            positions: std::array::from_fn(|_| Vec::new()),
+            cursors: [0; 6],
+            #[cfg(test)]
+            work: 0,
+        };
+        let mut i = 0;
+        while i < bytes.len() {
+            #[cfg(test)]
+            { out.work += 1; }
+            let c = bytes[i];
+            if c == b'\\' {
+                i += 2;
+            } else if c == b'*' || c == b'_' {
+                let width = run_width(bytes, i, c);
+                #[cfg(test)]
+                { out.work += width; }
+                if width <= 3 && can_close(text, i, width, c) {
+                    out.positions[Self::key(width, c)].push(i);
+                }
+                i += width;
+            } else {
+                i += 1;
             }
-            i += w;
-            continue;
         }
-        i += 1;
+        out
     }
-    None
+
+    fn key(width: usize, c: u8) -> usize {
+        usize::from(c == b'_') * 3 + width - 1
+    }
+
+    // Inline parsing asks in increasing source order; each closer is visited once.
+    fn closer(&mut self, from: usize, width: usize, c: u8) -> Option<usize> {
+        let key = Self::key(width, c);
+        let positions = &self.positions[key];
+        let cursor = &mut self.cursors[key];
+        while *cursor < positions.len() && positions[*cursor] < from {
+            *cursor += 1;
+            #[cfg(test)]
+            { self.work += 1; }
+        }
+        positions.get(*cursor).copied()
+    }
 }
 
 /// One paragraph's text split into marked runs.
@@ -245,6 +279,11 @@ fn closer(text: &str, bytes: &[u8], from: usize, width: usize, c: u8) -> Option<
 /// would recover is an ordering the store cannot represent and `export::wrap_marks`
 /// deliberately normalises away.
 fn inline(text: &str) -> Vec<Run> {
+    let mut closers = Closers::new(text);
+    inline_with(text, |from, width, c| closers.closer(from, width, c))
+}
+
+fn inline_with(text: &str, mut closer: impl FnMut(usize, usize, u8) -> Option<usize>) -> Vec<Run> {
     let bytes = text.as_bytes();
     let mut runs: Vec<Run> = Vec::new();
     let mut current = String::new();
@@ -302,7 +341,7 @@ fn inline(text: &str) -> Vec<Run> {
                 // twice and close once, and the tail would keep the mark.
                 let adds = (add_em && !em) || (add_strong && !strong);
                 if adds && can_open(text, bytes, i, width, b) {
-                    if let Some(at) = closer(text, bytes, i + width, width, b) {
+                    if let Some(at) = closer(i + width, width, b) {
                         flush(&mut current, em, strong);
                         pending.push((at, em, strong));
                         em |= add_em;
@@ -584,6 +623,67 @@ pub(crate) fn parse_with(source: &str, stem: &str, mut read: impl FnMut(&[String
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn old_closer(text: &str, bytes: &[u8], from: usize, width: usize, c: u8) -> Option<usize> {
+        let mut i = from;
+        while i < bytes.len() {
+            if bytes[i] == b'\\' {
+                // An escaped delimiter is not a delimiter. Skipping two bytes is
+                // safe: `\` is ASCII, so i+1 is a character boundary.
+                i += 2;
+                continue;
+            }
+            if bytes[i] == c {
+                let w = run_width(bytes, i, c);
+                if w == width && can_close(text, i, w, c) {
+                    return Some(i);
+                }
+                i += w;
+                continue;
+            }
+            i += 1;
+        }
+        None
+    }
+
+    #[test]
+    fn indexed_closers_keep_the_original_inline_output() {
+        fn check(text: &str) {
+            let old = inline_with(text, |from, width, c| old_closer(text, text.as_bytes(), from, width, c));
+            assert_eq!(inline(text), old, "{text:?}");
+        }
+        for text in [
+            "plain text", "*one* **two** ***three***", "_one_ __two__ ___three___",
+            "*a *b* c*", "**a *b* c**", "_a __b__ c_", "*a _b* c_",
+            r"\*a* \\**b** *c\*d*", "snake_case_names a_b_c", "é_中_字 *שלום*",
+            "*a *a *a ", "****a**** _____b_____", "_*x*_ **_y_**", "\\é*a*",
+            "*\u{2003}a* *a\u{2003}*", "**a***b** _a__b_", "*a\\", "*a\\*",
+        ] { check(text); }
+        // Exhaust small combinations as well as the readable cases above.
+        let alphabet = ['*', '_', '\\', 'a', ' ', 'é'];
+        for length in 0..=6 {
+            for mut code in 0..alphabet.len().pow(length) {
+                let mut text = String::new();
+                for _ in 0..length {
+                    text.push(alphabet[code % alphabet.len()]);
+                    code /= alphabet.len();
+                }
+                check(&text);
+            }
+        }
+    }
+
+    #[test]
+    fn unclosed_openers_take_linear_work() {
+        let text = "*a ".repeat(160_000);
+        let start = std::time::Instant::now();
+        let mut closers = Closers::new(&text);
+        let runs = inline_with(&text, |from, width, c| closers.closer(from, width, c));
+        assert_eq!(runs, vec![Run { text: text.clone(), em: false, strong: false }]);
+        assert_eq!(inline(&text), runs);
+        assert!(closers.work <= 3 * text.len(), "{} operations for {} bytes", closers.work, text.len());
+        assert!(start.elapsed() < std::time::Duration::from_secs(5), "480 KB of unclosed emphasis exceeded five seconds");
+    }
+
 
     fn titles(imported: &Imported) -> Vec<(&str, Option<usize>, &str)> {
         imported
