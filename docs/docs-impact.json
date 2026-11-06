@@ -26,9 +26,9 @@
       "breaking": "none",
       "docs": {},
       "migration": "",
-      "no_impact": "The reading pager builds its page controls only when there is more than one page, and two unused catalog keys are removed; no visible behavior changes.",
-      "note": "The reading pager builds its page controls only when there is more than one page, and two unused catalog keys are removed; no visible behavior changes.",
-      "source_sha256": "a02d46caf68e11ee7a29ad00bc3115d6d7e70d564db3df60299f7a7dbad0ac93"
+      "no_impact": "Statistics CSV now uses the existing craft report text rule for its five text columns. Numeric cells, JSON exports, panel labels, controls, and file selection stay unchanged; no writing or book-format guidance changes.",
+      "note": "Statistics CSV now uses the existing craft report text rule for its five text columns. Numeric cells, JSON exports, panel labels, controls, and file selection stay unchanged; no writing or book-format guidance changes.",
+      "source_sha256": "436e55e8c5e31535f0e8aa404aec7902d0a659a25a02e70df9c92c55859585aa"
     },
     "encryption": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
