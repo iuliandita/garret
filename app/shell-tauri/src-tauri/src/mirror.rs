@@ -6,6 +6,9 @@
 
 use crate::store::history::hash64;
 
+#[path = "mirror_io.rs"]
+pub(crate) mod io;
+
 /// The bidi controls the design names, removed rather than escaped.
 ///
 /// A right-to-left override inside a filename makes the name render as
@@ -213,7 +216,7 @@ fn describe_with_checked(
     content_digest: Option<[u8; 32]>,
 ) -> MirrorReport {
     let manifest: Option<crate::recovery::Manifest<MirrorEntry>> =
-        crate::recovery::read_manifest(dir);
+        read_manifest(dir).ok().flatten();
     let generated_at = manifest.as_ref().map(|m| m.generated_at);
     let (identity_check, persisted_finding) =
         crate::mirror_identity::reported(dir, manifest.as_ref(), content_digest);
@@ -453,7 +456,7 @@ fn pass_inner(
         (items, bodies, doc_revs, texts, schema_version, dictionary, plan)
     };
 
-    std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    io::create(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     let mut effective_pauses = persisted_pauses(dir)?;
     effective_pauses.extend(paused.iter().cloned());
     let paused = &effective_pauses;
@@ -461,9 +464,7 @@ fn pass_inner(
     // What the last pass left, by id. `rev` AND `path`, because either can move
     // without the other: an edit changes the rev, a reorder changes the path.
     let previous: Vec<MirrorEntry> = if paused.is_empty() {
-        crate::recovery::read_manifest(dir)
-            .map(|m: crate::recovery::Manifest<MirrorEntry>| m.entries)
-            .unwrap_or_default()
+        read_manifest(dir)?.map(|manifest| manifest.entries).unwrap_or_default()
     } else {
         strict_entries(dir)?
     };
@@ -530,12 +531,8 @@ fn pass_inner(
                 if old.doc_rev != doc_rev || old.hash != content_hash {
                     let rel = from_project_path(&old.path);
                     let full = dir.join(&rel);
-                    if let Some(parent) = full.parent() {
-                        std::fs::create_dir_all(parent)
-                            .map_err(|e| format!("{}: {e}", parent.display()))?;
-                    }
-                    if let Some(copy) = &planned { retain_mirror_assets(full.parent().ok_or("missing mirror parent")?, &copy.assets)?; }
-                    std::fs::write(&full, &content)
+                    if let Some(copy) = &planned { retain_mirror_assets(dir, &rel, &copy.assets)?; }
+                    io::write(dir, &rel, content.as_bytes())
                         .map_err(|e| format!("{}: {e}", full.display()))?;
                     sidecars.insert(rel);
                 }
@@ -550,9 +547,7 @@ fn pass_inner(
         }
 
         if let Some(copy) = &planned {
-            let parent = dir.join(&place.path).parent().ok_or("missing mirror parent")?.to_path_buf();
-            std::fs::create_dir_all(&parent).map_err(|error| error.to_string())?;
-            retain_mirror_assets(&parent, &copy.assets)?;
+            retain_mirror_assets(dir, &place.path, &copy.assets)?;
         }
 
         // UNCHANGED means both revisions, the path, and rendered content match.
@@ -576,10 +571,7 @@ fn pass_inner(
         }
 
         let full = dir.join(&place.path);
-        if let Some(parent) = full.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| format!("{}: {e}", parent.display()))?;
-        }
-        std::fs::write(&full, &content).map_err(|e| format!("{}: {e}", full.display()))?;
+        io::write(dir, &place.path, content.as_bytes()).map_err(|e| format!("{}: {e}", full.display()))?;
         written += 1;
         entries.push(MirrorEntry {
             id: item.id.clone(),
@@ -588,7 +580,7 @@ fn pass_inner(
             doc_rev,
             bytes: content.len() as u64,
             hash: content_hash,
-            mtime_ms: file_mtime_ms(&full).unwrap_or(now_ms),
+            mtime_ms: mirror_mtime_ms(dir, &place.path).unwrap_or(now_ms),
             words,
         });
     }
@@ -603,7 +595,7 @@ fn pass_inner(
             continue;
         }
         let stale = dir.join(&old.path);
-        match std::fs::remove_file(&stale) {
+        match io::remove(dir, &old.path, false) {
             Ok(()) => removed += 1,
             // Recorded, never fatal, for `take_point`'s reason: a file that
             // could not be removed is a directory with one stale scene in it,
@@ -642,7 +634,7 @@ fn pass_inner(
         },
         entries.clone(),
     );
-    crate::recovery::write_manifest(dir, &manifest)?;
+    write_manifest(dir, &manifest)?;
     let wordlist_hash = dictionary.as_ref().ok()
         .and_then(|words| crate::mirror_wordlist::render(words).ok())
         .map(|text| format!("{:016x}", hash64(text.as_bytes())));
@@ -695,14 +687,13 @@ pub fn scan(dir: &std::path::Path, entries: &[MirrorEntry]) -> ScanReport {
     let known: HashSet<&str> = entries.iter().map(|e| e.path.as_str()).collect();
 
     for entry in entries {
-        let full = dir.join(&entry.path);
-        match std::fs::metadata(&full) {
+        match io::metadata(dir, &entry.path) {
             Ok(meta) => {
                 // BOTH, and neither alone. A size-only check misses a typo fix
                 // (one byte for one byte); an mtime-only check misses a
                 // filesystem whose timestamp granularity swallowed the write.
                 let moved = meta.len() != entry.bytes
-                    || file_mtime_ms(&full).unwrap_or(entry.mtime_ms) != entry.mtime_ms;
+                    || metadata_mtime_ms(&meta).unwrap_or(entry.mtime_ms) != entry.mtime_ms;
                 if moved {
                     report.candidates.push(entry.id.clone());
                 }
@@ -742,7 +733,7 @@ pub fn confirm(
         if !wanted.contains(entry.id.as_str()) {
             continue;
         }
-        let Ok(bytes) = std::fs::read(dir.join(&entry.path)) else {
+        let Ok(bytes) = io::read(dir, &entry.path, crate::MAX_IMPORT_BYTES) else {
             continue;
         };
         if format!("{:016x}", hash64(&bytes)) != entry.hash {
@@ -888,7 +879,7 @@ pub fn persisted_pauses(
     dir: &std::path::Path,
 ) -> Result<std::collections::HashSet<String>, String> {
     let path = dir.join(PAUSE_STATE_NAME);
-    let bytes = match std::fs::read(&path) {
+    let bytes = match io::read(dir, PAUSE_STATE_NAME, crate::MAX_IMPORT_BYTES) {
         Ok(bytes) => bytes,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Default::default()),
         Err(error) => return Err(format!("{}: {error}", path.display())),
@@ -910,7 +901,7 @@ pub fn persist_pauses(
 ) -> Result<(), String> {
     // Validate an existing reserved-name file before replacing it. A writer's
     // unrelated file must never be claimed merely because its name collided.
-    match std::fs::metadata(dir.join(PAUSE_STATE_NAME)) {
+    match io::metadata(dir, PAUSE_STATE_NAME) {
         Ok(_) => {
             if persisted_pauses(dir)? == *ids {
                 return Ok(());
@@ -923,7 +914,7 @@ pub fn persist_pauses(
         }
         Err(error) => return Err(format!("{}: {error}", dir.join(PAUSE_STATE_NAME).display())),
     }
-    std::fs::create_dir_all(dir).map_err(|error| format!("{}: {error}", dir.display()))?;
+    io::create(dir).map_err(|error| format!("{}: {error}", dir.display()))?;
     let mut ids: Vec<String> = ids.iter().cloned().collect();
     ids.sort();
     let bytes = serde_json::to_vec_pretty(&PersistedPauses {
@@ -934,25 +925,9 @@ pub fn persist_pauses(
     .map_err(|error| error.to_string())?;
     static NEXT_TEMP: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let ordinal = NEXT_TEMP.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let tmp = dir.join(format!(
-        "{PAUSE_TEMP_PREFIX}{}.{}.tmp",
-        std::process::id(),
-        ordinal
-    ));
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&tmp)
-        .map_err(|error| format!("{}: {error}", tmp.display()))?;
-    use std::io::Write;
-    if let Err(error) = file.write_all(&bytes).and_then(|_| file.sync_all()) {
-        let _ = std::fs::remove_file(&tmp);
-        return Err(format!("{}: {error}", tmp.display()));
-    }
-    std::fs::rename(&tmp, dir.join(PAUSE_STATE_NAME)).map_err(|error| {
-        let _ = std::fs::remove_file(&tmp);
-        format!("{}: {error}", dir.join(PAUSE_STATE_NAME).display())
-    })
+    let temp = format!("{PAUSE_TEMP_PREFIX}{}.{}.tmp", std::process::id(), ordinal);
+    io::atomic(dir, PAUSE_STATE_NAME, &temp, &bytes)
+        .map_err(|error| format!("{}: {error}", dir.join(PAUSE_STATE_NAME).display()))
 }
 
 pub fn detect_and_persist(
@@ -1001,11 +976,8 @@ pub fn clear_persisted_pauses(
 }
 
 fn strict_entries(dir: &std::path::Path) -> Result<Vec<MirrorEntry>, String> {
-    let path = dir.join(crate::recovery::MANIFEST_NAME);
-    let text = std::fs::read(&path).map_err(|error| format!("{}: {error}", path.display()))?;
-    serde_json::from_slice::<crate::recovery::Manifest<MirrorEntry>>(&text)
-        .map(|manifest| manifest.entries)
-        .map_err(|error| format!("{}: {error}", path.display()))
+    read_manifest(dir)?.map(|manifest| manifest.entries)
+        .ok_or_else(|| "readable-folder manifest is missing".to_string())
 }
 
 fn paused_report(paused: &std::collections::HashSet<String>) -> DetectReport {
@@ -1032,7 +1004,7 @@ fn confirm_with_failures(
         if !wanted.contains(entry.id.as_str()) {
             continue;
         }
-        match std::fs::read(dir.join(&entry.path)) {
+        match io::read(dir, &entry.path, crate::MAX_IMPORT_BYTES) {
             Ok(bytes) if format!("{:016x}", hash64(&bytes)) != entry.hash => {
                 changed.push(entry.id.clone())
             }
@@ -1066,7 +1038,7 @@ pub fn check(dir: &std::path::Path) -> Result<CheckResult, CheckFailure> {
     let mut paused = Vec::new();
     let mut errors = Vec::new();
     for entry in &entries {
-        match std::fs::read(dir.join(&entry.path)) {
+        match io::read(dir, &entry.path, crate::MAX_IMPORT_BYTES) {
             Ok(bytes) => {
                 report.hashed += 1;
                 if format!("{:016x}", hash64(&bytes)) != entry.hash {
@@ -1129,24 +1101,9 @@ pub struct DetectReport {
 /// is not an error: the scan is the guarantee and it already reports an absent
 /// mirror as empty.
 pub fn watch_dirs(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
-    fn walk(here: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
-        out.push(here.to_path_buf());
-        let Ok(read) = std::fs::read_dir(here) else {
-            return;
-        };
-        for entry in read.flatten() {
-            let path = entry.path();
-            if path.is_dir() {
-                walk(&path, out);
-            }
-        }
-    }
-    if !dir.is_dir() {
-        return Vec::new();
-    }
-    let mut out = Vec::new();
-    walk(dir, &mut out);
-    out
+    io::walk(dir).unwrap_or_default().into_iter()
+        .filter(|(_, directory)| *directory)
+        .map(|(path, _)| dir.join(path)).collect()
 }
 
 /// Depth-first walk collecting files the manifest never wrote.
@@ -1156,23 +1113,13 @@ pub fn watch_dirs(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
 /// writer's stray file on every open.
 fn walk_for_unmatched(
     root: &std::path::Path,
-    dir: &std::path::Path,
+    _dir: &std::path::Path,
     known: &std::collections::HashSet<&str>,
     out: &mut Vec<String>,
 ) {
-    let Ok(read) = std::fs::read_dir(dir) else {
-        return;
-    };
-    for entry in read.flatten() {
-        let path = entry.path();
-        if path.is_dir() {
-            walk_for_unmatched(root, &path, known, out);
-            continue;
-        }
-        let Ok(rel) = path.strip_prefix(root) else {
-            continue;
-        };
-        let rel = rel.to_string_lossy().replace('\\', "/");
+    let Ok(entries) = io::walk(root) else { return; };
+    for (rel, directory) in entries {
+        if directory { continue; }
         // Both application-owned names. The tmp one matters because a crash
         // mid-write leaves it behind, and without this the writer would be told
         // about the application's own debris on every open, forever.
@@ -1195,9 +1142,17 @@ fn walk_for_unmatched(
     }
 }
 
+#[cfg(test)]
 fn file_mtime_ms(path: &std::path::Path) -> Option<i64> {
-    let modified = std::fs::metadata(path).ok()?.modified().ok()?;
-    let since = modified.duration_since(std::time::UNIX_EPOCH).ok()?;
+    metadata_mtime_ms(&std::fs::symlink_metadata(path).ok()?)
+}
+
+fn mirror_mtime_ms(dir: &std::path::Path, path: &str) -> Option<i64> {
+    metadata_mtime_ms(&io::metadata(dir, path).ok()?)
+}
+
+fn metadata_mtime_ms(metadata: &std::fs::Metadata) -> Option<i64> {
+    let since = metadata.modified().ok()?.duration_since(std::time::UNIX_EPOCH).ok()?;
     Some(since.as_millis() as i64)
 }
 
@@ -1211,25 +1166,12 @@ fn file_mtime_ms(path: &std::path::Path) -> Option<i64> {
 /// Never removes `dir` itself: that one is the mirror and it holds the
 /// manifest.
 fn prune_empty_dirs(dir: &std::path::Path) {
-    fn walk(here: &std::path::Path, root: &std::path::Path) {
-        let Ok(entries) = std::fs::read_dir(here) else {
-            return;
-        };
-        for e in entries.flatten() {
-            let p = e.path();
-            if p.is_dir() {
-                walk(&p, root);
-            }
-        }
-        if here != root
-            && std::fs::read_dir(here)
-                .map(|mut d| d.next().is_none())
-                .unwrap_or(false)
-        {
-            let _ = std::fs::remove_dir(here);
+    let Ok(entries) = io::walk(dir) else { return; };
+    for (path, directory) in entries.into_iter().rev() {
+        if directory && !path.is_empty() {
+            let _ = io::remove(dir, &path, true);
         }
     }
-    walk(dir, dir);
 }
 
 /// One mirror file's whole content: front matter, the title, the prose.
@@ -1263,31 +1205,14 @@ pub fn file_body(item: &crate::store::Item, body: Option<&str>) -> String {
     out
 }
 
-fn retain_mirror_assets(root: &std::path::Path, assets: &std::collections::BTreeMap<String, Vec<u8>>) -> Result<(), String> {
-    if assets.is_empty() { return Ok(()); }
-    let directory = root.join("assets");
-    match std::fs::create_dir(&directory) {
-        Ok(()) => {},
-        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
-            let meta = std::fs::symlink_metadata(&directory).map_err(|error| error.to_string())?;
-            if !meta.is_dir() || meta.file_type().is_symlink() { return Err("unsafe mirror asset directory".into()); }
-        },
-        Err(error) => return Err(error.to_string()),
-    }
+fn retain_mirror_assets(root: &std::path::Path, document: &str, assets: &std::collections::BTreeMap<String, Vec<u8>>) -> Result<(), String> {
+    let prefix = document.rsplit_once('/').map(|(parent, _)| format!("{parent}/")).unwrap_or_default();
     for (href, bytes) in assets {
-        let path = root.join(href);
-        match std::fs::OpenOptions::new().write(true).create_new(true).open(&path) {
-            Ok(mut file) => { use std::io::Write; file.write_all(bytes).and_then(|_| file.sync_all()).map_err(|error| error.to_string())?; },
-            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
-                let existing = crate::backup_bundle::open_regular_with_limit(&path, crate::pictures::MAX_PICTURE_BYTES).map_err(str::to_string)?;
-                use std::io::Read;
-                let mut content = Vec::new(); existing.take(crate::pictures::MAX_PICTURE_BYTES + 1).read_to_end(&mut content).map_err(|error| error.to_string())?;
-                if content != *bytes { return Err(format!("{}: mirror figure original differs; retained without replacement", path.display())); }
-            },
-            Err(error) => return Err(error.to_string()),
-        }
+        let path = format!("{prefix}{href}");
+        io::retain(root, &path, bytes, crate::pictures::MAX_PICTURE_BYTES)
+            .map_err(|error| format!("{path}: {error}"))?;
     }
-    crate::backup_bundle::sync_directory(&directory)
+    Ok(())
 }
 
 pub(crate) fn planned_file(item: &crate::store::Item, schema: i64, plan: &crate::publication_plan::Plan) -> Result<crate::export::Manuscript, String> {
@@ -1339,30 +1264,12 @@ pub fn from_project_path(path: &str) -> String {
 /// at the end of every pass. Reaping by name from the entry list instead would
 /// miss the copy left at a path a resumed entry has since moved away from.
 fn reap_sidecars(dir: &std::path::Path, wanted: &std::collections::HashSet<String>) {
-    fn walk(
-        root: &std::path::Path,
-        here: &std::path::Path,
-        wanted: &std::collections::HashSet<String>,
-    ) {
-        let Ok(read) = std::fs::read_dir(here) else {
-            return;
-        };
-        for entry in read.flatten() {
-            let path = entry.path();
-            if path.is_dir() {
-                walk(root, &path, wanted);
-                continue;
-            }
-            let Ok(rel) = path.strip_prefix(root) else {
-                continue;
-            };
-            let rel = rel.to_string_lossy().replace('\\', "/");
-            if rel.ends_with(FROM_PROJECT_SUFFIX) && !wanted.contains(rel.as_str()) {
-                let _ = std::fs::remove_file(&path);
-            }
+    let Ok(entries) = io::walk(dir) else { return; };
+    for (path, directory) in entries {
+        if !directory && path.ends_with(FROM_PROJECT_SUFFIX) && !wanted.contains(&path) {
+            let _ = io::remove(dir, &path, false);
         }
     }
-    walk(dir, dir, wanted);
 }
 
 /// A front-matter VALUE, flattened to one line.
@@ -1436,6 +1343,11 @@ pub struct Change {
     /// bring them back. The figure is on the ROW so the writer is told before
     /// they press; a notice afterwards is an apology.
     pub store_underlined: u64,
+    /// Hash of the exact source bytes parsed for this row, kept inside the host.
+    #[serde(skip)]
+    pub file_hash: Option<String>,
+    #[serde(skip)]
+    pub file_bytes: u64,
 }
 
 /// The prose changed and the book has not moved under it. **The only
@@ -1511,6 +1423,8 @@ pub fn change_set(
         error: None,
         can_accept: false,
         store_underlined: 0,
+        file_hash: None,
+        file_bytes: 0,
     };
 
     let mut rows: Vec<Change> = Vec::new();
@@ -1519,7 +1433,7 @@ pub fn change_set(
     let mut moved: HashSet<String> = HashSet::new();
 
     for path in &found.unmatched {
-        let parsed = std::fs::read_to_string(dir.join(path))
+        let parsed = io::read_text(dir, path)
             .ok()
             .and_then(|text| read_file(&text).ok());
         // A move is an unmatched path whose front matter names an entry whose
@@ -1572,9 +1486,10 @@ pub fn change_set(
             .map(|i| i.title.clone())
             .unwrap_or_default();
 
-        let read = std::fs::read_to_string(dir.join(&entry.path))
-            .map_err(|e| e.to_string())
-            .and_then(|text| read_file(&text));
+        let source = io::read_text(dir, &entry.path);
+        let file_bytes = source.as_ref().map(|text| text.len() as u64).unwrap_or(0);
+        let file_hash = source.as_ref().ok().map(|text| format!("{:016x}", hash64(text.as_bytes())));
+        let read = source.map_err(|e| e.to_string()).and_then(|text| read_file(&text));
         let file = match read {
             Ok(file) => file,
             Err(error) => {
@@ -1628,6 +1543,8 @@ pub fn change_set(
         let mut row = blank(id.clone(), entry.path.clone(), state, title);
         row.store_body = bodies.get(id.as_str()).cloned();
         row.file_body = file.body;
+        row.file_hash = file_hash;
+        row.file_bytes = file_bytes;
         // A prose row is applicable outright. A conflict is applicable only
         // with the book's side already on disk beside it -- the pass that
         // honours the pause writes it, and until it has, the accept would be
@@ -1636,7 +1553,7 @@ pub fn change_set(
         // open is not a preservation.
         let unsupported = row.store_body.as_deref().is_some_and(crate::figure_salvage::has_new_nodes);
         row.can_accept = !unsupported && row.file_body.is_some()
-            && (state == PROSE || dir.join(from_project_path(&entry.path)).is_file());
+            && (state == PROSE || io::metadata(dir, &from_project_path(&entry.path)).is_ok());
         if unsupported {
             row.error = Some("This document contains content that cannot be accepted from the readable folder".into());
         }
@@ -1731,7 +1648,9 @@ pub fn accept_plan(
 /// ever not byte-stable, wrong in content too.
 ///
 /// **THE TWO HALVES COME FROM OPPOSITE SIDES, DELIBERATELY.** `bytes`, `hash`
-/// and `mtime_ms` are re-stat-ed from the file the WRITER has; `doc_rev` and
+/// and `mtime_ms` describe the accepted file only if its hash still matches
+/// the change-set read. A newer save keeps its pause against the exact accepted
+/// bytes, including when it restores the earlier baseline. `doc_rev` and
 /// `words` describe what the BOOK now holds. Recording the store's own
 /// rendering of the accepted body instead would make the manifest describe a
 /// file that is not on disk, which is the one thing a baseline may never do.
@@ -1743,16 +1662,17 @@ pub fn accept_plan(
 /// is somewhere the application can put back.
 pub fn settle_accepted(
     dir: &std::path::Path,
-    paths: &[String],
+    rows: &[Change],
     accepted: &[crate::store::history::AcceptedDoc],
     now_ms: i64,
-) -> Result<(), String> {
-    let Some(mut manifest) = crate::recovery::read_manifest::<MirrorEntry>(dir) else {
+) -> Result<std::collections::HashSet<String>, String> {
+    let Some(mut manifest) = read_manifest(dir)? else {
         // No manifest is not an error here: the acceptance already committed,
         // and a mirror with nothing to settle is a mirror the next pass builds
         // from scratch. Failing would report a lost accept that did not happen.
-        return Ok(());
+        return Ok(std::collections::HashSet::new());
     };
+    let mut resolved = std::collections::HashSet::new();
     let by_id: std::collections::HashMap<&str, &crate::store::history::AcceptedDoc> =
         accepted.iter().map(|a| (a.item_id.as_str(), a)).collect();
     for entry in &mut manifest.entries {
@@ -1760,20 +1680,31 @@ pub fn settle_accepted(
             continue;
         };
         let full = dir.join(&entry.path);
-        let bytes = std::fs::read(&full).map_err(|e| format!("{}: {e}", full.display()))?;
+        let bytes = io::read(dir, &entry.path, crate::MAX_IMPORT_BYTES).map_err(|e| format!("{}: {e}", full.display()))?;
+        let hash = format!("{:016x}", hash64(&bytes));
+        let Some(row) = rows.iter().find(|row| row.id == entry.id && row.path == entry.path) else {
+            continue;
+        };
+        let Some(accepted_hash) = &row.file_hash else { continue; };
+        let unchanged = *accepted_hash == hash;
+        if unchanged { resolved.insert(entry.id.clone()); }
         entry.doc_rev = landed.rev;
-        entry.bytes = bytes.len() as u64;
-        entry.hash = format!("{:016x}", hash64(&bytes));
-        entry.mtime_ms = file_mtime_ms(&full).unwrap_or(now_ms);
+        entry.bytes = row.file_bytes;
+        entry.hash = accepted_hash.clone();
+        // Force a scan when a newer save differs, even if its size/time match an older baseline.
+        entry.mtime_ms = if unchanged { mirror_mtime_ms(dir, &entry.path).unwrap_or(now_ms) } else { i64::MIN };
         entry.words = crate::store::document_text(&landed.body)
             .map(|t| crate::words::count_words(&t))
             .unwrap_or(0);
     }
     manifest.generated_at = now_ms;
-    for path in paths {
-        let _ = std::fs::remove_file(dir.join(from_project_path(path)));
+    for entry in &manifest.entries {
+        if resolved.contains(&entry.id) {
+            let _ = io::remove(dir, &from_project_path(&entry.path), false);
+        }
     }
-    crate::recovery::write_manifest(dir, &manifest)
+    write_manifest(dir, &manifest)?;
+    Ok(resolved)
 }
 
 /// What one mirror file says, read back.
@@ -1913,6 +1844,7 @@ pub struct MirrorEntry {
     /// whenever the writer reorders a chapter.
     pub id: String,
     /// Relative to `mirror/<slug>/`, always `/`-separated.
+    #[serde(deserialize_with = "read_entry_path")]
     pub path: String,
     /// The item's `rev` at the moment this file was written. What makes the
     /// pass incremental -- TOGETHER WITH `doc_rev`, and never alone.
@@ -1944,6 +1876,35 @@ pub struct MirrorEntry {
     pub mtime_ms: i64,
     pub words: u64,
 }
+
+fn read_entry_path<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<String, D::Error> {
+    let path = <String as serde::Deserialize>::deserialize(deserializer)?;
+    if !crate::protection::mirror_path_safe(&path) {
+        return Err(serde::de::Error::custom("unsafe readable-folder manifest path"));
+    }
+    Ok(path)
+}
+
+pub(crate) fn read_manifest(dir: &std::path::Path) -> Result<Option<crate::recovery::Manifest<MirrorEntry>>, String> {
+    let bytes = match io::read(dir, crate::recovery::MANIFEST_NAME, crate::MAX_IMPORT_BYTES) {
+        Ok(bytes) => bytes,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(format!("readable-folder manifest: {error}")),
+    };
+    let manifest: crate::recovery::Manifest<MirrorEntry> = serde_json::from_slice(&bytes)
+        .map_err(|error| format!("readable-folder manifest: {error}"))?;
+    if manifest.manifest_version != 1 || manifest.kind != crate::recovery::KIND_MIRROR {
+        return Err("unrecognized readable-folder manifest".into());
+    }
+    Ok(Some(manifest))
+}
+
+fn write_manifest(dir: &std::path::Path, manifest: &crate::recovery::Manifest<MirrorEntry>) -> Result<(), String> {
+    let bytes = serde_json::to_vec_pretty(manifest).map_err(|error| error.to_string())?;
+    io::atomic(dir, crate::recovery::MANIFEST_NAME, crate::recovery::MANIFEST_TMP_NAME, &bytes)
+        .map_err(|error| format!("readable-folder manifest: {error}"))
+}
+
 
 /// One mirrored item: where its file goes, and whether it is a directory.
 #[derive(Debug, Clone, PartialEq)]
@@ -2039,6 +2000,140 @@ mod tests {
             mtime_ms: file_mtime_ms(&path).unwrap_or(0),
             words: 0,
         }
+    }
+
+
+    #[cfg(unix)]
+    #[test]
+    fn a_title_with_a_backslash_or_drive_like_prefix_still_mirrors() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("mirror");
+        io::create(&root).unwrap();
+        for name in ["0001-Act-I-\\-Part-2.md", "C:notes/0002-scene.md"] {
+            io::write(&root, name, b"words").unwrap();
+            assert_eq!(io::read_text(&root, name).unwrap(), "words");
+        }
+    }
+
+    #[test]
+    fn unsafe_manifest_paths_are_refused_before_file_access() {
+        let mut paths = vec!["../outside.md", "/outside.md", "folder/../../outside.md"];
+        // Path syntax only on Windows; on Unix these are names inside the folder.
+        if cfg!(windows) {
+            paths.extend(["C:/outside.md", r"folder\outside.md"]);
+        }
+        for path in paths {
+            let tmp = tempfile::tempdir().unwrap();
+            let m = mirrored(tmp.path());
+            let outside = tmp.path().join("outside.md");
+            std::fs::write(&outside, "outside writing").unwrap();
+            let mut manifest: Manifest<MirrorEntry> = crate::recovery::read_manifest(&m.out).unwrap();
+            // The absolute case names a real file, so absence cannot mask a missing guard.
+            manifest.entries[0].path = if path == "/outside.md" { outside.to_str().unwrap().to_owned() } else if path == "../outside.md" {
+                std::fs::write(m.out.parent().unwrap().join("outside.md"), "outside writing").unwrap();
+                path.to_owned()
+            } else { path.to_owned() };
+            let invalid = manifest.entries[0].path.clone();
+            crate::recovery::write_manifest(&m.out, &manifest).unwrap();
+            let error = pass(&m.src, "my-book", "My Book", &m.out, NOW + 10_000, &HashSet::new()).unwrap_err();
+            assert!(error.contains("unsafe readable-folder manifest path"), "{path}: {error}");
+            assert!(detect_and_persist(&m.out, &HashSet::new()).is_err());
+            assert!(check(&m.out).is_err());
+            assert!(io::read_text(&m.out, &invalid).is_err());
+            assert!(io::write(&m.out, &invalid, b"replacement").is_err());
+            assert!(io::remove(&m.out, &invalid, false).is_err());
+            assert_eq!(std::fs::read_to_string(&outside).unwrap(), "outside writing");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn mirror_writes_refuse_symlinked_files_parents_and_conflict_copies() {
+        for kind in ["file", "parent", "conflict"] {
+            let tmp = tempfile::tempdir().unwrap();
+            let m = mirrored(tmp.path());
+            let entry = prose_entry(&m);
+            let outside = tmp.path().join("outside");
+            std::fs::create_dir(&outside).unwrap();
+            let target = outside.join("writing.md");
+            std::fs::write(&target, "outside writing").unwrap();
+            let path = m.out.join(&entry.path);
+            let mut paused = HashSet::new();
+            if kind == "parent" {
+                let parent = path.parent().unwrap();
+                std::fs::rename(parent, tmp.path().join("retained-mirror-directory")).unwrap();
+                std::fs::write(outside.join(path.file_name().unwrap()), "outside writing").unwrap();
+                std::os::unix::fs::symlink(&outside, parent).unwrap();
+            } else if kind == "file" {
+                std::fs::remove_file(&path).unwrap();
+                std::os::unix::fs::symlink(&target, &path).unwrap();
+            } else {
+                std::os::unix::fs::symlink(&target, m.out.join(from_project_path(&entry.path))).unwrap();
+                paused.insert(entry.id.clone());
+            }
+            let store = crate::store::Store::open(&m.src).unwrap();
+            store.flush(&[crate::store::FlushEntry {
+                item_id: entry.id.clone(), body: doc("new words in the book"),
+                base_rev: store.load_doc(&entry.id).unwrap().rev, comments: None,
+            }]).unwrap();
+            drop(store);
+            assert!(pass(&m.src, "my-book", "My Book", &m.out, NOW + 10_000, &paused).is_err(), "{kind}");
+            assert_eq!(std::fs::read_to_string(&target).unwrap(), "outside writing", "{kind}");
+            if kind == "parent" {
+                assert_eq!(std::fs::read_to_string(outside.join(path.file_name().unwrap())).unwrap(), "outside writing");
+            }
+            let found = detect_and_persist(&m.out, &paused).unwrap();
+            if kind != "conflict" { assert!(found.changed.contains(&entry.id), "{kind}: {found:?}"); }
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn walks_ignore_directory_symlinks_and_self_loops() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("mirror");
+        let outside = tmp.path().join("outside");
+        std::fs::create_dir(&root).unwrap();
+        std::fs::create_dir(&outside).unwrap();
+        let preserved = outside.join("draft.from-project.md");
+        std::fs::write(&preserved, "outside writing").unwrap();
+        std::fs::create_dir(outside.join("empty")).unwrap();
+        std::fs::write(root.join("stray.md"), "writer's notes").unwrap();
+        std::os::unix::fs::symlink(".", root.join("loop-a")).unwrap();
+        std::os::unix::fs::symlink(".", root.join("loop-b")).unwrap();
+        std::os::unix::fs::symlink(&outside, root.join("linked")).unwrap();
+        let start = std::time::Instant::now();
+        assert_eq!(watch_dirs(&root), vec![root.clone()]);
+        assert_eq!(scan(&root, &[]).unmatched, vec!["stray.md"]);
+        reap_sidecars(&root, &HashSet::new());
+        prune_empty_dirs(&root);
+        assert_eq!(std::fs::read_to_string(preserved).unwrap(), "outside writing");
+        assert!(outside.join("empty").is_dir());
+        assert!(start.elapsed() < std::time::Duration::from_secs(5));
+    }
+
+    #[test]
+    fn mirror_reads_cap_changed_and_stray_files() {
+        let tmp = tempfile::tempdir().unwrap();
+        let m = mirrored(tmp.path());
+        let entry = prose_entry(&m);
+        std::fs::OpenOptions::new().write(true).open(m.out.join(&entry.path)).unwrap()
+            .set_len(crate::MAX_IMPORT_BYTES + 1).unwrap();
+        let stray = m.out.join("oversized-stray.md");
+        std::fs::File::create(&stray).unwrap().set_len(crate::MAX_IMPORT_BYTES + 1).unwrap();
+        let found = detect_and_persist(&m.out, &HashSet::new()).unwrap();
+        assert!(found.changed.contains(&entry.id));
+        assert!(found.unmatched.contains(&"oversized-stray.md".to_owned()));
+        assert!(check(&m.out).unwrap_err().paused.contains(&entry.id));
+        let store = crate::store::Store::open_readonly(&m.src).unwrap();
+        let rows = change_set(&m.out, &m.entries, &store.items().unwrap(), &store.documents().unwrap(), &store.document_revs().unwrap(), &found);
+        let row = rows.iter().find(|row| row.id == entry.id).unwrap();
+        assert_eq!(row.state, UNREADABLE);
+        assert!(row.error.as_deref().unwrap().contains("byte limit"));
+        assert!(io::read_text(&m.out, "oversized-stray.md").is_err());
+        std::fs::write(m.out.join("boundary.md"), b"1234567890123456").unwrap();
+        assert_eq!(io::read(&m.out, "boundary.md", 16).unwrap().len(), 16);
+        assert!(io::read(&m.out, "boundary.md", 15).is_err());
     }
 
     #[test]
@@ -4703,8 +4798,49 @@ mod tests {
             .accept_from_mirror(&plan.accepts, "Before accepting from the readable folder")
             .unwrap();
         drop(store);
-        settle_accepted(&m.out, &plan.paths, &report.documents, NOW + 30_000).unwrap();
+        settle_accepted(&m.out, &rows, &report.documents, NOW + 30_000).unwrap();
         plan.paths
+    }
+
+    #[test]
+    fn a_save_between_change_set_and_settle_stays_pending() {
+        for restore_previous in [false, true] {
+            let tmp = tempfile::tempdir().unwrap();
+            let m = mirrored(tmp.path());
+            let entry = prose_entry(&m);
+            let original = std::fs::read(m.out.join(&entry.path)).unwrap();
+            rewrite_prose(&m, &entry, "the version being accepted");
+            let found = detect_and_persist(&m.out, &HashSet::new()).unwrap();
+            let rows = changes_now(&m);
+            let store = crate::store::Store::open(&m.src).unwrap();
+            let plan = accept_plan(&rows, &store.document_revs().unwrap(), &[entry.id.clone()]).unwrap();
+            // The change-set read is complete; simulate the other editor's next save.
+            if restore_previous {
+                std::fs::write(m.out.join(&entry.path), &original).unwrap();
+            } else {
+                rewrite_prose(&m, &entry, "a newer save that must remain in the folder");
+            }
+            let newer = std::fs::read(m.out.join(&entry.path)).unwrap();
+            let report = store.accept_from_mirror(&plan.accepts, "Before accepting from the readable folder").unwrap();
+            assert_eq!(crate::store::document_text(&report.documents[0].body).unwrap(), "the version being accepted");
+            drop(store);
+            let resolved = settle_accepted(&m.out, &rows, &report.documents, NOW + 30_000).unwrap();
+            clear_persisted_pauses(&m.out, &resolved).unwrap();
+            let paused = persisted_pauses(&m.out).unwrap();
+            let after = detect_and_persist(&m.out, &paused).unwrap();
+            pass(&m.src, "my-book", "My Book", &m.out, NOW + 40_000, &HashSet::new()).unwrap();
+            assert_eq!(std::fs::read(m.out.join(&entry.path)).unwrap(), newer);
+            assert!(!resolved.contains(&entry.id));
+            assert!(after.changed.contains(&entry.id));
+            let manifest: Manifest<MirrorEntry> = crate::recovery::read_manifest(&m.out).unwrap();
+            let baseline = manifest.entries.iter().find(|row| row.id == entry.id).unwrap();
+            assert_eq!(baseline.hash, rows[0].file_hash.as_deref().unwrap());
+            assert_eq!(baseline.bytes, rows[0].file_bytes);
+            let pending = changes_now(&m);
+            assert_eq!(pending[0].id, entry.id);
+            assert!(pending[0].can_accept);
+            assert!(found.changed.contains(&entry.id));
+        }
     }
 
     #[test]

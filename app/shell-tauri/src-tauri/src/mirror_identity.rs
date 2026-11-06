@@ -233,24 +233,7 @@ pub fn reported(
     let (Some(manifest), Some(content_digest)) = (manifest, content_digest) else {
         return ("unavailable", None);
     };
-    let path = dir.join(RECORD_NAME);
-    let Ok(meta) = std::fs::symlink_metadata(&path) else {
-        return ("unavailable", None);
-    };
-    if !meta.file_type().is_file() || meta.len() > RECORD_MAX_BYTES {
-        return ("unavailable", None);
-    }
-    let Ok(file) = std::fs::File::open(path) else {
-        return ("unavailable", None);
-    };
-    let mut bytes = Vec::new();
-    use std::io::Read as _;
-    if file
-        .take(RECORD_MAX_BYTES + 1)
-        .read_to_end(&mut bytes)
-        .is_err()
-        || bytes.len() as u64 > RECORD_MAX_BYTES
-    {
+    let Ok(bytes) = mirror::io::read(dir, RECORD_NAME, RECORD_MAX_BYTES) else {
         return ("unavailable", None);
     };
     let Ok(record) = serde_json::from_slice::<Record>(&bytes) else {
@@ -292,7 +275,7 @@ pub fn record_after_pass(
     report: &mirror::PassReport,
 ) -> Result<(), String> {
     let manifest: Option<crate::recovery::Manifest<mirror::MirrorEntry>> =
-        crate::recovery::read_manifest(dir);
+        mirror::read_manifest(dir).ok().flatten();
     let manifest_matches = manifest.as_ref().is_some_and(|manifest| {
         manifest.generated_at == generated_at && manifest.entries == report.entries
     });
@@ -349,20 +332,9 @@ pub fn record_after_pass(
         location,
     };
     let bytes = serde_json::to_vec(&record).map_err(|e| e.to_string())?;
-    let temp = dir.join(format!("{RECORD_NAME}.{}.tmp", uuid::Uuid::now_v7()));
-    let dest = dir.join(RECORD_NAME);
-    use std::io::Write as _;
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&temp)
-        .map_err(|e| format!("identity disclosure record unavailable: {e}"))?;
-    file.write_all(&bytes)
-        .and_then(|_| file.sync_all())
-        .map_err(|e| format!("identity disclosure record unavailable: {e}"))?;
-    std::fs::rename(&temp, &dest)
-        .map_err(|e| format!("identity disclosure record unavailable: {e}"))?;
-    crate::backup_bundle::sync_directory(dir)
+    let temp = format!("{RECORD_NAME}.{}.tmp", uuid::Uuid::now_v7());
+    mirror::io::atomic(dir, RECORD_NAME, &temp, &bytes)
+        .map_err(|error| format!("identity disclosure record unavailable: {error}"))
 }
 
 #[cfg(test)]
@@ -371,7 +343,7 @@ mod tests {
     use crate::store::{FlushEntry, Store};
 
     fn reported_current(dir: &Path, digest: [u8; 32]) -> (&'static str, Option<String>) {
-        let manifest = crate::recovery::read_manifest(dir);
+        let manifest = mirror::read_manifest(dir).ok().flatten();
         reported(dir, manifest.as_ref(), Some(digest))
     }
 

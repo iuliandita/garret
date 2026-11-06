@@ -4420,7 +4420,7 @@ mod tests {
         let db = dir.path().join("p.db");
         let store = store::Store::open(&db).unwrap();
         let initial = crate::commands::export::preflight_of_store(
-            &store, "Book", export::Format::Markdown, &crate::identity::Vault::default(),
+            &store, &db, "Book", export::Format::Markdown, &crate::identity::Vault::default(),
         ).unwrap();
         let token = &initial.warning_tokens[0].token;
         store.with_immediate(|store| crate::warning_history::append(store, &initial, token, "No byline for this draft", 42)).unwrap();

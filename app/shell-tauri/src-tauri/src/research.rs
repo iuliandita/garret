@@ -52,16 +52,7 @@ pub fn private_dir(path: &Path) -> Result<(), String> {
             Ok(())
         }
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::DirBuilderExt;
-                fs::DirBuilder::new()
-                    .mode(0o700)
-                    .create(path)
-                    .map_err(|e| e.to_string())?;
-            }
-            #[cfg(not(unix))]
-            fs::create_dir(path).map_err(|e| e.to_string())?;
+            crate::private_fs::dir_builder().create(path).map_err(|e| e.to_string())?;
             Ok(())
         }
         Err(error) => Err(error.to_string()),

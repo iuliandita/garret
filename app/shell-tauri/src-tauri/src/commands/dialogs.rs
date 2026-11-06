@@ -283,7 +283,7 @@ pub(crate) async fn design_export_as(
         (project.name.clone(), project.generation)
     };
     let dir = export_dir(&data_home.0);
-    fs::create_dir_all(&dir).map_err(|e| format!("design export directory unavailable: {e}"))?;
+    projects::create_export_dir(&data_home.0, &dir).map_err(|e| format!("design export directory unavailable: {e}"))?;
     let dialog = SaveDialog {
         title: DESIGN_SAVE_DIALOG_TITLE,
         filter_label: "Book design",
@@ -365,7 +365,7 @@ fn encrypted_backup_start(data_home: &Path) -> Result<PathBuf, String> {
         Some(path) => canonical_backup_destination(Path::new(&path)),
         None => {
             let dir = export_dir(data_home);
-            fs::create_dir_all(&dir).map_err(|e| format!("archive destination unavailable: {e}"))?;
+            projects::create_export_dir(data_home, &dir).map_err(|e| format!("archive destination unavailable: {e}"))?;
             Ok(dir)
         }
     }
@@ -431,7 +431,7 @@ pub(crate) async fn encrypted_key_generate(
     let epoch = dialog_epoch(&app);
     dialog_still_owned(&app, epoch)?;
     let dir = export_dir(&data_home.0);
-    fs::create_dir_all(&dir).map_err(|e| format!("key destination unavailable: {e}"))?;
+    projects::create_export_dir(&data_home.0, &dir).map_err(|e| format!("key destination unavailable: {e}"))?;
     let dialog = SaveDialog { title: KEY_SAVE_DIALOG_TITLE, filter_label: "Recovery key", extensions: &["txt"], default_name: "recovery-key.txt".into() };
     let Some(dest) = ask_for_export_path(&app, &dir, &dialog).await else { return Ok(None); };
     dialog_still_owned(&app, epoch)?;
@@ -885,7 +885,7 @@ pub(crate) async fn project_export_as(
     crate::commands::export::check_save_as(&path, &name, format, &vault, strings, story_id.as_deref())?;
 
     let dir = export_dir(&data_home.0);
-    fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    projects::create_export_dir(&data_home.0, &dir).map_err(|e| format!("{}: {e}", dir.display()))?;
 
     let dialog = export_save_dialog(&name, format);
     let Some(dest) = ask_for_export_path(&app, &dir, &dialog).await else {
@@ -984,7 +984,7 @@ pub(crate) async fn statistics_export_as(
         open_project(&guard)?.name.clone()
     };
     let dir = export_dir(&data_home.0);
-    fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    projects::create_export_dir(&data_home.0, &dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     let dialog = statistics_save_dialog(&name, kind);
     let Some(dest) = ask_for_export_path(&app, &dir, &dialog).await else {
         return Ok(None);
@@ -1014,7 +1014,7 @@ pub(crate) async fn project_import_pick(
     strings: State<'_, HostStrings>,
 ) -> std::result::Result<Option<crate::ImportOutcome>, String> {
     let dir = imports_dir(&data_home.0);
-    fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    crate::private_fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
 
     let Some(source) = ask_for_import_path(&app, &dir).await else {
         return Ok(None);
