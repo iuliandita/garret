@@ -31,6 +31,10 @@ Nothing user-visible is pending on develop. Future user-visible capabilities
 awaiting release belong here and in the
 separate `develop_only` list in releases.json.
 
+Unix storage permission changes apply only to newly created application data;
+existing file permissions and user-chosen export destinations keep their modes.
+See [compatibility and recovery](COMPATIBILITY.md) for the creation rules.
+
 ## Preparing the next release
 
 Follow the [alpha release procedure](../CONTRIBUTING.md#alpha-testing-releases).
