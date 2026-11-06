@@ -1065,7 +1065,7 @@ pub(crate) fn export_open_project(
     let vault = vault_for(data_home)?;
 
     let dir = export_dir(data_home);
-    fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    projects::create_export_dir(data_home, &dir).map_err(|e| format!("{}: {e}", dir.display()))?;
 
     export(
         &path,

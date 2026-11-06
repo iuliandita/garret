@@ -70,6 +70,7 @@ mod privacy_windows;
 mod privacy_windows_file;
 #[cfg(target_os = "linux")]
 mod privacy_lifecycle;
+mod private_fs;
 mod projects;
 mod protection;
 mod recovery;
@@ -2792,6 +2793,9 @@ fn pass_scenes_while_held(
     // AFTER the pass lock. A thorough check may have discovered an edit while
     // this writer waited, and this snapshot must see the installed pause.
     let paused = paused_ids(&context.paused);
+    if root.is_none() {
+        private_fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    }
     let report = mirror::pass_for_book(
         &context.path,
         &context.book_id,
@@ -4010,7 +4014,7 @@ fn open_from_library(
     let path = match choice {
         Choice::Newest(p) => p,
         _ => {
-            if let Err(e) = fs::create_dir_all(library) {
+            if let Err(e) = private_fs::create_dir_all(library) {
                 eprintln!("cannot create {}: {e}", library.display());
                 process::exit(1);
             }

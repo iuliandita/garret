@@ -276,7 +276,7 @@ pub fn write_vault(data_home: &Path, vault: &Vault) -> Result<(), String> {
     let dir = path
         .parent()
         .ok_or_else(|| format!("{}: no parent directory", path.display()))?;
-    std::fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
+    crate::private_fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
     let body = serde_json::to_vec(vault).map_err(|e| format!("cannot serialize the vault: {e}"))?;
     if body.len() as u64 > VAULT_LIMIT { return Err("identity vault is too large".into()); }
     let mut tmp = tempfile::Builder::new()

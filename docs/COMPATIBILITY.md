@@ -681,3 +681,10 @@ warning; caption and alternative text remain editable, while publication still
 requires valid originals. DPI estimates precede caption and heading layout;
 the proof checks the final placed size. Figure copy/paste is refused, including
 within the same book; use insertion and explicit deletion with undo instead.
+
+On Unix, newly created book databases and settings files use owner-only file
+permissions (0600), and newly created application storage directories use 0700.
+SQLite WAL and shared-memory files inherit the book database's permissions.
+Existing file and directory permissions are preserved; this does not change
+permissions on older installations. Exports saved to user-chosen destinations
+keep their ordinary permissions. Windows behavior is unchanged.

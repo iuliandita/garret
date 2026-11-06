@@ -248,7 +248,7 @@ fn checked_stage_directory(path: &Path, private: bool) -> Result<(), String> {
 #[cfg(not(target_os = "android"))]
 fn private_stage_root(data_home: &Path) -> Result<PathBuf, String> {
     let app_dir = data_home.join(crate::APP_DIR);
-    fs::create_dir_all(&app_dir).map_err(|_| "application staging parent unavailable")?;
+    crate::private_fs::create_dir_all(&app_dir).map_err(|_| "application staging parent unavailable")?;
     checked_stage_directory(&app_dir, false)?;
     let root = app_dir.join(PRIVATE_STAGE_DIR);
     let mut builder = fs::DirBuilder::new();

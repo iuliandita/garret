@@ -218,6 +218,15 @@ pub fn exports_dir(data_home: &Path) -> PathBuf {
     data_home.join(APP_DIR).join("exports")
 }
 
+/// Only application storage gets private modes; operator overrides keep defaults.
+pub(crate) fn create_export_dir(data_home: &Path, dir: &Path) -> std::io::Result<()> {
+    if dir.starts_with(data_home.join(APP_DIR)) {
+        crate::private_fs::create_dir_all(dir)
+    } else {
+        fs::create_dir_all(dir)
+    }
+}
+
 /// Where the writer drops a Markdown file for import, beside `exports/`.
 pub fn imports_dir(data_home: &Path) -> PathBuf {
     data_home.join(APP_DIR).join("imports")
@@ -1159,7 +1168,7 @@ fn create_book_with_cleanup(
 ) -> Result<ProjectSummary, String> {
     let slug = slugify(name)
         .ok_or_else(|| format!("\"{name}\" has no characters that can name a file"))?;
-    fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
+    crate::private_fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
     let mut path = dir.join(format!("{slug}.db"));
     if path.exists() {
         return Err(format!(
@@ -1398,7 +1407,7 @@ fn restore_point_impl(
         .and_then(|store| store.validate_retained_formats())
         .map_err(|e| e.to_string())?;
 
-    fs::create_dir_all(library).map_err(|e| format!("cannot create {}: {e}", library.display()))?;
+    crate::private_fs::create_dir_all(library).map_err(|e| format!("cannot create {}: {e}", library.display()))?;
     // A sidecar occupies a name even when its database is missing. Claim only
     // a free name, then recheck before using any reserved destination.
     let mut ordinal: u32 = 1;
@@ -1413,7 +1422,7 @@ fn restore_point_impl(
             }
             Err(e) => return Err(format!("{}: {e}", candidate.display())),
         }
-        match fs::OpenOptions::new()
+        match crate::private_fs::file_options()
             .write(true)
             .create_new(true)
             .open(&candidate)
@@ -1497,7 +1506,7 @@ fn restore_point_impl(
                 .map_err(|e| format!("cannot prepare the restored database: {e}"))?,
         );
         let staged = stage.as_ref().unwrap().path().join("project.db");
-        fs::File::create(&staged).map_err(|e| format!("{}: {e}", staged.display()))?;
+        crate::private_fs::file_options().write(true).create_new(true).open(&staged).map_err(|e| format!("{}: {e}", staged.display()))?;
         copy(&source_db, &staged)?;
         Store::open_readonly(&staged)
             .and_then(|store| store.validate_retained_formats())
@@ -2898,7 +2907,7 @@ fn write_settings_with(data_home: &Path, s: &Settings, home: Option<&Path>) -> R
     let dir = path
         .parent()
         .ok_or_else(|| format!("{}: no parent directory", path.display()))?;
-    fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
+    crate::private_fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
     let contracted;
     let to_write: &Settings = match home {
         Some(home) => {
@@ -2911,7 +2920,12 @@ fn write_settings_with(data_home: &Path, s: &Settings, home: Option<&Path>) -> R
     let tmp = path.with_extension("json.tmp");
     {
         let mut f =
-            fs::File::create(&tmp).map_err(|e| format!("cannot write {}: {e}", tmp.display()))?;
+            crate::private_fs::file_options().write(true).create(true).truncate(true).open(&tmp).map_err(|e| format!("cannot write {}: {e}", tmp.display()))?;
+        #[cfg(unix)]
+        if let Ok(existing) = fs::metadata(&path) {
+            f.set_permissions(existing.permissions())
+                .map_err(|e| format!("cannot preserve settings permissions: {e}"))?;
+        }
         f.write_all(&body)
             .map_err(|e| format!("cannot write {}: {e}", tmp.display()))?;
         // Before the rename, or the rename can land while the bytes have not.
@@ -2957,6 +2971,65 @@ mod tests {
 
     fn create_in(dir: &Path, name: &str) -> Result<ProjectSummary, String> {
         super::create_in(dir, name, &english())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn new_book_and_sqlite_sidecars_are_owner_only() {
+        use std::os::unix::fs::PermissionsExt;
+        let home = tempdir().unwrap();
+        let library = library_dir(home.path());
+        let book = create_in(&library, "Private book").unwrap();
+        let path = Path::new(&book.path);
+        let store = Store::open_existing(path).unwrap();
+        store.set_meta("permission_probe", "written").unwrap();
+        for path in [path.to_path_buf(), path.with_extension("db-wal"), path.with_extension("db-shm")] {
+            assert_eq!(fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o600, "{}", path.display());
+        }
+        drop(store);
+        fs::set_permissions(path, fs::Permissions::from_mode(0o640)).unwrap();
+        Store::open_existing(path).unwrap();
+        assert_eq!(fs::metadata(path).unwrap().permissions().mode() & 0o777, 0o640);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn new_application_directories_are_owner_only_and_existing_modes_stay() {
+        use std::os::unix::fs::PermissionsExt;
+        let home = tempdir().unwrap();
+        let library = library_dir(home.path());
+        create_in(&library, "Private book").unwrap();
+        let recovery = recovery_dir(home.path(), "private-book");
+        let mirror = mirror_dir(home.path(), None, "private-book");
+        let exports = exports_dir(home.path());
+        crate::private_fs::create_dir_all(&recovery).unwrap();
+        crate::private_fs::create_dir_all(&mirror).unwrap();
+        create_export_dir(home.path(), &exports).unwrap();
+        for dir in [&library, &recovery, &mirror, &exports, &home.path().join(APP_DIR)] {
+            assert_eq!(fs::metadata(dir).unwrap().permissions().mode() & 0o777, 0o700, "{}", dir.display());
+        }
+        fs::set_permissions(&library, fs::Permissions::from_mode(0o755)).unwrap();
+        create_in(&library, "Another book").unwrap();
+        assert_eq!(fs::metadata(&library).unwrap().permissions().mode() & 0o777, 0o755);
+        let external = home.path().join("external-exports");
+        create_export_dir(home.path(), &external).unwrap();
+        let control = home.path().join("control");
+        fs::create_dir(&control).unwrap();
+        assert_eq!(fs::metadata(external).unwrap().permissions().mode(), fs::metadata(control).unwrap().permissions().mode());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn new_settings_are_owner_only_and_updates_preserve_existing_modes() {
+        use std::os::unix::fs::PermissionsExt;
+        let home = tempdir().unwrap();
+        update_settings(home.path(), |s| s.theme = Theme::Dark).unwrap();
+        let path = settings_path(home.path());
+        assert_eq!(fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o600);
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
+        update_settings(home.path(), |s| s.theme = Theme::Light).unwrap();
+        assert_eq!(fs::metadata(path).unwrap().permissions().mode() & 0o777, 0o644);
+        assert_eq!(read_settings(home.path()).theme, Theme::Light);
     }
 
     fn competing_creation_book(path: &Path) -> (Store, Vec<(PathBuf, Vec<u8>)>) {
