@@ -44,13 +44,11 @@
     },
     "maintenance": {
       "breaking": "none",
-      "docs": {
-        "docs/MAINTENANCE.md": "0a5a5c658392be44d5a42b97a7a4170e50894ac8aaa9e2b506f5c2fcbf950d2f"
-      },
+      "docs": {},
       "migration": "",
-      "no_impact": "",
-      "note": "Package media checks cover each publication format, rendering information, bounded parsing, immutable originals, preview resolution, and asset preflight states.",
-      "source_sha256": "7744f05c545eab559833c58cdc6660ff6f37a9997fbbdca52eb617df5017b0ac"
+      "no_impact": "The DOCX note-expansion and tree-size limits require no maintenance procedure change.",
+      "note": "The DOCX note-expansion and tree-size limits require no maintenance procedure change.",
+      "source_sha256": "8abab073c1921f571c30c266559e217177542333c9cd393f233ec709089b0793"
     },
     "native-packaging": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
@@ -64,13 +62,11 @@
     },
     "project-format": {
       "breaking": "none",
-      "docs": {
-        "docs/COMPATIBILITY.md": "281b651c7165096682592cc58d351b981da273bf5cb213038ab695b7556df6d5"
-      },
+      "docs": {},
       "migration": "",
-      "no_impact": "",
-      "note": "Publication PNG and JPEG copies use filtered bytes and content hashes. Originals, registry hashes, recovery copies, and the schema remain unchanged.",
-      "source_sha256": "8001440feb52f7cb187d23755f1b5a2ad381ac3d6a27b56fc16e1423791989bc"
+      "no_impact": "DOCX import refuses note expansion past the 128 MiB limit and XML trees past an estimated 512 MiB; the project format and ordinary imports are unchanged.",
+      "note": "DOCX import refuses note expansion past the 128 MiB limit and XML trees past an estimated 512 MiB; the project format and ordinary imports are unchanged.",
+      "source_sha256": "93203352f0db533a10714e963d3847264cf553c89fe3944cd4f671098bb70686"
     },
     "schema": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
