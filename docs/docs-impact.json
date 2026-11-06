@@ -49,7 +49,7 @@
       "migration": "",
       "no_impact": "",
       "note": "Clarify that Android release keys are restored only after the unsigned build and source checks, immediately before signing; documentation tooling is unchanged.",
-      "source_sha256": "1c1c90df96ae4f9033400397d4797a2dd75399455bb66c4fc0879918c82d68d1"
+      "source_sha256": "c64092c5a41a32b79d8c6623572764a40fb4eeb90d92d87f6dda91d64f317f58"
     },
     "native-packaging": {
       "breaking": "none",
@@ -60,7 +60,7 @@
       "migration": "",
       "no_impact": "",
       "note": "Document read-only Git metadata, hardened host Git checks, separate unsigned and signing-only packaging modes, and delayed CI key restoration.",
-      "source_sha256": "01f07f2ba003786836812f9797ce9636c3763d128f83e1e1d203c42bad600199"
+      "source_sha256": "e89930296064cbe152df9dea07a2383707cb940bcc6622e0f78628e9531a1cc1"
     },
     "project-format": {
       "breaking": "none Activation writes schema 18, which apps 0.0.5 and earlier refuse; 0.0.6 reads and preserves it. Update receiving devices before transfer.",
