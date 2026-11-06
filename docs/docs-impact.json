@@ -44,7 +44,7 @@
       "migration": "",
       "no_impact": "The instance guard checks its directory and peer and bounds request reads. Its library scope, CLI commands, stored books, and contributor check commands are unchanged, so existing maintenance and compatibility guidance remains applicable.",
       "note": "The instance guard checks its directory and peer and bounds request reads. Its library scope, CLI commands, stored books, and contributor check commands are unchanged, so existing maintenance and compatibility guidance remains applicable.",
-      "source_sha256": "fb799ac68c3eeaa66fdb28a7bfd3844951d076c2f459049fb35c23ee6db8228a"
+      "source_sha256": "b71da4404eb305f551227370b96153f81afca75f4f79305f7500195c3592b055"
     },
     "native-packaging": {
       "breaking": "none",

@@ -231,7 +231,7 @@ pub(crate) fn serve(listener: UnixListener, on_focus: impl Fn() + Send + 'static
                         continue;
                     }
                     let mut message = [0; 6];
-                    if stream.read(&mut message).is_ok() {
+                    if matches!(stream.read(&mut message), Ok(n) if n > 0) {
                         on_focus();
                     }
                 }
