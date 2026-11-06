@@ -2677,19 +2677,13 @@ fn mirror_accept(
     // not land when they did.
     let settled = mirror::settle_accepted(
         &dir,
-        &outcome.paths,
+        &rows,
         &outcome.report.documents,
         store::now_ms(),
     );
     match settled {
         Err(error) => eprintln!("mirror: could not settle the accepted files: {error}"),
-        Ok(()) => {
-            let resolved: PauseIds = outcome
-                .report
-                .documents
-                .iter()
-                .map(|landed| landed.item_id.clone())
-                .collect();
+        Ok(resolved) => {
             match mirror::clear_persisted_pauses(&dir, &resolved) {
                 Ok(()) => {
                     if let Ok(mut set) = context.paused.lock() {
