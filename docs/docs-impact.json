@@ -47,7 +47,7 @@
       "migration": "",
       "no_impact": "Review copies now use the existing pen-name preflight before preview and save. Contributor commands, host test isolation, and packaging stay the same; focused host tests cover the new checks.",
       "note": "Review copies now use the existing pen-name preflight before preview and save. Contributor commands, host test isolation, and packaging stay the same; focused host tests cover the new checks.",
-      "source_sha256": "6bede4b222fe9fd9b7178aa57805d9c69c330e085258e2213470c10b3c39dcd6"
+      "source_sha256": "61efefdc1260e6eff9fb1eeaeaa87afe9ca447a9204c61ffc792c15052ca22cc"
     },
     "native-packaging": {
       "breaking": "none",
