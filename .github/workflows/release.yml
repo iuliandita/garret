@@ -200,6 +200,12 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Set runner signing directory
         run: echo "ANDROID_SIGNING_DIR=$RUNNER_TEMP/android-signing" >> "$GITHUB_ENV"
+      - name: Build Android toolchain
+        run: docker build -t garret-android -f scripts/android/Dockerfile scripts/android
+      - name: Build and check unsigned APK
+        env:
+          ANDROID_UNSIGNED: '1'
+        run: bash scripts/package-android
       - name: Restore retained Android signing identity
         if: github.event_name == 'push'
         env:
@@ -221,10 +227,9 @@ jobs:
               path.write_bytes(data)
               path.chmod(0o600)
           PYTHON
-      - name: Build Android toolchain
-        run: docker build -t garret-android -f scripts/android/Dockerfile scripts/android
-      - name: Build and verify APK
+      - name: Sign and verify APK
         env:
+          ANDROID_SIGN_ONLY: '1'
           # Build-only runs use a disposable key, never the public update identity.
           ANDROID_ALLOW_NEW_KEY: ${{ github.event_name != 'push' && '1' || '0' }}
         run: bash scripts/package-android

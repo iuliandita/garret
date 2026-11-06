@@ -53,6 +53,13 @@ must retain develop's prose and counted note/picture losses, ignore note-body
 parts, and store no atoms. Test the owned-note path separately with an isolated
 open policy; its formatting, missing-body, and drawing losses count affected notes.
 
+Publication-image tests inspect media read back from EPUB and DOCX packages and
+from published Markdown asset folders. Keep metadata-bearing PNG/JPEG fixtures,
+orientation and rendering-chunk controls, immutable-original checks, and separate
+preflight checks for images present, absent, and unreadable. Byte filtering must
+handle JPEG metadata between scans, reject truncated segment/chunk bounds, and
+produce deterministic content hashes without adding metadata to retained files.
+
 Scoped EPUB tests cover note restarts and placement, reference/backlink targets,
 contents order, escaped figure text, relative PNG/JPEG media, and explicit
 publication refusals. Set `GARRET_EPUB_TEST_OUTPUT` to a disposable directory
@@ -84,7 +91,19 @@ Mirror fixtures cover matching-schema copies, relative media and format markers;
 the unchanged existing reader's retained-extra-key behavior rejects those markers.
 Stored-atom refusal remains independent of marker presence. Production new-format
 mirror output refuses before creating a destination. Run the complete mirror suite
-to retain the existing pause, conflict-copy, acceptance and undo checks.
+to retain the existing pause, conflict-copy, acceptance and undo checks. Acceptance tests also save a newer
+file after the change-set read and before settlement. Only unchanged accepted
+bytes settle; a newer save stays paused against the exact accepted file bytes,
+including when the newer save restores the previous mirror contents.
+The regression runs the next outbound pass and verifies those newer words survive.
+Mirror I/O tests exercise refused manifest traversal, file and parent-directory
+symlinks, conflict-copy writes, self-loop walks, external cleanup targets and
+the 64 MiB read cap. Unix operations walk directory handles with no-follow
+opens; the Windows path rejects reparse points and needs native qualification.
+Inline Markdown tests compare the indexed closer with the original reader on
+representative and exhaustive short inputs. The 480 KB unclosed-emphasis case
+checks linear work and a five-second ceiling through the actual inline parser.
+
 
 ## Checks
 
