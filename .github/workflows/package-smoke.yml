@@ -91,7 +91,7 @@ jobs:
           sleep 2
           bash "$RUNNER_TEMP/launch.sh" "${{ matrix.name }}"
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: linux-${{ matrix.name }}
           path: ${{ runner.temp }}/out
@@ -153,7 +153,7 @@ jobs:
           perl -e 'alarm 20; exec @ARGV' screencapture -x "$out/2-running.png"
           pkill -x garret
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: macos-${{ matrix.arch }}
           path: ${{ runner.temp }}/out
@@ -227,7 +227,7 @@ jobs:
           $wb.Save((Join-Path $out "windows-${{ matrix.name }}-window.png"))
           Stop-Process -Id $p.Id
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-${{ matrix.name }}
           path: ${{ runner.temp }}/out
@@ -285,7 +285,7 @@ jobs:
           disable-animations: true
           script: bash "$RUNNER_TEMP/android.sh"
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: android-${{ matrix.arch }}
           path: ${{ runner.temp }}/out
